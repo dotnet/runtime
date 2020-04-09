@@ -2669,6 +2669,20 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     }
 }
 
+// Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+bool Compiler::optIsLoopEntry(BasicBlock* block)
+{
+    for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
+        if (optLoopTable[loopInd].lpEntry == block)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Canonicalize the loop nest rooted at parent loop 'loopInd'.
 // Returns 'true' if the flow graph is modified.
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
@@ -3785,6 +3799,8 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
+                        newBlock->bbFlags &=
+                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -7642,6 +7658,7 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
     BasicBlock* botNext = optLoopTable[lnum].lpBottom->bbNext;
+    JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
     for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
     {
         optComputeLoopSideEffectsOfBlock(bbInLoop);
@@ -7651,6 +7668,7 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 {
     unsigned mostNestedLoop = blk->bbNatLoopNum;
+    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
     assert(mostNestedLoop != BasicBlock::NOT_IN_LOOP);
 
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
