@@ -552,7 +552,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, TypeRepresented);
+			return HashCode.Combine (Kind, TypeRepresented);
 		}
 
 		protected override string NodeToString ()
@@ -586,7 +586,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, TypeRepresented);
+			return HashCode.Combine (Kind, TypeRepresented);
 		}
 
 		protected override string NodeToString ()
@@ -620,7 +620,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, Contents);
+			return HashCode.Combine (Kind, Contents);
 		}
 
 		protected override string NodeToString ()
@@ -669,7 +669,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, HashUtils.CalcHashCode(ParameterIndex, (int)DynamicallyAccessedMemberKinds));
+			return HashCode.Combine (Kind, ParameterIndex, DynamicallyAccessedMemberKinds);
 		}
 
 		protected override string NodeToString ()
@@ -702,7 +702,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, (int)DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, DynamicallyAccessedMemberKinds);
 		}
 
 		protected override string NodeToString ()
@@ -817,7 +817,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, Values);
+			return HashCode.Combine (Kind, Values);
 		}
 
 		protected override string NodeToString ()
@@ -908,7 +908,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, AssemblyIdentity, NameString);
+			return HashCode.Combine (Kind, AssemblyIdentity, NameString);
 		}
 
 		protected override string NodeToString ()
@@ -948,7 +948,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode(HashUtils.CalcHashCode (Kind, Field), (int)this.DynamicallyAccessedMemberKinds);
+			return HashCode.Combine (Kind, Field, DynamicallyAccessedMemberKinds);
 		}
 
 		protected override string NodeToString ()
@@ -972,7 +972,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, Value);
+			return HashCode.Combine (Kind, Value);
 		}
 
 		public override bool Equals (ValueNode other)
@@ -1009,7 +1009,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, Size);
+			return HashCode.Combine (Kind, Size);
 		}
 
 		public override bool Equals (ValueNode other)
@@ -1112,94 +1112,12 @@ namespace Mono.Linker.Dataflow
 
 	static class HashUtils
 	{
-		[MethodImpl (MethodImplOptions.AggressiveInlining)]
-		static int _rotl (this int value, int shift)
-		{
-			return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-		}
-
 		public static int CalcHashCodeEnumerable<T> (IEnumerable<T> list) where T : class
 		{
-			int length = list.Count ();
-
-			int hash1 = 0x449b3ad6;
-			int hash2 = (length << 3) + 0x55399219;
-
-			int index = 0;
-
-			T element1 = null;
-			T element2 = null;
-
-			foreach (T element in list) {
-				if ((index++ & 1) == 0) {
-					element1 = element;
-					continue;
-				}
-				element2 = element;
-
-				hash1 = (hash1 + _rotl (hash1, 5)) ^ element1.GetHashCode();
-				hash2 = (hash2 + _rotl (hash2, 5)) ^ element2.GetHashCode();
-			}
-
-			// If we had an odd length, we haven't included the last element yet.
-			if ((length & 1) != 0)
-				hash1 = (hash1 + _rotl (hash1, 5)) ^ element1.GetHashCode();
-
-			hash1 += _rotl (hash1, 8);
-			hash2 += _rotl (hash2, 8);
-
-			return hash1 ^ hash2;
-		}
-
-		public static int CalcHashCode<T1> (ValueNodeKind kind, T1 obj1)
-			where T1 : class
-		{
-			return CalcHashCode (kind, obj1.GetHashCode());
-		}
-
-		public static int CalcHashCode (ValueNodeKind kind, int val1)
-		{
-			return CalcHashCode (kind.GetHashCode (), val1);
-		}
-
-		public static int CalcHashCode (int hashCode1, int hashCode2)
-		{
-			int length = 2;
-
-			int hash1 = 0x449b3ad6;
-			int hash2 = (length << 3) + 0x55399219;
-
-			hash1 = (hash1 + _rotl (hash1, 5)) ^ hashCode1;
-			hash2 = (hash2 + _rotl (hash2, 5)) ^ hashCode2;
-
-			hash1 += _rotl (hash1, 8);
-			hash2 += _rotl (hash2, 8);
-
-			return hash1 ^ hash2;
-		}
-
-		public static int CalcHashCode<T1, T2> (ValueNodeKind kind, T1 obj1, T2 obj2)
-			where T1 : class
-			where T2 : class
-		{
-			return CalcHashCode (kind, obj1 == null ? 0 : obj1.GetHashCode(), obj2 == null ? 0 : obj2.GetHashCode());
-		}
-
-		static int CalcHashCode (ValueNodeKind kind, int hashCode1, int hashCode2)
-		{
-			int length = 3;
-
-			int hash1 = 0x449b3ad6;
-			int hash2 = (length << 3) + 0x55399219;
-
-			hash1 = (hash1 + _rotl (hash1, 5)) ^ kind.GetHashCode ();
-			hash2 = (hash2 + _rotl (hash2, 5)) ^ hashCode1;
-			hash1 = (hash1 + _rotl (hash1, 5)) ^ hashCode2;
-
-			hash1 += _rotl (hash1, 8);
-			hash2 += _rotl (hash2, 8);
-
-			return hash1 ^ hash2;
+			HashCode hashCode = new HashCode ();
+			foreach (var item in list)
+				hashCode.Add (item);
+			return hashCode.ToHashCode ();
 		}
 	}
 }

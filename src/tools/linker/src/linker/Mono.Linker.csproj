@@ -41,6 +41,7 @@
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
   </ItemGroup>
 
   <!-- When publishing illink as a dependency of ILLink.Tasks, we want
