@@ -65,11 +65,6 @@ enum HWIntrinsicFlag : unsigned int
     // - that one intrinsic can generate multiple instructions
     HW_Flag_MultiIns = 0x20,
 
-    // NoContainment
-    // the intrinsic cannot be handled by comtainment,
-    // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x40,
-
     // Copy Upper bits
     // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
     HW_Flag_CopyUpperBits = 0x80,
@@ -100,9 +95,17 @@ enum HWIntrinsicFlag : unsigned int
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
     HW_Flag_NoRMWSemantics = 0x4000,
+
+    // NoContainment
+    // the intrinsic cannot be handled by comtainment,
+    // all the intrinsic that have explicit memory load/store semantics should have this flag
+    HW_Flag_NoContainment = 0x40,
+
 #elif defined(TARGET_ARM64)
     // The intrinsic has read/modify/write semantics in multiple-operands form.
     HW_Flag_HasRMWSemantics = 0x4000,
+
+    HW_Flag_SupportsContainment = 0x40,
 #else
 #error Unsupported platform
 #endif
@@ -245,7 +248,13 @@ struct HWIntrinsicInfo
     static bool SupportsContainment(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoContainment) == 0;
+#elif defined(TARGET_ARM64)
+        return (flags & HW_Flag_SupportsContainment) != 0;
+#else
+#error Unsupported platform
+#endif
     }
 
     static bool CopiesUpperBits(NamedIntrinsic id)
