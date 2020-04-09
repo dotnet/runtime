@@ -79,31 +79,31 @@
     },
     "android": {
       "#import": [
-        "linux"
+        "unix"
       ]
     },
     "android-arm": {
       "#import": [
         "android",
-        "linux-arm"
+        "unix-arm"
       ]
     },
     "android-arm64": {
       "#import": [
         "android",
-        "linux-arm64"
+        "unix-arm64"
       ]
     },
     "android-x64": {
       "#import": [
         "android",
-        "linux-x64"
+        "unix-x64"
       ]
     },
     "android-x86": {
       "#import": [
         "android",
-        "linux-x86"
+        "unix-x86"
       ]
     },
     "android.21": {
