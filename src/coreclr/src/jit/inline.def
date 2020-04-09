@@ -31,7 +31,6 @@ INLINE_OBSERVATION(BAD_LOCAL_NUMBER,          bool,   "invalid local number",   
 INLINE_OBSERVATION(CLASS_INIT_FAILURE,        bool,   "class init failed",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(EXCEEDS_THRESHOLD,         bool,   "exceeds profit threshold",             FATAL,       CALLEE)
-INLINE_OBSERVATION(HAS_DELEGATE_INVOKE,       bool,   "delegate invoke",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_EH,                    bool,   "has exception handling",               FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFILTER,             bool,   "has endfilter",                        FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFINALLY,            bool,   "has endfinally",                       FATAL,       CALLEE)
