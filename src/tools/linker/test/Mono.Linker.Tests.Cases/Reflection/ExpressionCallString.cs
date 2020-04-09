@@ -196,12 +196,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class ABase
 		{
-			[Kept]
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
 			public static void PublicOnBase ()
 			{
 			}
 
-			[Kept]
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
 			protected static void ProtectedOnBase ()
 			{
 			}
