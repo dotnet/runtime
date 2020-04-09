@@ -77,13 +77,14 @@ namespace InteropLibImports
     // and the case where the object doesn't support ICustomQueryInterface.
     enum class TryInvokeICustomQueryInterfaceResult
     {
+        OnGCThread = -2,
         FailedToInvoke = -1,
         Handled = 0,
         NotHandled = 1,
         Failed = 2,
 
         // Range checks
-        Min = FailedToInvoke,
+        Min = OnGCThread,
         Max = Failed,
     };
 

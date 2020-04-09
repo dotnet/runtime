@@ -1065,6 +1065,11 @@ namespace InteropLibImports
 
         *obj = NULL;
 
+        // If this is a GC thread, then someone is trying to query for something
+        // at a time when we can't run managed code.
+        if (IsGCThread())
+            return TryInvokeICustomQueryInterfaceResult::OnGCThread;
+
         auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)

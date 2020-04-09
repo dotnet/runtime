@@ -606,14 +606,6 @@ HRESULT ManagedObjectWrapper::QueryInterface(
             TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(Target, riid, ppvObject);
             switch (result)
             {
-                default:
-                    _ASSERTE(false && "Unknown result value");
-                case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
-                    // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
-                    // indicated the object lacks an implementation.
-                    SetFlag(CreateComInterfaceFlagsEx::LacksICustomQueryInterface);
-                    break;
-
                 case TryInvokeICustomQueryInterfaceResult::Handled:
                     _ASSERTE(*ppvObject != nullptr);
                     return S_OK;
@@ -625,6 +617,23 @@ HRESULT ManagedObjectWrapper::QueryInterface(
                 case TryInvokeICustomQueryInterfaceResult::Failed:
                     _ASSERTE(*ppvObject == nullptr);
                     return E_NOINTERFACE;
+
+                default:
+                    _ASSERTE(false && "Unknown result value");
+                case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
+                    // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
+                    // indicated the object lacks an implementation.
+                    SetFlag(CreateComInterfaceFlagsEx::LacksICustomQueryInterface);
+                    break;
+
+                case TryInvokeICustomQueryInterfaceResult::OnGCThread:
+                    // We are going to assume the caller is attempting to
+                    // check if this wrapper has an interface that is supported
+                    // during a GC and not trying to do something bad.
+                    // Instead of returning immediately, we handle the case
+                    // the same way that would occur if the managed object lacked
+                    // an ICustomQueryInterface implementation.
+                    break;
             }
         }
 
