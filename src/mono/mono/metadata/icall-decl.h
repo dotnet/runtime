@@ -205,7 +205,7 @@ ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_WriteZSt
 #endif
 
 #if defined(TARGET_WASM)
-ICALL_EXPORT void ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString result);
+ICALL_EXPORT void ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString **result);
 #endif
 
 #if defined(ENABLE_MONODROID)
