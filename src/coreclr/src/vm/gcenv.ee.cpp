@@ -770,8 +770,7 @@ void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        walk_surv_type type = (gen == 3) ? walk_for_loh : walk_for_poh;
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, type);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_uoh, gen);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE

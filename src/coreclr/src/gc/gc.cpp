@@ -25829,10 +25829,6 @@ void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type t
     else if (type == walk_for_bgc)
         walk_survivors_for_bgc (context, fn);
 #endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
-    else if (type == walk_for_loh)
-        walk_survivors_for_uoh (context, fn, loh_generation);
-    else if (type == walk_for_poh)
-        walk_survivors_for_uoh (context, fn, poh_generation);
     else
         assert (!"unknown type!");
 }
@@ -39474,10 +39470,18 @@ void GCHeap::DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context)
     }
 }
 
-void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type)
+void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number)
 {
     gc_heap* hp = (gc_heap*)gc_context;
-    hp->walk_survivors (fn, diag_context, type);
+
+    if (type == walk_for_uoh)
+    {
+        hp->walk_survivors_for_uoh (diag_context, fn, gen_number);
+    }
+    else
+    {
+        hp->walk_survivors (fn, diag_context, type);
+    }
 }
 
 void GCHeap::DiagWalkHeap (walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p)
