@@ -504,6 +504,11 @@ namespace
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
         CALL_MANAGED_METHOD(hr, HRESULT, args);
 
+        // Assert the supported return values.
+        _ASSERTE(hr == S_OK
+                || hr == S_FALSE
+                || hr == E_NOINTERFACE);
+
         return hr;
     }
 
