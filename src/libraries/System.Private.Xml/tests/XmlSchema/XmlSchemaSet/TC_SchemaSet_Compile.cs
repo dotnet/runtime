@@ -592,16 +592,9 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
-            Exception exception;
-            try
-            {
-                ss.Compile();
-                exception = null;
-            } catch (Exception ex)
-            {
-                exception = ex;
-            }
-            Assert.Null(exception);
+            ss.Compile();
+
+            Assert.True(true);
         }
         #endregion
 
