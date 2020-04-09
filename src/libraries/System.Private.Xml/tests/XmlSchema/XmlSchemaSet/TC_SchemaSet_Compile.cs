@@ -402,10 +402,8 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-            // The thrown error message has an upper case 'M' in both
-            // minLength and maxLength.
-            Assert.Contains("minlength", ex.Message.ToLower());
-            Assert.Contains("maxlength", ex.Message.ToLower());
+            Assert.Contains("minLength", ex.Message);
+            Assert.Contains("maxLength", ex.Message);
 
             // Issue 30218: invalid formatters
             Regex rx = new Regex(@"\{[0-9]*[a-zA-Z ]+[^\}]*\}");

@@ -1120,7 +1120,7 @@
     <value>It is an error for both length and minLength or maxLength to be present.</value>
   </data>
   <data name="Sch_MinLengthGtMaxLength" xml:space="preserve">
-    <value>MinLength is greater than MaxLength.</value>
+    <value>minLength is greater than maxLength.</value>
   </data>
   <data name="Sch_FractionDigitsGtTotalDigits" xml:space="preserve">
     <value>FractionDigits is greater than TotalDigits.</value>
