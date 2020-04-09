@@ -215,6 +215,8 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
         public void DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -251,6 +253,14 @@ namespace Microsoft.Extensions.Logging.Test
                     exception = Assert.Throws<ArgumentException>(
                         () => LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 0, formatString));
                     break;
+                case 7:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.Define<string, string, string, string, string, string, string>(LogLevel.Error, 0, formatString));
+                    break;
+                case 8:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.Define<string, string, string, string, string, string, string, string>(LogLevel.Error, 0, formatString));
+                    break;
                 default:
                     throw new ArgumentException($"Invalid value for '{nameof(expectedNamedParameterCount)}'");
             }
@@ -277,6 +287,11 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -301,6 +316,26 @@ namespace Microsoft.Extensions.Logging.Test
                     exception = Assert.Throws<ArgumentException>(
                         () => LoggerMessage.DefineScope<string, string, string>(formatString));
                     break;
+                case 4:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string>(formatString));
+                    break;
+                case 5:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string>(formatString));
+                    break;
+                case 6:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string, string>(formatString));
+                    break;
+                case 7:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string, string, string>(formatString));
+                    break;
+                case 8:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string, string, string, string>(formatString));
+                    break;
                 default:
                     throw new ArgumentException($"Invalid value for '{nameof(expectedNamedParameterCount)}'");
             }
@@ -317,6 +352,8 @@ namespace Microsoft.Extensions.Logging.Test
             new object[] { LoggerMessage.Define<string, string, string, string>(LogLevel.Error, 4, "Log {P0} {P1} {P2} {P3}"), 4 },
             new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}"), 5 },
             new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}"), 6 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5} {P6}"), 7 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5} {P6} {P7}"), 8 },
         };
 
         private void AssertLogValues(
