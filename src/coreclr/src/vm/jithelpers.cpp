@@ -4783,6 +4783,10 @@ HCIMPLEND
 /*************************************************************/
 HCIMPL0(VOID, JIT_PollGC)
 {
+    // as long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
+    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+        return;
+
     BEGIN_PRESERVE_LAST_ERROR;
 
     FCALL_CONTRACT;
