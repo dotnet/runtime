@@ -82,7 +82,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __OutputFile=$PWD/$(MSBuildProjectName).dll
     fi
 
-    __ResponseFile=$__OutputFile ".rsp"
+    __ResponseFile="$(__OutputFile).rsp"
     rm $__ResponseFile
 
     __Command=$_DebuggerFullPath
