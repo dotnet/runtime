@@ -1,0 +1,17 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <RootNamespace>Mono</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
+  </PropertyGroup>
+
+</Project>

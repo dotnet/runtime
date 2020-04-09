@@ -57,7 +57,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 				PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-				CreateAssemblyChecker (original, linked).Verify ();
+				if (!original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName).CustomAttributes
+					.Any (attr => attr.AttributeType.Name == nameof (SkipKeptItemsValidationAttribute))) {
+					CreateAssemblyChecker (original, linked).Verify ();
+				}
 
 				VerifyLinkingOfOtherAssemblies (original);
 
@@ -597,10 +600,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
 					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
-						var expectedMessagePattern = (string)attr.ConstructorArguments [0].Value;
-						Assert.That (
-							logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessagePattern)),
-							$"Expected to find logged message matching `{expectedMessagePattern}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+						var expectedMessage = (string)attr.ConstructorArguments [0].Value;
+
+						Assert.That (new Func<bool> (() => {
+							if ((bool)attr.ConstructorArguments [1].Value)
+								return logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessage));
+							return logger.Messages.Any (mc => mc.Message.Contains (expectedMessage));
+						}), $"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
 					}
 
 					if (attr.AttributeType.Resolve ().Name == nameof (LogDoesNotContainAttribute)) {
@@ -659,7 +665,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		void VerifyRecordedReflectionPatterns (AssemblyDefinition original, TestReflectionPatternRecorder reflectionPatternRecorder)
 		{
-			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ())) {
+			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ()).Distinct ()) {
 				bool foundAttributesToVerify = false;
 				foreach (var attr in expectedSourceMethodDefinition.CustomAttributes) {
 					if (attr.AttributeType.Resolve ().Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
@@ -802,7 +808,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return fullName;
 		}
 
-		static string GetFullMemberNameFromDefinition (IMemberDefinition member)
+		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member)
 		{
 			// Method which basically returns the same as member.ToString() but without the return type
 			// of a method (if it's a method).
@@ -810,19 +816,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// as it would have to actually resolve the referenced method, which is very expensive and no necessary
 			// for the tests to work (the return types are redundant piece of information anyway).
 
-			if (member is TypeDefinition) {
-				return member.FullName;
+			if (member is IMemberDefinition memberDefinition) {
+				if (memberDefinition is TypeDefinition) {
+					return memberDefinition.FullName;
+				}
+
+				string fullName = memberDefinition.DeclaringType.FullName + "::";
+				if (memberDefinition is MethodDefinition method) {
+					fullName += method.GetSignature ();
+				} else {
+					fullName += memberDefinition.Name;
+				}
+
+				return fullName;
 			}
 
-			string fullName = member.DeclaringType.FullName + "::";
-			if (member is MethodDefinition method) {
-				fullName += method.GetSignature ();
-			}
-			else {
-				fullName += member.Name;
-			}
-
-			return fullName;
+			throw new NotImplementedException ($"Getting the full member name has not been implemented for {member}");
 		}
 
 		static string RecognizedReflectionAccessPatternToString (TestReflectionPatternRecorder.ReflectionAccessPattern pattern)
