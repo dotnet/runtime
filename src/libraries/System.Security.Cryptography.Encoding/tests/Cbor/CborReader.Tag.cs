@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Numerics;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -45,9 +46,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
 
-            switch (ReadTag())
+            switch (PeekTag())
             {
                 case CborTag.DateTimeString:
+                    ReadTag();
+
                     if (Peek() != CborReaderState.TextString)
                     {
                         throw new FormatException("String DateTime semantic tag should annotate string value.");
@@ -57,6 +60,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return DateTimeOffset.Parse(dateString, formatProvider: null, DateTimeStyles.RoundtripKind);
 
                 case CborTag.DateTimeUnixSeconds:
+                    ReadTag();
+
                     switch (Peek())
                     {
                         case CborReaderState.UnsignedInteger:

@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("2013-03-21T20:04:00Z", "c074323031332d30332d32315432303a30343a30305a")]
+        [InlineData("2013-03-21T20:04:00.0000000+00:00", "c07821323031332d30332d32315432303a30343a30302e303030303030302b30303a3030")]
         [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
         public static void WriteDateTimeOffset_SingleValue_HappyPath(string valueString, string expectedHexEncoding)
         {
