@@ -50,8 +50,16 @@ namespace System.Text.Json
         /// Copies the options from a <see cref="JsonSerializerOptions"/> instance to a new instance.
         /// </summary>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> instance to copy options from.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="options"/> is <see langword="null"/>.
+        /// </exception>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             _memberAccessorStrategy = options.MemberAccessorStrategy;
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;

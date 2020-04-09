@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Xunit;
@@ -522,6 +524,21 @@ namespace System.Text.Json.Serialization.Tests
             RunTest(25, 25);
         }
 
+        [Fact]
+        public static void CopyConstructorTest_CopiesAllPublicProperties()
+        {
+            JsonSerializerOptions options = GetFullyPopulatedOptionsInstance();
+            var newOptions = new JsonSerializerOptions(options);
+            VerifyOptionsEqual_WithReflection(options, newOptions);
+        }
+
+        [Fact]
+        public static void CopyConstructorTest_NullInput()
+        {
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
+            Assert.Contains("options", ex.ToString());
+        }
+
         private static JsonSerializerOptions CreateOptionsInstance()
         {
             var options = new JsonSerializerOptions
@@ -565,6 +582,100 @@ namespace System.Text.Json.Serialization.Tests
             for (int i = 0; i < options.Converters.Count; i++)
             {
                 Assert.Same(options.Converters[i], newOptions.Converters[i]);
+            }
+        }
+
+        private static JsonSerializerOptions GetFullyPopulatedOptionsInstance()
+        {
+            var options = new JsonSerializerOptions();
+
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties())
+            {
+                Type propertyType = property.PropertyType;
+
+                if (propertyType == typeof(bool))
+                {
+                    property.SetValue(options, true);
+                }
+                if (propertyType == typeof(int))
+                {
+                    property.SetValue(options, 32);
+                }
+                else if (propertyType == typeof(IList<JsonConverter>))
+                {
+                    options.Converters.Add(new JsonStringEnumConverter());
+                    options.Converters.Add(new ConverterForInt32());
+                }
+                else if (propertyType == typeof(JavaScriptEncoder))
+                {
+                    options.Encoder = JavaScriptEncoder.Default;
+                }
+                else if (propertyType == typeof(JsonNamingPolicy))
+                {
+                    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    options.DictionaryKeyPolicy = new SimpleSnakeCasePolicy();
+                }
+                else if (propertyType == typeof(ReferenceHandling))
+                {
+                    options.ReferenceHandling = ReferenceHandling.Preserve;
+                }
+                else if (propertyType.IsValueType)
+                {
+                    options.ReadCommentHandling = JsonCommentHandling.Disallow;
+                }
+                else
+                {
+                    // An exception thrown from here means this test should be updated
+                    // to reflect any newly added properties on JsonSerializerOptions.
+                    property.SetValue(options, Activator.CreateInstance(propertyType));
+                }
+            }
+
+            return options;
+        }
+
+        private static void VerifyOptionsEqual_WithReflection(JsonSerializerOptions options, JsonSerializerOptions newOptions)
+        {
+            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties())
+            {
+                Type propertyType = property.PropertyType;
+
+                if (propertyType == typeof(bool))
+                {
+                    Assert.True((bool)property.GetValue(options));
+                    Assert.Equal((bool)property.GetValue(options), (bool)property.GetValue(newOptions));
+                }
+                else if (propertyType == typeof(int))
+                {
+                    Assert.Equal(32, (int)property.GetValue(options));
+                    Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
+                }
+                else if (typeof(IEnumerable).IsAssignableFrom(propertyType))
+                {
+                    var list1 = (IList<JsonConverter>)property.GetValue(options);
+                    var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
+
+                    Assert.Equal(list1.Count, list2.Count);
+                    for (int i = 0; i < list1.Count; i++)
+                    {
+                        Assert.Same(list1[i], list2[i]);
+                    }
+                }
+                else if (propertyType.IsValueType)
+                {
+                    if (property.Name == "ReadCommentHandling")
+                    {
+                        Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
+                    }
+                    else
+                    {
+                        Assert.True(false, $"Public option was added to JsonSerializerOptions but not copied in the copy ctor: {property.Name}");
+                    }
+                }
+                else
+                {
+                    Assert.Same(property.GetValue(options), property.GetValue(newOptions));
+                }
             }
         }
     }
