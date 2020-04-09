@@ -538,8 +538,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "VT_RECORD not supported on .NET Core")]
-        public void GetObjectForNativeVariant_Record_ReturnsExpected()
+        public void GetObjectForNativeVariant_Record_Throws()
         {
             int record = 10;
             var recordInfo = new RecordInfo { Guid = typeof(int).GUID };
@@ -557,11 +556,8 @@ namespace System.Runtime.InteropServices.Tests
                         _recordInfo = pRecordInfo
                     }
                 });
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
-                GetObjectForNativeVariant_NestedVariant_ReturnsExpected(variant, record);
 
-                variant.m_Variant.vt |= VT_BYREF;
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
+                Assert.Throws<ArgumentException>(() => GetObjectForNativeVariant(variant));
             }
             finally
             {
