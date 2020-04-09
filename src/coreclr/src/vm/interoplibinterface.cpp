@@ -481,6 +481,32 @@ namespace
         CALL_MANAGED_METHOD_NORET(args);
     }
 
+    HRESULT CallICustomQueryInterface(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** ppObject)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(ppObject != NULL);
+        }
+        CONTRACTL_END;
+
+        HRESULT hr;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(&iid);
+        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
+        CALL_MANAGED_METHOD(hr, HRESULT, args);
+
+        return hr;
+    }
+
     bool TryGetOrCreateComInterfaceForObjectInternal(
         _In_opt_ OBJECTREF impl,
         _In_ OBJECTREF instance,
@@ -1016,6 +1042,49 @@ namespace InteropLibImports
                 COMPlusThrow(kArgumentException);
 
             STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created Target for External: 0x%p => 0x%p\n", OBJECTREFToObject(gc.objRef), *trackerTarget);
+            GCPROTECT_END();
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
+    HRESULT TryInvokeICustomQueryInterface(
+        _In_ InteropLib::OBJECTHANDLE handle,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** obj) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+            PRECONDITION(handle != NULL);
+            PRECONDITION(obj != NULL);
+        }
+        CONTRACTL_END;
+
+        *obj = NULL;
+
+        HRESULT hr = S_FALSE;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            // Switch to Cooperative mode since object references
+            // are being manipulated.
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF objRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            // Get the target of the external object's reference.
+            ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+            gc.objRef = ObjectFromHandle(objectHandle);
+
+            hr = CallICustomQueryInterface(&gc.objRef, iid, obj);
+
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;

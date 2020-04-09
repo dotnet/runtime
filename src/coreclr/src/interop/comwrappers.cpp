@@ -584,7 +584,21 @@ HRESULT ManagedObjectWrapper::QueryInterface(
     // Find target interface
     *ppvObject = As(riid);
     if (*ppvObject == nullptr)
+    {
+        // Check if the managed object has implemented ICustomQueryInterface
+        if (!IsSet(CreateComInterfaceFlagsEx::LacksICustomQueryInterface))
+        {
+            HRESULT hr = InteropLibImports::TryInvokeICustomQueryInterface(Target, riid, ppvObject);
+            if (hr != S_FALSE)
+                return hr;
+
+            // Set the 'lacks' flag since our attempt to use ICustomQueryInterface
+            // indicated the object lacks an implementation.
+            SetFlag(CreateComInterfaceFlagsEx::LacksICustomQueryInterface);
+        }
+
         return E_NOINTERFACE;
+    }
 
     (void)AddRef();
     return S_OK;

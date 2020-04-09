@@ -72,6 +72,13 @@ namespace InteropLibImports
         _In_ InteropLib::Com::CreateObjectFlags externalObjectFlags,
         _In_ InteropLib::Com::CreateComInterfaceFlags trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept;
+
+    // Attempt to call the ICustomQueryInterface on the supplied object.
+    // Returns S_FALSE if the object doesn't support ICustomQueryInterface.
+    HRESULT TryInvokeICustomQueryInterface(
+        _In_ InteropLib::OBJECTHANDLE handle,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** obj) noexcept;
 }
 
 #endif // _INTEROP_INC_INTEROPLIBIMPORTS_H_

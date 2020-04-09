@@ -15,11 +15,12 @@ enum class CreateComInterfaceFlagsEx : int32_t
     CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
     TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
 
-    // Highest bit is reserved for internal usage
+    // Highest bits are reserved for internal usage
+    LacksICustomQueryInterface = 1 << 29,
     IsComActivated = 1 << 30,
     IsPegged = 1 << 31,
 
-    InternalMask = IsPegged | IsComActivated,
+    InternalMask = IsPegged | IsComActivated | LacksICustomQueryInterface,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);
