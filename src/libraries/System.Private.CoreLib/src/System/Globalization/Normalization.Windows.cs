@@ -11,7 +11,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -26,12 +26,9 @@ namespace System.Globalization
             // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
             // to 0 (ERROR_SUCCESS) before executing the calls.
             Interop.BOOL result;
-            unsafe
+            fixed (char* pInput = strInput)
             {
-                fixed (char* pInput = strInput)
-                {
-                    result = Interop.Normaliz.IsNormalizedString(normalizationForm, pInput, strInput.Length);
-                }
+                result = Interop.Normaliz.IsNormalizedString(normalizationForm, pInput, strInput.Length);
             }
 
             int lastError = Marshal.GetLastWin32Error();
@@ -62,7 +59,7 @@ namespace System.Globalization
             return result == Interop.BOOL.TRUE;
         }
 
-        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -91,13 +88,10 @@ namespace System.Globalization
                     // NormalizeString pinvoke has SetLastError attribute property which will set the last error
                     // to 0 (ERROR_SUCCESS) before executing the calls.
                     int realLength;
-                    unsafe
+                    fixed (char* pInput = strInput)
+                    fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
-                        fixed (char* pInput = strInput)
-                        fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
-                        {
-                            realLength = Interop.Normaliz.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
-                        }
+                        realLength = Interop.Normaliz.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
                     }
                     int lastError = Marshal.GetLastWin32Error();
 

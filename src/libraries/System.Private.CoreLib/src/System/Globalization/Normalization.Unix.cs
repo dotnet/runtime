@@ -11,7 +11,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -23,12 +23,9 @@ namespace System.Globalization
             ValidateArguments(strInput, normalizationForm);
 
             int ret;
-            unsafe
+            fixed (char* pInput = strInput)
             {
-                fixed (char* pInput = strInput)
-                {
-                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
-                }
+                ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
             }
 
             if (ret == -1)
@@ -39,7 +36,7 @@ namespace System.Globalization
             return ret == 1;
         }
 
-        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -60,13 +57,10 @@ namespace System.Globalization
                 for (int attempt = 0; attempt < 2; attempt++)
                 {
                     int realLen;
-                    unsafe
+                    fixed (char* pInput = strInput)
+                    fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
-                        fixed (char* pInput = strInput)
-                        fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
-                        {
-                            realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
-                        }
+                        realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
                     }
 
                     if (realLen == -1)
