@@ -115,20 +115,12 @@ namespace System.Runtime.InteropServices.Tests
 
             // Wrappers.
             yield return new object[] { new UnknownWrapper(10), VarEnum.VT_UNKNOWN, IntPtr.Zero, null };
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new DispatchWrapper(10), VarEnum.VT_DISPATCH, IntPtr.Zero, null };
-            }
             yield return new object[] { new ErrorWrapper(10), VarEnum.VT_ERROR, (IntPtr)10, 10 };
             yield return new object[] { new CurrencyWrapper(10), VarEnum.VT_CY, (IntPtr)100000, 10m };
             yield return new object[] { new BStrWrapper("a"), VarEnum.VT_BSTR, (IntPtr)(-1), "a" };
             yield return new object[] { new BStrWrapper(null), VarEnum.VT_BSTR, IntPtr.Zero, null };
 
             yield return new object[] { new UnknownWrapper[] { new UnknownWrapper(null), new UnknownWrapper(10) }, (VarEnum)8205, (IntPtr)(-1), new object[] { null, 10 }  };
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new DispatchWrapper[] { new DispatchWrapper(null), new DispatchWrapper(10) }, (VarEnum)8201, (IntPtr)(-1), new object[] { null, 10 } };
-            }
             yield return new object[] { new ErrorWrapper[] { new ErrorWrapper(10) }, (VarEnum)8202, (IntPtr)(-1), new uint[] { 10 } };
             yield return new object[] { new CurrencyWrapper[] { new CurrencyWrapper(10) }, (VarEnum)8198, (IntPtr)(-1), new decimal[] { 10 } };
             yield return new object[] { new BStrWrapper[] { new BStrWrapper("a"), new BStrWrapper(null), new BStrWrapper("c") }, (VarEnum)8200, (IntPtr)(-1), new string[] { "a", null, "c" } };
@@ -140,21 +132,9 @@ namespace System.Runtime.InteropServices.Tests
             var genericClass = new GenericClass<string>();
             yield return new object[] { new GenericClass<string>[] { genericClass, null }, (VarEnum)8205, (IntPtr)(-1), new object[] { genericClass, null } };
 
-            if (!PlatformDetection.IsNetCore)
-            {
-                var nonGenericStruct = new NonGenericStruct();
-                yield return new object[] { new NonGenericStruct[] { nonGenericStruct }, (VarEnum)8228, (IntPtr)(-1), new NonGenericStruct[] { nonGenericStruct } };
-            }
-
             var classWithInterface = new ClassWithInterface();
             var structWithInterface = new StructWithInterface();
             yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, null } };
-
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
-            }
-
             yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
 
             // Enums.
