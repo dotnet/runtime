@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,15 +70,18 @@ namespace System.Net.Http.Functional.Tests
             };
         }
 
-        public static IEnumerable<object[]> Async()
-        {
-            yield return new object[] { true };
-            yield return new object[] { false };
-        }
+        public static readonly bool[] Bools = new[] { true, false };
+
+        public static IEnumerable<object[]> Async() => Bools.Select(b => new object[] { b });
 
         // For use by remote server tests
 
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
+
+        public static IEnumerable<object[]> AsyncRemoteServersMemberData() => 
+            from async in Bools
+            from remoteServer in Configuration.Http.RemoteServers
+            select new object[] { async, remoteServer };
 
         protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer)
         {

@@ -182,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (remoteServer.IsSecure)
                 {
-                    foreach (bool checkRevocation in new[] { true, false })
+                    foreach (bool checkRevocation in Bools)
                     {
                         yield return new object[] {
                             remoteServer,

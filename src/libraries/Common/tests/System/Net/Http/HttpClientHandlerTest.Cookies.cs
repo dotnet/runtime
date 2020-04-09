@@ -606,7 +606,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> CookieNamesValuesAndUseCookies()
         {
-            foreach (bool useCookies in new[] { true, false })
+            foreach (bool useCookies in Bools)
             {
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };

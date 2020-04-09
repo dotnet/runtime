@@ -4,11 +4,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.DirectoryServices.Protocols;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -595,38 +593,36 @@ namespace System.Net.Http.Functional.Tests
             CancelPendingRequests = 0x2,
             DisposeHttpClient = 0x4
         }
-
-        private static readonly bool[] s_bools = new[] { true, false };
-
+        
         public static IEnumerable<object[]> OneBoolAndCancellationMode() =>
-            from first in s_bools
+            from first in Bools
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { first, mode };
 
         public static IEnumerable<object[]> TwoBoolsAndCancellationMode() =>
-            from first in s_bools
-            from second in s_bools
+            from first in Bools
+            from second in Bools
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { first, second, mode };
 
         public static IEnumerable<object[]> ThreeBoolsAndCancellationMode() =>
-            from first in s_bools
-            from second in s_bools
-            from third in s_bools
+            from first in Bools
+            from second in Bools
+            from third in Bools
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { first, second, third, mode };
 
         public static IEnumerable<object[]> ThreeBools() =>
-            from first in s_bools
-            from second in s_bools
-            from third in s_bools
+            from first in Bools
+            from second in Bools
+            from third in Bools
             select new object[] { first, second, third };
 
         public static IEnumerable<object[]> FourBools() =>
-            from first in s_bools
-            from second in s_bools
-            from third in s_bools
-            from fourth in s_bools
+            from first in Bools
+            from second in Bools
+            from third in Bools
+            from fourth in Bools
             select new object[] { first, second, third, fourth };
     }
 }

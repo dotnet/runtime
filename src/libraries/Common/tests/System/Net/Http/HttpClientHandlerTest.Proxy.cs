@@ -385,7 +385,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> CredentialsForProxy()
         {
             yield return new object[] { null, false };
-            foreach (bool wrapCredsInCache in new[] { true, false })
+            foreach (bool wrapCredsInCache in Bools)
             {
                 yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
