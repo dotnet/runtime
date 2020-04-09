@@ -68,30 +68,26 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 #if NETCOREAPP
 		[Kept]
-#endif
 		static void TestNameWithIntAndType ()
 		{
 			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
 			method.Invoke (null, new object [] { });
 		}
 
-#if NETCOREAPP
 		[Kept]
-#endif
 		static void TestNameWithIntAndBindingFlags ()
 		{
 			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type [] { }, null);
 			method.Invoke (null, new object [] { });
 		}
 
-#if NETCOREAPP
 		[Kept]
-#endif
 		static void TestNameWithIntBindingFlagsCallingConventionParameter()
 		{
 			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type [] { }, null);
 			method.Invoke (null, new object [] { });
 		}
+#endif
 
 		[Kept]
 		static void TestIfElse(int i)
@@ -278,7 +274,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 #if NETCOREAPP
 		[Kept]
-#endif
 		private class TestNameWithIntAndTypeClass
 		{
 			[Kept]
@@ -303,9 +298,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			}
 		}
 
-#if NETCOREAPP
 		[Kept]
-#endif
 		private class TestNameWithIntAndBindingClass
 		{
 			private static int OnlyCalledViaReflection ()
@@ -328,9 +321,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			}
 		}
 
-#if NETCOREAPP
 		[Kept]
-#endif
 		private class TestNameWithIntBindingFlagsCallingConventionParameterClass
 		{
 			[Kept]
@@ -351,6 +342,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				return 45;
 			}
 		}
+#endif
 
 		[Kept]
 		private class IfClass
