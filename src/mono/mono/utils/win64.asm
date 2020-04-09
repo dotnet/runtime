@@ -36,6 +36,23 @@ mono_context_get_current PROC
 	mov rax, qword ptr [rsp]
 	mov [rcx + 80h], rax
 
+	movaps xmmword ptr [rcx + 90h], xmm0
+	movaps xmmword ptr [rcx + 0A0h], xmm1
+	movaps xmmword ptr [rcx + 0B0h], xmm2
+	movaps xmmword ptr [rcx + 0C0h], xmm3
+	movaps xmmword ptr [rcx + 0D0h], xmm4
+	movaps xmmword ptr [rcx + 0E0h], xmm5
+	movaps xmmword ptr [rcx + 0F0h], xmm6
+	movaps xmmword ptr [rcx + 100h], xmm7
+	movaps xmmword ptr [rcx + 110h], xmm8
+	movaps xmmword ptr [rcx + 120h], xmm9
+	movaps xmmword ptr [rcx + 130h], xmm10
+	movaps xmmword ptr [rcx + 140h], xmm11
+	movaps xmmword ptr [rcx + 150h], xmm12
+	movaps xmmword ptr [rcx + 160h], xmm13
+	movaps xmmword ptr [rcx + 170h], xmm14
+	movaps xmmword ptr [rcx + 180h], xmm15
+
 	ret
 
 mono_context_get_current endP

@@ -200,7 +200,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	/* suspended request, this will wait until thread is suspended and thread context has been collected */
 	/* and returned. */
 	CONTEXT context;
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
 		result = ResumeThread (handle);
 		g_assert (result == 1);
@@ -289,19 +289,16 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		info->async_target = NULL;
 		info->user_data = NULL;
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
 			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 
-		g_assert (context.ContextFlags & CONTEXT_INTEGER);
-		g_assert (context.ContextFlags & CONTEXT_CONTROL);
-
 		mono_monoctx_to_sigctx (&ctx, &context);
 
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {
 			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
