@@ -7,7 +7,6 @@ using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace System.Xml.Tests
 {
@@ -375,13 +374,10 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
             Assert.Contains("length", ex.Message);
             Assert.Contains("minLength", ex.Message);
             Assert.Contains("maxLength", ex.Message);
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
         }
 
         [Fact]
@@ -402,12 +398,9 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
             Assert.Contains("minLength", ex.Message);
             Assert.Contains("maxLength", ex.Message);
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{[0-9]*[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
         }
 
         public static IEnumerable<object[]> MaxMinLengthBaseLength_TestData
@@ -638,11 +631,8 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-            Assert.Contains("length", ex.Message);
 
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
+            Assert.Contains("length", ex.Message);
         }
 
         #region FacetBaseFixed tests
@@ -943,11 +933,6 @@ namespace System.Xml.Tests
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
             Assert.Contains("fixed='true'", ex.Message);
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
-
         }
         #endregion
 
@@ -970,11 +955,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Add(null, xr));
-            Assert.Contains("all", ex.Message);
 
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
+            Assert.Contains("all", ex.Message);
         }
 
         [Fact]
@@ -996,10 +978,6 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Add(null, xr));
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
 
             Assert.Contains("all", ex.Message);
             Assert.Contains("maxOccurs", ex.Message);
@@ -1028,10 +1006,6 @@ namespace System.Xml.Tests
             ss.Add(null, xr);
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
-            Assert.Empty(rx.Matches(ex.Message));
 
             Assert.Contains("substitutionGroup", ex.Message);
             Assert.Contains("person", ex.Message);
@@ -1076,10 +1050,6 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
 
             Assert.Contains("particle", ex.Message);
         }
@@ -1141,10 +1111,6 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-
-            // Issue 30218: invalid formatters
-            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
 
             Assert.Contains("all", ex.Message);
             Assert.Contains("minOccurs", ex.Message);
