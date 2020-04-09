@@ -879,10 +879,10 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal Sha1() { }
         public static new bool IsSupported { get { throw null; } }
-        public static uint FixedRotate(uint hash_e) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateChoose(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateMajority(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateParity(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> FixedRotate(System.Runtime.Intrinsics.Vector64<uint> hash_e) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateChoose(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateMajority(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateParity(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate0(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w4_7, System.Runtime.Intrinsics.Vector128<uint> w8_11) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate1(System.Runtime.Intrinsics.Vector128<uint> tw0_3, System.Runtime.Intrinsics.Vector128<uint> w12_15) { throw null; }
     }

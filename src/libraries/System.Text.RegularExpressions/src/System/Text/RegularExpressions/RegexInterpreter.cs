@@ -352,48 +352,69 @@ namespace System.Text.RegularExpressions
 
             // If the pattern is anchored, we can update our position appropriately and return immediately.
             // If there's a Boyer-Moore prefix, we can also validate it.
-            if ((_code.Anchors & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
+            if ((_code.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
             {
                 if (!_code.RightToLeft)
                 {
-                    if (((_code.Anchors & RegexPrefixAnalyzer.Beginning) != 0 && runtextpos > runtextbeg) ||
-                        ((_code.Anchors & RegexPrefixAnalyzer.Start) != 0 && runtextpos > runtextstart))
+                    switch (_code.LeadingAnchor)
                     {
-                        runtextpos = runtextend;
-                        return false;
-                    }
+                        case RegexPrefixAnalyzer.Beginning when runtextpos > runtextbeg:
+                        case RegexPrefixAnalyzer.Start when runtextpos > runtextstart:
+                            runtextpos = runtextend;
+                            return false;
 
-                    if ((_code.Anchors & RegexPrefixAnalyzer.EndZ) != 0 && runtextpos < runtextend - 1)
-                    {
-                        runtextpos = runtextend - 1;
-                    }
-                    else if ((_code.Anchors & RegexPrefixAnalyzer.End) != 0 && runtextpos < runtextend)
-                    {
-                        runtextpos = runtextend;
+                        case RegexPrefixAnalyzer.EndZ when runtextpos < runtextend - 1:
+                            runtextpos = runtextend - 1;
+                            break;
+
+                        case RegexPrefixAnalyzer.End when runtextpos < runtextend:
+                            runtextpos = runtextend;
+                            break;
                     }
                 }
                 else
                 {
-                    if (((_code.Anchors & RegexPrefixAnalyzer.End) != 0 && runtextpos < runtextend) ||
-                        ((_code.Anchors & RegexPrefixAnalyzer.EndZ) != 0 && (runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtext![runtextpos] != '\n'))) ||
-                        ((_code.Anchors & RegexPrefixAnalyzer.Start) != 0 && runtextpos < runtextstart))
+                    switch (_code.LeadingAnchor)
                     {
-                        runtextpos = runtextbeg;
+                        case RegexPrefixAnalyzer.End when runtextpos < runtextend:
+                        case RegexPrefixAnalyzer.EndZ when runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtext![runtextpos] != '\n'):
+                        case RegexPrefixAnalyzer.Start when runtextpos < runtextstart:
+                            runtextpos = runtextbeg;
+                            return false;
+
+                        case RegexPrefixAnalyzer.Beginning when runtextpos > runtextbeg:
+                            runtextpos = runtextbeg;
+                            break;
+                    }
+                }
+
+                return
+                    _code.BoyerMoorePrefix == null || // found a valid start or end anchor
+                    _code.BoyerMoorePrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
+            }
+
+            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+            // to boost our position to the next line, and then continue normally with any Boyer-Moore or
+            // leading char class searches.
+            if (_code.LeadingAnchor == RegexPrefixAnalyzer.Bol &&
+                !_code.RightToLeft) // don't bother customizing this optimization for the very niche RTL + Multiline case
+            {
+                // If we're not currently positioned at the beginning of a line (either
+                // the beginning of the string or just after a line feed), find the next
+                // newline and position just after it.
+                if (runtextpos > runtextbeg && runtext![runtextpos - 1] != '\n')
+                {
+                    int newline = runtext.IndexOf('\n', runtextpos);
+                    if (newline == -1)
+                    {
+                        runtextpos = runtextend;
                         return false;
                     }
 
-                    if ((_code.Anchors & RegexPrefixAnalyzer.Beginning) != 0 && runtextpos > runtextbeg)
-                    {
-                        runtextpos = runtextbeg;
-                    }
+                    runtextpos = newline + 1;
                 }
-
-                if (_code.BoyerMoorePrefix != null)
-                {
-                    return _code.BoyerMoorePrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
-                }
-
-                return true; // found a valid start or end anchor
             }
 
             if (_code.BoyerMoorePrefix != null)

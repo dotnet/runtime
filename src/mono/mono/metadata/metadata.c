@@ -3054,8 +3054,8 @@ retry:
 		type = m_class_get_byval_arg (type->data.array->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		//return signature_in_image (type->data.method, image);
-		g_assert_not_reached ();
+		collect_signature_images (type->data.method, data);
+		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	{

@@ -3824,7 +3824,7 @@ lDone: ;
                 }
                 else
                 {
-                    sprintf_s(szString,SZSTRING_SIZE, "INVALID METHOD ADDRESS: 0x%8.8X (RVA: 0x%8.8X)",(size_t)newTarget,dwTargetRVA);
+                    sprintf_s(szString,SZSTRING_SIZE, "INVALID METHOD ADDRESS: 0x%8.8zX (RVA: 0x%8.8X)",(size_t)newTarget,dwTargetRVA);
                     printError(GUICookie,szString);
                 }
             }
@@ -4987,7 +4987,7 @@ void DumpVTables(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
             }
             else
             {
-                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16x)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
+                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
                 pSlot += sizeof(unsigned __int64);
             }
             printLine(GUICookie,szStr);
