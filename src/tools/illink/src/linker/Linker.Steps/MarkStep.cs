@@ -3752,10 +3752,10 @@ namespace Mono.Linker.Steps {
 						  && calledMethod.DeclaringType.Namespace == "System": {
 								reflectionContext.AnalyzingPattern ();
 								BindingFlags bindingFlags = BindingFlags.Default;
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags") {
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
 									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
 								}
-								else if(calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags") {
+								else if(calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags" && methodParams [3].AsConstInt () != null) {
 									bindingFlags |= (BindingFlags)methodParams [3].AsConstInt ();
 								}
 
