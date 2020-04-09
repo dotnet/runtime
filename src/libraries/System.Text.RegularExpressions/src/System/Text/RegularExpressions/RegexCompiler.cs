@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
         protected string[]? _strings;                                              // the stringtable associated with the RegexCodes
         protected (string CharClass, bool CaseInsensitive)[]? _leadingCharClasses; // the possible first chars computed by RegexPrefixAnalyzer
         protected RegexBoyerMoore? _boyerMoorePrefix;                              // a prefix as a boyer-moore machine
-        protected int _leadingAnchor;                                                    // the set of anchors
+        protected int _leadingAnchor;                                              // the set of anchors
         protected bool _hasTimeout;                                                // whether the regex has a non-infinite timeout
 
         private Label[]? _labels;             // a label for every operation in _codes
@@ -1031,48 +1031,42 @@ namespace System.Text.RegularExpressions
                 switch (_leadingAnchor)
                 {
                     case RegexPrefixAnalyzer.Beginning:
-                        if (!_code.RightToLeft)
                         {
                             Label l1 = DefineLabel();
                             Ldloc(_runtextposLocal);
-                            Ldthisfld(s_runtextbegField);
-                            Ble(l1);
-                            Br(returnFalse);
+                            if (!_code.RightToLeft)
+                            {
+                                Ldthisfld(s_runtextbegField);
+                                Ble(l1);
+                                Br(returnFalse);
+                            }
+                            else
+                            {
+                                Ldloc(_runtextbegLocal!);
+                                Ble(l1);
+                                Ldthis();
+                                Ldloc(_runtextbegLocal!);
+                                Stfld(s_runtextposField);
+                            }
                             MarkLabel(l1);
-                        }
-                        else
-                        {
-                            Label l1 = DefineLabel();
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextbegLocal!);
-                            Ble(l1);
-                            Ldthis();
-                            Ldloc(_runtextbegLocal!);
-                            Stfld(s_runtextposField);
-                            MarkLabel(l1);
-                            Ldc(1);
-                            Ret();
                         }
                         Ldc(1);
                         Ret();
                         return;
 
                     case RegexPrefixAnalyzer.Start:
-                        if (!_code.RightToLeft)
                         {
                             Label l1 = DefineLabel();
                             Ldloc(_runtextposLocal);
                             Ldthisfld(s_runtextstartField);
-                            Ble(l1);
-                            Br(returnFalse);
-                            MarkLabel(l1);
-                        }
-                        else
-                        {
-                            Label l1 = DefineLabel();
-                            Ldloc(_runtextposLocal);
-                            Ldthisfld(s_runtextstartField);
-                            Bge(l1);
+                            if (!_code.RightToLeft)
+                            {
+                                Ble(l1);
+                            }
+                            else
+                            {
+                                Bge(l1);
+                            }
                             Br(returnFalse);
                             MarkLabel(l1);
                         }
@@ -1081,65 +1075,64 @@ namespace System.Text.RegularExpressions
                         return;
 
                     case RegexPrefixAnalyzer.EndZ:
-                        if (!_code.RightToLeft)
                         {
                             Label l1 = DefineLabel();
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Ldc(1);
-                            Sub();
-                            Bge(l1);
-                            Ldthis();
-                            Ldloc(_runtextendLocal);
-                            Ldc(1);
-                            Sub();
-                            Stfld(s_runtextposField);
-                            MarkLabel(l1);
-                        }
-                        else
-                        {
-                            Label l1 = DefineLabel();
-                            Label l2 = DefineLabel();
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Ldc(1);
-                            Sub();
-                            Blt(l1);
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Beq(l2);
-                            Ldthisfld(s_runtextField);
-                            Ldloc(_runtextposLocal);
-                            Callvirt(s_stringGetCharsMethod);
-                            Ldc('\n');
-                            Beq(l2);
-                            MarkLabel(l1);
-                            BrFar(returnFalse);
-                            MarkLabel(l2);
+                            if (!_code.RightToLeft)
+                            {
+                                Ldloc(_runtextposLocal);
+                                Ldloc(_runtextendLocal);
+                                Ldc(1);
+                                Sub();
+                                Bge(l1);
+                                Ldthis();
+                                Ldloc(_runtextendLocal);
+                                Ldc(1);
+                                Sub();
+                                Stfld(s_runtextposField);
+                                MarkLabel(l1);
+                            }
+                            else
+                            {
+                                Label l2 = DefineLabel();
+                                Ldloc(_runtextposLocal);
+                                Ldloc(_runtextendLocal);
+                                Ldc(1);
+                                Sub();
+                                Blt(l1);
+                                Ldloc(_runtextposLocal);
+                                Ldloc(_runtextendLocal);
+                                Beq(l2);
+                                Ldthisfld(s_runtextField);
+                                Ldloc(_runtextposLocal);
+                                Callvirt(s_stringGetCharsMethod);
+                                Ldc('\n');
+                                Beq(l2);
+                                MarkLabel(l1);
+                                BrFar(returnFalse);
+                                MarkLabel(l2);
+                            }
                         }
                         Ldc(1);
                         Ret();
                         return;
 
                     case RegexPrefixAnalyzer.End when minRequiredLength == 0:  // if it's > 0, we already output a more stringent check
-                        if (!_code.RightToLeft)
                         {
                             Label l1 = DefineLabel();
                             Ldloc(_runtextposLocal);
                             Ldloc(_runtextendLocal);
-                            Bge(l1);
-                            Ldthis();
-                            Ldloc(_runtextendLocal);
-                            Stfld(s_runtextposField);
-                            MarkLabel(l1);
-                        }
-                        else
-                        {
-                            Label l1 = DefineLabel();
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Bge(l1);
-                            Br(returnFalse);
+                            if (!_code.RightToLeft)
+                            {
+                                Bge(l1);
+                                Ldthis();
+                                Ldloc(_runtextendLocal);
+                                Stfld(s_runtextposField);
+                            }
+                            else
+                            {
+                                Bge(l1);
+                                Br(returnFalse);
+                            }
                             MarkLabel(l1);
                         }
                         Ldc(1);
