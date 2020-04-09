@@ -21,7 +21,6 @@ using std::vector;
 // Prints a lot to the console for easier tracking
 #define DEBUG_OUT false
 
-
 GetAppDomainStaticAddress::GetAppDomainStaticAddress() :
     refCount(0),
     failures(0),
