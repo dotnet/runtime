@@ -7302,7 +7302,7 @@ ClrDataAccess::GetDacGlobals()
     }
 
     if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
+        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
         &rsrcRVA, &rsrcSize)))
     {
         _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
@@ -7351,9 +7351,9 @@ ClrDataAccess::GetDacGlobals()
 #ifdef _DEBUG
         char szMsgBuf[1024];
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %d.",
+            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %zd.",
             header.numGlobals,
-            offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
+            (size_t)offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
@@ -7366,9 +7366,9 @@ ClrDataAccess::GetDacGlobals()
 #ifdef _DEBUG
         char szMsgBuf[1024];
         _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %d.",
+            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %zd.",
             header.numVptrs,
-            (sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
+            (size_t)(sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
         _ASSERTE_MSG(false, szMsgBuf);
 #endif // _DEBUG
 
