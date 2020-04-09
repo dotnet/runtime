@@ -22,7 +22,9 @@
 		public virtual void Link (string [] args, LinkerCustomizations customizations, ILogger logger)
 		{
 			Driver.ProcessResponseFile (args, out var queue);
-			new TestDriver (queue, customizations).Run (logger);
+			using (var driver = new TestDriver (queue, customizations)) {
+				driver.Run (logger);
+			}
 		}
 	}
 }
