@@ -73,12 +73,12 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
     buildConfig: release
+    runtimeFlavor: mono
     platforms:
     - Linux_x64
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
-      runtimeFlavor: mono
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
