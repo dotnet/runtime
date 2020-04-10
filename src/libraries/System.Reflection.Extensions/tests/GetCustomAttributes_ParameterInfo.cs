@@ -238,7 +238,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue(@"https://github.com/dotnet/runtime/issues/6445")]
         public void GetCustom_Attribute_On_Return_Parameter_On_Parent_Method()
         {
             Type type = typeof(TestClass_P_Derived);
