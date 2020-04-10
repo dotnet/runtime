@@ -56,16 +56,17 @@ jobs:
 
       variables:
         - _subset: libs
-        - _addtionalBuildArguments: ''
+        - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
         # for coreclr library builds (when not testing) build corelib as well.   
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, ''), ne(parameters.osGroup, 'WebAssembly')) }}:
           - _subset: clr.corelib+libs
+        # Tests only run for 'allConfiguration' and 'net472' build-jobs
         - ${{ if eq(parameters.runTests, true) }}:
           - _subset: clr.corelib+libs+libs.tests
-          - _addtionalBuildArguments: /p:ArchiveTests=true
+          - _additionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -91,8 +92,9 @@ jobs:
           # Build CoreLib for WebAssembly
           - script: $(_buildScript)
                   -subset clr.corelib 
-                  -configuration Release -arch x64 -os Linux
-                  $(_addtionalBuildArguments)
+                  -configuration Release -arch x64 -os Linux -ci
+                  /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/BuildCorelib.binlog
+                  $(_additionalBuildArguments)
             displayName: Build System.Private.CoreLib 
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -103,7 +105,7 @@ jobs:
         - script: $(_buildScript)
                 -subset $(_subset)
                 $(_buildArguments)
-                $(_addtionalBuildArguments)
+                $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
         - ${{ if eq(parameters.runTests, false) }}:

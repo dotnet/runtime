@@ -99,7 +99,7 @@ jobs:
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
-          - _runtimeConfigurationArg: -runtimeConfiguration ${{ parameters.liveRuntimeBuildConfig }}
+          - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           # Download full product dependencies for mono or test
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
