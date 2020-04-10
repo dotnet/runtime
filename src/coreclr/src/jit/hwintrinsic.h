@@ -143,7 +143,9 @@ struct HWIntrinsicInfo
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
     static int lookupNumArgs(const GenTreeHWIntrinsic* node);
     static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
+#ifdef TARGET_XARCH
     static int lookupImmUpperBound(NamedIntrinsic id);
+#endif
 
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
     static bool isInImmRange(NamedIntrinsic id, int ival);

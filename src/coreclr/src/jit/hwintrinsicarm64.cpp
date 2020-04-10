@@ -115,21 +115,6 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 }
 
 //------------------------------------------------------------------------
-// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
-//
-// Arguments:
-//    id -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//
-// Return Value:
-//     The upper bound for the imm-value of the intrinsic associated with id
-//
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
-{
-    assert(HWIntrinsicInfo::HasFullRangeImm(id));
-    return 255;
-}
-
-//------------------------------------------------------------------------
 // isInImmRange: Check if ival is valid for the intrinsic
 //
 // Arguments:
