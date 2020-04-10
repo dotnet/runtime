@@ -11,7 +11,7 @@ namespace System.Globalization
         internal static bool Invariant { get; } = GetInvariantSwitchValue();
 
         internal static bool UseNls { get; } = !Invariant &&
-            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") || Interop.Globalization.LoadICU() == 0);
-
+            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
+                Interop.Globalization.LoadICU() == 0);
     }
 }
