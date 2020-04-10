@@ -96,6 +96,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_Stream_Success()
         {
             using (FileStream stream = File.OpenRead(GetPath(WmfFile)))
@@ -113,6 +114,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_EmptyStream_ThrowsExternalException()
         {
             using (var stream = new MemoryStream())
@@ -777,6 +779,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_StreamIntPtrRectangle_Success()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
@@ -789,6 +792,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(MetafileFrameUnit_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnit_Success(MetafileFrameUnit frameUnit)
         {
@@ -802,6 +806,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EmfType_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnitEmfType_Success(EmfType emfType)
         {
@@ -816,6 +821,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_StreamIntPtrRectangleMetafileFrameUnitEmfTypeString_Success(string description)
         {
@@ -831,6 +837,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Description_TestData))]
         public void Ctor_RectangleEmptyI_Success(string description)
         {
@@ -940,6 +947,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Static_GetMetafileHeader_Stream_ReturnsExpected()
         {
             using (FileStream stream = File.OpenRead(GetPath(WmfFile)))
@@ -957,6 +965,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Static_GetMetafileHeader_EmptyStream_ArgumentException()
         {
             using (var stream = new MemoryStream())

@@ -1081,6 +1081,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadVerb(bool useShellExecute)
@@ -1096,6 +1097,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)

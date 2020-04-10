@@ -683,7 +683,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
+    - Windows_NT_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64
