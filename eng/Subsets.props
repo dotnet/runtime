@@ -90,7 +90,7 @@
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
 
     <!-- Libs -->
-    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages." />
+    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
     <SubsetName Include="Libs.Depprojs" Description="The libraries upfront restore projects." />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Libs.Ref" Description="The managed reference libraries." />
