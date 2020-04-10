@@ -11,6 +11,101 @@
 
 #include "codegen.h"
 
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
+    : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
+{
+    assert(codeGen != nullptr);
+
+    if (immOp->isContainedIntOrIImmed())
+    {
+        nonConstImmReg = REG_NA;
+
+        immValue      = (int)immOp->AsIntCon()->IconValue();
+        immUpperBound = immValue + 1;
+    }
+    else
+    {
+        nonConstImmReg = immOp->GetRegNum();
+
+        immValue = 0;
+        immUpperBound =
+            HWIntrinsicInfo::lookupImmUpperBound(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType);
+
+        if (BranchAtNonZero())
+        {
+            nonZeroLabel = codeGen->genCreateTempLabel();
+        }
+        else
+        {
+            // At the moment, this helper supports only intrinsics that correspond to one machine instruction.
+            // If we ever encounter an intrinsic that is either lowered into multiple instructions or
+            // the number of instructions that correspond to each case is unknown apriori - we can extend support to
+            // these by
+            // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
+            // branch table.
+            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->gtHWIntrinsicId));
+            branchTargetReg = intrin->GetSingleTempReg();
+        }
+
+        endLabel = codeGen->genCreateTempLabel();
+    }
+}
+
+void CodeGen::HWIntrinsicImmOpHelper::EmitAtFirst()
+{
+    if (NonConstImmOp())
+    {
+        BasicBlock* beginLabel = codeGen->genCreateTempLabel();
+
+        if (BranchAtNonZero())
+        {
+            GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, nonZeroLabel, nonConstImmReg);
+        }
+        else
+        {
+            // Here we assume that each case consists of one arm64 instruction followed by "b endLabel".
+            // Since an arm64 instruction is 4 bytes, we branch to AddressOf(beginLabel) + (nonConstImmReg << 3).
+            GetEmitter()->emitIns_R_L(INS_adr, EA_8BYTE, beginLabel, branchTargetReg);
+            GetEmitter()->emitIns_R_R_R_I(INS_add, EA_8BYTE, branchTargetReg, branchTargetReg, nonConstImmReg, 3,
+                                          INS_OPTS_LSL);
+            GetEmitter()->emitIns_R(INS_br, EA_8BYTE, branchTargetReg);
+        }
+
+        codeGen->genDefineInlineTempLabel(beginLabel);
+    }
+}
+
+void CodeGen::HWIntrinsicImmOpHelper::EmitAfterCase()
+{
+    assert(!Done());
+
+    if (NonConstImmOp())
+    {
+        const bool isLastCase = (immValue + 1 == immUpperBound);
+
+        if (isLastCase)
+        {
+            codeGen->genDefineInlineTempLabel(endLabel);
+        }
+        else
+        {
+            GetEmitter()->emitIns_J(INS_b, endLabel);
+
+            if (BranchAtNonZero())
+            {
+                codeGen->genDefineInlineTempLabel(nonZeroLabel);
+            }
+            else
+            {
+                BasicBlock* tempLabel = codeGen->genCreateTempLabel();
+                codeGen->genDefineInlineTempLabel(tempLabel);
+            }
+        }
+    }
+
+    immValue++;
+}
+
 //------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //

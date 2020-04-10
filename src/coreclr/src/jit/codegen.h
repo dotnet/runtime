@@ -1047,6 +1047,53 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(TARGET_XARCH)
+
+#ifdef TARGET_ARM64
+    class HWIntrinsicImmOpHelper final
+    {
+    public:
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+
+        void EmitAtFirst();
+        void EmitAfterCase();
+
+        bool Done() const
+        {
+            return immValue == immUpperBound;
+        }
+
+        int ImmValue() const
+        {
+            return immValue;
+        }
+
+    private:
+        bool NonConstImmOp() const
+        {
+            return nonConstImmReg != REG_NA;
+        }
+
+        bool BranchAtNonZero() const
+        {
+            assert(NonConstImmOp());
+            return immUpperBound == 2;
+        }
+
+        emitter* GetEmitter() const
+        {
+            return codeGen->GetEmitter();
+        }
+
+        CodeGen*    codeGen;
+        BasicBlock* endLabel;
+        BasicBlock* nonZeroLabel;
+        int         immValue;
+        int         immUpperBound;
+        regNumber   nonConstImmReg;
+        regNumber   branchTargetReg;
+    };
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(TARGET_64BIT)
