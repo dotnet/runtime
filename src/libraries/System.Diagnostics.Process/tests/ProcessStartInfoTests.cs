@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.Security;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -903,7 +904,9 @@ namespace System.Diagnostics.Tests
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
         }
 
-        [Fact(Skip = "Manual test")]
+        [Fact]
+        [OuterLoop("Opens a browser")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_WebPage()
         {
@@ -916,6 +919,8 @@ namespace System.Diagnostics.Tests
             using (var p = Process.Start(info))
             {
                 Assert.NotNull(p);
+                p.WaitForInputIdle();
+                p.Kill();
             }
         }
 

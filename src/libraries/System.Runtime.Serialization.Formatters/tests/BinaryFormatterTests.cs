@@ -431,7 +431,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [OuterLoop]
-        [Theory(Skip = "Can cause improbable memory allocations leading to interminable paging")]
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(FuzzInputs_MemberData))]
         public void Deserialize_FuzzInput(object obj, Random rand)
         {
