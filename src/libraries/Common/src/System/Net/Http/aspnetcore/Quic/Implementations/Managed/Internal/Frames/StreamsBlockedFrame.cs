@@ -35,7 +35,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Debug.Assert(
                 type == FrameType.StreamsBlockedBidirectional || type == FrameType.StreamsBlockedUnidirectional);
 
-            if (!reader.TryReadVarInt(out ulong limit))
+            if (!reader.TryReadVarInt(out ulong limit) ||
+                limit > StreamHelpers.MaxStreamIndex) // FRAME_ENCODING_ERROR is fine for this
             {
                 frame = default;
                 return false;

@@ -6,9 +6,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private const ulong StreamTypeUnidirectionalMask = 0x02;
         private const ulong StreamTypeServerInitiationMask = 0x01;
 
+        // Maximum stream id is 2^62-1, and two lower bits are encoding the type
+        internal const ulong MaxStreamIndex = (1ul << 60) - 1;
+
         internal static StreamType GetStreamType(long streamId)
         {
             return (StreamType)((ulong) streamId & StreamTypeMask);
+        }
+
+        internal static long GetStreamIndex(long streamId)
+        {
+            return streamId >> 2;
         }
 
         internal static bool IsBidirectional(long streamId)
@@ -16,12 +24,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return ((ulong) streamId & StreamTypeUnidirectionalMask) == 0;
         }
 
+        internal static bool IsBidirectional(StreamType type)
+        {
+            return ((ulong) type & StreamTypeUnidirectionalMask) == 0;
+        }
+
         internal static bool IsServerInitiated(long streamId)
         {
             return ((ulong) streamId & StreamTypeServerInitiationMask) != 0;
         }
 
-        internal static StreamType GetOutboundType(bool isServer, bool unidirectional)
+        internal static bool IsReadable(bool isServer, long streamId)
+        {
+            return (isServer, GetStreamType(streamId)) switch
+            {
+                (true, var type) => type != StreamType.ClientInitiatedUnidirectional,
+                (false, var type) => type != StreamType.ServerInitiatedUnidirectional,
+            };
+        }
+
+        internal static StreamType GetLocallyInitiatedType(bool isServer, bool unidirectional)
         {
             return (StreamType)
                 ((isServer ? StreamTypeServerInitiationMask : 0) |

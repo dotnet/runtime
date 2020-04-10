@@ -47,7 +47,15 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private bool _handshakeDoneSent;
 
+        /// <summary>
+        ///     True if this side of connection belongs to the server.
+        /// </summary>
         private readonly bool _isServer;
+
+        /// <summary>
+        ///     Collection of streams for this connection.
+        /// </summary>
+        private readonly StreamCollection _streams = new StreamCollection();
 
         /// <summary>
         ///     Collection of local connection ids used by this endpoint.
@@ -67,12 +75,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     QUIC transport parameters requested by peer endpoint.
         /// </summary>
-        private readonly TransportParameters _peerTransportParameters = TransportParameters.Default;
-
-        /// <summary>
-        ///     All streams organized by the stream type.
-        /// </summary>
-        private readonly List<ManagedQuicStream>[] _streams = new List<ManagedQuicStream>[4];
+        private TransportParameters _peerTransportParameters = TransportParameters.Default;
 
         // TODO-RZ: remove these, they don't need to be saved
         private readonly string? cert;
@@ -106,7 +109,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         public ManagedQuicConnection(QuicClientConnectionOptions options)
-            : this(false)
+            : this(false, TransportParameters.FromClientConnectionOptions(options))
         {
             _clientOpts = options;
 
@@ -114,7 +117,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         public ManagedQuicConnection(QuicListenerOptions options)
-            : this(true)
+            : this(true, TransportParameters.FromListenerOptions(options))
         {
             _serverOpts = options;
             cert = _serverOpts.CertificateFilePath;
@@ -123,15 +126,14 @@ namespace System.Net.Quic.Implementations.Managed
             Init();
         }
 
-        public ManagedQuicConnection(bool isServer)
+        public ManagedQuicConnection(bool isServer, TransportParameters localParams)
         {
             _gcHandle = GCHandle.Alloc(this);
             _tls = new Tls(_gcHandle);
 
             _isServer = isServer;
 
-            // TODO-RZ: compose transport params from options
-            _localTransportParameters = new TransportParameters();
+            _localTransportParameters = localParams;
 
             _epochs = new EpochData[3]
             {
@@ -179,9 +181,10 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     ref ConnectionFlowControlLimits limits = ref _peerLimits;
 
-                    limits.MaxData = param.InitialMaxData;
-                    limits.MaxStreamsBidi = param.InitialMaxStreamsBidi;
-                    limits.MaxStreamsUni = param.InitialMaxStreamsUni;
+                    limits.UpdateMaxData(param.InitialMaxData);
+                    limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
+                    limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
+                    _peerTransportParameters = param;
                 }
             }
         }
@@ -268,7 +271,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (reader.Buffer.Offset + reader.Buffer.Count < QuicConstants.MinimumClientInitialDatagramSize)
                 {
                     return CloseConnection(TransportErrorCode.ProtocolViolation,
-                        Internal.QuicError.InitialPacketTooShort);
+                        QuicError.InitialPacketTooShort);
                 }
             }
 
@@ -684,6 +687,12 @@ namespace System.Net.Quic.Implementations.Managed
             public RecvContext(DateTime now) : base(now)
             {
             }
+
+            /// <summary>
+            ///     Flag whether TLS handshake should be incremented at the end of packet processing, perhaps due to
+            ///     having received crypto data.
+            /// </summary>
+            internal bool HandshakeWanted { get; set; }
         }
 
 

@@ -35,15 +35,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             StreamData = streamData;
         }
 
-        internal int GetSerializedLength()
+        internal static int GetOverheadLength(ulong streamId, ulong offset, ulong length)
         {
             return 1 +
-                   QuicPrimitives.GetVarIntLength(StreamId) +
-                   (Offset > 0 ? QuicPrimitives.GetVarIntLength(Offset) : 0) +
-                   QuicPrimitives.GetVarIntLength((ulong)StreamData.Length) + // TODO-RZ: length is not mandatory
+                   QuicPrimitives.GetVarIntLength(streamId) +
+                   (offset > 0 ? QuicPrimitives.GetVarIntLength(offset) : 0) +
+                   QuicPrimitives.GetVarIntLength(length); // TODO-RZ: length is not mandatory
+        }
+
+        internal int GetSerializedLength()
+        {
+            return GetOverheadLength(StreamId, Offset, (ulong) StreamData.Length) +
                    StreamData.Length;
-
-
         }
 
         internal static bool Read(QuicReader reader, out StreamFrame frame)
@@ -73,21 +76,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return true;
         }
 
+        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, ulong streamId, ulong offset, int length, bool fin)
+        {
+            // TODO-RZ: leave out length if this is the last frame
+            var type = FrameType.Stream | FrameType.StreamLenBit;
+            if (offset != 0) type |= FrameType.StreamOffBit;
+            if (fin) type |= FrameType.StreamFinBit;
+
+            writer.WriteFrameType(type);
+            writer.WriteVarInt(streamId);
+            if (offset != 0)
+                writer.WriteVarInt(offset);
+            writer.WriteVarInt((ulong) length);
+
+            return writer.GetWritableSpan(length);
+        }
+
         internal static void Write(QuicWriter writer, in StreamFrame frame)
         {
             Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
 
-            // TODO-RZ: leave out length if this is the last frame
-            var type = FrameType.Stream | FrameType.StreamLenBit;
-            if (frame.Offset != 0) type |= FrameType.StreamOffBit;
-            if (frame.Fin) type |= FrameType.StreamFinBit;
-
-            writer.WriteFrameType(type);
-
-            writer.WriteVarInt(frame.StreamId);
-            if (frame.Offset != 0)
-                writer.WriteVarInt(frame.Offset);
-            writer.WriteLengthPrefixedSpan(frame.StreamData);
+            frame.StreamData.CopyTo(ReservePayloadBuffer(writer, frame.StreamId, frame.Offset, frame.StreamData.Length, frame.Fin));
         }
     }
 }

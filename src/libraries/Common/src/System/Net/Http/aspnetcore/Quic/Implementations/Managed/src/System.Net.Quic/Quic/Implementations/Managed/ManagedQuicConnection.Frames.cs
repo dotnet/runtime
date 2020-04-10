@@ -143,8 +143,6 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.StopSending => throw new NotImplementedException(),
                     FrameType.Crypto => ProcessCryptoFrame(reader, packetType, context),
                     FrameType.NewToken => throw new NotImplementedException(),
-                    FrameType.Stream => throw new NotImplementedException(),
-                    FrameType.StreamMask => throw new NotImplementedException(),
                     FrameType.MaxData => ProcessMaxDataFrame(reader),
                     FrameType.MaxStreamData => ProcessMaxStreamDataFrame(reader),
                     FrameType.MaxStreamsBidirectional => ProcessMaxStreamsFrame(reader),
@@ -160,6 +158,7 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader),
                     FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader),
                     FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader),
+                    _ when (frameType & FrameType.StreamMask) == frameType => ProcessStreamFrame(reader),
                     _ => CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType)
                 };
 
@@ -312,22 +311,22 @@ namespace System.Net.Quic.Implementations.Managed
         private void OnSentPacketAcked(EpochData epoch, SentPacket packet)
         {
             // mark all sent data as acked
-            for (int i = 0; i < packet.CryptoRanges.Count; i++)
+            foreach (var r in packet.CryptoRanges)
             {
                 epoch.CryptoOutboundStream.OnAck(
-                    packet.CryptoRanges[i].Start, packet.CryptoRanges[i].Length);
+                    r.Start, r.Length);
             }
 
-            foreach (var (streamId, range) in packet.SentStreamData)
+            foreach ((ulong streamId, RangeSet ranges) in packet.SentStreamData)
             {
-                var buffer = GetStream(streamId).OutboundBuffer!;
-                for (int i = 0; i < range.Count; i++)
+                var buffer = _streams[streamId].OutboundBuffer!;
+                foreach (var r in ranges)
                 {
-                    buffer.OnAck(range[i].Start, range[i].Length);
+                    buffer.OnAck(r.Start, r.Length);
                 }
             }
 
-            // Since we know the acks arrived, we don't want to send acks for the packets acked by this frame.
+            // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
             epoch.UnackedPacketNumbers.Remove(packet.AckedRanges);
         }
 
@@ -362,6 +361,17 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult ProcessStreamFrame(QuicReader reader)
+        {
+            if (!StreamFrame.Read(reader, out var frame))
+                return ProcessPacketResult.ConnectionClose;
+
+            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer);
+            stream.InboundBuffer!.Receive(frame.Offset, frame.StreamData);
+
+            return ProcessPacketResult.Ok;
+        }
+
         private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, SendContext context)
         {
             var epoch = GetEpoch(level);
@@ -392,6 +402,11 @@ namespace System.Net.Quic.Implementations.Managed
 
             WriteAckFrame(writer, epoch, context);
             WriteCryptoFrames(writer, epoch, context);
+
+            if (packetType == PacketType.OneRtt)
+            {
+                WriteStreamFrames(writer, context);
+            }
         }
 
         private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
@@ -466,6 +481,26 @@ namespace System.Net.Quic.Implementations.Managed
                     false, 0, 0, 0));
 
             epoch.AckElicited = false;
+        }
+
+        private void WriteStreamFrames(QuicWriter writer, SendContext context)
+        {
+            var stream = _streams.GetFirstFlushableStream();
+            if (stream == null)
+                return;
+
+            var buffer = stream.OutboundBuffer!;
+            Debug.Assert(buffer.HasPendingData);
+
+            (ulong offset, ulong count) = buffer.GetNextSendableRange();
+            var actualLength = Math.Min((int) count,  writer.BytesAvailable - 8);
+
+            var data = StreamFrame.ReservePayloadBuffer(writer, (ulong)stream.StreamId, offset, actualLength, false);
+            buffer.CheckOut(data);
+
+            var ranges = new RangeSet();
+            ranges.Add(offset, offset + (ulong) actualLength - 1);
+            context.SentPacket.SentStreamData.Add((ulong)stream.StreamId, ranges);
         }
     }
 }

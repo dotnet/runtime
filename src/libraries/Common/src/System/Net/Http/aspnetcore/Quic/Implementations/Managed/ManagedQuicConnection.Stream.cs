@@ -11,48 +11,44 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Maximum amount of data the endpoint is allowed to send.
             /// </summary>
-            internal ulong MaxData { get; set; }
+            internal ulong MaxData { get; private set; }
 
-            /// <summary>
-            ///     Maximum number of streams the endpoint can open.
-            /// </summary>
-            internal ulong MaxStreams { get; set; }
+            internal void UpdateMaxData(ulong value)
+            {
+                MaxData = Math.Max(MaxData, value);
+            }
 
             /// <summary>
             ///     Maximum number of bidirectional streams the endpoint is allowed to open.
             /// </summary>
-            internal ulong MaxStreamsBidi { get; set; }
+            internal ulong MaxStreamsBidi { get; private set; }
+
+            internal void UpdateMaxStreamsBidi(ulong value)
+            {
+                MaxStreamsBidi = Math.Max(MaxStreamsBidi, value);
+            }
 
             /// <summary>
             ///     Maximum number of unidirectional streams the endpoint is allowed to open.
             /// </summary>
-            internal ulong MaxStreamsUni { get; set; }
+            internal ulong MaxStreamsUni { get; private set; }
+
+            internal void UpdateMaxStreamsUni(ulong value)
+            {
+                MaxStreamsUni = Math.Max(MaxStreamsUni, value);
+            }
         }
 
-        private ManagedQuicStream GetStream(ulong streamId)
+        internal ManagedQuicStream OpenStream(bool unidirectional)
         {
-            List<ManagedQuicStream> streamList = _streams[(int)StreamHelpers.GetStreamType((long)streamId)];
-            // TODO-RZ: Create stream if it does not exist yet
-            return streamList[(int)(streamId >> 2)];
+            // TODO-RZ assert that we really can open the stream (respect the limits)
+            var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
+            return _streams.CreateOutboundStream(_isServer, unidirectional, _localTransportParameters, _peerTransportParameters);
         }
 
-        private ManagedQuicStream OpenStream(bool unidirectional)
+        internal ManagedQuicStream AcceptStream()
         {
-            var type = StreamHelpers.GetOutboundType(_isServer, unidirectional);
-            var streamList = _streams[(int)type];
-            long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
-
-            // use initial flow control limits
-            OutboundBuffer outboundBuffer = new OutboundBuffer(unidirectional
-                ? _peerTransportParameters.InitialMaxStreamDataUni
-                : _peerTransportParameters.InitialMaxStreamDataBidiRemote);
-
-            InboundBuffer? inboundBuffer = unidirectional
-                ? null
-                : new InboundBuffer(_localTransportParameters.InitialMaxStreamDataBidiLocal);
-
-            var stream = new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer);
-            streamList.Add(stream);
+            _streams.IncomingStreams.Reader.TryRead(out var stream);
             return stream;
         }
     }

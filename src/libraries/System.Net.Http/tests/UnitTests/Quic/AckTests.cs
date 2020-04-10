@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
 
             _harness.Send1Rtt(_server, _client)
                 .ShouldContainConnectionClose(TransportErrorCode.ProtocolViolation,
-                    Implementations.Managed.QuicError.InvalidAckRange,
+                    QuicError.InvalidAckRange,
                     FrameType.Ack);
         }
 
@@ -65,7 +65,7 @@ namespace System.Net.Quic.Tests
 
             _harness.Send1Rtt(_server, _client)
                 .ShouldContainConnectionClose(TransportErrorCode.ProtocolViolation,
-                    Implementations.Managed.QuicError.InvalidAckRange,
+                    QuicError.InvalidAckRange,
                     FrameType.Ack);
         }
 

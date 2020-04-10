@@ -36,7 +36,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.MaxStreamsBidirectional || type == FrameType.MaxStreamsUnidirectional);
 
-            if (!reader.TryReadVarInt(out ulong maxStreams))
+            if (!reader.TryReadVarInt(out ulong maxStreams) ||
+                maxStreams > StreamHelpers.MaxStreamIndex)
             {
                 frame = default;
                 return false;

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Text;
 
 namespace System.Net.Quic.Tests.Harness
 {
@@ -29,6 +30,28 @@ namespace System.Net.Quic.Tests.Harness
         ///     Bytes from the designated stream to be delivered.
         /// </summary>
         internal byte[] StreamData;
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder($"Stream[{StreamId}");
+            if (Offset != 0)
+            {
+                builder.Append($", Off={Offset}");
+            }
+
+            if (StreamData.Length > 0)
+            {
+                builder.Append(($", Len={StreamData.Length}"));
+            }
+
+            if (Fin)
+            {
+                builder.Append((", Fin"));
+            }
+
+            builder.Append("]");
+            return builder.ToString();
+        }
 
         internal override FrameType FrameType
         {

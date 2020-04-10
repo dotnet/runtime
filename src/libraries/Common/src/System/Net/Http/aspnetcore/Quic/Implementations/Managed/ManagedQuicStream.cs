@@ -11,12 +11,19 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal class ManagedQuicStream : QuicStreamProvider
     {
+        private bool _disposed;
+
+        /// <summary>
+        ///     Stream collection to which this stream belongs.
+        /// </summary>
+        private readonly StreamCollection _streamCollection;
+
         // TODO-RZ: think about thread-safety of the buffers, and who can access which parts of them
         internal InboundBuffer? InboundBuffer { get; }
 
         internal OutboundBuffer? OutboundBuffer { get; }
 
-        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer)
+        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, StreamCollection streamCollection)
         {
             // trivial check whether buffer nullable combination makes sense with respect to streamId
             Debug.Assert(inboundBuffer != null || outboundBuffer != null);
@@ -25,6 +32,7 @@ namespace System.Net.Quic.Implementations.Managed
             StreamId = streamId;
             InboundBuffer = inboundBuffer;
             OutboundBuffer = outboundBuffer;
+            _streamCollection = streamCollection;
         }
 
         #region Public API
@@ -39,7 +47,15 @@ namespace System.Net.Quic.Implementations.Managed
         internal override void AbortWrite(long errorCode) => throw new NotImplementedException();
 
         internal override bool CanWrite => OutboundBuffer != null;
-        internal override void Write(ReadOnlySpan<byte> buffer) => throw new NotImplementedException();
+        internal override void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            OutboundBuffer!.Enqueue(buffer);
+            if (OutboundBuffer.HasPendingData)
+                _streamCollection.MarkFlushable(this, true);
+        }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -66,5 +82,29 @@ namespace System.Net.Quic.Implementations.Managed
         public override ValueTask DisposeAsync() => throw new NotImplementedException();
 
         #endregion
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ManagedQuicStream));
+            }
+        }
+
+        private void ThrowIfNotWritable()
+        {
+            if (!CanWrite)
+            {
+                throw new InvalidOperationException("Writing is not allowed on this stream.");
+            }
+        }
+
+        private void ThrowIfNotReadable()
+        {
+            if (!CanRead)
+            {
+                throw new InvalidOperationException("Reading is not allowed on this stream.");
+            }
+        }
     }
 }

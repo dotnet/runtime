@@ -18,6 +18,34 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const ulong DefaultAckDelayExponent = 3;
         internal const ulong DefaultMaxAckDelay = 25;
 
+        internal static TransportParameters FromClientConnectionOptions(QuicClientConnectionOptions options)
+        {
+            return new TransportParameters
+            {
+                InitialMaxStreamsBidi = (ulong) options.MaxBidirectionalStreams,
+                InitialMaxStreamsUni = (ulong) options.MaxUnidirectionalStreams,
+                MaxIdleTimeout = (ulong) options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
+                InitialMaxData = 100,
+                InitialMaxStreamDataUni = 100,
+                InitialMaxStreamDataBidiLocal = 100,
+                InitialMaxStreamDataBidiRemote = 100,
+            };
+        }
+
+        internal static TransportParameters FromListenerOptions(QuicListenerOptions options)
+        {
+            return new TransportParameters
+            {
+                InitialMaxStreamsBidi = (ulong) options.MaxBidirectionalStreams,
+                InitialMaxStreamsUni = (ulong) options.MaxUnidirectionalStreams,
+                MaxIdleTimeout = (ulong) options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
+                InitialMaxData = 100,
+                InitialMaxStreamDataUni = 100,
+                InitialMaxStreamDataBidiLocal = 100,
+                InitialMaxStreamDataBidiRemote = 100,
+            };
+        }
+
         /// <summary>
         ///     Set of default transport parameters.
         /// </summary>
