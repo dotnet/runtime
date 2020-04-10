@@ -50,8 +50,10 @@ namespace System.Globalization
             char[]? toReturn = null;
             try
             {
-                Span<char> buffer = strInput.Length <= 512
-                    ? stackalloc char[512]
+                const int StackallocThreshold = 512;
+
+                Span<char> buffer = strInput.Length <= StackallocThreshold
+                    ? stackalloc char[StackallocThreshold]
                     : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
 
                 for (int attempt = 0; attempt < 2; attempt++)
@@ -76,7 +78,7 @@ namespace System.Globalization
                             : new string(result);
                     }
 
-                    Debug.Assert(realLen > 512);
+                    Debug.Assert(realLen > StackallocThreshold);
 
                     if (attempt == 0)
                     {

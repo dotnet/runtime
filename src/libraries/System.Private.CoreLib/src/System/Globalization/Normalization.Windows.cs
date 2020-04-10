@@ -56,7 +56,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
             }
 
-            return result == Interop.BOOL.TRUE;
+            return result != Interop.BOOL.FALSE;
         }
 
         internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
@@ -78,8 +78,10 @@ namespace System.Globalization
             char[]? toReturn = null;
             try
             {
-                Span<char> buffer = strInput.Length <= 512
-                    ? stackalloc char[512]
+                const int StackallocThreshold = 512;
+
+                Span<char> buffer = strInput.Length <= StackallocThreshold
+                    ? stackalloc char[StackallocThreshold]
                     : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
 
                 while (true)
@@ -114,6 +116,7 @@ namespace System.Globalization
                                 toReturn = null;
                                 ArrayPool<char>.Shared.Return(temp);
                             }
+                            Debug.Assert(realLength > StackallocThreshold);
                             buffer = toReturn = ArrayPool<char>.Shared.Rent(realLength);
                             continue;
 
