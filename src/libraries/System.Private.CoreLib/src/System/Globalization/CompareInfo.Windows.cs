@@ -189,54 +189,6 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/8890:
-        // This method shouldn't be necessary, as we should be able to just use the overload
-        // that takes two spans.  But due to this issue, that's adding significant overhead.
-        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
-        {
-            Debug.Assert(string2 != null);
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
-
-            // CompareStringEx may try to dereference the first character of its input, even if an explicit
-            // length of 0 is specified. To work around potential AVs we'll always ensure zero-length inputs
-            // are normalized to a null-terminated empty string.
-
-            if (string1.IsEmpty)
-            {
-                string1 = string.Empty;
-            }
-
-            fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &string2.GetPinnableReference())
-            {
-                Debug.Assert(*pString1 >= 0); // assert that we can always dereference this
-                Debug.Assert(*pString2 >= 0); // assert that we can always dereference this
-
-                int result = Interop.Kernel32.CompareStringEx(
-                                    pLocaleName,
-                                    (uint)GetNativeCompareFlags(options),
-                                    pString1,
-                                    string1.Length,
-                                    pString2,
-                                    string2.Length,
-                                    null,
-                                    null,
-                                    _sortHandle);
-
-                if (result == 0)
-                {
-                    throw new ArgumentException(SR.Arg_ExternalException);
-                }
-
-                // Map CompareStringEx return value to -1, 0, 1.
-                return result - 2;
-            }
-        }
-
         private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

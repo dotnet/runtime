@@ -165,25 +165,6 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/8890:
-        // This method shouldn't be necessary, as we should be able to just use the overload
-        // that takes two spans.  But due to this issue, that's adding significant overhead.
-        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(string2 != null);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
-            // as long as the corresponding length parameter is 0.
-
-            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &string2.GetRawStringData())
-            {
-                return Interop.Globalization.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
-            }
-        }
-
         private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

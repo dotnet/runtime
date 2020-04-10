@@ -298,48 +298,6 @@ namespace System.Globalization
             return retVal;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/8890:
-        // This method shouldn't be necessary, as we should be able to just use the overload
-        // that takes two spans.  But due to this issue, that's adding significant overhead.
-        internal int Compare(ReadOnlySpan<char> string1, string? string2, CompareOptions options)
-        {
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                return CompareOrdinalIgnoreCase(string1, string2.AsSpan());
-            }
-
-            // Verify the options before we do any real comparison.
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                if (options != CompareOptions.Ordinal)
-                {
-                    throw new ArgumentException(SR.Argument_CompareOptionOrdinal, nameof(options));
-                }
-
-                return string.CompareOrdinal(string1, string2.AsSpan());
-            }
-
-            if ((options & ValidCompareMaskOffFlags) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
-
-            // null sorts less than any other string.
-            if (string2 == null)
-            {
-                return 1;
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                return (options & CompareOptions.IgnoreCase) != 0 ?
-                    CompareOrdinalIgnoreCase(string1, string2.AsSpan()) :
-                    string.CompareOrdinal(string1, string2.AsSpan());
-            }
-
-            return CompareString(string1, string2, options);
-        }
-
         internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
         {
             return GlobalizationMode.Invariant ?
