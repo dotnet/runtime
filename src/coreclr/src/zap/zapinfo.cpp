@@ -2161,7 +2161,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
             bool fIsPlatformSubArchitecture = false;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-            fIsPlatformRequiredISA     = (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
+            fIsPlatformRequiredISA     = (strcmp(isaName, "X86Base") == 0) || (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
             fIsPlatformSubArchitecture = strcmp(className, "X64") == 0;
 #elif defined(TARGET_ARM64)
             fIsPlatformRequiredISA     = (strcmp(isaName, "ArmBase") == 0) || (strcmp(isaName, "AdvSimd") == 0);
