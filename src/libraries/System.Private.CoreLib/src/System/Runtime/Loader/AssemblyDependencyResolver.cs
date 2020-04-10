@@ -48,13 +48,13 @@ namespace System.Runtime.Loader
                 var errorWriter = new Interop.HostPolicy.corehost_error_writer_fn(message => errorMessage.AppendLine(message));
 
                 IntPtr errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
-                IntPtr previousErrorWriterPtr = Interop.HostPolicy.SetErrorWriter(errorWriterPtr);
+                IntPtr previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(errorWriterPtr);
 
                 try
                 {
                     // Call hostpolicy to do the actual work of finding .deps.json, parsing it and extracting
                     // information from it.
-                    returnCode = Interop.HostPolicy.RresolveComponentDependencies(
+                    returnCode = Interop.HostPolicy.corehost_resolve_component_dependencies(
                         componentAssemblyPath,
                         (assemblyPaths, nativeSearchPaths, resourceSearchPaths) =>
                         {
@@ -66,7 +66,7 @@ namespace System.Runtime.Loader
                 finally
                 {
                     // Reset the error write to the one used before
-                    Interop.HostPolicy.SetErrorWriter(previousErrorWriterPtr);
+                    Interop.HostPolicy.corehost_set_error_writer(previousErrorWriterPtr);
                     GC.KeepAlive(errorWriter);
                 }
             }

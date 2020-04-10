@@ -18,14 +18,12 @@ internal static partial class Interop
 
 #pragma warning disable BCL0015 // Disable Pinvoke analyzer errors.
 
-        [DllImport(Libraries.HostPolicy, EntryPoint = "corehost_resolve_component_dependencies",
-            CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        private static extern int ResolveComponentDependencies(string componentMainAssemblyPath,
+        [DllImport(Libraries.HostPolicy, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        internal static extern int corehost_resolve_component_dependencies(string componentMainAssemblyPath,
             corehost_resolve_component_dependencies_result_fn result);
 
-        [DllImport(Libraries.HostPolicy, EntryPoint = "corehost_set_error_writer",
-            CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        private static extern IntPtr SetErrorWriter(IntPtr errorWriter);
+        [DllImport(Libraries.HostPolicy, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        internal static extern IntPtr corehost_set_error_writer(IntPtr errorWriter);
 
 #pragma warning restore
     }
