@@ -266,6 +266,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -302,6 +303,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -420,6 +422,7 @@ jobs:
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
+    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -438,6 +441,7 @@ jobs:
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
+    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
 
@@ -449,7 +453,6 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - WebAssembly_wasm
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
