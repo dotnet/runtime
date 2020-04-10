@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using Xunit;
 
@@ -361,6 +362,22 @@ namespace System.Globalization.Tests
             // Use Compare(string, int, int, string, int, int, CompareOptions)
             Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, offset1, length1, string2, offset2, length2, options)));
             Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, length2, string1, offset1, length1, options)));
+
+            // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanCompareTest(compareInfo, string1.AsSpan(offset1, length1), string2.AsSpan(offset2, length2), options, expected);
+
+            static void RunSpanCompareTest(CompareInfo compareInfo, ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options, int expected)
+            {
+                using BoundedMemory<char> string1BoundedMemory = BoundedMemory.AllocateFromExistingData(string1);
+                string1BoundedMemory.MakeReadonly();
+
+                using BoundedMemory<char> string2BoundedMemory = BoundedMemory.AllocateFromExistingData(string2);
+                string2BoundedMemory.MakeReadonly();
+
+                Assert.Equal(expected, Math.Sign(compareInfo.Compare(string1, string2, options)));
+                Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, string1, options)));
+            }
         }
 
         [Fact]

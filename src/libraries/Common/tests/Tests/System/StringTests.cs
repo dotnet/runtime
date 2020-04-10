@@ -6765,6 +6765,19 @@ namespace System.Tests
              Assert.Equal(expected, source.EndsWith(end, ignoreCase, ci));
         }
 
+        [Theory]
+        [InlineData("", StringComparison.InvariantCulture, true)]
+        [InlineData("", StringComparison.Ordinal, true)]
+        [InlineData(ZeroWidthJoiner, StringComparison.InvariantCulture, true)]
+        [InlineData(ZeroWidthJoiner, StringComparison.Ordinal, false)]
+        public static void StartEndWith_ZeroWeightValue(string value, StringComparison comparison, bool expectedStartsAndEndsWithResult)
+        {
+            Assert.Equal(expectedStartsAndEndsWithResult, string.Empty.StartsWith(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult, string.Empty.EndsWith(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult ? 0 : -1, string.Empty.IndexOf(value, comparison));
+            Assert.Equal(expectedStartsAndEndsWithResult ? 0 : -1, string.Empty.LastIndexOf(value, comparison));
+        }
+
         [Fact]
         public static void StartEndNegativeTest()
         {

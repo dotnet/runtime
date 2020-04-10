@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -74,6 +76,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, CompareOptions.IgnoreNonSpace, 4 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1 };
+
+            // Weightless characters
+            yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5 };
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5 };
@@ -193,6 +200,26 @@ namespace System.Globalization.Tests
                 // Use int MemoryExtensions.LastIndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
                 Assert.Equal(expected - adjustmentFactor, sourceSpan.LastIndexOf(value.AsSpan(), stringComparison));
             }
+
+            // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanLastIndexOfTest(compareInfo, sourceSpan, value, options, expected - adjustmentFactor);
+
+            static void RunSpanLastIndexOfTest(CompareInfo compareInfo, ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, int expected)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData(value);
+                valueBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expected, compareInfo.LastIndexOfNew(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
+
+                if (TryCreateRuneFrom(value, out Rune rune))
+                {
+                    Assert.Equal(expected, compareInfo.LastIndexOfNew(sourceBoundedMemory.Span, rune, options)); // try the Rune-based version
+                }
+            }
         }
 
         private static void LastIndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
@@ -271,38 +298,38 @@ namespace System.Globalization.Tests
             // Options are invalid
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.StringSort));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.StringSort));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.StringSort));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, (CompareOptions)(-1)));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, (CompareOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, (CompareOptions)(-1)));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, (CompareOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, (CompareOptions)(-1)));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, (CompareOptions)0x11111111));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 2, (CompareOptions)0x11111111));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, 1, (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', (CompareOptions)0x11111111));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, (CompareOptions)0x11111111));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 2, (CompareOptions)0x11111111));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, (CompareOptions)0x11111111));
 
             // StartIndex < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.LastIndexOf("Test", "Test", -1, CompareOptions.None));
@@ -350,6 +377,19 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "s", 4, 7, CompareOptions.None));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 6));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 7, CompareOptions.None));
+
+            // Count > StartIndex + 1
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "e", 1, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", "e", 1, 3, CompareOptions.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 'e', 1, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 'e', 1, 3, CompareOptions.None));
+        }
+
+        // Attempts to create a Rune from the entirety of a given text buffer.
+        private static bool TryCreateRuneFrom(ReadOnlySpan<char> text, out Rune value)
+        {
+            return Rune.DecodeFromUtf16(text, out value, out int charsConsumed) == OperationStatus.Done
+                && charsConsumed == text.Length;
         }
     }
 }
