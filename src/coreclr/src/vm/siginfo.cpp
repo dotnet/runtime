@@ -5713,6 +5713,7 @@ MetaSig::GetUnmanagedCallingConvention(
     *pPinvokeMapOut = (CorPinvokeMap)0;
     return TRUE;
 }
+#endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -5812,8 +5813,6 @@ void Substitution::DeleteChain()
     }
     delete this;
 }
-
-#endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
