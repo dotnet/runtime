@@ -123,8 +123,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Call (FindType (), "OnlyCalledViaExpression", Type.EmptyTypes);
 		}
 
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
 		[Kept]
 		static void TestNonExistingName ()
 		{
@@ -196,12 +194,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class ABase
 		{
-			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			[Kept]
 			public static void PublicOnBase ()
 			{
 			}
 
-			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			[Kept]
 			protected static void ProtectedOnBase ()
 			{
 			}
