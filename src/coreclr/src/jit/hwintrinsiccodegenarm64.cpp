@@ -349,6 +349,51 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_Insert:
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                }
+
+                if (intrin.op3->isContainedFltOrDblImmed())
+                {
+                    assert(intrin.op2->isContainedIntOrIImmed());
+                    assert(intrin.op2->AsIntCon()->gtIconVal == 0);
+
+                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                    GetEmitter()->emitIns_R_F(INS_fmov, emitTypeSize(intrin.baseType), targetReg, dataValue,
+                                              INS_OPTS_NONE);
+                }
+                else
+                {
+                    HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                        {
+                            const int elementIndex = helper.ImmValue();
+
+                            GetEmitter()->emitIns_R_R_I_I(ins, emitTypeSize(intrin.baseType), targetReg, op3Reg,
+                                                          elementIndex, 0, INS_OPTS_NONE);
+                        }
+                    }
+                    else
+                    {
+                        for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                        {
+                            const int elementIndex = helper.ImmValue();
+
+                            GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op3Reg,
+                                                        elementIndex, INS_OPTS_NONE);
+                        }
+                    }
+                }
+                break;
+
             default:
                 unreached();
         }
