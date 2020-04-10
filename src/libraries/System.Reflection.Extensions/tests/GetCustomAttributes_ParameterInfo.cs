@@ -244,7 +244,7 @@ namespace System.Reflection.Tests
             Type type = typeof(TestClass_P_Derived);
             MethodInfo miWithReturnAttribute = type.GetTypeInfo().GetDeclaredMethod("methodWithReturnAttribute");
             ParameterInfo returnParameter = miWithReturnAttribute.ReturnParameter;
-            MyAttribute_Single_P attribute = CustomAttributeExtensions.GetCustomAttribute<MyAttribute_Single_P>(returnParameter, inherit: true);
+            MyAttribute_Single_Inherited_P attribute = CustomAttributeExtensions.GetCustomAttribute<MyAttribute_Single_Inherited_P>(returnParameter, inherit: true);
             Assert.NotNull(attribute);
         }
     }
@@ -294,7 +294,7 @@ namespace System.Reflection.Tests
                                       MyAttribute_AllowMultiple_Inherited_P("multiple")] int param)
         { }
 
-        [return: MyAttribute_Single_P("single")]
+        [return: MyAttribute_Single_Inherited_P("single")]
         public virtual byte methodWithReturnAttribute() { return 0; }
     }
 
