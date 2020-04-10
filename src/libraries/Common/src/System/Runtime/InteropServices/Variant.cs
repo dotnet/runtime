@@ -174,11 +174,9 @@ namespace System.Runtime.InteropServices
                     *(uint*)this._typeUnion._unionTypes._byref = (uint)value;
                     break;
 
-#pragma warning disable 618 // ErrorWrapper is obsolete
                 case VarEnum.VT_ERROR:
                     *(int*)this._typeUnion._unionTypes._byref = ((ErrorWrapper)value).ErrorCode;
                     break;
-#pragma warning restore 618
 
                 case VarEnum.VT_I8:
                     *(long*)this._typeUnion._unionTypes._byref = (long)value;
