@@ -202,6 +202,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
                 }
+
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                 break;
 
@@ -316,6 +317,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Store:
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
+
+            case NI_AdvSimd_Extract:
+            {
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, elementIndex,
+                                                INS_OPTS_NONE);
+                }
+            }
+            break;
 
             default:
                 unreached();
