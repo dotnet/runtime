@@ -9,25 +9,19 @@ internal static partial class Interop
 {
     internal static class HostPolicy
     {
-#if TARGET_WINDOWS
-        private const CharSet HostpolicyCharSet = CharSet.Unicode;
-#else
-        private const CharSet HostpolicyCharSet = CharSet.Ansi;
-#endif
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        internal delegate void ResolveComponentDependenciesResultFn(string assemblyPaths,
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        internal delegate void corehost_resolve_component_dependencies_result_fn(string assemblyPaths,
             string nativeSearchPaths, string resourceSearchPaths);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        internal delegate void ErrorWriterFn(string message);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        internal delegate void corehost_error_writer_fn(string message);
 
 #pragma warning disable BCL0015 // Disable Pinvoke analyzer errors.
 
         [DllImport(Libraries.HostPolicy, EntryPoint = "corehost_resolve_component_dependencies"
             CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         private static extern int ResolveComponentDependencies(string componentMainAssemblyPath,
-            ResolveComponentDependenciesResultFn result);
+            corehost_resolve_component_dependencies_result_fn result);
 
         [DllImport(Libraries.HostPolicy, EntryPoint = "corehost_set_error_writer",
             CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
