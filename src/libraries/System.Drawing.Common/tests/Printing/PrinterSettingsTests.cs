@@ -431,13 +431,12 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void SupportsColor_ReturnsExpected()
         {
-            var printerSettings = new PrinterSettings();
-            bool supportsColor = printerSettings.SupportsColor;
-            Assert.True(supportsColor);
+            var printerSettings = new PrinterSettings() { PrinterName = "Microsoft Print to PDF" };
+            Assert.True(printerSettings.SupportsColor);
         }
 
         [Theory]
