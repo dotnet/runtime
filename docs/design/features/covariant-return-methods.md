@@ -25,9 +25,9 @@ Signature checking for MethodImpl is done through the `MetaSig::CompareElementTy
 The type signature checking algorithm will perform the following:
 1. Traverse and compare the signatures for `type1` and `type2` recursively.
 2. If the signatures mismatch at any given point, and the current element type for `type2` is `ELEMENT_TYPE_CLASS` or `ELEMENT_TYPE_GENERICINST`:
-2.a. Check for covariant return eligibility
-2.b. Compute the parent type's signature and parent type's generic substitution of `type2`
-2.c. Perform a recursive call to re-compare `type1` with the new parent type signature of `type2`.
+    + Check for covariant return eligibility
+    + Compute the parent type's signature and parent type's generic substitution of `type2`
+    + Perform a recursive call to re-compare `type1` with the new parent type signature of `type2`.
 
 Note: if `ELEMENT_TYPE_INTERNAL` is encountered in either of the type signatures, both types will be fully loaded and compared for compatibility.
 
