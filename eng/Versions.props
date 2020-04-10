@@ -77,6 +77,7 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETSdkILVersion>5.0.0-preview.4.20202.18</MicrosoftNETSdkILVersion>
+    <MicrosoftFileFormatsVersion>1.0.120601</MicrosoftFileFormatsVersion>
     <!-- Libraries dependencies -->
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->

@@ -5584,7 +5584,11 @@ ClrDataAccess::Initialize(void)
             UNREACHABLE();
         }
 
-        IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
+        ReleaseHolder<ICLRRuntimeLocator> pRuntimeLocator(NULL);
+        if (m_pLegacyTarget->QueryInterface(__uuidof(ICLRRuntimeLocator), (void**)&pRuntimeLocator) != S_OK || pRuntimeLocator->GetRuntimeBase(&base) != S_OK)
+        {
+            IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
+        }
 
         m_globalBase = TO_TADDR(base);
     }

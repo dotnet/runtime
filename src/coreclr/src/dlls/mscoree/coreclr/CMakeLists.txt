@@ -164,6 +164,29 @@ endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 
+# Create the runtime module index header file containing the coreclr build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    set(
+        RUNTIME_MODULE_INDEX_FILE 
+        ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
+    )
+    add_custom_command(
+        OUTPUT ${RUNTIME_MODULE_INDEX_FILE}
+        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:coreclr> ${RUNTIME_MODULE_INDEX_FILE}
+        DEPENDS coreclr
+        COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
+    )
+    set_source_files_properties(
+        ${RUNTIME_MODULE_INDEX_FILE} 
+        PROPERTIES GENERATED TRUE
+    )
+    add_custom_target(
+        runtime_module_index_header
+        DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
+    )
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+
 if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")
       add_custom_target(inject_debug_resources ALL COMMAND UNABLE_TO_EMBED_DAC_ON_WINDOWS_NON_VS_GENERATOR)

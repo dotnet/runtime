@@ -124,6 +124,10 @@ jobs:
         parameters:
           installDotnet: true
 
+    # Build CoreCLR tools needed by the native runtime build
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.buildtools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)/artifacts/log/clr.buildtools.binlog
+      displayName: Build CoreCLR Diagnostic Tools
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(officialBuildIdArg)
