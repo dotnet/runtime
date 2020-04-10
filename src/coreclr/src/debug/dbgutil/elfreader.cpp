@@ -92,6 +92,8 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 //
 
 ElfReader::ElfReader() :
+    m_elfLoadMin(~0ull),
+    m_elfLoadMax(0),
     m_gnuHashTableAddr(nullptr),
     m_stringTableAddr(nullptr),
     m_stringTableSize(0),
@@ -249,11 +251,19 @@ ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset)
     return false;
 }
 
+bool ElfReader::ReadElfMemory(void* address, void* buffer, size_t size)
+{
+    if (((uint64_t)address < m_elfLoadMin) || ((uint64_t)address + size > m_elfLoadMax))
+        return false;
+
+    return ReadMemory(address, buffer, size);
+}
+
 bool
 ElfReader::GetSymbol(int32_t index, Elf_Sym* symbol)
 {
     int symSize = sizeof(Elf_Sym);
-    if (!ReadMemory((char*)m_symbolTableAddr + (index * symSize), symbol, symSize)) {
+    if (!ReadElfMemory((char*)m_symbolTableAddr + (index * symSize), symbol, symSize)) {
         return false;
     }
     return true;
@@ -266,8 +276,8 @@ ElfReader::GetSymbol(int32_t index, Elf_Sym* symbol)
 bool
 ElfReader::InitializeGnuHashTable()
 {
-    if (!ReadMemory(m_gnuHashTableAddr, &m_hashTable, sizeof(m_hashTable))) {
-        TRACE("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
+    if (!ReadElfMemory(m_gnuHashTableAddr, &m_hashTable, sizeof(m_hashTable))) {
+        TRACE("ERROR: InitializeGnuHashTable hashtable ReadElfMemory(%p) FAILED\n", m_gnuHashTableAddr);
         return false;
     }
     if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset == 0) {
@@ -279,8 +289,8 @@ ElfReader::InitializeGnuHashTable()
         return false;
     }
     void* bucketsAddress = (char*)m_gnuHashTableAddr + sizeof(GnuHashTable) + (m_hashTable.BloomSize * sizeof(size_t));
-    if (!ReadMemory(bucketsAddress, m_buckets, m_hashTable.BucketCount * sizeof(int32_t))) {
-        TRACE("ERROR: InitializeGnuHashTable buckets ReadMemory(%p) FAILED\n", bucketsAddress);
+    if (!ReadElfMemory(bucketsAddress, m_buckets, m_hashTable.BucketCount * sizeof(int32_t))) {
+        TRACE("ERROR: InitializeGnuHashTable buckets ReadElfMemory(%p) FAILED\n", bucketsAddress);
         return false;
     }
     m_chainsAddress = (char*)bucketsAddress + (m_hashTable.BucketCount * sizeof(int32_t));
@@ -335,7 +345,7 @@ ElfReader::Hash(const std::string& symbolName)
 bool
 ElfReader::GetChain(int index, int32_t* chain)
 {
-    return ReadMemory((char*)m_chainsAddress + (index * sizeof(int32_t)), chain, sizeof(int32_t));
+    return ReadElfMemory((char*)m_chainsAddress + (index * sizeof(int32_t)), chain, sizeof(int32_t));
 }
 
 //
@@ -353,8 +363,8 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
         }
         char ch;
         void* address = (char*)m_stringTableAddr + index;
-        if (!ReadMemory(address, &ch, sizeof(ch))) {
-            TRACE("ERROR: GetStringAtIndex ReadMemory(%p) FAILED\n", address);
+        if (!ReadElfMemory(address, &ch, sizeof(ch))) {
+            TRACE("ERROR: GetStringAtIndex ReadElfMemory(%p) FAILED\n", address);
             return false;
         }
         if (ch == '\0') {
@@ -405,7 +415,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
     for (;;)
     {
         Elf_Dyn dyn;
-        if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
+        if (!ReadElfMemory(dynamicAddr, &dyn, sizeof(dyn))) {
             TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
             return false;
         }
@@ -509,7 +519,6 @@ bool
 ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, size_t *ploadsize)
 {
     uint64_t loadbias = baseAddress;
-    size_t loadsize = 0;
 
     // Calculate the load bias from the PT_LOAD program headers
     for (int i = 0; i < phnum; i++)
@@ -529,6 +538,9 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     if (ploadbias != nullptr) {
         *ploadbias = loadbias;
     }
+
+    m_elfLoadMin = baseAddress;
+    m_elfLoadMax = std::max<uint64_t>(uint64_t(baseAddress + sizeof(Elf_Ehdr)), uint64_t(phdrAddr + phnum));
 
     // Enumerate all the program headers
     for (int i = 0; i < phnum; i++)
@@ -550,7 +562,8 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
             break;
         case PT_LOAD:
             // Calculate the load size from the PT_LOAD program headers
-            loadsize = std::max<size_t>(loadsize, (size_t)(ph.p_vaddr + ph.p_memsz));
+            m_elfLoadMin = std::min<uint64_t>(m_elfLoadMin, (uint64_t)(loadbias + ph.p_vaddr));
+            m_elfLoadMax = std::max<uint64_t>(m_elfLoadMax, (uint64_t)(loadbias + ph.p_vaddr + ph.p_memsz));
             break;
         }
 
@@ -559,7 +572,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     }
 
     if (ploadsize != nullptr) {
-        *ploadsize = loadsize;
+        *ploadsize = size_t(m_elfLoadMax - loadbias);
     }
 
     return true;
