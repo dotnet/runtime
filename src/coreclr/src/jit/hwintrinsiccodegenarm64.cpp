@@ -332,6 +332,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_ExtractVector128:
+            {
+                opt = (intrin.id == NI_AdvSimd_ExtractVector64) ? INS_OPTS_8B : INS_OPTS_16B;
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                {
+                    const int elementIndex = helper.ImmValue();
+                    const int byteIndex    = genTypeSize(intrin.baseType) * elementIndex;
+
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, byteIndex, opt);
+                }
+            }
+            break;
+
             default:
                 unreached();
         }
