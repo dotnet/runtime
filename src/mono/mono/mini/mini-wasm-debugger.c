@@ -42,11 +42,13 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_add_bool_var (gint8);
+extern void mono_wasm_add_char_var (double);
 extern void mono_wasm_add_number_var (double);
 extern void mono_wasm_add_string_var (const char*);
-extern void mono_wasm_add_obj_var (const char*, guint64);
-extern void mono_wasm_add_value_type_unexpanded_var (const char*);
-extern void mono_wasm_begin_value_type_var (const char*);
+extern void mono_wasm_add_getter_var (const char*);
+extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
+extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
+extern void mono_wasm_begin_value_type_var (const char*, const char*);
 extern void mono_wasm_end_value_type_var (void);
 extern void mono_wasm_add_enum_var (const char*, const char*, guint64);
 extern void mono_wasm_add_func_var (const char*, guint64);
@@ -66,6 +68,21 @@ static int event_request_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
+
+static const char*
+all_getters_allowed_class_names[] = {
+	"System.DateTime",
+	"System.DateTimeOffset",
+	"System.TimeSpan"
+};
+
+static const char*
+to_string_as_descr_names[] = {
+	"System.DateTime",
+	"System.DateTimeOffset",
+	"System.Decimal",
+	"System.TimeSpan"
+};
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
@@ -616,6 +633,72 @@ mono_wasm_enum_frames (void)
 	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, NULL);
 }
 
+static char*
+invoke_to_string (const char *class_name, MonoClass *klass, gpointer addr)
+{
+	MonoObject *exc;
+	MonoString *mstr;
+	char *ret_str;
+	ERROR_DECL (error);
+	MonoObject *obj;
+
+	// TODO: this is for a specific use case right now,
+	//       (invoke ToString() get a preview/description for *some* types)
+	//       and we don't want to report errors for that.
+	if (m_class_is_valuetype (klass)) {
+		MonoMethod *method;
+
+		MONO_STATIC_POINTER_INIT (MonoMethod, to_string)
+			to_string = mono_class_get_method_from_name_checked (mono_get_object_class (), "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC, error);
+			mono_error_assert_ok (error);
+		MONO_STATIC_POINTER_INIT_END (MonoMethod, to_string)
+
+		method = mono_class_get_virtual_method (klass, to_string, FALSE, error);
+		if (!method)
+			return NULL;
+
+		MonoString *mstr = (MonoString*) mono_runtime_try_invoke (method, addr , NULL, &exc, error);
+		if (exc || !is_ok (error)) {
+			DEBUG_PRINTF (1, "Failed to invoke ToString for %s\n", class_name);
+			return NULL;
+		}
+
+		return mono_string_to_utf8_checked_internal (mstr, error);
+	}
+
+	obj = *(MonoObject**)addr;
+	if (!obj)
+		return NULL;
+
+	mstr = mono_object_try_to_string (obj, &exc, error);
+	if (exc || !is_ok (error))
+		return NULL;
+
+	ret_str = mono_string_to_utf8_checked_internal (mstr, error);
+	if (!is_ok (error))
+		return NULL;
+
+	return ret_str;
+}
+
+static char*
+get_to_string_description (const char* class_name, MonoClass *klass, gpointer addr)
+{
+	if (!class_name || !klass || !addr)
+		return NULL;
+
+	if (strcmp (class_name, "System.Guid") == 0)
+		return mono_guid_to_string (addr);
+
+	for (int i = 0; i < G_N_ELEMENTS (to_string_as_descr_names); i ++) {
+		if (strcmp (to_string_as_descr_names [i], class_name) == 0) {
+			return invoke_to_string (class_name, klass, addr);
+		}
+	}
+
+	return NULL;
+}
+
 typedef struct {
 	int cur_frame;
 	int target_frame;
@@ -673,6 +756,8 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			mono_wasm_add_number_var (*(guint8*)addr);
 			break;
 		case MONO_TYPE_CHAR:
+			mono_wasm_add_char_var (*(guint16*)addr);
+			break;
 		case MONO_TYPE_U2:
 			mono_wasm_add_number_var (*(guint16*)addr);
 			break;
@@ -734,7 +819,9 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			} else if (m_class_is_delegate (klass)) {
 				mono_wasm_add_func_var (class_name, obj_id);
 			} else {
-				mono_wasm_add_obj_var (class_name, obj_id);
+				char *to_string_val = get_to_string_description (class_name, klass, addr);
+				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
+				g_free (to_string_val);
 			}
 			g_free (class_name);
 			break;
@@ -779,12 +866,17 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 				mono_wasm_add_enum_var (class_name, enum_members->str, value__);
 				g_string_free (enum_members, TRUE);
 			} else if (expandValueType) {
-				mono_wasm_begin_value_type_var (class_name);
+				char *to_string_val = get_to_string_description (class_name, klass, addr);
+				mono_wasm_begin_value_type_var (class_name, to_string_val);
+				g_free (to_string_val);
+
 				// FIXME: isAsyncLocalThis
 				describe_object_properties_for_klass ((MonoObject*)addr, klass, FALSE, expandValueType);
 				mono_wasm_end_value_type_var ();
 			} else {
-				mono_wasm_add_value_type_unexpanded_var (class_name);
+				char *to_string_val = get_to_string_description (class_name, klass, addr);
+				mono_wasm_add_value_type_unexpanded_var (class_name, to_string_val);
+				g_free (to_string_val);
 			}
 			g_free (class_name);
 			break;
@@ -800,6 +892,17 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 	return TRUE;
 }
 
+static gboolean
+are_getters_allowed (const char *class_name)
+{
+	for (int i = 0; i < G_N_ELEMENTS (all_getters_allowed_class_names); i ++) {
+		if (strcmp (class_name, all_getters_allowed_class_names [i]) == 0)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 static void
 describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, gboolean expandValueType)
 {
@@ -810,6 +913,8 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	ERROR_DECL (error);
 	gboolean is_valuetype;
 	int pnum;
+	char *klass_name;
+	gboolean getters_allowed;
 
 	g_assert (klass);
 	is_valuetype = m_class_is_valuetype(klass);
@@ -841,12 +946,17 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 		describe_value (f->type, field_addr, is_valuetype | expandValueType);
 	}
 
+	klass_name = mono_class_full_name (klass);
+	getters_allowed = are_getters_allowed (klass_name);
+
 	iter = NULL;
 	pnum = 0;
 	while ((p = mono_class_get_properties (klass, &iter))) {
 		DEBUG_PRINTF (2, "mono_class_get_properties - %s - %s\n", p->name, p->get->name);
 		if (p->get->name) { //if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
-			char *class_name;
+			MonoObject *res;
+			MonoObject *exc;
+
 			if (isAsyncLocalThis && (p->name[0] != '<' || (p->name[0] == '<' &&  p->name[1] == '>')))
 				continue;
 
@@ -854,14 +964,18 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 			sig = mono_method_signature_internal (p->get);
 
 			// automatic properties will get skipped
-			class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
-			mono_wasm_add_string_var (class_name);
-			g_free (class_name);
+			if (!getters_allowed) {
+				// not allowed to call the getter here
+				char *ret_class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
+				mono_wasm_add_getter_var (ret_class_name);
+				g_free (ret_class_name);
 
-#if false // Disabled for now, as we don't want to invoke getters
+				continue;
+			}
+
 			if (is_valuetype && mono_class_from_mono_type_internal (sig->ret) == klass) {
 				// Property of the same valuetype, avoid endlessly recursion!
-				mono_wasm_add_string_var (mono_class_full_name (klass));
+				mono_wasm_add_getter_var (klass_name);
 				continue;
 			}
 
@@ -874,7 +988,6 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 				describe_value (sig->ret, &res, TRUE);
 			else
 				describe_value (sig->ret, mono_object_unbox_internal (res), TRUE);
-#endif
 		}
 		pnum ++;
 	}
@@ -975,7 +1088,7 @@ describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 		char *class_name = mono_class_full_name (obj->vtable->klass);
 
 		mono_wasm_add_properties_var ("this", -1);
-		mono_wasm_add_obj_var (class_name, get_object_id(obj));
+		mono_wasm_add_obj_var (class_name, NULL, get_object_id(obj));
 		g_free (class_name);
 	}
 }
