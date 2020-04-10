@@ -1193,7 +1193,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1213,7 +1213,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1234,7 +1234,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1254,7 +1254,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1275,7 +1275,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1302,7 +1302,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1329,7 +1329,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1357,7 +1357,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_FLOAT);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1431,7 +1431,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
             }
-            else if (compSupports(InstructionSet_AVX))
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1451,7 +1451,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1491,7 +1491,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1512,7 +1512,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
                                                    simdSize);
@@ -1533,7 +1533,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1560,7 +1560,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1587,7 +1587,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
@@ -1614,7 +1614,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
