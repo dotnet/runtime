@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
@@ -44,6 +45,24 @@ namespace System.Net.Quic.Tests
         {
             var flight = SendFlight(source, destination);
             return Assert.IsType<OneRttPacket>(flight.Packets[0]);
+        }
+
+        internal void Intercept1Rtt(ManagedQuicConnection source, ManagedQuicConnection destination,
+            Action<OneRttPacket> interceptCallback)
+        {
+            var packet = Get1RttToSend(source);
+            interceptCallback(packet);
+            SendPacket(source, destination, packet);
+        }
+
+        internal void Intercept1RttFrame<TFrame>(ManagedQuicConnection source, ManagedQuicConnection destination,
+            Action<TFrame> interceptCallback) where TFrame : FrameBase
+        {
+            Intercept1Rtt(source, destination, packet =>
+            {
+                var frame = packet.ShouldHaveFrame<TFrame>();
+                interceptCallback(frame);
+            });
         }
 
         internal void SendFlight(ManagedQuicConnection source,

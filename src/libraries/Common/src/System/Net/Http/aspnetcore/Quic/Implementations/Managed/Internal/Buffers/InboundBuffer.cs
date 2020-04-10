@@ -90,9 +90,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Delivers the buffered data to the target destination span.
         /// </summary>
         /// <param name="destination"></param>
-        internal void Deliver(Span<byte> destination)
+        internal int Deliver(Span<byte> destination)
         {
-            Debug.Assert(BytesAvailable >= (ulong) destination.Length);
+            if (BytesAvailable < (ulong)destination.Length)
+            {
+                destination = destination.Slice(0, (int) BytesAvailable);
+            }
+
+            int delivered = destination.Length;
             _undelivered.Remove(BytesRead, (ulong) destination.Length);
 
             int index = 0;
@@ -110,6 +115,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
 
             DiscardDataUntil(BytesRead);
+            return delivered;
         }
 
         /// <summary>

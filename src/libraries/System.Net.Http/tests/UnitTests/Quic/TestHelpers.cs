@@ -11,7 +11,9 @@ namespace System.Net.Quic.Tests
     {
         public static TFrame ShouldHaveFrame<TFrame>(this OneRttPacket packet) where TFrame : FrameBase
         {
-            return Assert.Single(packet.Frames.OfType<TFrame>());
+            var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();
+            Assert.True(frame != null, $"Packet does not contain {typeof(TFrame).Name}s.");
+            return frame;
         }
 
         public static void ShouldContainConnectionClose(this OneRttPacket packet, TransportErrorCode error,
@@ -22,7 +24,8 @@ namespace System.Net.Quic.Tests
             Assert.Equal(frame.ErrorCode, error);
             if (reason != null)
                 Assert.Equal(frame.ReasonPhrase, reason);
-            Assert.Equal(frame.ErrorFrameType, frameType);
+            if (frameType != FrameType.Padding)
+                Assert.Equal(frame.ErrorFrameType, frameType);
         }
     }
 }

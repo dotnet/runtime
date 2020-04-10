@@ -168,7 +168,7 @@ namespace System.Net.Quic.Implementations.Managed
                         continue;
                     case ProcessPacketResult.ConnectionClose when outboundError == null:
                         outboundError = new QuicError(TransportErrorCode.FrameEncodingError,
-                            "Unable to deserialize", frameType);
+                            QuicError.UnableToDeserialize, frameType);
                         break;
                 }
 
@@ -366,7 +366,25 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
 
+            bool bidirectional = StreamHelpers.IsBidirectional((long) frame.StreamId);
+            long index = StreamHelpers.GetStreamIndex((long)frame.StreamId);
+            long limit = (long) (bidirectional
+                ? _localLimits.MaxStreamsBidi
+                : _localLimits.MaxStreamsUni);
+
+            if (index > limit)
+            {
+                return CloseConnection(TransportErrorCode.StreamLimitError, QuicError.StreamsLimitExceeded,
+                    FrameType.Stream);
+            }
+
             var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer);
+            if (stream.InboundBuffer == null)
+            {
+                return CloseConnection(TransportErrorCode.StreamStateError, QuicError.StreamNotWritable,
+                    FrameType.Stream);
+            }
+
             stream.InboundBuffer!.Receive(frame.Offset, frame.StreamData);
 
             return ProcessPacketResult.Ok;

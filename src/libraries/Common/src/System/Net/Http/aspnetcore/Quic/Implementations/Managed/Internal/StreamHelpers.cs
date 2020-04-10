@@ -6,8 +6,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private const ulong StreamTypeUnidirectionalMask = 0x02;
         private const ulong StreamTypeServerInitiationMask = 0x01;
 
-        // Maximum stream id is 2^62-1, and two lower bits are encoding the type
-        internal const ulong MaxStreamIndex = (1ul << 60) - 1;
+        internal const ulong MaxStreamId = QuicPrimitives.MaxVarintValue;
+        internal const ulong MaxStreamIndex = MaxStreamId >> 2;
+        internal const ulong MaxStreamOffset = QuicPrimitives.MaxVarintValue;
 
         internal static StreamType GetStreamType(long streamId)
         {

@@ -38,7 +38,14 @@ namespace System.Net.Quic.Implementations.Managed
         #region Public API
         internal override long StreamId { get; }
         internal override bool CanRead => InboundBuffer != null;
-        internal override int Read(Span<byte> buffer) => throw new NotImplementedException();
+
+        internal override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotReadable();
+
+            return InboundBuffer!.Deliver(buffer);
+        }
 
         internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 

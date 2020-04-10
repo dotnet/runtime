@@ -13,6 +13,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
     internal static class QuicPrimitives
     {
+        internal const ulong MaxVarintValue = (1ul << 62) - 1;
+
         private static bool TryWriteVarInt(Span<byte> destination, ulong value, int length)
         {
             Debug.Assert(GetVarIntLength(value) <= (uint) length && length > 0);

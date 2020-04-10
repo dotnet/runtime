@@ -22,5 +22,9 @@ namespace System.Net.Quic.Implementations.Managed
         internal static readonly string InvalidAckRange = "Invalid ack range";
         internal static readonly string UnknownFrameType = "Unknown frame type";
         internal static readonly string NotInRecvState = "Stream is not in Recv state";
+        internal static readonly string StreamsLimitExceeded = "Streams limit exceeded";
+        internal static readonly string StreamMaxDataExceeded = "Streams max data limit exceeded";
+        internal static readonly string StreamNotWritable = "Stream is not writable";
+        internal static readonly string UnableToDeserialize = "Unable to deserialize";
     }
 }

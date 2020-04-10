@@ -64,6 +64,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             if (!reader.TryReadVarInt(out ulong streamId) ||
                 hasOffset && !reader.TryReadVarInt(out offset) ||
                 hasLength && !reader.TryReadVarInt(out length) ||
+                offset + length > StreamHelpers.MaxStreamOffset ||
                 // Read to end if length not set
                 !reader.TryReadSpan(hasLength ? (int)length : reader.BytesLeft,
                     out var data))

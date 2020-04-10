@@ -1,4 +1,6 @@
 using System.Net.Quic.Implementations.Managed;
+using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,22 +32,103 @@ namespace System.Net.Quic.Tests
             _harness.EstablishConnection(_client, _server);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SimpleStreamOpen(bool unidirectional)
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(unidirectional);
+            Assert.True(clientStream.CanWrite);
+            Assert.Equal(!unidirectional, clientStream.CanRead);
+            clientStream.Write(data);
+
+            var frame = _harness.Send1Rtt(_client, _server)
+                .ShouldHaveFrame<StreamFrame>();
+
+            Assert.Equal(clientStream.StreamId, (long) frame.StreamId);
+            Assert.Equal(0u, frame.Offset);
+            Assert.Equal(data, frame.StreamData);
+            Assert.False(frame.Fin);
+
+            var serverStream = _server.AcceptStream();
+            Assert.NotNull(serverStream);
+            Assert.Equal(clientStream.StreamId, serverStream.StreamId);
+            Assert.True(serverStream.CanRead);
+            Assert.Equal(!unidirectional, serverStream.CanWrite);
+
+            var read = new byte[data.Length];
+            int bytesRead = serverStream.Read(read);
+            Assert.Equal(data.Length, bytesRead);
+            Assert.Equal(data, read);
+        }
+
         [Fact]
-        public void SendSimpleUnidirectionalStream()
+        public void ClosesConnectionWhenStreamLimitIsExceeded()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
             var clientStream = _client.OpenStream(true);
             clientStream.Write(data);
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+                {
+                    // make sure the stream id is above bounds
+                    frame.StreamId += (ulong) (_serverOpts.MaxUnidirectionalStreams << 2 + 4);
+                });
 
-            _harness.SendFlight(_client, _server);
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.StreamLimitError,
+                QuicError.StreamsLimitExceeded,
+                FrameType.Stream);
+        }
 
-            var serverStream = _server.AcceptStream();
-            Assert.NotNull(serverStream);
+        [Fact]
+        public void ClosesConnectionWhenSendingPastMaxOffset()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+                {
+                    frame.Offset = StreamHelpers.MaxStreamOffset;
+                });
 
-            var read = new byte[data.Length];
-            serverStream.InboundBuffer!.Deliver(read);
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.FrameEncodingError,
+                QuicError.UnableToDeserialize);
+        }
 
-            Assert.Equal(data, read);
+        [Fact]
+        public void ClosesConnectionWhenSendingInNonReadableStream()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+                {
+                    // use the only type of stream into which client cannot send
+                    frame.StreamId = (ulong) StreamHelpers.ComposeStreamId(StreamType.ServerInitiatedUnidirectional, 0);
+                });
+
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.StreamStateError,
+                QuicError.StreamNotWritable);
+        }
+
+        [Fact(Skip = "Control flow not implemented")]
+        public void ClosesConnectionWhenSendingPastStreamMaxData()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+                {
+                    // TODO-RZ get length that is reliably outside flow control limits
+                    frame.StreamData = new byte[10000];
+                });
+
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.StreamLimitError,
+                QuicError.StreamMaxDataExceeded);
         }
     }
 }
