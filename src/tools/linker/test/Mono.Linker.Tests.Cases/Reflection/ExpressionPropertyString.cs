@@ -21,9 +21,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Foo.Branch_NullValueNode ();
 			Foo.Branch_MethodParameterValueNode (typeof (Foo), "Foo");
 			Foo.Branch_UnrecognizedPatterns ();
-			// TODO
-			Expression.Property(null, typeof(ADerived), "ProtectedPropertyOnBase");
-			Expression.Property(null, typeof(ADerived), "PublicPropertyOnBase");
 		}
 
 		[KeptMember (".ctor()")]
@@ -37,6 +34,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				TestByType (0);
 				TestByType (1);
 				StaticPropertyExpected ();
+				PropertyOnBaseType ();
 			}
 
 			[Kept]
@@ -104,17 +102,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				Expression.Property (null, T, "Foo");
 			}
-			#endregion
 
-			#region UnrecognizedReflectionAccessPatterns
-			[UnrecognizedReflectionAccessPattern (
-				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
+			[Kept]
+			static void PropertyOnBaseType ()
+			{
+				Expression.Property (Expression.Parameter (typeof (bool), "somename"), typeof (ADerived), "ProtectedPropertyOnBase");
+				Expression.Property (null, typeof (ADerived), "PublicPropertyOnBase");
+			}
+
 			[Kept]
 			public void StaticPropertyExpected ()
 			{
 				var expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
 			}
+			#endregion
 
+			#region UnrecognizedReflectionAccessPatterns
 			[UnrecognizedReflectionAccessPattern (
 				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
@@ -185,23 +188,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				return "unknownstring";
 			}
+
+			[Kept]
+			class ABase
+			{
+				[Kept]
+				[KeptBackingField]
+				protected bool ProtectedPropertyOnBase { [Kept] get; }
+
+				[Kept]
+				[KeptBackingField]
+				public static bool PublicPropertyOnBase { [Kept] get; }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (ABase))]
+			class ADerived : ABase
+			{
+			}
 			#endregion
-		}
-
-		[Kept]
-		class ABase
-		{
-			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
-			protected bool ProtectedPropertyOnBase { get; }
-
-			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
-			public bool PublicPropertyOnBase { get; }
-		}
-
-		[Kept]
-		[KeptBaseType (typeof (ABase))]
-		class ADerived : ABase
-		{
 		}
 	}
 }
