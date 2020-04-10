@@ -489,7 +489,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
 int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry* entry, GetHostEntryForNameCallback callback)
 {
 #if HAVE_GETADDRINFO_A
-    if (address == NULL)
+    if (address == NULL || entry == NULL)
     {
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
@@ -554,15 +554,8 @@ void SystemNative_FreeHostEntry(HostEntry* entry)
 {
     if (entry != NULL)
     {
-        if (entry->CanonicalName != NULL)
-        {
-            free(entry->CanonicalName);
-        }
-
-        if (entry->IPAddressList != NULL)
-        {
-            free(entry->IPAddressList);
-        }
+        free(entry->CanonicalName);
+        free(entry->IPAddressList);
 
         entry->CanonicalName = NULL;
         entry->IPAddressList = NULL;
