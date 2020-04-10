@@ -10,21 +10,8 @@ namespace System.Globalization
         // So we need Invariant to be initialized first.
         internal static bool Invariant { get; } = GetInvariantSwitchValue();
 
-        internal static bool UseNls { get; } = GetUseNlsMode();
+        internal static bool UseNls { get; } = !Invariant &&
+            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") || Interop.Globalization.LoadICU() == 0);
 
-        private static bool GetUseNlsMode()
-        {
-            bool retVal = true;
-            if (!Invariant)
-            {
-                if (!GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") &&
-                                    Interop.Globalization.LoadICU() != 0)
-                {
-                    retVal = false;
-                }
-            }
-
-            return retVal;
-        }
     }
 }

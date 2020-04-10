@@ -6,7 +6,7 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        internal static bool GetInvariantSwitchValue() =>
+        private static bool GetInvariantSwitchValue() =>
             GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
         // GetSwitchValue calls CLRConfig first to detect if the switch is defined in the config file.

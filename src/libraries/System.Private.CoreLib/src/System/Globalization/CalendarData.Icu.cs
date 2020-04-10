@@ -456,7 +456,7 @@ namespace System.Globalization
             }
         }
 
-        public struct IcuEnumCalendarsData
+        private struct IcuEnumCalendarsData
         {
             public List<string> Results;
             public bool DisallowDuplicates;
