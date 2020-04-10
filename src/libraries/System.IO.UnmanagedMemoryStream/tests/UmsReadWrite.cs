@@ -245,7 +245,7 @@ namespace System.IO.Tests
 
 
         [Fact]
-        public void Write()
+        public void WriteTest()
         {
             const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Write, length))

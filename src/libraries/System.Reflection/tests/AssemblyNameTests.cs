@@ -576,7 +576,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Foo")]
         [InlineData("Hi There")]
-        public void ToString(string name)
+        public void ToStringTest(string name)
         {
             var assemblyName = new AssemblyName(name);
             Assert.StartsWith(name, assemblyName.ToString());

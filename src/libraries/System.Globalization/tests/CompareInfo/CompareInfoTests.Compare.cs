@@ -267,14 +267,14 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Compare_Kana_TestData))]
         public void CompareWithKana(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
-            Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+            Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
         }
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
-            Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+            Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
         }
 
         public static IEnumerable<object[]> Compare_Advanced_TestData()
@@ -326,7 +326,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_Advanced_TestData))]
-        public void Compare(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
+        public void Compare_Advanced(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
         {
             if (offset1 + length1 == (string1?.Length ?? 0) && offset2 + length2 == (string2?.Length ?? 0))
             {

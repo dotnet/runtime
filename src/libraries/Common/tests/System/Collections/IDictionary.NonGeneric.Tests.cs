@@ -148,6 +148,21 @@ namespace System.Collections.Tests
                     return true;
                 };
             }
+            if ((operations & ModifyOperation.Overwrite) == ModifyOperation.Overwrite)
+            {
+                yield return (IEnumerable enumerable) =>
+                {
+                    IDictionary casted = ((IDictionary)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        var keys = casted.Keys.GetEnumerator();
+                        keys.MoveNext();
+                        casted[keys.Current] = CreateTValue(12);
+                        return true;
+                    }
+                    return false;
+                };
+            }
             if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
             {
                 yield return (IEnumerable enumerable) =>

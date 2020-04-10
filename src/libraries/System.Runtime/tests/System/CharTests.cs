@@ -155,7 +155,7 @@ namespace System.Tests
         [InlineData('a', (int)'a', false)]
         [InlineData('a', "a", false)]
         [InlineData('a', null, false)]
-        public static void Equals(char c, object obj, bool expected)
+        public static void EqualsTest(char c, object obj, bool expected)
         {
             if (obj is char)
             {
@@ -826,7 +826,7 @@ namespace System.Tests
         [Theory]
         [InlineData('a', "a")]
         [InlineData('\uabcd', "\uabcd")]
-        public static void ToString(char c, string expected)
+        public static void ToStringTest(char c, string expected)
         {
             Assert.Equal(expected, c.ToString());
             Assert.Equal(expected, char.ToString(c));

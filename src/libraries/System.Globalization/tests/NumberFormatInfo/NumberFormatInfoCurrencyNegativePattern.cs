@@ -31,7 +31,7 @@ namespace System.Globalization.Tests
         [InlineData("as")]
         [InlineData("es-BO")]
         [InlineData("fr-CA")]
-        public void CurrencyNegativePattern_Get_ReturnsExpected(string locale)
+        public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
         {
             CultureInfo culture;
             try

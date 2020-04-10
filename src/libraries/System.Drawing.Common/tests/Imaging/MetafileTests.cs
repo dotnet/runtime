@@ -404,7 +404,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Description_TestData))]
-        public void Ctor_StringIntPtrEmfType_Success(string description)
+        public void Ctor_StringIntPtrEmfTypeDescription_Success(string description)
         {
             string fileName = GetPath("newTestImage.wmf");
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
@@ -677,7 +677,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
-        public void Ctor_InvalidEmfTypeII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
+        public void Ctor_InvalidFrameUnit_ThrowsArgumentException(MetafileFrameUnit frameUnit)
         {
             string fileName = GetPath("newTestImage.wmf");
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))
@@ -861,7 +861,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
-        public void Ctor_InvalidEmfTypeIII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
+        public void Ctor_InvalidFrameUnitIII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
         {
             using (var stream = new MemoryStream())
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))

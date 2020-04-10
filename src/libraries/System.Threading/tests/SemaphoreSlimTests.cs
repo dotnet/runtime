@@ -30,43 +30,43 @@ namespace System.Threading.Tests
         [Fact]
         public static void RunSemaphoreSlimTest0_Ctor()
         {
-            RunSemaphoreSlimTest0_Ctor(0, 10, null);
-            RunSemaphoreSlimTest0_Ctor(5, 10, null);
-            RunSemaphoreSlimTest0_Ctor(10, 10, null);
+            RunSemaphoreSlimTest0_Helper(0, 10, null);
+            RunSemaphoreSlimTest0_Helper(5, 10, null);
+            RunSemaphoreSlimTest0_Helper(10, 10, null);
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest0_Ctor_Negative()
         {
-            RunSemaphoreSlimTest0_Ctor(10, 0, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest0_Ctor(10, -1, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest0_Ctor(-1, 10, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest0_Helper(10, 0, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest0_Helper(10, -1, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest0_Helper(-1, 10, typeof(ArgumentOutOfRangeException));
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest1_Wait()
         {
             // Infinite timeout
-            RunSemaphoreSlimTest1_Wait(10, 10, -1, true, null);
-            RunSemaphoreSlimTest1_Wait(1, 10, -1, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -1, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(1, 10, -1, true, null);
 
             // Zero timeout
-            RunSemaphoreSlimTest1_Wait(10, 10, 0, true, null);
-            RunSemaphoreSlimTest1_Wait(1, 10, 0, true, null);
-            RunSemaphoreSlimTest1_Wait(0, 10, 0, false, null);
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, 0, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(1, 10, 0, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(0, 10, 0, false, null);
 
             // Positive timeout
-            RunSemaphoreSlimTest1_Wait(10, 10, 10, true, null);
-            RunSemaphoreSlimTest1_Wait(1, 10, 10, true, null);
-            RunSemaphoreSlimTest1_Wait(0, 10, 10, false, null);
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, 10, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(1, 10, 10, true, null);
+            RunSemaphoreSlimTest1_Wait_Helper(0, 10, 10, false, null);
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout
-            RunSemaphoreSlimTest1_Wait(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest1_Wait
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest1_Wait_Helper
                (10, 10, new TimeSpan(0, 0, int.MaxValue), true, typeof(ArgumentOutOfRangeException));
         }
 
@@ -74,26 +74,26 @@ namespace System.Threading.Tests
         public static void RunSemaphoreSlimTest1_WaitAsync()
         {
             // Infinite timeout
-            RunSemaphoreSlimTest1_WaitAsync(10, 10, -1, true, null);
-            RunSemaphoreSlimTest1_WaitAsync(1, 10, -1, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, -1, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, -1, true, null);
 
             // Zero timeout
-            RunSemaphoreSlimTest1_WaitAsync(10, 10, 0, true, null);
-            RunSemaphoreSlimTest1_WaitAsync(1, 10, 0, true, null);
-            RunSemaphoreSlimTest1_WaitAsync(0, 10, 0, false, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, 0, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, 0, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(0, 10, 0, false, null);
 
             // Positive timeout
-            RunSemaphoreSlimTest1_WaitAsync(10, 10, 10, true, null);
-            RunSemaphoreSlimTest1_WaitAsync(1, 10, 10, true, null);
-            RunSemaphoreSlimTest1_WaitAsync(0, 10, 10, false, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, 10, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, 10, true, null);
+            RunSemaphoreSlimTest1_WaitAsync_Helper(0, 10, 10, false, null);
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest1_WaitAsync_NegativeCases()
         {
             // Invalid timeout
-            RunSemaphoreSlimTest1_WaitAsync(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest1_WaitAsync
+            RunSemaphoreSlimTest1_WaitAsync_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest1_WaitAsync_Helper
                (10, 10, new TimeSpan(0, 0, int.MaxValue), true, typeof(ArgumentOutOfRangeException));
             RunSemaphoreSlimTest1_WaitAsync2();
         }
@@ -102,62 +102,62 @@ namespace System.Threading.Tests
         public static void RunSemaphoreSlimTest2_Release()
         {
             // Valid release count
-            RunSemaphoreSlimTest2_Release(5, 10, 1, null);
-            RunSemaphoreSlimTest2_Release(0, 10, 1, null);
-            RunSemaphoreSlimTest2_Release(5, 10, 5, null);
+            RunSemaphoreSlimTest2_Release_Helper(5, 10, 1, null);
+            RunSemaphoreSlimTest2_Release_Helper(0, 10, 1, null);
+            RunSemaphoreSlimTest2_Release_Helper(5, 10, 5, null);
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest2_Release_NegativeCases()
         {
             // Invalid release count
-            RunSemaphoreSlimTest2_Release(5, 10, 0, typeof(ArgumentOutOfRangeException));
-            RunSemaphoreSlimTest2_Release(5, 10, -1, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest2_Release_Helper(5, 10, 0, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest2_Release_Helper(5, 10, -1, typeof(ArgumentOutOfRangeException));
 
             // Semaphore Full
-            RunSemaphoreSlimTest2_Release(10, 10, 1, typeof(SemaphoreFullException));
-            RunSemaphoreSlimTest2_Release(5, 10, 6, typeof(SemaphoreFullException));
-            RunSemaphoreSlimTest2_Release(int.MaxValue - 1, int.MaxValue, 10, typeof(SemaphoreFullException));
+            RunSemaphoreSlimTest2_Release_Helper(10, 10, 1, typeof(SemaphoreFullException));
+            RunSemaphoreSlimTest2_Release_Helper(5, 10, 6, typeof(SemaphoreFullException));
+            RunSemaphoreSlimTest2_Release_Helper(int.MaxValue - 1, int.MaxValue, 10, typeof(SemaphoreFullException));
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest4_Dispose()
         {
-            RunSemaphoreSlimTest4_Dispose(5, 10, null, null);
-            RunSemaphoreSlimTest4_Dispose(5, 10, SemaphoreSlimActions.CurrentCount, null);
-            RunSemaphoreSlimTest4_Dispose
+            RunSemaphoreSlimTest4_Dispose_Helper(5, 10, null, null);
+            RunSemaphoreSlimTest4_Dispose_Helper(5, 10, SemaphoreSlimActions.CurrentCount, null);
+            RunSemaphoreSlimTest4_Dispose_Helper
                (5, 10, SemaphoreSlimActions.Wait, typeof(ObjectDisposedException));
-            RunSemaphoreSlimTest4_Dispose
+            RunSemaphoreSlimTest4_Dispose_Helper
                (5, 10, SemaphoreSlimActions.WaitAsync, typeof(ObjectDisposedException));
-            RunSemaphoreSlimTest4_Dispose
+            RunSemaphoreSlimTest4_Dispose_Helper
               (5, 10, SemaphoreSlimActions.Release, typeof(ObjectDisposedException));
-            RunSemaphoreSlimTest4_Dispose
+            RunSemaphoreSlimTest4_Dispose_Helper
               (5, 10, SemaphoreSlimActions.AvailableWaitHandle, typeof(ObjectDisposedException));
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest5_CurrentCount()
         {
-            RunSemaphoreSlimTest5_CurrentCount(5, 10, null);
-            RunSemaphoreSlimTest5_CurrentCount(5, 10, SemaphoreSlimActions.Wait);
-            RunSemaphoreSlimTest5_CurrentCount(5, 10, SemaphoreSlimActions.WaitAsync);
-            RunSemaphoreSlimTest5_CurrentCount(5, 10, SemaphoreSlimActions.Release);
+            RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, null);
+            RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Wait);
+            RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.WaitAsync);
+            RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Release);
         }
 
         [Fact]
         public static void RunSemaphoreSlimTest7_AvailableWaitHandle()
         {
-            RunSemaphoreSlimTest7_AvailableWaitHandle(5, 10, null, true);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(0, 10, null, false);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, null, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(0, 10, null, false);
 
-            RunSemaphoreSlimTest7_AvailableWaitHandle(5, 10, SemaphoreSlimActions.Wait, true);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(1, 10, SemaphoreSlimActions.Wait, false);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(5, 10, SemaphoreSlimActions.Wait, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, SemaphoreSlimActions.Wait, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(1, 10, SemaphoreSlimActions.Wait, false);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, SemaphoreSlimActions.Wait, true);
 
-            RunSemaphoreSlimTest7_AvailableWaitHandle(5, 10, SemaphoreSlimActions.WaitAsync, true);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(1, 10, SemaphoreSlimActions.WaitAsync, false);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(5, 10, SemaphoreSlimActions.WaitAsync, true);
-            RunSemaphoreSlimTest7_AvailableWaitHandle(0, 10, SemaphoreSlimActions.Release, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, SemaphoreSlimActions.WaitAsync, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(1, 10, SemaphoreSlimActions.WaitAsync, false);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, SemaphoreSlimActions.WaitAsync, true);
+            RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(0, 10, SemaphoreSlimActions.Release, true);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace System.Threading.Tests
         /// <param name="exceptionType">The type of the thrown exception in case of invalid cases,
         /// null for valid cases</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest0_Ctor(int initial, int maximum, Type exceptionType)
+        private static void RunSemaphoreSlimTest0_Helper(int initial, int maximum, Type exceptionType)
         {
             string methodFailed = "RunSemaphoreSlimTest0_Ctor(" + initial + "," + maximum + "):  FAILED.  ";
             Exception exception = null;
@@ -195,7 +195,7 @@ namespace System.Threading.Tests
         /// <param name="exceptionType">The type of the thrown exception in case of invalid cases,
         /// null for valid cases</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest1_Wait
+        private static void RunSemaphoreSlimTest1_Wait_Helper
             (int initial, int maximum, object timeout, bool returnValue, Type exceptionType)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
@@ -233,7 +233,7 @@ namespace System.Threading.Tests
         /// <param name="exceptionType">The type of the thrown exception in case of invalid cases,
         /// null for valid cases</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest1_WaitAsync
+        private static void RunSemaphoreSlimTest1_WaitAsync_Helper
             (int initial, int maximum, object timeout, bool returnValue, Type exceptionType)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
@@ -308,7 +308,7 @@ namespace System.Threading.Tests
         /// <param name="exceptionType">The type of the thrown exception in case of invalid cases,
         /// null for valid cases</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest2_Release
+        private static void RunSemaphoreSlimTest2_Release_Helper
            (int initial, int maximum, int releaseCount, Type exceptionType)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
@@ -395,7 +395,7 @@ namespace System.Threading.Tests
         /// <param name="exceptionType">The type of the thrown exception in case of invalid cases,
         /// null for valid cases</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest4_Dispose(int initial, int maximum, SemaphoreSlimActions? action, Type exceptionType)
+        private static void RunSemaphoreSlimTest4_Dispose_Helper(int initial, int maximum, SemaphoreSlimActions? action, Type exceptionType)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
             try
@@ -417,7 +417,7 @@ namespace System.Threading.Tests
         /// <param name="maximum">The maximum semaphore count</param>
         /// <param name="action">SemaphoreSlim action to be called before CurrentCount</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest5_CurrentCount(int initial, int maximum, SemaphoreSlimActions? action)
+        private static void RunSemaphoreSlimTest5_CurrentCount_Helper(int initial, int maximum, SemaphoreSlimActions? action)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
 
@@ -440,7 +440,7 @@ namespace System.Threading.Tests
         /// <param name="action">SemaphoreSlim action to be called before WaitHandle</param>
         /// <param name="state">The expected wait handle state</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest7_AvailableWaitHandle(int initial, int maximum, SemaphoreSlimActions? action, bool state)
+        private static void RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(int initial, int maximum, SemaphoreSlimActions? action, bool state)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
 

@@ -25,161 +25,161 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void RunContinueWithTaskTask_State()
         {
-            RunContinueWithTaskTask_State(TaskContinuationOptions.None);
-            RunContinueWithTaskTask_State(s_onlyOnRanToCompletion);
+            RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion);
 
-            RunContinueWithTaskTask_State(TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithTaskTask_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithTaskFuture_State()
         {
-            RunContinueWithTaskFuture_State(TaskContinuationOptions.None);
-            RunContinueWithTaskFuture_State(s_onlyOnRanToCompletion);
+            RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.None);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion);
 
-            RunContinueWithTaskFuture_State(TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithTaskFuture_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithFutureTask_State()
         {
-            RunContinueWithFutureTask_State(TaskContinuationOptions.None);
-            RunContinueWithFutureTask_State(s_onlyOnRanToCompletion);
+            RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.None);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion);
 
-            RunContinueWithFutureTask_State(TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithFutureTask_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithFutureFuture_State()
         {
-            RunContinueWithFutureFuture_State(TaskContinuationOptions.None);
-            RunContinueWithFutureFuture_State(s_onlyOnRanToCompletion);
+            RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.None);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion);
 
-            RunContinueWithFutureFuture_State(TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithFutureFuture_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithTaskTask_State_FaultedCanceled()
         {
-            RunContinueWithTaskTask_State(s_onlyOnCanceled);
-            RunContinueWithTaskTask_State(s_onlyOnFaulted);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted);
 
-            RunContinueWithTaskTask_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithTaskTask_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithTaskFuture_State_FaultedCanceled()
         {
-            RunContinueWithTaskFuture_State(s_onlyOnCanceled);
-            RunContinueWithTaskFuture_State(s_onlyOnFaulted);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted);
 
-            RunContinueWithTaskFuture_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithTaskFuture_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithFutureTask_State_FaultedCanceled()
         {
-            RunContinueWithFutureTask_State(s_onlyOnCanceled);
-            RunContinueWithFutureTask_State(s_onlyOnFaulted);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted);
 
-            RunContinueWithFutureTask_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithFutureTask_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithFutureFuture_State_FaultedCanceled()
         {
-            RunContinueWithFutureFuture_State(s_onlyOnCanceled);
-            RunContinueWithFutureFuture_State(s_onlyOnFaulted);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnFaulted);
 
-            RunContinueWithFutureFuture_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
-            RunContinueWithFutureFuture_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
         [Fact]
         public static void RunContinueWithTaskTask_State_OnException()
         {
-            RunContinueWithTaskTask_State(TaskContinuationOptions.None, true);
-            RunContinueWithTaskTask_State(s_onlyOnRanToCompletion, true);
+            RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion, true);
 
-            RunContinueWithTaskTask_State(TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithTaskTask_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithTaskFuture_State_OnException()
         {
-            RunContinueWithTaskFuture_State(TaskContinuationOptions.None, true);
-            RunContinueWithTaskFuture_State(s_onlyOnRanToCompletion, true);
+            RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.None, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion, true);
 
-            RunContinueWithTaskFuture_State(TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithTaskFuture_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithFutureTask_State_OnException()
         {
-            RunContinueWithFutureTask_State(TaskContinuationOptions.None, true);
-            RunContinueWithFutureTask_State(s_onlyOnRanToCompletion, true);
+            RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.None, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion, true);
 
-            RunContinueWithFutureTask_State(TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithFutureTask_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureTask_State_Helper(TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithFutureFuture_State_OnException()
         {
-            RunContinueWithFutureFuture_State(TaskContinuationOptions.None, true);
-            RunContinueWithFutureFuture_State(s_onlyOnRanToCompletion, true);
+            RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.None, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion, true);
 
-            RunContinueWithFutureFuture_State(TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithFutureFuture_State(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithTaskTask_State_FaultedCanceled_OnException()
         {
-            RunContinueWithTaskTask_State(s_onlyOnCanceled, true);
-            RunContinueWithTaskTask_State(s_onlyOnFaulted, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted, true);
 
-            RunContinueWithTaskTask_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithTaskTask_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithTaskFuture_State_FaultedCanceled_OnException()
         {
-            RunContinueWithTaskFuture_State(s_onlyOnCanceled, true);
-            RunContinueWithTaskFuture_State(s_onlyOnFaulted, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted, true);
 
-            RunContinueWithTaskFuture_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithTaskFuture_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithTaskFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithFutureTask_State_FaultedCanceled_OnException()
         {
-            RunContinueWithFutureTask_State(s_onlyOnCanceled, true);
-            RunContinueWithFutureTask_State(s_onlyOnFaulted, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted, true);
 
-            RunContinueWithFutureTask_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithFutureTask_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
         public static void RunContinueWithFutureFuture_State_FaultedCanceled_OnException()
         {
-            RunContinueWithFutureFuture_State(s_onlyOnCanceled, true);
-            RunContinueWithFutureFuture_State(s_onlyOnFaulted, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnFaulted, true);
 
-            RunContinueWithFutureFuture_State(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
-            RunContinueWithFutureFuture_State(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, true);
+            RunContinueWithFutureFuture_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
         [Fact]
@@ -414,7 +414,7 @@ namespace System.Threading.Tasks.Tests
         #region Helper Methods
 
         // Chains a Task continuation to a Task.
-        private static void RunContinueWithTaskTask_State(TaskContinuationOptions options, bool runNegativeCases = false)
+        private static void RunContinueWithTaskTask_State_Helper(TaskContinuationOptions options, bool runNegativeCases = false)
         {
             bool ran = false;
 
@@ -447,7 +447,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Chains a Task<T> continuation to a Task, with a Func<Task, T>.
-        private static void RunContinueWithTaskFuture_State(TaskContinuationOptions options, bool runNegativeCases = false)
+        private static void RunContinueWithTaskFuture_State_Helper(TaskContinuationOptions options, bool runNegativeCases = false)
         {
             bool ran = false;
 
@@ -481,7 +481,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Chains a Task continuation to a Task<T>.
-        private static void RunContinueWithFutureTask_State(TaskContinuationOptions options, bool runNegativeCases = false)
+        private static void RunContinueWithFutureTask_State_Helper(TaskContinuationOptions options, bool runNegativeCases = false)
         {
             bool ran = false;
 
@@ -515,7 +515,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Chains a Task<U> continuation to a Task<T>, with a Func<Task<T>, U>.
-        private static void RunContinueWithFutureFuture_State(TaskContinuationOptions options, bool runNegativeCases = false)
+        private static void RunContinueWithFutureFuture_State_Helper(TaskContinuationOptions options, bool runNegativeCases = false)
         {
             bool ran = false;
 

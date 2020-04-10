@@ -997,16 +997,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, input.Value[2]);
         }
 
-        [Fact]
-        public static void ReadKeyValuePairOfKeyValuePair()
-        {
-            KeyValuePair<string, KeyValuePair<int, int>> input = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<int, int>>>(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}");
-
-            Assert.Equal("Key", input.Key);
-            Assert.Equal(1, input.Value.Key);
-            Assert.Equal(2, input.Value.Value);
-        }
-
         [Theory]
         [InlineData(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}")]
         [InlineData(@"{""Key"":""Key"", ""Value"":{""Value"":2, ""Key"":1}}")]
