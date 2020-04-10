@@ -166,7 +166,7 @@ target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
     set(
         RUNTIME_MODULE_INDEX_FILE 
         ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
@@ -185,7 +185,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
         runtime_module_index_header
         DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
     )
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.FileFormats;
 using Microsoft.FileFormats.ELF;
+using Microsoft.FileFormats.MachO;
 using Microsoft.FileFormats.PE;
 
 public class GetModuleIndex
@@ -44,6 +45,21 @@ public class GetModuleIndex
                 // First byte is the number of bytes total in the index
                 string outputText = string.Format("0x{0:x2}, {1} {2}", 8, ToHexString(peFile.Timestamp), ToHexString(peFile.SizeOfImage));
                 File.WriteAllText(outputFileName, outputText);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var machoFile = new MachOFile(new StreamAddressSpace(stream));
+                byte[] uuid = machoFile.Uuid;
+                if (uuid != null)
+                {
+                    // First byte is the number of bytes total in the build id
+                    string outputText = string.Format("0x{0:x2}, {1}", uuid.Length, ToHexString(uuid));
+                    File.WriteAllText(outputFileName, outputText);
+                }
+                else
+                {
+                    throw new BadInputFormatException($"{moduleFileName} does not have a uuid");
+                }
             }
             else
             {
