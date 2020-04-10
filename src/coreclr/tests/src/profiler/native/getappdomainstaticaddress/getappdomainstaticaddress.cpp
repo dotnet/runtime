@@ -46,17 +46,17 @@ GUID GetAppDomainStaticAddress::GetClsid()
     return clsid;
 }
 
-HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
+HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pIpCorProfilerInfoUnk)
 {
-    printf("Initialize profiler!\n");
-
-    HRESULT hr = pICorProfilerInfoUnk->QueryInterface(IID_ICorProfilerInfo10, (void**)&pCorProfilerInfo);
-    if (hr != S_OK)
+    HRESULT hr = Profiler::Initialize(pIpCorProfilerInfoUnk);
+    if (FAILED(hr))
     {
-        printf("Got HR %X from QI for ICorProfilerInfo4", hr);
-        ++failures;
-        return E_FAIL;
+        failures++;
+        printf("Profiler::Initialize failed with hr=0x%x\n", hr);
+        return hr;
     }
+
+    printf("GetAppDomainStaticAddress::Initialize!\n");
 
     pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_GC |
                                    COR_PRF_MONITOR_CLASS_LOADS |
@@ -105,12 +105,6 @@ HRESULT GetAppDomainStaticAddress::Shutdown()
     Profiler::Shutdown();
 
     gcWaitEvent.Reset();
-
-    if (this->pCorProfilerInfo != nullptr)
-    {
-        this->pCorProfilerInfo->Release();
-        this->pCorProfilerInfo = nullptr;
-    }
 
     if(failures == 0 && successes > 0)
     {
