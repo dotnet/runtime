@@ -305,7 +305,7 @@ namespace System.Management
         public System.Management.ManagementPath Put(System.Management.PutOptions options) { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial class ManagementObjectCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable
+    public partial class ManagementObjectCollection : System.Collections.Generic.IEnumerable<ManagementObject>, System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable
     {
         internal ManagementObjectCollection() { }
         public int Count { get { throw null; } }
@@ -316,11 +316,12 @@ namespace System.Management
         public void Dispose() { }
         ~ManagementObjectCollection() { }
         public System.Management.ManagementObjectCollection.ManagementObjectEnumerator GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<ManagementObject> System.Collections.Generic.IEnumerable<ManagementObject>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public partial class ManagementObjectEnumerator : System.Collections.IEnumerator, System.IDisposable
+        public partial class ManagementObjectEnumerator : System.Collections.Generic.IEnumerator<ManagementObject>, System.Collections.IEnumerator, System.IDisposable
         {
             internal ManagementObjectEnumerator() { }
-            public System.Management.ManagementBaseObject Current { get { throw null; } }
+            public System.Management.ManagementObject Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             ~ManagementObjectEnumerator() { }

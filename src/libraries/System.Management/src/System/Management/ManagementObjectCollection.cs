@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Management
@@ -56,7 +57,7 @@ namespace System.Management
     ///    </code>
     /// </example>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
-    public class ManagementObjectCollection : ICollection, IEnumerable, IDisposable
+    public class ManagementObjectCollection : IEnumerable<ManagementObject>, ICollection, IEnumerable, IDisposable
     {
         private static readonly string name = typeof(ManagementObjectCollection).FullName;
 
@@ -331,6 +332,18 @@ namespace System.Management
             }
         }
 
+        /// <internalonly/>
+        /// <summary>
+        ///    <para>Returns an enumerator that can iterate through a collection.</para>
+        /// </summary>
+        /// <returns>
+        ///    An <see cref='System.Collections.Generic.IEnumerable{T}'/> that can be used to iterate
+        ///    through the collection.
+        /// </returns>
+        IEnumerator<ManagementObject> IEnumerable<ManagementObject>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
         /// <internalonly/>
         /// <summary>
@@ -398,7 +411,7 @@ namespace System.Management
         ///    </code>
         /// </example>
         //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-        public class ManagementObjectEnumerator : IEnumerator, IDisposable
+        public class ManagementObjectEnumerator : IEnumerator<ManagementObject>, IEnumerator, IDisposable
         {
             private static readonly string name = typeof(ManagementObjectEnumerator).FullName;
             private IEnumWbemClassObject enumWbem;
@@ -469,7 +482,7 @@ namespace System.Management
             /// <value>
             ///    <para>The current object in the enumeration.</para>
             /// </value>
-            public ManagementBaseObject Current
+            public ManagementObject Current
             {
                 get
                 {
@@ -479,7 +492,7 @@ namespace System.Management
                     if (cacheIndex < 0)
                         throw new InvalidOperationException();
 
-                    return ManagementBaseObject.GetBaseObject(cachedObjects[cacheIndex],
+                    return ManagementObject.GetManagementObject(cachedObjects[cacheIndex],
                         collectionObject.scope);
                 }
             }

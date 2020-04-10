@@ -180,23 +180,30 @@ namespace System.Management
             IWbemClassObjectFreeThreaded wbemObject,
             ManagementScope scope)
         {
-            ManagementObject newObject = new ManagementObject();
-            newObject.wbemObject = wbemObject;
+            ManagementObject newObject = null;
+            if (_IsClass(wbemObject))
+            {
+                newObject = ManagementClass.GetManagementClass(wbemObject, scope);
+            }
+            else
+            {
+                newObject = new ManagementObject();
+                newObject.wbemObject = wbemObject;
 
-            newObject.path = new ManagementPath(ManagementPath.GetManagementPath(wbemObject));
-            newObject.path.IdentifierChanged += new IdentifierChangedEventHandler(newObject.HandleIdentifierChange);
+                newObject.path = new ManagementPath(ManagementPath.GetManagementPath(wbemObject));
+                newObject.path.IdentifierChanged += new IdentifierChangedEventHandler(newObject.HandleIdentifierChange);
 
-            newObject.scope = ManagementScope._Clone(scope, new IdentifierChangedEventHandler(newObject.HandleIdentifierChange));
+                newObject.scope = ManagementScope._Clone(scope, new IdentifierChangedEventHandler(newObject.HandleIdentifierChange));
 
-            // Since we have an object, we should mark it as bound. Note
-            // that we do this AFTER setting Scope and Path, since those
-            // have side-effects of setting isBound=false.
-            //
-            // ***
-            // *    Changed isBound flag to wbemObject==null check.
-            // *    newObject.isBound = true;
-            // ***
-
+                // Since we have an object, we should mark it as bound. Note
+                // that we do this AFTER setting Scope and Path, since those
+                // have side-effects of setting isBound=false.
+                //
+                // ***
+                // *    Changed isBound flag to wbemObject==null check.
+                // *    newObject.isBound = true;
+                // ***
+            }
             return newObject;
         }
 

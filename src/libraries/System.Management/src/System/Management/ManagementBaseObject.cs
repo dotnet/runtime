@@ -789,7 +789,7 @@ namespace System.Management
             }
         }
 
-        private static bool _IsClass(IWbemClassObjectFreeThreaded wbemObject)
+        internal static bool _IsClass(IWbemClassObjectFreeThreaded wbemObject)
         {
             object val = null;
             int dummy1 = 0, dummy2 = 0;
