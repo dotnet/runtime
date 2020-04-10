@@ -4329,7 +4329,7 @@ namespace System
 
             if (hasUnicode)
             {
-                string temp = UriHelper.StripBidiControlCharacters(pString + start, end - start);
+                string temp = UriHelper.StripBidiControlCharacters(new ReadOnlySpan<char>(pString + start, end - start));
                 try
                 {
                     newHost += temp.Normalize(NormalizationForm.FormC);

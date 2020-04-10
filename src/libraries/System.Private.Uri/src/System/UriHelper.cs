@@ -5,6 +5,7 @@
 using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -792,14 +793,14 @@ namespace System
         //
         // Strip Bidirectional control characters from this string
         //
-        internal static unsafe string StripBidiControlCharacters(char* strToClean, int length, string? backingString = null)
+        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
-            Debug.Assert(backingString is null || length == backingString.Length);
+            Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
             int charsToRemove = 0;
-            for (int i = 0; i < length; i++)
+            foreach (char c in strToClean)
             {
-                if ((uint)(strToClean[i] - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(strToClean[i]))
+                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
                 {
                     charsToRemove++;
                 }
@@ -807,35 +808,30 @@ namespace System
 
             if (charsToRemove == 0)
             {
-                return backingString ?? new string(strToClean, 0, length);
+                return backingString ?? new string(strToClean);
             }
 
-            if (charsToRemove == length)
+            if (charsToRemove == strToClean.Length)
             {
                 return string.Empty;
             }
 
-            return string.Create(length - charsToRemove, (ip: (IntPtr)strToClean, length), (buffer, state) =>
+            fixed (char* pStrToClean = &MemoryMarshal.GetReference(strToClean))
             {
-                char* source = (char*)state.ip;
-                int destIndex = 0;
-                int length = state.length;
-                for (int i = 0; i < length; i++)
+                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), (buffer, state) =>
                 {
-                    if ((uint)(source[i] - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(source[i]))
+                    char* source = (char*)state.StrToClean;
+                    int destIndex = 0;
+                    int length = state.Length;
+                    for (int i = 0; i < length; i++)
                     {
-                        buffer[destIndex++] = source[i];
+                        if ((uint)(source[i] - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(source[i]))
+                        {
+                            buffer[destIndex++] = source[i];
+                        }
                     }
-                }
-                Debug.Assert(buffer.Length == destIndex);
-            });
-        }
-
-        internal static unsafe string StripBidiControlCharacters(string strToClean)
-        {
-            fixed (char* strPointer = strToClean)
-            {
-                return StripBidiControlCharacters(strPointer, strToClean.Length, strToClean);
+                    Debug.Assert(buffer.Length == destIndex);
+                });
             }
         }
     }
