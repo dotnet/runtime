@@ -92,7 +92,8 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20486")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34786", TestPlatforms.AnyUnix)]
+        [Fact]
         public void LoadXml()
         {
             const string pValue = "oDZlcdJA1Kf6UeNEIZqm4KDqA6zpX7CmEtAGWi9pgnBhWOUDVEfhswfsvTLR5BCbKfE6KoHvt5Hh8D1RcAko//iZkLZ+gds9y/5Oxape8tu3TUi1BnNPWu8ieXjMtdnpyudKFsCymssJked1rBeRePG23HTVwOV1DpopjRkjBEU=";
