@@ -43,9 +43,9 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
-    - ${{ if eq(variables.runtimeFlavorName, 'Mono')}}:
-      - script: "echo Hello"
-        displayName: "Test of mono"
+    - script: "echo Hello"
+      displayName: "Test of mono"
+      condition: and(succeeded(), eq(variables['runtimeFlavorName'], 'Mono'))
 
     # Optionally download live-built libraries
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
