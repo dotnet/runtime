@@ -65,6 +65,7 @@ jobs:
   - name: SkipTests
     value: ${{ or(
       not(in(parameters.archType, 'x64', 'x86')),
+      in(parameters.osGroup, 'iOS', 'tvOS', 'Android'),
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
 
