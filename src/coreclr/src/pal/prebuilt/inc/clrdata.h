@@ -2,12 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0603 */
+ /* File created by MIDL compiler version 8.01.0622 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/ssd/runtime/src/coreclr/src/inc/clrdata.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -23,7 +31,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -58,6 +66,13 @@ typedef interface ICLRDataTarget2 ICLRDataTarget2;
 typedef interface ICLRDataTarget3 ICLRDataTarget3;
 
 #endif 	/* __ICLRDataTarget3_FWD_DEFINED__ */
+
+
+#ifndef __ICLRRuntimeLocator_FWD_DEFINED__
+#define __ICLRRuntimeLocator_FWD_DEFINED__
+typedef interface ICLRRuntimeLocator ICLRRuntimeLocator;
+
+#endif 	/* __ICLRRuntimeLocator_FWD_DEFINED__ */
 
 
 #ifndef __ICLRMetadataLocator_FWD_DEFINED__
@@ -761,6 +776,86 @@ EXTERN_C const IID IID_ICLRDataTarget3;
 #endif 	/* __ICLRDataTarget3_INTERFACE_DEFINED__ */
 
 
+#ifndef __ICLRRuntimeLocator_INTERFACE_DEFINED__
+#define __ICLRRuntimeLocator_INTERFACE_DEFINED__
+
+/* interface ICLRRuntimeLocator */
+/* [unique][uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ICLRRuntimeLocator;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("b760bf44-9377-4597-8be7-58083bdc5146")
+    ICLRRuntimeLocator : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetRuntimeBase( 
+            /* [out] */ CLRDATA_ADDRESS *baseAddress) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICLRRuntimeLocatorVtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICLRRuntimeLocator * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICLRRuntimeLocator * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICLRRuntimeLocator * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetRuntimeBase )( 
+            ICLRRuntimeLocator * This,
+            /* [out] */ CLRDATA_ADDRESS *baseAddress);
+        
+        END_INTERFACE
+    } ICLRRuntimeLocatorVtbl;
+
+    interface ICLRRuntimeLocator
+    {
+        CONST_VTBL struct ICLRRuntimeLocatorVtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICLRRuntimeLocator_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICLRRuntimeLocator_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICLRRuntimeLocator_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICLRRuntimeLocator_GetRuntimeBase(This,baseAddress)	\
+    ( (This)->lpVtbl -> GetRuntimeBase(This,baseAddress) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICLRRuntimeLocator_INTERFACE_DEFINED__ */
+
+
 #ifndef __ICLRMetadataLocator_INTERFACE_DEFINED__
 #define __ICLRMetadataLocator_INTERFACE_DEFINED__
 
@@ -1032,7 +1127,7 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegionsCallback2;
 #endif 	/* __ICLRDataEnumMemoryRegionsCallback2_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_clrdata_0000_0006 */
+/* interface __MIDL_itf_clrdata_0000_0007 */
 /* [local] */ 
 
 typedef 
@@ -1046,8 +1141,8 @@ enum CLRDataEnumMemoryFlags
 
 
 
-extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0006_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0006_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0007_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0007_v0_0_s_ifspec;
 
 #ifndef __ICLRDataEnumMemoryRegions_INTERFACE_DEFINED__
 #define __ICLRDataEnumMemoryRegions_INTERFACE_DEFINED__

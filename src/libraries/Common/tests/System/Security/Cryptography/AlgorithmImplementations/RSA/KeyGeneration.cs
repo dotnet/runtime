@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
         }
 
-        [Fact(Skip = "Takes approximately 1600 seconds to execute")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public static void GenerateMaxKey()
         {
             GenerateKey(rsa => GetMax(rsa.LegalKeySizes));

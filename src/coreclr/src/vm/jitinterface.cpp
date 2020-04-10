@@ -10768,16 +10768,6 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 #endif
 
-#if defined(ENABLE_FAST_GCPOLL_HELPER)
-        //always call this indirectly so that we can swap GC Poll helpers.
-        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_POLL_GC)
-        {
-            _ASSERTE(ppIndirection != NULL);
-            *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-            return NULL;
-        }
-#endif
-
         pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
 
 #ifdef _PREFAST_
@@ -13042,53 +13032,33 @@ void Module::LoadHelperTable()
         LOG((LF_JIT, LL_INFO1000000, "JIT helper %3d (%-40s: table @ %p, size 0x%x, entry %3d @ %p, pfnHelper %p)\n",
             iHelper, hlpFuncTable[iHelper].name, table, tableSize, iEntryNumber, curEntry, hlpFuncTable[iHelper].pfnHelper));
 
-#if defined(ENABLE_FAST_GCPOLL_HELPER)
-        // The fast GC poll helper works by calling indirect through a pointer that points to either
-        // JIT_PollGC or JIT_PollGC_Nop, based on whether we need to poll or not. The JIT_PollGC_Nop
-        // version is just a "ret". The pointer is stored in hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].
-        // See EnableJitGCPoll() and DisableJitGCPoll().
-        // In NGEN images, we generate a direct call to the helper table. Here, we replace that with
-        // an indirect jump through the pointer in hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].
-        if (iHelper == CORINFO_HELP_POLL_GC)
-        {
-            LOG((LF_JIT, LL_INFO1000000, "JIT helper CORINFO_HELP_POLL_GC (%d); emitting indirect jump to 0x%x\n",
-                CORINFO_HELP_POLL_GC, &hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].pfnHelper));
+        PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
 
-            emitJumpInd(curEntry, &hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].pfnHelper);
-            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
+        if (dwHelper & CORCOMPILE_HELPER_PTR)
+        {
+            //
+            // Indirection cell
+            //
+            *(TADDR *)curEntry = pfnHelper;
+            curEntry = curEntry + sizeof(TADDR);
         }
         else
-#endif // ENABLE_FAST_GCPOLL_HELPER
         {
-            PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
-
-            if (dwHelper & CORCOMPILE_HELPER_PTR)
-            {
-                //
-                // Indirection cell
-                //
-
-                *(TADDR *)curEntry = pfnHelper;
-
-                curEntry = curEntry + sizeof(TADDR);
-            }
-            else
-            {
-                //
-                // Jump thunk
-                //
+            //
+            // Jump thunk
+            //
 
 #if defined(TARGET_AMD64)
-                *curEntry = X86_INSTR_JMP_REL32;
-                *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
+            *curEntry = X86_INSTR_JMP_REL32;
+            *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
 #else // all other platforms
-                emitJump(curEntry, (LPVOID)pfnHelper);
-                _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
+            emitJump(curEntry, (LPVOID)pfnHelper);
+            _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
 #endif
 
-                curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
-            }
+            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
         }
+
 #ifdef LOGGING
         // Note that some table entries are sizeof(TADDR) in length, and some are HELPER_TABLE_ENTRY_LEN in length
         ++iEntryNumber;

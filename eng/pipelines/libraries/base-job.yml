@@ -63,6 +63,7 @@ jobs:
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
+        # force a value for OS when cross-building WebAssembly
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
@@ -105,10 +106,6 @@ jobs:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
-
-          # WebAssembly uses linux implementation detail
-          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.x64.Release'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

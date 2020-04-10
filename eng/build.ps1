@@ -11,28 +11,28 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [Parameter(Position=0)][string]$subset,
-  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
-  [ValidateSet("Debug","Release")][string]$librariesConfiguration,
+  [Parameter(Position=0)][string][Alias('s')]$subset,
+  [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
+  [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
+  Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
-  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
-  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
+  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
+  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
   Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   Write-Host "  -binaryLog                Output binary log (short: -bl)"
   Write-Host "  -help                     Print help and exit (short: -h)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
-  Write-Host "  -restore                Restore dependencies (short: -r)"
+  Write-Host "  -restore                Restore dependencies"
   Write-Host "  -build                  Build all source projects (short: -b)"
   Write-Host "  -rebuild                Rebuild all source projects"
   Write-Host "  -test                   Build and run tests (short: -t)"

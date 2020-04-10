@@ -49,17 +49,16 @@ jobs:
 
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         dependsOn:
-        - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
-          # Use full product dependency for non-coreclr and test builds
-          - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
-            - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+        # Use full product dependency for non-coreclr and test builds
+        - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
+          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - _subset: libs
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
+          - EMSDK_PATH: /usr/local/emscripten
         # for coreclr library builds (when not testing) build corelib as well.   
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, ''), ne(parameters.osGroup, 'WebAssembly')) }}:
           - _subset: clr.corelib+libs
@@ -79,23 +78,6 @@ jobs:
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
             displayName: Install Build Dependencies
-
-        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - script: |
-              EMSCRIPTEN_VERSION=1.38.47
-              git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_PATH)
-              cd $(EMSDK_PATH)
-              ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
-              ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
-            displayName: Install Emscripten
-
-          # Build CoreLib for WebAssembly
-          - script: $(_buildScript)
-                  -subset clr.corelib 
-                  -configuration Release -arch x64 -os Linux -ci
-                  /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/BuildCorelib.binlog
-                  $(_additionalBuildArguments)
-            displayName: Build System.Private.CoreLib 
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
