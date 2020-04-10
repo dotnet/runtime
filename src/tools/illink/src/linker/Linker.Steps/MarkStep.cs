@@ -3721,16 +3721,14 @@ namespace Mono.Linker.Steps {
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
-									} else if (value == NullValue.Instance) {
-										// Nothing to report. This is likely just a value on some unreachable branch.
-										reflectionContext.RecordHandledPattern ();
-									} else if (value is MethodParameterValue methodParameterValue) {
-										// This is the case where the value comes from a method parameter.
-										// TODO: If the parameter is annotated, we're good. If it's not annotated, we shold warn.
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
 									} else {
-										// Not known where the value is coming from
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
+										// Otherwise fall back to the bitfield requirements
+										var requiredMemberKinds = ctorParameterCount == 0
+											? DynamicallyAccessedMemberKinds.DefaultConstructor
+											: ((bindingFlags & BindingFlags.NonPublic) == 0)
+												? DynamicallyAccessedMemberKinds.PublicConstructors
+												: DynamicallyAccessedMemberKinds.Constructors;
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
@@ -3764,22 +3762,20 @@ namespace Mono.Linker.Steps {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
 												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags);
-											} else if (stringParam is NullValue) {
-												reflectionContext.RecordHandledPattern ();
-											} else if (stringParam is MethodParameterValue) {
-												// TODO: Check if parameter is annotated.
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 											} else {
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+												// Otherwise fall back to the bitfield requirements
+												var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
+														? DynamicallyAccessedMemberKinds.PublicMethods
+														: DynamicallyAccessedMemberKinds.Methods;
+												RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 											}
 										}
-									} else if (value == NullValue.Instance) {
-										reflectionContext.RecordHandledPattern ();
-									} else if (value is MethodParameterValue) {
-										// TODO: Check if parameter is annotated.
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
 									} else {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+										// Otherwise fall back to the bitfield requirements
+										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
+												? DynamicallyAccessedMemberKinds.PublicMethods
+												: DynamicallyAccessedMemberKinds.Methods;
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
