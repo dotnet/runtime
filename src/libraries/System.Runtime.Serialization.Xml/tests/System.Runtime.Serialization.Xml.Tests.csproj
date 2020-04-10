@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTypes.RuntimeOnly.cs" />
