@@ -1220,111 +1220,75 @@ namespace System.Globalization
         /// The following IndexOf overload is mainly used by String.Replace. This overload assumes the parameters are already validated
         /// and the caller is passing a valid matchLengthPtr pointer.
         /// </summary>
-        internal unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options, int* matchLengthPtr, bool fromBeginning = true)
+        internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
-            Debug.Assert(startIndex >= 0);
+            Debug.Assert(matchLengthPtr != null);
+            *matchLengthPtr = 0;
 
-            if (matchLengthPtr != null)
+            if ((options & ValidIndexMaskOffFlags) == 0)
             {
-                *matchLengthPtr = 0;
-            }
+                // Common case: caller is attempting to perform a linguistic search.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
 
-            if (value.Length == 0)
-            {
-                return startIndex;
-            }
-
-            if (startIndex >= source.Length)
-            {
-                return -1;
-            }
-
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                int res;
-                if (fromBeginning)
+                if (!GlobalizationMode.Invariant)
                 {
-                    res = IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
-                }
-                else
-                {
-                    res = LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
-                }
-
-                if (res >= 0 && matchLengthPtr != null)
-                {
-                    *matchLengthPtr = value.Length;
-                }
-                return res;
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                bool ignoreCase = (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0;
-                int res;
-
-                if (fromBeginning)
-                {
-                    res = IndexOfOrdinal(source, value, startIndex, count, ignoreCase);
-                }
-                else
-                {
-                    res = LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase);
-                }
-
-                if (res >= 0 && matchLengthPtr != null)
-                {
-                    *matchLengthPtr = value.Length;
-                }
-                return res;
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                int retValue;
-
-                if (fromBeginning)
-                {
-                    retValue = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref source.GetRawStringData(), startIndex),
-                        count,
-                        ref value.GetRawStringData(),
-                        value.Length);
-                }
-                else
-                {
-                    retValue = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref source.GetRawStringData(), startIndex),
-                        count,
-                        ref value.GetRawStringData(),
-                        value.Length);
-                }
-
-                if (retValue >= 0)
-                {
-                    retValue += startIndex;
-                    if (matchLengthPtr != null)
+                    if (value.IsEmpty)
                     {
-                        *matchLengthPtr = value.Length;
+                        // empty target substring trivially occurs at beginning / end of search space
+                        return (fromBeginning) ? 0 : source.Length;
+                    }
+                    else
+                    {
+                        return IndexOfCore(source, value, options, matchLengthPtr, fromBeginning);
                     }
                 }
-
-                return retValue;
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
             }
             else
             {
-                if (fromBeginning)
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
                 {
-                    // Call the string-based overload, as it special-cases IsFastSort as a perf optimization.
-                    return IndexOfCore(source, value, startIndex, count, options, matchLengthPtr);
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
                 }
                 else
                 {
-                    return IndexOfCore(source.AsSpan(startIndex, count), value, options, matchLengthPtr, fromBeginning: false);
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
                 }
             }
+
+        ReturnOrdinal:
+            int retVal = (fromBeginning) ? source.IndexOf(value) : source.LastIndexOf(value);
+            goto OrdinalReturn;
+
+        ReturnOrdinalIgnoreCase:
+            retVal = IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning);
+            goto OrdinalReturn;
+
+        OrdinalReturn:
+            // Both Ordinal and OrdinalIgnoreCase match by individual code points in a non-linguistic manner.
+            // Non-BMP code points will never match BMP code points, so given UTF-16 inputs the match length
+            // will always be equivalent to the target string length.
+
+            if (retVal >= 0)
+            {
+                *matchLengthPtr = value.Length;
+            }
+            return retVal;
         }
 
         internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
