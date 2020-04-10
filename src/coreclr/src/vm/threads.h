@@ -1656,9 +1656,12 @@ private:
     EEThreadId m_Creater;
 #endif
 
-    // After we suspend a thread, we may need to call EEJitManager::JitCodeToMethodInfo
-    // or StressLog which may waits on a spinlock.  It is unsafe to suspend a thread while it
-    // is in this state.
+    // A thread may forbid its own suspension. For example when holding certain locks.
+    // The state is a counter to allow nested forbids.
+    // The state is only modified by the current thread.
+    // Other threads may read this state, but must mind the races.
+    // It must be assumed that a running thread (or one that may start running) may change this state at any time.
+    // One exception: SuspendThread can read this "reliably" from other threads by temporarily suspending them, reading, and releasing if != 0.
     Volatile<LONG> m_dwForbidSuspendThread;
 
 public:
@@ -1684,7 +1687,8 @@ public:
             STRESS_LOG2(LF_SYNC, LL_INFO100000, "Set forbid suspend [%d] for thread %p.\n", pThread->m_dwForbidSuspendThread.Load(), pThread);
             }
 #endif
-            FastInterlockIncrement(&pThread->m_dwForbidSuspendThread);
+            // modified only by the current thread, so ++ is ok
+            pThread->m_dwForbidSuspendThread.RawValue()++;
         }
 #endif //!DACCESS_COMPILE
     }
@@ -1703,8 +1707,10 @@ public:
         Thread * pThread = GetThreadNULLOk();
         if (pThread)
         {
-            _ASSERTE (pThread->m_dwForbidSuspendThread != (LONG)0);
-            FastInterlockDecrement(&pThread->m_dwForbidSuspendThread);
+            _ASSERTE (pThread->m_dwForbidSuspendThread >= (LONG)0);
+
+            // modified only by the current thread, so -- is ok
+            pThread->m_dwForbidSuspendThread.RawValue()--;
 #ifdef _DEBUG
             {
                 //DEBUG_ONLY;
@@ -1715,9 +1721,11 @@ public:
 #endif //!DACCESS_COMPILE
     }
 
+    // Returns the state of m_dwForbidSuspendThread as it was at the time of the call.
+    // It may asynchronously change if there are no additional guarantees (i.e. it is the current thread or the thread is suspended)
     bool IsInForbidSuspendRegion()
     {
-        return m_dwForbidSuspendThread != (LONG)0;
+        return m_dwForbidSuspendThread.LoadWithoutBarrier() != (LONG)0;
     }
 
     typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;

@@ -191,7 +191,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
     }
 #endif
 
-    Volatile<HANDLE> hThread;
+    HANDLE hThread;
     SuspendThreadResult str = (SuspendThreadResult) -1;
     DWORD dwSuspendCount = 0;
     DWORD tries = 1;
@@ -237,13 +237,19 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
         {
             // We do not want to suspend the target thread while it is holding the log lock.
             // By acquiring the lock ourselves, we know that this is not the case.
+            // Note: LogLock is a noop when not logging, do not assume the rest is running under a lock.
             LogLockHolder.Acquire();
 
             // It is important to avoid two threads suspending each other.
             // Before a thread suspends another, it increments its own m_dwForbidSuspendThread count first,
             // then it checks the target thread's m_dwForbidSuspendThread.
             ForbidSuspendThreadHolder forbidSuspend;
-            if ((m_dwForbidSuspendThread != 0))
+
+            // We need a total order between write/read of our/their m_dwForbidSuspendThread here, thus a full fence.
+            // Note - this is just to prevent mutual suspension of two threads executing this same sequence.
+            // The other thread may still set its m_dwForbidSuspendThread for other reasons asynchronously.
+            // We will check on that once the thread is suspended.
+            if (InterlockedOr(&m_dwForbidSuspendThread, 0))
             {
 #if defined(_DEBUG)
                 // Enable the diagnostic ::SuspendThread() if the
@@ -273,11 +279,13 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                 }
             }
         }
+
         if ((int)dwSuspendCount >= 0)
         {
             if (hThread == GetThreadHandle())
             {
-                if (m_dwForbidSuspendThread != 0)
+                // read m_dwForbidSuspendThread again after suspension, it may have changed.
+                if (m_dwForbidSuspendThread.LoadWithoutBarrier() != 0)
                 {
 #if defined(_DEBUG)
                     // Log diagnostic below 8 times during the i64TimestampTicksMax period
