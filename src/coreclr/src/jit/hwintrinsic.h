@@ -148,10 +148,10 @@ struct HWIntrinsicInfo
     static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     static int lookupImmUpperBound(NamedIntrinsic id);
+    static bool isInImmRange(NamedIntrinsic id, int ival);
 #endif
 
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
-    static bool isInImmRange(NamedIntrinsic id, int ival);
     static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 

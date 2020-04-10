@@ -115,22 +115,6 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 }
 
 //------------------------------------------------------------------------
-// isInImmRange: Check if ival is valid for the intrinsic
-//
-// Arguments:
-//    id   -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//    ival -- the imm value to be checked
-//
-// Return Value:
-//     true if ival is valid for the intrinsic
-//
-bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
-{
-    assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
-    return ival <= lookupImmUpperBound(id) && ival >= 0;
-}
-
-//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
