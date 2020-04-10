@@ -40,7 +40,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override void Serialize(QuicWriter writer)
         {
-            ImplFrame.Write(writer, new ImplFrame((ulong) ErrorCode, IsQuicError, ErrorFrameType, ReasonPhrase));
+            ImplFrame.Write(writer, new ImplFrame((long) ErrorCode, IsQuicError, ErrorFrameType, ReasonPhrase));
         }
 
         internal override bool Deserialize(QuicReader reader)

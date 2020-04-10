@@ -14,12 +14,12 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Id of the data stream.
         /// </summary>
-        internal ulong StreamId;
+        internal long StreamId;
 
         /// <summary>
         ///     Byte offset of the carried data in the stream.
         /// </summary>
-        internal ulong Offset;
+        internal long Offset;
 
         /// <summary>
         ///     Flag indicating that this frame marks the end of the stream.

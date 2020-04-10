@@ -33,9 +33,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// <summary>
         ///     The length of the rest of the packet, including packet number and integrity tag (for encrypted packets).
         /// </summary>
-        internal readonly ulong Length;
+        internal readonly long Length;
 
-        internal SharedPacketData(byte firstByte, ReadOnlySpan<byte> token, ulong length)
+        internal SharedPacketData(byte firstByte, ReadOnlySpan<byte> token, long length)
         {
             this.firstByte = firstByte;
             Token = token;
@@ -48,7 +48,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
             ReadOnlySpan<byte> token = ReadOnlySpan<byte>.Empty;
             if (type == PacketType.Initial && !reader.TryReadLengthPrefixedSpan(out token) ||
-                !reader.TryReadVarInt(out ulong length))
+                !reader.TryReadVarInt(out long length))
             {
                 data = default;
                 return false;

@@ -9,7 +9,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class InboundBuffer : BufferBase
     {
-        public InboundBuffer(ulong maxData)
+        public InboundBuffer(long maxData)
         {
             UpdateMaxData(maxData);
         }
@@ -22,17 +22,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Total number of bytes delivered.
         /// </summary>
-        internal ulong BytesRead { get; private set; }
+        internal long BytesRead { get; private set; }
 
         /// <summary>
         ///     Final size of the stream. Null if final size is not known yet.
         /// </summary>
-        internal ulong? FinalSize { get; private set; }
+        internal long? FinalSize { get; private set; }
 
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
-        internal ulong BytesAvailable => _undelivered.Count > 0 && BytesRead == _undelivered.GetMin()
+        internal long BytesAvailable => _undelivered.Count > 0 && BytesRead == _undelivered.GetMin()
             ? _undelivered[0].Length
             : 0;
 
@@ -41,10 +41,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         /// <param name="offset">Offset on the stream of the received data.</param>
         /// <param name="data">The data to be received.</param>
-        internal void Receive(ulong offset, ReadOnlySpan<byte> data)
+        internal void Receive(long offset, ReadOnlySpan<byte> data)
         {
-            ulong deliverable = BytesRead + BytesAvailable;
-            if (offset + (ulong)data.Length < deliverable)
+            long deliverable = BytesRead + BytesAvailable;
+            if (offset + data.Length < deliverable)
             {
                 return; // entirely duplicate
             }
@@ -61,13 +61,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (_chunks.Count == 0 || _chunks[^1].StreamOffset + _chunks[^1].Length <= offset)
             {
                 EnqueueAtEnd(offset, data);
-                _undelivered.Add(offset, offset + (ulong)data.Length - 1);
+                _undelivered.Add(offset, offset + data.Length - 1);
                 return;
             }
 
             // out of order delivery, use ranges to remove duplicate data
             RangeSet toDeliver = new RangeSet();
-            toDeliver.Add(offset, offset + (ulong) data.Length - 1);
+            toDeliver.Add(offset, offset + data.Length - 1);
             foreach (var range in _undelivered)
             {
                 toDeliver.Remove(range.Start, range.End);
@@ -83,7 +83,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 _chunks.Insert(index, new StreamChunk(range.Start, buffer, range.Length));
             }
 
-            _undelivered.Add(offset, offset + (ulong)data.Length - 1);
+            _undelivered.Add(offset, offset + data.Length - 1);
         }
 
         /// <summary>
@@ -92,13 +92,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination"></param>
         internal int Deliver(Span<byte> destination)
         {
-            if (BytesAvailable < (ulong)destination.Length)
+            if (BytesAvailable < destination.Length)
             {
                 destination = destination.Slice(0, (int) BytesAvailable);
             }
 
             int delivered = destination.Length;
-            _undelivered.Remove(BytesRead, (ulong) destination.Length);
+            _undelivered.Remove(BytesRead, destination.Length);
 
             int index = 0;
             while (destination.Length > 0)
@@ -110,7 +110,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
                 destination = destination.Slice(inChunkLength);
 
-                BytesRead += (ulong) inChunkLength;
+                BytesRead += inChunkLength;
                 index++;
             }
 
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         {
             if (BytesAvailable == 0) return;
 
-            ulong deliverable = _undelivered[0].End;
+            long deliverable = _undelivered[0].End;
             int index = 0;
             while (_chunks[index].StreamOffset < deliverable)
             {
@@ -142,7 +142,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Drops buffers containing data lesser than given offset.
         /// </summary>
         /// <param name="offset">Minimum offset to be kept.</param>
-        private void DiscardDataUntil(ulong offset)
+        private void DiscardDataUntil(long offset)
         {
             int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > offset);
             if (toRemove < 0)
@@ -160,7 +160,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Skips given amount of data. Useful if the data was delivered by different means (without buffering).
         /// </summary>
         /// <param name="length">Number of bytes from the payload to be skipped.</param>
-        public void Skip(ulong length)
+        public void Skip(long length)
         {
             _undelivered.Remove(BytesRead, BytesRead + length - 1);
             BytesRead += length;

@@ -27,7 +27,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal List<FrameBase> Frames { get; } = new List<FrameBase>();
 
-        internal ulong Length;
+        internal long Length;
 
         protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames)}";
 

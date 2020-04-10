@@ -14,7 +14,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Maximum amount of data that can be sent on the entire connection in bytes.
         /// </summary>
-        internal ulong MaximumData;
+        internal long MaximumData;
 
         internal override FrameType FrameType => FrameType.MaxData;
 

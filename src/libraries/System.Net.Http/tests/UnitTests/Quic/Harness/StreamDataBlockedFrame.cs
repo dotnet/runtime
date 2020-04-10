@@ -14,12 +14,12 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Id of the blocked stream.
         /// </summary>
-        internal ulong StreamId;
+        internal long StreamId;
 
         /// <summary>
         ///     Offset in the stream at which the blocking occured.
         /// </summary>
-        internal ulong StreamDataLimit;
+        internal long StreamDataLimit;
 
         internal override FrameType FrameType => FrameType.StreamDataBlocked;
 

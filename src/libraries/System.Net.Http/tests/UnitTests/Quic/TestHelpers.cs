@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests
         {
             var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();
             Assert.True(frame != null, $"Packet does not contain {typeof(TFrame).Name}s.");
-            return frame;
+            return frame!;
         }
 
         public static void ShouldContainConnectionClose(this OneRttPacket packet, TransportErrorCode error,

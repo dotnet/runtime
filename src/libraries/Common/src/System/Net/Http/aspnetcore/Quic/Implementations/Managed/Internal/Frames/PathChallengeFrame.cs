@@ -10,14 +10,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Arbitrary data to be repeated by the peer.
         /// </summary>
-        internal readonly ulong Data;
+        internal readonly long Data;
 
         /// <summary>
         ///     True if the frame is a challenge frame, otherwise it is a response frame.
         /// </summary>
         internal readonly bool IsChallenge;
 
-        internal PathChallengeFrame(ulong data, bool isChallenge)
+        internal PathChallengeFrame(long data, bool isChallenge)
         {
             Data = data;
             IsChallenge = isChallenge;
@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal int GetSerializedLength()
         {
             return 1 +
-                   sizeof(ulong);
+                   sizeof(long);
         }
 
         internal static bool Read(QuicReader reader, out PathChallengeFrame frame)
@@ -34,7 +34,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.PathChallenge || type == FrameType.PathResponse);
 
-            if (!reader.TryReadUInt64(out ulong data))
+            if (!reader.TryReadUInt64(out long data))
             {
                 frame = default;
                 return false;

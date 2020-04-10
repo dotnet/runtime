@@ -18,7 +18,7 @@ namespace System.Net.Quic.Tests.Harness
         internal override bool Deserialize(QuicReader reader)
         {
             Length = 0;
-            while (reader.BytesLeft > 0 && reader.PeekUInt8() == 0)
+            while (reader.BytesLeft > 0 && reader.Peek() == 0)
             {
                 Length++;
                 reader.ReadUInt8();

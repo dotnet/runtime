@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _algorithm = CryptoSealAlgorithm.Create(alg, Key, HeaderKey);
         }
 
-        public void EncryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, ulong packetNumber)
+        public void EncryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, long packetNumber)
         {
             int pnLength = HeaderHelpers.GetPacketNumberLength(buffer[0]);
 
@@ -68,7 +68,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             }
         }
 
-        public bool DecryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, ulong largestAckedPn)
+        public bool DecryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, long largestAckedPn)
         {
             // remove header protection
             Span<byte> protectionMask = stackalloc byte[5];
@@ -81,7 +81,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             var header = buffer.Slice(0, pnOffset + pnLength);
 
             // read the actual packet number
-            ulong packetNumber = 0;
+            long packetNumber = 0;
             for (int i = 0; i < pnLength; ++i)
             {
                 packetNumber = (packetNumber << 8) | buffer[pnOffset + i];
@@ -124,7 +124,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             return pnLength;
         }
 
-        private static void MakeNonce(ReadOnlySpan<byte> iv, ulong packetNumber, Span<byte> nonce)
+        private static void MakeNonce(ReadOnlySpan<byte> iv, long packetNumber, Span<byte> nonce)
         {
             Debug.Assert(iv.Length == 12);
             Debug.Assert(nonce.Length == 12);

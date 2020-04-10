@@ -13,8 +13,8 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(0);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(0ul, _rangeSet.GetMax());
-            Assert.Equal(0ul, _rangeSet.GetMin());
+            Assert.Equal(0, _rangeSet.GetMax());
+            Assert.Equal(0, _rangeSet.GetMin());
         }
 
         [Fact]
@@ -25,15 +25,15 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(6);
 
             Assert.Equal(3, _rangeSet.Count);
-            Assert.Equal(0u, _rangeSet.GetMin());
-            Assert.Equal(6u, _rangeSet.GetMax());
+            Assert.Equal(0, _rangeSet.GetMin());
+            Assert.Equal(6, _rangeSet.GetMax());
         }
 
         [Theory]
         [InlineData(6, 7)]
         [InlineData(6, 6)]
         [InlineData(6, 5)]
-        public void InsertContiguous(ulong firstEnd, ulong secondStart)
+        public void InsertContiguous(long firstEnd, long secondStart)
         {
             Assert.True(firstEnd + 1 >= secondStart, "invalid values passed to test");
 
@@ -41,14 +41,14 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(secondStart, 10);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(10ul, _rangeSet.GetMax());
-            Assert.Equal(1ul, _rangeSet.GetMin());
+            Assert.Equal(10, _rangeSet.GetMax());
+            Assert.Equal(1, _rangeSet.GetMin());
         }
 
         [Theory]
         [InlineData(2, 4)]
         [InlineData(4, 2)]
-        public void InsertNonContiguous(ulong first, ulong second)
+        public void InsertNonContiguous(long first, long second)
         {
             _rangeSet.Add(first);
             _rangeSet.Add(second);
@@ -65,8 +65,8 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(0, 5);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(0u, _rangeSet.GetMin());
-            Assert.Equal(5u, _rangeSet.GetMax());
+            Assert.Equal(0, _rangeSet.GetMin());
+            Assert.Equal(5, _rangeSet.GetMax());
         }
 
         [Fact]
@@ -90,7 +90,7 @@ namespace System.Net.Quic.Tests
         [InlineData(2, 4)]
         [InlineData(4, 4)]
         [InlineData(4, 6)]
-        public void MergeRanges(ulong start, ulong end)
+        public void MergeRanges(long start, long end)
         {
             _rangeSet.Add(1, 3);
             _rangeSet.Add(5, 6);
@@ -98,8 +98,8 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(start, end);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(1u, _rangeSet.GetMin());
-            Assert.Equal(6u, _rangeSet.GetMax());
+            Assert.Equal(1, _rangeSet.GetMin());
+            Assert.Equal(6, _rangeSet.GetMax());
         }
 
         [Fact]
@@ -127,8 +127,8 @@ namespace System.Net.Quic.Tests
             _rangeSet.Remove(19, 22);
 
             Assert.Equal(2, _rangeSet.Count);
-            Assert.Equal(1u, _rangeSet.GetMin());
-            Assert.Equal(15u, _rangeSet.GetMax());
+            Assert.Equal(1, _rangeSet.GetMin());
+            Assert.Equal(15, _rangeSet.GetMax());
         }
 
         [Fact]
@@ -144,15 +144,15 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(1, 4)]
         [InlineData(11, 15)]
-        public void RemoveNonExistingAfter(ulong start, ulong end)
+        public void RemoveNonExistingAfter(long start, long end)
         {
             _rangeSet.Add(5, 10);
 
             _rangeSet.Remove(start, end);
 
             var range = Assert.Single(_rangeSet);
-            Assert.Equal(5u, range.Start);
-            Assert.Equal(10u, range.End);
+            Assert.Equal(5, range.Start);
+            Assert.Equal(10, range.End);
         }
     }
 }

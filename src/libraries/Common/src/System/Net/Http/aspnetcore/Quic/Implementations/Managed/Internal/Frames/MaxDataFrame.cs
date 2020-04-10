@@ -11,9 +11,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Maximum amount of data that can be sent on the entire connection in bytes.
         /// </summary>
-        internal readonly ulong MaximumData;
+        internal readonly long MaximumData;
 
-        internal MaxDataFrame(ulong maximumData)
+        internal MaxDataFrame(long maximumData)
         {
             MaximumData = maximumData;
         }
@@ -29,7 +29,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.MaxData);
 
-            if (!reader.TryReadVarInt(out ulong maxData))
+            if (!reader.TryReadVarInt(out long maxData))
             {
                 frame = default;
                 return false;

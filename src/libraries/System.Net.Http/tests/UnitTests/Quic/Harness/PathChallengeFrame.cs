@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Arbitrary data to be repeated by the peer.
         /// </summary>
-        internal ulong Data;
+        internal long Data;
 
         /// <summary>
         ///     True if the frame is a challenge frame, otherwise it is a response frame.

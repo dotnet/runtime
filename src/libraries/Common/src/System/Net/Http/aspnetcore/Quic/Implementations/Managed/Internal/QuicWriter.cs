@@ -41,12 +41,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Advance(sizeof(byte));
         }
 
-        internal void WriteUInt16(ushort value)
+        internal void WriteInt16(short value)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(GetWritableSpan(sizeof(ushort)), value);
+            BinaryPrimitives.WriteInt16BigEndian(GetWritableSpan(sizeof(short)), value);
         }
 
-        internal void WriteUInt24(uint value)
+        internal void WriteInt24(int value)
         {
             var destination = GetWritableSpan(3);
             destination[0] = (byte)(value >> 16);
@@ -54,17 +54,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             destination[2] = (byte)(value);
         }
 
-        internal void WriteUInt32(uint value)
+        internal void WriteInt32(int value)
         {
-            BinaryPrimitives.WriteUInt32BigEndian(GetWritableSpan(sizeof(uint)), value);
+            BinaryPrimitives.WriteInt32BigEndian(GetWritableSpan(sizeof(int)), value);
         }
 
-        internal void WriteUInt64(ulong value)
+        internal void WriteUInt64(long value)
         {
-            BinaryPrimitives.WriteUInt64BigEndian(GetWritableSpan(sizeof(ulong)), value);
+            BinaryPrimitives.WriteInt64BigEndian(GetWritableSpan(sizeof(long)), value);
         }
 
-        internal void WriteVarInt(ulong value)
+        internal void WriteVarInt(long value)
         {
             QuicPrimitives.WriteVarInt(GetWritableSpan(1 << QuicPrimitives.GetVarIntLengthLogarithm(value)), value);
         }

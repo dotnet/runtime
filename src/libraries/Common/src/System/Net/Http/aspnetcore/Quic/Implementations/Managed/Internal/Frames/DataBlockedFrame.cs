@@ -10,9 +10,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Connection-level limit at which the blocking occured.
         /// </summary>
-        internal readonly ulong DataLimit;
+        internal readonly long DataLimit;
 
-        public DataBlockedFrame(ulong dataLimit)
+        public DataBlockedFrame(long dataLimit)
         {
             DataLimit = dataLimit;
         }
@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.DataBlocked);
 
-            if (!reader.TryReadVarInt(out ulong limit))
+            if (!reader.TryReadVarInt(out long limit))
             {
                 frame = default;
                 return false;

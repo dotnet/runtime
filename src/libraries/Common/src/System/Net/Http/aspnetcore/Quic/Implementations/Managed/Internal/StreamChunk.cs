@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Offset in the stream where the data start.
         /// </summary>
-        internal readonly ulong StreamOffset;
+        internal readonly long StreamOffset;
 
         /// <summary>
         ///     Buffer holding the data, only first <see cref="Length"/> bytes are used.
@@ -26,9 +26,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Length of the chunk and number of bytes actually stored in the <see cref="Buffer"/>.
         /// </summary>
-        internal readonly ulong Length;
+        internal readonly long Length;
 
-        public StreamChunk(ulong streamOffset, byte[] buffer, ulong length)
+        public StreamChunk(long streamOffset, byte[] buffer, long length)
         {
             StreamOffset = streamOffset;
             Buffer = buffer;

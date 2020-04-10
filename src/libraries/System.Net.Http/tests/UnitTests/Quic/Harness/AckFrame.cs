@@ -14,15 +14,15 @@ namespace System.Net.Quic.Tests.Harness
     {
         internal struct AckRange
         {
-            internal ulong Gap;
-            internal ulong Acked;
+            internal long Gap;
+            internal long Acked;
         }
 
         /// <summary>
         ///     Largest packet number being acknowledged; this is usually the largest packet number that was received
         ///     prior to generating the frame.
         /// </summary>
-        internal ulong LargestAcknowledged;
+        internal long LargestAcknowledged;
 
         /// <summary>
         ///     Time delta in microseconds between when this frame was sent and when the largest acknowledged packet, as
@@ -30,12 +30,12 @@ namespace System.Net.Quic.Tests.Harness
         ///     multiplying the value by 2 to the power of the <see cref="TransportParameters.AckDelayExponent" />
         ///     transport parameter set by the sender.
         /// </summary>
-        internal ulong AckDelay;
+        internal long AckDelay;
 
         /// <summary>
         ///     Number of contiguous packets preceding the <see cref="LargestAcknowledged" /> that are being acknowledged.
         /// </summary>
-        internal ulong FirstAckRange;
+        internal long FirstAckRange;
 
         /// <summary>
         ///     Additional ack ranges.
@@ -52,19 +52,19 @@ namespace System.Net.Quic.Tests.Harness
         ///     Total number of packets received with the ECT(0) codepoint in the packet number space of this frame. Contains valid
         ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal ulong Ect0Count;
+        internal long Ect0Count;
 
         /// <summary>
         ///     Total number of packets received with the ECT(1) codepoint in the packet number space of this frame.  Contains
         ///     valid number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal ulong Ect1Count;
+        internal long Ect1Count;
 
         /// <summary>
         ///     Total number of packets received with the CE codepoint in the packet number space of this frame.  Contains valid
         ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal ulong CeCount;
+        internal long CeCount;
 
         public override string ToString() =>
             $"{(HasEcnCounts ? nameof(FrameType.AckWithEcn) : nameof(FrameType.Ack))}[{GetRangesString()}]";
@@ -83,7 +83,7 @@ namespace System.Net.Quic.Tests.Harness
             foreach (var range in AckRanges)
             {
                 builder.Append(lastAcked - range.Gap - 2);
-                ulong nextLast = lastAcked - range.Gap - range.Acked - 2;
+                long nextLast = lastAcked - range.Gap - range.Acked - 2;
 
                 if (lastAcked != nextLast)
                 {
@@ -101,7 +101,7 @@ namespace System.Net.Quic.Tests.Harness
         internal override void Serialize(QuicWriter writer)
         {
             ImplFrame.Write(writer, new ImplFrame(
-                LargestAcknowledged, AckDelay, (ulong) AckRanges.Count, FirstAckRange, ReadOnlySpan<byte>.Empty, HasEcnCounts, Ect0Count, Ect1Count, CeCount
+                LargestAcknowledged, AckDelay, AckRanges.Count, FirstAckRange, ReadOnlySpan<byte>.Empty, HasEcnCounts, Ect0Count, Ect1Count, CeCount
                 ));
         }
 
@@ -119,8 +119,8 @@ namespace System.Net.Quic.Tests.Harness
             int read = 0;
             while (read < frame.AckRangesRaw.Length)
             {
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong gap);
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong ack);
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long ack);
                 AckRanges.Add(new AckRange{ Acked = ack, Gap = gap});
             }
 

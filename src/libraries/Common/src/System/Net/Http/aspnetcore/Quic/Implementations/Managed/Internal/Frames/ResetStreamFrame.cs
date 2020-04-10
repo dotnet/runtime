@@ -10,17 +10,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Stream ID of the stream being terminated.
         /// </summary>
-        internal readonly ulong StreamId;
+        internal readonly long StreamId;
 
         /// <summary>
         ///     Application-level error code indicating why the stream is being closed.
         /// </summary>
-        internal readonly ulong ApplicationErrorCode;
+        internal readonly long ApplicationErrorCode;
 
         /// <summary>
         ///     Final size of the stream reset by this frame in bytes.
         /// </summary>
-        internal readonly ulong FinalSize;
+        internal readonly long FinalSize;
 
         internal int GetSerializedLength()
         {
@@ -30,7 +30,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                    QuicPrimitives.GetVarIntLength(FinalSize);
         }
 
-        internal ResetStreamFrame(ulong streamId, ulong applicationErrorCode, ulong finalSize)
+        internal ResetStreamFrame(long streamId, long applicationErrorCode, long finalSize)
         {
             StreamId = streamId;
             ApplicationErrorCode = applicationErrorCode;
@@ -42,9 +42,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.ResetStream);
 
-            if (reader.TryReadVarInt(out ulong streamId) &&
-                reader.TryReadVarInt(out ulong error) &&
-                reader.TryReadVarInt(out ulong size))
+            if (reader.TryReadVarInt(out long streamId) &&
+                reader.TryReadVarInt(out long error) &&
+                reader.TryReadVarInt(out long size))
             {
                 frame = new ResetStreamFrame(streamId, error, size);
                 return true;

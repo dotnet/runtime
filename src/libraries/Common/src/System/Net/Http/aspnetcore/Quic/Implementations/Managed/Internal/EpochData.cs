@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Largest packet number received from the peer.
         /// </summary>
-        internal ulong LargestReceivedPacketNumber { get; set; }
+        internal long LargestReceivedPacketNumber { get; set; }
 
         /// <summary>
         ///     Timestamp when packet with <see cref="LargestReceivedPacketNumber"/> was received.
@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Number for the next packet to be send with.
         /// </summary>
-        internal ulong NextPacketNumber { get; set; }
+        internal long NextPacketNumber { get; set; }
 
         /// <summary>
         ///     Received packet numbers which an ack frame needs to be sent to the peer.
@@ -65,26 +65,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Outbound messages to be carried in CRYPTO frames.
         /// </summary>
-        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer(ulong.MaxValue);
+        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer(long.MaxValue);
 
         /// <summary>
         ///     Inbound messages from CRYPTO frames.
         /// </summary>
-        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(ulong.MaxValue);
+        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(long.MaxValue);
 
         /// <summary>
         ///     All sent packets, for which we are still awaiting acknowledgement.
         /// </summary>
-        internal SortedList<ulong, ManagedQuicConnection.SentPacket> PacketsInFlight { get; } = new SortedList<ulong, ManagedQuicConnection.SentPacket>();
+        internal SortedList<long, ManagedQuicConnection.SentPacket> PacketsInFlight { get; } = new SortedList<long, ManagedQuicConnection.SentPacket>();
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.
         /// </summary>
         /// <returns>Truncated packet number and it's length.</returns>
-        internal (uint truncatedPn, int pnLength) GetNextPacketNumber()
+        internal (int truncatedPn, int pnLength) GetNextPacketNumber()
         {
             int pnLength = QuicPrimitives.GetPacketNumberByteCount(LargestReceivedPacketNumber, NextPacketNumber);
-            return ((uint) NextPacketNumber, pnLength);
+            return ((int) NextPacketNumber, pnLength);
         }
     }
 }

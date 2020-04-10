@@ -11,7 +11,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         ///     Largest packet number being acknowledged; this is usually the largest packet number that was received
         ///     prior to generating the frame.
         /// </summary>
-        internal readonly ulong LargestAcknowledged;
+        internal readonly long LargestAcknowledged;
 
         /// <summary>
         ///     Time delta in microseconds between when this frame was sent and when the largest acknowledged packet, as
@@ -19,17 +19,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         ///     multiplying the value by 2 to the power of the <see cref="TransportParameters.AckDelayExponent" />
         ///     transport parameter set by the sender.
         /// </summary>
-        internal readonly ulong AckDelay;
+        internal readonly long AckDelay;
 
         /// <summary>
         ///     Number of ack range fields in the frame.
         /// </summary>
-        internal readonly ulong AckRangeCount;
+        internal readonly long AckRangeCount;
 
         /// <summary>
         ///     Number of contiguous packets preceding the <see cref="LargestAcknowledged" /> that are being acknowledged.
         /// </summary>
-        internal readonly ulong FirstAckRange;
+        internal readonly long FirstAckRange;
 
         /// <summary>
         ///     Span with data about additional ranges, each item has two varint fields: gap and range.
@@ -46,19 +46,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         ///     Total number of packets received with the ECT(0) codepoint in the packet number space of this frame. Contains valid
         ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal readonly ulong Ect0Count;
+        internal readonly long Ect0Count;
 
         /// <summary>
         ///     Total number of packets received with the ECT(1) codepoint in the packet number space of this frame.  Contains
         ///     valid number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal readonly ulong Ect1Count;
+        internal readonly long Ect1Count;
 
         /// <summary>
         ///     Total number of packets received with the CE codepoint in the packet number space of this frame.  Contains valid
         ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
-        internal readonly ulong CeCount;
+        internal readonly long CeCount;
 
         /// <summary>
         ///     Returns number of bytes needed to serialize this frame.
@@ -79,8 +79,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         }
 
-        internal AckFrame(ulong largestAcknowledged, ulong ackDelay, ulong ackRangeCount, ulong firstAckRange,
-            ReadOnlySpan<byte> ackRangesRaw, bool hasEcnCounts, ulong ect0Count, ulong ect1Count, ulong ceCount)
+        internal AckFrame(long largestAcknowledged, long ackDelay, long ackRangeCount, long firstAckRange,
+            ReadOnlySpan<byte> ackRangesRaw, bool hasEcnCounts, long ect0Count, long ect1Count, long ceCount)
         {
             LargestAcknowledged = largestAcknowledged;
             AckDelay = ackDelay;
@@ -98,14 +98,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.Ack || type == FrameType.AckWithEcn);
 
-            ulong ect0 = 0;
-            ulong ect1 = 0;
-            ulong ce = 0;
+            long ect0 = 0;
+            long ect1 = 0;
+            long ce = 0;
 
-            if (!reader.TryReadVarInt(out ulong largest) ||
-                !reader.TryReadVarInt(out ulong ackDelay) ||
-                !reader.TryReadVarInt(out ulong rangeCount) ||
-                !reader.TryReadVarInt(out ulong firstRange))
+            if (!reader.TryReadVarInt(out long largest) ||
+                !reader.TryReadVarInt(out long ackDelay) ||
+                !reader.TryReadVarInt(out long rangeCount) ||
+                !reader.TryReadVarInt(out long firstRange))
             {
                 goto fail;
             }

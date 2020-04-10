@@ -11,7 +11,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         ///     Count of the cumulative number of streams of the corresponding type that can be opened over the lifetime of the
         ///     connection.
         /// </summary>
-        internal readonly ulong MaximumStreams;
+        internal readonly long MaximumStreams;
 
         /// <summary>
         ///     True if <see cref="MaximumStreams" /> is intended for bidirectional streams. Otherwise the count is meant as
@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly bool Bidirectional;
 
-        public MaxStreamsFrame(ulong maximumStreams, bool bidirectional)
+        public MaxStreamsFrame(long maximumStreams, bool bidirectional)
         {
             MaximumStreams = maximumStreams;
             Bidirectional = bidirectional;
@@ -36,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.MaxStreamsBidirectional || type == FrameType.MaxStreamsUnidirectional);
 
-            if (!reader.TryReadVarInt(out ulong maxStreams) ||
+            if (!reader.TryReadVarInt(out long maxStreams) ||
                 maxStreams > StreamHelpers.MaxStreamIndex)
             {
                 frame = default;

@@ -2,10 +2,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal readonly struct PacketNumberRange
     {
-        internal readonly ulong Start;
-        internal readonly ulong End;
+        internal readonly long Start;
+        internal readonly long End;
 
-        public PacketNumberRange(ulong start, ulong end)
+        public PacketNumberRange(long start, long end)
         {
             Start = start;
             End = end;

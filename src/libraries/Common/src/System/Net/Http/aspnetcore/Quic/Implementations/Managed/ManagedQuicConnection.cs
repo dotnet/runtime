@@ -301,9 +301,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             // TODO-RZ: read in a better way
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
-            reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
+            reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
 
-            ulong packetNumber = QuicPrimitives.DecodePacketNumber(epoch.LargestReceivedPacketNumber,
+            long packetNumber = QuicPrimitives.DecodePacketNumber(epoch.LargestReceivedPacketNumber,
                 truncatedPn, pnLength);
 
             // if (epoch.ReceivedPacketNumbers.Contains(packetNumber))
@@ -349,7 +349,7 @@ namespace System.Net.Quic.Implementations.Managed
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
-                        headerData.Length > (ulong)reader.BytesLeft)
+                        headerData.Length > reader.BytesLeft)
                     {
                         return ProcessPacketResult.DropPacket;
                     }
@@ -373,7 +373,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ReceiveOne(QuicReader reader, RecvContext context)
         {
-            byte first = reader.PeekUInt8();
+            byte first = reader.Peek();
 
             ProcessPacketResult result;
             if (HeaderHelpers.IsLongHeader(first))
@@ -439,7 +439,7 @@ namespace System.Net.Quic.Implementations.Managed
             var epoch = GetEpoch(level);
             var seal = epoch.SendCryptoSeal!;
 
-            (uint truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
+            (int truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
@@ -502,7 +502,7 @@ namespace System.Net.Quic.Implementations.Managed
             // fill in the payload length retrospectively
             if (packetType != PacketType.OneRtt)
             {
-                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong)payloadLength, 2);
+                QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);

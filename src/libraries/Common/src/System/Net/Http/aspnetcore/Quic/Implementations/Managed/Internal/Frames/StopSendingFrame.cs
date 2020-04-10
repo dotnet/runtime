@@ -11,9 +11,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Id of the stream being ignored.
         /// </summary>
-        internal readonly ulong StreamId;
+        internal readonly long StreamId;
 
-        internal StopSendingFrame(ulong streamId, ulong applicationErrorCode)
+        internal StopSendingFrame(long streamId, long applicationErrorCode)
         {
             StreamId = streamId;
             ApplicationErrorCode = applicationErrorCode;
@@ -22,7 +22,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Application-specific reason for ignoring the stream.
         /// </summary>
-        internal readonly ulong ApplicationErrorCode;
+        internal readonly long ApplicationErrorCode;
 
         internal int GetSerializedLength()
         {
@@ -36,8 +36,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.StopSending);
 
-            if (!reader.TryReadVarInt(out ulong streamId) ||
-                !reader.TryReadVarInt(out ulong error))
+            if (!reader.TryReadVarInt(out long streamId) ||
+                !reader.TryReadVarInt(out long error))
             {
                 frame = default;
                 return false;

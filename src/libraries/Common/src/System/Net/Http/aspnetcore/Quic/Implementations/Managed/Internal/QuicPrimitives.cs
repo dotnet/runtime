@@ -13,15 +13,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
     internal static class QuicPrimitives
     {
-        internal const ulong MaxVarintValue = (1ul << 62) - 1;
+        internal const long MaxVarintValue = (1L << 62) - 1;
 
-        private static bool TryWriteVarInt(Span<byte> destination, ulong value, int length)
+        private static bool TryWriteVarInt(Span<byte> destination, long value, int length)
         {
             Debug.Assert(GetVarIntLength(value) <= (uint) length && length > 0);
 
             int log = BitOperations.Log2((uint) length);
 
-            value |= (ulong)log << (length * 8 - 2);
+            value |= (long)log << (length * 8 - 2);
 
             if (destination.Length < length)
             {
@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     BinaryPrimitives.WriteUInt32BigEndian(destination, (uint) value);
                     break;
                 case 8:
-                    BinaryPrimitives.WriteUInt64BigEndian(destination, value);
+                    BinaryPrimitives.WriteInt64BigEndian(destination, value);
                     break;
                 default:
                     throw new InvalidOperationException("Unreachable");
@@ -49,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return true;
         }
 
-        internal static void WriteVarInt(Span<byte> destination, ulong value, int length)
+        internal static void WriteVarInt(Span<byte> destination, long value, int length)
         {
             if (!TryWriteVarInt(destination, value, length))
             {
@@ -57,7 +57,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal static int WriteVarInt(Span<byte> destination, ulong value)
+        internal static int WriteVarInt(Span<byte> destination, long value)
         {
             int length = GetVarIntLength(value);
 
@@ -69,7 +69,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return 0;
         }
 
-        internal static int ReadVarInt(ReadOnlySpan<byte> source, out ulong result)
+        internal static int ReadVarInt(ReadOnlySpan<byte> source, out long result)
         {
             if (source.Length == 0)
             {
@@ -88,25 +88,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 case 1:
                 {
                     success = true;
-                    result = (ulong) (source[0] & 0x3f);
+                    result = source[0] & 0x3f;
                     break;
                 }
                 case 2:
                 {
                     success = BinaryPrimitives.TryReadUInt16BigEndian(source, out ushort res);
-                    result = (ulong) (res & 0x3fff);
+                    result = res & 0x3fff;
                     break;
                 }
                 case 4:
                 {
                     success = BinaryPrimitives.TryReadUInt32BigEndian(source, out uint res);
-                    result = (ulong) (res & 0x3fff_ffff);
+                    result = res & 0x3fff_ffff;
                     break;
                 }
                 case 8:
                 {
                     success = BinaryPrimitives.TryReadUInt64BigEndian(source, out ulong res);
-                    result = res & 0x3fff_ffff_ffff_ffff;
+                    result = (long) res & 0x3fff_ffff_ffff_ffff;
                     break;
                 }
                 default:
@@ -116,27 +116,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return success ? bytes : 0;
         }
 
-        internal static int GetVarIntLengthLogarithm(ulong value)
+        internal static int GetVarIntLengthLogarithm(long value)
         {
-            if (value < 1ul <<  6) return 0;
-            if (value < 1ul << 14) return 1;
-            if (value < 1ul << 30) return 2;
-            if (value < 1ul << 62) return 3;
+            if (value < 1L <<  6) return 0;
+            if (value < 1L << 14) return 1;
+            if (value < 1L << 30) return 2;
+            if (value < 1L << 62) return 3;
 
             throw new ArgumentOutOfRangeException(nameof(value));
         }
 
-        internal static int GetVarIntLength(ulong value)
+        internal static int GetVarIntLength(long value)
         {
             return 1 << GetVarIntLengthLogarithm(value);
         }
 
-        private static int GetMinimumEncodingLength(ulong value)
+        private static int GetMinimumEncodingLength(long value)
         {
-            if (value < 1ul << 8) return 1;
-            if (value < 1ul << 16) return 2;
-            if (value < 1ul << 24) return 3;
-            if (value < 1ul << 32) return 4;
+            if (value < 1L << 8) return 1;
+            if (value < 1L << 16) return 2;
+            if (value < 1L << 24) return 3;
+            if (value < 1L << 32) return 4;
 
             throw new ArgumentOutOfRangeException("Invalid packet number");
         }
@@ -147,7 +147,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <param name="largestAckedPn">Largest packet number acknowledged by the peer.</param>
         /// <param name="currentPn">Packet number to be encoded.</param>
         /// <returns></returns>
-        internal static int GetPacketNumberByteCount(ulong largestAckedPn, ulong currentPn)
+        internal static int GetPacketNumberByteCount(long largestAckedPn, long currentPn)
         {
             // The sender MUST use a packet number size able to represent more than
             // twice as large a range than the difference between the largest
@@ -164,15 +164,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <param name="truncatedPn">Packet number to be decoded.</param>
         /// <param name="pnLength">Length of the <paramref name="truncatedPn"/> in bytes.</param>
         /// <returns></returns>
-        internal static ulong DecodePacketNumber(ulong largestAckedPn, ulong truncatedPn, int pnLength)
+        internal static long DecodePacketNumber(long largestAckedPn, long truncatedPn, int pnLength)
         {
-            var pnNbits = 8 * pnLength;
+            int pnNbits = 8 * pnLength;
 
             // following code has been copied and adapted from the RFC.
-            var expectedPn = largestAckedPn + 1;
-            var pnWin = 1ul << pnNbits;
-            var pnHwin = pnWin / 2;
-            var pnMask = pnWin - 1;
+            long expectedPn = largestAckedPn + 1;
+            long pnWin = 1L << pnNbits;
+            long pnHwin = pnWin / 2;
+            long pnMask = pnWin - 1;
 
             // The incoming packet number should be greater than
             // expectedPn - pnHwin and less than or equal to
@@ -186,10 +186,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // makes sure it's within the packet number window.
             // Note the extra checks to prevent overflow and underflow.
 
-            var candidatePn = (expectedPn & ~pnMask) | truncatedPn;
+            long candidatePn = (expectedPn & ~pnMask) | truncatedPn;
 
             if (candidatePn + pnHwin <= expectedPn &&
-                candidatePn < (1ul << 62) - pnWin)
+                candidatePn < (1L << 62) - pnWin)
                 return candidatePn + pnWin;
 
             if (candidatePn > expectedPn + pnHwin &&

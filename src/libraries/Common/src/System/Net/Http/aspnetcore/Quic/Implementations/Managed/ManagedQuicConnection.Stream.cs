@@ -11,9 +11,9 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Maximum amount of data the endpoint is allowed to send.
             /// </summary>
-            internal ulong MaxData { get; private set; }
+            internal long MaxData { get; private set; }
 
-            internal void UpdateMaxData(ulong value)
+            internal void UpdateMaxData(long value)
             {
                 MaxData = Math.Max(MaxData, value);
             }
@@ -21,9 +21,9 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Maximum number of bidirectional streams the endpoint is allowed to open.
             /// </summary>
-            internal ulong MaxStreamsBidi { get; private set; }
+            internal long MaxStreamsBidi { get; private set; }
 
-            internal void UpdateMaxStreamsBidi(ulong value)
+            internal void UpdateMaxStreamsBidi(long value)
             {
                 MaxStreamsBidi = Math.Max(MaxStreamsBidi, value);
             }
@@ -31,9 +31,9 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Maximum number of unidirectional streams the endpoint is allowed to open.
             /// </summary>
-            internal ulong MaxStreamsUni { get; private set; }
+            internal long MaxStreamsUni { get; private set; }
 
-            internal void UpdateMaxStreamsUni(ulong value)
+            internal void UpdateMaxStreamsUni(long value)
             {
                 MaxStreamsUni = Math.Max(MaxStreamsUni, value);
             }

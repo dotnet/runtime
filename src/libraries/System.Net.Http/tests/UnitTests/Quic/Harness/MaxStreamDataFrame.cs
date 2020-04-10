@@ -13,12 +13,12 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     The ID of the stream.
         /// </summary>
-        internal ulong StreamId;
+        internal long StreamId;
 
         /// <summary>
         ///     Maximum amount of data that can be sent on the stream identified by <see cref="StreamId" />.
         /// </summary>
-        internal ulong MaximumStreamData;
+        internal long MaximumStreamData;
 
         internal override FrameType FrameType => FrameType.MaxStreamData;
 

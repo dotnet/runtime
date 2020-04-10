@@ -37,8 +37,8 @@ namespace System.Net.Quic.Implementations.Managed
                 SingleReader = true, SingleWriter = true
             });
 
-        internal ManagedQuicStream this[ulong streamId] =>
-            _streams[(int)StreamHelpers.GetStreamType((long)streamId)][(int)StreamHelpers.GetStreamIndex((long) streamId)]!;
+        internal ManagedQuicStream this[long streamId] =>
+            _streams[(int)StreamHelpers.GetStreamType(streamId)][(int)StreamHelpers.GetStreamIndex(streamId)]!;
 
 
         internal ManagedQuicStream? GetFirstFlushableStream()
@@ -46,14 +46,14 @@ namespace System.Net.Quic.Implementations.Managed
             return _flushable.FirstOrDefault();
         }
 
-        internal ManagedQuicStream GetOrCreateStream(ulong streamId, in TransportParameters localParams,
+        internal ManagedQuicStream GetOrCreateStream(long streamId, in TransportParameters localParams,
             in TransportParameters remoteParams, bool isServer)
         {
-            var type = StreamHelpers.GetStreamType((long) streamId);
+            var type = StreamHelpers.GetStreamType(streamId);
             // TODO-RZ: allow for long indices
-            int index = (int) StreamHelpers.GetStreamIndex((long)streamId);
-            bool unidirectional = !StreamHelpers.IsBidirectional((long)streamId);
-            bool isLocal = isServer && StreamHelpers.IsServerInitiated((long)streamId);
+            int index = (int) StreamHelpers.GetStreamIndex(streamId);
+            bool unidirectional = !StreamHelpers.IsBidirectional(streamId);
+            bool isLocal = isServer && StreamHelpers.IsServerInitiated(streamId);
 
             var streamList = _streams[(int)type];
 
@@ -79,20 +79,20 @@ namespace System.Net.Quic.Implementations.Managed
             return stream;
         }
 
-        private ManagedQuicStream CreateStream(ulong streamId,
+        private ManagedQuicStream CreateStream(long streamId,
             bool isLocal, bool unidirectional, TransportParameters localParams, TransportParameters remoteParams)
         {
             // use initial flow control limits
-            (ulong? maxDataInbound, ulong? maxDataOutbound) = (isLocal, unidirectional) switch
+            (long? maxDataInbound, long? maxDataOutbound) = (isLocal, unidirectional) switch
             {
                 // local unidirectional
-                (true, true) => ((ulong?)null, (ulong?)remoteParams.InitialMaxStreamDataUni),
+                (true, true) => ((long?)null, (long?)remoteParams.InitialMaxStreamDataUni),
                 // local bidirectional
-                (true, false) => ((ulong?)localParams.InitialMaxStreamDataBidiLocal, (ulong?)remoteParams.InitialMaxStreamDataBidiRemote),
+                (true, false) => ((long?)localParams.InitialMaxStreamDataBidiLocal, (long?)remoteParams.InitialMaxStreamDataBidiRemote),
                 // remote unidirectional
-                (false, true) => ((ulong?)localParams.InitialMaxStreamDataUni, (ulong?)null),
+                (false, true) => ((long?)localParams.InitialMaxStreamDataUni, (long?)null),
                 // remote bidirectional
-                (false, false) => ((ulong?)localParams.InitialMaxStreamDataBidiRemote, (ulong?)remoteParams.InitialMaxStreamDataBidiLocal),
+                (false, false) => ((long?)localParams.InitialMaxStreamDataBidiRemote, (long?)remoteParams.InitialMaxStreamDataBidiLocal),
             };
 
             InboundBuffer? inboundBuffer = maxDataInbound != null
@@ -103,7 +103,7 @@ namespace System.Net.Quic.Implementations.Managed
                 ? new OutboundBuffer(maxDataOutbound.Value)
                 : null;
 
-            return new ManagedQuicStream((long) streamId, inboundBuffer, outboundBuffer, this);
+            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, this);
         }
 
         internal ManagedQuicStream CreateOutboundStream(bool isServer, bool unidirectional, in TransportParameters localParams, in TransportParameters remoteParams)
@@ -113,7 +113,7 @@ namespace System.Net.Quic.Implementations.Managed
             var streamList = _streams[(int)type];
             long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
 
-            var stream = CreateStream((ulong)streamId, true, unidirectional, localParams, remoteParams);
+            var stream = CreateStream(streamId, true, unidirectional, localParams, remoteParams);
             streamList.Add(stream);
             return stream;
         }

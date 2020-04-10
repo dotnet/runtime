@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Data ranges set in Stream frames.
             /// </summary>
-            internal SortedList<ulong, RangeSet> SentStreamData { get; } = new SortedList<ulong, RangeSet>();
+            internal SortedList<long, RangeSet> SentStreamData { get; } = new SortedList<long, RangeSet>();
 
             /// <summary>
             ///     True if HANDSHAKE_DONE frame is sent in the packet.
@@ -197,7 +197,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!MaxStreamDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
 
-            if (!StreamHelpers.IsReadable(_isServer, (long) frame.StreamId))
+            if (!StreamHelpers.IsReadable(_isServer, frame.StreamId))
                 // TODO-RZ: check stream state
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
@@ -259,8 +259,8 @@ namespace System.Net.Quic.Implementations.Managed
             // read the ranges in reverse order, so the `ranges` are in ascending order
             for (int i = (int)frame.AckRangeCount - 1; i > 0; i--)
             {
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong gap);
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong acked);
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
 
                 if (ranges[i].Start < gap + acked - 2)
                 {
@@ -271,7 +271,7 @@ namespace System.Net.Quic.Implementations.Managed
                 ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
-            _recovery.OnRangesAcked(GetEpoch(packetType), ranges, TimeSpan.FromTicks((long)frame.AckDelay),
+            _recovery.OnRangesAcked(GetEpoch(packetType), ranges, TimeSpan.FromTicks(frame.AckDelay),
                 context.Now);
             ProcessAckedPackets(epoch, ranges);
 
@@ -286,7 +286,7 @@ namespace System.Net.Quic.Implementations.Managed
             var pnsInFlight = epoch.PacketsInFlight.Keys.ToArray();
             for (int i = 0; i < pnsInFlight.Length; i++)
             {
-                ulong pn = pnsInFlight[i];
+                long pn = pnsInFlight[i];
                 while (ranges[rangeIndex].End < pn)
                 {
                     rangeIndex++;
@@ -317,7 +317,7 @@ namespace System.Net.Quic.Implementations.Managed
                     r.Start, r.Length);
             }
 
-            foreach ((ulong streamId, RangeSet ranges) in packet.SentStreamData)
+            foreach ((long streamId, RangeSet ranges) in packet.SentStreamData)
             {
                 var buffer = _streams[streamId].OutboundBuffer!;
                 foreach (var r in ranges)
@@ -340,7 +340,7 @@ namespace System.Net.Quic.Implementations.Managed
             // don't buffer if not needed
             if (stream.BytesRead == crypto.Offset)
             {
-                stream.Skip((ulong)crypto.CryptoData.Length);
+                stream.Skip(crypto.CryptoData.Length);
                 _tls.OnDataReceived(level, crypto.CryptoData);
 
                 // process also buffered data received earlier
@@ -366,11 +366,11 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
 
-            bool bidirectional = StreamHelpers.IsBidirectional((long) frame.StreamId);
-            long index = StreamHelpers.GetStreamIndex((long)frame.StreamId);
-            long limit = (long) (bidirectional
+            bool bidirectional = StreamHelpers.IsBidirectional(frame.StreamId);
+            long index = StreamHelpers.GetStreamIndex(frame.StreamId);
+            long limit = bidirectional
                 ? _localLimits.MaxStreamsBidi
-                : _localLimits.MaxStreamsUni);
+                : _localLimits.MaxStreamsUni;
 
             if (index > limit)
             {
@@ -430,7 +430,7 @@ namespace System.Net.Quic.Implementations.Managed
         private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
         {
             ConnectionCloseFrame.Write(writer,
-                new ConnectionCloseFrame((ulong)error.ErrorCode,
+                new ConnectionCloseFrame((long)error.ErrorCode,
                     error.IsQuicError,
                     error.FrameType,
                     error.ReasonPhrase));
@@ -445,9 +445,9 @@ namespace System.Net.Quic.Implementations.Managed
                 if (!epoch.CryptoOutboundStream.HasPendingData)
                     return;
 
-                (ulong offset, ulong count) = epoch.CryptoOutboundStream.GetNextSendableRange();
+                (long offset, long count) = epoch.CryptoOutboundStream.GetNextSendableRange();
 
-                count = Math.Min(count, (ulong) writer.BytesAvailable - minSize);
+                count = Math.Min(count, (long) writer.BytesAvailable - minSize);
                 epoch.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
                 context.SentPacket.CryptoRanges.Add(offset, offset + count - 1);
@@ -467,9 +467,9 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(ranges.Count % 2 == 1); // sanity check
 
             // TODO-RZ check max ack delay to avoid sending acks every packet
-            ulong ackDelay = (ulong) (context.Now - epoch.LargestReceivedPacketTimestamp).Ticks;
+            long ackDelay = (context.Now - epoch.LargestReceivedPacketTimestamp).Ticks;
 
-            ulong largest = ranges.GetMax();
+            long largest = ranges.GetMax();
             var firstRange = ranges[^1];
 
             int written = 0;
@@ -479,7 +479,7 @@ namespace System.Net.Quic.Implementations.Managed
                 ? stackalloc byte[lengthEstimate]
                 : new byte[lengthEstimate];
 
-            ulong gapStart = largest - firstRange.Length;
+            long gapStart = largest - firstRange.Length;
             for (int i = ranges.Count - 2; i >= 0; i--)
             {
                 // the numbers are always encoded as one lesser, meaning sending 0 means 1
@@ -495,7 +495,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             // TODO-RZ implement ECN counts
             AckFrame.Write(writer,
-                new AckFrame(largest, ackDelay, (ulong)(ranges.Count - 1) / 2, firstRange.Length - 1, ReadOnlySpan<byte>.Empty,
+                new AckFrame(largest, ackDelay, (long)(ranges.Count - 1) / 2, firstRange.Length - 1, ReadOnlySpan<byte>.Empty,
                     false, 0, 0, 0));
 
             epoch.AckElicited = false;
@@ -510,15 +510,15 @@ namespace System.Net.Quic.Implementations.Managed
             var buffer = stream.OutboundBuffer!;
             Debug.Assert(buffer.HasPendingData);
 
-            (ulong offset, ulong count) = buffer.GetNextSendableRange();
+            (long offset, long count) = buffer.GetNextSendableRange();
             var actualLength = Math.Min((int) count,  writer.BytesAvailable - 8);
 
-            var data = StreamFrame.ReservePayloadBuffer(writer, (ulong)stream.StreamId, offset, actualLength, false);
+            var data = StreamFrame.ReservePayloadBuffer(writer, stream.StreamId, offset, actualLength, false);
             buffer.CheckOut(data);
 
             var ranges = new RangeSet();
-            ranges.Add(offset, offset + (ulong) actualLength - 1);
-            context.SentPacket.SentStreamData.Add((ulong)stream.StreamId, ranges);
+            ranges.Add(offset, offset + actualLength - 1);
+            context.SentPacket.SentStreamData.Add(stream.StreamId, ranges);
         }
     }
 }

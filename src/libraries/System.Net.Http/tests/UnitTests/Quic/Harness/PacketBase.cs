@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal abstract PacketType PacketType { get; }
 
-        internal ulong PacketNumber;
+        internal long PacketNumber;
 
         internal bool FixedBit = true;
 
@@ -52,7 +52,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal static PacketBase Parse(QuicReader reader, TestHarnessContext context)
         {
-            var type = HeaderHelpers.GetPacketType(reader.PeekUInt8());
+            var type = HeaderHelpers.GetPacketType(reader.Peek());
             PacketBase packet = type switch
             {
                 PacketType.Initial => new InitialPacket(),
@@ -76,7 +76,7 @@ namespace System.Net.Quic.Tests.Harness
 
             int pnOffset = writer.BytesWritten;
 
-            writer.WriteTruncatedPacketNumber(PacketNumberLength, (uint) PacketNumber);
+            writer.WriteTruncatedPacketNumber(PacketNumberLength, (int) PacketNumber);
             var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - PacketNumberLength, 2);
 
             foreach (FrameBase frame in frames)
@@ -91,13 +91,13 @@ namespace System.Net.Quic.Tests.Harness
             // fill in the payload length retrospectively
             if (PacketType != PacketType.OneRtt)
             {
-                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong) payloadLength, 2);
+                QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, (uint) PacketNumber);
         }
 
-        protected (int pnLength, ulong packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
+        protected (int pnLength, long packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
         {
             // this more or less duplicates code inside ManagedQuicConnection
             int pnOffset = reader.BytesRead;
@@ -108,10 +108,10 @@ namespace System.Net.Quic.Tests.Harness
             var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
-            Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, (ulong) Math.Max(0, (int) epoch.NextPacketNumber - 3)));
+            Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, Math.Max(0, (int) epoch.NextPacketNumber - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
-            reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
+            reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
 
             var originalSegment = reader.Buffer;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, payloadLength - pnLength - seal.TagLength));

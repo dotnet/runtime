@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Stream limit at the time the frame was sent.
         /// </summary>
-        internal ulong StreamLimit;
+        internal long StreamLimit;
 
         /// <summary>
         ///     Indicates that the <see cref="StreamLimit" /> is meant for bidirectional streams. Otherwise unidirectional streams.

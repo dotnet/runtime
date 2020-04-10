@@ -46,17 +46,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return value;
         }
 
-        internal bool TryReadUInt16(out ushort result)
+        internal bool TryReadInt16(out short result)
         {
-            return BinaryPrimitives.TryReadUInt16BigEndian(ReadSpan(sizeof(ushort)), out result);
+            return BinaryPrimitives.TryReadInt16BigEndian(ReadSpan(sizeof(short)), out result);
         }
 
-        internal ushort ReadUInt16()
+        internal short ReadInt16()
         {
-            return BinaryPrimitives.ReadUInt16BigEndian(ReadSpan(sizeof(ushort)));
+            return BinaryPrimitives.ReadInt16BigEndian(ReadSpan(sizeof(short)));
         }
 
-        internal bool TryReadUInt24(out uint result)
+        internal bool TryReadInt24(out int result)
         {
             if (BytesLeft < 3)
             {
@@ -64,54 +64,54 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return false;
             }
 
-            result = ReadUInt24();
+            result = ReadInt24();
             return true;
         }
 
-        internal uint ReadUInt24()
+        internal int ReadInt24()
         {
             var source = ReadSpan(3);
-            return (uint) ((source[0] << 16) |
-                           (source[1] << 8) |
-                           source[0]);
+            return (source[0] << 16) |
+                   (source[1] << 8) |
+                   source[0];
         }
 
-        internal bool TryReadUInt32(out uint result)
+        internal bool TryReadInt32(out int result)
         {
-            return BinaryPrimitives.TryReadUInt32BigEndian(ReadSpan(sizeof(uint)), out result);
+            return BinaryPrimitives.TryReadInt32BigEndian(ReadSpan(sizeof(uint)), out result);
         }
 
-        internal uint ReadUInt32()
+        internal int ReadInt32()
         {
-            return BinaryPrimitives.ReadUInt32BigEndian(ReadSpan(sizeof(uint)));
+            return BinaryPrimitives.ReadInt32BigEndian(ReadSpan(sizeof(uint)));
         }
 
-        internal bool TryReadUInt64(out ulong result)
+        internal bool TryReadUInt64(out long result)
         {
-            return BinaryPrimitives.TryReadUInt64BigEndian(ReadSpan(sizeof(ulong)), out result);
+            return BinaryPrimitives.TryReadInt64BigEndian(ReadSpan(sizeof(long)), out result);
         }
 
-        internal ulong ReadUInt64()
+        internal long ReadInt64()
         {
-            return BinaryPrimitives.ReadUInt64BigEndian(ReadSpan(sizeof(ulong)));
+            return BinaryPrimitives.ReadInt64BigEndian(ReadSpan(sizeof(long)));
         }
 
-        internal bool TryReadVarInt(out ulong result)
+        internal bool TryReadVarInt(out long result)
         {
             int bytes =  QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out result);
             Advance(bytes);
             return bytes > 0;
         }
 
-        internal ulong PeekVarInt()
+        internal long PeekVarInt()
         {
-            QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out ulong result);
+            QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out long result);
             return result;
         }
 
-        internal ulong ReadVarInt()
+        internal long ReadVarInt()
         {
-            if (!TryReadVarInt(out ulong result)) throw new InvalidOperationException("Buffer too short");
+            if (!TryReadVarInt(out long result)) throw new InvalidOperationException("Buffer too short");
             return result;
         }
 
@@ -156,7 +156,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return _buffer.AsSpan(_consumed, length);
         }
 
-        internal byte PeekUInt8()
+        internal byte Peek()
         {
             return _buffer[_consumed];
         }

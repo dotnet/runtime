@@ -46,7 +46,7 @@ namespace System.Net.Quic.Tests
             var frame = _harness.Send1Rtt(_client, _server)
                 .ShouldHaveFrame<StreamFrame>();
 
-            Assert.Equal(clientStream.StreamId, (long) frame.StreamId);
+            Assert.Equal(clientStream.StreamId, frame.StreamId);
             Assert.Equal(0u, frame.Offset);
             Assert.Equal(data, frame.StreamData);
             Assert.False(frame.Fin);
@@ -72,7 +72,7 @@ namespace System.Net.Quic.Tests
             _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
                 {
                     // make sure the stream id is above bounds
-                    frame.StreamId += (ulong) (_serverOpts.MaxUnidirectionalStreams << 2 + 4);
+                    frame.StreamId += _serverOpts.MaxUnidirectionalStreams << 2 + 4;
                 });
 
             _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
@@ -106,7 +106,7 @@ namespace System.Net.Quic.Tests
             _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
                 {
                     // use the only type of stream into which client cannot send
-                    frame.StreamId = (ulong) StreamHelpers.ComposeStreamId(StreamType.ServerInitiatedUnidirectional, 0);
+                    frame.StreamId = StreamHelpers.ComposeStreamId(StreamType.ServerInitiatedUnidirectional, 0);
                 });
 
             _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(

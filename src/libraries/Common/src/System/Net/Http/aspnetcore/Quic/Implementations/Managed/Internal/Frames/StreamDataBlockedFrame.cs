@@ -11,14 +11,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Id of the blocked stream.
         /// </summary>
-        internal readonly ulong StreamId;
+        internal readonly long StreamId;
 
         /// <summary>
         ///     Offset in the stream at which the blocking occured.
         /// </summary>
-        internal readonly ulong StreamDataLimit;
+        internal readonly long StreamDataLimit;
 
-        internal StreamDataBlockedFrame(ulong streamId, ulong streamDataLimit)
+        internal StreamDataBlockedFrame(long streamId, long streamDataLimit)
         {
             StreamId = streamId;
             StreamDataLimit = streamDataLimit;
@@ -36,8 +36,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.StreamDataBlocked);
 
-            if (!reader.TryReadVarInt(out ulong streamId) ||
-                !reader.TryReadVarInt(out ulong limit))
+            if (!reader.TryReadVarInt(out long streamId) ||
+                !reader.TryReadVarInt(out long limit))
             {
                 frame = default;
                 return false;

@@ -14,12 +14,12 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Id of the stream being ignored.
         /// </summary>
-        internal ulong StreamId;
+        internal long StreamId;
 
         /// <summary>
         ///     Application-specific reason for ignoring the stream.
         /// </summary>
-        internal ulong ApplicationErrorCode;
+        internal long ApplicationErrorCode;
 
         internal override FrameType FrameType => FrameType.StopSending;
 

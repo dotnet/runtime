@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         ///     Error code which indicates the reason for closing this connection. If <see cref="IsQuicError" /> is true, then the
         ///     value is one of the <see cref="TransportErrorCode" />. Otherwise it is the application defined error.
         /// </summary>
-        internal readonly ulong ErrorCode;
+        internal readonly long ErrorCode;
 
         /// <summary>
         ///     If true, the error reported comes from the QUIC layer, otherwise from the application layer.
@@ -32,7 +32,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly string? ReasonPhrase;
 
-        public ConnectionCloseFrame(ulong errorCode, bool isQuicError, FrameType frameType, string? reasonPhrase)
+        public ConnectionCloseFrame(long errorCode, bool isQuicError, FrameType frameType, string? reasonPhrase)
         {
             ErrorCode = errorCode;
             IsQuicError = isQuicError;
@@ -46,8 +46,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
             return 1 +
                    QuicPrimitives.GetVarIntLength(ErrorCode) +
-                   (IsQuicError ? QuicPrimitives.GetVarIntLength((ulong)FrameType) : 0) +
-                   QuicPrimitives.GetVarIntLength((ulong)reasonPhraseLength) +
+                   (IsQuicError ? QuicPrimitives.GetVarIntLength((long)FrameType) : 0) +
+                   QuicPrimitives.GetVarIntLength(reasonPhraseLength) +
                    reasonPhraseLength;
         }
 
@@ -57,9 +57,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Debug.Assert(type == FrameType.ConnectionCloseApplication || type == FrameType.ConnectionCloseQuic);
 
             FrameType frameType = default;
-            if (!reader.TryReadVarInt(out ulong error) ||
+            if (!reader.TryReadVarInt(out long error) ||
                 type == FrameType.ConnectionCloseQuic && !reader.TryReadFrameType(out frameType) ||
-                !reader.TryReadVarInt(out ulong length) ||
+                !reader.TryReadVarInt(out long length) ||
                 !reader.TryReadSpan((int)length, out var reason))
             {
                 frame = default;
@@ -84,7 +84,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                 writer.WriteFrameType(frame.FrameType);
 
             int length = Encoding.UTF8.GetByteCount(frame.ReasonPhrase ?? string.Empty);
-            writer.WriteVarInt((ulong)length);
+            writer.WriteVarInt(length);
             if (length > 0)
                 Encoding.UTF8.GetBytes(frame.ReasonPhrase, writer.GetWritableSpan(length));
         }

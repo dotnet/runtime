@@ -16,12 +16,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal class Range
         {
-            internal ulong Start;
-            internal ulong End;
+            internal long Start;
+            internal long End;
 
-            internal ulong Length => End - Start + 1;
+            internal long Length => End - Start + 1;
 
-            internal Range(ulong start, ulong end)
+            internal Range(long start, long end)
             {
                 Start = start;
                 End = end;
@@ -32,18 +32,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return Includes(other.Start, other.End);
             }
 
-            internal bool Contains(ulong value)
+            internal bool Contains(long value)
             {
                 return Start <= value && value <= End;
             }
 
-            internal bool IsSubsetOf(ulong start, ulong end)
+            internal bool IsSubsetOf(long start, long end)
             {
                 Debug.Assert(start <= end);
                 return start <= Start && End <= end;
             }
 
-            internal bool Includes(ulong start, ulong end)
+            internal bool Includes(long start, long end)
             {
                 Debug.Assert(start <= end);
                 return Start <= start && end <= End;
@@ -51,7 +51,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             public override string ToString() => $"[{Start}..{End}]";
 
-            public void Deconstruct(out ulong start, out ulong end)
+            public void Deconstruct(out long start, out long end)
             {
                 start = Start;
                 end = End;
@@ -75,7 +75,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Adds given value to the set. Equivalent to adding range [value, value].
         /// </summary>
         /// <param name="value">Value to be added.</param>
-        internal void Add(ulong value)
+        internal void Add(long value)
         {
             Add(value, value);
         }
@@ -85,7 +85,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="start">Minimum value to add.</param>
         /// <param name="end">Maximum value to add.</param>
-        internal void Add(ulong start, ulong end)
+        internal void Add(long start, long end)
         {
             Debug.Assert(start <= end);
 
@@ -174,7 +174,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="value">The value to be searched for.</param>
         /// <returns>Index of the last range started before the value or -1 if no such range exists.</returns>
-        private int IndexOfPrevious(ulong value)
+        private int IndexOfPrevious(long value)
         {
             if (_ranges.Count == 0 || _ranges[0].Start > value)
                 return -1;
@@ -199,7 +199,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="value">The value to check.</param>
         /// <returns></returns>
-        internal bool Contains(ulong value)
+        internal bool Contains(long value)
         {
             return Includes(value, value);
         }
@@ -210,7 +210,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <param name="start">Start of the range.</param>
         /// <param name="end">Inclusive end of the range.</param>
         /// <returns></returns>
-        internal bool Includes(ulong start, ulong end)
+        internal bool Includes(long start, long end)
         {
             Debug.Assert(start <= end);
 
@@ -223,7 +223,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Removes given value from the set.
         /// </summary>
         /// <param name="value"></param>
-        internal void Remove(ulong value)
+        internal void Remove(long value)
         {
             Remove(value, value);
         }
@@ -233,7 +233,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="start">Start of the range to remove.</param>
         /// <param name="end">End of the range to remove.</param>
-        internal void Remove(ulong start, ulong end)
+        internal void Remove(long start, long end)
         {
             Debug.Assert(start <= end);
             if (_ranges.Count == 0) return;
@@ -309,7 +309,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Gets minimal value in the set.
         /// </summary>
-        internal ulong GetMin()
+        internal long GetMin()
         {
             return _ranges[0].Start;
         }
@@ -317,7 +317,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Gets maximal value in the set.
         /// </summary>
-        internal ulong GetMax()
+        internal long GetMax()
         {
             return _ranges[^1].End;
         }

@@ -73,7 +73,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             byte firstByte = reader.ReadUInt8();
             Debug.Assert(HeaderHelpers.IsLongHeader(firstByte), "Trying to parse short packet header as long.");
 
-            if (!reader.TryReadUInt32(out uint version) ||
+            if (!reader.TryReadInt32(out int version) ||
                 !reader.TryReadUInt8(out byte dcidLen) ||
                 !reader.TryReadSpan(dcidLen, out var dcid) ||
                 !reader.TryReadUInt8(out byte scidLen) ||
@@ -91,7 +91,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         {
             writer.WriteUInt8(header.FirstByte);
 
-            writer.WriteUInt32((uint)header.Version);
+            writer.WriteInt32((int)header.Version);
 
             writer.WriteUInt8((byte)header.DestinationConnectionId.Length);
             writer.WriteSpan(header.DestinationConnectionId);

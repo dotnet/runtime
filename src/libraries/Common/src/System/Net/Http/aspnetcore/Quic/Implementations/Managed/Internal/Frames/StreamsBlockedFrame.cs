@@ -10,14 +10,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Stream limit at the time the frame was sent.
         /// </summary>
-        internal readonly ulong StreamLimit;
+        internal readonly long StreamLimit;
 
         /// <summary>
         ///     Indicates that the <see cref="StreamLimit" /> is meant for bidirectional streams. Otherwise unidirectional streams.
         /// </summary>
         internal readonly bool Bidirectional;
 
-        public StreamsBlockedFrame(ulong streamLimit, bool bidirectional)
+        public StreamsBlockedFrame(long streamLimit, bool bidirectional)
         {
             StreamLimit = streamLimit;
             Bidirectional = bidirectional;
@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Debug.Assert(
                 type == FrameType.StreamsBlockedBidirectional || type == FrameType.StreamsBlockedUnidirectional);
 
-            if (!reader.TryReadVarInt(out ulong limit) ||
+            if (!reader.TryReadVarInt(out long limit) ||
                 limit > StreamHelpers.MaxStreamIndex) // FRAME_ENCODING_ERROR is fine for this
             {
                 frame = default;

@@ -14,7 +14,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Sequence number of the connection id being retired.
         /// </summary>
-        internal ulong SequenceNumber;
+        internal long SequenceNumber;
 
         internal override FrameType FrameType => FrameType.RetireConnectionId;
 

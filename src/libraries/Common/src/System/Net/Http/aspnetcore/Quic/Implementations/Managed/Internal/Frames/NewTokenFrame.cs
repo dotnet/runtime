@@ -20,7 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal int GetSerializedLength()
         {
             return 1 +
-                   QuicPrimitives.GetVarIntLength((ulong)Token.Length) +
+                   QuicPrimitives.GetVarIntLength(Token.Length) +
                    Token.Length;
         }
 

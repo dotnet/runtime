@@ -7,16 +7,16 @@ namespace System.Net.Quic.Tests
 {
     public class InboundBufferTest
     {
-        private InboundBuffer buffer = new InboundBuffer(ulong.MaxValue);
+        private InboundBuffer buffer = new InboundBuffer(long.MaxValue);
 
-        private void ReceiveBytes(ulong offset, int count)
+        private void ReceiveBytes(long offset, int count)
         {
             Span<byte> tmp = stackalloc byte[count];
 
             // generate ascending integers so that we can test for data correctness
             for (int i = 0; i < tmp.Length; i++)
             {
-                tmp[i] = (byte)(offset + (ulong) i);
+                tmp[i] = (byte)(offset + i);
             }
 
             buffer.Receive(offset, tmp);

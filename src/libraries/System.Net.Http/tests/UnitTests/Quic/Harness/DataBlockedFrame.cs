@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Connection-level limit at which the blocking occured.
         /// </summary>
-        internal ulong DataLimit;
+        internal long DataLimit;
 
         internal override FrameType FrameType => FrameType.DataBlocked;
 

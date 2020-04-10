@@ -10,21 +10,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class TransportParameters
     {
-        internal const ulong MinimumPacketSize = 1200;
-        internal const ulong MaxAckDelayExponent = 20;
-        internal const ulong MaxMaxAckDelay = 1 << 14;
+        internal const long MinimumPacketSize = 1200;
+        internal const long MaxAckDelayExponent = 20;
+        internal const long MaxMaxAckDelay = 1 << 14;
 
-        internal const ulong DefaultMaxPacketSize = 65527;
-        internal const ulong DefaultAckDelayExponent = 3;
-        internal const ulong DefaultMaxAckDelay = 25;
+        internal const long DefaultMaxPacketSize = 65527;
+        internal const long DefaultAckDelayExponent = 3;
+        internal const long DefaultMaxAckDelay = 25;
 
         internal static TransportParameters FromClientConnectionOptions(QuicClientConnectionOptions options)
         {
             return new TransportParameters
             {
-                InitialMaxStreamsBidi = (ulong) options.MaxBidirectionalStreams,
-                InitialMaxStreamsUni = (ulong) options.MaxUnidirectionalStreams,
-                MaxIdleTimeout = (ulong) options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
+                InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
+                InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
+                MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
                 InitialMaxData = 100,
                 InitialMaxStreamDataUni = 100,
                 InitialMaxStreamDataBidiLocal = 100,
@@ -36,9 +36,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             return new TransportParameters
             {
-                InitialMaxStreamsBidi = (ulong) options.MaxBidirectionalStreams,
-                InitialMaxStreamsUni = (ulong) options.MaxUnidirectionalStreams,
-                MaxIdleTimeout = (ulong) options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
+                InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
+                InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
+                MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
                 InitialMaxData = 100,
                 InitialMaxStreamDataUni = 100,
                 InitialMaxStreamDataBidiLocal = 100,
@@ -61,7 +61,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     The max idle timeout in milliseconds. Value 0 means that the endpoint wishes to disable the timeout.
         /// </summary>
-        internal ulong MaxIdleTimeout { get; set; }
+        internal long MaxIdleTimeout { get; set; }
 
         /// <summary>
         ///     A token used in verifying a stateless reset. This parameter may only be sent by a server. Server that does not send
@@ -74,56 +74,56 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     may be dropped by the endpoint. Values below 1200 are invalid, default value is maximum permitted UDP payload of
         ///     65527. This limit applies only to protected packets.
         /// </summary>
-        internal ulong MaxPacketSize { get; set; } = DefaultMaxPacketSize;
+        internal long MaxPacketSize { get; set; } = DefaultMaxPacketSize;
 
         /// <summary>
         ///     The initial value for the maximum amount of data that can be sent on the connection. This is equivalent to sending
         ///     a MAX_DATA immediately after completing the handshake.
         /// </summary>
-        internal ulong InitialMaxData { get; set; }
+        internal long InitialMaxData { get; set; }
 
         /// <summary>
         ///     Initial flow control limit for locally-initiated bidirectional streams. This limit applies to newly created
         ///     bidirectional streams opened by the endpoint that sends the transport parameter.
         /// </summary>
-        internal ulong InitialMaxStreamDataBidiLocal { get; set; }
+        internal long InitialMaxStreamDataBidiLocal { get; set; }
 
         /// <summary>
         ///     Initial flow control limit for peer-initiated bidirectional streams. This limit applies to newly created
         ///     bidirectional streams opened by the endpoint that receives the transport parameter.
         /// </summary>
-        internal ulong InitialMaxStreamDataBidiRemote { get; set; }
+        internal long InitialMaxStreamDataBidiRemote { get; set; }
 
         /// <summary>
         ///     Initial flow control limit for peer-initiated unidirectional streams. This limit applies to newly created
         ///     unidirectional streams opened by the endpoint that receives the transport parameter.
         /// </summary>
-        internal ulong InitialMaxStreamDataUni { get; set; }
+        internal long InitialMaxStreamDataUni { get; set; }
 
         /// <summary>
         ///     Initial maximum number of bidirectional streams the peer may initiate. If this parameter is 0, the peer cannot open
         ///     bidirectional streams until a MAX_STREAMS frame is sent.
         /// </summary>
-        internal ulong InitialMaxStreamsBidi { get; set; }
+        internal long InitialMaxStreamsBidi { get; set; }
 
         /// <summary>
         ///     Initial maximum number of unidirectional streams the peer may initiate. If this parameter is 0, the peer cannot
         ///     open unidirectional streams until a MAX_STREAMS frame is sent.
         /// </summary>
-        internal ulong InitialMaxStreamsUni { get; set; }
+        internal long InitialMaxStreamsUni { get; set; }
 
         /// <summary>
         ///     Parameter used to encode the ACK Delay field in the ACK frame. The default value is 3 (indicating a multiplier of
         ///     8). Values above 20 are invalid.
         /// </summary>
-        internal ulong AckDelayExponent { get; set; } = DefaultAckDelayExponent;
+        internal long AckDelayExponent { get; set; } = DefaultAckDelayExponent;
 
         /// <summary>
         ///     Maximum delay in milliseconds by which the endpoint will delay sending acknowledgments. This value SHOULD include
         ///     the receiver's expected delays in alarms firing. Default value is 25 milliseconds. Values of 2^14 or greater are
         ///     invalid.
         /// </summary>
-        internal ulong MaxAckDelay { get; set; } = DefaultMaxAckDelay;
+        internal long MaxAckDelay { get; set; } = DefaultMaxAckDelay;
 
         /// <summary>
         ///     If true, the endpoint does not support active connection migration. The peer MUST NOT send any packets (including
@@ -143,7 +143,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     those received in NEW_CONNECTION_ID frames. Unless a zero-length connection ID is being used, the value MUST be no
         ///     less than 2. When a zero-length connection ID is being used, this parameter must not be sent.
         /// </summary>
-        internal ulong ActiveConnectionIdLimit { get; set; }
+        internal long ActiveConnectionIdLimit { get; set; }
 
         private static bool IsServerOnlyParameter(TransportParameterName name) =>
             name switch
@@ -162,7 +162,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             while (reader.BytesLeft > 0)
             {
-                if (!reader.TryReadTranportParameterName(out TransportParameterName name) ||
+                if (!reader.TryReadTransportParameterName(out TransportParameterName name) ||
                     !isServer && IsServerOnlyParameter(name) ||
                     !reader.TryReadLengthPrefixedSpan(out var data))
                 {
@@ -170,7 +170,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     goto Error;
                 }
 
-                ulong varIntValue;
+                long varIntValue;
                 switch (name)
                 {
                     case TransportParameterName.OriginalConnectionId:
@@ -258,13 +258,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static void Write(QuicWriter writer, bool isServer, TransportParameters parameters)
         {
-            static void WriteVarIntParameterIfNotDefault(QuicWriter w, TransportParameterName name, ulong value,
-                ulong defaultValue = 0)
+            static void WriteVarIntParameterIfNotDefault(QuicWriter w, TransportParameterName name, long value,
+                long defaultValue = 0)
             {
                 if (value == defaultValue) return;
 
                 w.WriteTransportParameterName(name);
-                w.WriteVarInt((ulong)QuicPrimitives.GetVarIntLength(value));
+                w.WriteVarInt(QuicPrimitives.GetVarIntLength(value));
                 w.WriteVarInt(value);
             }
 
@@ -315,7 +315,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Debug.Assert(isServer, "Trying to send server-only parameter as a client.");
                 writer.WriteTransportParameterName(TransportParameterName.PreferredAddress);
                 // the only non-fixed length field is the connection id the rest of the parameter is 41 bytes
-                writer.WriteVarInt((ulong)(41 + parameters.PreferredAddress.Value.ConnectionId.Length));
+                writer.WriteVarInt(41 + parameters.PreferredAddress.Value.ConnectionId.Length);
                 Internal.PreferredAddress.Write(writer, parameters.PreferredAddress.Value);
             }
 

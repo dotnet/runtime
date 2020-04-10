@@ -15,7 +15,7 @@ namespace System.Net.Quic.Tests
             // generate ascending integers so that we can test for data correctness
             for (int i = 0; i < tmp.Length; i++)
             {
-                tmp[i] = (byte)(buffer.WrittenBytes + (ulong) i);
+                tmp[i] = (byte)(buffer.WrittenBytes + i);
             }
 
             buffer.Enqueue(tmp);

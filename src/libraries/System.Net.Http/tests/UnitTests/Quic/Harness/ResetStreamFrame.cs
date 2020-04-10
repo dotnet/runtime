@@ -13,17 +13,17 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Stream ID of the stream being terminated.
         /// </summary>
-        internal ulong StreamId;
+        internal long StreamId;
 
         /// <summary>
         ///     Application-level error code indicating why the stream is being closed.
         /// </summary>
-        internal ulong ApplicationErrorCode;
+        internal long ApplicationErrorCode;
 
         /// <summary>
         ///     Final size of the stream reset by this frame in bytes.
         /// </summary>
-        internal ulong FinalSize;
+        internal long FinalSize;
 
         internal override FrameType FrameType => FrameType.ResetStream;
 

@@ -21,16 +21,16 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void SerializeAckFrame()
         {
-            ulong[] ranges = {14, 134, 1313, 123123};
+            long[] ranges = {14, 134, 1313, 123123};
 
             Span<byte> rangesRaw = stackalloc byte[1024];
             int written = 0;
-            foreach (ulong range in ranges)
+            foreach (long range in ranges)
             {
                 written += QuicPrimitives.WriteVarInt(rangesRaw.Slice(written), range);
             }
 
-            var expected = new AckFrame(1, 2, (ulong)(ranges.Length / 2), 3, rangesRaw.Slice(0, written), true, 1, 2,
+            var expected = new AckFrame(1, 2, ranges.Length / 2, 3, rangesRaw.Slice(0, written), true, 1, 2,
                 3);
             AckFrame.Write(writer, expected);
             Assert.True(AckFrame.Read(reader, out var actual));

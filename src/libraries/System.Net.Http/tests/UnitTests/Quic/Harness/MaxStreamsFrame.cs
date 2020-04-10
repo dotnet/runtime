@@ -14,7 +14,7 @@ namespace System.Net.Quic.Tests.Harness
         ///     Count of the cumulative number of streams of the corresponding type that can be opened over the lifetime of the
         ///     connection.
         /// </summary>
-        internal ulong MaximumStreams;
+        internal long MaximumStreams;
 
         /// <summary>
         ///     True if <see cref="MaximumStreams" /> is intended for bidirectional streams. Otherwise the count is meant as

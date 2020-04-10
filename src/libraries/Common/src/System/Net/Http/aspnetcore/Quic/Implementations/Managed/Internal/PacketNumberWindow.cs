@@ -10,21 +10,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Packet number of the least significant bit in the window. All lesser numbers are assumed to be present.
         /// </summary>
-        private ulong _lower;
+        private long _lower;
 
         /// <summary>
         ///     Bit mask of present packets.
         /// </summary>
         private ulong _window;
 
-        private const ulong WindowWidth = 8 * sizeof(ulong);
+        private const int WindowWidth = 8 * sizeof(ulong);
 
         /// <summary>
         ///     Adds number to the window.
         /// </summary>
         /// <param name="value">Value to be added.</param>
         /// <exception cref="InvalidOperationException">If added value is outside representable window.</exception>
-        internal void Add(ulong value)
+        internal void Add(long value)
         {
             if (value < _lower)
                 return; // already present
@@ -36,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // TODO-RZ: what to do?
                 if (shift == 0) throw new InvalidOperationException("Window width exceeded.");
 
-                _lower += (ulong)shift;
+                _lower += shift;
                 _window <<= shift;
             }
 
@@ -47,7 +47,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Checks if given value is present.
         /// </summary>
         /// <param name="value">Value to be checked.</param>
-        internal bool Contains(ulong value)
+        internal bool Contains(long value)
         {
             if (value < _lower)
                 return true;

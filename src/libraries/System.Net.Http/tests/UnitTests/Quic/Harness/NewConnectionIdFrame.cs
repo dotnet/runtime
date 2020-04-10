@@ -16,12 +16,12 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Sequence number assigned to the connection ID by the sender.
         /// </summary>
-        internal ulong SequenceNumber;
+        internal long SequenceNumber;
 
         /// <summary>
         ///     Indicator which connection ids should be retired.
         /// </summary>
-        internal ulong RetirePriorTo;
+        internal long RetirePriorTo;
 
         /// <summary>
         ///     Connection Id.

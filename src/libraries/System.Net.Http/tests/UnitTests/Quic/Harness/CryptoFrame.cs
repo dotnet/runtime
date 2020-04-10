@@ -12,7 +12,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Byte offset of the stream carrying the cryptographic data.
         /// </summary>
-        internal ulong Offset;
+        internal long Offset;
 
         /// <summary>
         ///     Cryptographic message data;

@@ -11,9 +11,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Sequence number of the connection id being retired.
         /// </summary>
-        internal readonly ulong SequenceNumber;
+        internal readonly long SequenceNumber;
 
-        internal RetireConnectionIdFrame(ulong sequenceNumber) => SequenceNumber = sequenceNumber;
+        internal RetireConnectionIdFrame(long sequenceNumber) => SequenceNumber = sequenceNumber;
 
         internal int GetSerializedLength()
         {
@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.RetireConnectionId);
 
-            if (!reader.TryReadVarInt(out ulong sequenceNumber))
+            if (!reader.TryReadVarInt(out long sequenceNumber))
             {
                 frame = default;
                 return false;

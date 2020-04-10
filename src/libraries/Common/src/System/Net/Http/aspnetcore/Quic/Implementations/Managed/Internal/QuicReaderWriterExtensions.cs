@@ -7,7 +7,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         internal static bool TryReadLengthPrefixedSpan(this QuicReader reader, out ReadOnlySpan<byte> result)
         {
-            if (reader.TryReadVarInt(out ulong length) &&
+            if (reader.TryReadVarInt(out long length) &&
                 reader.TryReadSpan((int)length, out result))
             {
                 return true;
@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static void WriteLengthPrefixedSpan(this QuicWriter reader, in ReadOnlySpan<byte> data)
         {
-            reader.WriteVarInt((ulong)data.Length);
+            reader.WriteVarInt(data.Length);
             reader.WriteSpan(data);
         }
 
@@ -35,26 +35,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static bool TryReadFrameType(this QuicReader reader, out FrameType frameType)
         {
-            bool success = reader.TryReadVarInt(out ulong typeAsUlong);
-            frameType = (FrameType)typeAsUlong;
+            bool success = reader.TryReadVarInt(out long typeAsLong);
+            frameType = (FrameType)typeAsLong;
             return success;
         }
 
         internal static void WriteFrameType(this QuicWriter writer, FrameType frameType)
         {
-            writer.WriteVarInt((ulong)frameType);
+            writer.WriteVarInt((long)frameType);
         }
 
-        internal static bool TryReadTranportParameterName(this QuicReader reader, out TransportParameterName name)
+        internal static bool TryReadTransportParameterName(this QuicReader reader, out TransportParameterName name)
         {
-            bool success = reader.TryReadVarInt(out ulong nameAsUlong);
-            name = (TransportParameterName)nameAsUlong;
+            bool success = reader.TryReadVarInt(out long nameAsLong);
+            name = (TransportParameterName)nameAsLong;
             return success;
         }
 
         internal static void WriteTransportParameterName(this QuicWriter writer, TransportParameterName name)
         {
-            writer.WriteVarInt((ulong)name);
+            writer.WriteVarInt((long)name);
         }
 
         internal static bool TryReadStatelessResetToken(this QuicReader reader, out StatelessResetToken token)
@@ -76,7 +76,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static bool TryReadQuicVersion(this QuicReader reader, out QuicVersion version)
         {
-            if (!reader.TryReadUInt32(out uint ver))
+            if (!reader.TryReadInt32(out int ver))
             {
                 version = default;
                 return false;
@@ -88,10 +88,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static void WriteQuicVersion(this QuicWriter writer, QuicVersion version)
         {
-            writer.WriteUInt32((uint) version);
+            writer.WriteInt32((int) version);
         }
 
-        internal static bool TryReadTruncatedPacketNumber(this QuicReader reader, int length, out uint truncatedPn)
+        internal static bool TryReadTruncatedPacketNumber(this QuicReader reader, int length, out int truncatedPn)
         {
             bool success;
 
@@ -105,19 +105,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
                 case 2:
                 {
-                    success = reader.TryReadUInt16(out ushort res);
+                    success = reader.TryReadInt16(out short res);
                     truncatedPn = res;
                     break;
                 }
                 case 3:
                 {
-                    success = reader.TryReadUInt24(out uint res);
+                    success = reader.TryReadInt24(out int res);
                     truncatedPn = res;
                     break;
                 }
                 case 4:
                 {
-                    success = reader.TryReadUInt32(out uint res);
+                    success = reader.TryReadInt32(out int res);
                     truncatedPn = res;
                     break;
                 }
@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return success;
         }
 
-        internal static void WriteTruncatedPacketNumber(this QuicWriter writer, int length, uint truncatedPn)
+        internal static void WriteTruncatedPacketNumber(this QuicWriter writer, int length, int truncatedPn)
         {
             switch (length)
             {
@@ -136,13 +136,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     writer.WriteUInt8((byte) truncatedPn);
                     break;
                 case 2:
-                    writer.WriteUInt16((ushort) truncatedPn);
+                    writer.WriteInt16((short) truncatedPn);
                     break;
                 case 3:
-                    writer.WriteUInt24(truncatedPn);
+                    writer.WriteInt24(truncatedPn);
                     break;
                 case 4:
-                    writer.WriteUInt32(truncatedPn);
+                    writer.WriteInt32(truncatedPn);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(length));

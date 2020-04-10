@@ -10,14 +10,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Byte offset of the stream carrying the cryptographic data.
         /// </summary>
-        internal readonly ulong Offset;
+        internal readonly long Offset;
 
         /// <summary>
         ///     Cryptographic message data;
         /// </summary>
         internal readonly ReadOnlySpan<byte> CryptoData;
 
-        internal CryptoFrame(ulong offset, ReadOnlySpan<byte> cryptoData)
+        internal CryptoFrame(long offset, ReadOnlySpan<byte> cryptoData)
         {
             Offset = offset;
             CryptoData = cryptoData;
@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         {
             return 1 +
                    QuicPrimitives.GetVarIntLength(Offset) +
-                   QuicPrimitives.GetVarIntLength((ulong) CryptoData.Length) +
+                   QuicPrimitives.GetVarIntLength(CryptoData.Length) +
                    CryptoData.Length;
         }
 
@@ -36,7 +36,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.Crypto);
 
-            if (!reader.TryReadVarInt(out ulong offset) ||
+            if (!reader.TryReadVarInt(out long offset) ||
                 !reader.TryReadLengthPrefixedSpan(out var data))
             {
                 frame = default;
@@ -47,7 +47,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return true;
         }
 
-        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, ulong offset, ulong length)
+        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, long offset, long length)
         {
             writer.WriteFrameType(FrameType.Crypto);
 
@@ -60,7 +60,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         {
             Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
 
-            frame.CryptoData.CopyTo(ReservePayloadBuffer(writer, frame.Offset, (ulong)frame.CryptoData.Length));
+            frame.CryptoData.CopyTo(ReservePayloadBuffer(writer, frame.Offset, frame.CryptoData.Length));
         }
     }
 }

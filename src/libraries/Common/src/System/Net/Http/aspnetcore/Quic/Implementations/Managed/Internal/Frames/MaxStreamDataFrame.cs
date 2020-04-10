@@ -10,14 +10,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     The ID of the stream.
         /// </summary>
-        internal readonly ulong StreamId;
+        internal readonly long StreamId;
 
         /// <summary>
         ///     Maximum amount of data that can be sent on the stream identified by <see cref="StreamId" />.
         /// </summary>
-        internal readonly ulong MaximumStreamData;
+        internal readonly long MaximumStreamData;
 
-        internal MaxStreamDataFrame(ulong streamId, ulong maximumStreamData)
+        internal MaxStreamDataFrame(long streamId, long maximumStreamData)
         {
             StreamId = streamId;
             MaximumStreamData = maximumStreamData;
@@ -35,8 +35,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.MaxStreamData);
 
-            if (!reader.TryReadVarInt(out ulong streamId) ||
-                !reader.TryReadVarInt(out ulong maxData))
+            if (!reader.TryReadVarInt(out long streamId) ||
+                !reader.TryReadVarInt(out long maxData))
             {
                 frame = default;
                 return false;

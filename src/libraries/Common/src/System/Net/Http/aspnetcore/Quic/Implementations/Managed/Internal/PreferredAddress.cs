@@ -39,9 +39,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal static bool Read(QuicReader reader, out PreferredAddress address)
         {
             if (!reader.TryReadSpan(4, out var ipv4) ||
-                !reader.TryReadUInt16(out ushort ipv4Port) ||
+                !reader.TryReadInt16(out short ipv4Port) ||
                 !reader.TryReadSpan(16, out var ipv6) ||
-                !reader.TryReadUInt16(out ushort ipv6Port) ||
+                !reader.TryReadInt16(out short ipv6Port) ||
                 !reader.TryReadUInt8(out byte cidLength) ||
                 !reader.TryReadSpan(cidLength, out var cid) ||
                 !reader.TryReadSpan(Frames.StatelessResetToken.Length, out var token))
@@ -62,11 +62,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             address.IPv4Address.Address.TryWriteBytes(writer.GetWritableSpan(4), out int written);
             if (written != 4) throw new InvalidOperationException("Error writing preferred address");
-            writer.WriteUInt16((ushort) address.IPv4Address.Port);
+            writer.WriteInt16((short) address.IPv4Address.Port);
 
             address.IPv6Address.Address.TryWriteBytes(writer.GetWritableSpan(16), out written);
             if (written != 4) throw new InvalidOperationException("Error writing preferred address");
-            writer.WriteUInt16((ushort) address.IPv4Address.Port);
+            writer.WriteInt16((short) address.IPv4Address.Port);
 
             Debug.Assert(address.ConnectionId.Length <= byte.MaxValue);
             writer.WriteUInt8((byte) address.ConnectionId.Length);

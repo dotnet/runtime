@@ -20,14 +20,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     First 8 bytes of the reset token.
         /// </summary>
-        internal readonly ulong LowerHalf;
+        internal readonly long LowerHalf;
 
         /// <summary>
         ///     Second 8 bytes of the reset token.
         /// </summary>
-        internal readonly ulong UpperHalf;
+        internal readonly long UpperHalf;
 
-        public StatelessResetToken(ulong lowerHalf, ulong upperHalf)
+        public StatelessResetToken(long lowerHalf, long upperHalf)
         {
             LowerHalf = lowerHalf;
             UpperHalf = upperHalf;
@@ -52,12 +52,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Sequence number assigned to the connection ID by the sender.
         /// </summary>
-        internal readonly ulong SequenceNumber;
+        internal readonly long SequenceNumber;
 
         /// <summary>
         ///     Indicator which connection ids should be retired.
         /// </summary>
-        internal readonly ulong RetirePriorTo;
+        internal readonly long RetirePriorTo;
 
         /// <summary>
         ///     Connection Id.
@@ -69,7 +69,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly StatelessResetToken StatelessResetToken;
 
-        public NewConnectionIdFrame(ulong sequenceNumber, ulong retirePriorTo, ReadOnlySpan<byte> connectionId,
+        public NewConnectionIdFrame(long sequenceNumber, long retirePriorTo, ReadOnlySpan<byte> connectionId,
             StatelessResetToken statelessResetToken)
         {
             SequenceNumber = sequenceNumber;
@@ -83,7 +83,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return 1 +
                    QuicPrimitives.GetVarIntLength(SequenceNumber) +
                    QuicPrimitives.GetVarIntLength(RetirePriorTo) +
-                   QuicPrimitives.GetVarIntLength((ulong)ConnectionId.Length) +
+                   QuicPrimitives.GetVarIntLength(ConnectionId.Length) +
                    ConnectionId.Length +
                    StatelessResetToken.Length;
         }
@@ -93,8 +93,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.NewConnectionId);
 
-            if (!reader.TryReadVarInt(out ulong sequenceNumber) ||
-                !reader.TryReadVarInt(out ulong retirePriorTo) || retirePriorTo > sequenceNumber ||
+            if (!reader.TryReadVarInt(out long sequenceNumber) ||
+                !reader.TryReadVarInt(out long retirePriorTo) || retirePriorTo > sequenceNumber ||
                 !reader.TryReadUInt8(out byte length) || length > HeaderHelpers.MaxConnectionIdLength ||
                 !reader.TryReadSpan(length, out var connectionId) ||
                 !reader.TryReadStatelessResetToken(out var token))

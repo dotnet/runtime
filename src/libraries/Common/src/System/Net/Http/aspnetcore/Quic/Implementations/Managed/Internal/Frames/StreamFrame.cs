@@ -10,12 +10,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Id of the data stream.
         /// </summary>
-        internal readonly ulong StreamId;
+        internal readonly long StreamId;
 
         /// <summary>
         ///     Byte offset of the carried data in the stream.
         /// </summary>
-        internal readonly ulong Offset;
+        internal readonly long Offset;
 
         /// <summary>
         ///     Flag indicating that this frame marks the end of the stream.
@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly ReadOnlySpan<byte> StreamData;
 
-        internal StreamFrame(ulong streamId, ulong offset, bool fin, ReadOnlySpan<byte> streamData)
+        internal StreamFrame(long streamId, long offset, bool fin, ReadOnlySpan<byte> streamData)
         {
             StreamId = streamId;
             Offset = offset;
@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             StreamData = streamData;
         }
 
-        internal static int GetOverheadLength(ulong streamId, ulong offset, ulong length)
+        internal static int GetOverheadLength(long streamId, long offset, long length)
         {
             return 1 +
                    QuicPrimitives.GetVarIntLength(streamId) +
@@ -45,7 +45,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal int GetSerializedLength()
         {
-            return GetOverheadLength(StreamId, Offset, (ulong) StreamData.Length) +
+            return GetOverheadLength(StreamId, Offset, StreamData.Length) +
                    StreamData.Length;
         }
 
@@ -59,9 +59,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             bool hasLength = (type & FrameType.StreamLenBit) != 0;
             bool hasFin = (type & FrameType.StreamFinBit) != 0;
 
-            ulong length = 0;
-            ulong offset = 0;
-            if (!reader.TryReadVarInt(out ulong streamId) ||
+            long length = 0;
+            long offset = 0;
+            if (!reader.TryReadVarInt(out long streamId) ||
                 hasOffset && !reader.TryReadVarInt(out offset) ||
                 hasLength && !reader.TryReadVarInt(out length) ||
                 offset + length > StreamHelpers.MaxStreamOffset ||
@@ -77,7 +77,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return true;
         }
 
-        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, ulong streamId, ulong offset, int length, bool fin)
+        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, long streamId, long offset, int length, bool fin)
         {
             // TODO-RZ: leave out length if this is the last frame
             var type = FrameType.Stream | FrameType.StreamLenBit;
@@ -88,7 +88,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             writer.WriteVarInt(streamId);
             if (offset != 0)
                 writer.WriteVarInt(offset);
-            writer.WriteVarInt((ulong) length);
+            writer.WriteVarInt(length);
 
             return writer.GetWritableSpan(length);
         }

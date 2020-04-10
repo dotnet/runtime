@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer : BufferBase
     {
-        public OutboundBuffer(ulong maxData)
+        public OutboundBuffer(long maxData)
         {
             UpdateMaxData(maxData);
         }
@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Total number of bytes written into this stream.
         /// </summary>
-        internal ulong WrittenBytes { get; private set; }
+        internal long WrittenBytes { get; private set; }
 
         /// <summary>
         ///     Returns true if buffer contains any readable data.
@@ -42,10 +42,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Returns length of the next contiguous range of data that can be checked out, respecting the <see cref="BufferBase.MaxData"/> parameter.
         /// </summary>
         /// <returns></returns>
-        internal (ulong offset, ulong count) GetNextSendableRange()
+        internal (long offset, long count) GetNextSendableRange()
         {
-            ulong sendableLength = MaxData - _pending[0].Start;
-            ulong count = Math.Min(sendableLength, _pending[0].Length);
+            long sendableLength = MaxData - _pending[0].Start;
+            long count = Math.Min(sendableLength, _pending[0].Length);
             Debug.Assert(count > 0);
             return (_pending[0].Start, count);
         }
@@ -56,10 +56,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination">Destination memory for the data.</param>
         internal void CheckOut(Span<byte> destination)
         {
-            Debug.Assert((ulong) destination.Length <= GetNextSendableRange().count);
+            Debug.Assert(destination.Length <= GetNextSendableRange().count);
 
-            ulong start = _pending.GetMin();
-            ulong end = start + (ulong) destination.Length - 1;
+            long start = _pending.GetMin();
+            long end = start + destination.Length - 1;
 
             _pending.Remove(start, end);
             _checkedOut.Add(start, end);
@@ -83,9 +83,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="data">Data to be sent.</param>
         internal void Enqueue(ReadOnlySpan<byte> data)
         {
-            _pending.Add(WrittenBytes, WrittenBytes + (ulong) data.Length - 1);
+            _pending.Add(WrittenBytes, WrittenBytes + data.Length - 1);
             EnqueueAtEnd(WrittenBytes, data);
-            WrittenBytes += (ulong) data.Length;
+            WrittenBytes += data.Length;
         }
 
         /// <summary>
@@ -93,9 +93,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         /// <param name="offset">Start of the range.</param>
         /// <param name="count">Number of bytes lost.</param>
-        internal void OnLost(ulong offset, ulong count)
+        internal void OnLost(long offset, long count)
         {
-            ulong end = offset + count - 1;
+            long end = offset + count - 1;
 
             Debug.Assert(_checkedOut.Includes(offset, end));
             Debug.Assert(!_pending.Includes(offset, end));
@@ -109,15 +109,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         /// <param name="offset">Start of the range.</param>
         /// <param name="count">Number of bytes acked.</param>
-        internal void OnAck(ulong offset, ulong count)
+        internal void OnAck(long offset, long count)
         {
-            ulong end = offset + count - 1;
+            long end = offset + count - 1;
             Debug.Assert(_checkedOut.Includes(offset, end));
 
             _checkedOut.Remove(offset, end);
 
             // release unneeded data
-            ulong processed = (_pending.Count, _checkedOut.Count) switch
+            long processed = (_pending.Count, _checkedOut.Count) switch
             {
                 (0, 0) => WrittenBytes,
                 (0, _) => _checkedOut.GetMin(),
