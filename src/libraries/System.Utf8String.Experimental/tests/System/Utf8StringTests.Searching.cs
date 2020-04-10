@@ -87,8 +87,8 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TryFindData_Char_WithComparison() => Utf8SpanTests.TryFindData_Char_WithComparison();
 
-        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [MemberData(nameof(TryFindData_Char_WithComparison))]
         public static void TryFind_Char_WithComparison(ustring source, char searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
         {
@@ -240,8 +240,8 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TryFindData_Rune_WithComparison() => Utf8SpanTests.TryFindData_Rune_WithComparison();
 
-        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [MemberData(nameof(TryFindData_Rune_WithComparison))]
         public static void TryFind_Rune_WithComparison(ustring source, Rune searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
         {
@@ -393,8 +393,8 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TryFindData_Utf8String_WithComparison() => Utf8SpanTests.TryFindData_Utf8Span_WithComparison();
 
-        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [MemberData(nameof(TryFindData_Utf8String_WithComparison))]
         public static void TryFind_Utf8String_WithComparison(ustring source, ustring searchTerm, StringComparison comparison, CultureInfo currentCulture, Range? expectedForwardMatch, Range? expectedBackwardMatch)
         {
