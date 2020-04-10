@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
     public class InterfaceImplementedInVersionAttributeTests
     {
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34749", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(null, 0, 0, 0, 0)]
         [InlineData(typeof(int), 255, 255, 255, 255)]
         public void Ctor_DefaultInterface(Type interfaceType, byte majorVersion, byte minorVersion, byte buildVersion, byte revisionVersion)

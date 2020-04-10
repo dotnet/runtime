@@ -11,6 +11,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
     public class PrincipalContextTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_ContextType()
         {
             var context = new PrincipalContext(ContextType.Machine);
@@ -289,6 +290,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(null, null, true)]
         [InlineData("", "", false)]
         public void ValidateCredentials_Invoke_ReturnsExpected(string userName, string password, bool expected)

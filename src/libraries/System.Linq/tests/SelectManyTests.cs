@@ -210,7 +210,7 @@ namespace System.Linq.Tests
             Assert.Equal(source.Last().total, source.SelectMany((e, i) => i == 4 ? e.total : Enumerable.Empty<int?>()));
         }
 
-        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public void IndexOverflow()
         {
             var selected = new FastInfiniteEnumerator<int>().SelectMany((e, i) => Enumerable.Empty<int>());

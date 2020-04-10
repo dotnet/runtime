@@ -777,6 +777,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34396", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [MemberData(nameof(TestingCreateInstanceObjectHandleFullSignatureWinRTData))]
         public static void TestingCreateInstanceObjectHandleFullSignatureWinRT(string assemblyName, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
