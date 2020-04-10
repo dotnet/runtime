@@ -6,7 +6,6 @@ using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
-using QuicError = System.Net.Quic.Implementations.Managed.Internal.QuicError;
 
 namespace System.Net.Quic.Tests
 {
@@ -49,7 +48,7 @@ namespace System.Net.Quic.Tests
 
             _harness.Send1Rtt(_server, _client)
                 .ShouldContainConnectionClose(TransportErrorCode.ProtocolViolation,
-                    QuicError.InvalidAckRange,
+                    Implementations.Managed.QuicError.InvalidAckRange,
                     FrameType.Ack);
         }
 
@@ -66,7 +65,7 @@ namespace System.Net.Quic.Tests
 
             _harness.Send1Rtt(_server, _client)
                 .ShouldContainConnectionClose(TransportErrorCode.ProtocolViolation,
-                    QuicError.InvalidAckRange,
+                    Implementations.Managed.QuicError.InvalidAckRange,
                     FrameType.Ack);
         }
 

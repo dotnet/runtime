@@ -5,7 +5,6 @@ using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
-using QuicError = System.Net.Quic.Implementations.Managed.Internal.QuicError;
 
 namespace System.Net.Quic.Tests
 {
@@ -58,7 +57,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(TransportErrorCode.ProtocolViolation, closeFrame.ErrorCode);
             Assert.True(closeFrame.IsQuicError);
             Assert.Equal(FrameType.Padding, closeFrame.ErrorFrameType); // 0x00
-            Assert.Equal(QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
+            Assert.Equal(Implementations.Managed.QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
         }
 
         [Fact]

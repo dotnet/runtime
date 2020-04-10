@@ -17,5 +17,10 @@ namespace System.Net.Quic.Implementations.Managed
             ReasonPhrase = reasonPhrase;
             IsQuicError = isQuicError;
         }
+
+        internal static readonly string InitialPacketTooShort = "Initial packet too short";
+        internal static readonly string InvalidAckRange = "Invalid ack range";
+        internal static readonly string UnknownFrameType = "Unknown frame type";
+        internal static readonly string NotInRecvState = "Stream is not in Recv state";
     }
 }

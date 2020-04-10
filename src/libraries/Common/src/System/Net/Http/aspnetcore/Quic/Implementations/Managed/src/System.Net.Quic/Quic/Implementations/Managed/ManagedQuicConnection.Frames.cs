@@ -112,10 +112,14 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
+        private ProcessPacketResult DiscardFrameType(QuicReader reader)
+        {
+            reader.ReadFrameType();
+            return ProcessPacketResult.Ok;
+        }
+
         private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, RecvContext context)
         {
-            bool handshakeWanted = false;
-
             while (reader.BytesLeft > 0)
             {
                 var frameType = reader.PeekFrameType();
@@ -130,55 +134,34 @@ namespace System.Net.Quic.Implementations.Managed
                     GetEpoch(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
-                ProcessPacketResult result = ProcessPacketResult.Ok;
-                switch (frameType)
+                ProcessPacketResult result = frameType switch
                 {
-                    case FrameType.Padding:
-                        // discard the padding
-                        reader.ReadFrameType();
-                        break;
-                    case FrameType.Crypto:
-                        handshakeWanted = true;
-                        result = ProcessCryptoFrame(reader, packetType, context);
-                        break;
-                    case FrameType.Ping:
-                        // ack will be elicited, nothing more to do
-                        reader.ReadFrameType();
-                        break;
-                    case FrameType.Ack:
-                        result = ProcessAckFrame(reader, packetType, context);
-                        break;
-                    case FrameType.AckWithEcn:
-                    case FrameType.ResetStream:
-                    case FrameType.StopSending:
-                    case FrameType.NewToken:
-                    case FrameType.Stream:
-                    case FrameType.StreamMask:
-                    case FrameType.MaxData:
-                    case FrameType.MaxStreamData:
-                    case FrameType.MaxStreamsBidirectional:
-                    case FrameType.MaxStreamsUnidirectional:
-                    case FrameType.DataBlocked:
-                    case FrameType.StreamDataBlocked:
-                    case FrameType.StreamsBlockedBidirectional:
-                    case FrameType.StreamsBlockedUnidirectional:
-                    case FrameType.NewConnectionId:
-                    case FrameType.RetireConnectionId:
-                    case FrameType.PathChallenge:
-                    case FrameType.PathResponse:
-                        throw new NotImplementedException();
-                    case FrameType.ConnectionCloseQuic:
-                    case FrameType.ConnectionCloseApplication:
-                        result = ProcessConnectionClose(reader);
-                        break;
-                    case FrameType.HandshakeDone:
-                        Debug.Assert(!_isServer);
-                        _handshakeDoneReceived = true;
-                        reader.ReadFrameType();
-                        break;
-                    default:
-                        return CloseConnection(TransportErrorCode.FrameEncodingError, Internal.QuicError.UnknownFrameType, frameType);
-                }
+                    FrameType.Padding => DiscardFrameType(reader),
+                    FrameType.Ping => DiscardFrameType(reader),
+                    FrameType.Ack => ProcessAckFrame(reader,packetType, context),
+                    FrameType.AckWithEcn => ProcessAckFrame(reader,packetType, context),
+                    FrameType.StopSending => throw new NotImplementedException(),
+                    FrameType.Crypto => ProcessCryptoFrame(reader, packetType, context),
+                    FrameType.NewToken => throw new NotImplementedException(),
+                    FrameType.Stream => throw new NotImplementedException(),
+                    FrameType.StreamMask => throw new NotImplementedException(),
+                    FrameType.MaxData => ProcessMaxDataFrame(reader),
+                    FrameType.MaxStreamData => ProcessMaxStreamDataFrame(reader),
+                    FrameType.MaxStreamsBidirectional => ProcessMaxStreamsFrame(reader),
+                    FrameType.MaxStreamsUnidirectional => ProcessMaxStreamsFrame(reader),
+                    FrameType.DataBlocked => throw new NotImplementedException(),
+                    FrameType.StreamDataBlocked => throw new NotImplementedException(),
+                    FrameType.StreamsBlockedBidirectional => throw new NotImplementedException(),
+                    FrameType.StreamsBlockedUnidirectional => throw new NotImplementedException(),
+                    FrameType.NewConnectionId => throw new NotImplementedException(),
+                    FrameType.RetireConnectionId => throw new NotImplementedException(),
+                    FrameType.PathChallenge => throw new NotImplementedException(),
+                    FrameType.PathResponse => throw new NotImplementedException(),
+                    FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader),
+                    FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader),
+                    FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader),
+                    _ => CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType)
+                };
 
                 switch (result)
                 {
@@ -193,12 +176,55 @@ namespace System.Net.Quic.Implementations.Managed
                 return result;
             }
 
-            // do handshake to set encryption secrets (to be able to process coalesced packets
-            if (handshakeWanted)
+            // do handshake to set encryption secrets (to be able to process coalesced packets)
+            if (context.HandshakeWanted)
             {
                 DoHandshake();
             }
 
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader)
+        {
+            Debug.Assert(!_isServer); // frame not allowed handled elsewhere
+            reader.ReadFrameType();
+            _handshakeDoneReceived = true;
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessMaxStreamDataFrame(QuicReader reader)
+        {
+            if (!MaxStreamDataFrame.Read(reader, out var frame))
+                return ProcessPacketResult.ConnectionClose;
+
+            if (!StreamHelpers.IsReadable(_isServer, (long) frame.StreamId))
+                // TODO-RZ: check stream state
+                return CloseConnection(TransportErrorCode.StreamStateError,
+                    QuicError.NotInRecvState, FrameType.MaxStreamData);
+
+            throw new NotImplementedException();
+        }
+
+        private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
+        {
+            if (!MaxStreamsFrame.Read(reader, out var frame))
+                return ProcessPacketResult.ConnectionClose;
+
+            if (frame.Bidirectional)
+                _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
+            else
+                _peerLimits.UpdateMaxStreamsUni(frame.MaximumStreams);
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
+        {
+            if (!MaxDataFrame.Read(reader, out var frame))
+                return ProcessPacketResult.ConnectionClose;
+
+            _peerLimits.UpdateMaxData(frame.MaximumData);
             return ProcessPacketResult.Ok;
         }
 
@@ -221,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (frame.LargestAcknowledged >= epoch.NextPacketNumber || // acking future packet
                 frame.LargestAcknowledged < frame.FirstAckRange)       // acking negative PN
-                return CloseConnection(TransportErrorCode.ProtocolViolation, Internal.QuicError.InvalidAckRange, FrameType.Ack);
+                return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.InvalidAckRange, FrameType.Ack);
 
             // TODO-RZ: check ackDelay
             Span<PacketNumberRange> ranges =
@@ -240,7 +266,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (ranges[i].Start < gap + acked - 2)
                 {
                     return CloseConnection(TransportErrorCode.FrameEncodingError,
-                        Internal.QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
+                        QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
                 }
 
                 ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
@@ -325,6 +351,8 @@ namespace System.Net.Quic.Implementations.Managed
                     EncryptionLevel level2 = level;
                     stream.Deliver(segment => { _tls.OnDataReceived(level2, segment); });
                 }
+
+                context.HandshakeWanted = true;
             }
             else
             {
