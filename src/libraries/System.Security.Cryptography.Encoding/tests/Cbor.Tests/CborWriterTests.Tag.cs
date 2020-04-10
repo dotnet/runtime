@@ -125,5 +125,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = writer.ToArray();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
+
+        [Theory]
+        [InlineData("0", "c4820000")]
+        [InlineData("1", "c4820001")]
+        [InlineData("-1", "c4820020")]
+        [InlineData("1.1", "c482200b")]
+        [InlineData("1.000", "c482221903e8")]
+        [InlineData("273.15", "c48221196ab3")]
+        [InlineData("79228162514264337593543950335", "c48200c24cffffffffffffffffffffffff")] // decimal.MaxValue
+        [InlineData("7922816251426433759354395033.5", "c48220c24cffffffffffffffffffffffff")]
+        [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
+        public static void WriteDecimal_SingleValue_HappyPath(string stringValue, string expectedHexEncoding)
+        {
+            decimal value = Decimal.Parse(stringValue);
+            using var writer = new CborWriter();
+            writer.WriteDecimal(value);
+            byte[] encoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
+        }
     }
 }

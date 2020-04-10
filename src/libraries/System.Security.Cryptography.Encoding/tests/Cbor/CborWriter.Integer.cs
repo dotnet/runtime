@@ -31,6 +31,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
         }
 
+        // Writes a CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public void WriteCborNegativeIntegerEncoding(ulong value)
+        {
+            WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
+            AdvanceDataItemCounters();
+        }
+
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
         private void WriteUnsignedInteger(CborMajorType type, ulong value)
         {

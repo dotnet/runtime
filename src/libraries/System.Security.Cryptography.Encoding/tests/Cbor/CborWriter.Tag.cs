@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Numerics;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -43,6 +44,65 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             WriteTag(isUnsigned ? CborTag.UnsignedBigNum : CborTag.NegativeBigNum);
             WriteByteString(unsignedBigEndianEncoding);
+        }
+
+        public void WriteDecimal(decimal value)
+        {
+            // implements https://tools.ietf.org/html/rfc7049#section-2.4.3
+            DecimalHelpers.Deconstruct(value, out decimal mantissa, out byte scale);
+
+            WriteTag(CborTag.DecimalFraction);
+            WriteStartArray(2);
+            WriteInt64(-(long)scale);
+
+            if (-1m - ulong.MinValue <= mantissa && mantissa <= ulong.MaxValue)
+            {
+                if (mantissa >= 0m)
+                {
+                    WriteUInt64((ulong)mantissa);
+                }
+                else
+                {
+                    WriteCborNegativeIntegerEncoding((ulong)(-1m - mantissa));
+                }
+            }
+            else
+            {
+                // the mantissa can also be a BigNum
+                WriteBigInteger((BigInteger)mantissa);
+            }
+
+            WriteEndArray();
+        }
+    }
+
+    internal static class DecimalHelpers
+    {
+        private const int SignMask = unchecked((int)0x80000000);
+        private const int ScaleMask = 0x00ff0000;
+        private const int ScaleShift = 16;
+
+        private static readonly ThreadLocal<int[]> s_decimalBuf = new ThreadLocal<int[]>(() => new int[4]);
+
+        public static decimal Reconstruct(decimal mantissa, byte scale)
+        {
+            int[] buf = s_decimalBuf.Value;
+            Decimal.GetBits(mantissa, buf);
+
+            int flags = buf[3];
+            bool isNegative = (flags & SignMask) == SignMask;
+            return new decimal(lo: buf[0], mid: buf[1], hi: buf[2], isNegative: isNegative, scale: scale);
+        }
+
+        public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
+        {
+            int[] buf = s_decimalBuf.Value;
+            Decimal.GetBits(value, buf);
+
+            int flags = buf[3];
+            bool isNegative = (flags & SignMask) == SignMask;
+            mantissa = new decimal(lo: buf[0], mid: buf[1], hi: buf[2], isNegative: isNegative, scale: 0);
+            scale = (byte)((flags & ScaleMask) >> ScaleShift);
         }
     }
 }

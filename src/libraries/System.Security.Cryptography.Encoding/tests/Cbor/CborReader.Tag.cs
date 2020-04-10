@@ -112,5 +112,46 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
             return isUnsigned ? unsignedValue : -1 - unsignedValue;
         }
+
+        public decimal ReadDecimal()
+        {
+            ReadTag(expectedTag: CborTag.DecimalFraction);
+
+            if (Peek() != CborReaderState.StartArray || ReadStartArray() != 2)
+            {
+                throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+            }
+
+            long scale = -ReadInt64();
+            decimal mantissa;
+
+            if (scale < 0 || scale > 28)
+            {
+                // TODO support positive exponents
+                throw new OverflowException();
+            }
+
+            switch (Peek())
+            {
+                case CborReaderState.UnsignedInteger:
+                    mantissa = ReadUInt64();
+                    break;
+
+                case CborReaderState.NegativeInteger:
+                    mantissa = -1m - ReadCborNegativeIntegerEncoding();
+                    break;
+
+                case CborReaderState.Tag:
+                    mantissa = (decimal)ReadBigInteger();
+                    break;
+
+                default:
+                    throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+            }
+
+            ReadEndArray();
+
+            return DecimalHelpers.Reconstruct(mantissa, (byte)scale);
+        }
     }
 }

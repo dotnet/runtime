@@ -228,5 +228,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<FormatException>(() => reader.ReadBigInteger());
         }
+
+        [Theory]
+        [InlineData("0", "c4820000")]
+        [InlineData("1", "c4820001")]
+        [InlineData("-1", "c4820020")]
+        [InlineData("1.1", "c482200b")]
+        [InlineData("1.000", "c482221903e8")]
+        [InlineData("273.15", "c48221196ab3")]
+        [InlineData("79228162514264337593543950335", "c48200c24cffffffffffffffffffffffff")] // decimal.MaxValue
+        [InlineData("7922816251426433759354395033.5", "c48220c24cffffffffffffffffffffffff")]
+        [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
+        public static void ReadDecimal_SingleValue_HappyPath(string expectedStringValue, string hexEncoding)
+        {
+            decimal expectedValue = Decimal.Parse(expectedStringValue);
+            byte[] data = hexEncoding.HexToByteArray();
+
+            var reader = new CborReader(data);
+
+            decimal result = reader.ReadDecimal();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(expectedValue, result);
+        }
     }
 }
