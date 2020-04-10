@@ -16,9 +16,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_SystemTypeValueNode_UnknownStringValue ();
 			Branch_MethodParameterValueNode (typeof (ExpressionFieldString), "Foo");
 			Branch_UnrecognizedPatterns ();
-			// TODO
-			Expression.Field(null, typeof(ADerived), "_protectedFieldOnBase");
-			Expression.Field(null, typeof(ADerived), "_publicFieldOnBase");
 		}
 
 		[Kept]
@@ -29,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestType (0);
 			TestType (1);
 			StaticFieldExpected ();
+			FieldsOnBaseType ();
 		}
 
 		[Kept]
@@ -96,18 +94,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			Expression.Field (null, T, "Foo");
 		}
-		#endregion
 
-		#region UnrecognizedReflectionAccessPatterns
-		[UnrecognizedReflectionAccessPattern (
-				typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
+		[Kept]
+		static void FieldsOnBaseType ()
+		{
+			Expression.Field (null, typeof (ADerived), "_protectedFieldOnBase");
+			Expression.Field (null, typeof (ADerived), "_publicFieldOnBase");
+		}
+
 		[Kept]
 		static void StaticFieldExpected ()
 		{
 			var expr = Expression.Field (null, typeof (ExpressionFieldString), "TestOnlyStatic2");
 		}
+		#endregion
 
-
+		#region UnrecognizedReflectionAccessPatterns
 		[UnrecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
@@ -173,22 +175,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			return "unknownstring";
 		}
+
+		[Kept]
+		class ABase
+		{
+			[Kept]
+			protected static bool _protectedFieldOnBase;
+
+			[Kept]
+			public static bool _publicFieldOnBase;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
+		}
 		#endregion
-	}
-
-	[Kept]
-	class ABase
-	{
-		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
-		protected static bool _protectedFieldOnBase;
-
-		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
-		public static bool _publicFieldOnBase;
-	}
-
-	[Kept]
-	[KeptBaseType (typeof (ABase))]
-	class ADerived : ABase
-	{
 	}
 }

@@ -3537,10 +3537,12 @@ namespace Mono.Linker.Steps {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
 											// TODO: Change this as needed after deciding whether or not we are to keep
 											// all methods on a type that was accessed via reflection.
-											if (stringParam is KnownStringValue stringValue)
-												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-											else
+											if (stringParam is KnownStringValue stringValue) {
+												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+												reflectionContext.RecordHandledPattern ();
+											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+											}
 										}
 									} else if (value == NullValue.Instance) {
 										reflectionContext.RecordHandledPattern ();
@@ -3573,10 +3575,13 @@ namespace Mono.Linker.Steps {
 												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
 												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
 												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
-												if (calledMethod.Name [0] == 'P')
-													MarkPropertiesFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
-												else
-													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
+												if (calledMethod.Name [0] == 'P') {
+													MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, staticOnly);
+												} else {
+													MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, staticOnly);
+												}
+
+												reflectionContext.RecordHandledPattern ();
 											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											}
@@ -3605,10 +3610,12 @@ namespace Mono.Linker.Steps {
 								reflectionContext.AnalyzingPattern();
 
 								foreach (var value in methodParams [0].UniqueValues ()) {
-									if (value is SystemTypeValue systemTypeValue)
-										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parametersCount: 0);
-									else
+									if (value is SystemTypeValue systemTypeValue) {
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+										reflectionContext.RecordHandledPattern ();
+									} else {
 										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters [0]);
+									}
 								}
 							}
 							break;
@@ -3717,7 +3724,9 @@ namespace Mono.Linker.Steps {
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										// Special case known type values as we can do better by applying exact binding flags and parameter count.
-										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented,
+											ctorParameterCount == null ? (Func<MethodDefinition, bool>) null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
+										reflectionContext.RecordHandledPattern ();
 									} else {
 										// Otherwise fall back to the bitfield requirements
 										var requiredMemberKinds = ctorParameterCount == 0
@@ -3879,15 +3888,14 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkMethodsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, BindingFlags? bindingFlags, int? parametersCount = null)
+			void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
 			{
-				bool foundMatch = false;
-				foreach (var method in declaringType.Methods) {
-					var mname = method.Name;
-
-					if (mname != name) {
+				foreach (var method in type.Methods) {
+					if (!method.IsConstructor)
 						continue;
-					}
+
+					if (filter != null && !filter (method))
+						continue;
 
 					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
 						continue;
@@ -3901,89 +3909,12 @@ namespace Mono.Linker.Steps {
 					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
 						continue;
 
-					if (parametersCount != null && parametersCount != method.Parameters.Count)
-						continue;
-
-					foundMatch = true;
-					var methodCalling = reflectionContext.MethodCalling;
-					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-				}
-
-				if (!foundMatch) {
-					bool publicOnly = (bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public;
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve {(publicOnly ? "public" : "")} method `{name}` on type `{declaringType.FullName}`.");
-				}
-			}
-
-			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				foreach (var property in declaringType.Properties) {
-					if (property.Name != name)
-						continue;
-
-					bool markedAny = false;
-					var methodCalling = reflectionContext.MethodCalling;
-
-					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
-					// Be conservative and mark everything for the property.
-					var getter = property.GetMethod;
-					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
-					}
-
-					var setter = property.SetMethod;
-					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
-					}
-
-					if (markedAny) {
-						foundMatch = true;
-						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					}
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				var methodCalling = reflectionContext.MethodCalling;
-				foreach (var field in declaringType.Fields) {
-					if (field.Name != name)
-						continue;
-
-					if (staticOnly && !field.IsStatic)
-						continue;
-
-					foundMatch = true;
-					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					break;
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter)
-			{
-				foreach (var method in type.Methods) {
-					if (!method.IsConstructor)
-						continue;
-
-					if (filter != null && !filter (method))
-						continue;
-
 					var methodCalling = reflectionContext.MethodCalling;
 					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
 				}
 			}
 
-			void MarkMethodsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter)
+			void MarkMethodsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -4003,6 +3934,18 @@ namespace Mono.Linker.Steps {
 						if (filter != null && !filter (method))
 							continue;
 
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && method.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !method.IsPublic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
+							continue;
+
 						var methodCalling = reflectionContext.MethodCalling;
 						reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
 					}
@@ -4012,7 +3955,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter)
+			void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter, bool staticOnly = false)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -4026,6 +3969,9 @@ namespace Mono.Linker.Steps {
 						// This is intentional as reflection treats these as fields as well.
 
 						if (filter != null && !filter (field))
+							continue;
+
+						if (staticOnly && !field.IsStatic)
 							continue;
 
 						var methodCalling = reflectionContext.MethodCalling;
@@ -4048,7 +3994,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter)
+			void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter, bool staticOnly = false)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -4063,6 +4009,11 @@ namespace Mono.Linker.Steps {
 
 						if (filter != null && !filter (property))
 							continue;
+
+						if (staticOnly) {
+							if ((property.GetMethod != null) && !property.GetMethod.IsStatic) continue;
+							if ((property.SetMethod != null) && !property.SetMethod.IsStatic) continue;
+						}
 
 						var methodCalling = reflectionContext.MethodCalling;
 						reflectionContext.RecordRecognizedPattern (property, () => {
