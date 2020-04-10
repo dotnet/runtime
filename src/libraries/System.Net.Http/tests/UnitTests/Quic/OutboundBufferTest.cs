@@ -112,14 +112,21 @@ namespace System.Net.Quic.Tests
             EnqueueBytes(10);
             buffer.UpdateMaxData(50);
 
+            Assert.False(buffer.SizeKnown);
+            buffer.MarkEndOfData();
+            Assert.True(buffer.SizeKnown);
+            Assert.False(buffer.Finished);
+
             byte[] destination = new byte[5];
             buffer.CheckOut(destination);
             buffer.OnAck(0, 5);
             Assert.True(buffer.HasUnackedData);
+            Assert.False(buffer.Finished);
 
             buffer.CheckOut(destination);
             buffer.OnAck(5, 5);
 
+            Assert.True(buffer.Finished);
             Assert.False(buffer.HasUnackedData);
         }
     }

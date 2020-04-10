@@ -46,7 +46,7 @@ namespace System.Net.Quic.Implementations.Managed
             return _streams.CreateOutboundStream(_isServer, unidirectional, _localTransportParameters, _peerTransportParameters);
         }
 
-        internal ManagedQuicStream AcceptStream()
+        internal ManagedQuicStream? AcceptStream()
         {
             _streams.IncomingStreams.Reader.TryRead(out var stream);
             return stream;

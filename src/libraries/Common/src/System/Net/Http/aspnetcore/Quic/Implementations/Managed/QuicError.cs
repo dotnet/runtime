@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Net.Quic.Implementations.Managed.Internal;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -18,13 +20,15 @@ namespace System.Net.Quic.Implementations.Managed
             IsQuicError = isQuicError;
         }
 
-        internal static readonly string InitialPacketTooShort = "Initial packet too short";
-        internal static readonly string InvalidAckRange = "Invalid ack range";
-        internal static readonly string UnknownFrameType = "Unknown frame type";
-        internal static readonly string NotInRecvState = "Stream is not in Recv state";
-        internal static readonly string StreamsLimitExceeded = "Streams limit exceeded";
-        internal static readonly string StreamMaxDataExceeded = "Streams max data limit exceeded";
-        internal static readonly string StreamNotWritable = "Stream is not writable";
-        internal static readonly string UnableToDeserialize = "Unable to deserialize";
+        internal const string InitialPacketTooShort = "Initial packet too short";
+        internal const string InvalidAckRange = "Invalid ack range";
+        internal const string UnknownFrameType = "Unknown frame type";
+        internal const string NotInRecvState = "Stream is not in Recv state";
+        internal const string StreamsLimitExceeded = "Streams limit exceeded";
+        internal const string StreamMaxDataExceeded = "Streams max data limit exceeded";
+        internal const string StreamNotWritable = "Stream is not writable";
+        internal const string InconsistentFinalSize = "Inconsistent stream final size";
+        internal const string WritingPastFinalSize = "Writing data past stream final size";
+        internal const string UnableToDeserialize = "Unable to deserialize";
     }
 }

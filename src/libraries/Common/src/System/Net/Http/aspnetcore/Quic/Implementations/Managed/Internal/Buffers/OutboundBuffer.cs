@@ -29,6 +29,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long WrittenBytes { get; private set; }
 
         /// <summary>
+        ///     True if the stream is closed for further writing (no more data can be added).
+        /// </summary>
+        internal bool SizeKnown { get; private set; }
+
+        /// <summary>
+        ///     True if all data has been transmitted and acknowledged.
+        /// </summary>
+        internal bool Finished => SizeKnown && !HasUnackedData;
+
+        /// <summary>
         ///     Returns true if buffer contains any readable data.
         /// </summary>
         internal bool HasPendingData => _pending.Count > 0 && _pending[0].Start < MaxData;
@@ -44,6 +54,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <returns></returns>
         internal (long offset, long count) GetNextSendableRange()
         {
+            if (_pending.Count == 0) return (WrittenBytes, 0);
+
             long sendableLength = MaxData - _pending[0].Start;
             long count = Math.Min(sendableLength, _pending[0].Length);
             Debug.Assert(count > 0);
@@ -56,6 +68,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination">Destination memory for the data.</param>
         internal void CheckOut(Span<byte> destination)
         {
+            if (destination.IsEmpty)
+                return;
+
             Debug.Assert(destination.Length <= GetNextSendableRange().count);
 
             long start = _pending.GetMin();
@@ -83,9 +98,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="data">Data to be sent.</param>
         internal void Enqueue(ReadOnlySpan<byte> data)
         {
+            Debug.Assert(!SizeKnown, "Trying to add data to finished OutboundBuffer");
+
             _pending.Add(WrittenBytes, WrittenBytes + data.Length - 1);
             EnqueueAtEnd(WrittenBytes, data);
             WrittenBytes += data.Length;
+        }
+
+        /// <summary>
+        ///     Marks the stream as finished, no more data can be added to the stream.
+        /// </summary>
+        internal void MarkEndOfData()
+        {
+            SizeKnown = true;
         }
 
         /// <summary>
@@ -137,7 +162,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 ArrayPool<byte>.Shared.Return(_chunks[i].Buffer);
             }
 
-            _chunks.RemoveRange(0,toRemove);
+            _chunks.RemoveRange(0, toRemove);
         }
     }
 }

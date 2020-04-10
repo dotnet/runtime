@@ -45,7 +45,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Set of all received packet numbers.
         /// </summary>
-        internal PacketNumberWindow ReceivedPacketNumbers { get; } = new PacketNumberWindow();
+        internal PacketNumberWindow ReceivedPacketNumbers;
 
         /// <summary>
         ///     Flag that next time packets for sending are requested, an ack frame should be added, because an ack eliciting frame was received meanwhile.

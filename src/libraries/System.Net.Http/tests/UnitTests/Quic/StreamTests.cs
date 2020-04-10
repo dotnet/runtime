@@ -64,6 +64,37 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public void SendsFinWithLastFrame()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            clientStream.Shutdown();
+
+            var frame = _harness.Send1RttWithFrame<StreamFrame>(_client, _server);
+            Assert.True(frame.Fin);
+        }
+
+
+        [Fact]
+        public void SendsEmptyStreamFrameWithFin()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+
+            // send data before marking end of stream
+            clientStream.Write(data);
+            var frame = _harness.Send1RttWithFrame<StreamFrame>(_client, _server);
+            Assert.False(frame.Fin);
+
+            // no more data to send, just the fin bit
+            clientStream.Shutdown();
+            frame = _harness.Send1RttWithFrame<StreamFrame>(_client, _server);
+
+            Assert.True(frame.Fin);
+        }
+
+        [Fact]
         public void ClosesConnectionWhenStreamLimitIsExceeded()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
@@ -82,7 +113,23 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public void ClosesConnectionWhenSendingPastMaxOffset()
+        public void ClosesConnectionWhenSendingPastMaxRepresentableOffset()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+                {
+                    frame.Offset = StreamHelpers.MaxStreamOffset;
+                });
+
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.FrameEncodingError,
+                QuicError.UnableToDeserialize);
+        }
+
+        [Fact]
+        public void ClosesConnectionWhenSendingPastFin()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
             var clientStream = _client.OpenStream(true);

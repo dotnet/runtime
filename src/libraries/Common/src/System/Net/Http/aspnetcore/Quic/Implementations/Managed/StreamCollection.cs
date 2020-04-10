@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -120,6 +122,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         public void MarkFlushable(ManagedQuicStream stream, bool flushable)
         {
+            Debug.Assert(stream.CanWrite);
             if (flushable)
                 _flushable.Add(stream);
             else

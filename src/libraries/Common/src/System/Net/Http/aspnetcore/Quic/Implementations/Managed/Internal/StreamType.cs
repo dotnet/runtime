@@ -3,7 +3,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// <summary>
     ///     Type of the stream.
     /// </summary>
-    public enum StreamType : uint
+    internal enum StreamType : uint
     {
         ClientInitiatedBidirectional = 0x0,
         ServerInitiatedBidirectional = 0x1,

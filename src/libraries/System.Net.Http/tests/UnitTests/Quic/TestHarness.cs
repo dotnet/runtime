@@ -47,6 +47,13 @@ namespace System.Net.Quic.Tests
             return Assert.IsType<OneRttPacket>(flight.Packets[0]);
         }
 
+        internal TFrame Send1RttWithFrame<TFrame>(ManagedQuicConnection source,
+            ManagedQuicConnection destination) where TFrame : FrameBase
+        {
+            var packet = Send1Rtt(source, destination);
+            return packet.ShouldHaveFrame<TFrame>();
+        }
+
         internal void Intercept1Rtt(ManagedQuicConnection source, ManagedQuicConnection destination,
             Action<OneRttPacket> interceptCallback)
         {

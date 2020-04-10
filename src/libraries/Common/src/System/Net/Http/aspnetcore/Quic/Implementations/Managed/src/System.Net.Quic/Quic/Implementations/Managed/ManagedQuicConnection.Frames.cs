@@ -138,8 +138,8 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     FrameType.Padding => DiscardFrameType(reader),
                     FrameType.Ping => DiscardFrameType(reader),
-                    FrameType.Ack => ProcessAckFrame(reader,packetType, context),
-                    FrameType.AckWithEcn => ProcessAckFrame(reader,packetType, context),
+                    FrameType.Ack => ProcessAckFrame(reader, packetType, context),
+                    FrameType.AckWithEcn => ProcessAckFrame(reader, packetType, context),
                     FrameType.StopSending => throw new NotImplementedException(),
                     FrameType.Crypto => ProcessCryptoFrame(reader, packetType, context),
                     FrameType.NewToken => throw new NotImplementedException(),
@@ -374,6 +374,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (index > limit)
             {
+                // Flow control violated
                 return CloseConnection(TransportErrorCode.StreamLimitError, QuicError.StreamsLimitExceeded,
                     FrameType.Stream);
             }
@@ -381,11 +382,32 @@ namespace System.Net.Quic.Implementations.Managed
             var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer);
             if (stream.InboundBuffer == null)
             {
+                // Flow trying to write into receive only stream
                 return CloseConnection(TransportErrorCode.StreamStateError, QuicError.StreamNotWritable,
                     FrameType.Stream);
             }
 
-            stream.InboundBuffer!.Receive(frame.Offset, frame.StreamData);
+            var buffer = stream.InboundBuffer!;
+
+            if (frame.Fin)
+            {
+                long finalSize = frame.Offset + frame.StreamData.Length;
+
+                if (buffer.FinalSize != null && buffer.FinalSize != finalSize ||
+                    buffer.EstimatedSize > finalSize)
+                {
+                    return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.InconsistentFinalSize);
+                }
+
+                buffer.FinalSize = finalSize;
+            }
+
+            if (buffer.FinalSize != null && frame.Offset + frame.StreamData.Length > buffer.FinalSize)
+            {
+                return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize);
+            }
+
+            buffer.Receive(frame.Offset, frame.StreamData);
 
             return ProcessPacketResult.Ok;
         }
@@ -503,22 +525,40 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteStreamFrames(QuicWriter writer, SendContext context)
         {
-            var stream = _streams.GetFirstFlushableStream();
-            if (stream == null)
-                return;
+            ManagedQuicStream? stream;
+            while ((stream = _streams.GetFirstFlushableStream()) != null)
+            {
+                var buffer = stream!.OutboundBuffer!;
+                Debug.Assert(buffer.HasPendingData || buffer.SizeKnown);
 
-            var buffer = stream.OutboundBuffer!;
-            Debug.Assert(buffer.HasPendingData);
+                (long offset, long count) = buffer.GetNextSendableRange();
+                int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, count);
+                count = Math.Min(count,  writer.BytesAvailable - overhead);
 
-            (long offset, long count) = buffer.GetNextSendableRange();
-            var actualLength = Math.Min((int) count,  writer.BytesAvailable - 8);
+                // TODO-RZ: respect stream MaxData limits
+                if (count < 0)
+                {
+                    break; // no more data can fit into the packet
+                }
 
-            var data = StreamFrame.ReservePayloadBuffer(writer, stream.StreamId, offset, actualLength, false);
-            buffer.CheckOut(data);
+                bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
 
-            var ranges = new RangeSet();
-            ranges.Add(offset, offset + actualLength - 1);
-            context.SentPacket.SentStreamData.Add(stream.StreamId, ranges);
+                var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int) count, fin);
+
+                if (count > 0)
+                {
+                    // TODO-RZ: we need to note the sent FIN bit even if we sent no data.
+                    buffer.CheckOut(data);
+
+                    if (!context.SentPacket.SentStreamData.TryGetValue(stream!.StreamId, out var ranges))
+                        ranges = context.SentPacket.SentStreamData[stream!.StreamId] = new RangeSet();
+
+                    ranges.Add(offset, offset + count - 1);
+                }
+
+                if (!buffer.HasPendingData)
+                    _streams.MarkFlushable(stream!, false);
+            }
         }
     }
 }

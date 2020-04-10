@@ -27,7 +27,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Final size of the stream. Null if final size is not known yet.
         /// </summary>
-        internal long? FinalSize { get; private set; }
+        internal long? FinalSize { get; set; }
+
+        /// <summary>
+        ///     Estimated size of the stream. Final size may not be lower than this value.
+        /// </summary>
+        internal long EstimatedSize => _undelivered.Count > 0 ? _undelivered.GetMax() : BytesRead;
 
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
@@ -43,6 +48,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="data">The data to be received.</param>
         internal void Receive(long offset, ReadOnlySpan<byte> data)
         {
+            Debug.Assert(FinalSize == null || offset + data.Length <= FinalSize, "Writing after final size");
+
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
             long deliverable = BytesRead + BytesAvailable;
             if (offset + data.Length < deliverable)
             {

@@ -65,7 +65,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits for this endpoint for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _localLimits;
+        private ConnectionFlowControlLimits _localLimits = default;
 
         /// <summary>
         ///     Flow control limits for the peer endpoint for the entire connection.

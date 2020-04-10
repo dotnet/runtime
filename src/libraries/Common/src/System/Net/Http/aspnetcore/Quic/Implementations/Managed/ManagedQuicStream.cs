@@ -54,7 +54,9 @@ namespace System.Net.Quic.Implementations.Managed
         internal override void AbortWrite(long errorCode) => throw new NotImplementedException();
 
         internal override bool CanWrite => OutboundBuffer != null;
-        internal override void Write(ReadOnlySpan<byte> buffer)
+        internal override void Write(ReadOnlySpan<byte> buffer) => Write(buffer, false);
+
+        internal void Write(ReadOnlySpan<byte> buffer, bool endStream)
         {
             ThrowIfDisposed();
             ThrowIfNotWritable();
@@ -78,13 +80,26 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-        internal override void Shutdown() => throw new NotImplementedException();
+        internal override void Shutdown()
+        {
+            // TODO-RZ: is this really intened use for this method?
+            if (CanWrite)
+            {
+                OutboundBuffer!.MarkEndOfData();
+                // ensure that the stream is marked as flushable so that the fin bit is sent even if no more data was written since last time
+                _streamCollection.MarkFlushable(this, true);
+            }
+        }
 
         internal override void Flush() => throw new NotImplementedException();
 
         internal override Task FlushAsync(CancellationToken cancellationToken) => throw new NotImplementedException();
 
-        public override void Dispose() => throw new NotImplementedException();
+        public override void Dispose()
+        {
+            _disposed = true;
+            throw new NotImplementedException();
+        }
 
         public override ValueTask DisposeAsync() => throw new NotImplementedException();
 

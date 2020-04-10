@@ -102,7 +102,7 @@ namespace System.Net.Quic.Implementations.Managed
             TransportParameters localTransportParams)
         {
             // explicitly set allowed suites
-            var ciphers = new []
+            var ciphers = new TlsCipherSuite[]
             {
                 TlsCipherSuite.TLS_AES_128_GCM_SHA256,
                 TlsCipherSuite.TLS_AES_128_CCM_SHA256,
