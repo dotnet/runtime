@@ -13,10 +13,6 @@
 #include "eexcp.h"
 #include "exstatecommon.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define USE_PER_FRAME_PINVOKE_INIT
-#endif // TARGET_ARM || TARGET_X86
-
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
@@ -195,10 +191,8 @@ public:
         DWORD dwExceptionFlags,
         StackFrame sf,
         Thread* pThread,
-        StackTraceState STState
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-        , PVOID pICFSetAsLimitFrame
-#endif // USE_PER_FRAME_PINVOKE_INIT
+        StackTraceState STState,
+        PVOID pICFSetAsLimitFrame
         );
 
     CLRUnwindStatus ProcessExplicitFrame(

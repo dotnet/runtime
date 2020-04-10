@@ -690,7 +690,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void GetHashCode()
+        public void GetHashCodeTest()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             int iHashCode;
@@ -1431,7 +1431,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void ToString()
+        public void ToStringTest()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
             dt.DisplayExpression = dt.Columns[0].ColumnName;

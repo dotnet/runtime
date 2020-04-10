@@ -24,7 +24,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Null(workspace.Title);
         }
 
-        public static IEnumerable<object[]> Ctor_String_Collections()
+        public static IEnumerable<object[]> Ctor_String_Collections_Data()
         {
             yield return new object[] { null, null };
             yield return new object[] { "", new ResourceCollectionInfo[0] };
@@ -32,7 +32,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Ctor_String_Collections))]
+        [MemberData(nameof(Ctor_String_Collections_Data))]
         public void Ctor_String_Collections(string title, ResourceCollectionInfo[] collections)
         {
             var workspace = new Workspace(title, collections);
@@ -51,7 +51,7 @@ namespace System.ServiceModel.Syndication.Tests
             }
         }
 
-        public static IEnumerable<object[]> Ctor_TextSyndicationContent_Collections()
+        public static IEnumerable<object[]> Ctor_TextSyndicationContent_Collections_Data()
         {
             yield return new object[] { null, null };
             yield return new object[] { new TextSyndicationContent("", TextSyndicationContentKind.Html), new ResourceCollectionInfo[0] };
@@ -59,7 +59,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Ctor_TextSyndicationContent_Collections))]
+        [MemberData(nameof(Ctor_TextSyndicationContent_Collections_Data))]
         public void Ctor_TextSyndicationContent_Collections(TextSyndicationContent title, ResourceCollectionInfo[] collections)
         {
             var workspace = new Workspace(title, collections);

@@ -192,6 +192,66 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
+            // Using ^ with multiline
+            yield return new object[]
+            {
+                "^", "", RegexOptions.Multiline,
+                new[] { new CaptureData("", 0, 0) }
+            };
+            yield return new object[]
+            {
+                "^", "\n\n\n", RegexOptions.Multiline,
+                new[]
+                {
+                    new CaptureData("", 0, 0),
+                    new CaptureData("", 1, 0),
+                    new CaptureData("", 2, 0),
+                    new CaptureData("", 3, 0)
+                }
+            };
+            yield return new object[]
+            {
+                "^abc", "abc\nabc \ndef abc \nab\nabc", RegexOptions.Multiline,
+                new[]
+                {
+                    new CaptureData("abc", 0, 3),
+                    new CaptureData("abc", 4, 3),
+                    new CaptureData("abc", 21, 3),
+                }
+            };
+            yield return new object[]
+            {
+                @"^\w{5}", "abc\ndefg\n\nhijkl\n", RegexOptions.Multiline,
+                new[]
+                {
+                    new CaptureData("hijkl", 10, 5),
+                }
+            };
+            yield return new object[]
+            {
+                @"^.*$", "abc\ndefg\n\nhijkl\n", RegexOptions.Multiline,
+                new[]
+                {
+                    new CaptureData("abc", 0, 3),
+                    new CaptureData("defg", 4, 4),
+                    new CaptureData("", 9, 0),
+                    new CaptureData("hijkl", 10, 5),
+                    new CaptureData("", 16, 0),
+                }
+            };
+            yield return new object[]
+            {
+                @"^.*$", "abc\ndefg\n\nhijkl\n", RegexOptions.Multiline | RegexOptions.RightToLeft,
+                new[]
+                {
+                    new CaptureData("", 16, 0),
+                    new CaptureData("hijkl", 10, 5),
+                    new CaptureData("", 9, 0),
+                    new CaptureData("defg", 4, 4),
+                    new CaptureData("abc", 0, 3),
+                }
+            };
+
             if (!PlatformDetection.IsNetFramework)
             {
                 // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075

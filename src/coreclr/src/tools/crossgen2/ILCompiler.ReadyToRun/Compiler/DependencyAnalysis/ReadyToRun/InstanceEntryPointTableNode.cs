@@ -50,46 +50,45 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
             Dictionary<byte[], BlobVertex> uniqueSignatures = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
-                if (method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation)
+                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation);
+
+                int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
+
+                // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
+                EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
+                ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+
+                ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
+                signatureBuilder.EmitMethodSignature(
+                    new MethodWithToken(method.Method, moduleToken, constrainedType: null),
+                    enforceDefEncoding: true,
+                    enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
+                    factory.SignatureContext,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: false);
+                byte[] signature = signatureBuilder.ToArray();
+                BlobVertex signatureBlob;
+                if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
                 {
-                    int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
-
-                    // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
-                    EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
-                    ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
-
-                    ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
-                    signatureBuilder.EmitMethodSignature(
-                        new MethodWithToken(method.Method, moduleToken, constrainedType: null),
-                        enforceDefEncoding: true,
-                        enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
-                        factory.SignatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: false);
-                    byte[] signature = signatureBuilder.ToArray();
-                    BlobVertex signatureBlob;
-                    if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
-                    {
-                        signatureBlob = new BlobVertex(signature);
-                        hashtableSection.Place(signatureBlob);
-                        uniqueSignatures.Add(signature, signatureBlob);
-                    }
-
-                    byte[] fixup = method.GetFixupBlob(factory);
-                    BlobVertex fixupBlob = null;
-                    if (fixup != null && !uniqueFixups.TryGetValue(fixup, out fixupBlob))
-                    {
-                        fixupBlob = new BlobVertex(fixup);
-                        hashtableSection.Place(fixupBlob);
-                        uniqueFixups.Add(fixup, fixupBlob);
-                    }
-
-                    EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
-                    hashtableSection.Place(entryPointVertex);
-                    vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method.Method)), entryPointVertex);
+                    signatureBlob = new BlobVertex(signature);
+                    hashtableSection.Place(signatureBlob);
+                    uniqueSignatures.Add(signature, signatureBlob);
                 }
+
+                byte[] fixup = method.GetFixupBlob(factory);
+                BlobVertex fixupBlob = null;
+                if (fixup != null && !uniqueFixups.TryGetValue(fixup, out fixupBlob))
+                {
+                    fixupBlob = new BlobVertex(fixup);
+                    hashtableSection.Place(fixupBlob);
+                    uniqueFixups.Add(fixup, fixupBlob);
+                }
+
+                EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
+                hashtableSection.Place(entryPointVertex);
+                vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method.Method)), entryPointVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

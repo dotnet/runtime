@@ -20,6 +20,12 @@ namespace System.Text.Json.Serialization
             _options = options;
         }
 
+        public ConverterList(JsonSerializerOptions options, ConverterList source)
+        {
+            _options = options;
+            _list = new List<JsonConverter>(source._list);
+        }
+
         public JsonConverter this[int index]
         {
             get

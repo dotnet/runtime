@@ -974,6 +974,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void Test_LargeSize_STA()
         {

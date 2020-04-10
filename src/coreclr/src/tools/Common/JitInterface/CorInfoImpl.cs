@@ -2951,7 +2951,7 @@ namespace Internal.JitInterface
                 if (!isMethodDefinedInCoreLib())
 #endif
                 {
-                    _actualInstructionSetSupported.AddInstructionSet(instructionSet);
+                    _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }
         }

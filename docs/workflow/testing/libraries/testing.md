@@ -7,30 +7,28 @@ To build the tests and run them you can call the libraries build script.
 **Examples**
 - The following shows how to build only the tests but not run them:
 ```
-libraries -buildtests
+build.cmd/sh -subset libs.tests
 ```
 
 - The following builds and runs all tests in release configuration:
 ```
-libraries -test -c Release
+build.cmd/sh -subset libs -test -c Release
 ```
 
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
 ```
-libraries -test /p:WithoutCategories=IgnoreForCI
+build.cmd/sh -subset libs -test /p:WithoutCategories=IgnoreForCI
 ```
 
-Unless you specifiy `/p:TestNoBuild=true`, test assemblies are implicitly built when invoking the `Test` target.
+Unless you specifiy `-testnobuild`, test assemblies are implicitly built when invoking the `Test` action.
 - The following shows how to only test the libraries without building them
 ```
-libraries -test /p:TestNoBuild=true
+build.cmd/sh -subset libs -test -testnobuild
 ```
 
 ## Running tests on the command line
 
-To build tests you need to pass the `-buildtests` flag to `build.cmd/sh` or run `libraries -restore -build -buildtests` (note that you need to specify `-restore` and `-build` additionally as those are only implicit if no action is passed in).
-
-If you are interested in building and running the tests only for a specific library, then there are two different ways to do it:
+To build tests you need to specify the `test` subset when invoking build.cmd/sh: `build.cmd/sh -subset libs.tests`.
 
 The easiest (and recommended) way to build and run the tests for a specific library, is to invoke the `Test` target on that library:
 ```cmd

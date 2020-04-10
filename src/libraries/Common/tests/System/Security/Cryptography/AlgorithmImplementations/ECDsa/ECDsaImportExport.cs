@@ -320,6 +320,30 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [Fact]
+        public static void ImportFromPrivateOnlyKey()
+        {
+            byte[] expectedX = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray();
+            byte[] expectedY = "01425332844e592b440c0027972ad1526431c06732df19cd46a242172d4dd67c2c8c99dfc22e49949a56cf90c6473635ce82f25b33682fb19bc33bd910ed8ce3a7fa".HexToByteArray();
+
+            ECParameters limitedPrivateParameters = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP521,
+                Q = default,
+                D = "00816f19c1fb10ef94d4a1d81c156ec3d1de08b66761f03f06ee4bb9dcebbbfe1eaa1ed49a6a990838d8ed318c14d74cc872f95d05d07ad50f621ceb620cd905cfb8".HexToByteArray(),
+            };
+
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                ecdsa.ImportParameters(limitedPrivateParameters);
+                ECParameters exportedParameters = ecdsa.ExportParameters(true);
+
+                Assert.Equal(expectedX, exportedParameters.Q.X);
+                Assert.Equal(expectedY, exportedParameters.Q.Y);
+                Assert.Equal(limitedPrivateParameters.D, exportedParameters.D);
+            }
+        }
+
         private static void VerifyNamedCurve(ECParameters parameters, ECDsa ec, int keySize, bool includePrivate)
         {
             parameters.Validate();

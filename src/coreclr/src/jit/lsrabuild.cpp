@@ -2548,7 +2548,7 @@ void LinearScan::validateIntervals()
 }
 #endif // DEBUG
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // setTgtPref: Set a  preference relationship between the given Interval
 //             and a Use RefPosition.
@@ -2579,7 +2579,7 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
         }
     }
 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // BuildDef: Build a RefTypeDef RefPosition for the given node
 //
@@ -2660,7 +2660,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         RefInfoListNode* refInfo = listNodePool.GetNode(defRefPosition, tree);
         defList.Append(refInfo);
     }
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
 #endif // TARGET_XARCH

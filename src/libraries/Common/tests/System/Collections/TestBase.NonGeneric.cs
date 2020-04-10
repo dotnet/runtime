@@ -41,8 +41,9 @@ namespace System.Collections.Tests
             None = 0,
             Add = 1,
             Insert = 2,
-            Remove = 4,
-            Clear = 8
+            Overwrite = 4,
+            Remove = 8,
+            Clear = 16
         }
 
         #endregion

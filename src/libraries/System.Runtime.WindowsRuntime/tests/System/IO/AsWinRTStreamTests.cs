@@ -12,6 +12,7 @@ using Xunit;
 namespace System.IO
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34578", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class AsWinRTStreamTests
     {
         [Fact]

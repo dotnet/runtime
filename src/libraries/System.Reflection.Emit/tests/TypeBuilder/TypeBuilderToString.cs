@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("Test_Type")]
         [InlineData("Test Type")]
         [InlineData("   ")]
-        public void ToString(string typeName)
+        public void ToStringTest(string typeName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic, typeName: typeName);
             Assert.Equal(typeName, type.ToString());

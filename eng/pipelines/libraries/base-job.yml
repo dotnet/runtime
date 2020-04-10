@@ -36,7 +36,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
-        - _buildScriptFileName: libraries
+        - _buildScriptFileName: build
         - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
@@ -63,7 +63,12 @@ jobs:
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
+        # force a value for OS when cross-building WebAssembly
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
+        # force a value for OS when cross-building tvOS on OSX
+        - ${{ if eq(parameters.osGroup, 'tvOS') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
         # force a value for OS when cross-building iOS on OSX
@@ -83,7 +88,6 @@ jobs:
           - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-          - _skipTestHostCopy: true
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -103,10 +107,6 @@ jobs:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
           - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
-
-          # WebAssembly uses linux implementation detail
-          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: 'CoreLib_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

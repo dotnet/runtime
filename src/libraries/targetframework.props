@@ -34,6 +34,13 @@
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'tvOS'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetstvOS>true</TargetstvOS>
+        <PackageTargetRuntime>tvos</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'iOS'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
@@ -75,12 +82,6 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <!-- interop is not available on NETStandard1.0 -->
-    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
     <!-- setting the output paths -->

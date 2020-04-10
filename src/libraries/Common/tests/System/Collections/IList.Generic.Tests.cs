@@ -55,6 +55,19 @@ namespace System.Collections.Tests
                     return false;
                 };
             }
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Overwrite) == ModifyOperation.Overwrite)
+            {
+                yield return (IEnumerable<T> enumerable) =>
+                {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        casted[0] = CreateT(12);
+                        return true;
+                    }
+                    return false;
+                };
+            }
             if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Remove) == ModifyOperation.Remove)
             {
                 yield return (IEnumerable<T> enumerable) =>

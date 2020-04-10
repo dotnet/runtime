@@ -1,4 +1,5 @@
 kernel32.dll!CreateFile
+kernel32.dll!FormatMessage
 advapi32.dll!ClearEventLog
 advapi32.dll!CloseEventLog
 advapi32.dll!GetNumberOfEventLogRecords
@@ -6,6 +7,8 @@ advapi32.dll!GetOldestEventLogRecord
 advapi32.dll!NotifyChangeEventLog
 advapi32.dll!OpenEventLog
 advapi32.dll!ReadEventLog
+advapi32.dll!ReportEvent
+advapi32.dll!RegisterEventSource
 wevtapi.dll!EvtQuery
 wevtapi.dll!EvtSeek
 wevtapi.dll!EvtSubscribe
@@ -40,4 +43,3 @@ wevtapi.dll!EvtFormatMessage
 wevtapi.dll!EvtOpenSession
 wevtapi.dll!EvtUpdateBookmark
 wevtapi.dll!EvtCreateBookmark
-

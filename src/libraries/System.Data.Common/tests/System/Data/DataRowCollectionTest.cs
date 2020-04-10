@@ -366,7 +366,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             _tbl.Columns.Add();
             _tbl.Columns.Add();

@@ -16,6 +16,9 @@
     <ProjectReference Include="../NetServer/NetServer.csproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="OsSpecific" />
   </ItemGroup>
