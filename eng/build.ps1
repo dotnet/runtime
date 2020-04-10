@@ -11,7 +11,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [Parameter(Position=0)][string]$subset,
+  [Parameter(Position=0)][string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
@@ -19,7 +19,7 @@ Param(
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
+  Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
