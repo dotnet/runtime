@@ -13,9 +13,7 @@ namespace System.Runtime.CompilerServices.Tests
         public void Ctor_Default()
         {
             var attribute = new IUnknownConstantAttribute();
-#pragma warning disable 0618 // UnknownWrapper is marked as Obsolete.
             UnknownWrapper wrapper = Assert.IsType<UnknownWrapper>(attribute.Value);
-#pragma warning restore 0618
             Assert.Null(wrapper.WrappedObject);
         }
     }
