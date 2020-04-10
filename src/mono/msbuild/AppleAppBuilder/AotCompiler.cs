@@ -15,18 +15,21 @@ internal class AotCompiler
     /// </summary>
     public static void PrecompileLibraries(
         string crossCompiler,
+        string arch,
+        bool parallel,
         string binDir,
         string[] libsToPrecompile,
         IDictionary<string, string> envVariables,
         bool optimize)
     {
         Parallel.ForEach(libsToPrecompile,
-            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount  },
+            new ParallelOptions { MaxDegreeOfParallelism = parallel ? Environment.ProcessorCount : 1 },
             lib => PrecompileLibrary(crossCompiler, binDir, lib, envVariables, optimize));
     }
 
     private static void PrecompileLibrary(
         string crossCompiler,
+        string arch,
         string binDir,
         string libToPrecompile,
         IDictionary<string, string> envVariables,
@@ -43,16 +46,18 @@ internal class AotCompiler
         string libName = Path.GetFileNameWithoutExtension(libToPrecompile);
         var aotArgs = new StringBuilder();
         aotArgs
-            .Append("mtriple=arm64-ios,")
+            .Append("mtriple=".Append(arch).Append("-ios,")
             .Append("static,")
             .Append("asmonly,")
             .Append("direct-icalls,")
             .Append("no-direct-calls,")
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
+            // TODO:
+            //.Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
             .Append("full,");
 
-        // TODO: save *.aotdata
+        // TODO: enable Interpreter
         // TODO: enable LLVM
         // TODO: enable System.Runtime.Intrinsics.Arm (LLVM-only for now)
         // e.g. .Append("mattr=+crc,")
@@ -71,7 +76,7 @@ internal class AotCompiler
         clangArgs
             .Append(" -isysroot ").Append(Xcode.Sysroot)
             .Append(" -miphoneos-version-min=10.1")
-            .Append(" -arch arm64")
+            .Append(" -arch ").Append(arch)
             .Append(" -c ").Append(Path.Combine(binDir, libName)).Append(".dll.s")
             .Append(" -o ").Append(Path.Combine(binDir, libName)).Append(".dll.o");
 

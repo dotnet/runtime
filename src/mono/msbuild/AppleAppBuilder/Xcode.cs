@@ -17,6 +17,7 @@ internal class Xcode
         string workspace,
         string binDir,
         string monoInclude,
+        bool useConsoleUiTemplate = false,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
@@ -30,7 +31,7 @@ internal class Xcode
         {
             // use built-in main.m (with default UI) if it's not set
             nativeMainSource = Path.Combine(binDir, "main.m");
-            File.WriteAllText(nativeMainSource, Utils.GetEmbeddedResource("main.m"));
+            File.WriteAllText(nativeMainSource, Utils.GetEmbeddedResource(useConsoleUiTemplate ? "main-console.m" : "main-simple.m"));
         }
         else
         {

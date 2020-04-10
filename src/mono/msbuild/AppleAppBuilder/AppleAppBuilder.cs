@@ -48,15 +48,15 @@ public class AppleAppBuilderTask : Task
     public string? OutputDirectory { get; set; }
 
     /// <summary>
-    /// Path to a custom main.m with custom UI
-    /// A default one is used if it's not set
-    /// </summary>
-    public string? NativeMainSource { get; set; }
-
-    /// <summary>
     /// Produce optimized binaries (e.g. use -O2 in AOT)
+    /// and use 'Release' config in xcode
     /// </summary>
     public bool Optimized { get; set; }
+
+    /// <summary>
+    /// Disable parallel AOT compilation
+    /// </summary>
+    public bool DisableParallelAot { get; set; };
 
     /// <summary>
     /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
@@ -83,6 +83,18 @@ public class AppleAppBuilderTask : Task
     /// Files to be ignored in AppDir
     /// </summary>
     public ITaskItem[]? ExcludeFromAppDir { get; set; }
+
+    /// <summary>
+    /// Path to a custom main.m with custom UI
+    /// A default one is used if it's not set
+    /// </summary>
+    public string? NativeMainSource { get; set; }
+
+    /// <summary>
+    /// Use Console-style native UI template
+    /// (use NativeMainSource to override)
+    /// </summary>
+    public bool UseConsoleUITemplate { get; set; }
 
     /// <summary>
     /// Path to *.app bundle
@@ -138,7 +150,7 @@ public class AppleAppBuilderTask : Task
             if (string.IsNullOrEmpty(CrossCompiler))
                 throw new InvalidOperationException("cross-compiler is not set");
 
-            AotCompiler.PrecompileLibraries(CrossCompiler, binDir, libsToAot,
+            AotCompiler.PrecompileLibraries(CrossCompiler, Arch, !DisableParallelAot, binDir, libsToAot,
                 new Dictionary<string, string> { {"MONO_PATH", AppDir} },
                 Optimized);
         }
@@ -150,7 +162,9 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, AppDir, binDir, MonoInclude, NativeMainSource);
+            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, 
+                AppDir, binDir, MonoInclude, UseConsoleUITemplate, NativeMainSource);
+
             if (BuildAppBundle)
             {
                 if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
