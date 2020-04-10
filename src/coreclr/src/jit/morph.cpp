@@ -17676,7 +17676,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     if (verbose)
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
-        printf("From " FMT_BB ", stmt", block->bbNum);
+        printf("From " FMT_BB ", stmt ", block->bbNum);
         printStmtID(stmt);
         printf(" to stmt");
         printStmtID(lastStmt);
@@ -17742,7 +17742,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n" FMT_BB " stmt", block->bbNum);
+        printf("\n" FMT_BB " stmt ", block->bbNum);
         printStmtID(stmt);
         printf("(before)\n");
         gtDispStmt(stmt);
