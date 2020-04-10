@@ -44,66 +44,66 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void RangePartitionerCoverageTest()
         {
-            RangePartitionerCoverageTest(0, 1, -1);
-            RangePartitionerCoverageTest(-15, -14, -1);
-            RangePartitionerCoverageTest(14, 15, -1);
-            RangePartitionerCoverageTest(0, 1, 1);
-            RangePartitionerCoverageTest(-15, -14, 1);
-            RangePartitionerCoverageTest(14, 15, 1);
-            RangePartitionerCoverageTest(0, 1, 20);
-            RangePartitionerCoverageTest(-15, -14, 20);
-            RangePartitionerCoverageTest(14, 15, 20);
-            RangePartitionerCoverageTest(0, 7, -1);
-            RangePartitionerCoverageTest(-21, -14, -1);
-            RangePartitionerCoverageTest(14, 21, -1);
-            RangePartitionerCoverageTest(0, 7, 1);
-            RangePartitionerCoverageTest(-21, -14, 1);
-            RangePartitionerCoverageTest(14, 21, 1);
-            RangePartitionerCoverageTest(0, 7, 2);
-            RangePartitionerCoverageTest(-21, -14, 2);
-            RangePartitionerCoverageTest(14, 21, 2);
-            RangePartitionerCoverageTest(0, 7, 20);
-            RangePartitionerCoverageTest(-21, -14, 20);
-            RangePartitionerCoverageTest(14, 21, 20);
-            RangePartitionerCoverageTest(0, 1000, -1);
-            RangePartitionerCoverageTest(-2000, -1000, -1);
-            RangePartitionerCoverageTest(1000, 2000, -1);
-            RangePartitionerCoverageTest(0, 1000, 1);
-            RangePartitionerCoverageTest(-2000, -1000, 1);
-            RangePartitionerCoverageTest(1000, 2000, 1);
-            RangePartitionerCoverageTest(0, 1000, 27);
-            RangePartitionerCoverageTest(-2000, -1000, 27);
-            RangePartitionerCoverageTest(1000, 2000, 27);
-            RangePartitionerCoverageTest(0, 1000, 250);
-            RangePartitionerCoverageTest(-2000, -1000, 250);
-            RangePartitionerCoverageTest(1000, 2000, 250);
-            RangePartitionerCoverageTest(0, 1000, 750);
-            RangePartitionerCoverageTest(-2000, -1000, 750);
-            RangePartitionerCoverageTest(1000, 2000, 750);
+            RangePartitionerCoverageTest_HelperInt(0, 1, -1);
+            RangePartitionerCoverageTest_HelperInt(-15, -14, -1);
+            RangePartitionerCoverageTest_HelperInt(14, 15, -1);
+            RangePartitionerCoverageTest_HelperInt(0, 1, 1);
+            RangePartitionerCoverageTest_HelperInt(-15, -14, 1);
+            RangePartitionerCoverageTest_HelperInt(14, 15, 1);
+            RangePartitionerCoverageTest_HelperInt(0, 1, 20);
+            RangePartitionerCoverageTest_HelperInt(-15, -14, 20);
+            RangePartitionerCoverageTest_HelperInt(14, 15, 20);
+            RangePartitionerCoverageTest_HelperInt(0, 7, -1);
+            RangePartitionerCoverageTest_HelperInt(-21, -14, -1);
+            RangePartitionerCoverageTest_HelperInt(14, 21, -1);
+            RangePartitionerCoverageTest_HelperInt(0, 7, 1);
+            RangePartitionerCoverageTest_HelperInt(-21, -14, 1);
+            RangePartitionerCoverageTest_HelperInt(14, 21, 1);
+            RangePartitionerCoverageTest_HelperInt(0, 7, 2);
+            RangePartitionerCoverageTest_HelperInt(-21, -14, 2);
+            RangePartitionerCoverageTest_HelperInt(14, 21, 2);
+            RangePartitionerCoverageTest_HelperInt(0, 7, 20);
+            RangePartitionerCoverageTest_HelperInt(-21, -14, 20);
+            RangePartitionerCoverageTest_HelperInt(14, 21, 20);
+            RangePartitionerCoverageTest_HelperInt(0, 1000, -1);
+            RangePartitionerCoverageTest_HelperInt(-2000, -1000, -1);
+            RangePartitionerCoverageTest_HelperInt(1000, 2000, -1);
+            RangePartitionerCoverageTest_HelperInt(0, 1000, 1);
+            RangePartitionerCoverageTest_HelperInt(-2000, -1000, 1);
+            RangePartitionerCoverageTest_HelperInt(1000, 2000, 1);
+            RangePartitionerCoverageTest_HelperInt(0, 1000, 27);
+            RangePartitionerCoverageTest_HelperInt(-2000, -1000, 27);
+            RangePartitionerCoverageTest_HelperInt(1000, 2000, 27);
+            RangePartitionerCoverageTest_HelperInt(0, 1000, 250);
+            RangePartitionerCoverageTest_HelperInt(-2000, -1000, 250);
+            RangePartitionerCoverageTest_HelperInt(1000, 2000, 250);
+            RangePartitionerCoverageTest_HelperInt(0, 1000, 750);
+            RangePartitionerCoverageTest_HelperInt(-2000, -1000, 750);
+            RangePartitionerCoverageTest_HelperInt(1000, 2000, 750);
         }
 
         // Test that chunk sizes are being honored
         [Fact]
         public static void RangePartitionerChunkTest()
         {
-            RangePartitionerChunkTest(0, 10, 1);
-            RangePartitionerChunkTest(-20, -10, 1);
-            RangePartitionerChunkTest(10, 20, 1);
-            RangePartitionerChunkTest(0, 10, 3);
-            RangePartitionerChunkTest(-20, -10, 3);
-            RangePartitionerChunkTest(10, 20, 3);
-            RangePartitionerChunkTest(0, 10, 5);
-            RangePartitionerChunkTest(-20, -10, 5);
-            RangePartitionerChunkTest(10, 20, 5);
-            RangePartitionerChunkTest(0, 10, 7);
-            RangePartitionerChunkTest(-20, -10, 7);
-            RangePartitionerChunkTest(10, 20, 7);
-            RangePartitionerChunkTest(0, 1000000, 32768);
-            RangePartitionerChunkTest(-2000000, -1000000, 32768);
-            RangePartitionerChunkTest(1000000, 2000000, 32768);
+            RangePartitionerChunkTest_HelperInt(0, 10, 1);
+            RangePartitionerChunkTest_HelperInt(-20, -10, 1);
+            RangePartitionerChunkTest_HelperInt(10, 20, 1);
+            RangePartitionerChunkTest_HelperInt(0, 10, 3);
+            RangePartitionerChunkTest_HelperInt(-20, -10, 3);
+            RangePartitionerChunkTest_HelperInt(10, 20, 3);
+            RangePartitionerChunkTest_HelperInt(0, 10, 5);
+            RangePartitionerChunkTest_HelperInt(-20, -10, 5);
+            RangePartitionerChunkTest_HelperInt(10, 20, 5);
+            RangePartitionerChunkTest_HelperInt(0, 10, 7);
+            RangePartitionerChunkTest_HelperInt(-20, -10, 7);
+            RangePartitionerChunkTest_HelperInt(10, 20, 7);
+            RangePartitionerChunkTest_HelperInt(0, 1000000, 32768);
+            RangePartitionerChunkTest_HelperInt(-2000000, -1000000, 32768);
+            RangePartitionerChunkTest_HelperInt(1000000, 2000000, 32768);
         }
 
-        private static void RangePartitionerChunkTest(int from, int to, int rangeSize)
+        private static void RangePartitionerChunkTest_HelperInt(int from, int to, int rangeSize)
         {
             Debug.WriteLine("    RangePartitionChunkTest[int]({0},{1},{2})", from, to, rangeSize);
             int numLess = 0;
@@ -125,10 +125,10 @@ namespace System.Threading.Tasks.Tests
 
             Assert.False(numLess > 1, string.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
 
-            RangePartitionerChunkTest((long)from, (long)to, (long)rangeSize);
+            RangePartitionerChunkTest_HelperLong((long)from, (long)to, (long)rangeSize);
         }
 
-        private static void RangePartitionerChunkTest(long from, long to, long rangeSize)
+        private static void RangePartitionerChunkTest_HelperLong(long from, long to, long rangeSize)
         {
             Debug.WriteLine("    RangePartitionChunkTest[long]({0},{1},{2})", from, to, rangeSize);
             int numLess = 0;
@@ -150,7 +150,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(numLess > 1, string.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
         }
 
-        private static void RangePartitionerCoverageTest(int from, int to, int rangeSize)
+        private static void RangePartitionerCoverageTest_HelperInt(int from, int to, int rangeSize)
         {
             Debug.WriteLine("    RangePartitionCoverageTest[int]({0},{1},{2})", from, to, rangeSize);
 
@@ -172,10 +172,10 @@ namespace System.Threading.Tasks.Tests
                 Assert.False(visits[i] != 1, string.Format("    > FAILED.  Visits[{0}] = {1}", i, visits[i]));
             }
 
-            RangePartitionerCoverageTest((long)from, (long)to, (long)rangeSize);
+            RangePartitionerCoverageTest_HelperLong((long)from, (long)to, (long)rangeSize);
         }
 
-        private static void RangePartitionerCoverageTest(long from, long to, long rangeSize)
+        private static void RangePartitionerCoverageTest_HelperLong(long from, long to, long rangeSize)
         {
             Debug.WriteLine("    RangePartitionCoverageTest[long]({0},{1},{2})", from, to, rangeSize);
 

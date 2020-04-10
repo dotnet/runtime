@@ -94,15 +94,15 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // declared by the dirent.h header on the local system.
 // (AIX doesn't have dirent d_type, so none of this there)
 #if defined(DT_UNKNOWN)
-c_static_assert(PAL_DT_UNKNOWN == DT_UNKNOWN);
-c_static_assert(PAL_DT_FIFO == DT_FIFO);
-c_static_assert(PAL_DT_CHR == DT_CHR);
-c_static_assert(PAL_DT_DIR == DT_DIR);
-c_static_assert(PAL_DT_BLK == DT_BLK);
-c_static_assert(PAL_DT_REG == DT_REG);
-c_static_assert(PAL_DT_LNK == DT_LNK);
-c_static_assert(PAL_DT_SOCK == DT_SOCK);
-c_static_assert(PAL_DT_WHT == DT_WHT);
+c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
+c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
+c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
+c_static_assert((int)PAL_DT_DIR == (int)DT_DIR);
+c_static_assert((int)PAL_DT_BLK == (int)DT_BLK);
+c_static_assert((int)PAL_DT_REG == (int)DT_REG);
+c_static_assert((int)PAL_DT_LNK == (int)DT_LNK);
+c_static_assert((int)PAL_DT_SOCK == (int)DT_SOCK);
+c_static_assert((int)PAL_DT_WHT == (int)DT_WHT);
 #endif
 
 // Validate that our Lock enum value are correct for the platform
@@ -1061,7 +1061,7 @@ char* SystemNative_GetLine(FILE* stream)
     char* lineptr = NULL;
     size_t n = 0;
     ssize_t length = getline(&lineptr, &n, stream);
-    
+
     return length >= 0 ? lineptr : NULL;
 }
 
@@ -1230,7 +1230,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
         {
             return -1;
         }
-        
+
         ret = unlink(destPath);
         if (ret != 0)
         {
@@ -1430,7 +1430,7 @@ char* SystemNative_RealPath(const char* path)
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
-    if (offset < 0 || length < 0) 
+    if (offset < 0 || length < 0)
     {
         errno = EINVAL;
         return -1;

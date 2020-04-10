@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
-        public void GetHashCode(MethodBuilder method1, MethodBuilder method2, bool expected)
+        public void GetHashCodeTest(MethodBuilder method1, MethodBuilder method2, bool expected)
         {
             Assert.Equal(expected, method1.GetHashCode().Equals(method2.GetHashCode()));
         }

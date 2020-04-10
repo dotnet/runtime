@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task HandlesOnRenamedEventsThatMatchRootPath()
         {
             using (var root = new DisposableFileSystem())

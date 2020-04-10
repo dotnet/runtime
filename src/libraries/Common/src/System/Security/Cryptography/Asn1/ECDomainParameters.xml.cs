@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
@@ -15,7 +14,7 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct ECDomainParameters
     {
         internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
-        internal Oid Named;
+        internal Oid? Named;
 
 #if DEBUG
         static ECDomainParameters()

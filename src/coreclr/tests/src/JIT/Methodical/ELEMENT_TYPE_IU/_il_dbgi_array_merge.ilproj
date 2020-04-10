@@ -13,4 +13,10 @@
     <Compile Condition="'$(TargetArchitecture)' ==   'arm'" Include="i_array_merge-i386.il" />
     <Compile Condition="'$(TargetArchitecture)' ==   'armel'" Include="i_array_merge-i386.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
+  </ItemGroup>
 </Project>

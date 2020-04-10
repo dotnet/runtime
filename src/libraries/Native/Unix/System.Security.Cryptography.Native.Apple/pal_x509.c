@@ -108,7 +108,7 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
         return PAL_Certificate;
     }
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
     SecExternalFormat dataFormat = kSecFormatPKCS7;
     SecExternalFormat actualFormat = dataFormat;
     SecExternalItemType itemType = kSecItemTypeAggregate;
@@ -258,7 +258,7 @@ int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity
     return SecIdentityCopyPrivateKey(identity, pPrivateKeyOut);
 }
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t ReadX509(uint8_t* pbData,
                         int32_t cbData,
                         PAL_X509ContentType contentType,

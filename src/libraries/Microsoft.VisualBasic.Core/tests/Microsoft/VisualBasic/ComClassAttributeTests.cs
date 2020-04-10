@@ -48,7 +48,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
         [InlineData("classID", "interfaceID", "eventID")]
-        public void Ctor_String_String(string classID, string interfaceID, string eventID)
+        public void Ctor_String_String_String(string classID, string interfaceID, string eventID)
         {
             var attribute = new ComClassAttribute(classID, interfaceID, eventID);
             Assert.Equal(classID, attribute.ClassID);
