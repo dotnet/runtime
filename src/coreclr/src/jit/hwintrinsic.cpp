@@ -223,7 +223,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     return NO_CLASS_HANDLE;
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
 //
@@ -284,7 +283,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     // If we see two (or more) different instructions we need the extra VNF_SimdType arg
     return (diffInsCount >= 2);
 }
-#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
