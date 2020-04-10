@@ -60,7 +60,7 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - EMSDK_PATH: /usr/local/emscripten
         # for coreclr library builds (when not testing) build corelib as well.   
-        - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, ''), ne(parameters.osGroup, 'WebAssembly')) }}:
+        - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
           - _subset: clr.corelib+libs
         # Tests only run for 'allConfiguration' and 'net472' build-jobs
         - ${{ if eq(parameters.runTests, true) }}:
