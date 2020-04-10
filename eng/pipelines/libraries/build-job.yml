@@ -79,8 +79,6 @@ jobs:
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
-            parameters:
-              installDotnet: true
 
         - script: $(_buildScript)
                 -subset $(_subset)
