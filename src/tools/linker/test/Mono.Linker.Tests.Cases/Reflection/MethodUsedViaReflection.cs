@@ -119,8 +119,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string) })]
 		static void TestEmptyName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod (string.Empty);
@@ -348,17 +346,17 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		private class IfClass
 		{
 			[Kept]
-			public static int OnlyCalledViaReflection()
+			public static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
 			
-			private int OnlyCalledViaReflection(int foo)
+			private int OnlyCalledViaReflection (int foo)
 			{
 				return 43;
 			}
 			[Kept]
-			public static int ElseIfCall()
+			public static int ElseIfCall ()
 			{
 				return 44;
 			}
@@ -393,7 +391,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			{
 				return 49;
 			}
-			
+			[Kept]
 			public int ElseIfCall ()
 			{
 				return 50;
