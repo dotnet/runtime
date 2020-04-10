@@ -888,6 +888,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+        case NI_AdvSimd_ExtractVector64:
+        case NI_AdvSimd_ExtractVector128:
+            if (intrin.op3->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, intrin.op3);
+            }
+            break;
+
         default:
             unreached();
     }
