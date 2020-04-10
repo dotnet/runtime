@@ -27,17 +27,19 @@ namespace ComWrappersTests.Common
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;
 
+        public bool EnableICustomQueryInterface { get; set; } = false;
         public Guid ICustomQueryInterface_GetInterfaceIID { get; set; }
         public IntPtr ICustomQueryInterface_GetInterfaceResult { get; set; }
 
         CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
         {
             ppv = IntPtr.Zero;
-            if (iid == typeof(ITest).GUID)
+            if (!EnableICustomQueryInterface)
             {
                 return CustomQueryInterfaceResult.NotHandled;
             }
-            else if (iid != ICustomQueryInterface_GetInterfaceIID)
+
+            if (iid != ICustomQueryInterface_GetInterfaceIID)
             {
                 return CustomQueryInterfaceResult.Failed;
             }

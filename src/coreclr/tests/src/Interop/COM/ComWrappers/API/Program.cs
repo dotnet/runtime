@@ -113,7 +113,10 @@ namespace ComWrappersTests
         {
             Console.WriteLine($"Running {nameof(ValidateFallbackQueryInterface)}...");
 
-            var testObj = new Test();
+            var testObj = new Test()
+                {
+                    EnableICustomQueryInterface = true
+                };
 
             var wrappers = new TestComWrappers();
 
@@ -124,24 +127,16 @@ namespace ComWrappersTests
 
             IntPtr result;
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
-            Assert.AreNotEqual(anyGuid, typeof(ITest).GUID);
-
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
             int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
             Assert.AreEqual(hr, 0);
             Assert.AreEqual(result, testObj.ICustomQueryInterface_GetInterfaceResult);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
-            Assert.AreNotEqual(anyGuid2, typeof(ITest).GUID);
             hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             Assert.AreEqual(hr, E_NOINTERFACE);
             Assert.AreEqual(result, IntPtr.Zero);
-
-            var anyGuid3 = typeof(ITest).GUID;
-            hr = Marshal.QueryInterface(comWrapper, ref anyGuid3, out result);
-            Assert.AreEqual(hr, 0);
-            Assert.AreNotEqual(result, IntPtr.Zero);
         }
 
         static void ValidateCreateObjectCachingScenario()

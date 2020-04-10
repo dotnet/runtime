@@ -1057,7 +1057,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_PREEMPTIVE;
+            MODE_ANY;
             PRECONDITION(handle != NULL);
             PRECONDITION(obj != NULL);
         }
@@ -1070,9 +1070,23 @@ namespace InteropLibImports
         if (IsGCThread())
             return TryInvokeICustomQueryInterfaceResult::OnGCThread;
 
+        // Ideally the BEGIN_EXTERNAL_ENTRYPOINT/END_EXTERNAL_ENTRYPOINT pairs
+        // would be used here. However, this code path can be entered from within
+        // and from outside the runtime.
+        MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
+        if (CURRENT_THREAD == NULL)
+        {
+            CURRENT_THREAD = SetupThreadNoThrow();
+
+            // If we failed to set up a new thread, we are going to indicate
+            // there was a general failure to invoke instead of failing fast.
+            if (CURRENT_THREAD == NULL)
+                return TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        }
+
+        HRESULT hr;
         auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
-        HRESULT hr = S_OK;
-        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        EX_TRY_THREAD(CURRENT_THREAD)
         {
             // Switch to Cooperative mode since object references
             // are being manipulated.
@@ -1093,11 +1107,11 @@ namespace InteropLibImports
 
             GCPROTECT_END();
         }
-        END_EXTERNAL_ENTRYPOINT;
+        EX_CATCH_HRESULT(hr);
 
         // Assert valid value.
         _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result
-                && result <= TryInvokeICustomQueryInterfaceResult::Max);
+            && result <= TryInvokeICustomQueryInterfaceResult::Max);
 
         return result;
     }
