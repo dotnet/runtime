@@ -7661,16 +7661,34 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
     JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
     for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
     {
-        optComputeLoopSideEffectsOfBlock(bbInLoop);
+        if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
+        {
+            // Record that all loops containing this block have memory havoc effects.
+            unsigned lnum = bbInLoop->bbNatLoopNum;
+            while (lnum != BasicBlock::NOT_IN_LOOP)
+            {
+                // We set fullMemoryKindSet, aka allMemoryKinds()
+                for (MemoryKind memoryKind : allMemoryKinds())
+                {
+                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+                }
+                lnum = optLoopTable[lnum].lpParent;
+            }
+
+            // All done, no need to keep visiting more blocks
+            break;
+        }
     }
 }
 
-void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
+bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 {
     unsigned mostNestedLoop = blk->bbNatLoopNum;
     JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
-    assert(mostNestedLoop != BasicBlock::NOT_IN_LOOP);
-
+    if (mostNestedLoop == BasicBlock::NOT_IN_LOOP)
+    {
+        return false;
+    }
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
 
     // MemoryKinds for which an in-loop call or store has arbitrary effects.
@@ -7937,6 +7955,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             lnum = optLoopTable[lnum].lpParent;
         }
     }
+    return true;
 }
 
 // Marks the containsCall information to "lnum" and any parent loops.
