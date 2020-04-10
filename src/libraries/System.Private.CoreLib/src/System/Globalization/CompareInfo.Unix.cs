@@ -180,36 +180,6 @@ namespace System.Globalization
             }
         }
 
-        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-            Debug.Assert((options & CompareOptions.Ordinal) == 0);
-
-            int index;
-
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                    index = IndexOfOrdinalIgnoreCaseHelper(source.AsSpan(startIndex, count), target.AsSpan(), options, matchLengthPtr, fromBeginning: true);
-                else
-                    index = IndexOfOrdinalHelper(source.AsSpan(startIndex, count), target.AsSpan(), options, matchLengthPtr, fromBeginning: true);
-            }
-            else
-            {
-                fixed (char* pSource = source)
-                fixed (char* pTarget = target)
-                {
-                    index = Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource + startIndex, count, options, matchLengthPtr);
-                }
-            }
-
-            return index != -1 ? index + startIndex : -1;
-        }
-
         // For now, this method is only called from Span APIs with either options == CompareOptions.None or CompareOptions.IgnoreCase
         internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
@@ -232,7 +202,7 @@ namespace System.Globalization
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                     else
-                        return Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options);
+                        return Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
         }

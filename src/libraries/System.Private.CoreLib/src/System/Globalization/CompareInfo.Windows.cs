@@ -289,23 +289,6 @@ namespace System.Globalization
             }
         }
 
-        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-            Debug.Assert((options & CompareOptions.Ordinal) == 0);
-
-            int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex, count), target, matchLengthPtr);
-            if (retValue >= 0)
-            {
-                return retValue + startIndex;
-            }
-
-            return -1;
-        }
-
         internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -347,50 +330,6 @@ namespace System.Globalization
         private const int FIND_ENDSWITH = 0x00200000;
         private const int FIND_FROMSTART = 0x00400000;
         private const int FIND_FROMEND = 0x00800000;
-
-        // TODO: Instead of this method could we just have upstack code call LastIndexOfOrdinal with ignoreCase = false?
-        private static unsafe int FastLastIndexOfString(string source, string target, int startIndex, int sourceCount, int targetCount)
-        {
-            int retValue = -1;
-
-            int sourceStartIndex = startIndex - sourceCount + 1;
-
-            fixed (char* pSource = source, spTarget = target)
-            {
-                char* spSubSource = pSource + sourceStartIndex;
-
-                int endPattern = sourceCount - targetCount;
-                if (endPattern < 0)
-                    return -1;
-
-                Debug.Assert(target.Length >= 1);
-                char patternChar0 = spTarget[0];
-                for (int ctrSrc = endPattern; ctrSrc >= 0; ctrSrc--)
-                {
-                    if (spSubSource[ctrSrc] != patternChar0)
-                        continue;
-
-                    int ctrPat;
-                    for (ctrPat = 1; ctrPat < targetCount; ctrPat++)
-                    {
-                        if (spSubSource[ctrSrc + ctrPat] != spTarget[ctrPat])
-                            break;
-                    }
-                    if (ctrPat == targetCount)
-                    {
-                        retValue = ctrSrc;
-                        break;
-                    }
-                }
-
-                if (retValue >= 0)
-                {
-                    retValue += startIndex - sourceCount + 1;
-                }
-            }
-
-            return retValue;
-        }
 
         private unsafe SortKey CreateSortKey(string source, CompareOptions options)
         {
