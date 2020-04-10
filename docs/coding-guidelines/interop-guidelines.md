@@ -160,8 +160,6 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
 
- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code. We should not rename any of these based on managed coding guidelines. The only exception to this is for the constant grouping type, which should be named with the most discoverable name possible; if that name is a concept (e.g. Errors), it can be named using managed naming guidelines.
-
 ## UNIX shims
 
 Often, various UNIX flavors offer the same API from the point-of-view of compatibility with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out differently, constants can have different numeric values, exports can be named differently, etc. There are not only differences between operating systems (Mac OS X vs. Ubuntu vs. FreeBSD), but also differences related to the underlying processor architecture (x64 vs. x86 vs. ARM).
