@@ -9,12 +9,7 @@
 
 #ifdef FEATURE_HW_INTRINSICS
 
-#include "emit.h"
 #include "codegen.h"
-#include "sideeffects.h"
-#include "lower.h"
-#include "gcinfo.h"
-#include "gcinfoencoder.h"
 
 //------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
