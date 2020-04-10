@@ -39,6 +39,7 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+installer</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">mono+libs+installer</DefaultSubsets>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'WebAssembly'">mono+libs</DefaultSubsetCategories>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -66,7 +67,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'WebAssembly'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and $(_subset.Contains('+mono.runtime+')) and !$(_subset.Contains('+clr.runtime+'))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
