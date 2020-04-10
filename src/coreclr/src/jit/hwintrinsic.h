@@ -330,6 +330,102 @@ struct HWIntrinsicInfo
     }
 };
 
+#ifdef TARGET_ARM64
+
+struct HWIntrinsic final
+{
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
+        : op1(nullptr), op2(nullptr), op3(nullptr), numOperands(0), baseType(TYP_UNDEF)
+    {
+        assert(node != nullptr);
+
+        id       = node->gtHWIntrinsicId;
+        category = HWIntrinsicInfo::lookupCategory(id);
+
+        assert(HWIntrinsicInfo::RequiresCodegen(id));
+
+        InitializeOperands(node);
+        InitializeBaseType(node);
+    }
+
+    bool IsTableDriven() const
+    {
+        // TODO-Arm64-Cleanup - make more categories to the table-driven framework
+        bool isTableDrivenCategory = category != HW_Category_Helper;
+        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+
+        return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    NamedIntrinsic      id;
+    HWIntrinsicCategory category;
+    GenTree*            op1;
+    GenTree*            op2;
+    GenTree*            op3;
+    int                 numOperands;
+    var_types           baseType;
+
+private:
+    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    {
+        op1 = node->gtGetOp1();
+        op2 = node->gtGetOp2();
+
+        assert(op1 != nullptr);
+
+        if (op1->OperIsList())
+        {
+            assert(op2 == nullptr);
+
+            GenTreeArgList* list = op1->AsArgList();
+            op1                  = list->Current();
+            list                 = list->Rest();
+            op2                  = list->Current();
+            list                 = list->Rest();
+            op3                  = list->Current();
+
+            assert(list->Rest() == nullptr);
+
+            numOperands = 3;
+        }
+        else if (op2 != nullptr)
+        {
+            numOperands = 2;
+        }
+        else
+        {
+            numOperands = 1;
+        }
+    }
+
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
+    {
+        baseType = node->gtSIMDBaseType;
+
+        if (baseType == TYP_UNKNOWN)
+        {
+            assert(category == HW_Category_Scalar);
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+        }
+    }
+};
+
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #endif // _HW_INTRINSIC_H_
