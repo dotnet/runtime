@@ -92,14 +92,13 @@
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <!-- Setup the mobile testing directory -->
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
+    <!-- Setup the runtime pack structure for mobile platforms (for testing and installer) -->
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(NETCoreAppRuntimePackLibPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
-
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
-      <ItemName>BinMobileNative</ItemName>
+      <ItemName>NativeRuntimePackBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
 
     <!-- binplace targeting packs which may be different from Build TargetFramework -->

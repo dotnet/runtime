@@ -10,7 +10,7 @@
 
   <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
-    <ItemGroup>
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == ''">
       <BinPlaceItem Include="$(NativeBinDir)*.dll" />
       <BinPlaceItem Include="$(NativeBinDir)*.pdb" />
       <BinPlaceItem Include="$(NativeBinDir)*.lib" />
@@ -22,6 +22,18 @@
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
       <BinMobileNative Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="@(BinPlaceItem)" />
       <FileWrites Include="@(BinPlaceItem)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.dll" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.pdb" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.lib" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.a" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.bc" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.so" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.dbg" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.dylib" />
+      <NativeRuntimePackBinPlaceItem Include="$(NativeBinDir)/*.dwarf" />
+      <FileWrites Include="@(NativeRuntimePackBinPlaceItem)" />
     </ItemGroup>
   </Target>
 

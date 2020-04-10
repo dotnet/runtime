@@ -26,6 +26,15 @@
     <FileToExclude Include="apphost" />
   </ItemGroup>
 
+  <!-- In-tree runtime packs do not require the host, so exclude --> 
+  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
+    <FileToExclude Include="dotnet" />
+    <FileToExclude Include="libnethost" />
+    <FileToExclude Include="libhostfxr" />
+    <FileToExclude Include="libhostpolicy" />
+    <FileToExclude Include="nethost" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- System.Data.SqlClient is not live-built anymore -->
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
@@ -70,32 +79,18 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
-  <!-- Setup the runtime packs for mobile app testing -->
-  <Target Name="SetupMobileTesting"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
-          AfterTargets="AfterResolveReferences"
-          Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
-
-    <ItemGroup>
-      <MobileFile Include="@(RuntimeFiles)" />
-      <CrossFile Include="@(MonoCrossFiles)" />
-      <IncludeFile Include="@(MonoIncludeFiles)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(MobileFile)"
+  <Target Name="SetupRuntimePackNative"
+          Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          AfterTargets="AfterResolveReferences">
+    <Copy SourceFiles="@(RuntimeFiles)"
           DestinationFolder="$(NETCoreAppRuntimePackNativePath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-    <Copy SourceFiles="@(CrossFile)"
-          DestinationFolder="$(NETCoreAppRuntimePackNativeCrossPath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-    <Copy SourceFiles="@(IncludeFile)"
-          DestinationFolder="$(NETCoreAppRuntimePackNativeIncludePath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(MonoCrossFiles)"
+          DestinationFolder="$(NETCoreAppRuntimePackNativePath)/cross"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(MonoIncludeFiles)"
+          DestinationFolder="$(NETCoreAppRuntimePackNativePath)/include/%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
@@ -114,7 +109,7 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup>
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == ''">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>

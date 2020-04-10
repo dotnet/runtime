@@ -277,6 +277,10 @@
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
+    <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
+    <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
+    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\native</NETCoreAppRuntimePackNativePath>
+    <RuntimePackTargetFrameworkPath>runtimes/$(__RuntimeId)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
@@ -304,8 +308,10 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetOS)' != 'iOS'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
+
+    <BinPlaceTestRuntimePack Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetOS)' == 'iOS'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
@@ -313,15 +319,6 @@
     <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
 
     <PlatformManifestFile Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
-
-    <!-- Add extra binplacing for the Runtime pack testing framework -->
-    <BinPlaceTestRuntimePack Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android')">true</BinPlaceTestRuntimePack>
-
-    <NETCoreAppRuntimePackPath Condition="'$(BinPlaceTestRuntimePack)' == 'true'">$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
-    <NETCoreAppRuntimePackLibPath Condition="'$(BinPlaceTestRuntimePack)' == 'true'">$(NETCoreAppRuntimePackPath)\lib</NETCoreAppRuntimePackLibPath>
-    <NETCoreAppRuntimePackNativePath Condition="'$(BinPlaceTestRuntimePack)' == 'true'">$(NETCoreAppRuntimePackPath)\native</NETCoreAppRuntimePackNativePath>
-    <NETCoreAppRuntimePackNativeIncludePath Condition="'$(BinPlaceTestRuntimePack)' == 'true'">$(NETCoreAppRuntimePackNativePath)\include</NETCoreAppRuntimePackNativeIncludePath>
-    <NETCoreAppRuntimePackNativeCrossPath Condition="'$(BinPlaceTestRuntimePack)' == 'true'">$(NETCoreAppRuntimePackNativePath)\cross</NETCoreAppRuntimePackNativeCrossPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
