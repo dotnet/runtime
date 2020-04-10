@@ -175,7 +175,7 @@ namespace System
             catch { }
 
             return new Version(version >> 24,
-                              (version >> 16)  & 0xFF,
+                              (version >> 16) & 0xFF,
                               (version >> 8) & 0xFF,
                               version & 0xFF);
         }
