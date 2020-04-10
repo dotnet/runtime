@@ -2,25 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "unittestprofiler.h"
+#include "metadatagetdispenser.h"
 
 #ifdef WIN32
 #include <Windows.h>
 #else // WIN32
 #include <dlfcn.h>
-#ifdef __APPLE__ 
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif // __APPLE__
 #endif // WIN32
 
-UnitTestProfiler::UnitTestProfiler() :
+MetaDataGetDispenser::MetaDataGetDispenser() :
     _dispenser(NULL),
     _failures(0)
 {
 
 }
 
-UnitTestProfiler::~UnitTestProfiler()
+MetaDataGetDispenser::~MetaDataGetDispenser()
 {
     if (_dispenser != NULL)
     {
@@ -29,14 +29,14 @@ UnitTestProfiler::~UnitTestProfiler()
     }
 }
 
-GUID UnitTestProfiler::GetClsid()
+GUID MetaDataGetDispenser::GetClsid()
 {
     // {7198FF3E-50E8-4AD1-9B89-CB15A1D6E740}
     GUID clsid = { 0x7198FF3E, 0x50E8, 0x4AD1, {0x9B, 0x89, 0xCB, 0x15, 0xA1, 0xD6, 0xE7, 0x40 } };
     return clsid;
 }
 
-HRESULT UnitTestProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
+HRESULT MetaDataGetDispenser::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     HRESULT hr = Profiler::Initialize(pICorProfilerInfoUnk);
     if (FAILED(hr))
@@ -62,8 +62,10 @@ HRESULT UnitTestProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     return S_OK;
 }
 
-HRESULT UnitTestProfiler::Shutdown()
+HRESULT MetaDataGetDispenser::Shutdown()
 {
+    Profiler::Shutdown();
+
     if(_failures == 0)
     {
         printf("PROFILER TEST PASSES\n");
@@ -77,7 +79,7 @@ HRESULT UnitTestProfiler::Shutdown()
     return S_OK;
 }
 
-HRESULT UnitTestProfiler::ModuleLoadStarted(ModuleID moduleId)
+HRESULT MetaDataGetDispenser::ModuleLoadStarted(ModuleID moduleId)
 {
     COMPtrHolder<IMetaDataDispenserEx> pDispenser;
     HRESULT hr = GetDispenser(&pDispenser);
@@ -124,7 +126,7 @@ HRESULT UnitTestProfiler::ModuleLoadStarted(ModuleID moduleId)
 // typedef HRESULT (*GetDispenserFunc) (CLSID *pClsid, IID *pIid, void **ppv);
 #if WIN32
 
-HRESULT UnitTestProfiler::GetDispenser(IMetaDataDispenserEx **disp)
+HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 {
     HMODULE coreclr = LoadLibrary("coreclr.dll");
     if (coreclr == NULL)
@@ -201,7 +203,7 @@ const char *GetCoreCLRPath()
 }
 #endif // __APPLE__
 
-HRESULT UnitTestProfiler::GetDispenser(IMetaDataDispenserEx **disp)
+HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 {
 #ifdef __APPLE__
     const char *profilerName = GetCoreCLRPath();
@@ -238,5 +240,4 @@ HRESULT UnitTestProfiler::GetDispenser(IMetaDataDispenserEx **disp)
     printf("Got IMetaDataDispenserEx\n");
     return S_OK;
 }
-
 #endif // WIN32

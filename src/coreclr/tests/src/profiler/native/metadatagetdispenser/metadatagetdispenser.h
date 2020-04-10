@@ -13,11 +13,11 @@
 
 typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
 
-class UnitTestProfiler : public Profiler
+class MetaDataGetDispenser : public Profiler
 {
 public:
-    UnitTestProfiler();
-    virtual ~UnitTestProfiler();
+    MetaDataGetDispenser();
+    virtual ~MetaDataGetDispenser();
 
     virtual GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
