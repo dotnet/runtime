@@ -127,7 +127,7 @@ Build the Runtime and System.Private.CoreLib
 To build the runtime on Linux, run build.sh to build the CoreCLR subset category of the runtime:
 
 ```
-./build.sh -subsetCategory coreclr
+./build.sh -subset clr
 ```
 
 After the build is completed, there should some files placed in `artifacts/bin/coreclr/Linux.x64.Debug`.  The ones we are most interested in are:

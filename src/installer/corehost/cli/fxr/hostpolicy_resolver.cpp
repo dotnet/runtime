@@ -29,7 +29,6 @@ namespace
         trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
 
         pal::string_t retval;
-
         json_parser_t json;
         if (!json.parse_file(deps_json))
         {

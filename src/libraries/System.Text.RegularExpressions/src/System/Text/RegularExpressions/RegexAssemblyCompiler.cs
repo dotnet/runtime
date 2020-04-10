@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions
             _strings = code.Strings;
             _leadingCharClasses = code.LeadingCharClasses;
             _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _anchors = code.Anchors;
+            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
 
             // Pick a name for the class.

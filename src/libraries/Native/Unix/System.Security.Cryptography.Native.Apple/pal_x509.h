@@ -74,7 +74,7 @@ pPrivateKeyOut: Receives a SecKeyRef for the private key associated with the ide
 */
 PALEXPORT int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity, SecKeyRef* pPrivateKeyOut);
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Read cbData bytes of data from pbData and interpret it to a collection of certificates (or identities).
 

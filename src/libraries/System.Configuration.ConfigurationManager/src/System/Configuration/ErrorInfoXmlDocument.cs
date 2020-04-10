@@ -13,7 +13,7 @@ namespace System.Configuration
     // the necessary information for reporting filename / line numbers.
     // Note: these classes will go away if webdata ever decides to incorporate line numbers
     // into the default XML classes.  This class could also go away if webdata brings back
-    // the UserData property to hang any info off of any node.
+    // the UserData property to attach any info off of any node.
     internal sealed class ErrorInfoXmlDocument : XmlDocument, IConfigErrorInfo
     {
         private string _filename;

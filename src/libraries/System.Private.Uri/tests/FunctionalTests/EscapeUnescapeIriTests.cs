@@ -5,7 +5,7 @@ namespace System.PrivateUri.Tests
 {
     public class EscapeUnescapeIriTests
     {
-        public static IEnumerable<object[]> ReplacesStandaloneSurrogatesWithReplacementChar()
+        public static IEnumerable<object[]> ReplacesStandaloneSurrogatesWithReplacementChar_Data()
         {
             const string UrlEncodedReplacementChar = "%EF%BF%BD";
             const string HighSurrogate = "\ud83f";
@@ -21,7 +21,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ReplacesStandaloneSurrogatesWithReplacementChar))]
+        [MemberData(nameof(ReplacesStandaloneSurrogatesWithReplacementChar_Data))]
         public static void ReplacesStandaloneSurrogatesWithReplacementChar(string input, string expected)
         {
             const string Prefix = "scheme:";

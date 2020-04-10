@@ -10,11 +10,6 @@
     <ProjectReference Include="@(RuntimeProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">
-    <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
-  </ItemGroup>
-
   <Target Name="RestoreTestHost"
           BeforeTargets="Build">
     <MSBuild Targets="Build"

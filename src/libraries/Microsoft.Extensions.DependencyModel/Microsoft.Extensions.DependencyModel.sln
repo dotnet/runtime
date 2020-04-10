@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{8C081484-264
 		pkg\Microsoft.Extensions.DependencyModel.pkgproj = pkg\Microsoft.Extensions.DependencyModel.pkgproj
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{4FF50F50-C230-4C48-9DB1-080441BF7349}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +68,18 @@ Global
 		{E0DEC773-1FE9-49B0-9562-1E245FE2DA5C}.Release|x64.Build.0 = Release|Any CPU
 		{E0DEC773-1FE9-49B0-9562-1E245FE2DA5C}.Release|x86.ActiveCfg = Release|Any CPU
 		{E0DEC773-1FE9-49B0-9562-1E245FE2DA5C}.Release|x86.Build.0 = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|x64.Build.0 = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Debug|x86.Build.0 = Debug|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|x64.ActiveCfg = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|x64.Build.0 = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|x86.ActiveCfg = Release|Any CPU
+		{4FF50F50-C230-4C48-9DB1-080441BF7349}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +88,7 @@ Global
 		{5E0AA1BE-28A2-4D25-A10A-E13EBDABE8A1} = {47B5CCF6-E349-42D1-B3C2-900EFF594C8A}
 		{9EACDD3F-3833-4E71-954A-847989D634AB} = {48E09E46-BD12-4B7E-9D10-3FEC7F9AE9B4}
 		{E0DEC773-1FE9-49B0-9562-1E245FE2DA5C} = {A05AC200-A15B-430E-A4BD-522C570DDCB3}
+		{4FF50F50-C230-4C48-9DB1-080441BF7349} = {A05AC200-A15B-430E-A4BD-522C570DDCB3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {56AA6766-64A9-4715-BC6B-4A24EF6AF7F9}

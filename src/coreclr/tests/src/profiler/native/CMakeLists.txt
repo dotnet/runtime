@@ -5,9 +5,10 @@ project(Profiler)
 set(GCBASIC_SOURCES gcbasicprofiler/gcbasicprofiler.cpp)
 set(REJIT_SOURCES rejitprofiler/rejitprofiler.cpp rejitprofiler/ilrewriter.cpp rejitprofiler/sigparse.cpp)
 set(EVENTPIPE_SOURCES eventpipeprofiler/eventpipeprofiler.cpp)
-set(UNITTEST_SOURCES unittestprofiler/unittestprofiler.cpp)
+set(METADATAGETDISPENSER_SOURCES metadatagetdispenser/metadatagetdispenser.cpp)
+set(GETAPPDOMAINSTATICADDRESS_SOURCES getappdomainstaticaddress/getappdomainstaticaddress.cpp)
 
-set(SOURCES ${GCBASIC_SOURCES} ${REJIT_SOURCES} ${EVENTPIPE_SOURCES} ${UNITTEST_SOURCES} profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
+set(SOURCES ${GCBASIC_SOURCES} ${REJIT_SOURCES} ${EVENTPIPE_SOURCES} ${METADATAGETDISPENSER_SOURCES} ${GETAPPDOMAINSTATICADDRESS_SOURCES} profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
 
 include_directories(../../../../src/pal/prebuilt/inc)
 

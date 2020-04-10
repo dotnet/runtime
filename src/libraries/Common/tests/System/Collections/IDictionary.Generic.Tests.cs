@@ -175,6 +175,21 @@ namespace System.Collections.Tests
                     return true;
                 };
             }
+            if ((operations & ModifyOperation.Overwrite) == ModifyOperation.Overwrite)
+            {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                {
+                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                    if (casted.Count() > 0)
+                    {
+                        var keys = casted.Keys.GetEnumerator();
+                        keys.MoveNext();
+                        casted[keys.Current] = CreateTValue(12);
+                        return true;
+                    }
+                    return false;
+                };
+            }
             if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
             {
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>

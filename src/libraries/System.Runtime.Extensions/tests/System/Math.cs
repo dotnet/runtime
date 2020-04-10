@@ -1397,14 +1397,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Round_Decimal_Digits()
-        {
-            Assert.Equal(3.422m, Math.Round(3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(-3.422m, Math.Round(-3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, MidpointRounding.AwayFromZero));
-        }
-
-        [Fact]
         public static void Round_Double()
         {
             Assert.Equal(0.0, Math.Round(0.0));
@@ -1418,7 +1410,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Round_Double_Digits()
+        public static void Round_Double_Digits_SpecificCases()
         {
             Assert.Equal(3.422, Math.Round(3.42156, 3, MidpointRounding.AwayFromZero), 10);
             Assert.Equal(-3.422, Math.Round(-3.42156, 3, MidpointRounding.AwayFromZero), 10);
@@ -2431,7 +2423,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Double_Digits(MidpointRounding mode)
+        public static void Round_Double_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(double.NaN, Math.Round(double.NaN, 3, mode));
             Assert.Equal(double.PositiveInfinity, Math.Round(double.PositiveInfinity, 3, mode));
@@ -2458,7 +2450,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Decimal_Digits(MidpointRounding mode)
+        public static void Round_Decimal_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, mode));
         }
