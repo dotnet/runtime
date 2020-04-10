@@ -48,6 +48,8 @@ namespace Profiler.Tests
             object instance = Activator.CreateInstance(testType);
 
             Console.WriteLine(instance.GetHashCode());
+
+            collectibleContext.Unload();
         }
     }
 }
