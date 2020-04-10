@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public abstract class FileStream_ReadWrite_Span : FileSystemTest
     {
         protected abstract FileStream CreateFileStream(string path, FileMode mode, FileAccess access = FileAccess.ReadWrite);
@@ -286,6 +287,7 @@ namespace System.IO.Tests
             new FileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.Asynchronous);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Async_NoBuffer_FileStream_ReadWrite_Span : FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
