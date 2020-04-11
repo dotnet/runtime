@@ -2004,6 +2004,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // runtime threads for a GC that depends on the fact that we
         // do an EnablePreemptiveGC and a DisablePreemptiveGC around
         // taking this lock.
+        // besides, if the suspension is in progress, the lock is taken, we better be in premptive mode while blocked on this lock.
         if (toggleGC)
             pCurThread->EnablePreemptiveGC();
 
@@ -2499,18 +2500,10 @@ void Thread::RareEnablePreemptiveGC()
     if (IsAtProcessExit())
         return;
 
-    // EnablePreemptiveGC already set us to preemptive mode before triggering the Rare path.
-    // Force other threads to see this update, since the Rare path implies that someone else
-    // is observing us (e.g. SuspendRuntime).
-
     _ASSERTE (!m_fPreemptiveGCDisabled);
 
     // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
-
-    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
-
-    FastInterlockOr (&m_fPreemptiveGCDisabled, 0);
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
     if (!IsDetached())
@@ -2525,7 +2518,9 @@ void Thread::RareEnablePreemptiveGC()
         UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        // wake up any threads waiting to suspend us, like the GC thread.
+        // EnablePreemptiveGC already set us to preemptive mode before triggering the Rare path.
+        // the Rare path implies that someone else is observing us (e.g. SuspendRuntime).
+        // we have changed to preemptive mode, so signal that there was a suspension progress.
         ThreadSuspend::g_pGCSuspendEvent->Set();
 
         // for GC, the fact that we are leaving the EE means that it no longer needs to
@@ -3521,11 +3516,16 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
         // Threads can be in Preemptive or Cooperative GC mode.  Threads cannot switch
         // to Cooperative mode without special treatment when a GC is happening.
-        if (thread->m_fPreemptiveGCDisabled)
-        {
-            // Check a little more carefully.  Threads might sneak out without telling
-            // us, because of inlined PInvoke which doesn't go through RareEnablePreemptiveGC.
 
+        // When reading shared state we need to erect appropriate memory barriers.
+        // ::FlushProcessWriteBuffers above guarantees that the state that we see here
+        // is AT OR AFTER the other thread thread sees the trap flag set.
+        //
+        // In short: any thread switching to cooperative mode will see the trap flag.
+        //           as a result we only care about threads in cooperative mode.
+        //           as soon as we see a thread in preemptive mode, we stop caring about it.
+        if (thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
+        {
 #ifdef DISABLE_THREADSUSPEND
             // On platforms that do not support safe thread suspension, we do one of two things:
             //
@@ -3536,27 +3536,16 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             //     - Otherwise, we rely on the GCPOLL mechanism enabled by
             //       TrapReturningThreads.
 
-            // When reading shared state we need to erect appropriate memory barriers.
-            // The interlocked operation below ensures that any future reads on this
-            // thread will happen after any earlier writes on a different thread.
-            //
-            // <TODO> Need more careful review of this </TODO>
-            //
-            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-
-            if (thread->m_fPreemptiveGCDisabled)
-            {
-                FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_GCSuspendPending);
-                countThreads++;
+            FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_GCSuspendPending);
+            countThreads++;
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-                bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
-                if (!gcSuspensionSignalSuccess)
-                {
-                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
-                }
-#endif // FEATURE_HIJACK && TARGET_UNIX
+            bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
+            if (!gcSuspensionSignalSuccess)
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
             }
+#endif // FEATURE_HIJACK && TARGET_UNIX
 
 #else // DISABLE_THREADSUSPEND
 
@@ -3596,7 +3585,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 STRESS_LOG2(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d\n", thread, str);
             }
             else
-            if (thread->m_fPreemptiveGCDisabled)
+            if (thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
                 // We now know for sure that the thread is still in cooperative mode.  If it's in JIT'd code, here
                 // is where we try to hijack/redirect the thread.  If it's in VM code, we have to just let the VM
@@ -5964,13 +5953,6 @@ retry_for_debugger:
     if (reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP)
     {
         m_pThreadAttemptingSuspendForGC = pCurThread;
-
-        //
-        // also unblock any thread waiting around for this thread to suspend. This prevents us from completely
-        // starving other suspension clients, such as the debugger, which we otherwise would do because of
-        // the priority we just established.
-        //
-        g_pGCSuspendEvent->Set();
     }
 
 #ifdef TIME_SUSPEND

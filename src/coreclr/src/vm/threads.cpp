@@ -5181,7 +5181,16 @@ void ThreadStore::InitThreadStore()
 // additional semantics well beyond a normal lock.
 DEBUG_NOINLINE void ThreadStore::Enter()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        // we must be in preemptive mode while taking this lock
+        // if suspension is in progress, the lock is taken, and there is no way to suspend us once we block
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
@@ -5189,7 +5198,12 @@ DEBUG_NOINLINE void ThreadStore::Enter()
 
 DEBUG_NOINLINE void ThreadStore::Leave()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
