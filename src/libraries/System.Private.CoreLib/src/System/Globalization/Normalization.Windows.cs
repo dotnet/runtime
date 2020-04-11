@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,7 +11,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -24,7 +25,11 @@ namespace System.Globalization
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
             // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
             // to 0 (ERROR_SUCCESS) before executing the calls.
-            bool result = Interop.Normaliz.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
+            Interop.BOOL result;
+            fixed (char* pInput = strInput)
+            {
+                result = Interop.Normaliz.IsNormalizedString(normalizationForm, pInput, strInput.Length);
+            }
 
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -51,10 +56,10 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
             }
 
-            return result;
+            return result != Interop.BOOL.FALSE;
         }
 
-        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -65,84 +70,85 @@ namespace System.Globalization
 
             Debug.Assert(strInput != null);
 
-            // we depend on Win32 last error when calling NormalizeString
-            // NormalizeString pinvoke has SetLastError attribute property which will set the last error
-            // to 0 (ERROR_SUCCESS) before executing the calls.
-
-            // Guess our buffer size first
-            int iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, null, 0);
-
-            int lastError = Marshal.GetLastWin32Error();
-            // Could have an error (actually it'd be quite hard to have an error here)
-            if ((lastError != Interop.Errors.ERROR_SUCCESS) || iLength < 0)
+            if (strInput.Length == 0)
             {
-                if (lastError == Interop.Errors.ERROR_INVALID_PARAMETER)
+                return string.Empty;
+            }
+
+            char[]? toReturn = null;
+            try
+            {
+                const int StackallocThreshold = 512;
+
+                Span<char> buffer = strInput.Length <= StackallocThreshold
+                    ? stackalloc char[StackallocThreshold]
+                    : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
+
+                while (true)
                 {
-                    if (normalizationForm != NormalizationForm.FormC &&
-                        normalizationForm != NormalizationForm.FormD &&
-                        normalizationForm != NormalizationForm.FormKC &&
-                        normalizationForm != NormalizationForm.FormKD)
+                    // we depend on Win32 last error when calling NormalizeString
+                    // NormalizeString pinvoke has SetLastError attribute property which will set the last error
+                    // to 0 (ERROR_SUCCESS) before executing the calls.
+                    int realLength;
+                    fixed (char* pInput = strInput)
+                    fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
-                        throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+                        realLength = Interop.Normaliz.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
                     }
+                    int lastError = Marshal.GetLastWin32Error();
 
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    switch (lastError)
+                    {
+                        case Interop.Errors.ERROR_SUCCESS:
+                            ReadOnlySpan<char> result = buffer.Slice(0, realLength);
+                            return result.SequenceEqual(strInput)
+                                ? strInput
+                                : new string(result);
+
+                        // Do appropriate stuff for the individual errors:
+                        case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
+                            realLength = Math.Abs(realLength);
+                            Debug.Assert(realLength > buffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
+                            if (toReturn != null)
+                            {
+                                // Clear toReturn first to ensure we don't return the same buffer twice
+                                char[] temp = toReturn;
+                                toReturn = null;
+                                ArrayPool<char>.Shared.Return(temp);
+                            }
+                            Debug.Assert(realLength > StackallocThreshold);
+                            buffer = toReturn = ArrayPool<char>.Shared.Rent(realLength);
+                            continue;
+
+                        case Interop.Errors.ERROR_INVALID_PARAMETER:
+                        case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
+                            if (normalizationForm != NormalizationForm.FormC &&
+                                normalizationForm != NormalizationForm.FormD &&
+                                normalizationForm != NormalizationForm.FormKC &&
+                                normalizationForm != NormalizationForm.FormKD)
+                            {
+                                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+                            }
+
+                            // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
+                            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+
+                        case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                            throw new OutOfMemoryException();
+
+                        default:
+                            // We shouldn't get here...
+                            throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
+                    }
                 }
-
-                // We shouldn't really be able to get here..., guessing length is
-                // a trivial math function...
-                // Can't really be Out of Memory, but just in case:
-                if (lastError == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
-                    throw new OutOfMemoryException();
-
-                // Who knows what happened?  Not us!
-                throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
             }
-
-            // Don't break for empty strings (only possible for D & KD and not really possible at that)
-            if (iLength == 0) return string.Empty;
-
-            // Someplace to stick our buffer
-            char[] cBuffer;
-
-            while (true)
+            finally
             {
-                // (re)allocation buffer and normalize string
-                cBuffer = new char[iLength];
-
-                // NormalizeString pinvoke has SetLastError attribute property which will set the last error
-                // to 0 (ERROR_SUCCESS) before executing the calls.
-                iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
-                lastError = Marshal.GetLastWin32Error();
-
-                if (lastError == Interop.Errors.ERROR_SUCCESS)
-                    break;
-
-                // Could have an error (actually it'd be quite hard to have an error here)
-                switch (lastError)
+                if (toReturn != null)
                 {
-                    // Do appropriate stuff for the individual errors:
-                    case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                        iLength = Math.Abs(iLength);
-                        Debug.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
-                        continue;
-
-                    case Interop.Errors.ERROR_INVALID_PARAMETER:
-                    case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
-                        // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
-                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
-
-                    case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                        throw new OutOfMemoryException();
-
-                    default:
-                        // We shouldn't get here...
-                        throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
+                    ArrayPool<char>.Shared.Return(toReturn);
                 }
             }
-
-            // Copy our buffer into our new string, which will be the appropriate size
-            return new string(cBuffer, 0, iLength);
         }
     }
 }

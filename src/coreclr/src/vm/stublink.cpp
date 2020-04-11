@@ -2552,7 +2552,7 @@ VOID ArgBasedStubCache::Dump()
         if (!pStub) {
             printf("empty\n");
         } else {
-            printf("%lxh   - refcount is %lu\n",
+            printf("%zxh   - refcount is %lu\n",
                    (size_t)(pStub->GetEntryPoint()),
                    (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
         }
@@ -2564,7 +2564,7 @@ VOID ArgBasedStubCache::Dump()
 
         printf("  Dyna. slot %lu: ", (ULONG)(pSlotEntry->m_key));
         Stub *pStub = pSlotEntry->m_pStub;
-        printf("%lxh   - refcount is %lu\n",
+        printf("%zxh   - refcount is %lu\n",
                (size_t)(pStub->GetEntryPoint()),
                (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
 

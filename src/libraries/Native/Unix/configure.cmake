@@ -10,6 +10,8 @@ include(CheckTypeSize)
 
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    set(PAL_UNIX_NAME \"WEBASSEMBLY\")
 elseif (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
 elseif (CLR_CMAKE_TARGET_OSX)
@@ -20,14 +22,14 @@ elseif (CLR_CMAKE_TARGET_OSX)
     include_directories(SYSTEM /usr/local/include)
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
+elseif (CLR_CMAKE_TARGET_TVOS)
+    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
-elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-    set(PAL_UNIX_NAME \"WEBASSEMBLY\")
 else ()
     message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
@@ -109,6 +111,11 @@ check_symbol_exists(
     getifaddrs
     ifaddrs.h
     HAVE_GETIFADDRS)
+
+check_symbol_exists(
+    fork
+    unistd.h
+    HAVE_FORK)
 
 check_symbol_exists(
     lseek64
@@ -457,6 +464,13 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_TVOS)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
@@ -726,7 +740,7 @@ check_symbol_exists(
     HAVE_TCP_FSM_H
 )
 
-if(CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
@@ -825,7 +839,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CLR_CMAKE_TARGET_LINUX)
+elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 

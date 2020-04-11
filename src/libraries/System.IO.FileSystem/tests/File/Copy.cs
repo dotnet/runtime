@@ -109,7 +109,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyFileWithData_MemberData))]
-        public void CopyFileWithData_MemberData(char[] data, bool readOnly)
+        public void CopyFileWithData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
             string testFileDest = GetTestFilePath();

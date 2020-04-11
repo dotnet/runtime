@@ -81,6 +81,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34801")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartWithArgsThenStop()
         {
@@ -175,9 +176,8 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // The default username for installing the service is NT AUTHORITY\\LocalService which does not have access to EventLog.
             // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
-            var testService = new TestServiceProvider(serviceName, userName: null);
+            var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();
         }

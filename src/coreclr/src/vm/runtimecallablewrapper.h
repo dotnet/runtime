@@ -1998,7 +1998,7 @@ private:
         static RCW *Null()                         { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(RCW *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
         static const LPVOID GetKey(RCW *e)         { LIMITED_METHOD_CONTRACT; return e->m_pIdentity; }
-        static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)key_t; }
+        static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
         static BOOL Equals(LPVOID lhs, LPVOID rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
         static RCW *Deleted()                      { LIMITED_METHOD_CONTRACT; return (RCW *)-1; }
         static bool IsDeleted(RCW *e)              { LIMITED_METHOD_CONTRACT; return e == (RCW *)-1; }

@@ -117,6 +117,17 @@ namespace System.Security.Cryptography
             current?.Dispose();
         }
 
+        internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
+        {
+            const string ExportPassword = "DotnetExportPassphrase";
+            byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
+            EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
+            CryptographicOperations.ZeroMemory(key.D);
+            CryptographicOperations.ZeroMemory(keyBlob);
+            key.D = null;
+            return key;
+        }
+
         internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export
@@ -166,6 +177,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             bool isPrivateKey = parameters.D != null;
+            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
             SecKeyPair newKeys;
 
             if (isPrivateKey)
@@ -176,8 +188,17 @@ namespace System.Security.Cryptography
                 // Public import should go off without a hitch.
                 SafeSecKeyRefHandle privateKey = ImportKey(parameters);
 
-                ECParameters publicOnly = parameters;
-                publicOnly.D = null;
+                ECParameters publicOnly;
+
+                if (hasPublicParameters)
+                {
+                    publicOnly = parameters;
+                    publicOnly.D = null;
+                }
+                else
+                {
+                    publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
+                }
 
                 SafeSecKeyRefHandle publicKey;
                 try

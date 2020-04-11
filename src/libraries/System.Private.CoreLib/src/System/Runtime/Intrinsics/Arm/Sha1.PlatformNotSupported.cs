@@ -22,28 +22,28 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: SHA1H.32 Qd, Qm
         ///   A64: SHA1H Sd, Sn
         /// </summary>
-        public static uint FixedRotate(uint hash_e) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> FixedRotate(Vector64<uint> hash_e) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vsha1cq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
         ///   A32: SHA1C.32 Qd, Qn, Qm
         ///   A64: SHA1C Qd, Sn, Vm.4S
         /// </summary>
-        public static Vector128<uint> HashUpdateChoose(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> HashUpdateChoose(Vector128<uint> hash_abcd, Vector64<uint> hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vsha1mq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
         ///   A32: SHA1M.32 Qd, Qn, Qm
         ///   A64: SHA1M Qd, Sn, Vm.4S
         /// </summary>
-        public static Vector128<uint> HashUpdateMajority(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> HashUpdateMajority(Vector128<uint> hash_abcd, Vector64<uint> hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vsha1pq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
         ///   A32: SHA1P.32 Qd, Qn, Qm
         ///   A64: SHA1P Qd, Sn, Vm.4S
         /// </summary>
-        public static Vector128<uint> HashUpdateParity(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> HashUpdateParity(Vector128<uint> hash_abcd, Vector64<uint> hash_e, Vector128<uint> wk) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vsha1su0q_u32 (uint32x4_t w0_3, uint32x4_t w4_7, uint32x4_t w8_11)

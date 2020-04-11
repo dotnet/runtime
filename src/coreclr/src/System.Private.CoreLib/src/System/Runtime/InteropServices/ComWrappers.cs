@@ -306,5 +306,17 @@ namespace System.Runtime.InteropServices
 
         [DllImport(RuntimeHelpers.QCall)]
         private static extern void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
+
+        internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out IntPtr ppObject)
+        {
+            var customQueryInterface = customQueryInterfaceMaybe as ICustomQueryInterface;
+            if (customQueryInterface is null)
+            {
+                ppObject = IntPtr.Zero;
+                return -1; // See TryInvokeICustomQueryInterfaceResult
+            }
+
+            return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
+        }
     }
 }

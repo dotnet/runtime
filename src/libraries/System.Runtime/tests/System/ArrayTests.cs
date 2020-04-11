@@ -1770,10 +1770,10 @@ namespace System.Tests
         [MemberData(nameof(CreateInstance_TestData))]
         public static void CreateInstance(Type elementType, object repeatedValue)
         {
-            CreateInstance(elementType, new int[] { 10 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 0 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
-            CreateInstance(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 10 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 0 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
         }
 
         [Theory]
@@ -1785,7 +1785,7 @@ namespace System.Tests
         [InlineData(typeof(int), new int[] { 7 }, new int[] { 1 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8 }, new int[] { 1, 2 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, default(int))]
-        public static void CreateInstance(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
+        public static void CreateInstance_Advanced(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             bool lowerBoundsAreAllZero = lowerBounds.All(lowerBound => lowerBound == 0);
             if ((!lowerBoundsAreAllZero) && !PlatformDetection.IsNonZeroLowerBoundArraySupported)
@@ -3577,7 +3577,7 @@ namespace System.Tests
         [InlineData(10, 1)]
         [InlineData(9, 2)]
         [InlineData(0, 11)]
-        public void Store_NegativeLength_ThrowsArgumentOutOfRangeException(int index, int length)
+        public void Store_NegativeLength_ThrowsArgumentException(int index, int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length, null));

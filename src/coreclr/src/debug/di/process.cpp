@@ -12788,7 +12788,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         PORTABILITY_ASSERT("NYI: Breakpoint size offset for this platform");
 #endif
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
-            (DWORD)CORDbgGetIP(&tempDebugContext) == ((DWORD)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
+            (DWORD)(size_t)CORDbgGetIP(&tempDebugContext) == ((DWORD)(size_t)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }
 #endif
 

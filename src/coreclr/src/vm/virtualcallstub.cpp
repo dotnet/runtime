@@ -158,6 +158,7 @@ void VirtualCallStubManager::StartupLogging()
 }
 
 #define OUTPUT_FORMAT_INT "\t%-30s %d\r\n"
+#define OUTPUT_FORMAT_SIZE "\t%-30s %zu\r\n"
 #define OUTPUT_FORMAT_PCT "\t%-30s %#5.2f%%\r\n"
 #define OUTPUT_FORMAT_INT_PCT "\t%-30s %5d (%#5.2f%%)\r\n"
 
@@ -366,7 +367,7 @@ void VirtualCallStubManager::LoggingDump()
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_used", used);
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", g_cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
@@ -381,7 +382,7 @@ void VirtualCallStubManager::LoggingDump()
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space_dead", g_bucket_space_dead);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%d used, %d total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
@@ -3112,14 +3113,14 @@ void VirtualCallStubManager::LogStats()
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_used", used);
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", stats.cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", stats.cache_entry_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%d used, %d total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
     }

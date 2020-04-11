@@ -245,6 +245,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
@@ -576,7 +577,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Foo")]
         [InlineData("Hi There")]
-        public void ToString(string name)
+        public void ToStringTest(string name)
         {
             var assemblyName = new AssemblyName(name);
             Assert.StartsWith(name, assemblyName.ToString());

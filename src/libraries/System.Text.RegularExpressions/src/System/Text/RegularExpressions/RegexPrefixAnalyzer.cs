@@ -290,7 +290,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Takes a RegexTree and computes the leading anchor that it encounters.</summary>
-        public static int FindLeadingAnchors(RegexTree tree)
+        public static int FindLeadingAnchor(RegexTree tree)
         {
             RegexNode curNode = tree.Root;
             RegexNode? concatNode = null;
@@ -300,6 +300,30 @@ namespace System.Text.RegularExpressions
             {
                 switch (curNode.Type)
                 {
+                    case RegexNode.Bol:
+                        return Bol;
+
+                    case RegexNode.Eol:
+                        return Eol;
+
+                    case RegexNode.Boundary:
+                        return Boundary;
+
+                    case RegexNode.ECMABoundary:
+                        return ECMABoundary;
+
+                    case RegexNode.Beginning:
+                        return Beginning;
+
+                    case RegexNode.Start:
+                        return Start;
+
+                    case RegexNode.EndZ:
+                        return EndZ;
+
+                    case RegexNode.End:
+                        return End;
+
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
                         {
@@ -313,27 +337,6 @@ namespace System.Text.RegularExpressions
                         curNode = curNode.Child(0);
                         concatNode = null;
                         continue;
-
-                    case RegexNode.Bol:
-                    case RegexNode.Eol:
-                    case RegexNode.Boundary:
-                    case RegexNode.ECMABoundary:
-                    case RegexNode.Beginning:
-                    case RegexNode.Start:
-                    case RegexNode.EndZ:
-                    case RegexNode.End:
-                        return curNode.Type switch
-                        {
-                            RegexNode.Bol => Bol,
-                            RegexNode.Eol => Eol,
-                            RegexNode.Boundary => Boundary,
-                            RegexNode.ECMABoundary => ECMABoundary,
-                            RegexNode.Beginning => Beginning,
-                            RegexNode.Start => Start,
-                            RegexNode.EndZ => EndZ,
-                            RegexNode.End => End,
-                            _ => 0,
-                        };
 
                     case RegexNode.Empty:
                     case RegexNode.Require:

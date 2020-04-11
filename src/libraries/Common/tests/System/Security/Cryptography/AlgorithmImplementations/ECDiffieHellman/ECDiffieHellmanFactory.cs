@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
-        bool LimitedPrivateKeySupported { get; }
     }
 
     public static partial class ECDiffieHellmanFactory
@@ -41,6 +40,5 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
-        public static bool LimitedPrivateKeySupported => s_provider.LimitedPrivateKeySupported;
     }
 }

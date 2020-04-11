@@ -1524,7 +1524,6 @@ int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    assert(addrLen <= (socklen_t)*socketAddressLen);
     *socketAddressLen = (int32_t)addrLen;
     return Error_SUCCESS;
 }
@@ -2254,6 +2253,128 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
     }
 }
 
+static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int platformProtocolType, int32_t* palProtocolType)
+{
+    assert(palProtocolType != NULL);
+
+    switch (palAddressFamily)
+    {
+#ifdef AF_PACKET
+        case AddressFamily_AF_PACKET:
+            // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#if HAVE_LINUX_CAN_H
+        case AddressFamily_AF_CAN:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case CAN_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+#endif
+        case AddressFamily_AF_INET:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case IPPROTO_ICMP:
+                    *palProtocolType = ProtocolType_PT_ICMP;
+                    return true;
+
+                case IPPROTO_TCP:
+                    *palProtocolType = ProtocolType_PT_TCP;
+                    return true;
+
+                case IPPROTO_UDP:
+                    *palProtocolType = ProtocolType_PT_UDP;
+                    return true;
+
+                case IPPROTO_IGMP:
+                    *palProtocolType = ProtocolType_PT_IGMP;
+                    return true;
+
+                case IPPROTO_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                default:
+                    *palProtocolType = (int)palProtocolType;
+                    return false;
+            }
+
+        case AddressFamily_AF_INET6:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case IPPROTO_ICMPV6:
+                    *palProtocolType = ProtocolType_PT_ICMPV6;
+                    return true;
+
+                case IPPROTO_TCP:
+                    *palProtocolType = ProtocolType_PT_TCP;
+                    return true;
+
+                case IPPROTO_UDP:
+                    *palProtocolType = ProtocolType_PT_UDP;
+                    return true;
+
+                case IPPROTO_IGMP:
+                    *palProtocolType = ProtocolType_PT_IGMP;
+                    return true;
+
+                case IPPROTO_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                case IPPROTO_DSTOPTS:
+                    *palProtocolType = ProtocolType_PT_DSTOPTS;
+                    return true;
+
+                case IPPROTO_NONE:
+                    *palProtocolType = ProtocolType_PT_NONE;
+                    return true;
+
+                case IPPROTO_ROUTING:
+                    *palProtocolType = ProtocolType_PT_ROUTING;
+                    return true;
+
+                case IPPROTO_FRAGMENT:
+                    *palProtocolType = ProtocolType_PT_FRAGMENT;
+                    return true;
+
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+
+        default:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+    }
+}
+
 int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket)
 {
     if (createdSocket == NULL)
@@ -2294,6 +2415,48 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
 #ifndef SOCK_CLOEXEC
     fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
 #endif
+    return Error_SUCCESS;
+}
+
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType)
+{
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+#ifdef SO_DOMAIN
+    int domainValue;
+    socklen_t domainLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &domainValue, &domainLength) != 0 ||
+        !TryConvertAddressFamilyPlatformToPal((sa_family_t)domainValue, addressFamily))
+#endif
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+#ifdef SO_TYPE
+    int typeValue;
+    socklen_t typeLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &typeValue, &typeLength) != 0 ||
+        !TryConvertSocketTypePlatformToPal(typeValue, socketType))
+#endif
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+#ifdef SO_PROTOCOL
+    int protocolValue;
+    socklen_t protocolLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_PROTOCOL, &protocolValue, &protocolLength) != 0 ||
+        !TryConvertProtocolTypePlatformToPal(*addressFamily, protocolValue, protocolType))
+#endif
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
     return Error_SUCCESS;
 }
 

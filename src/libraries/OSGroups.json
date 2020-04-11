@@ -22,6 +22,11 @@
         "Unix"
         ]
       },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
     "Android": {
       "#import": [
         "Linux"

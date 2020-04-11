@@ -50,7 +50,9 @@ namespace System.Text.Json.Serialization.Converters
             _converterOptions = options;
             if (namingPolicy != null)
             {
-                _nameCache = new ConcurrentDictionary<string, string>(); } else
+                _nameCache = new ConcurrentDictionary<string, string>(); 
+            }
+            else
             {
                 namingPolicy = JsonNamingPolicy.Default;
             }

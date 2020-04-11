@@ -140,7 +140,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Select((e, i) => i == 5 ? e.name : null));
         }
 
-        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public void Overflow()
         {
             var selected = new FastInfiniteEnumerator<int>().Select((e, i) => e);

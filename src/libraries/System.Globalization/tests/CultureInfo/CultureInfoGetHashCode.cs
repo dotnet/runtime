@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US")]
         [InlineData("en")]
         [InlineData("")]
-        public void GetHashCode(string name)
+        public void GetHashCodeTest(string name)
         {
             // The only guarantee that can be made about HashCodes is that they will be the same across calls
             CultureInfo culture = new CultureInfo(name);

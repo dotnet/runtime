@@ -43,7 +43,7 @@ jobs:
 
   - script: >-
       build.cmd -ci
-      -subsetcategory installer -subset publish
+      -subset installer.publish
       -configuration Release
       /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
       /p:OfficialBuildId=$(Build.BuildNumber)

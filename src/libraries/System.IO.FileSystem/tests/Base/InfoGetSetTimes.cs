@@ -49,7 +49,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void TimesStillSetAfterDelete()
+        public void TimesResetAfterDelete()
         {
             T item = GetExistingItem();
 
@@ -63,11 +63,13 @@ namespace System.IO.Tests
                 times.Add(timeFunction, timeFunction.Getter(item));
             }
 
-            // Deleting shouldn't change any info state
+            // Deleting should refresh state
             item.Delete();
+
             Assert.All(times, time =>
             {
-                Assert.Equal(time.Value, time.Key.Getter(item));
+                // We check that all the file times have been refreshed
+                Assert.NotEqual(time.Key.Getter(item), time.Value);
             });
         }
     }
