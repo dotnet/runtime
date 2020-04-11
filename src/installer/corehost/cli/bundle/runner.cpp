@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,11 +48,11 @@ StatusCode runner_t::extract()
     }
 }
 
-const file_entry_t*  runner_t::probe(const pal::string_t& path) const
+const file_entry_t*  runner_t::probe(const pal::string_t &relative_path) const
 {
     for (const file_entry_t& entry : m_manifest.files)
     {
-        if (entry.relative_path() == path)
+        if (pal::pathcmp(entry.relative_path(), relative_path) == 0)
         {
             return &entry;
         }
@@ -80,4 +80,48 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
     append_path(&full_path, relative_path.c_str());
 
     return true;
+}
+
+bool STDMETHODCALLTYPE runner_t::bundle_probe(const wchar_t *path, int64_t *offset, int64_t *size)
+{
+    if (path == nullptr)
+    {
+        return false;
+    }
+
+    pal::string_t file_path;
+
+    if (!pal::unicode_palstring(path, &file_path))
+    {
+        trace::warning(_X("Failure probing contents of the application bundle."));
+        trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+
+        return false;
+    }
+
+    const file_entry_t* entry = app()->probe(file_path);
+    if (entry != nullptr)
+    {
+        *offset = entry->offset();
+        *size = entry->size();
+
+        assert(*offset != 0);
+
+        return true;
+    }
+
+    return false;
+}
+
+pal::string_t runner_t::get_bundle_probe()
+{
+    if (!is_single_file_bundle())
+    {
+        return _X("");
+    }
+
+    pal::stringstream_t ptr_stream;
+    ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
+
+    return ptr_stream.str();
 }

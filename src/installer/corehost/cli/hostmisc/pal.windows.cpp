@@ -49,11 +49,6 @@ pal::string_t pal::to_lower(const pal::string_t& in)
     return ret;
 }
 
-pal::string_t pal::to_string(int value)
-{
-    return std::to_wstring(value);
-}
-
 pal::string_t pal::get_timestamp()
 {
     std::time_t t = std::time(0);
@@ -605,7 +600,6 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     return realpath(&extraction_dir);
 }
 
-
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
     out->clear();
@@ -647,6 +641,12 @@ bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
+}
+
+bool pal::unicode_palstring(const wchar_t* str, pal::string_t* out)
+{
+    out->assign(str);
+    return true;
 }
 
 // Return if path is valid and file exists, return true and adjust path as appropriate.

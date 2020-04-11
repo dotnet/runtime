@@ -17,8 +17,11 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
+#include <clocale>
+#include <cwchar>
 #include <pwd.h>
 #include "config.h"
+
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -38,8 +41,6 @@
 #define DT_REG 8
 #define DT_LNK 10
 #endif
-
-pal::string_t pal::to_string(int value) { return std::to_string(value); }
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -252,6 +253,23 @@ void pal::unload_library(dll_t library)
 int pal::xtoi(const char_t* input)
 {
     return atoi(input);
+}
+
+bool pal::unicode_palstring(const wchar_t* str, pal::string_t* out)
+{
+    out->clear();
+
+    std::mbstate_t mbstate;
+    memset(&mbstate, 0, sizeof(std::mbstate_t));
+
+    // Passing a nullptr destination computes the length of the destination string 
+    // without the null-termination character.
+    size_t mbsize= wcsrtombs(nullptr, &str, 0, &mbstate) + 1;
+
+    out->resize(mbsize, '\0');
+    size_t written_size = std::wcsrtombs(&(*out)[0], &str, mbsize, &mbstate);
+
+    return written_size != -1;
 }
 
 bool pal::is_path_rooted(const pal::string_t& path)
