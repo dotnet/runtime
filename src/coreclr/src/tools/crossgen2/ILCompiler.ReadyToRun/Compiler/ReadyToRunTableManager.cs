@@ -110,14 +110,14 @@ namespace ILCompiler
 
                     foreach (var perModuleData in perModuleDatas)
                     {
-                        perModuleData.MethodsGenerated.Sort(sortHelper);
-                        perModuleData.GenericMethodsGenerated.Sort(sortHelper);
+                        perModuleData.MethodsGenerated.ParallelSort(sortHelper);
+                        perModuleData.GenericMethodsGenerated.ParallelSort(sortHelper);
                         _completeSortedMethods.AddRange(perModuleData.MethodsGenerated);
                         _completeSortedMethods.AddRange(perModuleData.GenericMethodsGenerated);
                         _completeSortedGenericMethods.AddRange(perModuleData.GenericMethodsGenerated);
                     }
-                    _completeSortedMethods.Sort(sortHelper);
-                    _completeSortedGenericMethods.Sort(sortHelper);
+                    _completeSortedMethods.ParallelSort(sortHelper);
+                    _completeSortedGenericMethods.ParallelSort(sortHelper);
                     _sortedMethods = true;
                 }
             }

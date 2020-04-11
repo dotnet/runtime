@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return null;
             }
 
-            fixupCells.Sort(FixupCell.Comparer);
+            fixupCells.ParallelSortAllowDuplicates(FixupCell.Comparer);
 
             // Deduplicate fixupCells
             int j = 0;

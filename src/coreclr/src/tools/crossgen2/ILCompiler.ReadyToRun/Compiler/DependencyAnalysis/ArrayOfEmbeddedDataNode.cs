@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialPointerAlignment();
 
             if (_sorter != null)
-                _nestedNodesList.Sort(_sorter);
+                _nestedNodesList.ParallelSort(_sorter);
 
             builder.AddSymbol(StartSymbol);
 
