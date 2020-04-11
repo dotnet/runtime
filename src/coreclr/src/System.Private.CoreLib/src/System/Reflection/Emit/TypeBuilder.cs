@@ -721,6 +721,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => GetModuleBuilder();
 
+        public override bool IsByRefLike => false;
+
         internal int MetadataTokenInternal => m_tdType.Token;
 
         #endregion

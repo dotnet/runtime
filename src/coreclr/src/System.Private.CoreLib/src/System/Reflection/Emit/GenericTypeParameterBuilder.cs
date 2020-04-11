@@ -52,6 +52,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => m_type.Module;
 
+        public override bool IsByRefLike => false;
+
         internal int MetadataTokenInternal => m_type.MetadataTokenInternal;
         #endregion
 
