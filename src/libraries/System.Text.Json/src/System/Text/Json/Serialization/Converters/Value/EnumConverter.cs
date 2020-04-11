@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,14 +12,28 @@ namespace System.Text.Json.Serialization.Converters
     internal class EnumConverter<T> : JsonConverter<T>
         where T : struct, Enum
     {
-        private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
+        private class EnumInfo
+        {
+            public EnumInfo(ulong[] values, string[] names)
+            {
+                Values = values;
+                Names = names;
+            }
 
+            public ulong[] Values;
+            public string[] Names;
+        }
+
+        private static readonly ConcurrentDictionary<string, EnumInfo> s_enumInfos = new ConcurrentDictionary<string, EnumInfo>();
+        private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
+        private static readonly bool s_isFlag = typeof(T).IsDefined(typeof(FlagsAttribute), false);
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
 
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
         private readonly ConcurrentDictionary<string, string>? _nameCache;
+        private const string _commaSeparator = ", ";
 
         public override bool CanConvert(Type type)
         {
@@ -35,9 +50,7 @@ namespace System.Text.Json.Serialization.Converters
             _converterOptions = options;
             if (namingPolicy != null)
             {
-                _nameCache = new ConcurrentDictionary<string, string>();
-            }
-            else
+                _nameCache = new ConcurrentDictionary<string, string>(); } else
             {
                 namingPolicy = JsonNamingPolicy.Default;
             }
@@ -166,7 +179,17 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (IsValidIdentifier(original))
                 {
-                    transformed = _namingPolicy.ConvertName(original);
+                    // If this is an flag enum then it can be a combined value
+                    // else convert as regular enum
+                    if (s_isFlag)
+                    {
+                        transformed = ConvertFlagEnumToString(original, value);
+                    }
+                    else
+                    {
+                        transformed = _namingPolicy.ConvertName(original);
+                    }
+
                     writer.WriteStringValue(transformed);
                     if (_nameCache != null)
                     {
@@ -211,6 +234,67 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                     break;
             }
+       }
+
+        private string ConvertFlagEnumToString(string original, T value)
+        {
+            string ConvertEnum(EnumInfo enumInformation, T value)
+            {
+                int index = enumInformation.Names.Length - 1;
+                ulong copyEnumValue = Unsafe.As<T, ulong>(ref value);
+                StringBuilder valueBuilder = new StringBuilder();
+                bool firstOccurrence = true;
+
+                while (index >= 0)
+                {
+                    if (index == 0 && enumInformation.Values[index] == 0)
+                    {
+                        break;
+                    }
+
+                    if ((copyEnumValue & enumInformation.Values[index]) == enumInformation.Values[index])
+                    {
+                        copyEnumValue -= enumInformation.Values[index];
+
+                        if (!firstOccurrence)
+                        {
+                            valueBuilder.Insert(0, _commaSeparator);
+                        }
+
+                        string transformed = _namingPolicy.ConvertName(enumInformation.Names[index]);
+                        valueBuilder.Insert(0, transformed);
+                        firstOccurrence = false;
+                    }
+
+                    index--;
+                }
+                return valueBuilder.ToString();
+            }
+
+            if (s_enumInfos.TryGetValue(original, out EnumInfo? enumInfo))
+            {
+                return ConvertEnum(enumInfo, value);
+            }
+
+            // If not in the cache then collect information about the enum
+            // and convert to string value
+            Type enumType = typeof(T);
+            string[] enumAllNames = Enum.GetNames(enumType);
+            ulong[] enumAllValues = new ulong[enumAllNames.Length];
+
+            for (int i = 0; i < enumAllValues.Length; i++)
+            {
+                  FieldInfo fieldInfo = enumType.GetField(
+                      enumAllNames[i],
+                      BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
+                T enumValue = (T)fieldInfo.GetValue(null)!;
+                enumAllValues[i] = Unsafe.As<T, ulong>(ref enumValue);
+            }
+
+            enumInfo = new EnumInfo(enumAllValues, enumAllNames);
+            s_enumInfos.TryAdd(original, enumInfo);
+
+            return ConvertEnum(enumInfo, value);
         }
     }
 }
