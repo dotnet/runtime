@@ -117,7 +117,7 @@ namespace System.Globalization.Tests
             using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
             valueBoundedMemory.MakeReadonly();
 
-            Assert.Equal(expected, compareInfo.IsSuffixNew(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
+            Assert.Equal(expected, compareInfo.IsSuffix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
         }
 
         [Fact]

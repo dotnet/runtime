@@ -211,11 +211,11 @@ namespace System.Globalization.Tests
                 using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData(value);
                 valueBoundedMemory.MakeReadonly();
 
-                Assert.Equal(expected, compareInfo.IndexOfNew(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
+                Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
 
                 if (TryCreateRuneFrom(value, out Rune rune))
                 {
-                    Assert.Equal(expected, compareInfo.IndexOfNew(sourceBoundedMemory.Span, rune, options)); // try the Rune-based version
+                    Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, rune, options)); // try the Rune-based version
                 }
             }
         }

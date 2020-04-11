@@ -743,7 +743,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.prefix);
             }
 
-            return IsPrefixNew(source, prefix, options);
+            return IsPrefix(source.AsSpan(), prefix.AsSpan(), options);
         }
 
         /// <summary>
@@ -759,7 +759,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public bool IsPrefixNew(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
+        public bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a prefix of every other string. For compat with
             // earlier versions of the Framework we'll early-exit here before validating the
@@ -835,7 +835,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.suffix);
             }
 
-            return IsSuffixNew(source, suffix, options);
+            return IsSuffix(source.AsSpan(), suffix.AsSpan(), options);
         }
 
         /// <summary>
@@ -851,7 +851,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public bool IsSuffixNew(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
+        public bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a suffix of every other string. For compat with
             // earlier versions of the Framework we'll early-exit here before validating the
@@ -937,7 +937,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return IndexOfNew(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return IndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
         }
 
         public int IndexOf(string source, string value, CompareOptions options)
@@ -951,7 +951,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return IndexOfNew(source, value, options);
+            return IndexOf(source.AsSpan(), value.AsSpan(), options);
         }
 
         public int IndexOf(string source, char value, int startIndex)
@@ -1017,7 +1017,7 @@ namespace System.Globalization
                 }
             }
 
-            int result = IndexOfNew(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int result = IndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
             if (result >= 0)
             {
                 result += startIndex;
@@ -1051,7 +1051,7 @@ namespace System.Globalization
                 }
             }
 
-            int result = IndexOfNew(sourceSpan, value, options);
+            int result = IndexOf(sourceSpan, value, options);
             if (result >= 0)
             {
                 result += startIndex;
@@ -1072,7 +1072,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public unsafe int IndexOfNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
+        public unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
         {
             if ((options & ValidIndexMaskOffFlags) == 0)
             {
@@ -1123,7 +1123,7 @@ namespace System.Globalization
             return source.IndexOf(value);
 
         ReturnOrdinalIgnoreCase:
-            return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: true);
+            return IndexOfOrdinalIgnoreCase(source, value, fromBeginning: true);
         }
 
         /// <summary>
@@ -1139,14 +1139,14 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public int IndexOfNew(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        public int IndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);
-            return IndexOfNew(source, valueAsUtf16.Slice(0, charCount), options);
+            return IndexOf(source, valueAsUtf16.Slice(0, charCount), options);
         }
 
-        internal static int IndexOfOrdinalIgnoreCaseNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool fromBeginning)
+        internal static int IndexOfOrdinalIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool fromBeginning)
         {
             if (value.IsEmpty)
             {
@@ -1234,7 +1234,7 @@ namespace System.Globalization
             goto OrdinalReturn;
 
         ReturnOrdinalIgnoreCase:
-            retVal = IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning);
+            retVal = IndexOfOrdinalIgnoreCase(source, value, fromBeginning);
             goto OrdinalReturn;
 
         OrdinalReturn:
@@ -1322,7 +1322,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return LastIndexOfNew(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return LastIndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
         }
 
         public int LastIndexOf(string source, string value, CompareOptions options)
@@ -1336,7 +1336,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return LastIndexOfNew(source, value, options);
+            return LastIndexOf(source.AsSpan(), value.AsSpan(), options);
         }
 
         public int LastIndexOf(string source, char value, int startIndex)
@@ -1417,7 +1417,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            int retVal = LastIndexOfNew(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int retVal = LastIndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
             if (retVal >= 0)
             {
                 retVal += startIndex;
@@ -1477,7 +1477,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            int retVal = LastIndexOfNew(sourceSpan, value, options);
+            int retVal = LastIndexOf(sourceSpan, value, options);
             if (retVal >= 0)
             {
                 retVal += startIndex;
@@ -1498,7 +1498,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public unsafe int LastIndexOfNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
+        public unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
         {
             if ((options & ValidIndexMaskOffFlags) == 0)
             {
@@ -1551,7 +1551,7 @@ namespace System.Globalization
             return source.LastIndexOf(value);
 
         ReturnOrdinalIgnoreCase:
-            return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: false);
+            return IndexOfOrdinalIgnoreCase(source, value, fromBeginning: false);
         }
 
         /// <summary>
@@ -1567,11 +1567,11 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public unsafe int LastIndexOfNew(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        public unsafe int LastIndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);
-            return LastIndexOfNew(source, valueAsUtf16.Slice(0, charCount), options);
+            return LastIndexOf(source, valueAsUtf16.Slice(0, charCount), options);
         }
 
         private static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)

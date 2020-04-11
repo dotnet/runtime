@@ -853,7 +853,7 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffixNew(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
             }
         }
