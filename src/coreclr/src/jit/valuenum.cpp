@@ -3614,6 +3614,13 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
 
         if ((indType == TYP_REF) && (varTypeIsStruct(elemTyp)))
         {
+            // This whole block is over-optimistic, we don't have any information
+            // or checks that allow us to prove that statement, 2014 TFS 1240560,
+            // optcse::IsCompatibleType does not allow type mismatch like that,
+            // so if we pass something here we can later get an assert there.
+            // It is not correct because TYP_REF we can get from struct return retyping.
+            // Check diffs if we delete it, get feedback.
+
             // indType is TYP_REF and elemTyp is TYP_STRUCT
             //
             // We have a pointer to a static that is a Boxed Struct
