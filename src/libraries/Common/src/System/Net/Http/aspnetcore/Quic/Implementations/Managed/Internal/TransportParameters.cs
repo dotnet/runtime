@@ -25,10 +25,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
                 InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
                 MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
-                InitialMaxData = 100,
-                InitialMaxStreamDataUni = 100,
-                InitialMaxStreamDataBidiLocal = 100,
-                InitialMaxStreamDataBidiRemote = 100,
+
+                // TODO-RZ: lower these once flow control is implemented
+                InitialMaxData = 1024*1024*1024,
+                InitialMaxStreamDataUni = 1024*1024*1024,
+                InitialMaxStreamDataBidiLocal = 1024*1024*1024,
+                InitialMaxStreamDataBidiRemote = 1024*1024*1024,
             };
         }
 
@@ -39,10 +41,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
                 InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
                 MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
-                InitialMaxData = 100,
-                InitialMaxStreamDataUni = 100,
-                InitialMaxStreamDataBidiLocal = 100,
-                InitialMaxStreamDataBidiRemote = 100,
+
+                // TODO-RZ: lower these once flow control is implemented
+                InitialMaxData = 1024*1024*1024,
+                InitialMaxStreamDataUni = 1024*1024*1024,
+                InitialMaxStreamDataBidiLocal = 1024*1024*1024,
+                InitialMaxStreamDataBidiRemote = 1024*1024*1024,
             };
         }
 

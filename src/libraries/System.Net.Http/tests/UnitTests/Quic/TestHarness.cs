@@ -10,16 +10,24 @@ namespace System.Net.Quic.Tests
 {
     internal class TestHarness
     {
+        internal static readonly QuicSocketContext DummySocketContet = new QuicSocketContext(new IPEndPoint(IPAddress.Any, 0), null);
+        internal static IPEndPoint IpAnyEndpoint = new IPEndPoint(IPAddress.Any, 0);
+
         private readonly byte[] buffer = new byte[16 * 1024];
-        private static IPEndPoint IpEndPoint = null;
 
         internal readonly ITestOutputHelper _output;
         private readonly ManagedQuicConnection _client;
+
+        private readonly QuicReader _reader;
+        private readonly QuicWriter _writer;
 
         public TestHarness(ITestOutputHelper output, ManagedQuicConnection client)
         {
             _output = output;
             _client = client;
+
+            _reader = new QuicReader(buffer);
+            _writer = new QuicWriter(buffer);
         }
 
         internal const string CertificateFilePath = "Certs/cert.crt";
@@ -27,7 +35,9 @@ namespace System.Net.Quic.Tests
 
         internal PacketFlight GetFlightToSend(ManagedQuicConnection from)
         {
-            int written = from.SendData(buffer, out _, DateTime.Now);
+            _writer.Reset(buffer);
+            from.SendData(_writer, out _, DateTime.Now);
+            int written = _writer.BytesWritten + _writer.Buffer.Offset;
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
 
@@ -75,18 +85,19 @@ namespace System.Net.Quic.Tests
         internal void SendFlight(ManagedQuicConnection source,
             ManagedQuicConnection destination, IEnumerable<PacketBase> packets)
         {
-            QuicWriter writer = new QuicWriter(new ArraySegment<byte>(buffer));
             TestHarnessContext testHarness = new TestHarnessContext(source);
 
             LogFlightPackets(packets, source == _client);
 
+            _writer.Reset(buffer);
             foreach (PacketBase packet in packets)
             {
-                packet.Serialize(writer, testHarness);
-                writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
+                packet.Serialize(_writer, testHarness);
+                _writer.Reset(_writer.Buffer.Slice(_writer.BytesWritten));
             }
 
-            destination.ReceiveData(buffer, writer.Buffer.Offset + writer.BytesWritten, IpEndPoint, DateTime.Now);
+            _reader.Reset(buffer, 0, _writer.BytesWritten + _writer.Buffer.Offset);
+            destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
         }
 
         internal void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
@@ -105,15 +116,19 @@ namespace System.Net.Quic.Tests
 
         internal PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
         {
+            _writer.Reset(buffer);
+            source.SendData(_writer, out _, DateTime.Now);
+
             // make a copy of the buffer, because decryption happens in-place
-            int written = source.SendData(buffer, out _, DateTime.Now);
+            int written = _writer.BytesWritten + _writer.Buffer.Offset;
             var copy = buffer.AsSpan(0, written).ToArray();
 
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(source));
 
             LogFlightPackets(packets, source == _client);
 
-            destination.ReceiveData(buffer, written, IpEndPoint, DateTime.Now);
+            _reader.Reset(buffer, 0, written);
+            destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
 
             return new PacketFlight(packets, written);
         }

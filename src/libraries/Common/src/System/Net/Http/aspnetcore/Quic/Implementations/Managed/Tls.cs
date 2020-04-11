@@ -18,6 +18,61 @@ namespace System.Net.Quic.Implementations.Managed
             Interop.OpenSslQuic.CryptoGetExNewIndex(Interop.OpenSslQuic.CRYPTO_EX_INDEX_SSL, 0, IntPtr.Zero,
                 IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
+        internal Tls(GCHandle handle, QuicClientConnectionOptions options, TransportParameters localTransportParams)
+            : this(handle, false, localTransportParams)
+        {
+            Interop.OpenSslQuic.SslSetConnectState(_ssl);
+            if (options.ClientAuthenticationOptions?.TargetHost != null)
+                Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, options.ClientAuthenticationOptions.TargetHost);
+        }
+
+        internal Tls(GCHandle handle, QuicListenerOptions options, TransportParameters localTransportParameters)
+            : this(handle, true, localTransportParameters)
+        {
+            Interop.OpenSslQuic.SslSetAcceptState(_ssl);
+
+            if (options.CertificateFilePath != null)
+                Interop.OpenSslQuic.SslUseCertificateFile(_ssl, options.CertificateFilePath!, SslFiletype.Pem);
+
+            if (options.PrivateKeyFilePath != null)
+                Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, options.PrivateKeyFilePath, SslFiletype.Pem);
+        }
+
+        private unsafe Tls(GCHandle handle, bool isServer, TransportParameters localTransportParams)
+        {
+            _ssl = Interop.OpenSslQuic.SslCreate();
+            Debug.Assert(handle.Target is ManagedQuicConnection);
+            Interop.OpenSslQuic.SslSetQuicMethod(_ssl, ref Callbacks);
+
+            // add the callback as contextual data so we can retrieve it inside the callback
+            Interop.OpenSslQuic.SslSetExData(_ssl, _managedInterfaceIndex, GCHandle.ToIntPtr(handle));
+
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13,
+                IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13,
+                IntPtr.Zero);
+
+            // explicitly set allowed suites
+            var ciphers = new TlsCipherSuite[]
+            {
+                TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+                TlsCipherSuite.TLS_AES_128_CCM_SHA256,
+                TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+                // not supported yet
+                // TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256
+            };
+            Interop.OpenSslQuic.SslSetCiphersuites(_ssl, string.Join(":", ciphers));
+
+            // init transport parameters
+            byte[] buffer = new byte[1024];
+            var writer = new QuicWriter(buffer);
+            TransportParameters.Write(writer, isServer, localTransportParams);
+            fixed (byte* pData = buffer)
+            {
+                Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
+            }
+        }
+
         private static unsafe OpenSslQuicMethods.NativeCallbacks _callbacks = new OpenSslQuicMethods.NativeCallbacks
         {
             setEncryptionSecrets =
@@ -32,21 +87,6 @@ namespace System.Net.Quic.Implementations.Managed
         };
 
         private readonly IntPtr _ssl;
-
-        public Tls(GCHandle handle)
-        {
-            _ssl = Interop.OpenSslQuic.SslCreate();
-            Debug.Assert(handle.Target is ManagedQuicConnection);
-            Interop.OpenSslQuic.SslSetQuicMethod(_ssl, ref Callbacks);
-
-            // add the callback as contextual data so we can retrieve it inside the callback
-            Interop.OpenSslQuic.SslSetExData(_ssl, _managedInterfaceIndex, GCHandle.ToIntPtr(handle));
-
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13,
-                IntPtr.Zero);
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13,
-                IntPtr.Zero);
-        }
 
         private static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
 
@@ -96,47 +136,6 @@ namespace System.Net.Quic.Implementations.Managed
         internal int OnDataReceived(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
             return Interop.OpenSslQuic.SslProvideQuicData(_ssl, ToOpenSslEncryptionLevel(level), data);
-        }
-
-        internal unsafe void Init(string? cert, string? privateKey, bool isServer,
-            TransportParameters localTransportParams)
-        {
-            // explicitly set allowed suites
-            var ciphers = new TlsCipherSuite[]
-            {
-                TlsCipherSuite.TLS_AES_128_GCM_SHA256,
-                TlsCipherSuite.TLS_AES_128_CCM_SHA256,
-                TlsCipherSuite.TLS_AES_256_GCM_SHA384,
-                // not supported yet
-                // TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256
-            };
-            Interop.OpenSslQuic.SslSetCiphersuites(_ssl, string.Join(":", ciphers));
-
-            if (cert != null)
-                Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
-            if (privateKey != null)
-                Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, privateKey, SslFiletype.Pem);
-
-            if (isServer)
-            {
-                Interop.OpenSslQuic.SslSetAcceptState(_ssl);
-            }
-            else
-            {
-                Interop.OpenSslQuic.SslSetConnectState(_ssl);
-                // TODO-RZ get hostname from somewhere
-                Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, "localhost:2000");
-            }
-
-            // init transport parameters
-            byte[] buffer = new byte[1024];
-            var writer = new QuicWriter(buffer);
-            TransportParameters.Write(writer, isServer, localTransportParams);
-            fixed (byte* pData = buffer)
-            {
-                // TODO-RZ: check return value == 1
-                Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
-            }
         }
 
         internal SslError DoHandshake()

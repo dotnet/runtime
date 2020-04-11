@@ -189,6 +189,11 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(!_isServer); // frame not allowed handled elsewhere
             reader.ReadFrameType();
             _handshakeDoneReceived = true;
+            if (!_isServer)
+            {
+                _connectTcs.Complete(0);
+            }
+
             return ProcessPacketResult.Ok;
         }
 

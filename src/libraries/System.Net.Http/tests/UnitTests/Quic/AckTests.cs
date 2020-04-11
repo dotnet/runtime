@@ -27,7 +27,7 @@ namespace System.Net.Quic.Tests
                 PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
             };
             _client = new ManagedQuicConnection(_clientOpts);
-            _server = new ManagedQuicConnection(_serverOpts);
+            _server = new ManagedQuicConnection(_serverOpts, TestHarness.DummySocketContet, TestHarness.IpAnyEndpoint);
 
             _harness = new TestHarness(output, _client);
 

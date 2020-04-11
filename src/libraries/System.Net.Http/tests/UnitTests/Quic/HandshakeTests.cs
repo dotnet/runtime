@@ -33,7 +33,7 @@ namespace System.Net.Quic.Tests
                 PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
             };
             _client = new ManagedQuicConnection(_clientOpts);
-            _server = new ManagedQuicConnection(_serverOpts);
+            _server = new ManagedQuicConnection(_serverOpts, TestHarness.DummySocketContet, TestHarness.IpAnyEndpoint);
 
             _harness = new TestHarness(output, _client);
         }
@@ -57,7 +57,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(TransportErrorCode.ProtocolViolation, closeFrame.ErrorCode);
             Assert.True(closeFrame.IsQuicError);
             Assert.Equal(FrameType.Padding, closeFrame.ErrorFrameType); // 0x00
-            Assert.Equal(Implementations.Managed.QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
+            Assert.Equal(QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
         }
 
         [Fact]

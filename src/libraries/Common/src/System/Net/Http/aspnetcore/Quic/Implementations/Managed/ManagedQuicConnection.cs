@@ -6,6 +6,7 @@ using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -15,9 +16,15 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
+        private readonly ResettableCompletionSource<int> _connectTcs = new ResettableCompletionSource<int>();
+
         private readonly QuicClientConnectionOptions? _clientOpts;
 
-        private readonly EpochData[] _epochs;
+        private readonly EpochData[] _epochs = new EpochData[3]
+        {
+            new EpochData(PacketEpoch.Initial), new EpochData(PacketEpoch.Handshake),
+            new EpochData(PacketEpoch.Application)
+        };
 
         /// <summary>
         ///     QUIC transport parameters used for this endpoint.
@@ -25,11 +32,30 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly TransportParameters _localTransportParameters;
 
         private readonly Recovery _recovery = new Recovery();
+
         private readonly QuicListenerOptions? _serverOpts;
 
         private readonly Tls _tls;
 
+        /// <summary>
+        ///     Local endpoint address, can be null for yet unconnected clients.
+        /// </summary>
+        private readonly IPEndPoint? _localEndpoint;
+
+        /// <summary>
+        ///     Remote endpoint address.
+        /// </summary>
+        private readonly IPEndPoint _remoteEndpoint;
+
+        /// <summary>
+        ///     GCHandle for this object.
+        /// </summary>
         private GCHandle _gcHandle;
+
+        /// <summary>
+        ///     Context of the socket serving this connection.
+        /// </summary>
+        private readonly QuicSocketContext _socketContext;
 
         /// <summary>
         ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
@@ -77,9 +103,6 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private TransportParameters _peerTransportParameters = TransportParameters.Default;
 
-        // TODO-RZ: remove these, they don't need to be saved
-        private readonly string? cert;
-
         /// <summary>
         ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
         /// </summary>
@@ -89,8 +112,6 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Error to send in next packet in a CONNECTION_CLOSE frame.
         /// </summary>
         private QuicError? outboundError;
-
-        private readonly string? privateKey;
 
         /// <summary>
         ///     Version of the QUIC protocol used for this connection.
@@ -103,62 +124,31 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private bool _pingWanted;
 
+        private bool _disposed;
+
         internal void Ping()
         {
             _pingWanted = true;
         }
 
+        // client constructor
         public ManagedQuicConnection(QuicClientConnectionOptions options)
-            : this(false, TransportParameters.FromClientConnectionOptions(options))
         {
+            _isServer = false;
             _clientOpts = options;
 
-            Init();
-        }
+            _remoteEndpoint = options.RemoteEndPoint!;
 
-        public ManagedQuicConnection(QuicListenerOptions options)
-            : this(true, TransportParameters.FromListenerOptions(options))
-        {
-            _serverOpts = options;
-            cert = _serverOpts.CertificateFilePath;
-            privateKey = _serverOpts.PrivateKeyFilePath;
-
-            Init();
-        }
-
-        public ManagedQuicConnection(bool isServer, TransportParameters localParams)
-        {
+            var localEndpoint = options.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+            _socketContext = new QuicSocketContext(localEndpoint, this);
+            _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
-            _tls = new Tls(_gcHandle);
-
-            _isServer = isServer;
-
-            _localTransportParameters = localParams;
-
-            _epochs = new EpochData[3]
-            {
-                new EpochData(PacketEpoch.Initial), new EpochData(PacketEpoch.Handshake),
-                new EpochData(PacketEpoch.Application)
-            };
-        }
-
-        public ConnectionId? SourceConnectionId { get; private set; }
-
-        public ConnectionId? DestinationConnectionId { get; private set; }
-
-        private void Init()
-        {
-            _tls.Init(cert, privateKey, _isServer, _localTransportParameters);
-
-            if (_isServer)
-            {
-                return;
-            }
+            _tls = new Tls(_gcHandle, options, _localTransportParameters);
 
             // init random connection ids for the client
             SourceConnectionId = ConnectionId.Random(20);
             DestinationConnectionId = ConnectionId.Random(20);
-            _localConnectionIdCollection.Add(SourceConnectionId.Data);
+            _localConnectionIdCollection.Add(SourceConnectionId);
 
             // derive also clients initial secrets.
             DeriveInitialProtectionKeys(DestinationConnectionId.Data);
@@ -166,6 +156,24 @@ namespace System.Net.Quic.Implementations.Managed
             // generate first Crypto frames
             _tls.DoHandshake();
         }
+
+        // server constructor
+        public ManagedQuicConnection(QuicListenerOptions options, QuicSocketContext socketContext, IPEndPoint remoteEndpoint)
+        {
+            _isServer = true;
+            _serverOpts = options;
+            _socketContext = socketContext;
+            _localEndpoint = options.ListenEndPoint;
+            _remoteEndpoint = remoteEndpoint;
+            _localTransportParameters = TransportParameters.FromListenerOptions(options);
+
+            _gcHandle = GCHandle.Alloc(this);
+            _tls = new Tls(_gcHandle, options, _localTransportParameters);
+        }
+
+        public ConnectionId? SourceConnectionId { get; private set; }
+
+        public ConnectionId? DestinationConnectionId { get; private set; }
 
         private void DoHandshake()
         {
@@ -206,10 +214,9 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal void ReceiveData(byte[] buffer, int count, IPEndPoint sender, DateTime now)
+        internal void ReceiveData(QuicReader reader, IPEndPoint sender, DateTime now)
         {
-            var segment = new ArraySegment<byte>(buffer, 0, count);
-            var reader = new QuicReader(segment);
+            var segment = reader.Buffer;
             var context = new RecvContext(now);
 
             while (reader.BytesLeft > 0)
@@ -263,7 +270,7 @@ namespace System.Net.Quic.Implementations.Managed
                     SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
                     DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray());
 
-                    _localConnectionIdCollection.Add(SourceConnectionId.Data);
+                    _localConnectionIdCollection.Add(SourceConnectionId);
                     DeriveInitialProtectionKeys(SourceConnectionId.Data);
                 }
 
@@ -425,7 +432,7 @@ namespace System.Net.Quic.Implementations.Managed
             return desiredLevel;
         }
 
-        private bool SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level, SendContext context)
+        private bool SendOne(QuicWriter writer, EncryptionLevel level, SendContext context)
         {
             var packetType = level switch
             {
@@ -537,16 +544,14 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver, DateTime now)
+        internal void SendData(QuicWriter writer, out IPEndPoint? receiver, DateTime now)
         {
-            receiver = default;
+            receiver = _remoteEndpoint;
             // TODO-RZ: process lost packets
             // TODO-RZ: pool SentPacket, SendContext and QuicWriter instances
 
             var context = new SendContext(now);
-            var writer = new QuicWriter(targetBuffer);
 
-            int written = 0;
             var level = GetWriteLevel();
 
             while (true)
@@ -557,11 +562,8 @@ namespace System.Net.Quic.Implementations.Managed
                     break;
                 }
 
-                // TODO-RZ get client address
-                if (!SendOne(writer, null, level, context))
+                if (!SendOne(writer, level, context))
                     break;
-
-                written += writer.BytesWritten;
 
                 // 0-RTT packets do not have Length, so they may not be coalesced
                 if (level == EncryptionLevel.Application)
@@ -577,8 +579,6 @@ namespace System.Net.Quic.Implementations.Managed
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
-
-            return written;
         }
 
         private static PacketEpoch GetEpoch(PacketType packetType)
@@ -630,6 +630,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             _tls.Dispose();
             _gcHandle.Free();
+            _disposed = true;
         }
 
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
@@ -735,8 +736,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
 
-        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (Connected) return new ValueTask();
+            _socketContext.Start();
+
+            return _connectTcs.GetTypelessValueTask();
+        }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
@@ -769,5 +777,13 @@ namespace System.Net.Quic.Implementations.Managed
             throw new NotImplementedException();
 
         #endregion
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ManagedQuicConnection));
+            }
+        }
     }
 }

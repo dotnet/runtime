@@ -123,12 +123,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal void Reset(ArraySegment<byte> buffer, int consumed = 0)
         {
             _buffer = buffer;
-            _consumed = consumed;
+            Seek(consumed);
         }
 
         internal void Reset(byte[] buffer, int start, int count)
         {
             Reset(new ArraySegment<byte>(buffer, start, count));
+        }
+
+        internal void Seek(int pos)
+        {
+            _consumed = pos;
         }
 
         internal bool TryReadSpan(int length, out ReadOnlySpan<byte> result)

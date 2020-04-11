@@ -119,11 +119,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void SerializeShortPacketHeader()
         {
-            var dcid = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var dcid = new ConnectionId(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
             var idCollection = new ConnectionIdCollection();
             idCollection.Add(dcid);
 
-            var expected = new ShortPacketHeader(true, false, 2, new ConnectionId(dcid));
+            var expected = new ShortPacketHeader(true, false, 2, dcid);
 
             ShortPacketHeader.Write(writer, expected);
             reader.Reset(buffer, 0, writer.BytesWritten);
@@ -134,7 +134,7 @@ namespace System.Net.Quic.Tests
             Assert.True(actual.SpinBit);
             Assert.False(actual.KeyPhaseBit);
             Assert.Equal(2, actual.PacketNumberLength);
-            Assert.Equal(dcid, actual.DestinationConnectionId.Data);
+            Assert.Equal(dcid.Data, actual.DestinationConnectionId.Data);
 
             Assert.Equal(0, reader.BytesLeft);
         }

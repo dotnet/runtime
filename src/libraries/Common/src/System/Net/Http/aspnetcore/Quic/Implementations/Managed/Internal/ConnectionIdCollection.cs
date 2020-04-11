@@ -13,17 +13,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _connectionIds = new List<ConnectionId>();
         }
 
-        public void Add(byte[] connectionId)
+        public void Add(ConnectionId connectionId)
         {
             foreach (var id in _connectionIds)
             {
-                if (id.Data.AsSpan().StartsWith(connectionId))
+                if (id.Data.AsSpan().StartsWith(connectionId.Data))
                 {
                     throw new InvalidOperationException("New connection id must not be a prefix of an existing one");
                 }
             }
 
-            _connectionIds.Add(new ConnectionId(connectionId));
+            _connectionIds.Add(connectionId);
         }
 
         /// <summary>

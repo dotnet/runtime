@@ -9,8 +9,8 @@ namespace System.Net.Quic.Tests.Harness
         public TestHarnessContext(ManagedQuicConnection sender)
         {
             Sender = sender;
-            ConnectionIdCollection.Add(sender.SourceConnectionId.Data);
-            ConnectionIdCollection.Add(sender.DestinationConnectionId.Data);
+            ConnectionIdCollection.Add(sender.SourceConnectionId);
+            ConnectionIdCollection.Add(sender.DestinationConnectionId);
         }
 
         internal ManagedQuicConnection Sender { get; }
