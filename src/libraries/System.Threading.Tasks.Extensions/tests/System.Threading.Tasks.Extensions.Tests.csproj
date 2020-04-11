@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -13,6 +14,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs">
       <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs">
+      <Link>Common\System\Threading\Tasks\GetStateMachineData.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
