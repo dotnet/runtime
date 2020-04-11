@@ -48,32 +48,24 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) })]
 		static void TestNullName ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty (null);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) })]
 		static void TestEmptyName ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty (string.Empty);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) })]
 		static void TestNonExistingName ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("NonExisting");
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) })]
 		static void TestNullType ()
 		{
 			Type type = null;

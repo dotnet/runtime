@@ -2724,6 +2724,7 @@ namespace Mono.Linker.Steps {
 					//
 					// System.Type
 					//
+					/*
 					case "Type" when methodCalledType.Namespace == "System":
 
 						// Some of the overloads are implemented by calling another overload of the same name.
@@ -2771,7 +2772,7 @@ namespace Mono.Linker.Steps {
 						}
 
 						break;
-
+						*/
 					//
 					// System.Reflection.RuntimeReflectionExtensions
 					//
@@ -3729,7 +3730,9 @@ namespace Mono.Linker.Steps {
 								// Go over all types we've seen
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
-										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, 
+											ctorParameterCount == null ? (Func<MethodDefinition, bool>)null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
+										reflectionContext.RecordHandledPattern ();
 									} else {
 										// Otherwise fall back to the bitfield requirements
 										var requiredMemberKinds = ctorParameterCount == 0
@@ -3770,7 +3773,8 @@ namespace Mono.Linker.Steps {
 									if (value is SystemTypeValue systemTypeValue) {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
-												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags);
+												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+												reflectionContext.RecordHandledPattern ();
 											} else {
 												// Otherwise fall back to the bitfield requirements
 												var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
@@ -3785,6 +3789,81 @@ namespace Mono.Linker.Steps {
 												? DynamicallyAccessedMemberKinds.PublicMethods
 												: DynamicallyAccessedMemberKinds.Methods;
 										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
+									}
+								}
+							}
+							break;
+						//
+						// GetField (string)
+						// GetField (string, BindingFlags)
+						// GetEvent (string)
+						// GetEvent (string, BindingFlags)
+						// GetProperty (string)
+						// GetProperty (string, BindingFlags)
+						// GetProperty (string, Type)
+						// GetProperty (string, Type[])
+						// GetProperty (string, Type, Type[])
+						// GetProperty (string, Type, Type[], ParameterModifier[])
+						// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+						//
+						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
+							&& calledMethod.DeclaringType.Namespace == "System"
+							&& calledMethod.DeclaringType.Name == "Type"
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.String"): {
+								
+								reflectionContext.AnalyzingPattern ();
+								DynamicallyAccessedMemberKinds? memberKind = null;
+								switch (fieldPropertyOrEvent) {
+									case var mt when fieldPropertyOrEvent.EndsWith ("Event"):
+										memberKind = DynamicallyAccessedMemberKinds.Events;
+										break;
+
+									case var mt when fieldPropertyOrEvent.EndsWith ("Field"):
+										memberKind = DynamicallyAccessedMemberKinds.Fields;
+										break;
+
+									case var mt when fieldPropertyOrEvent.EndsWith ("Property"):
+										memberKind = DynamicallyAccessedMemberKinds.Properties;
+										break;
+									
+									default:
+										Debug.Fail ("Unsuported member type");
+										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
+										break;
+								}
+								if (memberKind == null)
+									break;
+
+								BindingFlags bindingFlags = BindingFlags.Default; 
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
+									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
+								}
+
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												switch (memberKind) {
+													case DynamicallyAccessedMemberKinds.Events:
+														MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents);
+														break;
+													case DynamicallyAccessedMemberKinds.Fields:
+														MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents);
+														break;
+													case DynamicallyAccessedMemberKinds.Properties:
+														MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents);
+														break;
+													default:
+														Debug.Fail ("Unreachable.");
+														break;
+												}
+												reflectionContext.RecordHandledPattern ();
+											} else {
+												RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
+											}
+										}
+									} else {
+										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
