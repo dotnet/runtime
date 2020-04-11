@@ -820,14 +820,13 @@ namespace System
             {
                 return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), (buffer, state) =>
                 {
-                    char* source = (char*)state.StrToClean;
+                    var strToClean = new ReadOnlySpan<char>((char*)state.StrToClean, state.Length);
                     int destIndex = 0;
-                    int length = state.Length;
-                    for (int i = 0; i < length; i++)
+                    foreach (char c in strToClean)
                     {
-                        if ((uint)(source[i] - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(source[i]))
+                        if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
                         {
-                            buffer[destIndex++] = source[i];
+                            buffer[destIndex++] = c;
                         }
                     }
                     Debug.Assert(buffer.Length == destIndex);
