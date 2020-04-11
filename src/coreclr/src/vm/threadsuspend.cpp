@@ -3728,30 +3728,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         DWORD dbgStartTimeout = GetTickCount();
 #endif
 
-        // If another thread is trying to do a GC, there is a chance of deadlock
-        // because this thread holds the threadstore lock and the GC thread is stuck
-        // trying to get it, so this thread must bail and do a retry after the GC completes.
-        //
-        // <REVISIT> Shouldn't we do this only if *this* thread isn't attempting a GC?  We're mostly
-        //  done suspending the EE at this point - why give up just because another thread wants
-        //  to do exactly the same thing?  Note that GetGCThreadAttemptingSuspend will never (AFAIK)
-        //  return the current thread here, because we NULL it out after obtaining the thread store lock. </REVISIT>
-        //
-        if (m_pThreadAttemptingSuspendForGC != NULL && m_pThreadAttemptingSuspendForGC != pCurThread)
-        {
-#ifdef PROFILING_SUPPORTED
-            // Must let the profiler know that this thread is aborting its attempt at suspending
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                g_profControlBlock.pProfInterface->RuntimeSuspendAborted();
-                END_PIN_PROFILER();
-            }
-#endif // PROFILING_SUPPORTED
-
-            STRESS_LOG0(LF_SYNC, LL_ALWAYS, "Thread::SuspendRuntime() - Timing out.\n");
-            return (ERROR_TIMEOUT);
-        }
-
 #ifdef TIME_SUSPEND
         DWORD startWait = g_SuspendStatistics.GetTime();
 #endif
@@ -5995,7 +5971,7 @@ retry_for_debugger:
     {
         //
         // Now we're going to acquire an exclusive lock on managed code execution (including
-        // "maunally managed" code in GCX_COOP regions).
+        // "manually managed" code in GCX_COOP regions).
         //
         // First, we reset the event that we're about to tell other threads to wait for.
         //
@@ -6023,14 +5999,10 @@ retry_for_debugger:
             // I wonder how much confusion this has caused....)
             // It seems like much of the above is redundant.  We should investigate reducing the number
             // of mechanisms we use to indicate that a suspension is in progress.
-            //
+            // +1
             GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
 
-            //
-            // Gratuitous memory barrier.  (may be needed - but I'm not sure why.)
-            //
-            MemoryBarrier();
-
+            // set tls flags for compat with SOS
             ClrFlsSetThreadType (ThreadType_DynamicSuspendEE);
         }
 
