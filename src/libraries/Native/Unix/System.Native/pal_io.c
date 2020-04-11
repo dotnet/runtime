@@ -594,6 +594,24 @@ int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
     return fcntl(fileDescriptor, F_SETFL, flags);
 }
 
+int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
+{
+    if (isNonBlocking == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int flags = fcntl(ToFileDescriptor(fd), F_GETFL);
+    if (flags == -1)
+    {
+        *isNonBlocking = 0;
+        return -1;
+    }
+
+    *isNonBlocking = ((flags & O_NONBLOCK) == O_NONBLOCK) ? 1 : 0;
+    return 0;
+}
+
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;

@@ -222,6 +222,7 @@ namespace System.Net.Sockets
     }
     public partial class Socket : System.IDisposable
     {
+        public Socket(System.Net.Sockets.SafeSocketHandle handle) { }
         public Socket(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
         public Socket(System.Net.Sockets.SocketInformation socketInformation) { }
         public Socket(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }
