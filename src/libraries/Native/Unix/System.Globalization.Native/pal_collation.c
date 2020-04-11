@@ -464,7 +464,28 @@ int32_t GlobalizationNative_IndexOf(
                         int32_t options,
                         int32_t* pMatchedLength)
 {
+    assert(cwTargetLength > 0);
+
     int32_t result = USEARCH_DONE;
+
+    // It's possible somebody passed us (source = <empty>, target = <non-empty>).
+    // ICU's usearch_* APIs don't handle empty source inputs properly. However,
+    // if this occurs the user really just wanted us to perform an equality check.
+    // We can't short-circuit the operation because depending on the collation in
+    // use, certain code points may have zero weight, which means that empty
+    // strings may compare as equal to non-empty strings.
+
+    if (cwSourceLength == 0)
+    {
+        result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+        if (result == UCOL_EQUAL && pMatchedLength != NULL)
+        {
+            *pMatchedLength = cwTargetLength;
+        }
+
+        return (result == UCOL_EQUAL) ? 0 : -1;
+    }
+    
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -502,7 +523,28 @@ int32_t GlobalizationNative_LastIndexOf(
                         int32_t options,
                         int32_t* pMatchedLength)
 {
+    assert(cwTargetLength > 0);
+
     int32_t result = USEARCH_DONE;
+
+    // It's possible somebody passed us (source = <empty>, target = <non-empty>).
+    // ICU's usearch_* APIs don't handle empty source inputs properly. However,
+    // if this occurs the user really just wanted us to perform an equality check.
+    // We can't short-circuit the operation because depending on the collation in
+    // use, certain code points may have zero weight, which means that empty
+    // strings may compare as equal to non-empty strings.
+
+    if (cwSourceLength == 0)
+    {
+        result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+        if (result == UCOL_EQUAL && pMatchedLength != NULL)
+        {
+            *pMatchedLength = cwTargetLength;
+        }
+
+        return (result == UCOL_EQUAL) ? 0 : -1;
+    }
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 

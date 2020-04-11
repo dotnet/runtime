@@ -292,9 +292,7 @@ namespace System.Globalization
         internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-
             Debug.Assert(target.Length != 0);
-            Debug.Assert(options == CompareOptions.None || options == CompareOptions.IgnoreCase);
 
             uint positionFlag = fromBeginning ? (uint)FIND_FROMSTART : FIND_FROMEND;
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);

@@ -170,8 +170,8 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
-            // as long as the corresponding length parameter is 0.
+            // GetReference may return nullptr if the input span is defaulted. The native layer handles
+            // this appropriately; no workaround is needed on the managed side.
 
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
@@ -180,11 +180,9 @@ namespace System.Globalization
             }
         }
 
-        // For now, this method is only called from Span APIs with either options == CompareOptions.None or CompareOptions.IgnoreCase
         internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(source.Length != 0);
             Debug.Assert(target.Length != 0);
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
@@ -196,6 +194,9 @@ namespace System.Globalization
             }
             else
             {
+                // GetReference may return nullptr if the input span is defaulted. The native layer handles
+                // this appropriately; no workaround is needed on the managed side.
+
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
