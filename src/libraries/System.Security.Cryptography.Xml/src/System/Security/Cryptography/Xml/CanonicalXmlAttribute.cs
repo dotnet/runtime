@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Xml
         {
             strBuilder.Append(" " + Name + "=\"");
             strBuilder.Append(Utils.EscapeAttributeValue(Value));
-            strBuilder.Append("\"");
+            strBuilder.Append('"');
         }
 
         public void WriteHash(HashAlgorithm hash, DocPosition docPos, AncestralNamespaceContextManager anc)

@@ -2,7 +2,7 @@
 # Visual Studio 15
 VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri.ExtendedFunctional.Tests", "tests\ExtendedFunctionalTests\System.Private.Uri.ExtendedFunctional.Tests.csproj", "{0febe054-68ac-446f-b999-9068736d3cec}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Uri.ExtendedFunctional.Tests", "tests\ExtendedFunctionalTests\System.Private.Uri.ExtendedFunctional.Tests.csproj", "{7A93B8A0-E663-4CB1-B6A5-850E5EC56146}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {4AC5343E-6E31-4BA5-A795-0493AE7E9008}
 	EndProjectSection
@@ -31,10 +31,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0febe054-68ac-446f-b999-9068736d3cec}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0febe054-68ac-446f-b999-9068736d3cec}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0febe054-68ac-446f-b999-9068736d3cec}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0febe054-68ac-446f-b999-9068736d3cec}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A93B8A0-E663-4CB1-B6A5-850E5EC56146}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A93B8A0-E663-4CB1-B6A5-850E5EC56146}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A93B8A0-E663-4CB1-B6A5-850E5EC56146}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A93B8A0-E663-4CB1-B6A5-850E5EC56146}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,7 +56,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{0febe054-68ac-446f-b999-9068736d3cec} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{7A93B8A0-E663-4CB1-B6A5-850E5EC56146} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{96AF3242-A368-4F13-B006-A722CC3B8517} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}

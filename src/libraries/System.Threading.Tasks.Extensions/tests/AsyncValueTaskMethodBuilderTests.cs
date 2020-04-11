@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Sources.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -550,6 +554,69 @@ namespace System.Threading.Tasks.Tests
                     }
                 }
             }));
+        }
+
+        [Theory]
+        [InlineData("1", null)]
+        [InlineData("true", null)]
+        [InlineData("true", "1")]
+        [InlineData("true", "100")]
+        [InlineData("false", null)]
+        [InlineData("false", "100")]
+        public void PoolingAsyncValueTasksBuilder_ObjectsPooled(string poolingEnvVar, string limitEnvVar)
+        {
+            // Use RemoteExecutor to launch a process with the right environment variables set
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_THREADING_POOLASYNCVALUETASKS", poolingEnvVar);
+            if (limitEnvVar != null)
+            {
+                psi.Environment.Add("DOTNET_SYSTEM_THREADING_POOLASYNCVALUETASKSLIMIT", limitEnvVar);
+            }
+
+            RemoteExecutor.Invoke(async expectReuse =>
+            {
+                var boxes = new ConcurrentQueue<object>();
+                var valueTasks = new ValueTask<int>[10];
+                int total = 0;
+
+                // Invoke a bunch of ValueTask methods, some in parallel,
+                // and track a) their results and b) what boxing object is used.
+                for (int rep = 0; rep < 3; rep++)
+                {
+                    for (int i = 0; i < valueTasks.Length; i++)
+                    {
+                        valueTasks[i] = ComputeAsync(i + 1, boxes);
+                    }
+                    foreach (ValueTask<int> vt in valueTasks)
+                    {
+                        total += await vt;
+                    }
+                }
+
+                // Make sure we got the right total, and that if we expected pooling,
+                // we at least pooled one object.
+                Assert.Equal(330, total);
+                if (expectReuse == "1" || expectReuse == "true")
+                {
+                    Assert.InRange(boxes.Distinct().Count(), 1, boxes.Count - 1);
+                }
+            }, (poolingEnvVar == "1" || poolingEnvVar == "true").ToString(), new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+
+            static async ValueTask<int> ComputeAsync(int input, ConcurrentQueue<object> boxes)
+            {
+                await RecursiveValueTaskAsync(3, boxes);
+                return input * 2;
+            }
+
+            static async ValueTask RecursiveValueTaskAsync(int depth, ConcurrentQueue<object> boxes)
+            {
+                boxes.Enqueue(await GetStateMachineData.FetchAsync());
+                if (depth > 0)
+                {
+                    await Task.Delay(1);
+                    await RecursiveValueTaskAsync(depth - 1, boxes);
+                }
+            }
         }
 
         private struct DelegateStateMachine : IAsyncStateMachine
