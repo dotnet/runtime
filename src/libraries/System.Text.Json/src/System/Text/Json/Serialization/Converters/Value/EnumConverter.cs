@@ -12,9 +12,9 @@ namespace System.Text.Json.Serialization.Converters
     internal class EnumConverter<T> : JsonConverter<T>
         where T : struct, Enum
     {
-        private class EnumInfo
+        private class EnumInformation
         {
-            public EnumInfo(ulong[] values, string[] names)
+            public EnumInformation(ulong[] values, string[] names)
             {
                 Values = values;
                 Names = names;
@@ -24,7 +24,6 @@ namespace System.Text.Json.Serialization.Converters
             public string[] Names;
         }
 
-        private static readonly ConcurrentDictionary<string, EnumInfo> s_enumInfos = new ConcurrentDictionary<string, EnumInfo>();
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
         private static readonly bool s_isFlag = typeof(T).IsDefined(typeof(FlagsAttribute), false);
         // Odd type codes are conveniently signed types (for enum backing types).
@@ -33,6 +32,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
         private readonly ConcurrentDictionary<string, string>? _nameCache;
+        private readonly ConcurrentDictionary<string, EnumInformation>? _enumInformationCache;
         private const string _commaSeparator = ", ";
 
         public override bool CanConvert(Type type)
@@ -51,6 +51,10 @@ namespace System.Text.Json.Serialization.Converters
             if (namingPolicy != null)
             {
                 _nameCache = new ConcurrentDictionary<string, string>();
+                if (s_isFlag)
+                {
+                    _enumInformationCache = new ConcurrentDictionary<string, EnumInformation>();
+                }
             }
             else
             {
@@ -240,7 +244,7 @@ namespace System.Text.Json.Serialization.Converters
 
         private string ConvertFlagEnumToString(string original, T value)
         {
-            string ConvertEnum(EnumInfo enumInformation, T value)
+            string ConvertEnum(EnumInformation enumInformation, T value)
             {
                 int index = enumInformation.Names.Length - 1;
                 ulong copyEnumValue = Unsafe.As<T, ulong>(ref value);
@@ -273,9 +277,9 @@ namespace System.Text.Json.Serialization.Converters
                 return valueBuilder.ToString();
             }
 
-            if (s_enumInfos.TryGetValue(original, out EnumInfo? enumInfo))
+            if (_enumInformationCache != null && _enumInformationCache.TryGetValue(original, out EnumInformation? enumInformation))
             {
-                return ConvertEnum(enumInfo, value);
+                return ConvertEnum(enumInformation, value);
             }
 
             // If not in the cache then collect information about the enum
@@ -293,10 +297,13 @@ namespace System.Text.Json.Serialization.Converters
                 enumAllValues[i] = Unsafe.As<T, ulong>(ref enumValue);
             }
 
-            enumInfo = new EnumInfo(enumAllValues, enumAllNames);
-            s_enumInfos.TryAdd(original, enumInfo);
+            enumInformation = new EnumInformation(enumAllValues, enumAllNames);
+            if (_enumInformationCache != null)
+            {
+                _enumInformationCache.TryAdd(original, enumInformation);
+            }
 
-            return ConvertEnum(enumInfo, value);
+            return ConvertEnum(enumInformation, value);
         }
     }
 }
