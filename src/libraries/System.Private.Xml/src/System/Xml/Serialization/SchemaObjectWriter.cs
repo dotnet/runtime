@@ -185,7 +185,7 @@ namespace System.Xml.Serialization
         {
             NewLine();
             _indentLevel++;
-            _w.Append("[");
+            _w.Append('[');
             _w.Append(name);
         }
         protected void WriteEndElement()
