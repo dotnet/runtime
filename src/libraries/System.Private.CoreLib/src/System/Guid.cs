@@ -252,7 +252,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? input, string? format, out Guid result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
         {
             if (input == null)
             {
