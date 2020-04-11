@@ -135,6 +135,9 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress, std::string symbolName)
         return false;
     }
 
+    m_elfLoadMin = baseAddress;
+    m_elfLoadMax = loadbias + loadsize;
+
     // Search for dynamic entries
     for (;;)
     {
@@ -415,7 +418,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
     for (;;)
     {
         Elf_Dyn dyn;
-        if (!ReadElfMemory(dynamicAddr, &dyn, sizeof(dyn))) {
+        if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
             TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
             return false;
         }
@@ -519,6 +522,7 @@ bool
 ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, size_t *ploadsize)
 {
     uint64_t loadbias = baseAddress;
+    size_t loadsize = 0;
 
     // Calculate the load bias from the PT_LOAD program headers
     for (int i = 0; i < phnum; i++)
@@ -538,9 +542,6 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     if (ploadbias != nullptr) {
         *ploadbias = loadbias;
     }
-
-    m_elfLoadMin = baseAddress;
-    m_elfLoadMax = std::max<uint64_t>(uint64_t(baseAddress + sizeof(Elf_Ehdr)), uint64_t(phdrAddr + phnum));
 
     // Enumerate all the program headers
     for (int i = 0; i < phnum; i++)
@@ -562,8 +563,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
             break;
         case PT_LOAD:
             // Calculate the load size from the PT_LOAD program headers
-            m_elfLoadMin = std::min<uint64_t>(m_elfLoadMin, (uint64_t)(loadbias + ph.p_vaddr));
-            m_elfLoadMax = std::max<uint64_t>(m_elfLoadMax, (uint64_t)(loadbias + ph.p_vaddr + ph.p_memsz));
+            loadsize = std::max<size_t>(loadsize, (size_t)(ph.p_vaddr + ph.p_memsz));
             break;
         }
 
@@ -572,7 +572,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     }
 
     if (ploadsize != nullptr) {
-        *ploadsize = size_t(m_elfLoadMax - loadbias);
+        *ploadsize = loadsize;
     }
 
     return true;
