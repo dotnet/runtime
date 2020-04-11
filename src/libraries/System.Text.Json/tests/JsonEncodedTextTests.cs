@@ -111,7 +111,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void Equals()
+        public static void EqualsTest()
         {
             string message = "message";
 

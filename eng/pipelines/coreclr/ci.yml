@@ -32,17 +32,6 @@ jobs:
 - template: /eng/pipelines/common/checkout-job.yml
 
 #
-# Checked Corelib builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
-    buildConfig: checked
-    platformGroup: all
-    jobParameters:
-      testGroup: outerloop
-
-#
 # Debug builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml

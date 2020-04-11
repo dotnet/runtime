@@ -90,6 +90,8 @@ public:
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
 
+    static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
+
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }

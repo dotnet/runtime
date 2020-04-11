@@ -5043,11 +5043,16 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= gen_number == poh_generation ?
+        res->flags |= (gen_number == poh_generation) ?
                                         heap_segment_flags_poh :
                                         heap_segment_flags_loh;
 
-        FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), gc_etw_segment_large_object_heap);
+        FIRE_EVENT(GCCreateSegment_V1,
+            heap_segment_mem(res),
+            (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)),
+            (gen_number == poh_generation) ?
+                gc_etw_segment_pinned_object_heap :
+                gc_etw_segment_large_object_heap);
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
@@ -16591,9 +16596,9 @@ inline
 void fire_overflow_event (uint8_t* overflow_min,
                           uint8_t* overflow_max,
                           size_t marked_objects,
-                          int large_objects_p)
+                          int gen_number)
 {
-    FIRE_EVENT(BGCOverflow, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, large_objects_p);
+    FIRE_EVENT(BGCOverflow_V1, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, gen_number == loh_generation, gen_number);
 }
 
 void gc_heap::concurrent_print_time_delta (const char* msg)
@@ -20359,7 +20364,7 @@ void gc_heap::background_process_mark_overflow_internal (int condemned_gen_numbe
             }
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
-            fire_overflow_event (min_add, max_add, total_marked_objects, !small_object_segments);
+            fire_overflow_event (min_add, max_add, total_marked_objects, i);
             if (small_object_segments)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
@@ -23954,10 +23959,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (!loh_compacted_p)
 #endif //FEATURE_LOH_COMPACTION
         {
-            GCToEEInterface::DiagWalkLOHSurvivors(__this);
+            GCToEEInterface::DiagWalkUOHSurvivors(__this, loh_generation);
             sweep_uoh_objects (loh_generation);
         }
 
+        GCToEEInterface::DiagWalkUOHSurvivors(__this, poh_generation);
         sweep_uoh_objects (poh_generation);
     }
     else
@@ -25789,8 +25795,6 @@ void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type t
     else if (type == walk_for_bgc)
         walk_survivors_for_bgc (context, fn);
 #endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
-    else if (type == walk_for_loh)
-        walk_survivors_for_loh (context, fn);
     else
         assert (!"unknown type!");
 }
@@ -33557,7 +33561,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
     }
 }
 
-BOOL gc_heap::large_object_marked (uint8_t* o, BOOL clearp)
+BOOL gc_heap::uoh_object_marked (uint8_t* o, BOOL clearp)
 {
     BOOL m = FALSE;
     // It shouldn't be necessary to do these comparisons because this is only used for blocking
@@ -33595,9 +33599,9 @@ void gc_heap::walk_survivors_relocation (void* profiling_context, record_surv_fn
 #endif //FEATURE_LOH_COMPACTION
 }
 
-void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn)
+void gc_heap::walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number)
 {
-    generation* gen        = large_object_generation;
+    generation* gen        = generation_of (gen_number);
     heap_segment* seg      = heap_segment_rw (generation_start_segment (gen));;
 
     PREFIX_ASSUME(seg != NULL);
@@ -33616,7 +33620,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
             else
                 o = heap_segment_mem (seg);
         }
-        if (large_object_marked(o, FALSE))
+        if (uoh_object_marked(o, FALSE))
         {
             plug_start = o;
 
@@ -33628,7 +33632,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
                 {
                     break;
                 }
-                m = large_object_marked (o, FALSE);
+                m = uoh_object_marked (o, FALSE);
             }
 
             plug_end = o;
@@ -33637,7 +33641,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
         }
         else
         {
-            while (o < heap_segment_allocated (seg) && !large_object_marked(o, FALSE))
+            while (o < heap_segment_allocated (seg) && !uoh_object_marked(o, FALSE))
             {
                 o = o + AlignQword (size (o));
             }
@@ -34499,7 +34503,7 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                              (size_t)heap_segment_allocated (seg)));
             }
         }
-        if (large_object_marked(o, TRUE))
+        if (uoh_object_marked(o, TRUE))
         {
             plug_start = o;
             //everything between plug_end and plug_start is free
@@ -34513,14 +34517,14 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                 {
                     break;
                 }
-                m = large_object_marked (o, TRUE);
+                m = uoh_object_marked (o, TRUE);
             }
             plug_end = o;
             dprintf (3, ("plug [%Ix, %Ix[", (size_t)plug_start, (size_t)plug_end));
         }
         else
         {
-            while (o < heap_segment_allocated (seg) && !large_object_marked(o, FALSE))
+            while (o < heap_segment_allocated (seg) && !uoh_object_marked(o, FALSE))
             {
                 o = o + AlignQword (size (o));
             }
@@ -34880,32 +34884,32 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 #endif // _PREFAST_
 #endif //MULTIPLE_HEAPS
 
-        int curr_gen_number0 = max_generation+1;
-        while (curr_gen_number0 >= 0)
+        for (int curr_gen_number = total_generation_count-1; curr_gen_number >= 0; curr_gen_number--)
         {
-            generation* gen = hp->generation_of (curr_gen_number0);
+            generation* gen = hp->generation_of (curr_gen_number);
             heap_segment* seg = generation_start_segment (gen);
             while (seg && (seg != hp->ephemeral_heap_segment))
             {
-                assert (curr_gen_number0 > 0);
+                assert (curr_gen_number > 0);
 
                 // report bounds from heap_segment_mem (seg) to
                 // heap_segment_allocated (seg);
-                // for generation # curr_gen_number0
+                // for generation # curr_gen_number
                 // for heap # heap_no
 
-                fn(context, curr_gen_number0, heap_segment_mem (seg),
+                fn(context, curr_gen_number, heap_segment_mem (seg),
                                               heap_segment_allocated (seg),
-                                              curr_gen_number0 == max_generation+1 ? heap_segment_reserved (seg) : heap_segment_allocated (seg));
+                                              curr_gen_number > max_generation ? heap_segment_reserved (seg) : heap_segment_allocated (seg));
 
                 seg = heap_segment_next (seg);
             }
+
             if (seg)
             {
                 assert (seg == hp->ephemeral_heap_segment);
-                assert (curr_gen_number0 <= max_generation);
+                assert (curr_gen_number <= max_generation);
                 //
-                if (curr_gen_number0 == max_generation)
+                if (curr_gen_number == max_generation)
                 {
                     if (heap_segment_mem (seg) < generation_allocation_start (hp->generation_of (max_generation-1)))
                     {
@@ -34913,33 +34917,32 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                         // generation_allocation_start (generation_of (max_generation-1))
                         // for heap # heap_number
 
-                        fn(context, curr_gen_number0, heap_segment_mem (seg),
+                        fn(context, curr_gen_number, heap_segment_mem (seg),
                                                       generation_allocation_start (hp->generation_of (max_generation-1)),
                                                       generation_allocation_start (hp->generation_of (max_generation-1)) );
                     }
                 }
-                else if (curr_gen_number0 != 0)
+                else if (curr_gen_number != 0)
                 {
-                    //report bounds from generation_allocation_start (generation_of (curr_gen_number0))
-                    // to generation_allocation_start (generation_of (curr_gen_number0-1))
+                    //report bounds from generation_allocation_start (generation_of (curr_gen_number))
+                    // to generation_allocation_start (generation_of (curr_gen_number-1))
                     // for heap # heap_number
 
-                    fn(context, curr_gen_number0, generation_allocation_start (hp->generation_of (curr_gen_number0)),
-                                                  generation_allocation_start (hp->generation_of (curr_gen_number0-1)),
-                                                  generation_allocation_start (hp->generation_of (curr_gen_number0-1)));
+                    fn(context, curr_gen_number, generation_allocation_start (hp->generation_of (curr_gen_number)),
+                                                  generation_allocation_start (hp->generation_of (curr_gen_number-1)),
+                                                  generation_allocation_start (hp->generation_of (curr_gen_number-1)));
                 }
                 else
                 {
-                    //report bounds from generation_allocation_start (generation_of (curr_gen_number0))
+                    //report bounds from generation_allocation_start (generation_of (curr_gen_number))
                     // to heap_segment_allocated (ephemeral_heap_segment);
                     // for heap # heap_number
 
-                    fn(context, curr_gen_number0, generation_allocation_start (hp->generation_of (curr_gen_number0)),
+                    fn(context, curr_gen_number, generation_allocation_start (hp->generation_of (curr_gen_number)),
                                                   heap_segment_allocated (hp->ephemeral_heap_segment),
                                                   heap_segment_reserved (hp->ephemeral_heap_segment) );
                 }
             }
-            curr_gen_number0--;
         }
     }
 }
@@ -39426,10 +39429,18 @@ void GCHeap::DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context)
     }
 }
 
-void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type)
+void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number)
 {
     gc_heap* hp = (gc_heap*)gc_context;
-    hp->walk_survivors (fn, diag_context, type);
+
+    if (type == walk_for_uoh)
+    {
+        hp->walk_survivors_for_uoh (diag_context, fn, gen_number);
+    }
+    else
+    {
+        hp->walk_survivors (fn, diag_context, type);
+    }
 }
 
 void GCHeap::DiagWalkHeap (walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p)

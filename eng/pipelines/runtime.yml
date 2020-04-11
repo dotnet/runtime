@@ -119,27 +119,6 @@ jobs:
       - eng/pipelines/libraries/*
 
 #
-# Build CoreLib release
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      testGroup: innerloop
-
-#
 # Build CoreCLR checked
 # Only when CoreCLR is changed
 #
@@ -256,6 +235,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -264,6 +245,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -290,6 +272,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -298,6 +282,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -411,9 +396,12 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
+    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -427,9 +415,12 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
+    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
 
@@ -441,7 +432,6 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - WebAssembly_wasm
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
@@ -523,6 +513,8 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
+      - tvOS_x64
+      - tvOS_arm64
       - iOS_x64
       # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
@@ -670,7 +662,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
+    - Windows_NT_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64

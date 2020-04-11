@@ -11,6 +11,7 @@
 #define FireEtwGCRestartEEEnd_V1(ClrInstanceID) 0
 #define FireEtwGCHeapStats(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount) 0
 #define FireEtwGCHeapStats_V1(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) 0
+#define FireEtwGCHeapStats_V2(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID, GenerationSize4, TotalPromotedSize4) 0
 #define FireEtwGCCreateSegment(Address, Size, Type) 0
 #define FireEtwGCCreateSegment_V1(Address, Size, Type, ClrInstanceID) 0
 #define FireEtwGCFreeSegment(Address) 0
@@ -249,6 +250,7 @@
 #define FireEtwBGCDrainMark(Objects, ClrInstanceID) 0
 #define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID) 0
 #define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID) 0
+#define FireEtwBGCOverflow_V1(Min, Max, Objects, IsLarge, ClrInstanceID, GenNumber) 0
 #define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID) 0
 #define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID) 0
 #define FireEtwGCFullNotify(GenNumber, IsAlloc) 0

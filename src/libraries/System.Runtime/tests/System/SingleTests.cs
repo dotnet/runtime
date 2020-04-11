@@ -113,7 +113,7 @@ namespace System.Tests
         [InlineData(float.NaN, -float.NaN, true)]
         [InlineData(789.0f, 789.0, false)]
         [InlineData(789.0f, "789", false)]
-        public static void Equals(float f1, object value, bool expected)
+        public static void EqualsTest(float f1, object value, bool expected)
         {
             if (value is float f2)
             {
@@ -456,12 +456,12 @@ namespace System.Tests
             {
                 foreach (object[] testdata in ToString_TestData_NotNetFramework())
                 {
-                    ToString((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    ToStringTest((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
             }
         }
 
-        private static void ToString(float f, string format, IFormatProvider provider, string expected)
+        private static void ToStringTest(float f, string format, IFormatProvider provider, string expected)
         {
             bool isDefaultProvider = provider == null;
             if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")

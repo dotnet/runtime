@@ -189,7 +189,10 @@ inline LPWSTR CeeFileGenWriter::getResourceFileName() {
 }
 
 inline HRESULT CeeFileGenWriter::setDllSwitch(bool dllSwitch) {
-    if((m_dllSwitch = dllSwitch)) m_objSwitch = FALSE; return S_OK;
+    if((m_dllSwitch = dllSwitch))
+        m_objSwitch = FALSE;
+
+    return S_OK;
 }
 
 inline bool CeeFileGenWriter::getDllSwitch() {
@@ -197,7 +200,10 @@ inline bool CeeFileGenWriter::getDllSwitch() {
 }
 
 inline HRESULT CeeFileGenWriter::setObjSwitch(bool objSwitch) {
-    if((m_objSwitch = objSwitch)) m_dllSwitch = FALSE; return S_OK;
+    if((m_objSwitch = objSwitch))
+        m_dllSwitch = FALSE;
+
+    return S_OK;
 }
 
 inline bool CeeFileGenWriter::getObjSwitch() {

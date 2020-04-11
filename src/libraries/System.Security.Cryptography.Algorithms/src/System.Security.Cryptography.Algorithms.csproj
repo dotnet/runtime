@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <NoWarn>CS1573;CS3016;CA5350;CA5351;CA5379;CA5384;CA5385;$(NoWarn)</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
@@ -98,6 +98,9 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs">
       <Link>Internal\Cryptography\HashProvider.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs">
+      <Link>Common\Internal\Cryptography\PemKeyImportHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs">
       <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
     </Compile>
@@ -133,6 +136,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs">
       <Link>Common\System\Security\Cryptography\PasswordBasedEncryption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs">
+      <Link>Common\System\Security\Cryptography\PemLabels.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs">
       <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
@@ -487,7 +493,7 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -595,7 +601,7 @@
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>

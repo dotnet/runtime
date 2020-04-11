@@ -58,23 +58,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             List<EntryPoint> ridToEntryPoint = new List<EntryPoint>();
 
-            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.NonInstantiated))
             {
-                if (method.Method is EcmaMethod ecmaMethod && ecmaMethod.Module == _module)
+                Debug.Assert(method.Method is EcmaMethod);
+                EcmaMethod ecmaMethod = (EcmaMethod)method.Method;
+                Debug.Assert(ecmaMethod.Module == _module);
+
+                // Strip away the token type bits, keep just the low 24 bits RID
+                uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
+                Debug.Assert(rid != 0);
+                rid--;
+
+                while (ridToEntryPoint.Count <= rid)
                 {
-                    // Strip away the token type bits, keep just the low 24 bits RID
-                    uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
-                    Debug.Assert(rid != 0);
-                    rid--;
-
-                    while (ridToEntryPoint.Count <= rid)
-                    {
-                        ridToEntryPoint.Add(EntryPoint.Null);
-                    }
-
-                    int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
-                    ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, method);
+                    ridToEntryPoint.Add(EntryPoint.Null);
                 }
+
+                int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
+                ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, method);
             }
 
             NativeWriter writer = new NativeWriter();

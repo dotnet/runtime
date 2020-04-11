@@ -847,11 +847,6 @@ struct BasicBlock : private LIR::Range
     typedef unsigned char loopNumber;
     static const unsigned NOT_IN_LOOP = UCHAR_MAX;
 
-    // This is the label a loop gets as part of the second, reachability-based
-    // loop discovery mechanism.  This is apparently only used for debugging.
-    // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    INDEBUG(loopNumber bbLoopNum;) // set to 'n' for a loop #n header
-
     loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
                              // or else NOT_IN_LOOP if this block is not in a loop.
 

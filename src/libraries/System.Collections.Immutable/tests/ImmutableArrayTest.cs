@@ -838,7 +838,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(EqualsData))]
-        public void Equals(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
+        public void EqualsTest(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
         {
             Assert.Equal(expected, first == second);
             Assert.NotEqual(expected, first != second);
@@ -944,7 +944,7 @@ namespace System.Collections.Immutable.Tests
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         [MemberData(nameof(SpecialInt32ImmutableArrayData))]
-        public void GetHashCode(IEnumerable<int> source)
+        public void GetHashCodeTest(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
 
@@ -2252,7 +2252,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
-        public void DebuggerAttributesValid(IEnumerable<int> source)
+        public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }

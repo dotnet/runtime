@@ -28,7 +28,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(SignatureHelper helper, object obj, bool expected)
+        public void EqualsTest(SignatureHelper helper, object obj, bool expected)
         {
             Assert.Equal(expected, helper.Equals(obj));
             if (obj is SignatureHelper && expected == true)
