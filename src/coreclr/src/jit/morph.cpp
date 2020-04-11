@@ -5376,7 +5376,12 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree->ChangeOper(GT_IND);
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
+        bool canCSE               = indir->CanCSE();
         indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
+        if (!canCSE)
+        {
+            indir->SetDoNotCSE();
+        }
 
 #ifdef DEBUG
         indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
@@ -13384,9 +13389,6 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
-
-            /* op1 of a GT_ADDR is an l-value. Only r-values can be CSEed */
-            op1->gtFlags |= GTF_DONT_CSE;
             break;
 
         case GT_COLON:
@@ -16831,8 +16833,15 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 tree->SetOper(GT_LCL_VAR);
                 tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
                 tree->gtType = fieldType;
+                bool canCSE  = tree->CanCSE();
+                // That doesn't make any sense, was it supposed to clean all flags except GTF_NODE_MASK here? 2012<
                 tree->gtFlags &= GTF_NODE_MASK;
+                // If yes then why a year after (2013) was this cleaning added, that obviously does nothing.
                 tree->gtFlags &= ~GTF_GLOB_REF;
+                if (!canCSE)
+                {
+                    tree->SetDoNotCSE();
+                }
 
                 if (parent->gtOper == GT_ASG)
                 {
@@ -17748,6 +17757,9 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
         gtDispStmt(stmt);
     }
 #endif
+
+    assert(!simdStructNode->CanCSE());
+    simdStructNode->ClearDoNotCSE();
 
     tree = gtNewAssignNode(dstNode, simdStructNode);
 

@@ -21241,6 +21241,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     return;
                 }
                 break;
+            case GT_ADDR:
+                assert(!op1->CanCSE());
 
             default:
                 break;
