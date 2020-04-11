@@ -49,21 +49,23 @@ jobs:
 
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         dependsOn:
-        # Use corelib dependencies for coreclr and non test builds
-        - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
-          - ${{ format('coreclr_corelib_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+        # Use full product dependency for non-coreclr and test builds
         - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
           - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - _subset: libs
-        - _addtionalBuildArguments: ''
+        - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - EMSDK_PATH: /usr/local/emscripten
+        # for coreclr library builds (when not testing) build corelib as well.   
+        - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
+          - _subset: clr.corelib+libs
+        # Tests only run for 'allConfiguration' and 'net472' build-jobs
         - ${{ if eq(parameters.runTests, true) }}:
-          - _subset: libs+libs.tests
-          - _addtionalBuildArguments: /p:ArchiveTests=true
+          - _subset: clr.corelib+libs+libs.tests
+          - _additionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -83,7 +85,7 @@ jobs:
         - script: $(_buildScript)
                 -subset $(_subset)
                 $(_buildArguments)
-                $(_addtionalBuildArguments)
+                $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
         - ${{ if eq(parameters.runTests, false) }}:
