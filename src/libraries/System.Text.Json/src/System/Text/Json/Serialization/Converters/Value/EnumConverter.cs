@@ -277,7 +277,8 @@ namespace System.Text.Json.Serialization.Converters
                 return valueBuilder.ToString();
             }
 
-            if (_enumInformationCache != null && _enumInformationCache.TryGetValue(original, out EnumInformation? enumInformation))
+            if (_enumInformationCache != null
+                && _enumInformationCache.TryGetValue(original, out EnumInformation? enumInformation))
             {
                 return ConvertEnum(enumInformation, value);
             }
@@ -288,13 +289,12 @@ namespace System.Text.Json.Serialization.Converters
             string[] enumAllNames = Enum.GetNames(enumType);
             ulong[] enumAllValues = new ulong[enumAllNames.Length];
 
-            for (int i = 0; i < enumAllValues.Length; i++)
+            for (int i = 0; i < enumAllNames.Length; i++)
             {
-                  FieldInfo fieldInfo = enumType.GetField(
-                      enumAllNames[i],
-                      BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
-                T enumValue = (T)fieldInfo.GetValue(null)!;
-                enumAllValues[i] = Unsafe.As<T, ulong>(ref enumValue);
+                FieldInfo fieldInfo = enumType.GetField(
+                    enumAllNames[i],
+                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
+                enumAllValues[i] = Convert.ToUInt64(fieldInfo.GetValue(null));
             }
 
             enumInformation = new EnumInformation(enumAllValues, enumAllNames);
