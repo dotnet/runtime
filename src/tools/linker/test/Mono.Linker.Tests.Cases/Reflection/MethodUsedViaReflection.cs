@@ -6,7 +6,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection {
 
 	[SetupCSharpCompilerToUse ("csc")]
-	/*[VerifyAllReflectionAccessPatternsAreValidated]*/
 	public class MethodUsedViaReflection {
 		public static void Main ()
 		{
@@ -90,29 +89,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 #endif
 
 		[Kept]
-		static void TestIfElse(int i)
-		{
-			Type myType;
-			if (i == 1) {
-				myType = typeof(IfClass);
-			} else if (i == 2) {
-				myType = typeof (ElseIfClass);	
-			} else {
-				myType = typeof (ElseClass);
-			}
-			string mystring;
-			if (i == 1) {
-				mystring = "OnlyCalledViaReflection";
-			} else if (i == 2) {
-				mystring = "ElseIfCall";
-			} else {
-				mystring = null;
-			}
-			var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
-			method.Invoke (null, new object [] { });
-		}
-
-		[Kept]
 		static void TestNullName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod (null);
@@ -125,8 +101,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string) })]
 		static void TestNonExistingName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod ("NonExisting");
@@ -152,6 +126,29 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		{
 			Type type = FindType ();
 			var method = type.GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+		}
+
+		[Kept]
+		static void TestIfElse (int i)
+		{
+			Type myType;
+			if (i == 1) {
+				myType = typeof (IfClass);
+			} else if (i == 2) {
+				myType = typeof (ElseIfClass);
+			} else {
+				myType = typeof (ElseClass);
+			}
+			string mystring;
+			if (i == 1) {
+				mystring = "OnlyCalledViaReflection";
+			} else if (i == 2) {
+				mystring = "ElseIfCall";
+			} else {
+				mystring = null;
+			}
+			var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
+			method.Invoke (null, new object [] { });
 		}
 
 		[Kept]
@@ -346,21 +343,23 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		private class IfClass
 		{
 			[Kept]
-			public static int OnlyCalledViaReflection ()
+			public static int OnlyCalledViaReflection()
 			{
 				return 42;
 			}
 			
-			private int OnlyCalledViaReflection (int foo)
+			private int OnlyCalledViaReflection(int foo)
 			{
 				return 43;
 			}
 			[Kept]
-			public static int ElseIfCall ()
+			public static int ElseIfCall()
 			{
 				return 44;
 			}
 		}
+
+		[Kept]
 		private class ElseIfClass
 		{
 			[Kept]
@@ -379,6 +378,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				return 47;
 			}
 		}
+
+		[Kept]
 		private class ElseClass
 		{
 			[Kept]
@@ -391,8 +392,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			{
 				return 49;
 			}
-			[Kept]
-			public int ElseIfCall ()
+			private int ElseIfCall ()
 			{
 				return 50;
 			}
