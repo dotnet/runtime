@@ -1200,7 +1200,8 @@ namespace System.Net
 
                 HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
 
-                if (!responseMessage.IsSuccessStatusCode)
+                int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
+                if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
                 {
                     throw new WebException(
                         SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
