@@ -70,7 +70,9 @@ HRESULT ReJITProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     INFO(L"Initialize started");
 
-    DWORD eventMaskLow = COR_PRF_ENABLE_REJIT | COR_PRF_MONITOR_JIT_COMPILATION;
+    DWORD eventMaskLow = COR_PRF_ENABLE_REJIT |
+                         COR_PRF_MONITOR_JIT_COMPILATION |
+                         COR_PRF_DISABLE_ALL_NGEN_IMAGES;
     DWORD eventMaskHigh = 0x0;
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMaskLow, eventMaskHigh)))
     {

@@ -24,7 +24,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     // No event mask, just calling the EventPipe APIs.
-    if (FAILED(hr = _pCorProfilerInfo12->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION, 0)))
+    if (FAILED(hr = _pCorProfilerInfo12->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_DISABLE_ALL_NGEN_IMAGES, 0)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x\n", hr);
