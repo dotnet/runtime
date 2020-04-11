@@ -74,7 +74,7 @@ bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     ElfReaderExport elfreader(dataTarget);
-    if (elfreader.PopulateForSymbolLookup(baseAddress))
+    if (elfreader.PopulateForSymbolLookup(baseAddress, symbolName))
     {
         uint64_t symbolOffset;
         if (elfreader.TryLookupSymbol(symbolName, &symbolOffset))
@@ -114,7 +114,7 @@ ElfReader::~ElfReader()
 // caches the info neccessary in the ElfReader class look up symbols.
 //
 bool
-ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
+ElfReader::PopulateForSymbolLookup(uint64_t baseAddress, std::string symbolName)
 {
     TRACE("PopulateForSymbolLookup: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
@@ -196,7 +196,7 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
         // Rather than making a compile time decision based on OS, we try to find a required symbol.
         // Try to find "g_dacTable" in the hash table w/o adding the loadbias
         uint64_t symbolOffset;
-        if (!InitializeGnuHashTable() || !TryLookupSymbol("g_dacTable", &symbolOffset)) {
+        if (!InitializeGnuHashTable() || !TryLookupSymbol(symbolName, &symbolOffset)) {
             // Since we cannot find the expected symbol assume we need to add the loadbias
             addLoadBias = true;
         }

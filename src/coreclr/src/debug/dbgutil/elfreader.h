@@ -50,7 +50,7 @@ public:
 #ifdef HOST_UNIX
     bool EnumerateElfInfo(ElfW(Phdr)* phdrAddr, int phnum);
 #endif
-    bool PopulateForSymbolLookup(uint64_t baseAddress);
+    bool PopulateForSymbolLookup(uint64_t baseAddress, std::string symbolName = "g_dacTable");
     bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
     bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, ElfW(Dyn)** pdynamicAddr = nullptr, size_t *ploadsize = nullptr);
 
