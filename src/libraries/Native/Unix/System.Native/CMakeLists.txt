@@ -30,7 +30,7 @@ else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
 endif ()
 
-if (CLR_CMAKE_TARGET_LINUX)
+if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
 
     if (!HAVE_LINUX_RTNETLINK_H)

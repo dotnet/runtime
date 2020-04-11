@@ -96,10 +96,6 @@ jobs:
           - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
 
-          # WebAssembly uses linux implementation detail
-          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: 'CoreLib_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
-
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           - _runtimeOSArg: /p:RuntimeOS=win10

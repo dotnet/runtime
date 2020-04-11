@@ -82,9 +82,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.6.0">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.7.0-preview-20200408-06">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>008f22a9ebb66bb51d38b01cfd29756c898287e0</Sha>
+      <Sha>732a3a37e8d3e1a2522546fca644c7d69be457cf</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20206.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -166,9 +166,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
     </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="5.0.0-preview.3.20207.1">
+    <Dependency Name="ILLink.Tasks" Version="5.0.0-preview.3.20209.2">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>269deccf88e998c762fb74914da793cf19093869</Sha>
+      <Sha>3b97c4fae70a79e02af24d93cc8ce5613434dedb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

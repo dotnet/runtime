@@ -486,6 +486,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34362", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Input_Object_Write()
         {
             int fileNumber = FileSystem.FreeFile();

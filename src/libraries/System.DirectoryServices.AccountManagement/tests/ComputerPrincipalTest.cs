@@ -46,6 +46,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_MachineContext_NoException()
         {
             var context = new PrincipalContext(ContextType.Machine);

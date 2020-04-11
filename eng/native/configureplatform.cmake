@@ -166,7 +166,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL Windows)
 endif(CLR_CMAKE_HOST_OS STREQUAL Windows)
 
 if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
-    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    #set(CLR_CMAKE_HOST_UNIX 1) # TODO: this should be reenabled but it activates a bunch of additional compiler flags in configurecompiler.cmake
+    set(CLR_CMAKE_HOST_UNIX_WASM 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
 #--------------------------------------------
@@ -196,6 +197,9 @@ elseif(CLR_CMAKE_HOST_UNIX_AMD64)
 elseif(CLR_CMAKE_HOST_UNIX_X86)
     set(CLR_CMAKE_HOST_ARCH_I386 1)
     set(CLR_CMAKE_HOST_ARCH "x86")
+elseif(CLR_CMAKE_HOST_UNIX_WASM)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    set(CLR_CMAKE_HOST_ARCH "wasm")
 elseif(WIN32)
     # CLR_CMAKE_HOST_ARCH is passed in as param to cmake
     if (CLR_CMAKE_HOST_ARCH STREQUAL x64)
@@ -237,6 +241,8 @@ if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
     set(CLR_CMAKE_TARGET_ARCH_ARM 1)
     set(CLR_CMAKE_TARGET_ARCH_ARMV7L 1)
     set(ARM_SOFTFP 1)
+  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL wasm)
+    set(CLR_CMAKE_TARGET_ARCH_WASM 1)
   else()
     clr_unknown_arch()
 endif()
@@ -306,6 +312,12 @@ if(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
     set(CLR_CMAKE_TARGET_SUNOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_EMSCRIPTEN 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
+
 if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)
         set(CLR_CMAKE_TARGET_UNIX_AMD64 1)
@@ -317,6 +329,8 @@ if(CLR_CMAKE_TARGET_UNIX)
         set(CLR_CMAKE_TARGET_UNIX_ARM64 1)
     elseif(CLR_CMAKE_TARGET_ARCH STREQUAL x86)
         set(CLR_CMAKE_TARGET_UNIX_X86 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL wasm)
+        set(CLR_CMAKE_TARGET_UNIX_WASM 1)
     else()
         clr_unknown_arch()
     endif()
@@ -343,7 +357,7 @@ else()
     endif()
 endif()
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
     # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
     # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
     # but since we know that PIE is supported, we can safely skip this redundant check).
@@ -363,7 +377,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+endif(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
 if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)

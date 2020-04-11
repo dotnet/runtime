@@ -151,8 +151,13 @@ build_native()
 
         popd
     else
-        echo "Executing cmake --build \"$intermediatesDir\" --target install -j $__NumProc"
-        cmake --build "$intermediatesDir" --target install -j "$__NumProc"
+        cmake_command=cmake
+        if [[ "$build_arch" == "wasm" ]]; then
+            cmake_command="emcmake $cmake_command"
+        fi
+
+        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
+        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
     fi
 
     local exit_code="$?"

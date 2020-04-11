@@ -64,7 +64,7 @@ public:
     static void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
     static void DiagWalkFReachableObjects(void* gcContext);
     static void DiagWalkSurvivors(void* gcContext, bool fCompacting);
-    static void DiagWalkLOHSurvivors(void* gcContext);
+    static void DiagWalkUOHSurvivors(void* gcContext, int gen);
     static void DiagWalkBGCSurvivors(void* gcContext);
     static void StompWriteBarrier(WriteBarrierParameters* args);
 
