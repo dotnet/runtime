@@ -103,6 +103,20 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize((FileAttributes)(-1), options);
             Assert.Equal(@"-1", json);
 
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+            json = JsonSerializer.Serialize(FileAttributes.Compressed | FileAttributes.Device, options);
+            Assert.Equal(@"""device, compressed""", json);
+
+            json = JsonSerializer.Serialize(
+                FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
+                options);
+            Assert.Equal(@"""directory, compressed, integrityStream""", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Compressed & FileAttributes.Device, options);
+            Assert.Equal(@"0", json);
+ 
             // Not permitting integers should throw
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
