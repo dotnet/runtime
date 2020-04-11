@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System
 {
@@ -247,69 +249,11 @@ namespace System
             }
         }
 
-        private static unsafe bool IsIdnAce(string input, int index)
+        internal static unsafe bool TryGetUnicodeEquivalent(string hostname, ref ValueStringBuilder dest)
         {
-            if ((input[index] == 'x') &&
-                (input[index + 1] == 'n') &&
-                (input[index + 2] == '-') &&
-                (input[index + 3] == '-'))
-                return true;
-            else
-                return false;
-        }
+            Debug.Assert(ReferenceEquals(hostname, UriHelper.StripBidiControlCharacters(hostname, hostname)));
 
-        private static unsafe bool IsIdnAce(char* input, int index)
-        {
-            if ((input[index] == 'x') &&
-                (input[index + 1] == 'n') &&
-                (input[index + 2] == '-') &&
-                (input[index + 3] == '-'))
-                return true;
-            else
-                return false;
-        }
-
-        //
-        // Will convert a host name into its unicode equivalent expanding any existing idn names present
-        //
-        internal static unsafe string? UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
-        {
-            // Test common scenario first for perf
-            // try to get unicode equivalent
-            try
-            {
-                return s_idnMapping.GetUnicode(idnHost);
-            }
-            catch (ArgumentException)
-            {
-            }
-            // Here because something threw in GetUnicode above
-            // Need to now check individual labels of they had an ace label that was not valid Idn name
-            // or if there is a label with invalid Idn char.
-            bool dummy = true;
-            return UnicodeEquivalent(hostname, start, end, ref dummy, ref dummy);
-        }
-
-        internal static unsafe string? UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
-        {
-            // hostname already validated
-            allAscii = true;
-            atLeastOneValidIdn = false;
-            string? idn = null;
-            if (end <= start)
-                return idn;
-
-            string unescapedHostname = UriHelper.StripBidiControlCharacters(new ReadOnlySpan<char>(hostname + start, end - start));
-
-            string? unicodeEqvlHost = null;
             int curPos = 0;
-            int newPos = 0;
-            int length = unescapedHostname.Length;
-            bool asciiLabel = true;
-            bool foundAce = false;
-            bool checkedAce = false;
-            bool foundDot = false;
-
 
             // We run a loop where for every label
             // a) if label is ascii and no ace then we lowercase it
@@ -318,27 +262,34 @@ namespace System
             // d) if label is unicode then clean it by running it through idnmapping
             do
             {
-                asciiLabel = true;
-                foundAce = false;
-                checkedAce = false;
-                foundDot = false;
+                bool asciiLabel = true;
+                bool foundAce = false;
+                bool checkedAce = false;
+                bool foundDot = false;
 
                 //find the dot or hit the end
-                newPos = curPos;
-                while (newPos < length)
+                int newPos = curPos;
+                while ((uint)newPos < (uint)hostname.Length)
                 {
-                    char c = unescapedHostname[newPos];
+                    char c = hostname[newPos];
                     if (!checkedAce)
                     {
                         checkedAce = true;
-                        if ((newPos + 3 < length) && (c == 'x') && IsIdnAce(unescapedHostname, newPos))
+                        if (c == 'x'
+                            && (uint)(newPos + 3) < (uint)hostname.Length
+                            && hostname[newPos + 1] == 'n'
+                            && hostname[newPos + 2] == '-'
+                            && hostname[newPos + 3] == '-')
+                        {
                             foundAce = true;
+                        }
                     }
-                    if (asciiLabel && (c > '\x7F'))
+
+                    if (c > '\x7F')
                     {
                         asciiLabel = false;
-                        allAscii = false;
                     }
+
                     if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP
                         (c == '\uFF0E') ||                  //FULLWIDTH FULL STOP
                         (c == '\uFF61'))                    //HALFWIDTH IDEOGRAPHIC FULL STOP
@@ -351,19 +302,18 @@ namespace System
 
                 if (!asciiLabel)
                 {
-                    string asciiForm = unescapedHostname.Substring(curPos, newPos - curPos);
                     try
                     {
-                        asciiForm = s_idnMapping.GetAscii(asciiForm);
+                        string asciiForm = s_idnMapping.GetAscii(hostname, curPos, newPos - curPos);
+
+                        dest.AppendString(s_idnMapping.GetUnicode(asciiForm));
+                        if (foundDot)
+                            dest.Append('.');
                     }
                     catch (ArgumentException)
                     {
-                        throw new UriFormatException(SR.net_uri_BadUnicodeHostForIdn);
+                        return false;
                     }
-
-                    unicodeEqvlHost += s_idnMapping.GetUnicode(asciiForm);
-                    if (foundDot)
-                        unicodeEqvlHost += ".";
                 }
                 else
                 {
@@ -373,11 +323,10 @@ namespace System
                         // check ace validity
                         try
                         {
-                            unicodeEqvlHost += s_idnMapping.GetUnicode(unescapedHostname, curPos, newPos - curPos);
+                            dest.AppendString(s_idnMapping.GetUnicode(hostname, curPos, newPos - curPos));
                             if (foundDot)
-                                unicodeEqvlHost += ".";
+                                dest.Append('.');
                             aceValid = true;
-                            atLeastOneValidIdn = true;
                         }
                         catch (ArgumentException)
                         {
@@ -388,16 +337,19 @@ namespace System
                     if (!aceValid)
                     {
                         // for invalid aces we just lowercase the label
-                        unicodeEqvlHost += unescapedHostname.Substring(curPos, newPos - curPos).ToLowerInvariant();
+                        ReadOnlySpan<char> slice = hostname.AsSpan(curPos, newPos - curPos);
+                        int charsWritten = slice.ToLowerInvariant(dest.AppendSpan(slice.Length));
+                        Debug.Assert(charsWritten == slice.Length);
+
                         if (foundDot)
-                            unicodeEqvlHost += ".";
+                            dest.Append('.');
                     }
                 }
 
                 curPos = newPos + (foundDot ? 1 : 0);
-            } while (curPos < length);
+            } while (curPos < hostname.Length);
 
-            return unicodeEqvlHost;
+            return true;
         }
 
         //
