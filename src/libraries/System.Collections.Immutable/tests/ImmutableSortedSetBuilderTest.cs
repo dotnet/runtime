@@ -409,7 +409,6 @@ namespace System.Collections.Immutable.Tests
             builder = ImmutableSortedSet.Create(CustomComparer.Instance, 1, 2, 3, 4).ToBuilder();
             var existing = 0;
             Assert.True(builder.TryGetValue(5, out existing));
-            Assert.NotEqual(5, existing);
             Assert.Equal(4, existing);
         }
 

@@ -204,10 +204,10 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Searches a given value in the set and returns the equal value if it finds
+            /// Searches the set for a given value and returns the equal value it finds, if any.
             /// </summary>
-            /// <param name="equalValue">The value to search.</param>
-            /// <param name="actualValue">The value from the set that the search found, else the original value.</param>
+            /// <param name="equalValue">The value for which to search.</param>
+            /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
             /// <returns>A value indicating whether the search was successful.</returns>
             public bool TryGetValue(T equalValue, out T actualValue)
             {
