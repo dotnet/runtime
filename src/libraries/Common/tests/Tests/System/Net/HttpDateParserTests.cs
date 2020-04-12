@@ -11,7 +11,7 @@ namespace Tests.System.Net.Http
 {
     public static class HttpDateParserTests
     {
-        public static IEnumerable<object[]> TryStringToDate_Data()
+        public static IEnumerable<object[]> TryParse_Data()
         {
             DateTimeOffset zeroOffset = new DateTimeOffset(1994, 11, 6, 8, 49, 37, TimeSpan.Zero);
 
@@ -42,12 +42,12 @@ namespace Tests.System.Net.Http
         }
 
         [Theory]
-        [MemberData(nameof(TryStringToDate_Data))]
+        [MemberData(nameof(TryParse_Data))]
         // We don't need extensive tests, since we let DateTimeOffset do the parsing. This test is just
         // to validate that we use the correct parameters when calling into DateTimeOffset.ToString().
-        public static void TryStringToDate_UseOfValidDateTimeStringsInDifferentFormats_ParsedCorrectly(string input, DateTimeOffset expected)
+        public static void TryParse_UseOfValidDateTimeStringsInDifferentFormats_ParsedCorrectly(string input, DateTimeOffset expected)
         {
-            Assert.True(HttpDateParser.TryStringToDate(input, out var result));
+            Assert.True(HttpDateParser.TryParse(input, out var result));
             Assert.Equal(expected, result);
         }
 
@@ -55,9 +55,9 @@ namespace Tests.System.Net.Http
         [InlineData("Sun, 06 Nov 1994 08:49:37 GMT invalid")]
         [InlineData("Sun, 06 Nov 1994 08:49:37 GMT,")]
         [InlineData(",Sun, 06 Nov 1994 08:49:37 GMT")]
-        public static void TryStringToDate_UseInvalidDateTimeString(string invalid)
+        public static void TryParse_UseInvalidDateTimeString(string invalid)
         {
-            Assert.False(HttpDateParser.TryStringToDate(invalid, out var result));
+            Assert.False(HttpDateParser.TryParse(invalid, out var result));
             Assert.Equal(default, result);
         }
 

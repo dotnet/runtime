@@ -35,7 +35,7 @@ namespace System.Net
             "d MMM yyyy H:m:s", // RFC 5322 no day-of-week, no zone
         };
 
-        internal static bool TryStringToDate(ReadOnlySpan<char> input, out DateTimeOffset result)
+        internal static bool TryParse(ReadOnlySpan<char> input, out DateTimeOffset result)
         {
             // None of the relevant patterns have whitespace at the beginning or end, so trim the input of
             // any whitespace.  We can then use strict "r" matching, or if we have to fall back to trying
@@ -47,7 +47,7 @@ namespace System.Net
             // fall back to trying each of the various date formats listed earlier, in order, to be accomodating and
             // accept a wide variety of old formats.
             return
-                DateTimeOffset.TryParseExact(input, "r", null, DateTimeStyles.None, out result) || // no culture specified, as "r" doesn't use it
+                DateTimeOffset.TryParseExact(input, "r", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out result) ||
                 DateTimeOffset.TryParseExact(input, s_dateFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowInnerWhite | DateTimeStyles.AssumeUniversal, out result);
         }
 
