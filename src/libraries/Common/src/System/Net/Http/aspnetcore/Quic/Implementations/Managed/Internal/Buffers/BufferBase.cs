@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 {
@@ -9,6 +10,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal class BufferBase
     {
+        /// <summary>
+        ///     Channel for synchronizing input/output. Data are always inserted in-order and without gaps.
+        /// </summary>
+        protected Channel<ReadOnlyMemory<byte>> _boundaryChannel;
+
         /// <summary>
         ///     Individual, deduplicated parts of the stream, ordered by stream offset.
         /// </summary>
@@ -44,7 +50,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 var last = _chunks[^1];
                 int copied = Math.Min(last.Buffer.Length - (int)last.Length, data.Length);
                 data.Slice(0, copied).CopyTo(last.Buffer.AsSpan((int)last.Length));
-                _chunks[^1] = new StreamChunk(last.StreamOffset, last.Buffer, last.Length + copied);
+                _chunks[^1] = new StreamChunk(last.StreamOffset, last.Buffer.AsMemory(0, (int) last.Length + copied), last.Buffer);
 
                 data = data.Slice(copied);
                 offset += copied;
@@ -56,7 +62,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
             data.CopyTo(buffer);
 
-            _chunks.Add(new StreamChunk(offset, buffer, data.Length));
+            _chunks.Add(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
         }
     }
 }

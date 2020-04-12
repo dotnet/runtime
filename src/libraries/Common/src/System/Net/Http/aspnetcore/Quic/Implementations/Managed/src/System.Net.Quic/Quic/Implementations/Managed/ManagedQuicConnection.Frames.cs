@@ -469,7 +469,7 @@ namespace System.Net.Quic.Implementations.Managed
             const int minSize = 5;
             while (writer.BytesAvailable > minSize)
             {
-                if (!epoch.CryptoOutboundStream.HasPendingData)
+                if (!epoch.CryptoOutboundStream.IsFlushable)
                     return;
 
                 (long offset, long count) = epoch.CryptoOutboundStream.GetNextSendableRange();
@@ -534,7 +534,7 @@ namespace System.Net.Quic.Implementations.Managed
             while ((stream = _streams.GetFirstFlushableStream()) != null)
             {
                 var buffer = stream!.OutboundBuffer!;
-                Debug.Assert(buffer.HasPendingData || buffer.SizeKnown);
+                Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
 
                 (long offset, long count) = buffer.GetNextSendableRange();
                 int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, count);
@@ -561,7 +561,7 @@ namespace System.Net.Quic.Implementations.Managed
                     ranges.Add(offset, offset + count - 1);
                 }
 
-                if (!buffer.HasPendingData)
+                if (!buffer.IsFlushable)
                     _streams.MarkFlushable(stream!, false);
             }
         }

@@ -62,7 +62,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotWritable();
 
             OutboundBuffer!.Enqueue(buffer);
-            if (OutboundBuffer.HasPendingData)
+            if (OutboundBuffer.IsFlushable)
                 _streamCollection.MarkFlushable(this, true);
         }
 

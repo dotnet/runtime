@@ -19,20 +19,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal readonly long StreamOffset;
 
         /// <summary>
-        ///     Buffer holding the data, only first <see cref="Length"/> bytes are used.
+        ///     Memory block to be sent.
         /// </summary>
-        internal readonly byte[] Buffer;
+        internal readonly ReadOnlyMemory<byte> Memory;
+
+        /// <summary>
+        ///     Source buffer for <see cref="Memory"/>, if the backing array was pooled. Null if the memory came from user.
+        /// </summary>
+        internal readonly byte[]? Buffer;
 
         /// <summary>
         ///     Length of the chunk and number of bytes actually stored in the <see cref="Buffer"/>.
         /// </summary>
-        internal readonly long Length;
+        internal long Length => Memory.Length;
 
-        public StreamChunk(long streamOffset, byte[] buffer, long length)
+        public StreamChunk(long streamOffset, ReadOnlyMemory<byte> memory, byte[]? buffer = null)
         {
             StreamOffset = streamOffset;
+            Memory = memory;
             Buffer = buffer;
-            Length = length;
         }
     }
 }

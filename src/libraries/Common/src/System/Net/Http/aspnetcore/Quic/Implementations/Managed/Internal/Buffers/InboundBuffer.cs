@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
                 data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
 
-                _chunks.Insert(index, new StreamChunk(range.Start, buffer, range.Length));
+                _chunks.Insert(index, new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
             }
 
             _undelivered.Add(offset, offset + data.Length - 1);

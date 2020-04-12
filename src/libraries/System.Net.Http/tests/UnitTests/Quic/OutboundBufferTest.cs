@@ -25,10 +25,10 @@ namespace System.Net.Quic.Tests
         public void ReturnsCorrectPendingRange()
         {
             EnqueueBytes(10);
-            Assert.False(buffer.HasPendingData); // MaxData is 0 yet
+            Assert.False(buffer.IsFlushable); // MaxData is 0 yet
             buffer.UpdateMaxData(10);
 
-            Assert.True(buffer.HasPendingData);
+            Assert.True(buffer.IsFlushable);
             var (start, count) = buffer.GetNextSendableRange();
             Assert.Equal(0u, start);
             Assert.Equal(10u, count);

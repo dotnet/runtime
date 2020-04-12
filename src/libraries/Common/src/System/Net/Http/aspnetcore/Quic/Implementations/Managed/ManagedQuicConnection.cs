@@ -425,7 +425,7 @@ namespace System.Net.Quic.Implementations.Managed
                 var level = (EncryptionLevel)i;
                 var epoch = _epochs[i];
 
-                if (epoch.CryptoOutboundStream.HasPendingData)
+                if (epoch.CryptoOutboundStream.IsFlushable)
                     return level;
 
                 if (epoch.AckElicited)
