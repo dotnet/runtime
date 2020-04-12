@@ -751,28 +751,34 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
-            // TODO-RZ: use messages from string resources
-            if (GetRemoteAvailableUnidirectionalStreamCount() == 0)
-                throw new InvalidOperationException("Cannot open stream");
-
+            ThrowIfDisposed();
             return OpenStream(true);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
-            // TODO-RZ: use messages from string resources
-            if (GetRemoteAvailableBidirectionalStreamCount() == 0)
-                throw new InvalidOperationException("Cannot open stream");
-
+            ThrowIfDisposed();
             return OpenStream(false);
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount() => throw new NotImplementedException();
+        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        {
+            ThrowIfDisposed();
+            return _peerLimits.MaxStreamsUni;
+        }
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount() => throw new NotImplementedException();
+        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        {
+            ThrowIfDisposed();
+            return _peerLimits.MaxStreamsBidi;
+        }
 
-        internal override ValueTask<QuicStreamProvider>
-            AcceptStreamAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override async ValueTask<QuicStreamProvider>
+            AcceptStreamAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken);
+        }
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 

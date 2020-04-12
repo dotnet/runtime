@@ -109,8 +109,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 destination = destination.Slice(0, (int) BytesAvailable);
             }
 
+            if (destination.Length == 0)
+                return 0;
+
             int delivered = destination.Length;
-            _undelivered.Remove(BytesRead, destination.Length);
+            _undelivered.Remove(BytesRead, BytesRead + destination.Length - 1);
 
             int index = 0;
             while (destination.Length > 0)

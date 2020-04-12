@@ -41,9 +41,16 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal ManagedQuicStream OpenStream(bool unidirectional)
         {
-            // TODO-RZ assert that we really can open the stream (respect the limits)
             var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
-            return _streams.CreateOutboundStream(_isServer, unidirectional, _localTransportParameters, _peerTransportParameters);
+            long limit = unidirectional ? _peerLimits.MaxStreamsUni : _peerLimits.MaxStreamsBidi;
+
+            if (_streams.GetStreamCount(type) == limit)
+            {
+                // TODO-RZ: use messages from string resources
+                throw new QuicException("Cannot open stream");
+            }
+
+            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters);
         }
 
         internal ManagedQuicStream? AcceptStream()

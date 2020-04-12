@@ -108,25 +108,28 @@ namespace System.Net.Quic.Implementations.Managed
             return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, this);
         }
 
-        internal ManagedQuicStream CreateOutboundStream(bool isServer, bool unidirectional, in TransportParameters localParams, in TransportParameters remoteParams)
+        internal ManagedQuicStream CreateOutboundStream(StreamType type, in TransportParameters localParams, in TransportParameters remoteParams)
         {
-            var type = StreamHelpers.GetLocallyInitiatedType(isServer, unidirectional);
-
             var streamList = _streams[(int)type];
             long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
 
-            var stream = CreateStream(streamId, true, unidirectional, localParams, remoteParams);
+            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams);
             streamList.Add(stream);
             return stream;
         }
 
-        public void MarkFlushable(ManagedQuicStream stream, bool flushable)
+        internal void MarkFlushable(ManagedQuicStream stream, bool flushable)
         {
             Debug.Assert(stream.CanWrite);
             if (flushable)
                 _flushable.Add(stream);
             else
                 _flushable.Remove(stream);
+        }
+
+        internal long GetStreamCount(StreamType type)
+        {
+            return _streams[(int)type].Count;
         }
     }
 }

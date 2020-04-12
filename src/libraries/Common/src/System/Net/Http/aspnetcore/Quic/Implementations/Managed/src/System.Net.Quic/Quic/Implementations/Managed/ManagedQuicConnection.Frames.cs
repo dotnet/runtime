@@ -298,7 +298,7 @@ namespace System.Net.Quic.Implementations.Managed
                     if (rangeIndex == ranges.Length)
                     {
                         // all ranges processed
-                        break;
+                        return;
                     }
                 }
 
