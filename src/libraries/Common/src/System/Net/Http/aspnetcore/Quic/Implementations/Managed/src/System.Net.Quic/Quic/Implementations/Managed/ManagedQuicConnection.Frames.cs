@@ -384,7 +384,7 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.Stream);
             }
 
-            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer);
+            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer, _socketContext);
             if (stream.InboundBuffer == null)
             {
                 // Flow trying to write into receive only stream
@@ -533,6 +533,7 @@ namespace System.Net.Quic.Implementations.Managed
             while ((stream = _streams.GetFirstFlushableStream()) != null)
             {
                 var buffer = stream!.OutboundBuffer!;
+                // TODO-RZ IsFlushable is not threadsafe
                 Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
 
                 (long offset, long count) = buffer.GetNextSendableRange();

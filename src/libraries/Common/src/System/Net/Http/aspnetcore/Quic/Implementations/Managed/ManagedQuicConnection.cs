@@ -745,6 +745,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (Connected) return new ValueTask();
             _socketContext.Start();
+            _socketContext.Ping();
 
             return _connectTcs.GetTypelessValueTask();
         }

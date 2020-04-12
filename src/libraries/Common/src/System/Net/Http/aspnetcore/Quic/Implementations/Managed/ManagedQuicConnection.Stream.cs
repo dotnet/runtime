@@ -50,7 +50,7 @@ namespace System.Net.Quic.Implementations.Managed
                 throw new QuicException("Cannot open stream");
             }
 
-            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters);
+            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters, _socketContext);
         }
 
         internal ManagedQuicStream? AcceptStream()

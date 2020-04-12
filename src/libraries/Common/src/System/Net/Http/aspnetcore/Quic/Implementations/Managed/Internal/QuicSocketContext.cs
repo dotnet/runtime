@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
@@ -25,6 +26,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private readonly IPEndPoint _localEndpoint;
         private readonly CancellationTokenSource _socketTaskCts;
+
+        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
 
         // constructor for server
         internal QuicSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
@@ -58,12 +61,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _ = BackgroundWorker(_socketTaskCts.Token);
         }
 
-        private void DispatchDatagram(QuicReader reader, IPEndPoint remoteEp)
+        /// <summary>
+        ///     Used to signal the thread that one of the connections has data to send.
+        /// </summary>
+        internal void Ping()
+        {
+            _signalTcs.TrySetResult(0);
+        }
+
+        private ManagedQuicConnection DispatchConnection(QuicReader reader, IPEndPoint remoteEp)
         {
             if (_client != null)
             {
-                _client!.ReceiveData(reader, remoteEp, DateTime.Now);
-                return;
+                _client.ReceiveData(reader, remoteEp, DateTime.Now);
+                return _client;
             }
 
             ManagedQuicConnection? connection;
@@ -74,7 +85,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (!LongPacketHeader.Read(reader, out var header))
                 {
                     // drop packet
-                    return;
+                    return null;
                 }
 
                 var connectionId = _connectionIds!.FindConnectionId(header.DestinationConnectionId);
@@ -95,7 +106,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (!ShortPacketHeader.Read(reader, _connectionIds!, out var header))
                 {
                     // drop packet
-                    return;
+                    return null;
                 }
 
                 connection = _connections![header.DestinationConnectionId];
@@ -110,6 +121,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // new connection established
                 _newConnections!.TryWrite(connection!);
             }
+
+            return connection;
         }
 
 
@@ -128,9 +141,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             await Task.Yield();
 
-            byte[] buffer = new byte[64 * 1024]; // max UDP packet size
-            var reader = new QuicReader(buffer);
-            var writer = new QuicWriter(buffer);
+            byte[] recvBuffer = new byte[64 * 1024]; // max UDP packet size
+            var reader = new QuicReader(recvBuffer);
+            byte[] sendBuffer = new byte[64 * 1024]; // max UDP packet size
+            var writer = new QuicWriter(sendBuffer);
 
             var socket = new Socket(_localEndpoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             if (_localEndpoint != null)
@@ -138,33 +152,54 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 socket.Bind(_localEndpoint);
             }
 
+            Task<SocketReceiveFromResult> socketReceiveTask =
+                socket.ReceiveFromAsync(recvBuffer, SocketFlags.None, _localEndpoint);
+
+            Task[] waitingTasks = {socketReceiveTask, _signalTcs.Task};
+
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    EndPoint endpoint = _localEndpoint;
+                    await Task.WhenAny(waitingTasks);
 
-                    var received = socket.Available > 0
-                        ? socket.ReceiveFrom(buffer, SocketFlags.None, ref endpoint)
-                        : 0;
+                    if (socketReceiveTask.IsCompleted)
+                    {
+                        var result = await socketReceiveTask;
 
-                    if (received >= QuicConstants.MinimumPacketSize)
-                    {
-                        reader.Reset(buffer, 0, received);
-                        DispatchDatagram(reader, (IPEndPoint)endpoint!);
-                    }
-
-                    if (_client != null)
-                    {
-                        await SendData(_client, writer, socket, buffer);
-                    }
-                    else
-                    {
-                        foreach (ManagedQuicConnection connection in _connections!.Values)
+                        // discard too small datagrams as they cannot be valid packets
+                        if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                         {
-                            await SendData(connection, writer, socket, buffer);
+                            reader.Reset(recvBuffer, 0, result.ReceivedBytes);
+                            var connection = DispatchConnection(reader, (IPEndPoint) result.RemoteEndPoint);
+
+                            // also query the connection for data to be sent back
+                            await SendData(connection, writer, socket, sendBuffer);
+                        }
+
+                        // start new receiving task
+                        waitingTasks[0] = socketReceiveTask =
+                            socket.ReceiveFromAsync(recvBuffer, SocketFlags.None, _localEndpoint);
+                    }
+
+                    if (_signalTcs.Task.IsCompleted)
+                    {
+                        _signalTcs = new TaskCompletionSource<int>();
+                        waitingTasks[1] = _signalTcs.Task;
+
+                        if (_client != null)
+                        {
+                            await SendData(_client, writer, socket, sendBuffer);
+                        }
+                        else
+                        {
+                            foreach (ManagedQuicConnection connection in _connections!.Values)
+                            {
+                                await SendData(connection, writer, socket, sendBuffer);
+                            }
                         }
                     }
+
                 }
             }
             catch (Exception e)

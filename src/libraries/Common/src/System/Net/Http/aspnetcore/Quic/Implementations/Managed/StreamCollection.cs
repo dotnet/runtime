@@ -52,7 +52,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         internal ManagedQuicStream GetOrCreateStream(long streamId, in TransportParameters localParams,
-            in TransportParameters remoteParams, bool isServer)
+            in TransportParameters remoteParams, bool isServer, QuicSocketContext ctx)
         {
             var type = StreamHelpers.GetStreamType(streamId);
             // TODO-RZ: allow for long indices
@@ -71,7 +71,7 @@ namespace System.Net.Quic.Implementations.Managed
             var stream = streamList[index];
             if (stream == null)
             {
-                stream = streamList[index] ??= CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams);
+                stream = streamList[index] ??= CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, ctx);
 
                 if (!isLocal)
                 {
@@ -85,7 +85,8 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         private ManagedQuicStream CreateStream(long streamId,
-            bool isLocal, bool unidirectional, TransportParameters localParams, TransportParameters remoteParams)
+            bool isLocal, bool unidirectional, TransportParameters localParams, TransportParameters remoteParams,
+            QuicSocketContext ctx)
         {
             // use initial flow control limits
             (long? maxDataInbound, long? maxDataOutbound) = (isLocal, unidirectional) switch
@@ -108,15 +109,16 @@ namespace System.Net.Quic.Implementations.Managed
                 ? new OutboundBuffer(maxDataOutbound.Value)
                 : null;
 
-            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, this);
+            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, this, ctx);
         }
 
-        internal ManagedQuicStream CreateOutboundStream(StreamType type, in TransportParameters localParams, in TransportParameters remoteParams)
+        internal ManagedQuicStream CreateOutboundStream(StreamType type, in TransportParameters localParams,
+            in TransportParameters remoteParams, QuicSocketContext ctx)
         {
             var streamList = _streams[(int)type];
             long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
 
-            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams);
+            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams, ctx);
             streamList.Add(stream);
             return stream;
         }

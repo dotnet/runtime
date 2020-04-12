@@ -18,12 +18,14 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly StreamCollection _streamCollection;
 
+        private readonly QuicSocketContext _ctx;
+
         // TODO-RZ: think about thread-safety of the buffers, and who can access which parts of them
         internal InboundBuffer? InboundBuffer { get; }
 
         internal OutboundBuffer? OutboundBuffer { get; }
 
-        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, StreamCollection streamCollection)
+        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, StreamCollection streamCollection, QuicSocketContext ctx)
         {
             // trivial check whether buffer nullable combination makes sense with respect to streamId
             Debug.Assert(inboundBuffer != null || outboundBuffer != null);
@@ -33,6 +35,7 @@ namespace System.Net.Quic.Implementations.Managed
             InboundBuffer = inboundBuffer;
             OutboundBuffer = outboundBuffer;
             _streamCollection = streamCollection;
+            _ctx = ctx;
         }
 
         #region Public API
@@ -68,9 +71,12 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotWritable();
 
             OutboundBuffer!.Enqueue(buffer);
+            if (endStream)
+                OutboundBuffer!.MarkEndOfData();
             // TODO-RZ: this is not threadsafe yet
             // if (OutboundBuffer.IsFlushable)
-                _streamCollection.MarkFlushable(this, true);
+            _streamCollection.MarkFlushable(this, true);
+            _ctx.Ping();
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
