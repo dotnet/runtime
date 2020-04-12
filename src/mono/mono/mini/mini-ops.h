@@ -1099,10 +1099,8 @@ MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
 MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 
 /* sse 4.1 */
-MINI_OP(OP_SSE41_ROUNDP, "roundp", XREG, XREG, NONE)
-MINI_OP(OP_SSE41_ROUNDS, "rounds", XREG, XREG, NONE)
-MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
-MINI_OP(OP_SSE41_ROUNDSD, "roundsd", XREG, XREG, NONE)
+MINI_OP(OP_SSE41_ROUNDP, "roundp", XREG, XREG, NONE) // packed, inst_c0 - mode, inst_c1 - r4 or r8
+MINI_OP(OP_SSE41_ROUNDS, "rounds", XREG, XREG, NONE) // scalar, inst_c0 - mode, inst_c1 - r4 or r8
 MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_BLENDV, "sse41_blendv", XREG, XREG, XREG, XREG)
 MINI_OP(OP_SSE41_BLEND_IMM, "sse41_blend", XREG, XREG, XREG)

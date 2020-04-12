@@ -8442,17 +8442,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildInsertElement (builder, vector, val, insert_pos, "");
 			break;
 		}
-
-		case OP_SSE41_ROUNDSS: {
-			LLVMValueRef args [3];
-
-			args [0] = lhs;
-			args [1] = lhs;
-			args [2] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
-
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_ROUNDSS, args, dname);
-			break;
-		}
 		case OP_SSE41_ROUNDP: {
 			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE) };
 			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDPS : INTRINS_SSE_ROUNDPD, args, dname);

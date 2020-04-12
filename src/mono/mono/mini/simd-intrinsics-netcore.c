@@ -676,6 +676,14 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 }
 #endif // !TARGET_ARM64
 
+static MonoInst*
+emit_invalid_operation (MonoCompile *cfg, const char* message)
+{
+	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+	mono_error_set_generic_error (cfg->error, "System", "InvalidOperationException", "%s", message);
+	return NULL;
+}
+
 #ifdef TARGET_ARM64
 
 static SimdIntrinsic armbase_methods [] = {
@@ -997,16 +1005,16 @@ static SimdIntrinsic ssse3_methods [] = {
 static SimdIntrinsic sse41_methods [] = {
 	{SN_Blend},
 	{SN_BlendVariable},
-	{SN_Ceiling, OP_SSE41_ROUNDP, 10},
-	{SN_CeilingScalar, OP_SSE41_ROUNDS, 10},
+	{SN_Ceiling, OP_SSE41_ROUNDP, 10 /*round mode*/},
+	{SN_CeilingScalar, OP_SSE41_ROUNDS, 10 /*round mode*/},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ},
 	{SN_ConvertToVector128Int16, OP_SSE_CVTII, MONO_TYPE_I2},
 	{SN_ConvertToVector128Int32, OP_SSE_CVTII, MONO_TYPE_I4},
 	{SN_ConvertToVector128Int64, OP_SSE_CVTII, MONO_TYPE_I8},
 	{SN_DotProduct},
 	{SN_Extract},
-	{SN_Floor, OP_SSE41_ROUNDP, 9},
-	{SN_FloorScalar, OP_SSE41_ROUNDS, 9},
+	{SN_Floor, OP_SSE41_ROUNDP, 9 /*round mode*/},
+	{SN_FloorScalar, OP_SSE41_ROUNDS, 9 /*round mode*/},
 	{SN_Insert},
 	{SN_LoadAlignedVector128NonTemporal, OP_SSE41_LOADANT},
 	{SN_Max, OP_XBINOP, OP_IMAX},
@@ -1016,16 +1024,16 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_Multiply, OP_SSE41_MUL},
 	{SN_MultiplyLow, OP_SSE41_MULLO},
 	{SN_PackUnsignedSaturate, OP_XOP_X_X_X, SIMD_OP_SSE_PACKUSDW},
-	{SN_RoundCurrentDirection, OP_SSE41_ROUNDP, 4},
-	{SN_RoundCurrentDirectionScalar, OP_SSE41_ROUNDS, 4},
-	{SN_RoundToNearestInteger, OP_SSE41_ROUNDP, 8},
-	{SN_RoundToNearestIntegerScalar, OP_SSE41_ROUNDS, 8},
-	{SN_RoundToNegativeInfinity, OP_SSE41_ROUNDP, 9},
-	{SN_RoundToNegativeInfinityScalar, OP_SSE41_ROUNDS, 9},
-	{SN_RoundToPositiveInfinity, OP_SSE41_ROUNDP, 10},
-	{SN_RoundToPositiveInfinityScalar, OP_SSE41_ROUNDS, 10},
-	{SN_RoundToZero, OP_SSE41_ROUNDP, 11},
-	{SN_RoundToZeroScalar, OP_SSE41_ROUNDS, 11},
+	{SN_RoundCurrentDirection, OP_SSE41_ROUNDP, 4 /*round mode*/},
+	{SN_RoundCurrentDirectionScalar, OP_SSE41_ROUNDS, 4 /*round mode*/},
+	{SN_RoundToNearestInteger, OP_SSE41_ROUNDP, 8 /*round mode*/},
+	{SN_RoundToNearestIntegerScalar, OP_SSE41_ROUNDS, 8 /*round mode*/},
+	{SN_RoundToNegativeInfinity, OP_SSE41_ROUNDP, 9 /*round mode*/},
+	{SN_RoundToNegativeInfinityScalar, OP_SSE41_ROUNDS, 9 /*round mode*/},
+	{SN_RoundToPositiveInfinity, OP_SSE41_ROUNDP, 10 /*round mode*/},
+	{SN_RoundToPositiveInfinityScalar, OP_SSE41_ROUNDS, 10 /*round mode*/},
+	{SN_RoundToZero, OP_SSE41_ROUNDP, 11 /*round mode*/},
+	{SN_RoundToZeroScalar, OP_SSE41_ROUNDS, 11 /*round mode*/},
 	{SN_TestC, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTC},
 	{SN_TestNotZAndNotC, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTNZ},
 	{SN_TestZ, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTZ},
@@ -1080,14 +1088,6 @@ static SimdIntrinsic bmi2_methods [] = {
 	{SN_ZeroHighBits},
 	{SN_get_IsSupported}
 };
-
-static MonoInst*
-emit_invalid_operation (MonoCompile *cfg, const char* message)
-{
-	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-	mono_error_set_generic_error (cfg->error, "System", "InvalidOperationException", "%s", message);
-	return NULL;
-}
 
 static MonoInst*
 emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
