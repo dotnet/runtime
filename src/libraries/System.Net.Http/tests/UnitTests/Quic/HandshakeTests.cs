@@ -32,8 +32,8 @@ namespace System.Net.Quic.Tests
                 CertificateFilePath = TestHarness.CertificateFilePath,
                 PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
             };
-            _client = new ManagedQuicConnection(_clientOpts);
-            _server = new ManagedQuicConnection(_serverOpts, TestHarness.DummySocketContet, TestHarness.IpAnyEndpoint);
+            _client = TestHarness.CreateClient(_clientOpts);
+            _server = TestHarness.CreateServer(_serverOpts);
 
             _harness = new TestHarness(output, _client);
         }

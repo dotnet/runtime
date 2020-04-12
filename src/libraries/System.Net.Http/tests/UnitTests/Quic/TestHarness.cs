@@ -21,6 +21,17 @@ namespace System.Net.Quic.Tests
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
 
+        internal static ManagedQuicConnection CreateClient(QuicClientConnectionOptions options)
+        {
+            options.RemoteEndPoint = IpAnyEndpoint;
+            return new ManagedQuicConnection(options);
+        }
+
+        internal static ManagedQuicConnection CreateServer(QuicListenerOptions options)
+        {
+            return new ManagedQuicConnection(options, DummySocketContet, IpAnyEndpoint);
+        }
+
         public TestHarness(ITestOutputHelper output, ManagedQuicConnection client)
         {
             _output = output;
