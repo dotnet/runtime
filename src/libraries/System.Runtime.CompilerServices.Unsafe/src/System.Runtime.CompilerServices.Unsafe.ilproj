@@ -8,7 +8,6 @@
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
     <IncludePath>include\$(TargetFramework)</IncludePath>
-    <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
