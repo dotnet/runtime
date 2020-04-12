@@ -310,6 +310,56 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ExtensionPropertyObjectValue_IgnoresCustomSerializerWithOptions()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new DictionaryOverflowConverter());
+
+            ClassWithExtensionData obj
+                = JsonSerializer.Deserialize<ClassWithExtensionData>(@"{""TestKey"":""TestValue""}", options);
+
+            Assert.Equal("TestValue", ((JsonElement)obj.Overflow["TestKey"]).GetString());
+        }
+
+        [Fact]
+        public static void ExtensionPropertyObjectValue_IgnoresExplicitCustomSerializer()
+        {
+            ClassWithExtensionDataWithAttributedConverter obj
+                = JsonSerializer.Deserialize<ClassWithExtensionDataWithAttributedConverter>(@"{""TestKey"":""TestValue""}");
+
+            Assert.Equal("TestValue", ((JsonElement)obj.Overflow["TestKey"]).GetString());
+        }
+
+        private class ClassWithJsonElementExtensionData
+        {
+            [JsonExtensionData]
+            [JsonConverter(typeof(JsonElementOverflowConverter))]
+            public Dictionary<string, JsonElement> Overflow { get; set; }
+        }
+
+        public class JsonElementOverflowConverter : JsonConverter<Dictionary<string, JsonElement>>
+        {
+            public override Dictionary<string, JsonElement> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, JsonElement> value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
+        public static void ExtensionPropertyWithJsonElement_IgnoresExplicitCustomSerializer()
+        {
+            ClassWithJsonElementExtensionData obj
+                = JsonSerializer.Deserialize<ClassWithJsonElementExtensionData>(@"{""TestKey"":""TestValue""}");
+
+            Assert.Equal("TestValue", obj.Overflow["TestKey"].GetString());
+        }
+
+        [Fact]
         public static void ExtensionPropertyObjectValue_Empty()
         {
             ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");

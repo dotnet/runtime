@@ -223,7 +223,7 @@ namespace System.Text.Json
                 else
                 {
                     JsonConverter<object> converter = (JsonConverter<object>)
-                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+                        (state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo?.PropertyInfoForClassInfo.ConverterBase ?? Options.GetConverter(typeof(object)));
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
