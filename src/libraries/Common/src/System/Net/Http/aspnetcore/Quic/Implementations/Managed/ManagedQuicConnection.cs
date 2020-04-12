@@ -8,6 +8,7 @@ using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -139,7 +140,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
-            var localEndpoint = options.LocalEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
+            var localEndpoint = options.LocalEndPoint ?? new IPEndPoint(_remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
+                ? IPAddress.Any
+                : IPAddress.IPv6Any, 0);
             _socketContext = new QuicSocketContext(localEndpoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);

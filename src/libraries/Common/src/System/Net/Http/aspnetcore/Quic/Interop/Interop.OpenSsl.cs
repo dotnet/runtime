@@ -59,7 +59,7 @@ internal static partial class Interop
         internal static extern byte* SslGetVersion(IntPtr ssl);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_quic_method")]
-        internal static extern int SslSetQuicMethod(IntPtr ssl, ref OpenSslQuicMethods.NativeCallbacks methods);
+        internal static extern int SslSetQuicMethod(IntPtr ssl, IntPtr methods);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_accept_state")]
         internal static extern int SslSetAcceptState(IntPtr ssl);

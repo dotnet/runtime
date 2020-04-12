@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -14,9 +15,31 @@ namespace System.Net.Quic.Implementations.Managed
     /// </summary>
     internal class Tls : IDisposable
     {
+        private static readonly unsafe OpenSslQuicMethods.AddHandshakeDataFunc AddHandshakeDelegate = AddHandshakeDataImpl;
+        private static readonly unsafe OpenSslQuicMethods.SetEncryptionSecretsFunc SetEncryptionSecretsDelegate = SetEncryptionSecretsImpl;
+        private static readonly OpenSslQuicMethods.FlushFlightFunc FlushFlightDelegate = FlushFlightImpl;
+        private static readonly OpenSslQuicMethods.SendAlertFunc SendAlertDelegate = SendAlertImpl;
+
+        private static readonly IntPtr _callbacksPtr;
+
         private static readonly int _managedInterfaceIndex =
             Interop.OpenSslQuic.CryptoGetExNewIndex(Interop.OpenSslQuic.CRYPTO_EX_INDEX_SSL, 0, IntPtr.Zero,
                 IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+        static unsafe Tls()
+        {
+            _callbacksPtr = Marshal.AllocHGlobal(sizeof(OpenSslQuicMethods.NativeCallbacks));
+            *(OpenSslQuicMethods.NativeCallbacks*)_callbacksPtr.ToPointer() = new OpenSslQuicMethods.NativeCallbacks
+            {
+                setEncryptionSecrets =
+                    Marshal.GetFunctionPointerForDelegate(SetEncryptionSecretsDelegate),
+                addHandshakeData =
+                    Marshal.GetFunctionPointerForDelegate(AddHandshakeDelegate),
+                flushFlight =
+                    Marshal.GetFunctionPointerForDelegate(FlushFlightDelegate),
+                sendAlert = Marshal.GetFunctionPointerForDelegate(SendAlertDelegate)
+            };
+        }
 
         internal Tls(GCHandle handle, QuicClientConnectionOptions options, TransportParameters localTransportParams)
             : this(handle, false, localTransportParams)
@@ -42,7 +65,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             _ssl = Interop.OpenSslQuic.SslCreate();
             Debug.Assert(handle.Target is ManagedQuicConnection);
-            Interop.OpenSslQuic.SslSetQuicMethod(_ssl, ref Callbacks);
+            Interop.OpenSslQuic.SslSetQuicMethod(_ssl, _callbacksPtr);
 
             // add the callback as contextual data so we can retrieve it inside the callback
             Interop.OpenSslQuic.SslSetExData(_ssl, _managedInterfaceIndex, GCHandle.ToIntPtr(handle));
@@ -73,22 +96,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static unsafe OpenSslQuicMethods.NativeCallbacks _callbacks = new OpenSslQuicMethods.NativeCallbacks
-        {
-            setEncryptionSecrets =
-                Marshal.GetFunctionPointerForDelegate(
-                    new OpenSslQuicMethods.SetEncryptionSecretsFunc(SetEncryptionSecretsImpl)),
-            addHandshakeData =
-                Marshal.GetFunctionPointerForDelegate(
-                    new OpenSslQuicMethods.AddHandshakeDataFunc(AddHandshakeDataImpl)),
-            flushFlight =
-                Marshal.GetFunctionPointerForDelegate(new OpenSslQuicMethods.FlushFlightFunc(FlushFlightImpl)),
-            sendAlert = Marshal.GetFunctionPointerForDelegate(new OpenSslQuicMethods.SendAlertFunc(SendAlertImpl))
-        };
-
         private readonly IntPtr _ssl;
-
-        private static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
 
         internal bool IsHandshakeComplete => Interop.OpenSslQuic.SslIsInitFinished(_ssl) == 1;
         public EncryptionLevel WriteLevel { get; private set; }
@@ -96,7 +104,7 @@ namespace System.Net.Quic.Implementations.Managed
         public void Dispose()
         {
             // call SslSetQuicMethod(ssl, null) to stop callbacks being called
-            // Interop.OpenSslQuic.SslSetQuicMethod(ssl, ref Unsafe.AsRef<OpenSslQuicMethods.NativeCallbacks>(null));
+            Interop.OpenSslQuic.SslSetQuicMethod(_ssl, IntPtr.Zero);
             Interop.OpenSslQuic.SslFree(_ssl);
         }
 
