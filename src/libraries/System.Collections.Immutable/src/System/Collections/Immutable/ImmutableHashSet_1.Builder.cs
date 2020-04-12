@@ -203,6 +203,24 @@ namespace System.Collections.Immutable
                 return _immutable;
             }
 
+            /// <summary>
+            /// Searches a given value in the set and returns the equal value if it finds
+            /// </summary>
+            /// <param name="equalValue">The value to search.</param>
+            /// <param name="actualValue">The value from the set that the search found, else the original value.</param>
+            /// <returns>A value indicating whether the search was successful.</returns>
+            public bool TryGetValue(T equalValue, out T actualValue)
+            {
+                int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
+                if (_root.TryGetValue(hashCode, out HashBucket bucket))
+                {
+                    return bucket.TryExchange(equalValue, _equalityComparer, out actualValue);
+                }
+
+                actualValue = equalValue;
+                return false;
+            }
+
             #endregion
 
             #region ISet<T> Methods
