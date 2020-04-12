@@ -298,7 +298,7 @@ namespace System.Net.Http.Headers
                 }
 
                 DateTimeOffset temp;
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
+                if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
                 {
                     return false;
                 }
