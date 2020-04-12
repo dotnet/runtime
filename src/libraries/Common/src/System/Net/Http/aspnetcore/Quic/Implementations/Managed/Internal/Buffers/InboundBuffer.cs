@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 {
@@ -157,6 +158,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
 
             _chunks.RemoveRange(0, pushed);
+        }
+
+        internal async ValueTask<int> DeliverAsync(Memory<byte> destination)
+        {
+            // TODO-RZ: This can probably be optimized
+            int delivered = Deliver(destination.Span);
+
+            if (delivered > 0)
+                return delivered;
+
+            _deliveryLeftoverChunk = await _boundaryChannel.Reader.ReadAsync();
+
+            return Deliver(destination.Span);
         }
 
         /// <summary>

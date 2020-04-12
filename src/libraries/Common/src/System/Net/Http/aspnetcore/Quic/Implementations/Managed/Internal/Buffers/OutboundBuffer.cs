@@ -82,6 +82,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
         /// </summary>
+        // TODO-RZ: this is not threadsafe
         internal bool IsFlushable => _pending.Count > 0 && _pending[0].Start < MaxData ||
                                      _dequedBytes < MaxData && BytesInChannel > 0;
 

@@ -47,7 +47,13 @@ namespace System.Net.Quic.Implementations.Managed
             return InboundBuffer!.Deliver(buffer);
         }
 
-        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotReadable();
+
+            return InboundBuffer!.DeliverAsync(buffer);
+        }
 
         internal override void AbortRead(long errorCode) => throw new NotImplementedException();
 
@@ -62,7 +68,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotWritable();
 
             OutboundBuffer!.Enqueue(buffer);
-            if (OutboundBuffer.IsFlushable)
+            // TODO-RZ: this is not threadsafe yet
+            // if (OutboundBuffer.IsFlushable)
                 _streamCollection.MarkFlushable(this, true);
         }
 
