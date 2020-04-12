@@ -1,14 +1,48 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 {
     /// <summary>
     ///     Class for receiving and buffering inbound stream data.
     /// </summary>
-    internal sealed class InboundBuffer : BufferBase
+    internal sealed class InboundBuffer
     {
+        /// <summary>
+        ///     Chunk containing leftover data from the last delivery.
+        /// </summary>
+        private StreamChunk _deliveryLeftoverChunk;
+
+        /// <summary>
+        ///     Channel for producing chunks of from the user to read.
+        /// </summary>
+        private readonly Channel<StreamChunk> _boundaryChannel =
+            Channel.CreateUnbounded<StreamChunk>(new UnboundedChannelOptions
+            {
+                SingleReader = true, SingleWriter = true
+            });
+
+        /// <summary>
+        ///     Individual, deduplicated parts of the stream, ordered by stream offset.
+        /// </summary>
+        internal List<StreamChunk> _chunks = new List<StreamChunk>();
+
+        /// <summary>
+        ///     Total number of bytes allowed to transport in this stream.
+        /// </summary>
+        internal long MaxData { get; private set; }
+
+        /// <summary>
+        ///     Updates the <see cref="MaxData"/> parameter.
+        /// </summary>
+        /// <param name="value">Value of the parameter.</param>
+        internal void UpdateMaxData(long value)
+        {
+            MaxData = Math.Max(MaxData, value);
+        }
+
         public InboundBuffer(long maxData)
         {
             UpdateMaxData(maxData);
@@ -18,6 +52,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Ranges of data which are received, but not delivered.
         /// </summary>
         private RangeSet _undelivered = new RangeSet();
+
+        /// <summary>
+        ///     Number of bytes streamed through the <see cref="_boundaryChannel"/>.
+        /// </summary>
+        internal long _bytesChanneled;
 
         /// <summary>
         ///     Total number of bytes delivered.
@@ -37,9 +76,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
-        internal long BytesAvailable => _undelivered.Count > 0 && BytesRead == _undelivered.GetMin()
-            ? _undelivered[0].Length
-            : 0;
+        internal long BytesAvailable => _bytesChanneled - BytesRead;
+        // internal long BytesAvailable => _undelivered.Count > 0 && BytesRead == _undelivered.GetMin()
+            // ? _undelivered[0].Length
+            // : 0;
 
         /// <summary>
         ///     Receives a chunk of data and buffers it for delivery.
@@ -72,30 +112,51 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             // optimized hot path - in-order delivery
             if (_chunks.Count == 0 || _chunks[^1].StreamOffset + _chunks[^1].Length <= offset)
             {
-                EnqueueAtEnd(offset, data);
-                _undelivered.Add(offset, offset + data.Length - 1);
-                return;
+                var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
+                data.CopyTo(buffer);
+
+                _chunks.Add(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
             }
-
-            // out of order delivery, use ranges to remove duplicate data
-            RangeSet toDeliver = new RangeSet();
-            toDeliver.Add(offset, offset + data.Length - 1);
-            foreach (var range in _undelivered)
+            else
             {
-                toDeliver.Remove(range.Start, range.End);
-            }
+                // out of order delivery, use ranges to remove duplicate data
+                RangeSet toDeliver = new RangeSet();
+                toDeliver.Add(offset, offset + data.Length - 1);
+                foreach (var range in _undelivered)
+                {
+                    toDeliver.Remove(range.Start, range.End);
+                }
 
-            foreach (var range in toDeliver)
-            {
-                // find appropriate index
-                int index = _chunks.FindLastIndex(c => c.StreamOffset < range.Start) + 1;
-                var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
-                data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
+                foreach (var range in toDeliver)
+                {
+                    // find appropriate index
+                    int index = _chunks.FindLastIndex(c => c.StreamOffset < range.Start) + 1;
+                    var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
+                    data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
 
-                _chunks.Insert(index, new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
+                    _chunks.Insert(index, new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
+                }
             }
 
             _undelivered.Add(offset, offset + data.Length - 1);
+            FlushChunksToUser();
+        }
+
+        private void FlushChunksToUser()
+        {
+            // push chunks to the output channel for the user thread to read.
+            int pushed = 0;
+            var channelWriter = _boundaryChannel.Writer;
+            while (pushed < _chunks.Count && _chunks[pushed].StreamOffset == _bytesChanneled)
+            {
+                var chunk = _chunks[pushed];
+                _undelivered.Remove(chunk.StreamOffset, chunk.StreamOffset + chunk.Length - 1);
+                channelWriter.TryWrite(chunk);
+                _bytesChanneled += chunk.Length;
+                pushed++;
+            }
+
+            _chunks.RemoveRange(0, pushed);
         }
 
         /// <summary>
@@ -104,71 +165,64 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination"></param>
         internal int Deliver(Span<byte> destination)
         {
-            if (BytesAvailable < destination.Length)
+            int delivered = 0;
+
+            do
             {
-                destination = destination.Slice(0, (int) BytesAvailable);
-            }
+                if (_deliveryLeftoverChunk.Memory.IsEmpty)
+                {
+                    ReturnMemory(_deliveryLeftoverChunk);
 
-            if (destination.Length == 0)
-                return 0;
+                    if (!_boundaryChannel.Reader.TryRead(out _deliveryLeftoverChunk))
+                    {
+                        break;
+                    }
+                }
 
-            int delivered = destination.Length;
-            _undelivered.Remove(BytesRead, BytesRead + destination.Length - 1);
+                int len = Math.Min(destination.Length, _deliveryLeftoverChunk.Memory.Length);
+                _deliveryLeftoverChunk.Memory.Span.Slice(0, len).CopyTo(destination.Slice(0, len));
 
-            int index = 0;
-            while (destination.Length > 0)
-            {
-                int inChunkOffset = (int) (BytesRead - _chunks[index].StreamOffset);
-                int inChunkLength = Math.Min((int) _chunks[index].Length, destination.Length);
+                _deliveryLeftoverChunk = new StreamChunk(
+                    _deliveryLeftoverChunk.StreamOffset + len,
+                    _deliveryLeftoverChunk.Memory.Slice(len),
+                    _deliveryLeftoverChunk.Buffer);
 
-                _chunks[index].Buffer.AsSpan(inChunkOffset, inChunkLength).CopyTo(destination);
+                destination = destination.Slice(len);
+                delivered += len;
+            } while (destination.Length > 0);
 
-                destination = destination.Slice(inChunkLength);
-
-                BytesRead += inChunkLength;
-                index++;
-            }
-
-            DiscardDataUntil(BytesRead);
+            BytesRead += delivered;
             return delivered;
         }
 
         /// <summary>
-        ///     Processes all buffered readable data using provided callback.
+        ///     Processes all deliverable data using provided callback.
         /// </summary>
         /// <param name="process"></param>
-        internal void Deliver(Action<ArraySegment<byte>> process)
+        internal void Deliver(Action<ReadOnlyMemory<byte>> process)
         {
-            if (BytesAvailable == 0) return;
-
-            long deliverable = _undelivered[0].End;
-            int index = 0;
-            while (_chunks[index].StreamOffset < deliverable)
+            if (!_deliveryLeftoverChunk.Memory.IsEmpty)
             {
-                process(new ArraySegment<byte>(_chunks[index].Buffer, 0, (int) _chunks[index].Length));
-                index++;
+                process(_deliveryLeftoverChunk.Memory);
+                BytesRead += _deliveryLeftoverChunk.Memory.Length;
+                ReturnMemory(_deliveryLeftoverChunk);
+                _deliveryLeftoverChunk = default;
             }
 
-            BytesRead = deliverable;
-            DiscardDataUntil(BytesRead);
+            while (_boundaryChannel.Reader.TryRead(out var chunk))
+            {
+                process(chunk.Memory);
+                BytesRead += chunk.Memory.Length;
+                ReturnMemory(chunk);
+            }
         }
 
-        /// <summary>
-        ///     Drops buffers containing data lesser than given offset.
-        /// </summary>
-        /// <param name="offset">Minimum offset to be kept.</param>
-        private void DiscardDataUntil(long offset)
+        private void ReturnMemory(in StreamChunk chunk)
         {
-            int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > offset);
-            if (toRemove < 0)
-                toRemove = _chunks.Count;
-
-            for (int i = 0; i < toRemove; i++)
+            if (chunk.Buffer != null)
             {
-                ArrayPool<byte>.Shared.Return(_chunks[i].Buffer);
+                ArrayPool<byte>.Shared.Return(chunk.Buffer);
             }
-
-            _chunks.RemoveRange(0, toRemove);
         }
 
         /// <summary>
@@ -177,9 +231,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="length">Number of bytes from the payload to be skipped.</param>
         public void Skip(long length)
         {
+            // TODO-RZ: test if this is robust against crypto stream out of order receipt
+            Debug.Assert(BytesAvailable == 0, "Can skip only if the data has not been received.");
             _undelivered.Remove(BytesRead, BytesRead + length - 1);
             BytesRead += length;
-            DiscardDataUntil(BytesRead);
+            _bytesChanneled += length;
+            FlushChunksToUser();
         }
     }
 }

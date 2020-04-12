@@ -27,7 +27,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly CancellationTokenSource _socketTaskCts;
 
         // constructor for server
-        internal QuicSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions, ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
+        internal QuicSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
+            ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
             : this(localEndpoint)
         {
             _newConnections = newConnectionsWriter;
@@ -85,7 +86,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 if (!_connections!.TryGetValue(connectionId!, out connection))
                 {
-                    connection = _connections![connectionId!] = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
+                    connection = _connections![connectionId!] =
+                        new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
                 }
             }
             else
@@ -136,30 +138,38 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 socket.Bind(_localEndpoint);
             }
 
-            while (!token.IsCancellationRequested)
+            try
             {
-                EndPoint endpoint = _localEndpoint;
-
-                var received = socket.Available > 0 ? socket.ReceiveFrom(buffer, SocketFlags.None, ref endpoint) : 0;
-                IPEndPoint remoteEp = (IPEndPoint)endpoint;
-
-                if (received >= QuicConstants.MinimumPacketSize)
+                while (!token.IsCancellationRequested)
                 {
-                    reader.Reset(buffer, 0, received);
-                    DispatchDatagram(reader, (IPEndPoint)endpoint);
-                }
+                    EndPoint endpoint = _localEndpoint;
 
-                if (_client != null)
-                {
-                    await SendData(_client, writer, socket, buffer);
-                }
-                else
-                {
-                    foreach (ManagedQuicConnection connection in _connections!.Values)
+                    var received = socket.Available > 0
+                        ? socket.ReceiveFrom(buffer, SocketFlags.None, ref endpoint)
+                        : 0;
+
+                    if (received >= QuicConstants.MinimumPacketSize)
                     {
-                        await SendData(connection, writer, socket, buffer);
+                        reader.Reset(buffer, 0, received);
+                        DispatchDatagram(reader, (IPEndPoint)endpoint!);
+                    }
+
+                    if (_client != null)
+                    {
+                        await SendData(_client, writer, socket, buffer);
+                    }
+                    else
+                    {
+                        foreach (ManagedQuicConnection connection in _connections!.Values)
+                        {
+                            await SendData(connection, writer, socket, buffer);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
 

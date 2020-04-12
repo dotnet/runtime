@@ -353,7 +353,7 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     // define a copy of level variable with smaller scope to prevent allocations in common case
                     EncryptionLevel level2 = level;
-                    stream.Deliver(segment => { _tls.OnDataReceived(level2, segment); });
+                    stream.Deliver(segment => { _tls.OnDataReceived(level2, segment.Span); });
                 }
 
                 context.HandshakeWanted = true;
@@ -491,7 +491,6 @@ namespace System.Net.Quic.Implementations.Managed
             var ranges = epoch.UnackedPacketNumbers;
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
-            Debug.Assert(ranges.Count % 2 == 1); // sanity check
 
             // TODO-RZ check max ack delay to avoid sending acks every packet
             long ackDelay = (context.Now - epoch.LargestReceivedPacketTimestamp).Ticks;

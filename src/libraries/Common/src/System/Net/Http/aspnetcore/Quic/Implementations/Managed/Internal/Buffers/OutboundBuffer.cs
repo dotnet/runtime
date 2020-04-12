@@ -241,7 +241,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             {
                 if (_chunks[i].Buffer != null)
                 {
-                    ArrayPool<byte>.Shared.Return(_chunks[i].Buffer);
+                    ArrayPool<byte>.Shared.Return(_chunks[i].Buffer!);
                 }
             }
 

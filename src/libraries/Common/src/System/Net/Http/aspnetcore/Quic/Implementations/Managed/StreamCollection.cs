@@ -45,7 +45,10 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal ManagedQuicStream? GetFirstFlushableStream()
         {
-            return _flushable.FirstOrDefault();
+            lock (_flushable)
+            {
+                return _flushable.FirstOrDefault();
+            }
         }
 
         internal ManagedQuicStream GetOrCreateStream(long streamId, in TransportParameters localParams,
@@ -120,11 +123,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void MarkFlushable(ManagedQuicStream stream, bool flushable)
         {
-            Debug.Assert(stream.CanWrite);
-            if (flushable)
-                _flushable.Add(stream);
-            else
-                _flushable.Remove(stream);
+            // TODO-RZ: remove the need for this lock
+            lock (_flushable)
+            {
+                Debug.Assert(stream.CanWrite);
+                if (flushable)
+                    _flushable.Add(stream);
+                else
+                    _flushable.Remove(stream);
+            }
         }
 
         internal long GetStreamCount(StreamType type)
