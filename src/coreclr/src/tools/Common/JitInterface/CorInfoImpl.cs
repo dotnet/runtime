@@ -109,7 +109,7 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
+        private static readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public static void Startup()
         {
@@ -125,8 +125,6 @@ namespace Internal.JitInterface
             }
 
             _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
-
-            _unboxingThunkFactory = new UnboxingMethodDescFactory();
         }
 
         public TextWriter Log
