@@ -707,7 +707,7 @@ namespace System.Xml.Tests
 "
                     },
                     new object[]
-                    {  // maxLength, derived type has larger value.
+                    {  // maxLength, derived type has lower value.
                         @"<?xml version='1.0' encoding='utf-8' ?>
 <xs:schema elementFormDefault='qualified'
            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
