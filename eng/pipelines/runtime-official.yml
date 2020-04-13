@@ -57,7 +57,7 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
-      - FreeBSD
+      - FreeBSD_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -110,7 +110,7 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
-      - FreeBSD
+      - FreeBSD_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
@@ -174,7 +174,7 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
-      - FreeBSD
+      - FreeBSD_x64
 
     #
     # Installer Build for platforms using Mono
