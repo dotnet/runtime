@@ -197,8 +197,8 @@ if [[ "$use_core_run" = true ]]; then
     mv $core_root_directory $new_core_root
 fi
 
-if [[ "$mono_dotnet" ~= "" ]]; then
-    using_mono = true
+if [[ "$mono_dotnet" != "" ]]; then
+    using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $core_root_directory $mono_dotnet_path
 fi

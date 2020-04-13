@@ -73,6 +73,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
     buildConfig: release
+    runtimeFlavor: mono
     platforms:
     - Linux_x64
     jobParameters:

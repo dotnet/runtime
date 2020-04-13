@@ -84,8 +84,8 @@ jobs:
     # Create Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
-      condition: and(succeeded(), ne(parameters.runtimeType, 'mono'))
+      condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
 
     - script: "cd src/mono/netcore;make patch-mono-dotnet"
       displayName: "Create mono dotnet"
-      condition: and(succeeded(), eq(parameters.runtimeType, 'mono'))
+      condition: and(succeeded(), (variables.runtimeFlavorName, 'Mono'))
