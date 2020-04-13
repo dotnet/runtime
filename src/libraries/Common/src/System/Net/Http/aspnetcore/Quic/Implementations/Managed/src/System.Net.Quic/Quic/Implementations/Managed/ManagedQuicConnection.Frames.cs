@@ -131,7 +131,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (IsAckEliciting(frameType))
                 {
-                    GetEpoch(GetEncryptionLevel(packetType)).AckElicited = true;
+                    GetPacketNumberSpace(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
                 ProcessPacketResult result = frameType switch
@@ -247,9 +247,9 @@ namespace System.Net.Quic.Implementations.Managed
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
 
-            EpochData epoch = GetEpoch(GetEncryptionLevel(packetType));
+            PacketNumberSpace pnSpace = GetPacketNumberSpace(GetEncryptionLevel(packetType));
 
-            if (frame.LargestAcknowledged >= epoch.NextPacketNumber || // acking future packet
+            if (frame.LargestAcknowledged >= pnSpace.NextPacketNumber || // acking future packet
                 frame.LargestAcknowledged < frame.FirstAckRange)       // acking negative PN
                 return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.InvalidAckRange, FrameType.Ack);
 
@@ -276,19 +276,19 @@ namespace System.Net.Quic.Implementations.Managed
                 ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
-            _recovery.OnRangesAcked(GetEpoch(packetType), ranges, TimeSpan.FromTicks(frame.AckDelay),
+            _recovery.OnRangesAcked(GetPacketSpace(packetType), ranges, TimeSpan.FromTicks(frame.AckDelay),
                 context.Now);
-            ProcessAckedPackets(epoch, ranges);
+            ProcessAckedPackets(pnSpace, ranges);
 
             return ProcessPacketResult.Ok;
         }
 
-        private void ProcessAckedPackets(EpochData epoch, Span<PacketNumberRange> ranges)
+        private void ProcessAckedPackets(PacketNumberSpace pnSpace, Span<PacketNumberRange> ranges)
         {
             // TODO-RZ: make this more efficient
             int rangeIndex = 0;
 
-            var pnsInFlight = epoch.PacketsInFlight.Keys.ToArray();
+            var pnsInFlight = pnSpace.PacketsInFlight.Keys.ToArray();
             for (int i = 0; i < pnsInFlight.Length; i++)
             {
                 long pn = pnsInFlight[i];
@@ -308,17 +308,17 @@ namespace System.Net.Quic.Implementations.Managed
                     continue;
                 }
 
-                OnSentPacketAcked(epoch, epoch.PacketsInFlight[pn]);
-                epoch.PacketsInFlight.Remove(pn);
+                OnSentPacketAcked(pnSpace, pnSpace.PacketsInFlight[pn]);
+                pnSpace.PacketsInFlight.Remove(pn);
             }
         }
 
-        private void OnSentPacketAcked(EpochData epoch, SentPacket packet)
+        private void OnSentPacketAcked(PacketNumberSpace pnSpace, SentPacket packet)
         {
             // mark all sent data as acked
             foreach (var r in packet.CryptoRanges)
             {
-                epoch.CryptoOutboundStream.OnAck(
+                pnSpace.CryptoOutboundStream.OnAck(
                     r.Start, r.Length);
             }
 
@@ -332,7 +332,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
-            epoch.UnackedPacketNumbers.Remove(packet.AckedRanges);
+            pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
         }
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, RecvContext context)
@@ -340,7 +340,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
 
             EncryptionLevel level = GetEncryptionLevel(packetType);
-            var stream = GetEpoch(level).CryptoInboundBuffer;
+            var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
             // don't buffer if not needed
             if (stream.BytesRead == crypto.Offset)
@@ -419,7 +419,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, SendContext context)
         {
-            var epoch = GetEpoch(level);
+            var pnSpace = GetPacketNumberSpace(level);
 
             // TODO-RZ other frames
 
@@ -445,8 +445,8 @@ namespace System.Net.Quic.Implementations.Managed
                 _pingWanted = false;
             }
 
-            WriteAckFrame(writer, epoch, context);
-            WriteCryptoFrames(writer, epoch, context);
+            WriteAckFrame(writer, pnSpace, context);
+            WriteCryptoFrames(writer, pnSpace, context);
 
             if (packetType == PacketType.OneRtt)
             {
@@ -463,37 +463,37 @@ namespace System.Net.Quic.Implementations.Managed
                     error.ReasonPhrase));
         }
 
-        private static void WriteCryptoFrames(QuicWriter writer, EpochData epoch, SendContext context)
+        private static void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
         {
             // assume 2 * 2 bytes for offset and length and 1 B for type
             const int minSize = 5;
             while (writer.BytesAvailable > minSize)
             {
-                if (!epoch.CryptoOutboundStream.IsFlushable)
+                if (!pnSpace.CryptoOutboundStream.IsFlushable)
                     return;
 
-                (long offset, long count) = epoch.CryptoOutboundStream.GetNextSendableRange();
+                (long offset, long count) = pnSpace.CryptoOutboundStream.GetNextSendableRange();
 
                 count = Math.Min(count, (long) writer.BytesAvailable - minSize);
-                epoch.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
+                pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
                 context.SentPacket.CryptoRanges.Add(offset, offset + count - 1);
             }
         }
 
-        private static unsafe void WriteAckFrame(QuicWriter writer, EpochData epoch, SendContext context)
+        private static unsafe void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
         {
-            if (!epoch.AckElicited)
+            if (!pnSpace.AckElicited)
             {
                 return; // no need for ack now
             }
 
-            var ranges = epoch.UnackedPacketNumbers;
+            var ranges = pnSpace.UnackedPacketNumbers;
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
 
             // TODO-RZ check max ack delay to avoid sending acks every packet
-            long ackDelay = (context.Now - epoch.LargestReceivedPacketTimestamp).Ticks;
+            long ackDelay = (context.Now - pnSpace.LargestReceivedPacketTimestamp).Ticks;
 
             long largest = ranges.GetMax();
             var firstRange = ranges[^1];
@@ -524,7 +524,7 @@ namespace System.Net.Quic.Implementations.Managed
                 new AckFrame(largest, ackDelay, (long)(ranges.Count - 1) / 2, firstRange.Length - 1, ReadOnlySpan<byte>.Empty,
                     false, 0, 0, 0));
 
-            epoch.AckElicited = false;
+            pnSpace.AckElicited = false;
         }
 
         private void WriteStreamFrames(QuicWriter writer, SendContext context)

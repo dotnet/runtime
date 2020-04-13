@@ -70,7 +70,7 @@ namespace System.Net.Quic.Tests.Harness
 
         protected void SerializePayloadWithFrames(QuicWriter writer, TestHarnessContext context, IEnumerable<FrameBase> frames)
         {
-            var seal = context.GetSenderEpoch(PacketType).SendCryptoSeal;
+            var seal = context.GetSenderPacketNumberSpace(PacketType).SendCryptoSeal;
 
             // this more or less duplicates code inside ManagedQuicConnection
 
@@ -103,12 +103,12 @@ namespace System.Net.Quic.Tests.Harness
             int pnOffset = reader.BytesRead;
 
             // first, strip packet protection.
-            var epoch = harnessContext.GetSenderEpoch(packetType);
+            var pnSpace = harnessContext.GetSenderPacketNumberSpace(packetType);
 
             var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
-            Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, Math.Max(0, (int) epoch.NextPacketNumber - 3)));
+            Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, Math.Max(0, (int) pnSpace.NextPacketNumber - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
@@ -121,7 +121,7 @@ namespace System.Net.Quic.Tests.Harness
             }
             reader.Reset(originalSegment, pnOffset + payloadLength);
 
-            return (pnLength, QuicPrimitives.DecodePacketNumber(epoch.NextPacketNumber, truncatedPn, pnLength));
+            return (pnLength, QuicPrimitives.DecodePacketNumber(pnSpace.NextPacketNumber, truncatedPn, pnLength));
         }
     }
 }

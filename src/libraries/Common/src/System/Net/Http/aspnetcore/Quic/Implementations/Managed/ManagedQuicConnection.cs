@@ -21,10 +21,10 @@ namespace System.Net.Quic.Implementations.Managed
 
         private readonly QuicClientConnectionOptions? _clientOpts;
 
-        private readonly EpochData[] _epochs = new EpochData[3]
+        private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
-            new EpochData(PacketEpoch.Initial), new EpochData(PacketEpoch.Handshake),
-            new EpochData(PacketEpoch.Application)
+            new PacketNumberSpace(), new PacketNumberSpace(),
+            new PacketNumberSpace()
         };
 
         /// <summary>
@@ -236,10 +236,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             int pnOffset = reader.BytesRead;
             PacketType packetType = PacketType.OneRtt;
-            var epoch = GetEpoch(EncryptionLevel.Application);
+            var pnSpace = GetPacketNumberSpace(EncryptionLevel.Application);
             int payloadLength = reader.BytesLeft;
 
-            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType, context);
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, context);
         }
 
         private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header, RecvContext context)
@@ -260,13 +260,13 @@ namespace System.Net.Quic.Implementations.Managed
             //TODO-RZ: Check connection id length (beware that length is unbounded in initial packets)
 
             int pnOffset = reader.BytesRead;
-            var epoch = GetEpoch(GetEncryptionLevel(header.PacketType));
+            var pnSpace = GetPacketNumberSpace(GetEncryptionLevel(header.PacketType));
             int payloadLength = (int)headerData.Length;
             PacketType packetType = header.PacketType;
 
             if (_isServer && packetType == PacketType.Initial)
             {
-                if (epoch.RecvCryptoSeal == null)
+                if (pnSpace.RecvCryptoSeal == null)
                 {
                     // initialize protection keys
                     // clients destination connection Id is ours source connection Id
@@ -285,24 +285,24 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType, context);
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, payloadLength, packetType, context);
         }
 
-        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, EpochData epoch, int pnOffset,
+        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
             int payloadLength,
             PacketType packetType, RecvContext context)
         {
-            if (epoch.RecvCryptoSeal == null)
+            if (pnSpace.RecvCryptoSeal == null)
             {
                 // Decryption keys are not available yet, drop the packet for now
                 // TODO-RZ: consider buffering the packet
                 return ProcessPacketResult.DropPacket;
             }
 
-            var seal = epoch.RecvCryptoSeal!;
+            var seal = pnSpace.RecvCryptoSeal!;
 
             if (!seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength,
-                epoch.LargestReceivedPacketNumber))
+                pnSpace.LargestReceivedPacketNumber))
             {
                 // decryption failed, drop the packet.
                 reader.Advance(payloadLength);
@@ -313,22 +313,22 @@ namespace System.Net.Quic.Implementations.Managed
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
 
-            long packetNumber = QuicPrimitives.DecodePacketNumber(epoch.LargestReceivedPacketNumber,
+            long packetNumber = QuicPrimitives.DecodePacketNumber(pnSpace.LargestReceivedPacketNumber,
                 truncatedPn, pnLength);
 
-            // if (epoch.ReceivedPacketNumbers.Contains(packetNumber))
+            // if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
             // {
             //     return ProcessPacketResult.Ok; // already processed;
             // }
 
-            if (epoch.LargestReceivedPacketNumber < packetNumber)
+            if (pnSpace.LargestReceivedPacketNumber < packetNumber)
             {
-                epoch.LargestReceivedPacketNumber = packetNumber;
-                epoch.LargestReceivedPacketTimestamp = DateTime.Now; //TODO-RZ: pass time externally
+                pnSpace.LargestReceivedPacketNumber = packetNumber;
+                pnSpace.LargestReceivedPacketTimestamp = DateTime.Now; //TODO-RZ: pass time externally
             }
 
-            epoch.UnackedPacketNumbers.Add(packetNumber);
-            epoch.ReceivedPacketNumbers.Add(packetNumber);
+            pnSpace.UnackedPacketNumbers.Add(packetNumber);
+            pnSpace.ReceivedPacketNumbers.Add(packetNumber);
 
             return ProcessFramesWithoutTag(reader, packetType, context);
         }
@@ -338,7 +338,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
-            int tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
+            int tagLength = GetPacketNumberSpace(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
             var retval = ProcessFrames(reader, packetType, context);
             reader.Reset(originalSegment);
@@ -420,15 +420,15 @@ namespace System.Net.Quic.Implementations.Managed
             // if (!Connected && desiredLevel == EncryptionLevel.Application)
             // return EncryptionLevel.Handshake;
 
-            for (int i = 0; i < _epochs.Length; i++)
+            for (int i = 0; i < _pnSpaces.Length; i++)
             {
                 var level = (EncryptionLevel)i;
-                var epoch = _epochs[i];
+                var pnSpace = _pnSpaces[i];
 
-                if (epoch.CryptoOutboundStream.IsFlushable)
+                if (pnSpace.CryptoOutboundStream.IsFlushable)
                     return level;
 
-                if (epoch.AckElicited)
+                if (pnSpace.AckElicited)
                     return level;
             }
 
@@ -446,10 +446,10 @@ namespace System.Net.Quic.Implementations.Managed
                 _ => throw new InvalidOperationException()
             };
 
-            var epoch = GetEpoch(level);
-            var seal = epoch.SendCryptoSeal!;
+            var pnSpace = GetPacketNumberSpace(level);
+            var seal = pnSpace.SendCryptoSeal!;
 
-            (int truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber();
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
@@ -483,9 +483,9 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // remember what we sent in this packet
-            epoch.PacketsInFlight.Add(epoch.NextPacketNumber, context.SentPacket);
+            pnSpace.PacketsInFlight.Add(pnSpace.NextPacketNumber, context.SentPacket);
             context.SentPacket.Sent = context.Now;
-            epoch.NextPacketNumber++;
+            pnSpace.NextPacketNumber++;
 
             if (!_isServer && packetType == PacketType.Initial)
             {
@@ -559,7 +559,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             while (true)
             {
-                if (GetEpoch(level).SendCryptoSeal == null)
+                if (GetPacketNumberSpace(level).SendCryptoSeal == null)
                 {
                     // Secrets have not been derived yet, can't send anything
                     break;
@@ -584,14 +584,14 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static PacketEpoch GetEpoch(PacketType packetType)
+        private static PacketSpace GetPacketSpace(PacketType packetType)
         {
             return packetType switch
             {
-                PacketType.Initial => PacketEpoch.Initial,
-                PacketType.ZeroRtt => PacketEpoch.Application,
-                PacketType.Handshake => PacketEpoch.Handshake,
-                PacketType.OneRtt => PacketEpoch.Application,
+                PacketType.Initial => PacketSpace.Initial,
+                PacketType.ZeroRtt => PacketSpace.Application,
+                PacketType.Handshake => PacketSpace.Handshake,
+                PacketType.OneRtt => PacketSpace.Application,
                 _ => throw new ArgumentOutOfRangeException(nameof(packetType), packetType, null)
             };
         }
@@ -610,14 +610,14 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        internal EpochData GetEpoch(EncryptionLevel encryptionLevel)
+        internal PacketNumberSpace GetPacketNumberSpace(EncryptionLevel encryptionLevel)
         {
             return encryptionLevel switch
             {
-                EncryptionLevel.Initial => _epochs[0],
-                EncryptionLevel.Handshake => _epochs[1],
-                EncryptionLevel.EarlyData => _epochs[2],
-                EncryptionLevel.Application => _epochs[2],
+                EncryptionLevel.Initial => _pnSpaces[0],
+                EncryptionLevel.Handshake => _pnSpaces[1],
+                EncryptionLevel.EarlyData => _pnSpaces[2],
+                EncryptionLevel.Application => _pnSpaces[2],
                 _ => throw new ArgumentOutOfRangeException(nameof(encryptionLevel), encryptionLevel, null)
             };
         }
@@ -639,11 +639,11 @@ namespace System.Net.Quic.Implementations.Managed
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
             ReadOnlySpan<byte> readSecret, ReadOnlySpan<byte> writeSecret)
         {
-            var epoch = GetEpoch(level);
-            Debug.Assert(epoch.SendCryptoSeal == null, "Protection keys already derived");
+            var pnSpace = GetPacketNumberSpace(level);
+            Debug.Assert(pnSpace.SendCryptoSeal == null, "Protection keys already derived");
 
-            epoch.RecvCryptoSeal = new CryptoSeal(algorithm, readSecret);
-            epoch.SendCryptoSeal = new CryptoSeal(algorithm, writeSecret);
+            pnSpace.RecvCryptoSeal = new CryptoSeal(algorithm, readSecret);
+            pnSpace.SendCryptoSeal = new CryptoSeal(algorithm, writeSecret);
         }
 
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
@@ -657,7 +657,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            GetEpoch(level).CryptoOutboundStream.Enqueue(data);
+            GetPacketNumberSpace(level).CryptoOutboundStream.Enqueue(data);
             return 1;
         }
 

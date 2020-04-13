@@ -8,20 +8,10 @@ using System.Runtime.CompilerServices;
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     /// <summary>
-    ///     Class for aggregating all connection data for a single epoch.
+    ///     Class for aggregating all connection data for a single packet number space.
     /// </summary>
-    internal class EpochData
+    internal class PacketNumberSpace
     {
-        public EpochData(PacketEpoch epoch)
-        {
-            Epoch = epoch;
-        }
-
-        /// <summary>
-        ///     Encryption level of this epoch
-        /// </summary>
-        internal PacketEpoch Epoch { get; }
-
         /// <summary>
         ///     Largest packet number received from the peer.
         /// </summary>

@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    internal enum PacketEpoch
+    internal enum PacketSpace
     {
         Initial,
         Handshake,

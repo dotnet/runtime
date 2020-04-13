@@ -18,12 +18,12 @@ namespace System.Net.Quic.Tests.Harness
         internal CryptoSeal GetRecvSeal(PacketType packetType)
         {
             // encryption is symmetric
-            return GetSenderEpoch(packetType).SendCryptoSeal;
+            return GetSenderPacketNumberSpace(packetType).SendCryptoSeal;
         }
 
         internal ConnectionIdCollection ConnectionIdCollection { get; } = new ConnectionIdCollection();
 
-        internal EpochData GetSenderEpoch(PacketType packetType)
+        internal PacketNumberSpace GetSenderPacketNumberSpace(PacketType packetType)
         {
             var level = packetType switch
             {
@@ -34,7 +34,7 @@ namespace System.Net.Quic.Tests.Harness
                 _ => throw new InvalidOperationException()
             };
 
-            return Sender.GetEpoch(level);
+            return Sender.GetPacketNumberSpace(level);
         }
     }
 }
