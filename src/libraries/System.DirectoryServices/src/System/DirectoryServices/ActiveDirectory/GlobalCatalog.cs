@@ -263,6 +263,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
+                _ = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
                 _schema = new ActiveDirectorySchema(context, schemaNC);
             }
 
