@@ -3665,6 +3665,32 @@ namespace System.Net.Sockets
             // Start the accept.
             DoBeginAccept(acceptSocket, receiveSize, asyncResult);
 
+            // Copy socket state if new socket was created when accepting into existing socket (Unix).
+            if (acceptSocket != null && acceptSocket != asyncResult.AcceptSocket)
+            {
+                asyncResult.AcceptSocket!._addressFamily = acceptSocket._addressFamily;
+                asyncResult.AcceptSocket!._cachedTaskEventArgs = acceptSocket._cachedTaskEventArgs;
+                asyncResult.AcceptSocket!._caches = acceptSocket._caches;
+                asyncResult.AcceptSocket!._closeTimeout = acceptSocket._closeTimeout;
+                asyncResult.AcceptSocket!._disposed = acceptSocket._disposed;
+                asyncResult.AcceptSocket!._handle = acceptSocket._handle;
+                asyncResult.AcceptSocket!._isConnected = acceptSocket._isConnected;
+                asyncResult.AcceptSocket!._isDisconnected = acceptSocket._isDisconnected;
+                asyncResult.AcceptSocket!._isListening = acceptSocket._isListening;
+                asyncResult.AcceptSocket!._lastReceiveHandle = acceptSocket._lastReceiveHandle;
+                asyncResult.AcceptSocket!._lastReceiveThread = acceptSocket._lastReceiveThread;
+                asyncResult.AcceptSocket!._lastReceiveTick = acceptSocket._lastReceiveTick;
+                asyncResult.AcceptSocket!._nonBlockingConnectInProgress = acceptSocket._nonBlockingConnectInProgress;
+                asyncResult.AcceptSocket!._nonBlockingConnectRightEndPoint = acceptSocket._nonBlockingConnectRightEndPoint;
+                asyncResult.AcceptSocket!._protocolType = acceptSocket._protocolType;
+                asyncResult.AcceptSocket!._receivingPacketInformation = acceptSocket._receivingPacketInformation;
+                asyncResult.AcceptSocket!._remoteEndPoint = acceptSocket._remoteEndPoint;
+                asyncResult.AcceptSocket!._rightEndPoint = acceptSocket._rightEndPoint;
+                asyncResult.AcceptSocket!._socketType = acceptSocket._socketType;
+                asyncResult.AcceptSocket!._willBlock = acceptSocket._willBlock;
+                asyncResult.AcceptSocket!._willBlockInternal = acceptSocket._willBlockInternal;
+            }
+
             // Finish the flow capture, maybe complete here.
             asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
 

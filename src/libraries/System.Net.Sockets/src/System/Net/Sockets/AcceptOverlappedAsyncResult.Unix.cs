@@ -18,6 +18,10 @@ namespace System.Net.Sockets
 
         internal Socket? AcceptSocket
         {
+            get
+            {
+                return _acceptedSocket;
+            }
             set
             {
                 // *nix does not support the reuse of an existing socket as the accepted

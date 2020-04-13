@@ -148,12 +148,7 @@ namespace System.Net.Sockets
 
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
-            // AcceptSocket is not supported on Unix.
-            if (acceptSocket != null)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
-            }
-
+            // AcceptSocket is not supported on Unix, so return null to accept into a new socket.
             handle = null;
             return null;
         }
