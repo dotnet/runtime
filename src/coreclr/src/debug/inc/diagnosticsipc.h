@@ -44,21 +44,17 @@ public:
         // The bookeeping struct used for polling on server and client structs
         struct IpcPollHandle
         {
+            // Only one of these will be non-null, treat as a union
             DiagnosticsIpc *pIpc;
-
-            // After calling Poll, will contain a usable IpcStream
-            // IFF (revents & (uint8_t)PollEvents::SIGNALED) != 0
-            // 
-            // DiagnosticsIpc::ConnectionMode::CLIENT connections should place a usable
-            // IpcStream here before calling Poll, i.e., pollHandle.pStream = pollHandle.pIpc->Connect()
-            // 
-            // DiagnosticsIpc::ConnectionMode::SERVER connections can leave this null
             IpcStream *pStream;
 
             // contains some set of PollEvents
             // will be set by Poll
             // Any values here are ignored by Poll
             uint8_t revents;
+
+            // a callback cookie assignable by upstream users for additional bookkeeping
+            void *pUserData;
         };
 
         // Poll
@@ -72,7 +68,7 @@ public:
         // Check the events returned in revents for each IpcPollHandle to find the signaled handle.
         // Signaled handles will have usable IpcStreams in the pStream field.
         // The caller is responsible for cleaning up "hung up" connections.
-        static int32_t Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback = nullptr);
+        static int32_t Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback = nullptr);
 
         ConnectionMode mode;
 
@@ -84,6 +80,9 @@ public:
         //! puts the DiagnosticsIpc into Listening Mode
         //! Re-entrant safe
         bool Listen(ErrorCallback callback = nullptr);
+
+        //! produces a client stream from a server-mode DiagnosticsIpc.  Blocks until a connection is available.
+        IpcStream *Accept(ErrorCallback callback = nullptr);
 
         //! Connect to client connection (returns a usable stream)
         IpcStream *Connect(ErrorCallback callback = nullptr);

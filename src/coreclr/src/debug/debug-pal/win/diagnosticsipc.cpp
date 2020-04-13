@@ -117,6 +117,43 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
     return true;
 }
 
+IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
+{
+    _ASSERTE(_isListening);
+    _ASSERTE(mode == ConnectionMode::SERVER);
+
+    DWORD dwDummy = 0;
+    bool fSuccess = GetOverlappedResult(
+        _hPipe,     // handle
+        _oOverlap,  // overlapped
+        &dwDummy,   // throw-away dword
+        true);      // wait till event signals
+
+    if (!fSuccess)
+    {
+        if (callback != nullptr)
+            callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
+        return nullptr;
+    }
+
+    // create new IpcStream using handle and reset the Server object so it can listen again
+    IpcStream *pStream = new IpcStream(_hPipe, ConnectionMode::SERVER);
+
+    // reset the server
+    _hPipe = INVALID_HANDLE_VALUE;
+    _isListening = false;
+    ::CloseHandle(_oOverlap.hEvent);
+    memset(&_oOverlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
+    fSuccess = Listen(callback);
+    if (!fSuccess)
+    {
+        delete pStream;
+        return nullptr;
+    }
+
+    return pStream;
+}
+
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
     _ASSERTE(mode == ConnectionMode::CLIENT);
@@ -201,44 +238,47 @@ void IpcStream::Close(ErrorCallback)
     }
 }
 
-int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
+int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
 {
     // load up an array of handles
     HANDLE *pHandles = new HANDLE[nHandles];
     for (uint32_t i = 0; i < nHandles; i++)
     {
-        rgpIpcPollHandles[i]->revents = 0; // ignore any inputs on revents
-        if (rgpIpcPollHandles[i]->pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        rgIpcPollHandles[i].revents = 0; // ignore any inputs on revents
+        if (rgIpcPollHandles[i].pIpc != nullptr)
         {
-            pHandles[i] = rgpIpcPollHandles[i]->pIpc->_oOverlap.hEvent;
+            // SERVER
+            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER);
+            pHandles[i] = rgIpcPollHandles[i].pIpc->_oOverlap.hEvent;
         }
         else
         {
+            // CLIENT
             bool fSuccess = false;
             DWORD dwDummy = 0;
-            if (!rgpIpcPollHandles[i]->pStream->_isTestReading)
+            if (!rgIpcPollHandles[i].pStream->_isTestReading)
             {
                 // check for data by doing an asynchronous 0 byte read.
                 // This will signal if the pipe closes (hangup) or the server
                 // sends new data
                 fSuccess = ::ReadFile(
-                    rgpIpcPollHandles[i]->pStream->_hPipe,      // handle
+                    rgIpcPollHandles[i].pStream->_hPipe,      // handle
                     nullptr,                                    // null buffer
                     0,                                          // read 0 bytes
                     &dwDummy,                                   // dummy variable
-                    &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
-                rgpIpcPollHandles[i]->pStream->_isTestReading = true;
+                    &rgIpcPollHandles[i].pStream->_oOverlap); // overlap object to use
+                rgIpcPollHandles[i].pStream->_isTestReading = true;
                 if (!fSuccess)
                 {
                     DWORD error = ::GetLastError();
                     switch (error)
                     {
                         case ERROR_IO_PENDING:
-                            pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+                            pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
                             break;
                         case ERROR_PIPE_NOT_CONNECTED:
                             // hangup
-                            rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::HANGUP;
+                            rgIpcPollHandles[i].revents = (uint8_t)PollEvents::HANGUP;
                             delete[] pHandles;
                             return -1;
                         default:
@@ -251,7 +291,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
             }
             else
             {
-                pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+                pHandles[i] = rgIpcPollHandles[i].pStream->_oOverlap.hEvent;
             }
         }
     }
@@ -288,7 +328,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
         DWORD abandonedIndex = dwWait - WAIT_ABANDONED_0;
         if (abandonedIndex > 0 || abandonedIndex < (nHandles - 1))
         {
-            rgpIpcPollHandles[abandonedIndex]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
+            rgIpcPollHandles[abandonedIndex].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
             delete[] pHandles;
             return -1;
         }
@@ -302,57 +342,39 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
     }
 
     // Set revents depending on what signaled the stream
-    if (rgpIpcPollHandles[index]->pIpc->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
+    if (rgIpcPollHandles[index].pIpc == nullptr)
     {
+        // CLIENT
         // check if the connection got hung up
         DWORD dwDummy = 0;
-        bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pStream->_hPipe,
-                                            &rgpIpcPollHandles[index]->pStream->_oOverlap,
+        bool fSuccess = GetOverlappedResult(rgIpcPollHandles[index].pStream->_hPipe,
+                                            &rgIpcPollHandles[index].pStream->_oOverlap,
                                             &dwDummy,
                                             true);
+        rgIpcPollHandles[index].pStream->_isTestReading = false;
         if (!fSuccess)
         {
             DWORD error = ::GetLastError();
             if (error == ERROR_PIPE_NOT_CONNECTED)
-                rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
+                rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
             else
             {
                 if (callback != nullptr)
                     callback("Client connection error", -1);
-                rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
+                rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
                 delete[] pHandles;
                 return -1;
             }
         }
         else
         {
-            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
+            rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
         }
     }
     else
     {
-        // complete the async listen
-        DWORD dwDummy = 0;
-        bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pIpc->_hPipe,
-                                            &rgpIpcPollHandles[index]->pIpc->_oOverlap,
-                                            &dwDummy,
-                                            true);
-        if (!fSuccess)
-        {
-            if (callback != nullptr)
-                callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
-            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
-            delete[] pHandles;
-            return -1;
-        }
-
-        // create new IpcStream using handle and reset the Server object so it can listen again
-        rgpIpcPollHandles[index]->pStream = new IpcStream(rgpIpcPollHandles[index]->pIpc->_hPipe, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER);
-        rgpIpcPollHandles[index]->pIpc->_hPipe = INVALID_HANDLE_VALUE;
-        rgpIpcPollHandles[index]->pIpc->_isListening = false;
-        ::CloseHandle(rgpIpcPollHandles[index]->pIpc->_oOverlap.hEvent);
-        memset(&rgpIpcPollHandles[index]->pIpc->_oOverlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
-        rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
+        // SERVER
+        rgIpcPollHandles[index].revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
     }
 
     delete[] pHandles;

@@ -149,15 +149,27 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
     }
 }
 
+IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
+{
+    _ASSERTE(mode == ConnectionMode::SERVER);
+    _ASSERTE(_isListening);
+
+    sockaddr_un from;
+    socklen_t fromlen = sizeof(from);
+    const int clientSocket = ::accept(_serverSocket, (sockaddr *)&from, &fromlen);
+    if (clientSocket == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        return nullptr;
+    }
+
+    return new IpcStream(clientSocket, mode);
+}
+
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
     _ASSERTE(mode == ConnectionMode::CLIENT);
-    if (mode != ConnectionMode::CLIENT)
-    {
-        if (callback != nullptr)
-            callback("Cannot call connect on a server connection", 0);
-        return nullptr;
-    }
 
     sockaddr_un clientAddress{};
     clientAddress.sun_family = AF_UNIX;
@@ -182,24 +194,25 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     return new IpcStream(clientSocket, ConnectionMode::CLIENT);
 }
 
-int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
+int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
 {
     // prepare the pollfd structs
     pollfd *pollfds = new pollfd[nHandles];
     for (uint32_t i = 0; i < nHandles; i++)
     {
-        rgpIpcPollHandles[i]->revents = 0; // ignore any values in revents
+        rgIpcPollHandles[i].revents = 0; // ignore any values in revents
         int fd = -1;
-        if (rgpIpcPollHandles[i]->pIpc->mode == ConnectionMode::SERVER)
+        if (rgIpcPollHandles[i].pIpc != nullptr)
         {
             // SERVER
-            fd = rgpIpcPollHandles[i]->pIpc->_serverSocket;
+            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == ConnectionMode::SERVER);
+            fd = rgIpcPollHandles[i].pIpc->_serverSocket;
         }
         else
         {
             // CLIENT
-            _ASSERTE(rgpIpcPollHandles[i]->pStream != nullptr);
-            fd = rgpIpcPollHandles[i]->pStream->_clientSocket;
+            _ASSERTE(rgIpcPollHandles[i].pStream != nullptr);
+            fd = rgIpcPollHandles[i].pStream->_clientSocket;
         }
 
         pollfds[i].fd = fd;
@@ -215,7 +228,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
         {
             if ((pollfds[i].revents & POLLERR) && callback != nullptr)
                 callback(strerror(errno), errno);
-            rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::ERR;
+            rgIpcPollHandles[i].revents = (uint8_t)PollEvents::ERR;
         }
         delete[] pollfds;
         return -1;
@@ -231,14 +244,13 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
     {
         if (pollfds[i].revents != 0)
         {
-            bool needToAccept = rgpIpcPollHandles[i]->pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER;
             // error check FIRST
             if (pollfds[i].revents & POLLHUP)
             {
                 // check for hangup first because a closed socket
                 // will technically meet the requirements for POLLIN
                 // i.e., a call to recv/read won't block
-                rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::HANGUP;
+                rgIpcPollHandles[i].revents = (uint8_t)PollEvents::HANGUP;
                 delete[] pollfds;
                 return -1;
             }
@@ -246,32 +258,13 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
             {
                 if (callback != nullptr)
                     callback("Poll error", (uint32_t)pollfds[i].revents);
-                rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::ERR;
+                rgIpcPollHandles[i].revents = (uint8_t)PollEvents::ERR;
                 delete[] pollfds;
                 return -1;
             }
             else if (pollfds[i].revents & POLLIN)
             {
-                if (needToAccept)
-                {
-                    sockaddr_un from;
-                    socklen_t fromlen = sizeof(from);
-                    const int clientSocket = ::accept(rgpIpcPollHandles[i]->pIpc->_serverSocket, (sockaddr *)&from, &fromlen);
-                    if (clientSocket == -1)
-                    {
-                        if (callback != nullptr)
-                            callback(strerror(errno), errno);
-                        rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::ERR;
-                        delete[] pollfds;
-                        return -1;
-                    }
-                    rgpIpcPollHandles[i]->pStream = new IpcStream(clientSocket, rgpIpcPollHandles[i]->pIpc->mode);
-                    rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::SIGNALED;
-                }
-                else
-                {
-                    rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::SIGNALED;
-                }
+                rgIpcPollHandles[i].revents = (uint8_t)PollEvents::SIGNALED;
                 break;
             }
         }
@@ -326,6 +319,7 @@ void IpcStream::Close(ErrorCallback)
 
         const int fSuccessClose = ::close(_clientSocket);
         _ASSERTE(fSuccessClose != -1);
+        _clientSocket = -1;
     }
 }
 
