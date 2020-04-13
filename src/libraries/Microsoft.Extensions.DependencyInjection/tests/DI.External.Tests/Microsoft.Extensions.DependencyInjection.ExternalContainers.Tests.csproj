@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
+    <RootNamespace>Microsoft.Extensions.DependencyInjection</RootNamespace>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json" />
+
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection" />
+
+    <Reference Include="Autofac.Extensions.DependencyInjection" />
+    <Reference Include="DryIoc.Microsoft.DependencyInjection" />
+    <Reference Include="Lamar.Microsoft.DependencyInjection" />
+    <Reference Include="LightInject.Microsoft.DependencyInjection" />
+    <Reference Include="StructureMap.Microsoft.DependencyInjection" />
+    <Reference Include="Grace.DependencyInjection.Extensions" />
+    <Reference Include="Stashbox.Extensions.Dependencyinjection" />
+    <Reference Include="Unity.Microsoft.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
