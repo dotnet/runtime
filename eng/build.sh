@@ -94,7 +94,7 @@ firstArgumentChecked=0
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
 
-  if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z\.\+]+ ]]; then
+  if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
     arguments="$arguments /p:Subset=$1"
     shift 1
     continue
