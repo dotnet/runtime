@@ -88,4 +88,4 @@ jobs:
 
     - script: "cd src/mono/netcore;make patch-mono-dotnet"
       displayName: "Create mono dotnet"
-      condition: and(succeeded(), (variables.runtimeFlavorName, 'Mono'))
+      condition: and(succeeded(), eq(variables.runtimeFlavorName, 'Mono'))
