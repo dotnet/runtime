@@ -26,6 +26,9 @@ namespace System
 
     internal static class ConsolePal
     {
+        internal static void EnsureConsoleInitialized()
+        { }
+
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
         public static Stream OpenStandardOutput() => new NSLogStream();
