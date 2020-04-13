@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Timestamp when the packet was sent.
             /// </summary>
-            internal DateTime Sent { get; set; }
+            internal DateTime TimeSent { get; set; }
 
             /// <summary>
             ///     Ranges of values which have been acked in the Ack frame in this packet, empty if nothing was acked.
@@ -41,6 +41,23 @@ namespace System.Net.Quic.Implementations.Managed
             internal bool HandshakeDoneSent { get; set; }
 
             /// <summary>
+            ///     Number of bytes sent, includes QUIC header and payload, but not UDP and IP overhead.
+            /// </summary>
+            internal int BytesSent { get; set; }
+
+            /// <summary>
+            ///     True if the packet counts toward bytes in flight for congestion control purposes.
+            /// </summary>
+            internal bool InFlight { get; set; }
+
+            /// <summary>
+            ///     True if the packet contained an ack-eliciting frame. If true, it is expected that an
+            ///     acknowledgement will be received, though the peer could delay sending the ACK frame by
+            ///     up to the MaxAckDelay transport parameter.
+            /// </summary>
+            internal bool AckEliciting { get; set; }
+
+            /// <summary>
             ///     Resets the object to it's default state so that it can be reused.
             /// </summary>
             internal void Reset()
@@ -49,6 +66,7 @@ namespace System.Net.Quic.Implementations.Managed
                 CryptoRanges.Clear();
                 SentStreamData.Clear();
                 HandshakeDoneSent = false;
+                BytesSent = 0;
             }
         }
 
@@ -276,63 +294,10 @@ namespace System.Net.Quic.Implementations.Managed
                 ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
-            _recovery.OnRangesAcked(GetPacketSpace(packetType), ranges, TimeSpan.FromTicks(frame.AckDelay),
-                context.Now);
-            ProcessAckedPackets(pnSpace, ranges);
+            // TODO-RZ: convert microseconds to TimeSpan
+            OnAckReceived(GetPacketSpace(packetType), ranges, TimeSpan.FromTicks(frame.AckDelay), frame, context.Now);
 
             return ProcessPacketResult.Ok;
-        }
-
-        private void ProcessAckedPackets(PacketNumberSpace pnSpace, Span<PacketNumberRange> ranges)
-        {
-            // TODO-RZ: make this more efficient
-            int rangeIndex = 0;
-
-            var pnsInFlight = pnSpace.PacketsInFlight.Keys.ToArray();
-            for (int i = 0; i < pnsInFlight.Length; i++)
-            {
-                long pn = pnsInFlight[i];
-                while (ranges[rangeIndex].End < pn)
-                {
-                    rangeIndex++;
-                    if (rangeIndex == ranges.Length)
-                    {
-                        // all ranges processed
-                        return;
-                    }
-                }
-
-                Debug.Assert(pn <= ranges[rangeIndex].End);
-                if (pn < ranges[rangeIndex].Start)
-                {
-                    continue;
-                }
-
-                OnSentPacketAcked(pnSpace, pnSpace.PacketsInFlight[pn]);
-                pnSpace.PacketsInFlight.Remove(pn);
-            }
-        }
-
-        private void OnSentPacketAcked(PacketNumberSpace pnSpace, SentPacket packet)
-        {
-            // mark all sent data as acked
-            foreach (var r in packet.CryptoRanges)
-            {
-                pnSpace.CryptoOutboundStream.OnAck(
-                    r.Start, r.Length);
-            }
-
-            foreach ((long streamId, RangeSet ranges) in packet.SentStreamData)
-            {
-                var buffer = _streams[streamId].OutboundBuffer!;
-                foreach (var r in ranges)
-                {
-                    buffer.OnAck(r.Start, r.Length);
-                }
-            }
-
-            // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
-            pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
         }
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, RecvContext context)

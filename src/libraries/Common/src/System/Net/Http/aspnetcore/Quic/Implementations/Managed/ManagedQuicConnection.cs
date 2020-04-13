@@ -32,8 +32,6 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly TransportParameters _localTransportParameters;
 
-        private readonly Recovery _recovery = new Recovery();
-
         private readonly QuicListenerOptions? _serverOpts;
 
         private readonly Tls _tls;
@@ -484,7 +482,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             // remember what we sent in this packet
             pnSpace.PacketsInFlight.Add(pnSpace.NextPacketNumber, context.SentPacket);
-            context.SentPacket.Sent = context.Now;
+            context.SentPacket.TimeSent = context.Now;
             pnSpace.NextPacketNumber++;
 
             if (!_isServer && packetType == PacketType.Initial)
