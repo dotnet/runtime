@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <PropertyGroup Condition="'$(DotNetBuildTasksSharedFrameworkTaskDir)' == ''">
+    <DotNetBuildTasksSharedFrameworkTaskDir Condition="'$(MSBuildRuntimeType)' == 'core'">$(MSBuildThisFileDirectory)../tools/netcoreapp2.1/</DotNetBuildTasksSharedFrameworkTaskDir>
+    <DotNetBuildTasksSharedFrameworkTaskDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(MSBuildThisFileDirectory)../tools/net472/</DotNetBuildTasksSharedFrameworkTaskDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotNetBuildTasksSharedFrameworkTaskFile>$(DotNetBuildTasksSharedFrameworkTaskDir)Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk.dll</DotNetBuildTasksSharedFrameworkTaskFile>
+  </PropertyGroup>
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
