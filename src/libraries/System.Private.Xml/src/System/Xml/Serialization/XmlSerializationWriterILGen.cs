@@ -2588,7 +2588,7 @@ namespace System.Xml.Serialization
             StringBuilder writer = new StringBuilder();
             writer.Append("@\"");
             writer.Append(GetCSharpString(value));
-            writer.Append("\"");
+            writer.Append('"');
             return writer.ToString();
         }
 

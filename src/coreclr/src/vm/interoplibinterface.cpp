@@ -481,6 +481,32 @@ namespace
         CALL_MANAGED_METHOD_NORET(args);
     }
 
+    int CallICustomQueryInterface(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** ppObject)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(ppObject != NULL);
+        }
+        CONTRACTL_END;
+
+        int result;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(&iid);
+        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
+        CALL_MANAGED_METHOD(result, int, args);
+
+        return result;
+    }
+
     bool TryGetOrCreateComInterfaceForObjectInternal(
         _In_opt_ OBJECTREF impl,
         _In_ OBJECTREF instance,
@@ -1021,6 +1047,73 @@ namespace InteropLibImports
         END_EXTERNAL_ENTRYPOINT;
 
         return hr;
+    }
+
+    TryInvokeICustomQueryInterfaceResult TryInvokeICustomQueryInterface(
+        _In_ InteropLib::OBJECTHANDLE handle,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** obj) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+            PRECONDITION(obj != NULL);
+        }
+        CONTRACTL_END;
+
+        *obj = NULL;
+
+        // If this is a GC thread, then someone is trying to query for something
+        // at a time when we can't run managed code.
+        if (IsGCThread())
+            return TryInvokeICustomQueryInterfaceResult::OnGCThread;
+
+        // Ideally the BEGIN_EXTERNAL_ENTRYPOINT/END_EXTERNAL_ENTRYPOINT pairs
+        // would be used here. However, this code path can be entered from within
+        // and from outside the runtime.
+        MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
+        if (CURRENT_THREAD == NULL)
+        {
+            CURRENT_THREAD = SetupThreadNoThrow();
+
+            // If we failed to set up a new thread, we are going to indicate
+            // there was a general failure to invoke instead of failing fast.
+            if (CURRENT_THREAD == NULL)
+                return TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        }
+
+        HRESULT hr;
+        auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        EX_TRY_THREAD(CURRENT_THREAD)
+        {
+            // Switch to Cooperative mode since object references
+            // are being manipulated.
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF objRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            // Get the target of the external object's reference.
+            ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+            gc.objRef = ObjectFromHandle(objectHandle);
+
+            result = (TryInvokeICustomQueryInterfaceResult)CallICustomQueryInterface(&gc.objRef, iid, obj);
+
+            GCPROTECT_END();
+        }
+        EX_CATCH_HRESULT(hr);
+
+        // Assert valid value.
+        _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result
+            && result <= TryInvokeICustomQueryInterfaceResult::Max);
+
+        return result;
     }
 
     struct RuntimeCallContext

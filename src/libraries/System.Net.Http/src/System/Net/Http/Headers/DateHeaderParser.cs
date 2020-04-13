@@ -42,7 +42,7 @@ namespace System.Net.Http.Headers
             }
 
             DateTimeOffset date;
-            if (!HttpDateParser.TryStringToDate(dateString, out date))
+            if (!HttpDateParser.TryParse(dateString, out date))
             {
                 return false;
             }

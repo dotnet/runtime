@@ -33,15 +33,15 @@ namespace System.Runtime.InteropServices.Tests
         {
             // Arrays.
             var empty = new ComImportObject();
-            yield return new object[] { new ComImportObject[] { empty, null }, (VarEnum)8205, new object[] { empty, null } };
+            yield return new object[] { new ComImportObject[] { empty, null }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), new object[] { empty, null } };
 
             var nonDualEmpty = new NonDualComObjectEmpty();
             var autoDispatchEmpty = new AutoDispatchComObjectEmpty();
             var autoDualEmpty = new AutoDualComObjectEmpty();
 
-            yield return new object[] { new NonDualComObjectEmpty[] { nonDualEmpty, null }, (VarEnum)8205, new object[] { nonDualEmpty, null } };
-            yield return new object[] { new AutoDispatchComObjectEmpty[] { autoDispatchEmpty, null }, (VarEnum)8205, new object[] { autoDispatchEmpty, null } };
-            yield return new object[] { new AutoDualComObjectEmpty[] { autoDualEmpty, null }, (VarEnum)8205, new object[] { autoDualEmpty, null } };
+            yield return new object[] { new NonDualComObjectEmpty[] { nonDualEmpty, null }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), new object[] { nonDualEmpty, null } };
+            yield return new object[] { new AutoDispatchComObjectEmpty[] { autoDispatchEmpty, null }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), new object[] { autoDispatchEmpty, null } };
+            yield return new object[] { new AutoDualComObjectEmpty[] { autoDualEmpty, null }, (VarEnum.VT_ARRAY | VarEnum.VT_UNKNOWN), new object[] { autoDualEmpty, null } };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
