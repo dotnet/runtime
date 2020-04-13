@@ -8589,7 +8589,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             vnPrint(simdTypeVN, 1);
             printf("\n");
         }
-#endif // DEBUG
+#endif
     }
 
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
@@ -8597,7 +8597,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     {
         if (encodeResultType)
         {
-            // There are zero arg HWINTRINSICS operations that encode the result type, i.e. Vector128_AllBitSet
+            // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet
             normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, resvnp);
             assert(vnStore->VNFuncArity(func) == 1);
         }
