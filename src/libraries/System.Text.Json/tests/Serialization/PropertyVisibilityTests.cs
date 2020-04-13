@@ -104,10 +104,10 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithNewSlotAttributedDecimalProperty();
             string json = JsonSerializer.Serialize(obj);
 
-            Assert.Equal(@"{""MyNumeric"":1,""MyNewNumeric"":1.5}", json);
+            Assert.Equal(@"{""MyNewNumeric"":1.5,""MyNumeric"":1}", json);
 
             // Deserialize
-            json = @"{""MyNumeric"":4,""MyNewNumeric"":2.5}";
+            json = @"{""MyNewNumeric"":2.5,""MyNumeric"":4}";
             obj = JsonSerializer.Deserialize<ClassWithNewSlotAttributedDecimalProperty>(json);
 
             Assert.Equal(4, ((ClassWithHiddenByNewSlotIntProperty)obj).MyNumeric);
