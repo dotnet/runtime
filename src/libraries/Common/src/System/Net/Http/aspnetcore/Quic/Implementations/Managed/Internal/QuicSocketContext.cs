@@ -69,7 +69,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _signalTcs.TrySetResult(0);
         }
 
-        private ManagedQuicConnection DispatchConnection(QuicReader reader, IPEndPoint remoteEp)
+        private ManagedQuicConnection? DispatchPacket(QuicReader reader, IPEndPoint remoteEp)
         {
             if (_client != null)
             {
@@ -171,10 +171,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                         {
                             reader.Reset(recvBuffer, 0, result.ReceivedBytes);
-                            var connection = DispatchConnection(reader, (IPEndPoint) result.RemoteEndPoint);
-
-                            // also query the connection for data to be sent back
-                            await SendData(connection, writer, socket, sendBuffer);
+                            var connection = DispatchPacket(reader, (IPEndPoint) result.RemoteEndPoint);
+                            if (connection != null)
+                            {
+                                // also query the connection for data to be sent back
+                                await SendData(connection!, writer, socket, sendBuffer);
+                            }
                         }
 
                         // start new receiving task
