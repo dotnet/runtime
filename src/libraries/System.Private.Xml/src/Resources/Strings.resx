@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -1762,6 +1763,9 @@
   </data>
   <data name="Sch_TotalDigitsMismatch" xml:space="preserve">
     <value>It is an error if the derived 'totalDigits' facet value is greater than the parent 'totalDigits' facet value.</value>
+  </data>
+  <data name="Sch_FractionDigitsMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'fractionDigits' facet value is greater than the parent 'fractionDigits' facet value.</value>
   </data>
   <data name="Sch_FacetBaseFixed" xml:space="preserve">
     <value>Values that are declared as {fixed} in a base type can not be changed in a derived type.</value>
