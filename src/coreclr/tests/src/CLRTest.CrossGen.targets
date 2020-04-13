@@ -76,13 +76,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
     fi
 
+    __OutputFile="$PWD/"
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        __OutputFile=$PWD/composite-r2r.dll
+        __OutputFile+="composite-r2r.dll"
     else
-        __OutputFile=$PWD/$(MSBuildProjectName).dll
+        __OutputFile+="$(MSBuildProjectName).dll"
     fi
 
-    __ResponseFile="$(__OutputFile).rsp"
+    __ResponseFile="$__OutputFile.rsp"
     rm $__ResponseFile
 
     __Command=$_DebuggerFullPath
@@ -100,7 +101,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       echo -r:$PWD/IL/*.dll>>$__ResponseFile
     fi
 
-    echo -o:$(__OutputFile)>>$__ResponseFile
+    echo -o:$__OutputFile>>$__ResponseFile
     echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
