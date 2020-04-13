@@ -159,7 +159,7 @@ namespace System.Net
                     return DateTime.Now;
                 }
 
-                if (HttpDateParser.TryStringToDate(lastmodHeaderValue, out var dateTimeOffset))
+                if (HttpDateParser.TryParse(lastmodHeaderValue, out DateTimeOffset dateTimeOffset))
                 {
                     return dateTimeOffset.LocalDateTime;
                 }
