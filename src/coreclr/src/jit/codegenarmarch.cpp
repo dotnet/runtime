@@ -189,12 +189,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode);
             break;
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_ARM64)
         case GT_BSWAP:
         case GT_BSWAP16:
             genCodeForBswap(treeNode);
             break;
-#endif // defined(TARGET_64BIT)
+#endif // defined(TARGET_ARM64)
 
         case GT_MOD:
         case GT_UMOD:
