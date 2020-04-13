@@ -45,17 +45,8 @@ namespace System.Net.Http
             }
         }
 
-        public HttpRequestHeaders DefaultRequestHeaders
-        {
-            get
-            {
-                if (_defaultRequestHeaders == null)
-                {
-                    _defaultRequestHeaders = new HttpRequestHeaders();
-                }
-                return _defaultRequestHeaders;
-            }
-        }
+        public HttpRequestHeaders DefaultRequestHeaders =>
+            _defaultRequestHeaders ??= new HttpRequestHeaders(forceHeaderStoreItems: true);
 
         public Version DefaultRequestVersion
         {

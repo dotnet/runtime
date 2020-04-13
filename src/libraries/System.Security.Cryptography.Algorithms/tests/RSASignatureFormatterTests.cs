@@ -10,13 +10,13 @@ namespace System.Security.Cryptography.Rsa.Tests
     public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
         [Fact]
-        public static void InvalidFormatterArguments()
+        public static void InvalidFormatterArguments_RSA()
         {
             InvalidFormatterArguments(new RSAPKCS1SignatureFormatter());
         }
 
         [Fact]
-        public static void InvalidDeformatterArguments()
+        public static void InvalidDeformatterArguments_RSA()
         {
             InvalidDeformatterArguments(new RSAPKCS1SignatureDeformatter());
         }

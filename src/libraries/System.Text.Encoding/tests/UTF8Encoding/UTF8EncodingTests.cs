@@ -162,7 +162,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(UTF8Encoding encoding, object value, bool expected)
+        public void EqualsTest(UTF8Encoding encoding, object value, bool expected)
         {
             Assert.Equal(expected, encoding.Equals(value));
             if (value is UTF8Encoding)

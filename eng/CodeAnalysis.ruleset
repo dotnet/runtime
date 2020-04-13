@@ -336,7 +336,6 @@
     <Rule Id="SA1649" Action="None" /> <!-- File name should match first type name -->
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
-    <Rule Id="xUnit1024" Action="None" /> <!-- Test methods cannot have overloads -->
     <Rule Id="xUnit2013" Action="None" /> <!-- Do not use equality check to check for collection size. -->
     <Rule Id="xUnit2017" Action="None" /> <!-- Do not use Contains() to check if a value exists in a collection -->
   </Rules>

@@ -680,14 +680,14 @@ namespace System.Diagnostics
             bool fileNameIsQuoted = (fileName.StartsWith('\"') && fileName.EndsWith('\"'));
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             commandLine.Append(fileName);
 
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             if (!string.IsNullOrEmpty(arguments))

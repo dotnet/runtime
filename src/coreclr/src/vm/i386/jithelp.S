@@ -414,16 +414,6 @@ LEAF_ENTRY JIT_WriteBarrierGroup_End, _TEXT
 LEAF_END JIT_WriteBarrierGroup_End, _TEXT
 
 // *********************************************************************/
-//  In cases where we support it we have an optimized GC Poll callback.
-//  Normall (when we're not trying to suspend for GC, the CORINFO_HELP_POLL_GC
-//  helper points to this nop routine.  When we're ready to suspend for GC,
-//  we whack the Jit Helper table entry to point to the real helper.  When we're
-//  done with GC we whack it back.
-LEAF_ENTRY JIT_PollGC_Nop, _TEXT
-    ret
-LEAF_END JIT_PollGC_Nop, _TEXT
-
-// *********************************************************************/
 // llshl - long shift left
 //
 // Purpose:

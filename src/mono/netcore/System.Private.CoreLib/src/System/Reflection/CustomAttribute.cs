@@ -667,7 +667,10 @@ namespace System.Reflection
                     MethodInfo bmethod = ((RuntimeMethodInfo)method).GetBaseMethod();
                     if (bmethod == method)
                         return null;
-                    return bmethod.GetParameters()[parinfo.Position];
+                    int position = parinfo.Position;
+                    if (position == -1)
+                        return bmethod.ReturnParameter;
+                    return bmethod.GetParameters()[position];
                 }
             }
             /*

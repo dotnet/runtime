@@ -10,6 +10,7 @@ namespace System.Management.Tests
     public class ManagementObjectSearcherTests
     {
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Dynamic_Instances()
         {
             using (var searcher = new ManagementObjectSearcher())

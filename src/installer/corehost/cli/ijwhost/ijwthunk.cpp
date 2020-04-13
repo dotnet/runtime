@@ -73,7 +73,7 @@ bool patch_vtable_entries(PEDecoder& pe)
     error_writer_scope_t writer_scope(swallow_trace);
 
     size_t currentThunk = 0;
-    for(size_t i = 0; i < numFixupRecords; ++i)
+    for (size_t i = 0; i < numFixupRecords; ++i)
     {
         if (pFixupTable[i].Type & COR_VTABLE_PTRSIZED)
         {
@@ -81,7 +81,7 @@ bool patch_vtable_entries(PEDecoder& pe)
 
 #ifdef _WIN64
             DWORD oldProtect;
-            if(!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), PAGE_READWRITE, &oldProtect))
+            if (!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), PAGE_READWRITE, &oldProtect))
             {
                 trace::error(_X("Failed to change the vtfixup table from RO to R/W failed.\n"));
                 return false;
@@ -101,7 +101,7 @@ bool patch_vtable_entries(PEDecoder& pe)
 
 #ifdef _WIN64
             DWORD _;
-            if(!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), oldProtect, &_))
+            if (!VirtualProtect(pointers, (sizeof(BYTE*) * pFixupTable[i].Count), oldProtect, &_))
             {
                 trace::warning(_X("Failed to change the vtfixup table from R/W back to RO failed.\n"));
             }

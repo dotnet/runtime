@@ -72,7 +72,6 @@ extern "C" {
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
-// To get a HMODULE on Unix, call PAL_RegisterLibraryDirect() on a NATIVE_LIBRARY_HANDLE.
 typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Processor-specific glue  *****************************/

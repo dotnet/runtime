@@ -14,4 +14,10 @@
     <Compile Condition="'$(TargetArchitecture)' == 'arm64'" Include="arglist64.il" />
     <Compile Condition="'$(TargetArchitecture)' == 'armel'" Include="arglistARM.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="ArchSpecific" />
+  </ItemGroup>
 </Project>

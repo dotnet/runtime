@@ -40,7 +40,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(CompareInfo compare1, object value, bool expected)
+        public void EqualsTest(CompareInfo compare1, object value, bool expected)
         {
             Assert.Equal(expected, compare1.Equals(value));
             if (value is CompareInfo)
@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
-        public void GetHashCode(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
+        public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
             Assert.Equal(expected, invariantCompare.GetHashCode(source1, options1).Equals(invariantCompare.GetHashCode(source2, options2)));
@@ -80,7 +80,7 @@ namespace System.Globalization.Tests
         [InlineData("", "CompareInfo - ")]
         [InlineData("en-US", "CompareInfo - en-US")]
         [InlineData("EN-US", "CompareInfo - en-US")]
-        public void ToString(string name, string expected)
+        public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).CompareInfo.ToString());
         }

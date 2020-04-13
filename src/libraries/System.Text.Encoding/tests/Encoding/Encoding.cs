@@ -67,7 +67,7 @@ namespace System.Text.Encodings.Tests
 
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
-        public static void NormalizationTest(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
+        public static void VerifyCodePageAttributes(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
                                             bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave, int windowsCodePage)
         {
             Encoding encoding = Encoding.GetEncoding(codepage);

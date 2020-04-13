@@ -325,7 +325,7 @@ namespace System.IO
 
             // As we successfully removed all of the files we shouldn't care about the directory itself
             // not being empty. As file deletion is just a marker to remove the file when all handles
-            // are closed we could still have contents hanging around.
+            // are closed we could still have undeleted contents.
             RemoveDirectoryInternal(fullPath, topLevel: topLevel, allowDirectoryNotEmpty: true);
         }
 
