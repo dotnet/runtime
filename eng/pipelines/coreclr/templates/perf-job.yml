@@ -18,8 +18,8 @@ jobs:
 - template: run-performance-job.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables['runtimeFlavorName']) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables['runtimeFlavorName']) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables.runtimeFlavorName) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables.runtimeFlavorName) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -65,7 +65,7 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
 
-    - ${{ if eq(variables['runtimeFlavorName'], 'Mono') }}:
+    - ${{ if eq(parameters.variables.runtimeFlavorName, 'Mono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/mono/$(osGroup).$(archType).$(buildConfigUpper)
