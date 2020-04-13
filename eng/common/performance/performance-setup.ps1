@@ -14,6 +14,7 @@ Param(
     [string] $Kind="micro",
     [switch] $Internal,
     [switch] $Compare,
+    [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
 )
 
@@ -69,6 +70,13 @@ else {
     git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
+if($MonoDotnet -ne "")
+{
+    $UsingMono = "true"
+    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
+    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
+}
+
 if ($UseCoreRun) {
     $NewCoreRoot = (Join-Path $PayloadDirectory "Core_Root")
     Move-Item -Path $CoreRootDirectory -Destination $NewCoreRoot
@@ -104,6 +112,7 @@ Write-PipelineSetVariable -Name 'UseCoreRun' -Value "$UseCoreRun" -IsMultiJobVar
 Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false
