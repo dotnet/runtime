@@ -59,8 +59,6 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                                                CORINFO_SIG_INFO*    sig,
                                                var_types            baseType)
 {
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
-
     if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
