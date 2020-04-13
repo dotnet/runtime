@@ -3854,7 +3854,7 @@ namespace Mono.Linker.Steps {
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
 					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
-					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.Parameters.Count == 0);
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic && m.Parameters.Count == 0);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
