@@ -64,6 +64,10 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
+      - ${{ if eq(parameters.osGroup, 'Android') }}:
+        - name: ANDROID_NDK_HOME
+          value: /usr/local/ndk
+
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           value: Mono
@@ -103,6 +107,10 @@ jobs:
 
         # Public OSX Build Pool
         ${{ if eq(parameters.osGroup, 'iOS') }}:
+          vmImage: 'macOS-10.14'
+
+        # Public OSX Build Pool
+        ${{ if eq(parameters.osGroup, 'tvOS') }}:
           vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool

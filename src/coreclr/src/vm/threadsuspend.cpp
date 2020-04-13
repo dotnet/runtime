@@ -2892,9 +2892,6 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
 
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
         FastInterlockIncrement (&g_TrapReturningThreads);
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-        EnableJitGCPoll();
-#endif
         _ASSERTE(g_TrapReturningThreads > 0);
 
 #ifdef _DEBUG
@@ -2905,22 +2902,10 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
     {
         FastInterlockDecrement (&g_TrapReturningThreads);
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
-
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-        if (0 == g_TrapReturningThreads)
-        {
-            DisableJitGCPoll();
-        }
-#endif
-
         _ASSERTE(g_TrapReturningThreads >= 0);
     }
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-    //Ensure that we flush the cache line containing the GC Poll Helper.
-    MemoryBarrier();
-#endif //ENABLE_FAST_GCPOLL_HELPER
-    g_fTrapReturningThreadsLock = 0;
 
+    g_fTrapReturningThreadsLock = 0;
 }
 
 #ifdef FEATURE_HIJACK
@@ -5280,13 +5265,22 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(VOID *pvHijackAddr, ExecutionState *esb)
+void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    _ASSERTE(IsValidReturnKind(returnKind));
+    VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
+#ifdef TARGET_X86
+    if (returnKind == RT_Float)
+    {
+        pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
+    }
+#endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
     // This is because they share ebp with their containing function further down the
@@ -5305,7 +5299,7 @@ void Thread::HijackThread(VOID *pvHijackAddr, ExecutionState *esb)
         return;
     }
 
-    IS_VALID_CODE_PTR((FARPROC) pvHijackAddr);
+    SetHijackReturnKind(returnKind);
 
     if (m_State & TS_Hijacked)
         UnhijackThread();
@@ -5616,27 +5610,10 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-ReturnKind GetReturnKind(Thread *pThread, EECodeInfo *codeInfo)
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind)
 {
-    GCInfoToken gcInfoToken = codeInfo->GetGCInfoToken();
-    ReturnKind returnKind = codeInfo->GetCodeManager()->GetReturnKind(gcInfoToken);
-    _ASSERTE(IsValidReturnKind(returnKind));
-    return returnKind;
-}
-
-VOID * GetHijackAddr(Thread *pThread, EECodeInfo *codeInfo)
-{
-    ReturnKind returnKind = GetReturnKind(pThread, codeInfo);
-    pThread->SetHijackReturnKind(returnKind);
-
-#ifdef TARGET_X86
-    if (returnKind == RT_Float)
-    {
-        return reinterpret_cast<VOID *>(OnHijackFPTripThread);
-    }
-#endif // TARGET_X86
-
-    return reinterpret_cast<VOID *>(OnHijackTripThread);
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind);
 }
 
 #ifndef TARGET_UNIX
@@ -6091,18 +6068,23 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
             // the method returns an object reference, so we know whether to protect
             // it or not.
             EECodeInfo codeInfo(ip);
-            VOID *pvHijackAddr = GetHijackAddr(this, &codeInfo);
+
+            ReturnKind returnKind;
+
+            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+            {
 
 #ifdef FEATURE_ENABLE_GCPOLL
-            // On platforms that support both hijacking and GC polling
-            // decide whether to hijack based on a configuration value.
-            // COMPlus_GCPollType = 1 is the setting that enables hijacking
-            // in GCPOLL enabled builds.
-            EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-            if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
+                // On platforms that support both hijacking and GC polling
+                // decide whether to hijack based on a configuration value.
+                // COMPlus_GCPollType = 1 is the setting that enables hijacking
+                // in GCPOLL enabled builds.
+                EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
+                if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
 #endif // FEATURE_ENABLE_GCPOLL
-            {
-                HijackThread(pvHijackAddr, &esb);
+                {
+                    HijackThread(returnKind, &esb);
+                }
             }
         }
     }
@@ -6640,6 +6622,12 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         if (executionState.m_ppvRetAddrPtr == NULL)
             return;
 
+        ReturnKind returnKind;
+
+        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+        {
+            return;
+        }
 
         // Calling this turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
         // We should not trigger any loads for unresolved types.
@@ -6650,8 +6638,7 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        void *pvHijackAddr = GetHijackAddr(pThread, &codeInfo);
-        pThread->HijackThread(pvHijackAddr, &executionState);
+        pThread->HijackThread(returnKind, &executionState);
     }
 }
 

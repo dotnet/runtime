@@ -752,7 +752,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal(1_050_097_521, writer.BytesPending);
 
                 // Next write forces a grow beyond 2 GB
-                Assert.Throws<OverflowException>(() => writer.WriteStringValue(text3));
+                Assert.Throws<OutOfMemoryException>(() => writer.WriteStringValue(text3));
 
                 Assert.Equal(1_050_097_521, writer.BytesPending);
 
@@ -4159,7 +4159,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
         [InlineData(false, true, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
         [InlineData(false, false, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>mess\nage", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Hello, \nWorld!")]
-        public void WriteHelloWorldEscaped(bool formatted, bool skipValidation, string key, string value)
+        public void WriteHelloWorldEscaped_AdditionalCases(bool formatted, bool skipValidation, string key, string value)
         {
             string expectedStr = GetEscapedExpectedString(prettyPrint: formatted, key, value, StringEscapeHandling.EscapeHtml);
 
@@ -4666,7 +4666,7 @@ namespace System.Text.Json.Tests
         public void OutputConsistentWithJsonEncodedText()
         {
             string jsonEncodedText = $"{{\"{JsonEncodedText.Encode("propertyName+1")}\":\"{JsonEncodedText.Encode("value+1")}\"}}";
-            
+
             var output = new ArrayBufferWriter<byte>(1024);
 
             using (var writer = new Utf8JsonWriter(output))
@@ -4880,7 +4880,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, 100)]
         [InlineData(false, true, 100)]
         [InlineData(false, false, 100)]
-        public void WriteStartEndWithPropertyNameArray(bool formatted, bool skipValidation, int keyLength)
+        public void WriteStartEndWithPropertyNameArrayDifferentKeyLengths(bool formatted, bool skipValidation, int keyLength)
         {
             var keyChars = new char[keyLength];
             for (int i = 0; i < keyChars.Length; i++)
@@ -4969,7 +4969,7 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, 100)]
         [InlineData(false, true, 100)]
         [InlineData(false, false, 100)]
-        public void WriteStartEndWithPropertyNameObject(bool formatted, bool skipValidation, int keyLength)
+        public void WriteStartEndWithPropertyNameObjectDifferentKeyLengths(bool formatted, bool skipValidation, int keyLength)
         {
             var keyChars = new char[keyLength];
             for (int i = 0; i < keyChars.Length; i++)

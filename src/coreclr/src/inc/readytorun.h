@@ -202,6 +202,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
+
+    READYTORUN_FIXUP_Check_InstructionSetSupport= 0x30, /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
 };
 
 //
@@ -358,6 +360,8 @@ enum ReadyToRunHelper
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,
 };
+
+#include "readytoruninstructionset.h"
 
 //
 // Exception info

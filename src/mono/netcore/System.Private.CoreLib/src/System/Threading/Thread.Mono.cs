@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -25,7 +26,7 @@ namespace System.Threading
         private int name_free; // bool
         private int name_length;
         private ThreadState state;
-        private object abort_exc;
+        private object? abort_exc;
         private int abort_state_handle;
         /* thread_id is only accessed from unmanaged code */
         internal long thread_id;
@@ -34,9 +35,9 @@ namespace System.Threading
         private IntPtr runtime_thread_info;
         /* current System.Runtime.Remoting.Contexts.Context instance
            keep as an object to avoid triggering its class constructor when not needed */
-        private object current_appcontext;
-        private object root_domain_thread;
-        internal byte[] _serialized_principal;
+        private object? current_appcontext;
+        private object? root_domain_thread;
+        internal byte[]? _serialized_principal;
         internal int _serialized_principal_version;
         private IntPtr appdomain_refs;
         private int interruption_requested;
@@ -59,9 +60,9 @@ namespace System.Threading
         private int self_suspended;
         private IntPtr thread_state;
 
-        private Thread self;
-        private object pending_exception;
-        private object start_obj;
+        private Thread self = null!;
+        private object? pending_exception;
+        private object? start_obj;
 
         /* This is used only to check that we are in sync between the representation
          * of MonoInternalThread in native and InternalThread in managed
@@ -71,12 +72,12 @@ namespace System.Threading
         #endregion
 #pragma warning restore 169, 414, 649
 
-        private string _name;
-        private Delegate m_start;
-        private object m_start_arg;
-        private CultureInfo culture, ui_culture;
-        internal ExecutionContext _executionContext;
-        internal SynchronizationContext _synchronizationContext;
+        private string? _name;
+        private Delegate? m_start;
+        private object? m_start_arg;
+        private CultureInfo? culture, ui_culture;
+        internal ExecutionContext? _executionContext;
+        internal SynchronizationContext? _synchronizationContext;
 
         private Thread()
         {
@@ -279,7 +280,7 @@ namespace System.Threading
             }
             else
             {
-                var pdel = (ParameterizedThreadStart)m_start;
+                var pdel = (ParameterizedThreadStart)m_start!;
                 object? arg = m_start_arg;
                 m_start = null;
                 m_start_arg = null;
@@ -287,7 +288,7 @@ namespace System.Threading
             }
         }
 
-        partial void ThreadNameChanged(string value)
+        partial void ThreadNameChanged(string? value)
         {
             // TODO: Should only raise the events
             SetName(this, value);
@@ -311,16 +312,17 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
+        [MemberNotNull("self")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitInternal(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitializeCurrentThread_icall(ref Thread thread);
+        private static extern void InitializeCurrentThread_icall([NotNull] ref Thread? thread);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            Thread thread = null;
+            Thread? thread = null;
             InitializeCurrentThread_icall(ref thread);
             return thread;
         }
@@ -343,7 +345,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void SetName_icall(Thread thread, char* name, int nameLength);
 
-        private static unsafe void SetName(Thread thread, string name)
+        private static unsafe void SetName(Thread thread, string? name)
         {
             fixed (char* fixed_name = name)
                 SetName_icall(thread, fixed_name, name?.Length ?? 0);

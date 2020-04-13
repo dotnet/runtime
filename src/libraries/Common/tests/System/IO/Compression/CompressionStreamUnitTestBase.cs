@@ -664,18 +664,18 @@ namespace System.IO.Compression
         [Fact]
         public async Task CompressDecompress_RoundTrip()
         {
-            await CompressDecompress_RoundTrip(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip(ReadWriteMode.SyncSpan, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip(ReadWriteMode.AsyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip(ReadWriteMode.AsyncMemory, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip(ReadWriteMode.AsyncBeginEnd, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await CompressDecompress_RoundTrip(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.SyncSpan, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncMemory, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncBeginEnd, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
         }
 
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task CompressDecompress_RoundTrip(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
+        public async Task CompressDecompress_RoundTrip_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
             new Random(42).NextBytes(data);
@@ -715,14 +715,14 @@ namespace System.IO.Compression
         {
             if (FlushNoOps)
                 return;
-            await Flush_RoundTrip(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_RoundTrip(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+            await Flush_RoundTrip_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await Flush_RoundTrip_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
         }
 
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_RoundTrip(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
+        public async Task Flush_RoundTrip_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
         {
             if (FlushNoOps)
                 return;
@@ -777,14 +777,14 @@ namespace System.IO.Compression
         {
             if (FlushNoOps)
                 return;
-            await Flush_Consecutive(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_Consecutive(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+            await Flush_Consecutive_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await Flush_Consecutive_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
         }
 
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_Consecutive(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
+        public async Task Flush_Consecutive_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
         {
             if (FlushNoOps)
                 return;
@@ -851,14 +851,14 @@ namespace System.IO.Compression
         {
             if (FlushNoOps)
                 return;
-            await Flush_BeforeFirstWrites(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await Flush_BeforeFirstWrites(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+            await Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode.AsyncArray, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
         }
 
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
-        public async Task Flush_BeforeFirstWrites(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
+        public async Task Flush_BeforeFirstWrites_OuterLoop(ReadWriteMode readWriteMode, int chunkSize, int totalSize, CompressionLevel level)
         {
             if (FlushNoOps)
                 return;
@@ -1168,7 +1168,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void BaseStream(CompressionMode mode)
+        public void BaseStreamTest(CompressionMode mode)
         {
             using (var baseStream = new MemoryStream())
             using (var compressor = CreateStream(baseStream, mode))

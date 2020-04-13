@@ -4,9 +4,11 @@ project(HelloiOS)
 
 file(GLOB DLLS *.dll)
 file(GLOB DLLS_AOT *.dll.o)
+file(GLOB DLLS_PDB *.pdb)
 
 set(APP_RESOURCES
     ${DLLS}
+    ${DLLS_PDB}
 )
 
 add_executable(

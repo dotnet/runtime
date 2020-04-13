@@ -35,17 +35,23 @@ namespace System.Net
             "d MMM yyyy H:m:s", // RFC 5322 no day-of-week, no zone
         };
 
-        // Try the various date formats in the order listed above.
-        // We should accept a wide variety of common formats, but only output RFC 1123 style dates.
-        internal static bool TryStringToDate(ReadOnlySpan<char> input, out DateTimeOffset result) =>
-             DateTimeOffset.TryParseExact(
-                 input,
-                 s_dateFormats,
-                 DateTimeFormatInfo.InvariantInfo,
-                 DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal,
-                 out result);
+        internal static bool TryParse(ReadOnlySpan<char> input, out DateTimeOffset result)
+        {
+            // None of the relevant patterns have whitespace at the beginning or end, so trim the input of
+            // any whitespace.  We can then use strict "r" matching, or if we have to fall back to trying
+            // lots of patterns, only allow inner whitespace rather than leading or trailing whitespace.
+            input = input.Trim();
 
-        // Format according to RFC1123; 'r' uses invariant info (DateTimeFormatInfo.InvariantInfo).
+            // First try strict parsing for "r" with no options, as it's an order of magnitude faster than general parsing for
+            // any individual format in s_dateFormats, allocation-free, and also likely to succeed.  If it doesn't, then
+            // fall back to trying each of the various date formats listed earlier, in order, to be accomodating and
+            // accept a wide variety of old formats.
+            return
+                DateTimeOffset.TryParseExact(input, "r", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out result) ||
+                DateTimeOffset.TryParseExact(input, s_dateFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowInnerWhite | DateTimeStyles.AssumeUniversal, out result);
+        }
+
+        // Format according to RFC1123
         internal static string DateToString(DateTimeOffset dateTime) =>
             dateTime.ToUniversalTime().ToString("r");
     }

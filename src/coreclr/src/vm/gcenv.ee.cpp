@@ -818,14 +818,14 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_uoh, gen);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
@@ -1101,6 +1101,12 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
     if (strcmp(key, "GCRetainVM") == 0)
     {
         *value = !!g_pConfig->GetGCRetainVM();
+        return true;
+    }
+
+    if (strcmp(key, "GCLargePages") == 0)
+    {
+        *value = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages));
         return true;
     }
 

@@ -439,7 +439,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
 
 #ifdef FEATURE_TIERED_COMPILATION
             bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
+#if !defined(TARGET_X86)
             CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
             // If the method is eligible for tiering but is being
             // called from a Preemptive GC Mode thread or the method
@@ -458,7 +458,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
                 codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
                 shouldTier = false;
             }
-#endif  // !TARGET_X86 || !TARGET_WINDOWS
+#endif  // !TARGET_X86
 #endif // FEATURE_TIERED_COMPILATION
 
             if (pConfig->SetNativeCode(pCode, &pCode))

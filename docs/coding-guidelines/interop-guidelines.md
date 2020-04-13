@@ -156,28 +156,9 @@ internal static partial class Interop
 
 Using enums instead of partial, static classes can lead to needing lots of casts at call sites and can cause problems if such a type needs to be split across multiple files (enums can't currently be partial). However, enums can be valuable in making it clear in a DllImport signature what values are permissible. Enums may be used in limited circumstances where these aren't concerns: the full set of values can be represented in the enum, and the interop signature can be defined to use the enum type rather than the underlying integral type.
 
-### Naming
+## P/Invoke Definitions
 
- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code.
-  - We should not rename any of these based on managed coding guidelines. The only exception to this is for the constant grouping type, which should be named with the most discoverable name possible; if that name is a concept (e.g. Errors), it can be named using managed naming guidelines.
-
-### Definition
-
-When defining the P/Invoke signatures and structs, the following guidelines should be followed. More details on P/Invoke behavior and these guidelines can be found here: [P/Invokes](interop-pinvokes.md)
-
-- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code.
-- Avoid using `StringBuilder`, particularly as an output buffer to avoid over allocating.
-- Use blittable types in structs where possible (not `string` and `bool`).
-- Use `sizeof()` for blittable structs, not `Marshal.SizeOf<MyStruct>()`
-- Use C# type keywords that map as closely to the underlying type as possible (e.g. use `uint` when the native type is unsigned, not `int` or `System.UInt`).
-- Use `ArrayPool` for buffer pooling.
-- Be careful of return string termination when allocating buffers (add room for null where needed).
-- Only use `bool` for 32 bit types (matches `BOOL` not `BOOLEAN`).
-- Use `[In]` and `[Out]` only when they differ from the implicit behavior.
-- Explicitly specify the `CharSet` as `Ansi` or `Unicode` when the signature has a string.
-- Use `ExactSpelling` to avoid probing for A/W signature variants.
-- Do not set `PreserveSig` to false.
-
+When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
 
 ## UNIX shims
 

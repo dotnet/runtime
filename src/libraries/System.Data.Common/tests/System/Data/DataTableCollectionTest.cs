@@ -262,7 +262,7 @@ namespace System.Data.Tests
             Assert.Equal("Table4", array1[5].TableName);
         }
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataTableCollection tbcol1 = _dataset[0].Tables;
             DataTableCollection tbcol2 = _dataset[1].Tables;

@@ -882,6 +882,46 @@
                         </UserData>
                     </template>
 
+                    <template tid="GCHeapStats_V2">
+                        <data name="GenerationSize0" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TotalPromotedSize0" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="GenerationSize1" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TotalPromotedSize1" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="GenerationSize2" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TotalPromotedSize2" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="GenerationSize3" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TotalPromotedSize3" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="FinalizationPromotedSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="FinalizationPromotedCount" inType="win:UInt64" />
+                        <data name="PinnedObjectCount" inType="win:UInt32" />
+                        <data name="SinkBlockCount" inType="win:UInt32" />
+                        <data name="GCHandleCount" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="GenerationSize4" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TotalPromotedSize4" inType="win:UInt64" outType="win:HexInt64" />
+
+                        <UserData>
+                            <GCHeapStats_V2 xmlns="myNs">
+                                <GenerationSize0> %1 </GenerationSize0>
+                                <TotalPromotedSize0> %2 </TotalPromotedSize0>
+                                <GenerationSize1> %3 </GenerationSize1>
+                                <TotalPromotedSize1> %4 </TotalPromotedSize1>
+                                <GenerationSize2> %5 </GenerationSize2>
+                                <TotalPromotedSize2> %6 </TotalPromotedSize2>
+                                <GenerationSize3> %7 </GenerationSize3>
+                                <TotalPromotedSize3> %8 </TotalPromotedSize3>
+                                <FinalizationPromotedSize> %9 </FinalizationPromotedSize>
+                                <FinalizationPromotedCount> %10 </FinalizationPromotedCount>
+                                <PinnedObjectCount> %11 </PinnedObjectCount>
+                                <SinkBlockCount> %12 </SinkBlockCount>
+                                <GCHandleCount> %13 </GCHandleCount>
+                                <ClrInstanceID> %14 </ClrInstanceID>
+                                <GenerationSize4> %15 </GenerationSize4>
+                                <TotalPromotedSize4> %16 </TotalPromotedSize4>
+                            </GCHeapStats_V2>
+                        </UserData>
+                    </template>
+                    
                     <template tid="GCCreateSegment">
                         <data name="Address" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="Size" inType="win:UInt64" outType="win:HexInt64" />
@@ -2757,6 +2797,11 @@
                            keywords ="GCKeyword" opcode="GCHeapStats"
                            task="GarbageCollection"
                            symbol="GCHeapStats_V1" message="$(string.RuntimePublisher.GCHeapStats_V1EventMessage)"/>
+
+                    <event value="4" version="2" level="win:Informational"  template="GCHeapStats_V2"
+                           keywords ="GCKeyword" opcode="GCHeapStats"
+                           task="GarbageCollection"
+                           symbol="GCHeapStats_V2" message="$(string.RuntimePublisher.GCHeapStats_V2EventMessage)"/>
 
                     <event value="5" version="0" level="win:Informational"  template="GCCreateSegment"
                            keywords ="GCKeyword" opcode="GCCreateSegment"
@@ -5246,6 +5291,26 @@
                         </UserData>
                     </template>
 
+                    <template tid="BGCOverflow_V1">
+                        <data name="Min" inType="win:UInt64" />
+                        <data name="Max" inType="win:UInt64" />
+                        <data name="Objects" inType="win:UInt64" />
+                        <data name="IsLarge" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="GenNumber" inType="win:UInt32" />
+
+                        <UserData>
+                            <BGCOverflow_V1 xmlns="myNs">
+                                <Min> %1 </Min>
+                                <Max> %2 </Max>
+                                <Objects> %3 </Objects>
+                                <IsLarge> %4 </IsLarge>
+                                <ClrInstanceID> %5 </ClrInstanceID>
+                                <GenNumber> %6 </GenNumber>
+                            </BGCOverflow_V1>
+                        </UserData>
+                    </template>
+
                     <template tid="BGCAllocWait">
                         <data name="Reason" inType="win:UInt32" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -5941,6 +6006,11 @@
                            keywords ="GCPrivateKeyword"  opcode="BGCOverflow"
                            task="GarbageCollectionPrivate"
                            symbol="BGCOverflow" message="$(string.PrivatePublisher.BGCOverflowEventMessage)"/>
+
+                    <event value="22" version="1" level="win:Informational"  template="BGCOverflow_V1"
+                           keywords ="GCPrivateKeyword"  opcode="BGCOverflow"
+                           task="GarbageCollectionPrivate"
+                           symbol="BGCOverflow_V1" message="$(string.PrivatePublisher.BGCOverflowEventMessage)"/>
 
                     <event value="23" version="0" level="win:Informational"  template="BGCAllocWait"
                            keywords ="GCPrivateKeyword"  opcode="BGCAllocWaitBegin"
@@ -6748,6 +6818,7 @@
                 <string id="RuntimePublisher.GCEnd_V1EventMessage" value="Count=%1;%nDepth=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCHeapStatsEventMessage" value="GenerationSize0=%1;%nTotalPromotedSize0=%2;%nGenerationSize1=%3;%nTotalPromotedSize1=%4;%nGenerationSize2=%5;%nTotalPromotedSize2=%6;%nGenerationSize3=%7;%nTotalPromotedSize3=%8;%nFinalizationPromotedSize=%9;%nFinalizationPromotedCount=%10;%nPinnedObjectCount=%11;%nSinkBlockCount=%12;%nGCHandleCount=%13" />
                 <string id="RuntimePublisher.GCHeapStats_V1EventMessage" value="GenerationSize0=%1;%nTotalPromotedSize0=%2;%nGenerationSize1=%3;%nTotalPromotedSize1=%4;%nGenerationSize2=%5;%nTotalPromotedSize2=%6;%nGenerationSize3=%7;%nTotalPromotedSize3=%8;%nFinalizationPromotedSize=%9;%nFinalizationPromotedCount=%10;%nPinnedObjectCount=%11;%nSinkBlockCount=%12;%nGCHandleCount=%13;%nClrInstanceID=%14" />
+                <string id="RuntimePublisher.GCHeapStats_V2EventMessage" value="GenerationSize0=%1;%nTotalPromotedSize0=%2;%nGenerationSize1=%3;%nTotalPromotedSize1=%4;%nGenerationSize2=%5;%nTotalPromotedSize2=%6;%nGenerationSize3=%7;%nTotalPromotedSize3=%8;%nFinalizationPromotedSize=%9;%nFinalizationPromotedCount=%10;%nPinnedObjectCount=%11;%nSinkBlockCount=%12;%nGCHandleCount=%13;%nClrInstanceID=%14;%nGenerationSize4=%15;%nTotalPromotedSize4=%16" />
                 <string id="RuntimePublisher.GCCreateSegmentEventMessage" value="Address=%1;%nSize=%2;%nType=%3" />
                 <string id="RuntimePublisher.GCCreateSegment_V1EventMessage" value="Address=%1;%nSize=%2;%nType=%3;%nClrInstanceID=%4" />
                 <string id="RuntimePublisher.GCFreeSegmentEventMessage" value="Address=%1" />
@@ -7003,6 +7074,7 @@
                 <string id="PrivatePublisher.BGCDrainMarkEventMessage" value="Objects=%1;%nClrInstanceID=%2"/>
                 <string id="PrivatePublisher.BGCRevisitEventMessage" value="Pages=%1;%nObjects=%2;%nIsLarge=%3;%nClrInstanceID=%4"/>
                 <string id="PrivatePublisher.BGCOverflowEventMessage" value="Min=%1;%nMax=%2;%Objects=%3;%nIsLarge=%4;%nClrInstanceID=%5"/>
+                <string id="PrivatePublisher.BGCOverflow_V1EventMessage" value="Min=%1;%nMax=%2;%Objects=%3;%nIsLarge=%4;%nClrInstanceID=%5;%GenNumber=%6"/>
                 <string id="PrivatePublisher.BGCAllocWaitEventMessage" value="Reason=%1;%nClrInstanceID=%2"/>
                 <string id="PrivatePublisher.GCFullNotifyEventMessage" value="GenNumber=%1;%nIsAlloc=%2"/>
                 <string id="PrivatePublisher.GCFullNotify_V1EventMessage" value="GenNumber=%1;%nIsAlloc=%2;%nClrInstanceID=%3"/>

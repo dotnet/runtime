@@ -993,7 +993,7 @@ ULONG TiggerStorage::PrintSizeInfo(bool verbose)
 {
     ULONG total = 0;
 
-    printf("Storage Header:  %d\n", sizeof(STORAGEHEADER));
+    printf("Storage Header:  %zu\n", sizeof(STORAGEHEADER));
     if (m_pStreamList != NULL)
     {
         PSTORAGESTREAM storStream = m_pStreamList;
@@ -1001,7 +1001,7 @@ ULONG TiggerStorage::PrintSizeInfo(bool verbose)
         for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
         {
             pNext = storStream->NextStream();
-            printf("Stream #%d (%s) Header: %d, Data: %d\n",i,storStream->GetName(), (BYTE*)pNext - (BYTE*)storStream, storStream->GetSize());
+            printf("Stream #%d (%s) Header: %zd, Data: %lu\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
             total += storStream->GetSize();
             storStream = pNext;
         }

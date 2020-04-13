@@ -19,6 +19,11 @@ set(SOURCES
     ./hostpolicy_context.cpp
     ./hostpolicy.cpp
     ./hostpolicy_init.cpp
+    ../bundle/dir_utils.cpp
+    ../bundle/extractor.cpp
+    ../bundle/file_entry.cpp
+    ../bundle/manifest.cpp
+    ../bundle/runner.cpp
 )
 
 set(HEADERS
@@ -30,6 +35,11 @@ set(HEADERS
     ./hostpolicy_context.h
     ../hostpolicy.h
     ./hostpolicy_init.h
+    ../bundle/dir_utils.h
+    ../bundle/extractor.h
+    ../bundle/file_entry.h
+    ../bundle/manifest.h
+    ../bundle/runner.h
 )
 
 include(../lib.cmake)

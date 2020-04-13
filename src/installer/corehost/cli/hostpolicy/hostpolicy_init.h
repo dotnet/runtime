@@ -8,6 +8,7 @@
 #include "host_interface.h"
 #include "host_startup_info.h"
 #include "fx_definition.h"
+#include "bundle/info.h"
 
 struct hostpolicy_init_t
 {
