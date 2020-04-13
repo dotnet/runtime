@@ -2721,58 +2721,7 @@ namespace Mono.Linker.Steps {
 				var methodCalledType = methodCalled.DeclaringType;
 
 				switch (methodCalledType.Name) {
-					//
-					// System.Type
-					//
-					/*
-					case "Type" when methodCalledType.Namespace == "System":
-
-						// Some of the overloads are implemented by calling another overload of the same name.
-						// These "internal" calls are not interesting to analyze, the outermost call is the one
-						// which needs to be analyzed. The assumption is that all overloads have the same semantics.
-						// (for example that all overload of GetConstructor if used require the specified type to have a .ctor).
-						if (_methodCalling.DeclaringType == methodCalled.DeclaringType && _methodCalling.Name == methodCalled.Name)
-							break;
-
-						switch (methodCalled.Name) {
-							//
-							// GetField (string)
-							// GetField (string, BindingFlags)
-							//
-							case "GetField":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Field, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetEvent (string)
-							// GetEvent (string, BindingFlags)
-							//
-							case "GetEvent":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Event, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetProperty (string)
-							// GetProperty (string, BindingFlags)
-							// GetProperty (string, Type)
-							// GetProperty (string, Type[])
-							// GetProperty (string, Type, Type[])
-							// GetProperty (string, Type, Type[], ParameterModifier[])
-							// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
-							//
-							case "GetProperty":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Property, instructionIndex - 1);
-
-								break;
-						}
-
-						break;
-						*/
+					
 					//
 					// System.Reflection.RuntimeReflectionExtensions
 					//
