@@ -2290,7 +2290,8 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 	}
 }
 
-void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append)
+void
+mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
@@ -2311,7 +2312,6 @@ void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpoi
 		assembly_preload_hook = hook;
 	}
 }
-
 
 static void
 free_assembly_preload_hooks (void)
@@ -4859,7 +4859,7 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 }
 
 MonoAssembly *
-mono_assembly_load_full_alc (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, MonoGCHandle alc_gchandle)
+mono_assembly_load_full_alc (MonoGCHandle alc_gchandle, MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
