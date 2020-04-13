@@ -781,5 +781,29 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
             public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
         }
+
+        [Fact]
+        public static void NonPublicMembersAreNotIncluded()
+        {
+            Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithNonPublicProperties()));
+
+            string json = @"{""MyInt"":1,""MyString"":""Hello"",""MyFloat"":2,""MyDouble"":3}";
+            var obj = JsonSerializer.Deserialize<ClassWithNonPublicProperties>(json);
+            Assert.Equal(0, obj.MyInt);
+            Assert.Null(obj.MyString);
+            Assert.Equal(0, obj.GetMyFloat);
+            Assert.Equal(0, obj.GetMyDouble);
+        }
+
+        private class ClassWithNonPublicProperties
+        {
+            internal int MyInt { get; set; }
+            internal string MyString { get; private set; }
+            internal float MyFloat { private get; set; }
+            private double MyDouble { get; set; }
+
+            internal float GetMyFloat => MyFloat;
+            internal double GetMyDouble => MyDouble;
+        }
     }
 }

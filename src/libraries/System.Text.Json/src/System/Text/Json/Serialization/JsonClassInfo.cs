@@ -97,7 +97,7 @@ namespace System.Text.Json
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
-                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
                         Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
 
@@ -106,6 +106,17 @@ namespace System.Text.Json
                             // Ignore indexers
                             if (propertyInfo.GetIndexParameters().Length > 0)
                             {
+                                continue;
+                            }
+
+                            if (IsNonPublicProperty(propertyInfo))
+                            {
+                                if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                {
+                                    ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
+                                }
+
+                                // Non-public properties should not be included for (de)serialization.
                                 continue;
                             }
 
@@ -156,23 +167,6 @@ namespace System.Text.Json
                         cache.Values.CopyTo(cacheArray, 0);
                         PropertyCacheArray = cacheArray;
 
-                        // Ensure `[JsonInclude]` is not used on non-public properties.
-                        properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
-
-                        foreach (PropertyInfo propertyInfo in properties)
-                        {
-                            // Ignore indexers
-                            if (propertyInfo.GetIndexParameters().Length > 0)
-                            {
-                                continue;
-                            }
-
-                            if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
-                            {
-                                ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
-                            }
-                        }
-
                         if (converter.ConstructorIsParameterized)
                         {
                             InitializeConstructorParameters(converter.ConstructorInfo!);
@@ -201,6 +195,13 @@ namespace System.Text.Json
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
             }
+        }
+
+        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
+        {
+            MethodInfo? getMethod = propertyInfo.GetMethod;
+            MethodInfo? setMethod = propertyInfo.SetMethod;
+            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
         }
 
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
