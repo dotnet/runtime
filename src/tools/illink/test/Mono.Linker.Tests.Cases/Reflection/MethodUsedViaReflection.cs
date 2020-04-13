@@ -25,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestNullType ();
 			TestDataFlowType ();
 			TestIfElse (1);
+			TestMethodInBaseType ();
 		}
 
 		[Kept]
@@ -47,9 +48,12 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (Type []) },
+			typeof (TestNameAndTypeClass), nameof (TestNameAndTypeClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestNameAndType ()
 		{
-			var method = typeof (TestNameAndTypeClass).GetMethod ("OnlyCalledViaReflection", new Type [] { typeof (int) });
+			var method = typeof (TestNameAndTypeClass).GetMethod ("OnlyCalledViaReflection", new Type [] { });
 			method.Invoke (null, new object [] { });
 		}
 
@@ -61,12 +65,19 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof(CallingConventions), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (TestNameBindingFlagsCallingConventionParameterClass), nameof (TestNameBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestNameBindingFlagsCallingConventionParameterModifier()
 		{
 			var method = typeof (TestNameBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.NonPublic, null, CallingConventions.Standard, new Type [] { }, null);
+			method.Invoke (null, new object [] { });
 		}
 #if NETCOREAPP
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (int), typeof (Type []) },
+			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestNameWithIntAndType ()
 		{
 			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
@@ -81,6 +92,9 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (int), typeof (BindingFlags), typeof (Binder), typeof(CallingConventions), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass), nameof (TestNameWithIntBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestNameWithIntBindingFlagsCallingConventionParameter()
 		{
 			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type [] { }, null);
@@ -129,6 +143,21 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (IfClass), nameof (IfClass.OnlyCalledViaReflection), new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (IfClass), nameof (IfClass.ElseIfCall), new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (ElseIfClass), nameof (ElseIfClass.OnlyCalledViaReflection), new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (ElseIfClass), nameof (ElseIfClass.ElseIfCall), new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (ElseClass), nameof (ElseClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -148,6 +177,16 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				mystring = null;
 			}
 			var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.OnlyCalledViaReflection), new Type [0])]
+		static void TestMethodInBaseType()
+		{
+			var method = typeof (DerivedClass).GetMethod ("OnlyCalledViaReflection");
 			method.Invoke (null, new object [] { });
 		}
 
@@ -397,5 +436,20 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				return 50;
 			}
 		}
+
+		[Kept]
+		class BaseClass
+		{
+			[Kept]
+			public int OnlyCalledViaReflection ()
+			{
+				return 51;
+			}
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (BaseClass))]
+		class DerivedClass : BaseClass
+		{ }
 	}
 }

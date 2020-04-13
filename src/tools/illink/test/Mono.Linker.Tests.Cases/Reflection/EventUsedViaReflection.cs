@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestNullType ();
 			TestDataFlowType ();
 			TestIfElse (1);
+			TestEventInBaseType ();
 		}
 
 		[Kept]
@@ -38,6 +39,9 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string), typeof(BindingFlags) },
+			typeof (Bar), nameof (Bar.PublicEvent), (Type [])null)]
 		static void TestNameWrongBindingFlags()
 		{
 			var eventInfo = typeof (Bar).GetEvent ("PublicEvent", BindingFlags.NonPublic);
@@ -84,6 +88,15 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.IfEvent), (Type [])null)]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.ElseEvent), (Type [])null)]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.IfEvent), (Type [])null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -99,6 +112,16 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				myString = "ElseEvent";
 			}
 			var eventInfo = myType.GetEvent (myString);
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.PublicEventOnBase), (Type [])null)]
+		static void TestEventInBaseType ()
+		{
+			typeof (DerivedClass).GetEvent ("ProtectedEventOnBase");
+			typeof (DerivedClass).GetEvent ("PublicEventOnBase");
 		}
 
 		[KeptMember (".ctor()")]
@@ -151,7 +174,26 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			protected event EventHandler<EventArgs> IfEvent;
+			public event EventHandler<EventArgs> IfEvent;
+		}
+
+		[Kept]
+		class BaseClass
+		{
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			protected static event EventHandler<EventArgs> ProtectedEventOnBase;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			public event EventHandler<EventArgs> PublicEventOnBase;
+		}
+		[KeptBaseType (typeof (BaseClass))]
+		class DerivedClass : BaseClass
+		{
 		}
 	}
 }

@@ -71,6 +71,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (IfConstructor), ".ctor", new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
+			typeof (ElseConstructor), ".ctor", new Type [0])]
 		static void TestIfElse (bool decision)
 		{
 			Type myType;
