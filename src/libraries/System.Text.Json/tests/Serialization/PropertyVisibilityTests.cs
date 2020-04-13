@@ -98,6 +98,23 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Serealize_NewSlotPublicProperty_SpecifiedJsonPropertyName()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotAttributedDecimalProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyNumeric"":1,""MyNewNumeric"":1.5}", json);
+
+            // Deserialize
+            json = @"{""MyNumeric"":4,""MyNewNumeric"":2.5}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotAttributedDecimalProperty>(json);
+
+            Assert.Equal(4, ((ClassWithHiddenByNewSlotIntProperty)obj).MyNumeric);
+            Assert.Equal(2.5M, ((ClassWithNewSlotAttributedDecimalProperty)obj).MyNumeric);
+        }
+
+        [Fact]
         public static void Ignore_NonPublicProperty()
         {
             // Serialize
@@ -394,6 +411,12 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithNewSlotDecimalProperty : ClassWithHiddenByNewSlotIntProperty
         {
+            public new decimal MyNumeric { get; set; } = 1.5M;
+        }
+
+        public class ClassWithNewSlotAttributedDecimalProperty : ClassWithHiddenByNewSlotIntProperty
+        {
+            [JsonPropertyName("MyNewNumeric")]
             public new decimal MyNumeric { get; set; } = 1.5M;
         }
 
