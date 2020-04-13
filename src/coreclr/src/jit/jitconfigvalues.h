@@ -352,6 +352,9 @@ CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT fu
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This
                                                  // mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
+CONFIG_INTEGER(FastTailCalls, W("FastTailCalls"), 1) // If set, allow fast tail calls; otherwise allow only helper-based
+                                                     // calls
+                                                     // for explicit tail calls.
 
 CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1 to measure noway_assert usage. Only
                                                                      // valid if MEASURE_NOWAY is defined.

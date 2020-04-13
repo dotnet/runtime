@@ -6664,6 +6664,16 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 {
 #if FEATURE_FASTTAILCALL
+
+    if (!opts.compFastTailCalls)
+    {
+        if (failReason)
+        {
+            *failReason = "Configuration doesn't allow fast tail calls";
+        }
+        return false;
+    }
+
     // To reach here means that the return types of the caller and callee are tail call compatible.
     // In the case of structs that can be returned in a register, compRetNativeType is set to the actual return type.
     CLANG_FORMAT_COMMENT_ANCHOR;

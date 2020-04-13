@@ -8711,6 +8711,11 @@ public:
         bool compTailCallLoopOpt;
 #endif
 
+#if FEATURE_FASTTAILCALL
+        // Whether fast tail calls are allowed.
+        bool compFastTailCalls;
+#endif // FEATURE_FASTTAILCALL
+
 #if defined(TARGET_ARM64)
         // Decision about whether to save FP/LR registers with callee-saved registers (see
         // COMPlus_JitSaveFpLrWithCalleSavedRegisters).

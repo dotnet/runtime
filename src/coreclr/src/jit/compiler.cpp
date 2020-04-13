@@ -2693,6 +2693,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compTailCallOpt = true;
 #endif // FEATURE_TAILCALL_OPT
 
+#if FEATURE_FASTTAILCALL
+    // By default fast tail calls are enabled.
+    opts.compFastTailCalls = true;
+#endif // FEATURE_FASTTAILCALL
+
     if (compIsForInlining())
     {
         return;
@@ -3032,6 +3037,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compTailCallLoopOpt = false;
     }
 #endif
+
+#if FEATURE_FASTTAILCALL
+    if (JitConfig.FastTailCalls() == 0)
+    {
+        opts.compFastTailCalls = false;
+    }
+#endif // FEATURE_FASTTAILCALL
 
     opts.compScopeInfo = opts.compDbgInfo;
 
