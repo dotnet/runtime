@@ -170,7 +170,13 @@ if(CLR_CMAKE_TARGET_UNIX)
             add_link_options(-Wl,-bind_at_load)
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-            add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+            if(CLR_CMAKE_TARGET_SUNOS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+            else()
+                # -z,now is required for full relro.
+                # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
+                add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+            endif()
         endif()
     endif()
 

@@ -54,7 +54,7 @@ namespace System.Diagnostics
             }
             else
             {
-                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
+                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
             }
         }
 

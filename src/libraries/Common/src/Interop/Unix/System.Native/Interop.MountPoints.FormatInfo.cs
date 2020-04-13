@@ -44,6 +44,7 @@ internal static partial class Interop
             bdevfs = 0x62646576,
             bfs = 0x1BADFACE,
             binfmt_misc = 0x42494E4D,
+            bootfs = 0xA56D3FF9,
             btrfs = 0x9123683E,
             ceph = 0x00C36400,
             cgroupfs = 0x0027E0EB,
@@ -65,6 +66,7 @@ internal static partial class Interop
             ext3 = 0xEF53,
             ext4 = 0xEF53,
             fat = 0x4006,
+            fd = 0xF00D1E,
             fhgfs = 0x19830326,
             fuse = 0x65735546,
             fuseblk = 0x65735546,
@@ -86,6 +88,7 @@ internal static partial class Interop
             jffs2 = 0x72B6,
             jfs = 0x3153464A,
             kafs = 0x6B414653,
+            lofs = 0xEF53, /* loopback filesystem, magic same as ext2 */
             logfs = 0xC97E8168,
             lustre = 0x0BD00BD0,
             minix_old = 0x137F, /* orig. minix */
@@ -227,6 +230,7 @@ internal static partial class Interop
                 case "bdevfs":
                 case "befs":
                 case "bfs":
+                case "bootfs":
                 case "bpf_fs":
                 case "btrfs":
                 case "btrfs_test":
@@ -261,6 +265,7 @@ internal static partial class Interop
                 case "jffs":
                 case "jffs2":
                 case "jfs":
+                case "lofs":
                 case "logfs":
                 case "lxfs":
                 case "minix (30 char.)":
@@ -384,15 +389,18 @@ internal static partial class Interop
                 case "cgroupfs":
                 case "cgroup2fs":
                 case "configfs":
+                case "cpuset":
                 case "cramfs":
                 case "cramfs-wend":
                 case "cryptkeeper":
-                case "cpuset":
+                case "ctfs":
                 case "debugfs":
+                case "dev":
                 case "devfs":
                 case "devpts":
                 case "devtmpfs":
                 case "encfs":
+                case "fd":
                 case "fdesc":
                 case "fuse.gvfsd-fuse":
                 case "fusectl":
@@ -400,9 +408,11 @@ internal static partial class Interop
                 case "hugetlbfs":
                 case "libpam-encfs":
                 case "ibpam-mount":
+                case "mntfs":
+                case "mqueue":
                 case "mtpfs":
                 case "mythtvfs":
-                case "mqueue":
+                case "objfs":
                 case "openprom":
                 case "openpromfs":
                 case "pipefs":
@@ -417,6 +427,7 @@ internal static partial class Interop
                 case "securityfs":
                 case "selinux":
                 case "selinuxfs":
+                case "sharefs":
                 case "sockfs":
                 case "sysfs":
                 case "tmpfs":

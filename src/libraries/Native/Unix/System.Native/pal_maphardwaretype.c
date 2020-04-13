@@ -9,13 +9,16 @@
 #include <sys/types.h>
 
 #if defined(AF_PACKET)
-#if defined(_WASM_)
+#if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>
-#include <net/if_arp.h>
-#else // _WASM_
+#else
 #include <linux/if_packet.h>
+#endif
+#if HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#else
 #include <linux/if_arp.h>
-#endif // _WASM_
+#endif
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
@@ -43,7 +46,9 @@ uint16_t MapHardwareType(uint16_t nativeType)
         case ARPHRD_PPP:
             return NetworkInterfaceType_Ppp;
         case ARPHRD_TUNNEL:
+#ifdef ARPHRD_TUNNEL6
         case ARPHRD_TUNNEL6:
+#endif
             return NetworkInterfaceType_Tunnel;
         case ARPHRD_LOOPBACK:
             return NetworkInterfaceType_Loopback;
