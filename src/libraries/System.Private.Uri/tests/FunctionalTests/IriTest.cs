@@ -37,7 +37,7 @@ namespace System.PrivateUri.Tests
                               + "%80%80%97%F4%80%80%93%F4%80%80%9C%F4%80%80%99&pbx=1&bav=on.2,or.r_gc.r_pw.&fp=fb838c8"
                               + "df90b57b2&biw=1600&bih=718";
 
-            _ = new Uri(uriString);
+            new Uri(uriString);
 
             GC.Collect(2);
         }
@@ -107,7 +107,7 @@ namespace System.PrivateUri.Tests
                 resultUri.ToString());
 
             string u4 = "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5";
-            _ = new Uri(u4);
+            new Uri(u4);
             Uri.TryCreate(
                 "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5",
                 UriKind.Absolute,
@@ -651,7 +651,7 @@ namespace System.PrivateUri.Tests
         [MemberData(nameof(Iri_ExpandingContents_AllowedSize))]
         public static void Iri_ExpandingContents_DoesNotThrowIfSizeAllowed(string input)
         {
-            _ = new Uri(input);
+            new Uri(input);
             Assert.True(Uri.TryCreate(input, UriKind.Absolute, out Uri _));
         }
     }

@@ -458,18 +458,18 @@ namespace System.PrivateUri.Tests
         {
             // Make sure that constructor doesn't throw when using different types of  Parser Options
 
-            _ = new GenericUriParser(GenericUriParserOptions.AllowEmptyAuthority);
-            _ = new GenericUriParser(GenericUriParserOptions.Default);
-            _ = new GenericUriParser(GenericUriParserOptions.DontCompressPath);
-            _ = new GenericUriParser(GenericUriParserOptions.DontConvertPathBackslashes);
-            _ = new GenericUriParser(GenericUriParserOptions.DontUnescapePathDotsAndSlashes);
-            _ = new GenericUriParser(GenericUriParserOptions.GenericAuthority);
-            _ = new GenericUriParser(GenericUriParserOptions.Idn);
-            _ = new GenericUriParser(GenericUriParserOptions.IriParsing);
-            _ = new GenericUriParser(GenericUriParserOptions.NoFragment);
-            _ = new GenericUriParser(GenericUriParserOptions.NoPort);
-            _ = new GenericUriParser(GenericUriParserOptions.NoQuery);
-            _ = new GenericUriParser(GenericUriParserOptions.NoUserInfo);
+            new GenericUriParser(GenericUriParserOptions.AllowEmptyAuthority);
+            new GenericUriParser(GenericUriParserOptions.Default);
+            new GenericUriParser(GenericUriParserOptions.DontCompressPath);
+            new GenericUriParser(GenericUriParserOptions.DontConvertPathBackslashes);
+            new GenericUriParser(GenericUriParserOptions.DontUnescapePathDotsAndSlashes);
+            new GenericUriParser(GenericUriParserOptions.GenericAuthority);
+            new GenericUriParser(GenericUriParserOptions.Idn);
+            new GenericUriParser(GenericUriParserOptions.IriParsing);
+            new GenericUriParser(GenericUriParserOptions.NoFragment);
+            new GenericUriParser(GenericUriParserOptions.NoPort);
+            new GenericUriParser(GenericUriParserOptions.NoQuery);
+            new GenericUriParser(GenericUriParserOptions.NoUserInfo);
         }
         #endregion GenericUriParser tests
 
@@ -479,43 +479,43 @@ namespace System.PrivateUri.Tests
         [Fact]
         public static void HttpStyleUriParser_ctor()
         {
-            _ = new HttpStyleUriParser();
+            new HttpStyleUriParser();
         }
 
         [Fact]
         public static void FtpStyleUriParser_ctor()
         {
-            _ = new FtpStyleUriParser();
+            new FtpStyleUriParser();
         }
         [Fact]
         public static void FileStyleUriParser_ctor()
         {
-            _ = new FileStyleUriParser();
+            new FileStyleUriParser();
         }
         [Fact]
         public static void NewsStyleUriParser_ctor()
         {
-            _ = new NewsStyleUriParser();
+            new NewsStyleUriParser();
         }
         [Fact]
         public static void GopherStyleUriParser_ctor()
         {
-            _ = new GopherStyleUriParser();
+            new GopherStyleUriParser();
         }
         [Fact]
         public static void LdapStyleUriParser_ctor()
         {
-            _ = new LdapStyleUriParser();
+            new LdapStyleUriParser();
         }
         [Fact]
         public static void NetPipeStyleUriParser_ctor()
         {
-            _ = new NetPipeStyleUriParser();
+            new NetPipeStyleUriParser();
         }
         [Fact]
         public static void NetTcpStyleUriParser_ctor()
         {
-            _ = new NetTcpStyleUriParser();
+            new NetTcpStyleUriParser();
         }
         #endregion UriParser template tests
     }

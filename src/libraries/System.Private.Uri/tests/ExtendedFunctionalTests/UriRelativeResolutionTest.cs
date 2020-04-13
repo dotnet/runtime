@@ -141,11 +141,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Uri_Relative_BaseVsFileLikeUri_MissingRootSlash_ThrowsUriFormatException()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-          {
-              string partialPath = "g:a";
-              Uri resolved = new Uri(_fullBaseUri, partialPath);
-          });
+            Assert.ThrowsAny<FormatException>(() => new Uri(_fullBaseUri, "g:a"));
         }
 
         #region PathCompression
@@ -477,12 +473,7 @@ namespace System.PrivateUri.Tests
         {
             Uri baseUri = new Uri("http://nothing.com/");
             Uri testUri = new Uri("https://specialPort.com:00065535/path?query#fragment");
-
-            _ = testUri.Port; // Trigger parsing.
-
             Uri resultUri = new Uri(baseUri, testUri);
-
-            _ = resultUri.Port; // For Debugging.
 
             Assert.Equal(testUri.Port, resultUri.Port);
         }
