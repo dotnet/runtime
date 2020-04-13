@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class PropertyVisibilityTests
     {
         [Fact]
-        public static void SerializeNewSlotPublicProperty()
+        public static void Serialize_NewSlotPublicProperty()
         {
             // Serialize
             var obj = new ClassWithNewSlotProperty();
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serialize_base_public_property_on_conflict_with_derived_private()
+        public static void Serialize_BasePublicProperty_ConflictWithDerivedPrivate()
         {
             // Serialize
             var obj = new ClassWithNewSlotInternalProperty();
@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serialize_public_property_on_conflict_with_private_due_to_attributes()
+        public static void Serialize_PublicProperty_ConflictWithPrivateDueAttributes()
         {
             // Serialize
             var obj = new ClassWithPropertyNamingConflict();
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serialize_public_property_on_conflict_with_private_due_to_policy()
+        public static void Serialize_PublicProperty_ConflictWithPrivateDuePolicy()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -82,7 +82,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Serealize_new_slot_public_property_without_conflict_with_base_public_property()
+        public static void Serealize_NewSlotPublicProperty_ConflictWithBasePublicProperty()
         {
             // Serialize
             var obj = new ClassWithNewSlotDecimalProperty();
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Ignore_non_public_property()
+        public static void Ignore_NonPublicProperty()
         {
             // Serialize
             var obj = new ClassWithInternalProperty();
@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Ignore_ignored_new_slot_public_property()
+        public static void Ignore_NewSlotPublicPropertyIgnored()
         {
             // Serialize
             var obj = new ClassWithIgnoredNewSlotProperty();
@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Ignore_ignored_base_public_property_on_conflict_with_derived_private()
+        public static void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPrivate()
         {
             // Serialize
             var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPrivate();
@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Ignore_public_property_on_conflict_with_private_due_to_attributes()
+        public static void Ignore_PublicProperty_ConflictWithPrivateDueAttributes()
         {
             // Serialize
             var obj = new ClassWithIgnoredPropertyNamingConflict();
@@ -165,7 +165,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Ignore_public_property_on_conflict_with_private_due_to_policy()
+        public static void Ignore_PublicProperty_ConflictWithPrivateDuePolicy()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_attributes()
+        public static void Throw_PublicProperty_ConflictDueAttributes()
         {
             // Serialize
             var obj = new ClassWithPropertyNamingConflictWhichThrows();
@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_attributes_and_inheritance()
+        public static void Throw_PublicProperty_ConflictDueAttributes_SingleInheritance()
         {
             // Serialize
             var obj = new ClassInheritedWithPropertyNamingConflictWhichThrows();
@@ -212,7 +212,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_attributes_and_double_inheritance()
+        public static void Throw_PublicProperty_ConflictDueAttributes_DoubleInheritance()
         {
             // Serialize
             var obj = new ClassTwiceInheritedWithPropertyNamingConflictWhichThrows();
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_policy()
+        public static void Throw_PublicProperty_ConflictDuePolicy()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -242,7 +242,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_policy_and_inheritance()
+        public static void Throw_PublicProperty_ConflictDuePolicy_SingleInheritance()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -258,7 +258,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Throw_when_public_properties_conflict_due_to_policy_and_double_inheritance()
+        public static void Throw_PublicProperty_ConflictDuePolicy_DobuleInheritance()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -317,7 +317,6 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy : ClassWithPublicProperty
         {
-
         }
 
         public class ClassTwiceInheritedWithPropertyNamingConflictWhichThrows : ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy
