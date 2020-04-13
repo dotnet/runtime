@@ -630,6 +630,7 @@
       <_MonoConfigureParams Include="--disable-mcs-build" />
       <_MonoConfigureParams Include="--disable-nls" />
       <_MonoConfigureParams Include="--disable-visibility-hidden" />
+      <_MonoConfigureParams Include="--with-lazy-gc-thread-creation=yes" />
       <_MonoConfigureParams Include="--enable-maintainer-mode" />
       <_MonoConfigureParams Include="--enable-llvm-runtime"/>
       <_MonoConfigureParams Include="--enable-icall-export"/>
