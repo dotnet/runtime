@@ -278,8 +278,8 @@
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
     <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
-    <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
-    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\native</NETCoreAppRuntimePackNativePath>
+    <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(PackageRID)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
+    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(PackageRID)\native</NETCoreAppRuntimePackNativePath>>
     <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
