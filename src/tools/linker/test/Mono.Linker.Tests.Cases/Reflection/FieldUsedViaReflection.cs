@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestNullType ();
 			TestDataFlowType ();
 			TestIfElse (1);
+			TestFieldInBaseType ();
 		}
 
 		[Kept]
@@ -30,12 +31,18 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string), typeof(BindingFlags) },
+			typeof (Foo), nameof (Foo.field), (Type [])null)]
 		static void TestNameBindingFlags ()
 		{
 			var field = typeof (Foo).GetField ("field", BindingFlags.Static);
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string), typeof(BindingFlags) },
+			typeof (Foo), nameof (Foo.nonStatic), (Type [])null)]
 		static void TestNameWrongBindingFlags ()
 		{
 			var field = typeof (Foo).GetField ("nonStatic", BindingFlags.Static);
@@ -82,6 +89,12 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string)},
+			typeof (IfClass), nameof (IfClass.ifField), (Type [])null)]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.elseField), (Type [])null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -100,6 +113,16 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.publicFieldOnBase), (Type [])null)]
+		static void TestFieldInBaseType ()
+		{
+			var protectedField = typeof(DerivedClass).GetField ("protectedFieldOnBase");
+			var publicField = typeof(DerivedClass).GetField ("publicFieldOnBase");
+		}
+
+		[Kept]
 		static int field;
 
 		[Kept]
@@ -108,8 +131,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			[Kept]
 			public static int field;
 			[Kept]
-			private int nonStatic;
-			public static int nonKept;
+			public int nonStatic;
+			private static int nonKept;
 		}
 
 		[Kept]
@@ -126,10 +149,25 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		private class ElseClass
 		{
 			[Kept]
-			int elseField;
+			public int elseField;
 			[Kept]
 			static string ifField;
 			volatile char nonKept;
+		}
+
+		[Kept]
+		class BaseClass
+		{
+			[Kept]
+			protected int protectedFieldOnBase;
+			[Kept]
+			public char publicFieldOnBase;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (BaseClass))]
+		class DerivedClass : BaseClass
+		{
 		}
 	}
 }

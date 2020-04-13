@@ -3834,11 +3834,6 @@ namespace Mono.Linker.Steps {
 								if (memberKind == null)
 									break;
 
-								BindingFlags bindingFlags = BindingFlags.Default; 
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
-									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
-								}
-
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
