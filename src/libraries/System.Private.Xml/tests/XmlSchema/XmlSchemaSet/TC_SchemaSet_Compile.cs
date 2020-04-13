@@ -207,9 +207,6 @@ namespace System.Xml.Tests
             Assert.Contains("minLength", ex.Message);
         }
 
-        /// <summary>
-        /// Test for issue #30218, resource Sch_MaxLengthGtBaseMaxLength
-        /// </summary>
         [Fact]
         public void MaxLengthGtBaseMaxLength_Throws()
         {
@@ -598,9 +595,6 @@ namespace System.Xml.Tests
         }
         #endregion
 
-        /// <summary>
-        /// Test for issue #30218, resource Sch_LengthGtBaseLength
-        /// </summary>
         [Fact]
         public void LengthGtBaseLength_Throws()
         {
