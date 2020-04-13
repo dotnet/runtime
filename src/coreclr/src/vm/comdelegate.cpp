@@ -1132,7 +1132,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
 // Marshals a managed method to an unmanaged callback provided the
 // managed method is static and it's parameters require no marshalling.
 PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
@@ -1189,7 +1189,7 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     _ASSERTE(pCode != NULL);
     return pCode;
 }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86)
 
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
@@ -1315,13 +1315,10 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(pCallback != NULL);
+        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
-
-    if (!pCallback)
-    {
-        return NULL;
-    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Check if this callback was originally a managed method passed out to unmanaged code.
@@ -1339,25 +1336,13 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     if (DelegateHnd != (LPVOID)INVALIDENTRY)
     {
         // Found a managed callsite
-        OBJECTREF pDelegate = NULL;
-        GCPROTECT_BEGIN(pDelegate);
-
-        pDelegate = ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
-
-        // Make sure we're not trying to sneak into another domain.
-        SyncBlock* pSyncBlock = pDelegate->GetSyncBlock();
-        _ASSERTE(pSyncBlock);
-
-        InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
-        _ASSERTE(pInteropInfo);
-
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
-        _ASSERTE(pUMEntryThunk);
-
-        GCPROTECT_END();
-        return pDelegate;
+        return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
     }
 
+    // Validate the MethodTable is a delegate type
+    // See Marshal.GetDelegateForFunctionPointer() for exception details.
+    if (!pMT->IsDelegate())
+        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeDelegate"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // This is an unmanaged callsite. We need to create a new delegate.

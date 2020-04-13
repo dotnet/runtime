@@ -19,7 +19,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Equals()
+        public static void EqualsTest()
         {
             C c = new C();
             DFoo d1 = c.Foo;

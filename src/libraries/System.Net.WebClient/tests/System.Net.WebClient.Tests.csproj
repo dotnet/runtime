@@ -4,6 +4,7 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="WebClientTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>

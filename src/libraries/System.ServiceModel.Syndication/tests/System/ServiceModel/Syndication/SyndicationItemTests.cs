@@ -446,18 +446,6 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal("Atom10", formatter.Version);
         }
 
-        [Fact]
-        public void GetRss20Formatter_Invoke_ReturnsExpected()
-        {
-            var item = new SyndicationItem();
-            Rss20ItemFormatter formatter = Assert.IsType<Rss20ItemFormatter>(item.GetRss20Formatter());
-            Assert.Same(item, formatter.Item);
-            Assert.True(formatter.PreserveAttributeExtensions);
-            Assert.True(formatter.PreserveElementExtensions);
-            Assert.True(formatter.SerializeExtensionsAsAtom);
-            Assert.Equal("Rss20", formatter.Version);
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

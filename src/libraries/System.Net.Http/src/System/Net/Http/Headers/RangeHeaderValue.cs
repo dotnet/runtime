@@ -25,17 +25,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<RangeItemHeaderValue> Ranges
-        {
-            get
-            {
-                if (_ranges == null)
-                {
-                    _ranges = new ObjectCollection<RangeItemHeaderValue>();
-                }
-                return _ranges;
-            }
-        }
+        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new ObjectCollection<RangeItemHeaderValue>();
 
         public RangeHeaderValue()
         {

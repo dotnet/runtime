@@ -12,5 +12,20 @@ namespace System.IO.Tests
         {
             new FileInfo(path).Delete();
         }
+
+        [Fact]
+        public void FileInfoInvalidatedOnDelete()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testFilePath = Path.Combine(testDir.FullName, GetTestFileName());
+            FileInfo info = new FileInfo(testFilePath);
+            using (FileStream fileStream = info.Create())
+            {
+                Assert.True(info.Exists);
+            }
+
+            info.Delete();
+            Assert.False(info.Exists);
+        }
     }
 }

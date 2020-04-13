@@ -45,16 +45,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
-            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.All))
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;
                 EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
-                if (inlinerDefinition.Module != _module)
-                {
-                    // Only encode inlining info for inliners within the active module
-                    continue;
-                }
+
+                // Only encode inlining info for inliners within the active module
+                Debug.Assert(inlinerDefinition.Module == _module);
 
                 foreach (MethodDesc inlinee in inlinees)
                 {
@@ -63,6 +61,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         // We don't record non-ECMA methods because they don't have tokens that
                         // diagnostic tools could reason about anyway.
+                        continue;
+                    }
+
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
+                    {
+                        // We cannot record inlining info across version bubble as cross-bubble assemblies
+                        // are not guaranteed to preserve token values. Only non-versionable methods may be
+                        // inlined across the version bubble.
+                        Debug.Assert(inlinee.IsNonVersionable());
                         continue;
                     }
 

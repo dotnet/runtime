@@ -27,7 +27,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Text;
@@ -44,10 +43,10 @@ namespace System.Reflection.Emit
     {
         #region Keep in sync with object-internals.h
         private Type instantiation;
-        private MethodInfo base_method; /*This is the base method definition, it must be non-inflated and belong to a non-inflated type.*/
-        private Type[] method_arguments;
+        private MethodInfo base_method = null!; /*This is the base method definition, it must be non-inflated and belong to a non-inflated type.*/
+        private Type[]? method_arguments;
         #endregion
-        private MethodInfo generic_method_definition;
+        private MethodInfo? generic_method_definition;
 
         public MethodOnTypeBuilderInst(TypeBuilderInstantiation instantiation, MethodInfo base_method)
         {
@@ -66,7 +65,7 @@ namespace System.Reflection.Emit
 
         internal MethodOnTypeBuilderInst(MethodInfo method, Type[] typeArguments)
         {
-            this.instantiation = method.DeclaringType;
+            this.instantiation = method.DeclaringType!;
             this.base_method = ExtractBaseMethod(method);
             this.method_arguments = new Type[typeArguments.Length];
             typeArguments.CopyTo(this.method_arguments, 0);
@@ -84,14 +83,14 @@ namespace System.Reflection.Emit
             if (info.IsGenericMethod)
                 info = info.GetGenericMethodDefinition();
 
-            Type t = info.DeclaringType;
+            Type t = info.DeclaringType!;
             if (!t.IsGenericType || t.IsGenericTypeDefinition)
                 return info;
 
-            return (MethodInfo)t.Module.ResolveMethod(info.MetadataToken);
+            return (MethodInfo)t.Module.ResolveMethod(info.MetadataToken)!;
         }
 
-        internal Type[] GetTypeArgs()
+        internal Type[]? GetTypeArgs()
         {
             if (!instantiation.IsGenericType || instantiation.IsGenericParameter)
                 return null;
@@ -215,7 +214,7 @@ namespace System.Reflection.Emit
             return base_method.GetParametersCount();
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
@@ -267,7 +266,7 @@ namespace System.Reflection.Emit
         public override Type[] GetGenericArguments()
         {
             if (!base_method.IsGenericMethodDefinition)
-                return null;
+                return Type.EmptyTypes;
             Type[] source = method_arguments ?? base_method.GetGenericArguments();
             Type[] result = new Type[source.Length];
             source.CopyTo(result, 0);

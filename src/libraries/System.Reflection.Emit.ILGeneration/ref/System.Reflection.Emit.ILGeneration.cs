@@ -10,9 +10,9 @@ namespace System.Reflection.Emit
     public partial class CustomAttributeBuilder
     {
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs) { }
-        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.FieldInfo[] namedFields, object[] fieldValues) { }
-        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object[] propertyValues) { }
-        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object[] propertyValues, System.Reflection.FieldInfo[] namedFields, object[] fieldValues) { }
+        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
+        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues) { }
+        public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
     }
     public partial class ILGenerator
     {

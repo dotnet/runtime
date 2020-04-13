@@ -29,7 +29,7 @@ Debugging metadata tables may be embedded into type system metadata (and part of
 
 ### Standalone debugging metadata
 
-When debugging metadata is generated to a separate data blob "#Pdb" and "#~" streams shall be present. The standalone debugging metadata may also include #Guid, #String and #Blob heaps, which have the same physical layout but are distict from the corresponding streams of the type system metadata.
+When debugging metadata is generated to a separate data blob "#Pdb" and "#~" streams shall be present. The standalone debugging metadata may also include #Guid, #String and #Blob heaps, which have the same physical layout but are distinct from the corresponding streams of the type system metadata.
 
 #### <a name="PdbStream"></a>#Pdb stream
 

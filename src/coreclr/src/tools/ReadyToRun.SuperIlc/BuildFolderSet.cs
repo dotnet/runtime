@@ -260,7 +260,7 @@ namespace ReadyToRun.SuperIlc
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;

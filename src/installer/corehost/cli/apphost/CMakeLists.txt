@@ -18,26 +18,11 @@ endif()
 set(SKIP_VERSIONING 1)
 
 set(SOURCES
-    ./bundle/file_entry.cpp
-    ./bundle/manifest.cpp
-    ./bundle/header.cpp
-    ./bundle/marker.cpp
-    ./bundle/reader.cpp
-    ./bundle/extractor.cpp
-    ./bundle/runner.cpp
-    ./bundle/dir_utils.cpp
+    ./bundle_marker.cpp
 )
 
 set(HEADERS
-    ./bundle/file_type.h
-    ./bundle/file_entry.h
-    ./bundle/manifest.h
-    ./bundle/header.h
-    ./bundle/marker.h
-    ./bundle/reader.h
-    ./bundle/extractor.h
-    ./bundle/runner.h
-    ./bundle/dir_utils.h
+    ./bundle_marker.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

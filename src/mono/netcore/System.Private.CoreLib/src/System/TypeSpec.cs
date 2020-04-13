@@ -121,14 +121,14 @@ namespace System
 
     internal class TypeSpec
     {
-        private ITypeIdentifier name;
-        private string assembly_name;
-        private List<ITypeIdentifier> nested;
-        private List<TypeSpec> generic_params;
-        private List<IModifierSpec> modifier_spec;
+        private ITypeIdentifier? name;
+        private string? assembly_name;
+        private List<ITypeIdentifier>? nested;
+        private List<TypeSpec>? generic_params;
+        private List<IModifierSpec>? modifier_spec;
         private bool is_byref;
 
-        private string display_fullname; // cache
+        private string? display_fullname; // cache
 
         internal bool HasModifiers
         {
@@ -145,7 +145,7 @@ namespace System
             get { return is_byref; }
         }
 
-        internal ITypeName Name
+        internal ITypeName? Name
         {
             get { return name; }
         }
@@ -190,7 +190,7 @@ namespace System
         {
             bool wantAssembly = (flags & DisplayNameFormat.WANT_ASSEMBLY) != 0;
             bool wantModifiers = (flags & DisplayNameFormat.NO_MODIFIERS) == 0;
-            var sb = new Text.StringBuilder(name.DisplayName);
+            var sb = new Text.StringBuilder(name!.DisplayName);
             if (nested != null)
             {
                 foreach (ITypeIdentifier? n in nested)
@@ -323,9 +323,9 @@ namespace System
             return false;
         }
 
-        internal Type Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+        internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Assembly asm = null;
+            Assembly? asm = null;
             if (assemblyResolver == null && typeResolver == null)
                 return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, false, ref stackMark);
 
@@ -344,11 +344,11 @@ namespace System
                 }
             }
 
-            Type type = null;
+            Type? type = null;
             if (typeResolver != null)
-                type = typeResolver(asm, name.DisplayName, ignoreCase);
+                type = typeResolver(asm!, name!.DisplayName, ignoreCase);
             else
-                type = asm.GetType(name.DisplayName, false, ignoreCase);
+                type = asm!.GetType(name!.DisplayName, false, ignoreCase);
             if (type == null)
             {
                 if (throwOnError)
@@ -376,7 +376,7 @@ namespace System
                 Type[] args = new Type[generic_params.Count];
                 for (int i = 0; i < args.Length; ++i)
                 {
-                    Type? tmp = generic_params[i].Resolve(assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+                    Type? tmp = generic_params[i].Resolve(assemblyResolver!, typeResolver!, throwOnError, ignoreCase, ref stackMark);
                     if (tmp == null)
                     {
                         if (throwOnError)

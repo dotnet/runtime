@@ -49,17 +49,13 @@ namespace System.Collections.Concurrent.Tests
         /// We unroll the tuples and flatten them to a single sequence
         /// The single sequence is compared to the original range for verification
         /// </summary>
-        [Fact]
-        public static void CheckGetPartitions()
-        {
-            CheckGetPartitions(0, 1, 1);
-            CheckGetPartitions(1, 1999, 3);
-            CheckGetPartitions(2147473647, 9999, 4);
-            CheckGetPartitions(-1999, 5000, 63);
-            CheckGetPartitions(-2147483648, 5000, 63);
-        }
-
-        private static void CheckGetPartitions(int from, int count, int dop)
+        [Theory]
+        [InlineData(0, 1, 1)]
+        [InlineData(1, 1999, 3)]
+        [InlineData(2147473647, 9999, 4)]
+        [InlineData(-1999, 5000, 63)]
+        [InlineData(-2147483648, 5000, 63)]
+        public static void CheckGetPartitions(int from, int count, int dop)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to);
@@ -82,17 +78,13 @@ namespace System.Collections.Concurrent.Tests
         /// </summary>
         /// <param name="from"></param>
         /// <param name="count"></param>
-        [Fact]
-        public static void CheckGetDynamicPartitions()
-        {
-            CheckGetDynamicPartitions(0, 1);
-            CheckGetDynamicPartitions(1, 1999);
-            CheckGetDynamicPartitions(2147473647, 9999);
-            CheckGetDynamicPartitions(-1999, 5000);
-            CheckGetDynamicPartitions(-2147483648, 5000);
-        }
-
-        private static void CheckGetDynamicPartitions(int from, int count)
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 1999)]
+        [InlineData(2147473647, 9999)]
+        [InlineData(-1999, 5000)]
+        [InlineData(-2147483648, 5000)]
+        public static void CheckGetDynamicPartitions(int from, int count)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to);
@@ -114,17 +106,13 @@ namespace System.Collections.Concurrent.Tests
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
-        [Fact]
-        public static void CheckGetOrderablePartitions()
-        {
-            CheckGetOrderablePartitions(0, 1, 1);
-            CheckGetOrderablePartitions(1, 1999, 3);
-            CheckGetOrderablePartitions(2147473647, 9999, 4);
-            CheckGetOrderablePartitions(-1999, 5000, 63);
-            CheckGetOrderablePartitions(-2147483648, 5000, 63);
-        }
-
-        private static void CheckGetOrderablePartitions(int from, int count, int dop)
+        [Theory]
+        [InlineData(0, 1, 1)]
+        [InlineData(1, 1999, 3)]
+        [InlineData(2147473647, 9999, 4)]
+        [InlineData(-1999, 5000, 63)]
+        [InlineData(-2147483648, 5000, 63)]
+        public static void CheckGetOrderablePartitions(int from, int count, int dop)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to);
@@ -155,17 +143,13 @@ namespace System.Collections.Concurrent.Tests
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
-        [Fact]
-        public static void GetOrderableDynamicPartitions()
-        {
-            GetOrderableDynamicPartitions(0, 1);
-            GetOrderableDynamicPartitions(1, 1999);
-            GetOrderableDynamicPartitions(2147473647, 9999);
-            GetOrderableDynamicPartitions(-1999, 5000);
-            GetOrderableDynamicPartitions(-2147483648, 5000);
-        }
-
-        private static void GetOrderableDynamicPartitions(int from, int count)
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 1999)]
+        [InlineData(2147473647, 9999)]
+        [InlineData(-1999, 5000)]
+        [InlineData(-2147483648, 5000)]
+        public static void GetOrderableDynamicPartitions(int from, int count)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to);
@@ -197,17 +181,13 @@ namespace System.Collections.Concurrent.Tests
         /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
-        [Fact]
-        public static void CheckGetPartitionsWithRange()
-        {
-            CheckGetPartitionsWithRange(1999, 1000, 20, 1);
-            CheckGetPartitionsWithRange(-1999, 1000, 100, 2);
-            CheckGetPartitionsWithRange(1999, 1, 2000, 3);
-            CheckGetPartitionsWithRange(2147482647, 999, 600, 4);
-            CheckGetPartitionsWithRange(-2147483648, 1000, 19, 63);
-        }
-
-        private static void CheckGetPartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
+        [Theory]
+        [InlineData(1999, 1000, 20, 1)]
+        [InlineData(-1999, 1000, 100, 2)]
+        [InlineData(1999, 1, 2000, 3)]
+        [InlineData(2147482647, 999, 600, 4)]
+        [InlineData(-2147483648, 1000, 19, 63)]
+        public static void CheckGetPartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -240,17 +220,13 @@ namespace System.Collections.Concurrent.Tests
         /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
-        [Fact]
-        public static void CheckGetDynamicPartitionsWithRange()
-        {
-            CheckGetDynamicPartitionsWithRange(1999, 1000, 20);
-            CheckGetDynamicPartitionsWithRange(-1999, 1000, 100);
-            CheckGetDynamicPartitionsWithRange(1999, 1, 2000);
-            CheckGetDynamicPartitionsWithRange(2147482647, 999, 600);
-            CheckGetDynamicPartitionsWithRange(-2147483648, 1000, 19);
-        }
-
-        private static void CheckGetDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
+        [Theory]
+        [InlineData(1999, 1000, 20)]
+        [InlineData(-1999, 1000, 100)]
+        [InlineData(1999, 1, 2000)]
+        [InlineData(2147482647, 999, 600)]
+        [InlineData(-2147483648, 1000, 19)]
+        public static void CheckGetDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -284,17 +260,13 @@ namespace System.Collections.Concurrent.Tests
         /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
-        [Fact]
-        public static void CheckGetOrderablePartitionsWithRange()
-        {
-            CheckGetOrderablePartitionsWithRange(1999, 1000, 20, 1);
-            CheckGetOrderablePartitionsWithRange(-1999, 1000, 100, 2);
-            CheckGetOrderablePartitionsWithRange(1999, 1, 2000, 3);
-            CheckGetOrderablePartitionsWithRange(2147482647, 999, 600, 4);
-            CheckGetOrderablePartitionsWithRange(-2147483648, 1000, 19, 63);
-        }
-
-        private static void CheckGetOrderablePartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
+        [Theory]
+        [InlineData(1999, 1000, 20, 1)]
+        [InlineData(-1999, 1000, 100, 2)]
+        [InlineData(1999, 1, 2000, 3)]
+        [InlineData(2147482647, 999, 600, 4)]
+        [InlineData(-2147483648, 1000, 19, 63)]
+        public static void CheckGetOrderablePartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -337,17 +309,13 @@ namespace System.Collections.Concurrent.Tests
         /// The range sizes for individual ranges are checked to see if they are equal to
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
-        [Fact]
-        public static void GetOrderableDynamicPartitionsWithRange()
-        {
-            GetOrderableDynamicPartitionsWithRange(1999, 1000, 20);
-            GetOrderableDynamicPartitionsWithRange(-1999, 1000, 100);
-            GetOrderableDynamicPartitionsWithRange(1999, 1, 2000);
-            GetOrderableDynamicPartitionsWithRange(2147482647, 999, 600);
-            GetOrderableDynamicPartitionsWithRange(-2147483648, 1000, 19);
-        }
-
-        private static void GetOrderableDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
+        [Theory]
+        [InlineData(1999, 1000, 20)]
+        [InlineData(-1999, 1000, 100)]
+        [InlineData(1999, 1, 2000)]
+        [InlineData(2147482647, 999, 600)]
+        [InlineData(-2147483648, 1000, 19)]
+        public static void GetOrderableDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -400,20 +368,16 @@ namespace System.Collections.Concurrent.Tests
             Assert.InRange(rangeSizes[rangeSizes.Count - 1], 0, desiredRangeSize);
         }
 
-        [Fact]
-        public static void RangePartitionerChunking()
-        {
-            RangePartitionerChunking(1999, 1000, 10);
-            RangePartitionerChunking(89, 17823, -1);
-        }
-
         /// <summary>
         /// Ensure that the range partitioner doesn't chunk up elements i.e. uses chunk size = 1
         /// </summary>
         /// <param name="from"></param>
         /// <param name="count"></param>
         /// <param name="rangeSize"></param>
-        private static void RangePartitionerChunking(int from, int count, int rangeSize)
+        [Theory]
+        [InlineData(1999, 1000, 10)]
+        [InlineData(89, 17823, -1)]
+        public static void RangePartitionerChunking(int from, int count, int rangeSize)
         {
             int to = from + count;
 
@@ -480,20 +444,16 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(count, actualCount);
         }
 
-        [Fact]
-        public static void RangePartitionerDynamicChunking()
-        {
-            RangePartitionerDynamicChunking(1999, 1000, 10);
-            RangePartitionerDynamicChunking(1, 884354, -1);
-        }
-
         /// <summary>
         /// Ensure that the range partitioner doesn't chunk up elements i.e. uses chunk size = 1
         /// </summary>
         /// <param name="from"></param>
         /// <param name="count"></param>
         /// <param name="rangeSize"></param>
-        private static void RangePartitionerDynamicChunking(int from, int count, int rangeSize)
+        [Theory]
+        [InlineData(1999, 1000, 10)]
+        [InlineData(1, 884354, -1)]
+        public static void RangePartitionerDynamicChunking(int from, int count, int rangeSize)
         {
             int to = from + count;
 
@@ -557,7 +517,7 @@ namespace System.Collections.Concurrent.Tests
             // Verifying that all items are there
             Assert.Equal(count, actualCount);
         }
-        
+
         /// <summary>
         /// Ensure that the range partitioner doesn't exceed the exclusive bound
         /// </summary>

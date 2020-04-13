@@ -472,6 +472,13 @@ PALEXPORT int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size);
 PALEXPORT int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
 
 /**
+ * Gets whether or not a file descriptor is non-blocking.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */
+PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking);
+
+/**
  * Create a directory. Implemented as a shim to mkdir(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.

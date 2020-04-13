@@ -419,6 +419,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)] //Concurrent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
         [InlineData(GCLatencyMode.LowLatency)]
         [InlineData(GCLatencyMode.SustainedLowLatency)]
@@ -897,7 +898,6 @@ namespace System.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateUninitializedArray()
         {
             // allocate a bunch of SOH byte arrays and touch them.
@@ -952,7 +952,6 @@ namespace System.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArray()
         {
             // allocate a bunch of SOH byte arrays and touch them.
@@ -1007,7 +1006,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));
@@ -1016,8 +1014,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue, pinned: true));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         private static void AllocateArrayTooLarge()
         {
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
@@ -1025,7 +1022,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArrayRefType()
         {
             GC.AllocateUninitializedArray<string>(100);
@@ -1033,7 +1029,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private unsafe static void AllocateArrayCheckPinning()
         {
             var list = new List<long[]>();

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #include "pch.h"
 #include "Component.Contracts.KeyValuePairTesting.h"
+#include "winrt/Windows.Foundation.Collections.h"
 #include <utility>
 #include <vector>
 

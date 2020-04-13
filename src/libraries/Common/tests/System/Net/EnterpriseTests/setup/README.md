@@ -49,7 +49,7 @@ Now build the repo as you would on a regular dev machine:
 
 ```bash
 cd /repo
-./build.sh --subsetCategory libraries
+./build.sh --subset libs
 ```
 
 Now you can run the enterprise tests. Currently, there are tests for System.Net.Http and System.Net.Security. You can run them in the same way you already run tests in the repo.

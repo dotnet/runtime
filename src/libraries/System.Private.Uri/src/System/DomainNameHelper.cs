@@ -230,14 +230,7 @@ namespace System
                 return hostname.ToLowerInvariant();
             }
 
-            string bidiStrippedHost;
-            unsafe
-            {
-                fixed (char* hostnamePtr = hostname)
-                {
-                    bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostnamePtr, 0, hostname.Length);
-                }
-            }
+            string bidiStrippedHost = UriHelper.StripBidiControlCharacters(hostname, hostname);
 
             try
             {
@@ -306,7 +299,7 @@ namespace System
             if (end <= start)
                 return idn;
 
-            string unescapedHostname = UriHelper.StripBidiControlCharacter(hostname, start, (end - start));
+            string unescapedHostname = UriHelper.StripBidiControlCharacters(new ReadOnlySpan<char>(hostname + start, end - start));
 
             string? unicodeEqvlHost = null;
             int curPos = 0;

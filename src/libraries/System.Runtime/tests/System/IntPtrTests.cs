@@ -108,7 +108,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(IntPtr ptr1, object obj, bool expected)
+        public static void EqualsTest(IntPtr ptr1, object obj, bool expected)
         {
             if (obj is IntPtr)
             {

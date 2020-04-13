@@ -196,9 +196,6 @@ public:
     //====================================================================
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
     static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
-    static FCDECL3(Object*, GetMethodInfoForComSlot, ReflectClassBaseObject* tUNSAFE, INT32 slot, ComMemberType* pMemberType);
-
-    static FCDECL1(int, GetComSlotForMethodInfo, ReflectMethodObject* pMethodUNSAFE);
 
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 

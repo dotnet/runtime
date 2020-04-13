@@ -7,6 +7,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -56,7 +57,14 @@ namespace System.Net.Sockets
             IPEndPoint ep = new IPEndPoint(tempAddress, 0);
 
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
-            errorCode = SocketPal.GetSockName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
+            unsafe
+            {
+                fixed (byte* bufferPtr = socketAddress.Buffer)
+                fixed (int* sizePtr = &socketAddress.InternalSize)
+                {
+                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, sizePtr);
+                }
+            }
 
             if (errorCode == SocketError.Success)
             {
@@ -74,6 +82,28 @@ namespace System.Net.Sockets
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        private unsafe void LoadSocketTypeFromHandle(
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking)
+        {
+            Interop.Winsock.WSAPROTOCOL_INFOW info = default;
+            int optionLength = sizeof(Interop.Winsock.WSAPROTOCOL_INFOW);
+
+            // Get the address family, socket type, and protocol type from the socket.
+            if (Interop.Winsock.getsockopt(handle, SocketOptionLevel.Socket, (SocketOptionName)Interop.Winsock.SO_PROTOCOL_INFOW, (byte*)&info, ref optionLength) == SocketError.SocketError)
+            {
+                throw new SocketException((int)SocketPal.GetLastSocketError());
+            }
+
+            addressFamily = info.iAddressFamily;
+            socketType = info.iSocketType;
+            protocolType = info.iProtocol;
+
+            // There's no API to retrieve this (WSAIsBlocking isn't supported any more).  Assume it's blocking, but we might be wrong.
+            // This affects the result of querying Socket.Blocking, which will mostly only affect user code that happens to query
+            // that property, though there are a few places we check it internally, e.g. as part of NetworkStream argument validation.
+            blocking = true;
         }
 
         public SocketInformation DuplicateAndClose(int targetProcessId)

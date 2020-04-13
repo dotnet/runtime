@@ -172,13 +172,16 @@ namespace System.Collections.Concurrent
         /// <returns>True if succeeded, false otherwise.</returns>
         private bool TrySteal(out T result, bool take)
         {
-            if (take)
+            if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
-                CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryTakeSteals();
-            }
-            else
-            {
-                CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryPeekSteals();
+                if (take)
+                {
+                    CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryTakeSteals();
+                }
+                else
+                {
+                    CDSCollectionETWBCLProvider.Log.ConcurrentBag_TryPeekSteals();
+                }
             }
 
             while (true)

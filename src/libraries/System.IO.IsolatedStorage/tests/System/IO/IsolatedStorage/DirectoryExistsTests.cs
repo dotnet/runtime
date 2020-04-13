@@ -72,7 +72,7 @@ namespace System.IO.IsolatedStorage
 
         [Theory]
         [MemberData(nameof(ValidStores))]
-        public void DirectoryExists_Existance(PresetScopes scope)
+        public void DirectoryExists_Existance_WithScope(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
             {

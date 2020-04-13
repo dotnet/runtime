@@ -1891,7 +1891,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(TimeZoneInfo timeZoneInfo, object obj, bool expected)
+        public static void EqualsTest(TimeZoneInfo timeZoneInfo, object obj, bool expected)
         {
             Assert.Equal(expected, timeZoneInfo.Equals(obj));
             if (obj is TimeZoneInfo)

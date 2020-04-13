@@ -13,7 +13,7 @@ variables:
 
 jobs:
   - template: /eng/pipelines/common/checkout-job.yml
-  
+
   #
   # CoreCLR Build
   #
