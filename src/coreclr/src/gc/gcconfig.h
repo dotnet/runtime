@@ -73,8 +73,6 @@ public:
         "When set we put the segments that should be deleted on a standby list (instead of "     \
         "releasing them back to the OS) which will be considered to satisfy new segment requests"\
         " (note that the same thing can be specified via API which is the supported way)")        \
-    BOOL_CONFIG(StressMix,    "GCStressMix",  false,                                             \
-        "Specifies whether the GC mix mode is enabled or not")                                   \
     BOOL_CONFIG(BreakOnOOM,   "GCBreakOnOOM", false,                                             \
         "Does a DebugBreak at the soonest time we detect an OOM")                                \
     BOOL_CONFIG(NoAffinitize, "GCNoAffinitize", false,                                           \
@@ -126,8 +124,6 @@ public:
     STRING_CONFIG(LogFile,    "GCLogFile",    "Specifies the name of the GC log file")           \
     STRING_CONFIG(ConfigLogFile, "GCConfigLogFile",                                              \
         "Specifies the name of the GC config log file")                                          \
-    STRING_CONFIG(MixLogFile, "GCMixLog",                                                        \
-        "Specifies the name of the log file for GC mix statistics")                              \
     INT_CONFIG(BGCFLTuningEnabled, "BGCFLTuningEnabled", 0, "Enables FL tuning")                 \
     INT_CONFIG(BGCMemGoal, "BGCMemGoal", 75, "Specifies the physical memory load goal")          \
     INT_CONFIG(BGCMemGoalSlack, "BGCMemGoalSlack", 10,                                           \
