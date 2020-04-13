@@ -815,7 +815,7 @@ expand_i8: dest:x src1:i len:11
 expand_r4: dest:x src1:f len:16
 expand_r8: dest:x src1:f len:13
 
-roundpd: dest:x src1:x len:10
+roundp: dest:x src1:x len:10
 
 liverange_start: len:0
 liverange_end: len:0

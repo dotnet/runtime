@@ -254,11 +254,8 @@ class Object
     // assert.
     BOOL ValidateObjectWithPossibleAV();
 
-    // Validate an object ref out of the Promote routine in the GC
-    void ValidatePromote(ScanContext *sc, DWORD flags);
-
     // Validate an object ref out of the VerifyHeap routine in the GC
-    void ValidateHeap(Object *from, BOOL bDeep=TRUE);
+    void ValidateHeap(BOOL bDeep=TRUE);
 
     PTR_SyncBlock PassiveGetSyncBlock()
     {
