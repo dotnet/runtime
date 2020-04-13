@@ -81,7 +81,6 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34801")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartWithArgsThenStop()
         {
@@ -94,10 +93,9 @@ namespace System.ServiceProcess.Tests
             controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
             _testService.Client = null;
             _testService.Client.Connect();
+            Assert.Equal((int)(PipeMessageByteCode.Connected), _testService.GetByte());
 
-            // There is no definite order between start and connected when tests are running on multiple threads.
-            // In this case we dont care much about the order, so we are just checking whether the appropiate bytes have been sent.
-            Assert.Equal((int)(PipeMessageByteCode.Connected | PipeMessageByteCode.Start), _testService.GetByte() | _testService.GetByte());
+            Assert.Equal((int)(PipeMessageByteCode.Start), _testService.GetByte());           
             controller.WaitForStatus(ServiceControllerStatus.Running);
 
             controller.Stop();
