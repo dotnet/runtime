@@ -1243,7 +1243,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector256_AllBitsSet:
         {
             assert(op1 == nullptr);
-            if (varTypeIsFloating(baseType) && compiler->compExactlyDependsOn(InstructionSet_AVX))
+            if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // The immediate 8 means Equal (unordered, non-signaling)
                 // This is not available without VEX prefix.
