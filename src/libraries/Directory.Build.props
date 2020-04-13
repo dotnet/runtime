@@ -280,7 +280,8 @@
     <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
     <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
     <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\native</NETCoreAppRuntimePackNativePath>
-    <RuntimePackTargetFrameworkPath>runtimes/$(__RuntimeId)</RuntimePackTargetFrameworkPath>
+    <!--<RuntimePackTargetFrameworkPath>runtimes/$(__RuntimeId)</RuntimePackTargetFrameworkPath>-->
+    <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
@@ -308,10 +309,12 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetOS)' != 'iOS'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">false</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(BinPlaceTestSharedFramework)' == '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
+    
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
-    <BinPlaceTestRuntimePack Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetOS)' == 'iOS'">true</BinPlaceTestRuntimePack>
+    <BinPlaceTestRuntimePack Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 

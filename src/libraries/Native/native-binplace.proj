@@ -20,7 +20,6 @@
       <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
       <BinPlaceItem Include="$(NativeBinDir)*.dylib" />
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
-      <BinMobileNative Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="@(BinPlaceItem)" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
     <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
