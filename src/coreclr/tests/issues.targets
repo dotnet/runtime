@@ -1014,6 +1014,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34905</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
