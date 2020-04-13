@@ -24,7 +24,7 @@ internal class AotCompiler
     {
         Parallel.ForEach(libsToPrecompile,
             new ParallelOptions { MaxDegreeOfParallelism = parallel ? Environment.ProcessorCount : 1 },
-            lib => PrecompileLibrary(crossCompiler, binDir, lib, envVariables, optimize));
+            lib => PrecompileLibrary(crossCompiler, arch, binDir, lib, envVariables, optimize));
     }
 
     private static void PrecompileLibrary(
@@ -46,15 +46,17 @@ internal class AotCompiler
         string libName = Path.GetFileNameWithoutExtension(libToPrecompile);
         var aotArgs = new StringBuilder();
         aotArgs
-            .Append("mtriple=".Append(arch).Append("-ios,")
+            .Append("mtriple=").Append(arch).Append("-ios,")
             .Append("static,")
             .Append("asmonly,")
             .Append("direct-icalls,")
             .Append("no-direct-calls,")
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
-            // TODO:
+            //  TODO: enable aotdata
             //.Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
+            //  TODO: enable direct-pinvokes (to get rid of -force_loads)
+            //.Append("direct-pinvoke,")
             .Append("full,");
 
         // TODO: enable Interpreter

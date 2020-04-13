@@ -53,6 +53,7 @@ internal class Xcode
         foreach (string lib in Directory.GetFiles(workspace, "*.a"))
         {
             // these libraries are pinvoked
+            // -force_load will be removed once we enable direct-pinvokes for AOT
             toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
         }
         foreach (string lib in Directory.GetFiles(binDir, "*.dll.o"))

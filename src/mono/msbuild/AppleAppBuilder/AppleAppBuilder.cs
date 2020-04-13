@@ -56,7 +56,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Disable parallel AOT compilation
     /// </summary>
-    public bool DisableParallelAot { get; set; };
+    public bool DisableParallelAot { get; set; }
 
     /// <summary>
     /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
