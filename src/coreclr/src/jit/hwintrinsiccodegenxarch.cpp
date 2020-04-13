@@ -1251,7 +1251,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                assert(varTypeIsIntegral(baseType) || !compiler->compExactlyDependsOn(InstructionSet_AVX));
+                assert(varTypeIsIntegral(baseType) || !compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
             }
             break;
