@@ -1396,8 +1396,25 @@ namespace Internal.JitInterface
             {
                 throw new RequiresRuntimeJitException(type);
             }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            }
 #endif
             return (uint)classSize.AsInt;
+        }
+
+        bool NeedsTypeLayoutCheck(TypeDesc type)
+        {
+            if (!type.IsDefType)
+                return false;
+
+            if (!type.IsValueType)
+                return false;
+
+            return !IsLayoutFixedInCurrentVersionBubble(type);
         }
 
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)

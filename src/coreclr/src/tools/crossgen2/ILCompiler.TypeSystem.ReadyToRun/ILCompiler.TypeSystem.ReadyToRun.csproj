@@ -150,6 +150,12 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
+      <Link>Utilities\GCPointerMap.Algorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.cs">
+      <Link>Utilities\GCPointerMap.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
       <Link>Utilities\DebugNameFormatter.cs</Link>
     </Compile>
