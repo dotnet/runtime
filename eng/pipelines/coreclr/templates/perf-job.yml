@@ -7,6 +7,7 @@ parameters:
   framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   liveLibrariesBuildConfig: ''
   variables: {}
+  runtimeType: 'coreclr'
   pool: ''
 
 ### Perf job
@@ -18,8 +19,8 @@ jobs:
 - template: run-performance-job.yml
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables.runtimeFlavorName) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.variables.runtimeFlavorName) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -31,7 +32,7 @@ jobs:
     - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    - ${{ if eq(parameters.variables['runtimeFlavorName'], 'Mono') }}:
+    - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -65,7 +66,7 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
 
-    - ${{ if eq(parameters.variables.runtimeFlavorName, 'Mono') }}:
+    - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/mono/$(osGroup).$(archType).$(buildConfigUpper)
@@ -77,8 +78,8 @@ jobs:
     # Create Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
-      condition: and(succeeded(), ne(variables['runtimeFlavorName'], 'Mono'))
+      condition: and(succeeded(), ne(parameters.runtimeFlavorName, 'mono'))
 
     - script: "cd src/mono/netcore;make patch-mono-dotnet"
       displayName: "Create mono dotnet"
-      condition: and(succeeded(), eq(variables['runtimeFlavorName'], 'Mono'))
+      condition: and(succeeded(), eq(parameters.runtimeType, 'mono'))
