@@ -92,12 +92,20 @@ namespace System.Text.Json
             PropertyNameKey = key;
         }
 
-        private void DetermineSerializationCapabilities()
+        private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
         {
             if ((ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
+
+                // Three possible values for ignoreCondition:
+                // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties wins
+                // WhenNull = only ignore when null, global IgnoreReadOnlyProperties loses
+                // Never = never ignore (always include), global IgnoreReadOnlyProperties loses
+                bool serializeReadOnlyProperty = ignoreCondition != null || !Options.IgnoreReadOnlyProperties;
+
                 // We serialize if there is a getter + not ignoring readonly properties.
-                ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
+                ShouldSerialize = HasGetter && (HasSetter || serializeReadOnlyProperty);
 
                 // We deserialize if there is a setter.
                 ShouldDeserialize = HasSetter;
@@ -118,19 +126,16 @@ namespace System.Text.Json
             }
         }
 
-        private void DetermineIgnoreCondition()
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
         {
-            JsonIgnoreAttribute? ignoreAttribute;
-            if (PropertyInfo != null && (ignoreAttribute = GetAttribute<JsonIgnoreAttribute>(PropertyInfo)) != null)
+            if (ignoreCondition != null)
             {
-                JsonIgnoreCondition condition = ignoreAttribute.Condition;
+                Debug.Assert(PropertyInfo != null);
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
 
-                // We should have created a placeholder property for this upstream and shouldn't be down this code-path.
-                Debug.Assert(condition != JsonIgnoreCondition.Always);
-
-                if (condition != JsonIgnoreCondition.Never)
+                if (ignoreCondition != JsonIgnoreCondition.Never)
                 {
-                    Debug.Assert(condition == JsonIgnoreCondition.WhenNull);
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
                     IgnoreNullValues = true;
                 }
             }
@@ -152,11 +157,11 @@ namespace System.Text.Json
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public virtual void GetPolicies()
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
         {
-            DetermineSerializationCapabilities();
+            DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            DetermineIgnoreCondition();
+            DetermineIgnoreCondition(ignoreCondition);
         }
 
         public abstract object? GetValueAsObject(object obj);
@@ -171,6 +176,7 @@ namespace System.Text.Json
             ClassType runtimeClassType,
             PropertyInfo? propertyInfo,
             JsonConverter converter,
+            JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
         {
             Debug.Assert(converter != null);

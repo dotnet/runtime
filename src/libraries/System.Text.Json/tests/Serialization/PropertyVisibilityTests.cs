@@ -613,7 +613,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
-            public int MyInt { get; set;  }
+            public int MyInt { get; set; }
             public int Int2 { get; set; }
         }
 
@@ -734,7 +734,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""MyString"":""Random"",""MYSTRING"":null}";
 
-            var options = new JsonSerializerOptions {
+            var options = new JsonSerializerOptions
+            {
                 IgnoreNullValues = true,
                 PropertyNameCaseInsensitive = true
             };
@@ -806,6 +807,63 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
             public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
+        }
+
+        [Fact]
+        public static void IgnoreConditionNever_WinsOver_IgnoreReadOnlyValues()
+        {
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+
+            // Baseline
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyString("Hello"), options);
+            Assert.Equal("{}", json);
+
+            // With condition to never ignore
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreNever("Hello"), options);
+            Assert.Equal(@"{""MyString"":""Hello""}", json);
+
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreNever(null), options);
+            Assert.Equal(@"{""MyString"":null}", json);
+        }
+
+        [Fact]
+        public static void IgnoreConditionWhenNull_WinsOver_IgnoreReadOnlyValues()
+        {
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+
+            // Baseline
+            string json = JsonSerializer.Serialize(new ClassWithReadOnlyString("Hello"), options);
+            Assert.Equal("{}", json);
+
+            // With condition to ignore when null
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreWhenNull("Hello"), options);
+            Assert.Equal(@"{""MyString"":""Hello""}", json);
+
+            json = JsonSerializer.Serialize(new ClassWithReadOnlyString_IgnoreWhenNull(null), options);
+            Assert.Equal(@"{}", json);
+        }
+
+        private class ClassWithReadOnlyString
+        {
+            public string MyString { get; }
+
+            public ClassWithReadOnlyString(string myString) => MyString = myString;
+        }
+
+        private class ClassWithReadOnlyString_IgnoreNever
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+            public string MyString { get; }
+
+            public ClassWithReadOnlyString_IgnoreNever(string myString) => MyString = myString;
+        }
+
+        private class ClassWithReadOnlyString_IgnoreWhenNull
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
+            public string MyString { get; }
+
+            public ClassWithReadOnlyString_IgnoreWhenNull(string myString) => MyString = myString;
         }
     }
 }
