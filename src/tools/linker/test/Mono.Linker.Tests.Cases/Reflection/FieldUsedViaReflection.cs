@@ -40,9 +40,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string), typeof(BindingFlags) },
-			typeof (Foo), nameof (Foo.nonStatic), (Type [])null)]
 		static void TestNameWrongBindingFlags ()
 		{
 			var field = typeof (Foo).GetField ("nonStatic", BindingFlags.Static);
@@ -130,7 +127,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		{
 			[Kept]
 			public static int field;
-			[Kept]
 			public int nonStatic;
 			private static int nonKept;
 		}
