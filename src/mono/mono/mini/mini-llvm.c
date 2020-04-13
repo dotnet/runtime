@@ -9853,7 +9853,8 @@ after_codegen_1:
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 
 after_codegen:
-	g_ptr_array_add (ctx->module->cfgs, cfg);
+	if (cfg->compile_aot)
+		g_ptr_array_add (ctx->module->cfgs, cfg);
 	if (cfg->llvm_only) {
 		/*
 		 * Add the contents of ctx->callsite_list to module->callsite_list.

@@ -55,7 +55,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
-        internal static extern int FStat(SafeFileHandle fd, out FileStatus output);
+        internal static extern int FStat(SafeHandle fd, out FileStatus output);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
         internal static extern int Stat(string path, out FileStatus output);

@@ -10,6 +10,7 @@ namespace System.DirectoryServices.Protocols.Tests
     public class SortRequestControlTests
     {
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34679", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_SortKeys(bool critical)

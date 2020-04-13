@@ -417,18 +417,28 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
         {
-            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            return EnumerateCompiledMethods(null, CompiledMethodCategory.All);
+        }
+
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
+        {
+            foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
-                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+#if DEBUG
+                IMethodNode methodNodeDebug = MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport precodeMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = precodeMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
                 }
+                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
+#endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {

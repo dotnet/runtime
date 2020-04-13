@@ -1114,7 +1114,7 @@ namespace System.DirectoryServices.Protocols
                 if (domainName != null && domainName.Length != 0)
                 {
                     tempDomainName.Append(domainName);
-                    tempDomainName.Append("\\");
+                    tempDomainName.Append('\\');
                 }
 
                 tempDomainName.Append(username);

@@ -38,11 +38,11 @@ run-sample-coreclr:
 
 # build System.Private.CoreLib.dll
 bcl corelib:
-	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
+	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.CoreLib
 
 # build runtime and copy to artifacts
 runtime:
-	$(DOTNET) msbuild /t:Build $(MONO_PROJ)
+	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
 
 # call it if you want to use $(DOTNET_MONO) in this Makefile
 patch-mono-dotnet:

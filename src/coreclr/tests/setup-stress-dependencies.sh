@@ -189,7 +189,7 @@ fi
 packageDir=$(<"${CoreDisToolsPackagePathOutputFile}")
 
 # Get library path
-libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
+libPath="$(find "$packageDir" -path "*$rid*libcoredistools*" -print | head -n 1)"
 echo "libPath to be used: ${libPath}"
 
 if [ ! -e $libPath ] || [ -z "$libPath" ]; then

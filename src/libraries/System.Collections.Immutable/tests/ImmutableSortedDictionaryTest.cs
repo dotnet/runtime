@@ -425,56 +425,6 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-        [Fact(Skip = "Useful to enable when collecting perf traces")]
-        public void EnumerationPerformance()
-        {
-            var dictionary = Enumerable.Range(1, 1000).ToImmutableSortedDictionary(k => k, k => k);
-
-            var timing = new TimeSpan[3];
-            var sw = new Stopwatch();
-            for (int j = 0; j < timing.Length; j++)
-            {
-                sw.Start();
-                for (int i = 0; i < 10000; i++)
-                {
-                    foreach (var entry in dictionary)
-                    {
-                    }
-                }
-
-                timing[j] = sw.Elapsed;
-                sw.Reset();
-            }
-
-            string timingText = string.Join(Environment.NewLine, timing);
-            Debug.WriteLine("Timing:{0}{1}", Environment.NewLine, timingText);
-        }
-
-        [Fact(Skip = "Useful to enable when collecting perf traces")]
-        public void EnumerationPerformance_Empty()
-        {
-            var dictionary = ImmutableSortedDictionary<int, int>.Empty;
-
-            var timing = new TimeSpan[3];
-            var sw = new Stopwatch();
-            for (int j = 0; j < timing.Length; j++)
-            {
-                sw.Start();
-                for (int i = 0; i < 10000; i++)
-                {
-                    foreach (var entry in dictionary)
-                    {
-                    }
-                }
-
-                timing[j] = sw.Elapsed;
-                sw.Reset();
-            }
-
-            string timingText = string.Join(Environment.NewLine, timing);
-            Debug.WriteLine("Timing_Empty:{0}{1}", Environment.NewLine, timingText);
-        }
-
         [Fact]
         public void ValueRef()
         {
@@ -504,6 +454,15 @@ namespace System.Collections.Immutable.Tests
             }.ToImmutableSortedDictionary();
 
             Assert.Throws<KeyNotFoundException>(() => dictionary.ValueRef("c"));
+        }
+
+        [Fact]
+        public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
+        {
+            var map = ImmutableSortedDictionary.Create<string, string>()
+                .Add("a", "1").Add("b", "2");
+            var exception = Assert.Throws<KeyNotFoundException>(() => map["c"]);
+            Assert.Contains("'c'", exception.Message);
         }
 
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()

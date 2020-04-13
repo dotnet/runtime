@@ -17,12 +17,12 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print available subsets with -subset help"
+  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
   echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS or Android"
   echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
-  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"
+  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
+  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
   echo "  --projects <value>         Project or solution file(s) to build"
   echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   echo "  --binaryLog                Output binary log (short: -bl)"
@@ -97,7 +97,7 @@ while [[ $# > 0 ]]; do
       usage
       exit 0
       ;;
-     -subset)
+     -subset|-s)
       arguments="$arguments /p:Subset=$2"
       shift 2
       ;;
@@ -136,12 +136,12 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:Coverage=true"
       shift 1
       ;;
-     -runtimeconfiguration)
+     -runtimeconfiguration|-rc)
       val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
       arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
-     -librariesconfiguration)
+     -librariesconfiguration|-lc)
       arguments="$arguments /p:LibrariesConfiguration=$2"
       shift 2
       ;;
