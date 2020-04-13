@@ -10,7 +10,7 @@
 
   <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == ''">
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
       <BinPlaceItem Include="$(NativeBinDir)*.dll" />
       <BinPlaceItem Include="$(NativeBinDir)*.pdb" />
       <BinPlaceItem Include="$(NativeBinDir)*.lib" />

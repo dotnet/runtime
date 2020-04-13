@@ -109,7 +109,7 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == ''">
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>

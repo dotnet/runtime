@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
@@ -61,7 +62,7 @@
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
   <Target Name="GenerateFrameworkListFile"
           Condition="'$(BinPlaceTestRuntimePack)' == 'true'"
           AfterTargets="RestoreTestHost">
@@ -71,14 +72,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_rpLibFiles Include="$(NETCoreAppRuntimePackLibPath)\*.*">
+      <_runtimePackLibFiles Include="$(NETCoreAppRuntimePackLibPath)\*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NETCoreAppFramework)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
-      </_rpLibFiles>
-      <_rpNativeFiles Include="$(NETCoreAppRuntimePackNativePath)\*.*">
+      </_runtimePackLibFiles>
+      <_runtimePackNativeFiles Include="$(NETCoreAppRuntimePackNativePath)\*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/native</TargetPath>
         <IsNative>true</IsNative>
-      </_rpNativeFiles>
+      </_runtimePackNativeFiles>
 
       <FrameworkListRootAttributes Include="Name" Value=".NET $(NETCoreAppFrameworkVersion)" />
       <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NETCoreAppFrameworkIdentifier)" />
@@ -87,7 +88,7 @@
     </ItemGroup>
 
     <CreateFrameworkListFile
-      Files="@(_rpLibFiles);@(_rpNativeFiles)"
+      Files="@(_runtimePackLibFiles);@(_runtimePackNativeFiles)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)" />

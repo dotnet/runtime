@@ -280,7 +280,6 @@
     <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
     <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
     <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(__RuntimeId)\native</NETCoreAppRuntimePackNativePath>
-    <!--<RuntimePackTargetFrameworkPath>runtimes/$(__RuntimeId)</RuntimePackTargetFrameworkPath>-->
     <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
