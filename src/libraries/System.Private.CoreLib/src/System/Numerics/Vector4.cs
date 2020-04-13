@@ -195,7 +195,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Clamp(Vector4 value1, Vector4 min, Vector4 max)
         {
-            // https://github.com/dotnet/runtime/issues/34017
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
             return Vector4.Min(Vector4.Max(value1, min), max);
         }
 
