@@ -39,9 +39,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string), typeof(BindingFlags) },
-			typeof (Bar), nameof (Bar.PublicEvent), (Type [])null)]
 		static void TestNameWrongBindingFlags()
 		{
 			var eventInfo = typeof (Bar).GetEvent ("PublicEvent", BindingFlags.NonPublic);
@@ -142,10 +139,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
 			private event EventHandler<EventArgs> PrivateEvent;
-			[Kept]
-			[KeptBackingField]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
 			public event EventHandler<EventArgs> PublicEvent;
 		}
 		
