@@ -10,6 +10,8 @@ namespace System.Text
 {
     public sealed class DecoderExceptionFallback : DecoderFallback
     {
+        internal static readonly DecoderExceptionFallback s_default = new DecoderExceptionFallback();
+
         public override DecoderFallbackBuffer CreateFallbackBuffer() =>
             new DecoderExceptionFallbackBuffer();
 

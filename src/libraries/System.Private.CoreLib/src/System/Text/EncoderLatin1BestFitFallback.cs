@@ -31,7 +31,6 @@ namespace System.Text
     {
         // Our variables
         private char _cBestFit = '\0';
-        private readonly char[] _arrayBestFit = s_arrayCharBestFit;
         private int _iCount = -1;
         private int _iSize;
 
@@ -125,8 +124,8 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            Debug.Assert(_arrayBestFit != null);
-            int highBound = _arrayBestFit.Length;
+            Debug.Assert(s_arrayCharBestFit != null);
+            int highBound = s_arrayCharBestFit.Length;
             int index;
 
             // Binary search the array
@@ -138,13 +137,13 @@ namespace System.Text
                 // Also note that index can never == highBound (because diff is rounded down)
                 index = ((iDiff / 2) + lowBound) & 0xFFFE;
 
-                char cTest = _arrayBestFit[index];
+                char cTest = s_arrayCharBestFit[index];
                 if (cTest == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < _arrayBestFit.Length,
+                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return _arrayBestFit[index + 1];
+                    return s_arrayCharBestFit[index + 1];
                 }
                 else if (cTest < cUnknown)
                 {
@@ -160,12 +159,12 @@ namespace System.Text
 
             for (index = lowBound; index < highBound; index += 2)
             {
-                if (_arrayBestFit[index] == cUnknown)
+                if (s_arrayCharBestFit[index] == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < _arrayBestFit.Length,
+                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return _arrayBestFit[index + 1];
+                    return s_arrayCharBestFit[index + 1];
                 }
             }
 

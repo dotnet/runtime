@@ -5,18 +5,15 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.Text
 {
     public abstract class EncoderFallback
     {
         // Default fallback, uses no best fit & "?"
-        private static readonly EncoderReplacementFallback s_replacementFallback = new EncoderReplacementFallback();
-        public static EncoderFallback ReplacementFallback => s_replacementFallback;
+        public static EncoderFallback ReplacementFallback => EncoderReplacementFallback.s_default;
 
-        private static readonly EncoderExceptionFallback s_exceptionFallback = new EncoderExceptionFallback();
-        public static EncoderFallback ExceptionFallback => s_exceptionFallback;
+        public static EncoderFallback ExceptionFallback => EncoderExceptionFallback.s_default;
 
         // Fallback
         //

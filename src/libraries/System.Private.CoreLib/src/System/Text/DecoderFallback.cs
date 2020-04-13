@@ -5,18 +5,15 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Threading;
 
 namespace System.Text
 {
     public abstract class DecoderFallback
     {
         // Default fallback, uses no best fit & "?"
-        private static readonly DecoderReplacementFallback s_replacementFallback = new DecoderReplacementFallback();
-        public static DecoderFallback ReplacementFallback => s_replacementFallback;
+        public static DecoderFallback ReplacementFallback => DecoderReplacementFallback.s_default;
 
-        private static readonly DecoderExceptionFallback s_exceptionFallback = new DecoderExceptionFallback();
-        public static DecoderFallback ExceptionFallback => s_exceptionFallback;
+        public static DecoderFallback ExceptionFallback => DecoderExceptionFallback.s_default;
 
         // Fallback
         //

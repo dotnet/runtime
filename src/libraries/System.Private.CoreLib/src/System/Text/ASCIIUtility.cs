@@ -675,8 +675,8 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Vector128<ushort> asciiMaskForPTEST = Vector128.Create((ushort)0xFF80); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80); // used for PTEST on supported hardware
+            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
@@ -689,7 +689,7 @@ namespace System.Text
             // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
             // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
 
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
 
             if ((currentMask & NonAsciiDataSeenMask) != 0)
             {
@@ -743,7 +743,7 @@ namespace System.Text
                     {
                         // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                         // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                        if (!Sse41.TestZ(combinedVector, asciiMaskForPTEST))
+                        if (!Sse41.TestZ(combinedVector, asciiMaskForTestZ))
                         {
                             goto FoundNonAsciiDataInFirstOrSecondVector;
                         }
@@ -751,7 +751,7 @@ namespace System.Text
                     else
                     {
                         // See comment earlier in the method for an explanation of how the below logic works.
-                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, asciiMaskForPADDUSW).AsByte());
+                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, asciiMaskForAddSaturate).AsByte());
                         if ((currentMask & NonAsciiDataSeenMask) != 0)
                         {
                             goto FoundNonAsciiDataInFirstOrSecondVector;
@@ -786,7 +786,7 @@ namespace System.Text
             {
                 // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                 // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                 {
                     goto FoundNonAsciiDataInFirstVector;
                 }
@@ -794,7 +794,7 @@ namespace System.Text
             else
             {
                 // See comment earlier in the method for an explanation of how the below logic works.
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                 if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
@@ -819,7 +819,7 @@ namespace System.Text
                 {
                     // If a non-ASCII bit is set in any WORD of the combined vector, we have seen non-ASCII data.
                     // Jump to the non-ASCII handler to figure out which particular vector contained non-ASCII data.
-                    if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                     {
                         goto FoundNonAsciiDataInFirstVector;
                     }
@@ -827,7 +827,7 @@ namespace System.Text
                 else
                 {
                     // See comment earlier in the method for an explanation of how the below logic works.
-                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                     if ((currentMask & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInCurrentMask;
@@ -851,14 +851,14 @@ namespace System.Text
             // See comment earlier in the method for an explanation of how the below logic works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(firstVector, asciiMaskForPTEST))
+                if (!Sse41.TestZ(firstVector, asciiMaskForTestZ))
                 {
                     goto FoundNonAsciiDataInFirstVector;
                 }
             }
             else
             {
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
                 if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
@@ -873,7 +873,7 @@ namespace System.Text
         FoundNonAsciiDataInFirstVector:
 
             // See comment earlier in the method for an explanation of how the below logic works.
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForAddSaturate).AsByte());
 
         FoundNonAsciiDataInCurrentMask:
 
@@ -1312,8 +1312,8 @@ namespace System.Text
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
-            Vector128<short> asciiMaskForPTEST = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            Vector128<short> asciiMaskForTestZ = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
+            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
             const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
 
             // First, perform an unaligned read of the first part of the input buffer.
@@ -1325,14 +1325,14 @@ namespace System.Text
 
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                 {
                     return 0;
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     return 0;
                 }
@@ -1365,14 +1365,14 @@ namespace System.Text
                 // See comments earlier in this method for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                     {
                         goto Finish;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto Finish;
                     }
@@ -1404,14 +1404,14 @@ namespace System.Text
                 // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(combinedVector, asciiMaskForPTEST))
+                    if (!Sse41.TestZ(combinedVector, asciiMaskForTestZ))
                     {
                         goto FoundNonAsciiDataInLoop;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInLoop;
                     }
@@ -1438,14 +1438,14 @@ namespace System.Text
             // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
                 {
                     goto Finish; // found non-ASCII data
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     goto Finish; // found non-ASCII data
                 }
@@ -1647,6 +1647,12 @@ namespace System.Text
 
             nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
 
+            // Calculating the destination address outside the loop results in significant
+            // perf wins vs. relying on the JIT to fold memory addressing logic into the
+            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+
+            char* pCurrentWriteAddress = pUtf16Buffer + currentOffset;
+
             do
             {
                 // In a loop, perform an unaligned read, widen to two vectors, then aligned write the two vectors.
@@ -1660,17 +1666,14 @@ namespace System.Text
                     goto NonAsciiDataSeenInInnerLoop;
                 }
 
-                // Calculating the destination address in the below manner results in significant
-                // performance wins vs. other patterns. See for more information:
-                // https://github.com/dotnet/runtime/issues/33002
-
                 Vector128<byte> low = Sse2.UnpackLow(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), low);
+                Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
 
                 Vector128<byte> high = Sse2.UnpackHigh(asciiVector, zeroVector);
-                Sse2.StoreAligned((byte*)pUtf16Buffer + (currentOffset << 1) + SizeOfVector128, high);
+                Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
 
                 currentOffset += SizeOfVector128;
+                pCurrentWriteAddress += SizeOfVector128;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
 
         Finish:

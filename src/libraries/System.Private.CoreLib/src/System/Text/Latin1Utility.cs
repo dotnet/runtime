@@ -215,8 +215,8 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all Latin-1". If we see non-Latin-1
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Vector128<ushort> latin1MaskForPTEST = Vector128.Create((ushort)0xFF00); // used for PTEST on supported hardware
-            Vector128<ushort> latin1MaskForPADDUSW = Vector128.Create((ushort)0x7F00); // used for PADDUSW
+            Vector128<ushort> latin1MaskForTestZ = Vector128.Create((ushort)0xFF00); // used for PTEST on supported hardware
+            Vector128<ushort> latin1MaskForAddSaturate = Vector128.Create((ushort)0x7F00); // used for PADDUSW
             const uint NonLatin1DataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-Latin-1 data
 
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
@@ -229,7 +229,7 @@ namespace System.Text
             // has value >= 0x0100 (non-Latin-1). Then we'll treat the vector as a BYTE vector in order
             // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
 
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForAddSaturate).AsByte());
 
             if ((currentMask & NonLatin1DataSeenMask) != 0)
             {
@@ -283,7 +283,7 @@ namespace System.Text
                     {
                         // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                         // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                        if (!Sse41.TestZ(combinedVector, latin1MaskForPTEST))
+                        if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
                         {
                             goto FoundNonLatin1DataInFirstOrSecondVector;
                         }
@@ -291,7 +291,7 @@ namespace System.Text
                     else
                     {
                         // See comment earlier in the method for an explanation of how the below logic works.
-                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, latin1MaskForPADDUSW).AsByte());
+                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, latin1MaskForAddSaturate).AsByte());
                         if ((currentMask & NonLatin1DataSeenMask) != 0)
                         {
                             goto FoundNonLatin1DataInFirstOrSecondVector;
@@ -326,7 +326,7 @@ namespace System.Text
             {
                 // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                 // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                if (!Sse41.TestZ(firstVector, latin1MaskForPTEST))
+                if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
                 {
                     goto FoundNonLatin1DataInFirstVector;
                 }
@@ -334,7 +334,7 @@ namespace System.Text
             else
             {
                 // See comment earlier in the method for an explanation of how the below logic works.
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForAddSaturate).AsByte());
                 if ((currentMask & NonLatin1DataSeenMask) != 0)
                 {
                     goto FoundNonLatin1DataInCurrentMask;
@@ -359,7 +359,7 @@ namespace System.Text
                 {
                     // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                     // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                    if (!Sse41.TestZ(firstVector, latin1MaskForPTEST))
+                    if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
                     {
                         goto FoundNonLatin1DataInFirstVector;
                     }
@@ -367,7 +367,7 @@ namespace System.Text
                 else
                 {
                     // See comment earlier in the method for an explanation of how the below logic works.
-                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForPADDUSW).AsByte());
+                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForAddSaturate).AsByte());
                     if ((currentMask & NonLatin1DataSeenMask) != 0)
                     {
                         goto FoundNonLatin1DataInCurrentMask;
@@ -391,14 +391,14 @@ namespace System.Text
             // See comment earlier in the method for an explanation of how the below logic works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(firstVector, latin1MaskForPTEST))
+                if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
                 {
                     goto FoundNonLatin1DataInFirstVector;
                 }
             }
             else
             {
-                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForPADDUSW).AsByte());
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForAddSaturate).AsByte());
                 if ((currentMask & NonLatin1DataSeenMask) != 0)
                 {
                     goto FoundNonLatin1DataInCurrentMask;
@@ -413,7 +413,7 @@ namespace System.Text
         FoundNonLatin1DataInFirstVector:
 
             // See comment earlier in the method for an explanation of how the below logic works.
-            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForPADDUSW).AsByte());
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, latin1MaskForAddSaturate).AsByte());
 
         FoundNonLatin1DataInCurrentMask:
 
@@ -787,8 +787,8 @@ namespace System.Text
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
-            Vector128<short> latin1MaskForPTEST = Vector128.Create(unchecked((short)0xFF00)); // used for PTEST on supported hardware
-            Vector128<ushort> latin1MaskForPADDUSW = Vector128.Create((ushort)0x7F00); // used for PADDUSW
+            Vector128<short> latin1MaskForTestZ = Vector128.Create(unchecked((short)0xFF00)); // used for PTEST on supported hardware
+            Vector128<ushort> latin1MaskForAddSaturate = Vector128.Create((ushort)0x7F00); // used for PADDUSW
             const int NonLatin1DataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-Latin-1 chars
 
             // First, perform an unaligned read of the first part of the input buffer.
@@ -800,14 +800,14 @@ namespace System.Text
 
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {
                     return 0;
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForPADDUSW).AsByte()) & NonLatin1DataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForAddSaturate).AsByte()) & NonLatin1DataSeenMask) != 0)
                 {
                     return 0;
                 }
@@ -840,14 +840,14 @@ namespace System.Text
                 // See comments earlier in this method for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForPTEST))
+                    if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                     {
                         goto Finish;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForPADDUSW).AsByte()) & NonLatin1DataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForAddSaturate).AsByte()) & NonLatin1DataSeenMask) != 0)
                     {
                         goto Finish;
                     }
@@ -879,14 +879,14 @@ namespace System.Text
                 // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
                 if (Sse41.IsSupported)
                 {
-                    if (!Sse41.TestZ(combinedVector, latin1MaskForPTEST))
+                    if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
                     {
                         goto FoundNonLatin1DataInLoop;
                     }
                 }
                 else
                 {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), latin1MaskForPADDUSW).AsByte()) & NonLatin1DataSeenMask) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), latin1MaskForAddSaturate).AsByte()) & NonLatin1DataSeenMask) != 0)
                     {
                         goto FoundNonLatin1DataInLoop;
                     }
@@ -913,14 +913,14 @@ namespace System.Text
             // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
             if (Sse41.IsSupported)
             {
-                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForPTEST))
+                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {
                     goto Finish; // found non-Latin-1 data
                 }
             }
             else
             {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForPADDUSW).AsByte()) & NonLatin1DataSeenMask) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), latin1MaskForAddSaturate).AsByte()) & NonLatin1DataSeenMask) != 0)
                 {
                     goto Finish; // found non-Latin-1 data
                 }
@@ -994,6 +994,12 @@ namespace System.Text
                 currentOffset = (SizeOfVector128 >> 1) - (((nuint)pUtf16Buffer >> 1) & (MaskOfAllBitsInVector128 >> 1));
                 Debug.Assert(0 < currentOffset && currentOffset <= SizeOfVector128 / sizeof(char));
 
+                // Calculating the destination address outside the loop results in significant
+                // perf wins vs. relying on the JIT to fold memory addressing logic into the
+                // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+
+                char* pCurrentWriteAddress = pUtf16Buffer + currentOffset;
+
                 // Now run the main 1x 128-bit read + 2x 128-bit write loop.
 
                 nuint finalOffsetWhereCanIterateLoop = elementCount - SizeOfVector128;
@@ -1006,12 +1012,13 @@ namespace System.Text
                     // https://github.com/dotnet/runtime/issues/33002
 
                     Vector128<byte> low = Sse2.UnpackLow(latin1Vector, zeroVector);
-                    Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), low);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
 
                     Vector128<byte> high = Sse2.UnpackHigh(latin1Vector, zeroVector);
-                    Sse2.StoreAligned((byte*)pUtf16Buffer + (currentOffset << 1) + SizeOfVector128, high);
+                    Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
 
                     currentOffset += SizeOfVector128;
+                    pCurrentWriteAddress += SizeOfVector128;
                 }
             }
 

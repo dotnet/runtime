@@ -8,6 +8,8 @@ namespace System.Text
 {
     public sealed class EncoderExceptionFallback : EncoderFallback
     {
+        internal static readonly EncoderExceptionFallback s_default = new EncoderExceptionFallback();
+
         // Construction
         public EncoderExceptionFallback()
         {
