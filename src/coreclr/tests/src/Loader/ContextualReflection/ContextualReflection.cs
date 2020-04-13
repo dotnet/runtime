@@ -38,7 +38,7 @@ namespace ContextualReflectionTest
 
             Console.WriteLine("Success");
 
-            return 100;
+            return 43;
         }
 
         public Program()
