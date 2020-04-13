@@ -1688,7 +1688,8 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        if (!tyvar->SatisfiesConstraints(&typeContext,thArg))
+        InstantiationContext instContext(&typeContext, NULL);
+        if (!tyvar->SatisfiesConstraints(&typeContext,thArg, &instContext))
         {
             if (fThrowIfNotSatisfied)
             {
