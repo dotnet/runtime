@@ -63,11 +63,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(long.MaxValue);
 
         /// <summary>
-        ///     All sent packets, for which we are still awaiting acknowledgement.
-        /// </summary>
-        internal SortedList<long, ManagedQuicConnection.SentPacket> PacketsInFlight { get; } = new SortedList<long, ManagedQuicConnection.SentPacket>();
-
-        /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.
         /// </summary>
         /// <returns>Truncated packet number and it's length.</returns>

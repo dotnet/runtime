@@ -23,9 +23,10 @@ namespace System.Net.Quic.Implementations.Managed
 
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
-            new PacketNumberSpace(), new PacketNumberSpace(),
-            new PacketNumberSpace()
+            new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
         };
+
+        private Recovery Recovery { get; } = new Recovery();
 
         /// <summary>
         ///     QUIC transport parameters used for this endpoint.
@@ -463,7 +464,7 @@ namespace System.Net.Quic.Implementations.Managed
             //     // use minimum size for packets during handshake
             //     : QuicConstants.MinimumClientInitialDatagramSize);
 
-            // TODO-RZ: respect control flow limits
+            // TODO-RZ: respect control flow limits and congestion window
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 
@@ -481,8 +482,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // remember what we sent in this packet
-            pnSpace.PacketsInFlight.Add(pnSpace.NextPacketNumber, context.SentPacket);
-            context.SentPacket.TimeSent = context.Now;
+            Recovery.OnPacketSent(pnSpace.NextPacketNumber, GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
 
             if (!_isServer && packetType == PacketType.Initial)
@@ -576,7 +576,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (nextLevel <= level)
                     break;
 
-                context.SentPacket = new SentPacket();
+                context.SentPacket = new SentPacket {TimeSent = context.Now};
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
