@@ -16,6 +16,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [Collection("MiniStress")]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_NoVersion : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_NoVersion(ITestOutputHelper output) : base(output) { }
@@ -31,6 +32,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection("MiniStress")]
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
     {
@@ -38,12 +40,14 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection("MiniStress")]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
+    [Collection("MiniStress")]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http11 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http11(ITestOutputHelper output) : base(output) { }
