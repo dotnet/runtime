@@ -52,7 +52,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe AddressFamily GetAddressFamily(byte[] buffer)
+        public static unsafe AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {
             AddressFamily family;
             Interop.Error err;
@@ -76,7 +76,7 @@ namespace System.Net
             ThrowOnFailure(err);
         }
 
-        public static unsafe ushort GetPort(byte[] buffer)
+        public static unsafe ushort GetPort(ReadOnlySpan<byte> buffer)
         {
             ushort port;
             Interop.Error err;

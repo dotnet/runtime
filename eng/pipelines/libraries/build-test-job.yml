@@ -56,7 +56,7 @@ jobs:
             cleanUnpackFolder: false
 
         - script: $(_buildScript)
-                -subset pretest-libtests
+                -subset libs.pretest+libs.tests
                 $(_buildArguments)
                 $(_archiveTestsParameter)
           displayName: Restore and Build

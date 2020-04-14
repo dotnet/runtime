@@ -51,7 +51,7 @@ int32_t SystemNative_GetOSArchitecture()
     return ARCH_ARM64;
 #elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(TARGET_X86)
+#elif defined(TARGET_X86) || defined(TARGET_WASM) // TODO: add arch for WASM
     return ARCH_X86;
 #else
 #error Unidentified Architecture
@@ -71,7 +71,7 @@ int32_t SystemNative_GetProcessArchitecture()
     return ARCH_ARM64;
 #elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(TARGET_X86)
+#elif defined(TARGET_X86) || defined(TARGET_WASM) // TODO: add arch for WASM
     return ARCH_X86;
 #else
 #error Unidentified Architecture

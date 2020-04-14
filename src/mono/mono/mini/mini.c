@@ -4353,6 +4353,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 	}
 #endif
 
+#if defined(TARGET_ARM64)
+	// All Arm64 devices have this set
+	features |= MONO_CPU_ARM64_BASE; 
+#endif
+
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }

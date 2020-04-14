@@ -49,11 +49,17 @@ source "$__RepoRootDir"/eng/native/build-commons.sh
 
 if [[ "$__BuildArch" == wasm ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
-        echo "Error: Should set EMSDK_PATH environment variable pointing to emsdk root."
+        echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
         exit 1
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
+
+    export CLR_CC=$(which emcc)
+    export CLR_CXX=$(which em++)
 elif [[ "$__TargetOS" == iOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
@@ -113,6 +119,19 @@ elif [[ "$__TargetOS" == iOS ]]; then
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
         echo "Error: Unknown iOS architecture $__BuildArch."
+        exit 1
+    fi
+elif [[ "$__TargetOS" == tvOS ]]; then
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
+    # set default tvOS device deployment target 
+    # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown tvOS architecture $__BuildArch."
         exit 1
     fi
 fi

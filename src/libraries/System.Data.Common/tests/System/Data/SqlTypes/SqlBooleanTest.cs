@@ -236,7 +236,7 @@ namespace System.Data.Tests.SqlTypes
 
         // Equals
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             SqlBoolean sqlTrue2 = new SqlBoolean(true);
             SqlBoolean sqlFalse2 = new SqlBoolean(false);

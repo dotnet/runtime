@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine.Experimental">
-      <Version>0.3.0-alpha.19525.2</Version>
+      <Version>0.3.0-alpha.19577.1</Version>
     </PackageReference>
   </ItemGroup>
 

@@ -35,8 +35,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        public bool LimitedPrivateKeySupported => !PlatformDetection.IsOSX;
-
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
             if (string.IsNullOrEmpty(friendlyNameOrValue))

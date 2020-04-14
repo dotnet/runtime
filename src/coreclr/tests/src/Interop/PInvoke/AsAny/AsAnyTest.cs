@@ -341,8 +341,7 @@ class AsAnyTests
     {
         if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
         {
-            Console.WriteLine("Non english platforms are not supported");
-            Console.WriteLine("passing without running tests");
+            Console.WriteLine($"Non-US English platforms are not supported.\nPassing {nameof(RunBestFitMappingTests)} without running.");
             return;
         }
 

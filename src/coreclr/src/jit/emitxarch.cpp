@@ -2322,9 +2322,16 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
         else
         {
-            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx))
+            // When we are using the SIB or VSIB format with EBP or R13 as a base, we must emit at least
+            // a 1 byte displacement (this is a special case in the encoding to allow for the case of no
+            // base register at all). In order to avoid this when we have no scaling, we can reverse the
+            // registers so that we don't have to add that extra byte. However, we can't do that if the
+            // index register is a vector, such as for a gather instruction.
+            //
+            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx) &&
+                !isFloatReg(rgx))
             {
-                /* Swap reg and rgx, such that reg is not EBP/R13 */
+                // Swap reg and rgx, such that reg is not EBP/R13.
                 regNumber tmp                       = reg;
                 id->idAddr()->iiaAddrMode.amBaseReg = reg = rgx;
                 id->idAddr()->iiaAddrMode.amIndxReg = rgx = tmp;

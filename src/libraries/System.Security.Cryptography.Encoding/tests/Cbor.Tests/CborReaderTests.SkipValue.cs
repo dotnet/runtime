@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     public partial class CborReaderTests
     {
         [Theory]
-        [MemberData(nameof(SampleValues))]
+        [MemberData(nameof(SkipTestInputs))]
         public static void SkipValue_RootValue_HappyPath(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [MemberData(nameof(SampleValues))]
+        [MemberData(nameof(SkipTestInputs))]
         public static void SkipValue_NestedValue_HappyPath(string hexEncoding)
         {
             byte[] encoding = $"8301{hexEncoding}03".HexToByteArray();
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [MemberData(nameof(SampleValues))]
+        [MemberData(nameof(SkipTestInputs))]
         public static void SkipValue_TaggedValue_HappyPath(string hexEncoding)
         {
             byte[] encoding = $"c2{hexEncoding}".HexToByteArray();
@@ -63,11 +63,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData("ff")]
-        [InlineData("c2")]
-        [InlineData("bf01ff")]
-        [InlineData("7f01ff")]
+        [MemberData(nameof(SkipTestInvalidCborInputs))]
         public static void SkipValue_InvalidFormat_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -79,12 +75,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        public static void SkipValue_InvalidUtf8_ShouldDecoderFallbackException(string hexEncoding)
+        public static void SkipValue_InvalidUtf8_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<DecoderFallbackException>(() => reader.SkipValue());
+            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<DecoderFallbackException>(exn.InnerException);
         }
 
         [Theory]
@@ -104,39 +102,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
-        public static IEnumerable<object[]> SampleValues =>
-            new string[]
-            {
-                // numeric values
-                "01",
-                "1a000f4240",
-                "3affffffff",
-                // byte strings
-                "40",
-                "4401020304",
-                "5f41ab40ff",
-                // text strings
-                "60",
-                "6161",
-                "6449455446",
-                "7f62616260ff",
-                // Arrays
-                "80",
-                "840120604107",
-                "8301820203820405",
-                "9f182aff",
-                // Maps
-                "a0",
-                "a201020304",
-                "a1a1617802182a",
-                "bf01020304ff",
-                // tagged values
-                "c202",
-                "d82076687474703a2f2f7777772e6578616d706c652e636f6d",
-                // special values
-                "f4",
-                "f6",
-                "fa47c35000",
-            }.Select(x => new object[] { x });
+        public static IEnumerable<object[]> SkipTestInputs => SampleCborValues.Select(x => new [] { x });
+        public static IEnumerable<object[]> SkipTestInvalidCborInputs => InvalidCborValues.Select(x => new[] { x });
     }
 }

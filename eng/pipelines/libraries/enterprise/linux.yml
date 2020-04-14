@@ -50,7 +50,7 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash -c '/repo/build.sh -subsetcategory coreclr-libraries -runtimeconfiguration release -ci'
+    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci'
   displayName: Build product sources
 
 - bash: |

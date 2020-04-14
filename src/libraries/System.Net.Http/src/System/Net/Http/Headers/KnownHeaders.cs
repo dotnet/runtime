@@ -46,6 +46,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Date = new KnownHeader("Date", HttpHeaderType.General | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Date, H3StaticTable.Date);
         public static readonly KnownHeader ETag = new KnownHeader("ETag", HttpHeaderType.Response, GenericHeaderParser.SingleValueEntityTagParser, null, H2StaticTable.ETag, H3StaticTable.ETag);
         public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueWithParametersParser, new string[] { "100-continue" }, H2StaticTable.Expect);
+        public static readonly KnownHeader ExpectCT = new KnownHeader("Expect-CT");
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Expires);
         public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, H2StaticTable.From);
         public static readonly KnownHeader Host = new KnownHeader("Host", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.HostParser, null, H2StaticTable.Host);
@@ -69,6 +70,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader PublicKeyPins = new KnownHeader("Public-Key-Pins");
         public static readonly KnownHeader Range = new KnownHeader("Range", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.RangeParser, null, H2StaticTable.Range, H3StaticTable.RangeBytes0ToAll);
         public static readonly KnownHeader Referer = new KnownHeader("Referer", HttpHeaderType.Request, UriHeaderParser.RelativeOrAbsoluteUriParser, null, H2StaticTable.Referer, H3StaticTable.Referer); // NB: The spelling-mistake "Referer" for "Referrer" must be matched.
+        public static readonly KnownHeader ReferrerPolicy = new KnownHeader("Referrer-Policy");
         public static readonly KnownHeader Refresh = new KnownHeader("Refresh", H2StaticTable.Refresh);
         public static readonly KnownHeader RetryAfter = new KnownHeader("Retry-After", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.RetryConditionParser, null, H2StaticTable.RetryAfter);
         public static readonly KnownHeader SecWebSocketAccept = new KnownHeader("Sec-WebSocket-Accept");
@@ -93,6 +95,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader WWWAuthenticate = new KnownHeader("WWW-Authenticate", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueAuthenticationParser, null, H2StaticTable.WwwAuthenticate);
         public static readonly KnownHeader Warning = new KnownHeader("Warning", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueWarningParser);
         public static readonly KnownHeader XAspNetVersion = new KnownHeader("X-AspNet-Version");
+        public static readonly KnownHeader XCache = new KnownHeader("X-Cache");
         public static readonly KnownHeader XContentDuration = new KnownHeader("X-Content-Duration");
         public static readonly KnownHeader XContentTypeOptions = new KnownHeader("X-Content-Type-Options", http3StaticTableIndex: H3StaticTable.XContentTypeOptionsNoSniff);
         public static readonly KnownHeader XFrameOptions = new KnownHeader("X-Frame-Options", http3StaticTableIndex: H3StaticTable.XFrameOptionsDeny);
@@ -100,6 +103,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader XPoweredBy = new KnownHeader("X-Powered-By");
         public static readonly KnownHeader XRequestID = new KnownHeader("X-Request-ID");
         public static readonly KnownHeader XUACompatible = new KnownHeader("X-UA-Compatible");
+        public static readonly KnownHeader XXssProtection = new KnownHeader("X-XSS-Protection");
 
         // Helper interface for making GetCandidate generic over strings, utf8, etc
         private interface IHeaderNameAccessor
@@ -209,6 +213,7 @@ namespace System.Net.Http.Headers
                         case 'T': case 't': return Trailer; // [T]railer
                         case 'U': case 'u': return Upgrade; // [U]pgrade
                         case 'W': case 'w': return Warning; // [W]arning
+                        case 'X': case 'x': return XCache;  // [X]-Cache
                     }
                     break;
 
@@ -218,6 +223,13 @@ namespace System.Net.Http.Headers
                         case 'M': case 'm': return IfMatch;  // If-[M]atch
                         case 'R': case 'r': return IfRange;  // If-[R]ange
                         case 'A': case 'a': return Location; // Loc[a]tion
+                    }
+                    break;
+
+                case 9:
+                    switch (key[0])
+                    {
+                        case 'E': case 'e': return ExpectCT; // [E]xpect-CT
                     }
                     break;
 
@@ -282,6 +294,7 @@ namespace System.Net.Http.Headers
                         case 'E': case 'e': return AcceptEncoding; // Accept-[E]ncoding
                         case 'K': case 'k': return PublicKeyPins;  // Public-[K]ey-Pins
                         case 'L': case 'l': return AcceptLanguage; // Accept-[L]anguage
+                        case 'R': case 'r': return ReferrerPolicy; // Referre[r]-Policy
                     }
                     break;
 
@@ -291,7 +304,13 @@ namespace System.Net.Http.Headers
                         case 'O': case 'o': return ContentEncoding; // Content-Enc[o]ding
                         case 'G': case 'g': return ContentLanguage; // Content-Lan[g]uage
                         case 'A': case 'a': return ContentLocation; // Content-Loc[a]tion
-                        case 'C': case 'c': return ProxyConnection; // Proxy-Conne[c]tion
+                        case 'C': case 'c':
+                            switch (key[0])
+                            {
+                                case 'P': case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
+                                case 'X': case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
+                            }
+                            break;
                         case 'I': case 'i': return WWWAuthenticate; // WWW-Authent[i]cate
                         case 'R': case 'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
                     }

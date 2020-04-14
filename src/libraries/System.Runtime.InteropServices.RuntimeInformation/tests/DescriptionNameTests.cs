@@ -117,8 +117,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
-                // Dump several procfs files
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits" })
+                // Dump several procfs files and /etc/os-release
+                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release" })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try

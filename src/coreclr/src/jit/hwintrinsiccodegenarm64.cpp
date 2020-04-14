@@ -163,6 +163,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
+    const bool isRMW = node->isRMWHWIntrinsic(compiler);
+
     genConsumeHWIntrinsicOperands(node);
 
     if (intrin.IsTableDriven())
@@ -177,10 +179,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case 2:
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                if (isRMW)
+                {
+                    assert(targetReg != op2Reg);
+
+                    if (targetReg != op1Reg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    }
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
                 break;
 
             case 3:
+                assert(isRMW);
+                assert(targetReg != op2Reg);
+                assert(targetReg != op3Reg);
+
                 if (targetReg != op1Reg)
                 {
                     GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
@@ -240,6 +259,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (intrin.id)
         {
             case NI_AdvSimd_BitwiseSelect:
+                // Even though BitwiseSelect is an RMW intrinsic per se, we don't want to mark it as such
+                // since we can handle all possible allocation decisions for targetReg.
+                assert(!isRMW);
+
                 if (targetReg == op1Reg)
                 {
                     GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
@@ -257,15 +280,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
                     GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
                 }
-                break;
-
-            case NI_Aes_Decrypt:
-            case NI_Aes_Encrypt:
-                if (targetReg != op1Reg)
-                {
-                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
-                }
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 break;
 
             case NI_Crc32_ComputeCrc32:
@@ -291,14 +305,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
-                break;
-
-            case NI_AdvSimd_ExtractAndNarrowHigh:
-                if (targetReg != op1Reg)
-                {
-                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
-                }
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 break;
 
             case NI_AdvSimd_FusedMultiplyAddScalar:

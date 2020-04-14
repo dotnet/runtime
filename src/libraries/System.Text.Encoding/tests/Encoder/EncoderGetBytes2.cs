@@ -110,14 +110,28 @@ namespace System.Text.Tests
         [MemberData(nameof(Encoders_MixedInput))]
         public void EncoderGetBytesMixedInput(Encoder encoder, int asciiSize, int unicodeSize0, int unicodeSize1)
         {
+            static void encoderGetBytesMixedInput(Encoder encoder, char[] chars, int length, int asciiSize, int unicodeSize0, int unicodeSize1)
+            {
+                int byteLength = asciiSize
+                    + Clamp(length - 1, 0, 1) * unicodeSize0
+                    + Clamp(length - 2, 0, 1) * unicodeSize1
+                    + Math.Max(length - 3, 0) * asciiSize;
+                byte[] b = new byte[byteLength];
+                Assert.Equal(byteLength, encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
+
+                // Fixed buffer so make larger
+                b = new byte[20];
+                VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength);
+            }
+
             // Bytes does not have enough capacity to accomodate result
             string s = "T\uD83D\uDE01est";
             char[] c = s.ToCharArray();
 
-            EncoderGetBytesMixedInput(encoder, c, 2, asciiSize, unicodeSize0, unicodeSize1);
-            EncoderGetBytesMixedInput(encoder, c, 3, asciiSize, unicodeSize0, unicodeSize1);
-            EncoderGetBytesMixedInput(encoder, c, 4, asciiSize, unicodeSize0, unicodeSize1);
-            EncoderGetBytesMixedInput(encoder, c, 5, asciiSize, unicodeSize0, unicodeSize1);
+            encoderGetBytesMixedInput(encoder, c, 2, asciiSize, unicodeSize0, unicodeSize1);
+            encoderGetBytesMixedInput(encoder, c, 3, asciiSize, unicodeSize0, unicodeSize1);
+            encoderGetBytesMixedInput(encoder, c, 4, asciiSize, unicodeSize0, unicodeSize1);
+            encoderGetBytesMixedInput(encoder, c, 5, asciiSize, unicodeSize0, unicodeSize1);
         }
 
         // Call GetBytes to convert an ASCIIUnicode character array by different encoders
@@ -133,20 +147,6 @@ namespace System.Text.Tests
             EncoderGetBytesMixedInputThrows(encoder, c, 3, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInputThrows(encoder, c, 4, asciiSize, unicodeSize0, unicodeSize1);
             EncoderGetBytesMixedInputThrows(encoder, c, 5, asciiSize, unicodeSize0, unicodeSize1);
-        }
-
-        private void EncoderGetBytesMixedInput(Encoder encoder, char[] chars, int length, int asciiSize, int unicodeSize0, int unicodeSize1)
-        {
-            int byteLength = asciiSize
-                + Clamp(length - 1, 0, 1) * unicodeSize0
-                + Clamp(length - 2, 0, 1) * unicodeSize1
-                + Math.Max(length - 3, 0) * asciiSize;
-            byte[] b = new byte[byteLength];
-            Assert.Equal(byteLength, encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
-
-            // Fixed buffer so make larger
-            b = new byte[20];
-            VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength);
         }
 
         private void EncoderGetBytesMixedInputThrows(Encoder encoder, char[] chars, int length, int asciiSize, int unicodeSize0, int unicodeSize1)

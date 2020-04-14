@@ -17,7 +17,11 @@
     <TargetFramework>$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</TargetFramework>
   </PropertyGroup>
 
-    <!-- Split $(TargetFramework) (e.g. net45) into short identifier and short version (e.g. 'net' and '45'). -->
+  <PropertyGroup>
+    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
+  </PropertyGroup>
+
+  <!-- Split $(TargetFramework) (e.g. net45) into short identifier and short version (e.g. 'net' and '45'). -->
   <PropertyGroup Condition="'$(TargetFramework)' != '' and !$(TargetFramework.Contains(',')) and !$(TargetFramework.Contains('+'))">
    <_ShortFrameworkIdentifier>$(TargetFramework.TrimEnd('.0123456789'))</_ShortFrameworkIdentifier>
    <_ShortFrameworkVersion>$(TargetFramework.Substring($(_ShortFrameworkIdentifier.Length)))</_ShortFrameworkVersion>
@@ -75,6 +79,10 @@
     <ProjectAssetsCacheFile Condition="'$(ProjectAssetsCacheFile)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName).assets.cache</ProjectAssetsCacheFile>
     <ProjectAssetsCacheFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(ProjectAssetsCacheFile)))</ProjectAssetsCacheFile>
     <NuGetTargetMoniker>$(TargetFrameworkMoniker)</NuGetTargetMoniker>
+    <!-- We change the default value of the output path set by the sdk in our targetframework.props file.
+         We need to update the properties derived from the output path in order to reflect the change.
+         TargetPath is one of such property. -->
+    <TargetPath>$(OutputPath)$(TargetFileName)</TargetPath>
   </PropertyGroup>
 
 </Project>

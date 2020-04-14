@@ -15,11 +15,11 @@ Note that the debug configuration is the default option. It generates a 'debug' 
 Once you've built the whole runtime and assuming you want to work with just mono, you want to use the following command:
 
 ```bash
-./build.sh --subsetCategory mono
+./build.sh --subset mono
 ```
 or on Windows,
 ```bat
-build.cmd -subsetCategory mono
+build.cmd -subset mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
 
@@ -44,11 +44,11 @@ The build has a number of options that you can learn about using build -?.
 To generate nuget packages:
 
 ```bash
-./build.sh --subsetCategory mono -pack (with optional release configuration)
+./build.sh --subset mono -pack (with optional release configuration)
 ```
 or on Windows,
 ```bat
-build.cmd -subsetCategory mono -pack (with optional release configuration)
+build.cmd -subset mono -pack (with optional release configuration)
 ```
 
 The following packages will be created under `artifacts\packages\<configuration>\Shipping`:

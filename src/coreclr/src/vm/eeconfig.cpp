@@ -103,11 +103,6 @@ HRESULT EEConfig::Init()
     iGCStress     = 0;
 #endif
 
-#ifdef STRESS_HEAP
-    iGCStressMix  = 0;
-    iGCStressStep = 1;
-#endif
-
     fGCBreakOnOOM = false;
     iGCgen0size = 0;
     iGCSegmentSize = 0;
@@ -480,16 +475,16 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
     bool gcConcurrentWasForced = false;
-    // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
-    // positive value as 'forcing' concurrent GC to be on. Because the standard logic
-    // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
-    // like any other nonzero value), we will explicitly check the DWORD later if this
-    // check returns false.
     gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), false);
 
     int gcConcurrentConfigVal = 0;
     if (!gcConcurrentWasForced)
     {
+        // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
+        // positive value as 'forcing' concurrent GC to be on. Because the standard logic
+        // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
+        // like any other nonzero value), we will explicitly check the DWORD later if this
+        // check returns false.
         gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
         gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
     }
@@ -507,17 +502,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef STRESS_HEAP
     BOOL bGCStressAndHeapVerifyAllowed = true;
-    iGCStressMix        =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressMix);
-    iGCStressStep       =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressStep);
-
-    // For GC stress mix mode ensure reasonable defaults
-    if (iGCStressMix != 0)
-    {
-        if (iGCStress == 0)
-            iGCStress |= int(GCSTRESS_ALLOC) | int(GCSTRESS_TRANSITION);
-        if (iGCStressStep == 0 || iGCStressStep == 1)
-            iGCStressStep = 0x10;
-    }
 
     if (iGCStress)
     {
@@ -558,21 +542,14 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             else
             {
                 // If GCStress was enabled, and
-                // If GcConcurrent was NOT explicitly specified in the environment, and
-                // If GSCtressMix was NOT specified
-                // Then let's turn off concurrent GC since it make objects move less
-                if (iGCStressMix == 0)
-                {
-                    iGCconcurrent   =
-                    g_IGCconcurrent = 0;
-                }
+                // If GcConcurrent was NOT explicitly specified in the environment,
+                // then let's turn off concurrent GC since it make objects move less
+                iGCconcurrent = g_IGCconcurrent = 0;
             }
         }
         else
         {
             iGCStress = 0;
-            iGCStressMix  = 0;
-            iGCStressStep = 1;
         }
     }
 

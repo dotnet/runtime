@@ -146,20 +146,20 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public CallSiteFormatterContext StartObject()
             {
-                Builder.Append("{");
+                Builder.Append('{');
                 return IncrementOffset();
             }
 
             public void EndObject()
             {
-                Builder.Append("}");
+                Builder.Append('}');
             }
 
             public void StartProperty(string name)
             {
                 if (!_firstItem)
                 {
-                    Builder.Append(",");
+                    Builder.Append(',');
                 }
                 else
                 {
@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (!_firstItem)
                 {
-                    Builder.Append(",");
+                    Builder.Append(',');
                 }
                 else
                 {
@@ -195,13 +195,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public CallSiteFormatterContext StartArray()
             {
-                Builder.Append("[");
+                Builder.Append('[');
                 return IncrementOffset();
             }
 
             public void EndArray()
             {
-                Builder.Append("]");
+                Builder.Append(']');
             }
         }
     }

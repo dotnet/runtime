@@ -15,14 +15,10 @@ namespace System.Security.Cryptography.ProtectedDataTests
     [PlatformSpecific(TestPlatforms.Windows)]
     public static class ProtectedDataTests
     {
-        [Fact]
-        public static void RoundTrip()
-        {
-            RoundTrip(null);
-            RoundTrip(new byte[] { 4, 5, 6 });
-        }
-
-        private static void RoundTrip(byte[] entropy)
+        [Theory]
+        [InlineData(null)]
+        [InlineData(new byte[] { 4, 5, 6 })]
+        public static void RoundTrip(byte[] entropy)
         {
             foreach (DataProtectionScope scope in new DataProtectionScope[] { DataProtectionScope.CurrentUser, DataProtectionScope.LocalMachine })
             {
@@ -74,18 +70,12 @@ namespace System.Security.Cryptography.ProtectedDataTests
             Assert.Equal<byte>(plain, recovered);
         }
 
-        [Fact]
-        public static void WrongEntropy()
-        {
-            // Passing a zero-length array as entropy is equivalent to passing null as entropy.
-            byte[] entropy1 = { 4, 5, 6 };
-            byte[] entropy2 = { 4, 5, 7 };
-            WrongEntropy(null, entropy1);
-            WrongEntropy(entropy1, null);
-            WrongEntropy(entropy1, entropy2);
-        }
-
-        private static void WrongEntropy(byte[] entropy1, byte[] entropy2)
+        [Theory]
+        // Passing a zero-length array as entropy is equivalent to passing null as entropy.
+        [InlineData(null, new byte[] { 4, 5, 6 })]
+        [InlineData(new byte[] { 4, 5, 6 }, null)]
+        [InlineData(new byte[] { 4, 5, 6 }, new byte[] { 4, 5, 7 })]
+        public static void WrongEntropy(byte[] entropy1, byte[] entropy2)
         {
             foreach (DataProtectionScope scope in new DataProtectionScope[] { DataProtectionScope.CurrentUser, DataProtectionScope.LocalMachine })
             {

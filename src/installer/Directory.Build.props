@@ -95,6 +95,7 @@
     <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
@@ -166,6 +167,7 @@
     <TargetsWindows>false</TargetsWindows>
     <TargetsOSX>false</TargetsOSX>
     <TargetsiOS>false</TargetsiOS>
+    <TargetstvOS>false</TargetstvOS>
     <TargetsAndroid>false</TargetsAndroid>
     <TargetsLinux>false</TargetsLinux>
     <TargetsUnix>false</TargetsUnix>
@@ -194,6 +196,12 @@
     <When Condition="$(OutputRid.StartsWith('ios'))">
       <PropertyGroup>
         <TargetsiOS>true</TargetsiOS>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('tvos'))">
+      <PropertyGroup>
+        <TargetstvOS>true</TargetstvOS>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
@@ -337,7 +345,7 @@
     <LibPrefix Condition="'$(TargetOS)' != 'Windows_NT'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix>
     <LibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.dll</LibSuffix>
-    <LibSuffix Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">.dylib</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <StaticLibSuffix>.a</StaticLibSuffix>
     <StaticLibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
@@ -347,7 +355,7 @@
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

@@ -1463,7 +1463,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.AwayFromZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Digits(MidpointRounding mode)
+        public static void Round_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(float.PositiveInfinity, MathF.Round(float.PositiveInfinity, 3, mode));
             Assert.Equal(float.NegativeInfinity, MathF.Round(float.NegativeInfinity, 3, mode));

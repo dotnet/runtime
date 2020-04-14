@@ -4,6 +4,7 @@
 
 #include "hostpolicy_init.h"
 #include <trace.h>
+#include "bundle/runner.h"
 
 void make_palstr_arr(int argc, const pal::char_t** argv, std::vector<pal::string_t>* out)
 {
@@ -124,6 +125,15 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
         init->host_info.dotnet_root = input->host_info_dotnet_root;
         init->host_info.app_path = input->host_info_app_path;
         // For the backwards compat case, this will be later initialized with argv[0]
+    }
+
+    if (input->version_lo >= offsetof(host_interface_t, single_file_bundle_header_offset) + sizeof(input->single_file_bundle_header_offset))
+    {
+        if (input->single_file_bundle_header_offset != 0)
+        {
+            static bundle::runner_t bundle_runner(input->host_info_host_path, input->host_info_app_path, input->single_file_bundle_header_offset);
+            bundle::info_t::the_app = &bundle_runner;
+        }
     }
 
     return true;
