@@ -36,12 +36,13 @@ void (*clickHandlerPtr)(void);
     label.font = [UIFont boldSystemFontOfSize: 30];
     label.numberOfLines = 2;
     label.textAlignment = NSTextAlignmentCenter;
+    label.text = @"Hello, wire me up!\n(dllimport ios_set_text)";
     [self.view addSubview:label];
     
     UIButton *button = [UIButton buttonWithType:UIButtonTypeInfoDark];
     [button addTarget:self action:@selector(buttonClicked:) forControlEvents:UIControlEventTouchUpInside];
     [button setFrame:CGRectMake(50, 300, 200, 50)];
-    [button setTitle:@"Click me" forState:UIControlStateNormal];
+    [button setTitle:@"Click me (wire me up)" forState:UIControlStateNormal];
     [button setExclusiveTouch:YES];
     [self.view addSubview:button];
 

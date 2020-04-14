@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #import <Foundation/Foundation.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
@@ -7,26 +11,23 @@
 #include <mono/metadata/exception.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
-
+#include <TargetConditionals.h>
 #import <os/log.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+
+static char *bundle_path;
 
 // no-op for iOS and tvOS.
 // watchOS is not supported yet.
 #define MONO_ENTER_GC_UNSAFE
 #define MONO_EXIT_GC_UNSAFE
 
-static os_log_t stdout_log;
-
-static char *bundle_path;
-
 const char *
 get_bundle_path (void)
 {
     if (bundle_path)
         return bundle_path;
-
     NSBundle* main_bundle = [NSBundle mainBundle];
     NSString* path = [main_bundle bundlePath];
     bundle_path = strdup ([path UTF8String]);
@@ -99,7 +100,7 @@ load_assembly (const char *name, const char *culture)
     else
         res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, filename);
     assert (res > 0);
-    
+
     struct stat buffer;
     if (stat (path, &buffer) == 0) {
         MonoAssembly *assembly = mono_assembly_open (path, NULL);
@@ -193,53 +194,12 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 static void
 register_dllmap (void)
 {
-    mono_dllmap_insert (NULL, "libSystem.Native", NULL, "__Internal", NULL);
-    mono_dllmap_insert (NULL, "libSystem.IO.Compression.Native", NULL, "__Internal", NULL);
-    mono_dllmap_insert (NULL, "libSystem.Security.Cryptography.Native.Apple", NULL, "__Internal", NULL);
+//%DllMap%
 }
 
+#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
 void mono_jit_set_aot_mode (MonoAotMode mode);
-
-#if DEVICE
-extern void *mono_aot_module_Program_info;
-extern void *mono_aot_module_System_Private_CoreLib_info;
-extern void *mono_aot_module_System_Runtime_info;
-extern void *mono_aot_module_System_Runtime_Extensions_info;
-extern void *mono_aot_module_System_Collections_info;
-extern void *mono_aot_module_System_Core_info;
-extern void *mono_aot_module_System_Threading_info;
-extern void *mono_aot_module_System_Threading_Tasks_info;
-extern void *mono_aot_module_System_Linq_info;
-extern void *mono_aot_module_System_Memory_info;
-extern void *mono_aot_module_System_Runtime_InteropServices_info;
-extern void *mono_aot_module_System_Text_Encoding_Extensions_info;
-extern void *mono_aot_module_Microsoft_Win32_Primitives_info;
-extern void *mono_aot_module_System_Console_info;
-extern void *mono_aot_module_Program_info;
-
-void mono_ios_register_modules (void)
-{
-    mono_aot_register_module (mono_aot_module_Program_info);
-    mono_aot_register_module (mono_aot_module_System_Private_CoreLib_info);
-    mono_aot_register_module (mono_aot_module_System_Runtime_info);
-    mono_aot_register_module (mono_aot_module_System_Runtime_Extensions_info);
-    mono_aot_register_module (mono_aot_module_System_Collections_info);
-    mono_aot_register_module (mono_aot_module_System_Core_info);
-    mono_aot_register_module (mono_aot_module_System_Threading_info);
-    mono_aot_register_module (mono_aot_module_System_Threading_Tasks_info);
-    mono_aot_register_module (mono_aot_module_System_Linq_info);
-    mono_aot_register_module (mono_aot_module_System_Memory_info);
-    mono_aot_register_module (mono_aot_module_System_Runtime_InteropServices_info);
-    mono_aot_register_module (mono_aot_module_System_Text_Encoding_Extensions_info);
-    mono_aot_register_module (mono_aot_module_Microsoft_Win32_Primitives_info);
-    mono_aot_register_module (mono_aot_module_System_Console_info);
-    mono_aot_register_module (mono_aot_module_Program_info);
-}
-
-void mono_ios_setup_execution_mode (void)
-{
-    mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
-}
+void mono_ios_register_modules (void);
 #endif
 
 void
@@ -252,22 +212,35 @@ mono_ios_runtime_init (void)
     // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     // setenv ("MONO_LOG_MASK", "all", TRUE);
 
-    stdout_log = os_log_create ("net.dot.mono", "stdout");
+    bool auto_exit = FALSE;
+    id args_array = [[NSProcessInfo processInfo] arguments];
+    assert ([args_array count] <= 128);
+    const char *managed_argv [128];
+    int argi;
+    for (argi = 0; argi < [args_array count]; argi++) {
+        NSString* arg = [args_array objectAtIndex: argi];
+        assert ([arg length] >= 3);
+        if ([arg hasPrefix:@"--setenv="]) {
+            // TODO: setenv
+        } else if ([arg isEqualToString:@"--auto-exit"]) {
+            auto_exit = TRUE;
+        }
+        managed_argv[argi] = [arg UTF8String];
+    }
 
     bool wait_for_debugger = FALSE;
-    char* executable = "Program.dll";
 
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
     register_dllmap ();
 
-#if DEVICE
+#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
     // register modules
     mono_ios_register_modules ();
-    mono_ios_setup_execution_mode ();
+    mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 #endif
-    
+
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (assembly_preload_hook, NULL);
     mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
@@ -282,18 +255,22 @@ mono_ios_runtime_init (void)
     }
     mono_jit_init_version ("dotnet.ios", "mobile");
 
-#if DEVICE
+#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
     // device runtimes are configured to use lazy gc thread creation
     MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();
     MONO_EXIT_GC_UNSAFE;
 #endif
 
+    const char* executable = "%EntryPointLibName%";
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, 1, &executable);
+    int res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+
+    if (auto_exit)
+        exit (res);
 }

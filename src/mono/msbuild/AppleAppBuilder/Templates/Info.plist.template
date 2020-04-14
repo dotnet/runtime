@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en-US</string>
 	<key>CFBundleExecutable</key>
-	<string>HelloiOS</string>
+	<string>%BundleIdentifier%</string>
 	<key>CFBundleIdentifier</key>
-	<string>net.dot.HelloiOS</string>
+	<string>net.dot.%BundleIdentifier%</string>
+	<key>CFBundleName</key>
+	<string>%BundleIdentifier%</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>HelloiOS</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
