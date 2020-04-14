@@ -94,6 +94,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(1363896240, "c11a514b67b0")]
         [InlineData(1586439081, "c11a5e8f23a9")]
+        [InlineData(0, "c100")]
+        [InlineData(-1, "c120")]
+        [InlineData(-315619200, "c13a12cff77f")]
         public static void WriteUnixTimeSeconds_SingleValue_HappyPath(long value, string expectedHexEncoding)
         {
             using var writer = new CborWriter();

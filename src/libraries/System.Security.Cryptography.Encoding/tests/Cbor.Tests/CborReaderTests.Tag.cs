@@ -136,6 +136,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
         [InlineData("2020-04-09T11:41:19.12-08:00", "c0781c323032302d30342d30395431313a34313a31392e31322d30383a3030")]
         [InlineData("2020-04-09T13:31:21Z", "c11a5e8f23a9")]
+        [InlineData("1970-01-01T00:00:00Z", "c100")]
+        [InlineData("1969-12-31T23:59:59Z", "c120")]
+        [InlineData("1960-01-01T00:00:00Z", "c13a12cff77f")]
         public static void ReadDateTimeOffset_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
         {
             DateTimeOffset expectedValue = DateTimeOffset.Parse(expectedValueString);
