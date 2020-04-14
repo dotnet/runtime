@@ -76,6 +76,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
