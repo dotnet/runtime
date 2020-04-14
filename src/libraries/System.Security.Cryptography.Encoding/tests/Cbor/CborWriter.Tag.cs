@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Numerics;
-using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -82,12 +81,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private const int ScaleMask = 0x00ff0000;
         private const int ScaleShift = 16;
 
-        private static readonly ThreadLocal<int[]> s_decimalBuf = new ThreadLocal<int[]>(() => new int[4]);
-
         public static decimal Reconstruct(decimal mantissa, byte scale)
         {
-            int[] buf = s_decimalBuf.Value;
-            Decimal.GetBits(mantissa, buf);
+            Span<int> buf = stackalloc int[4];
+            decimal.GetBits(mantissa, buf);
 
             int flags = buf[3];
             bool isNegative = (flags & SignMask) == SignMask;
@@ -96,8 +93,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
         {
-            int[] buf = s_decimalBuf.Value;
-            Decimal.GetBits(value, buf);
+            Span<int> buf = stackalloc int[4];
+            decimal.GetBits(value, buf);
 
             int flags = buf[3];
             bool isNegative = (flags & SignMask) == SignMask;
