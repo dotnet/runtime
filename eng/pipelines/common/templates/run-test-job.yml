@@ -200,7 +200,7 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-      - script: msbuild $(monoRepoRoot)/mono.proj -target:PatchCoreClrCoreRoot
+      - script: msbuild $(monoRepoRoot)/mono.proj -target:PatchCoreClrCoreRoot /p:Configuration=Release
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
