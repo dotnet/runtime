@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
@@ -451,9 +452,19 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector64<byte> CreateScalar(byte value)
         {
-            var result = Vector64<byte>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<byte>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<byte>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<byte> SoftwareFallback(byte value)
+            {
+                var result = Vector64<byte>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<byte>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -461,9 +472,19 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector64<short> CreateScalar(short value)
         {
-            var result = Vector64<short>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<short>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<short>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<short> SoftwareFallback(short value)
+            {
+                var result = Vector64<short>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<short>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -471,9 +492,19 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector64<int> CreateScalar(int value)
         {
-            var result = Vector64<int>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<int>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<int>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<int> SoftwareFallback(int value)
+            {
+                var result = Vector64<int>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<int>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -482,9 +513,19 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> CreateScalar(sbyte value)
         {
-            var result = Vector64<sbyte>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<sbyte>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<sbyte>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<sbyte> SoftwareFallback(sbyte value)
+            {
+                var result = Vector64<sbyte>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<sbyte>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -492,9 +533,19 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector64<float> CreateScalar(float value)
         {
-            var result = Vector64<float>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<float>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<float>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<float> SoftwareFallback(float value)
+            {
+                var result = Vector64<float>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<float>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -503,9 +554,19 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> CreateScalar(ushort value)
         {
-            var result = Vector64<ushort>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<ushort>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<ushort>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<ushort> SoftwareFallback(ushort value)
+            {
+                var result = Vector64<ushort>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<ushort>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -514,9 +575,19 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> CreateScalar(uint value)
         {
-            var result = Vector64<uint>.Zero;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<uint>, byte>(ref result), value);
-            return result;
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.Insert(Vector64<uint>.Zero, 0, value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector64<uint> SoftwareFallback(uint value)
+            {
+                var result = Vector64<uint>.Zero;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<uint>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
