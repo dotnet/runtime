@@ -580,8 +580,6 @@ namespace System.Text
 
             return string.Create(count, (encoding: this, bytes, index), (chars, args) =>
             {
-                Debug.Assert(chars.Length == args.bytes.Length);
-
                 fixed (byte* pBytes = args.bytes)
                 fixed (char* pChars = chars)
                 {
