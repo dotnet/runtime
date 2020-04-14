@@ -246,6 +246,89 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
+// lookupFloatingComparisonForSwappedArgs: Get the floating-point comparison
+//      mode to use when the operands are swapped.
+//
+// Arguments:
+//    comparison -- The comparison mode used for (op1, op2)
+//
+// Return Value:
+//     The comparison mode to use for (op2, op1)
+//
+int HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(int comparison)
+{
+    switch (comparison)
+    {
+        case _CMP_EQ_OQ:
+            return _CMP_EQ_OQ;
+        case _CMP_LT_OS:
+            return _CMP_GT_OS;
+        case _CMP_LE_OS:
+            return _CMP_GE_OS;
+        case _CMP_UNORD_Q:
+            return _CMP_UNORD_Q;
+        case _CMP_NEQ_UQ:
+            return _CMP_NEQ_UQ;
+        case _CMP_NLT_US:
+            return _CMP_NGT_US;
+        case _CMP_NLE_US:
+            return _CMP_NLE_US;
+        case _CMP_ORD_Q:
+            return _CMP_ORD_Q;
+        case _CMP_EQ_UQ:
+            return _CMP_EQ_UQ;
+        case _CMP_NGE_US:
+            return _CMP_NLE_US;
+        case _CMP_NGT_US:
+            return _CMP_NLT_US;
+        case _CMP_FALSE_OQ:
+            return _CMP_FALSE_OQ;
+        case _CMP_NEQ_OQ:
+            return _CMP_NEQ_OQ;
+        case _CMP_GE_OS:
+            return _CMP_LE_OS;
+        case _CMP_GT_OS:
+            return _CMP_LT_OS;
+        case _CMP_TRUE_UQ:
+            return _CMP_TRUE_UQ;
+        case _CMP_EQ_OS:
+            return _CMP_EQ_OS;
+        case _CMP_LT_OQ:
+            return _CMP_GT_OQ;
+        case _CMP_LE_OQ:
+            return _CMP_GE_OQ;
+        case _CMP_UNORD_S:
+            return _CMP_UNORD_S;
+        case _CMP_NEQ_US:
+            return _CMP_NEQ_US;
+        case _CMP_NLT_UQ:
+            return _CMP_NGT_UQ;
+        case _CMP_NLE_UQ:
+            return _CMP_NGE_UQ;
+        case _CMP_ORD_S:
+            return _CMP_ORD_S;
+        case _CMP_EQ_US:
+            return _CMP_EQ_US;
+        case _CMP_NGE_UQ:
+            return _CMP_NLE_UQ;
+        case _CMP_NGT_UQ:
+            return _CMP_NLT_UQ;
+        case _CMP_FALSE_OS:
+            return _CMP_FALSE_OS;
+        case _CMP_NEQ_OS:
+            return _CMP_NEQ_OS;
+        case _CMP_GE_OQ:
+            return _CMP_LE_OQ;
+        case _CMP_GT_OQ:
+            return _CMP_LT_OQ;
+        case _CMP_TRUE_US:
+            return _CMP_TRUE_US;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -1186,66 +1269,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
     switch (intrinsic)
     {
         case NI_SSE_CompareGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThan, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThanOrEqual, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareNotGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThan, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
@@ -1256,99 +1281,24 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_Compare,
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
+                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThanOrEqual, baseType,
-                                                   simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
             }
             break;
         }
 
         case NI_SSE_CompareScalarGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
-
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThan, baseType, simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareScalarGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThanOrEqual"));
-
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThanOrEqual, baseType,
-                                                   simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareScalarNotGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_FLOAT);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThan"));
-
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThan, baseType, simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
@@ -1359,17 +1309,21 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US),
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
+                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThanOrEqual,
-                                                   baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
             }
@@ -1421,29 +1375,25 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     {
         case NI_SSE2_CompareGreaterThan:
         {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-
             if (baseType != TYP_DOUBLE)
             {
+                assert(sig->numArgs == 2);
+                op2      = impSIMDPopStack(TYP_SIMD16);
+                op1      = impSIMDPopStack(TYP_SIMD16);
+                baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+
+                break;
             }
-            else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThan, baseType, simdSize);
-            }
-            break;
+
+            __fallthrough;
         }
 
         case NI_SSE2_CompareGreaterThanOrEqual:
+        case NI_SSE2_CompareNotGreaterThan:
+        case NI_SSE2_CompareNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
@@ -1453,13 +1403,17 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_Compare,
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
+                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
             else
             {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
             }
             break;
         }
@@ -1483,129 +1437,9 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             break;
         }
 
-        case NI_SSE2_CompareNotGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThan, baseType, simdSize);
-            }
-            break;
-        }
-
-        case NI_SSE2_CompareNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_Compare,
-                                                   baseType, simdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThanOrEqual, baseType,
-                                                   simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
-
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThan, baseType, simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThanOrEqual"));
-
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThanOrEqual, baseType,
-                                                   simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarNotGreaterThan:
-        {
-            assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert(baseType == TYP_DOUBLE);
-
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US),
-                                                   NI_AVX_CompareScalar, baseType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThan"));
-
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThan, baseType,
-                                                   simdSize);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
-            }
-            break;
-        }
-
         case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
@@ -1616,17 +1450,21 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US),
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
+                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThanOrEqual,
-                                                   baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }

@@ -150,6 +150,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
     static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static int lookupFloatingComparisonForSwappedArgs(int comparison);
 #endif
 
     // Member lookup
