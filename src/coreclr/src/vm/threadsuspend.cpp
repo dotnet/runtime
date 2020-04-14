@@ -3533,7 +3533,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 }
             }
 
-            // TODO: WIP order of reads matters? This read is ordered with what?
             if (thread->HasThreadState(Thread::TS_BlockGCForSO))
             {
                 // The thread has seen the trap while going to cooperative but does not have enough stack to block.
@@ -3699,11 +3698,21 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         bool hasProgress = previousCount != countThreads;
         previousCount = countThreads;
 
-        if (g_SystemInfo.dwNumberOfProcessors > 1 && hasProgress)
+        // If we have just updated hijacks/redirects, then do a pass while only observing.
+        // Repeat as long as we see progress. Most threads react to hijack/redirect very fast and
+        // typically we can avoid waiting on an event. (except on uniporocessor where we do not spin)
+        //
+        // Otherwise redo hijacks, but check g_pGCSuspendEvent event on the way.
+        // Re-hijacking unconditionally is likely to execute exactly the same hijacks,
+        // while not letting the other threads to run much.
+        // Thus we require either PING_JIT_TIMEOUT or some progress between active suspension attempts.
+        if (g_SystemInfo.dwNumberOfProcessors > 1 && (hasProgress || !observeOnly))
         {
+            // small pause
             YieldProcessorNormalized();
 
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "Spinning, %d threads remaining\n", countThreads);
+            observeOnly = true;
             continue;
         }
 
@@ -3711,16 +3720,14 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         DWORD startWait = g_SuspendStatistics.GetTime();
 #endif
 
-        //
         // Wait for at least one thread to tell us it's left cooperative mode.
         // we do this by waiting on g_pGCSuspendEvent.  We cannot simply wait forever, because we
         // might have done return-address hijacking on a thread, and that thread might not
         // return from the method we hijacked (maybe it calls into some other managed code that
-        // executes a long loop, for example).  We we wait with a timeout, and retry hijacking/redirection.
+        // executes a long loop, for example).  We wait with a timeout, and retry hijacking/redirection.
         //
         // This is unfortunate, because it means that in some cases we wait for PING_JIT_TIMEOUT
         // milliseconds, causing long GC pause times.
-        //
 
         STRESS_LOG1(LF_SYNC, LL_INFO1000, "Waiting for suspend event %d threads remaining\n", countThreads);
         DWORD res = g_pGCSuspendEvent->Wait(PING_JIT_TIMEOUT, FALSE);

@@ -1097,7 +1097,8 @@ public:
         TS_Unknown                = 0x00000000,    // threads are initialized this way
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
-        TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
+        TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC,
+                                                   // only ThreadSuspend::SuspendRuntime writes/resets this state.
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -3938,7 +3939,7 @@ public:
             UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        ResetThreadState(TS_GCSuspendPending);
+        _ASSERTE(!HasThreadStateOpportunistic(Thread::TS_GCSuspendPending));
     }
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
