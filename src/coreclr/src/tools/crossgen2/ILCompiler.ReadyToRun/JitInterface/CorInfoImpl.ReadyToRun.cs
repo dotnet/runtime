@@ -1938,6 +1938,17 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private bool NeedsTypeLayoutCheck(TypeDesc type)
+        {
+            if (!type.IsDefType)
+                return false;
+
+            if (!type.IsValueType)
+                return false;
+
+            return !IsLayoutFixedInCurrentVersionBubble(type);
+        }
+
         /// <summary>
         /// Is field layout of the inheritance chain fixed within the current version bubble?
         /// </summary>

@@ -1406,17 +1406,6 @@ namespace Internal.JitInterface
             return (uint)classSize.AsInt;
         }
 
-        bool NeedsTypeLayoutCheck(TypeDesc type)
-        {
-            if (!type.IsDefType)
-                return false;
-
-            if (!type.IsValueType)
-                return false;
-
-            return !IsLayoutFixedInCurrentVersionBubble(type);
-        }
-
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
