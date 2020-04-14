@@ -371,7 +371,7 @@ function(generate_moduleindex_file)
   endif()
 
   if(NOT EXISTS ${GET_MODULEIDX_TOOL_PATH})
-    message(FATAL_ERROR "GetModuleIndex tool not found. Please run the build for subset 'clr.buildtools'. Alternatively if using the build-runtime scripts and you are ok opting out of the feature, specify '-cmakeargs -DFEATURE_SINGLE_FILE_DIAGNOSTICS=OFF' as an argument.")
+    message(FATAL_ERROR "GetModuleIndex tool not found at ${GET_MODULEIDX_TOOL_PATH}. Please run the build for subset 'clr.buildtools' or specify by specify '-cmakeargs -DFEATURE_SINGLE_FILE_DIAGNOSTICS=OFF' as an argument to 'build-runtime' to opt out.")
   endif()
 
   add_custom_command(
