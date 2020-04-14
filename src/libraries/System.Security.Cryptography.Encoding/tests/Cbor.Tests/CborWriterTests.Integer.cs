@@ -77,6 +77,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteUInt64(input);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
+
+        [Theory]
+        [InlineData(0, "20")]
+        [InlineData(9, "29")]
+        [InlineData(23, "37")]
+        [InlineData(99, "3863")]
+        [InlineData(999, "3903e7")]
+        [InlineData(byte.MaxValue, "38ff")]
+        [InlineData(ushort.MaxValue, "39ffff")]
+        [InlineData(uint.MaxValue, "3affffffff")]
+        [InlineData(ulong.MaxValue, "3bffffffffffffffff")]
+        public static void WriteCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            using var writer = new CborWriter();
+            writer.WriteCborNegativeIntegerEncoding(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+        }
     }
 
     internal static class AssertHelper
