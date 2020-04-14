@@ -34,7 +34,7 @@ UITextView* logLabel;
 
     CGRect applicationFrame = [[UIScreen mainScreen] applicationFrame];
     logLabel = [[UITextView alloc] initWithFrame:
-        CGRectMake(2.0, 50.0, applicationFrame.size.width, applicationFrame.size.height)];
+        CGRectMake(2.0, 50.0, applicationFrame.size.width - 2.0, applicationFrame.size.height - 50.0)];
     logLabel.font = [UIFont systemFontOfSize:9.0];
     logLabel.backgroundColor = [UIColor blackColor];
     logLabel.textColor = [UIColor greenColor];
@@ -43,7 +43,7 @@ UITextView* logLabel;
     logLabel.editable = NO;
     logLabel.clipsToBounds = YES;
 
-    summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width, 50)];
+    summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];
     summaryLabel.textColor = [UIColor whiteColor];
     summaryLabel.font = [UIFont boldSystemFontOfSize: 14];
     summaryLabel.numberOfLines = 2;

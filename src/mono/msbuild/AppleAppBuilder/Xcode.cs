@@ -83,12 +83,20 @@ internal class Xcode
             Utils.GetEmbeddedResource("runtime.h"));
 
         // forward pinvokes to "__Internal"
-        string dllMap = string.Join(Environment.NewLine, Directory.GetFiles(workspace, "*.a")
-            .Select(f => $"    mono_dllmap_insert (NULL, \"{Path.GetFileNameWithoutExtension(f)}\", NULL, \"__Internal\", NULL);"));
+        var dllMap = new StringBuilder();
+        foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
+        {
+            string aFileName = Path.GetFileNameWithoutExtension(aFile);
+            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+
+            // also register with or without "lib" prefix
+            aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
+            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+        }
 
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
-                .Replace("//%DllMap%", dllMap)
+                .Replace("//%DllMap%", dllMap.ToString())
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);
