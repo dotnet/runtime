@@ -125,7 +125,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     DWORD dwDummy = 0;
     bool fSuccess = GetOverlappedResult(
         _hPipe,     // handle
-        _oOverlap,  // overlapped
+        &_oOverlap, // overlapped
         &dwDummy,   // throw-away dword
         true);      // wait till event signals
 
