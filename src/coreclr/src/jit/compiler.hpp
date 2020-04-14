@@ -986,7 +986,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             }
             else
             {
-                // Addr source cant be CSE-ed.
+                // Addr source can't be CSE-ed.
                 op1->SetDoNotCSE();
             }
         }
