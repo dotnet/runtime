@@ -18,8 +18,8 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android or WebAssembly"
-  echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS or Android"
+  echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
