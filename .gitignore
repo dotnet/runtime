@@ -18,6 +18,8 @@ syntax: glob
 artifacts/
 .idea/
 [Dd]ebug/
+# Allow
+!src/coreclr/src/debug
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
