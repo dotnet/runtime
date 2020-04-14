@@ -663,14 +663,11 @@
       <_MonoAotCrossConfigureParams Include="--enable-hybrid-suspend=no" />
       <_MonoAotCrossConfigureParams Include="--target=wasm32-unknown-none" />
       <_MonoAotCrossConfigureParams Include="--with-cross-offsets=$(MonoObjDir)cross/offsets-wasm32-unknown-none.h" />
-	  <!-- FIXME: LLVM -->
+      <!-- FIXME: LLVM -->
 
       <_MonoAotCrossCFLAGS Include="-O2" />
       <_MonoAotCrossCFLAGS Include="-g" />
       <_MonoAotCrossCFLAGS Include="-m64" />
-
-      <HostDylibSuffix Include=".dylib" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
-      <HostDylibSuffix Include=".so" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
 
       <_MonoAotCrossOffsetsToolParams Include="--netcore" />
       <_MonoAotCrossOffsetsToolParams Include="--abi=wasm32-unknown-unknown" />
@@ -678,8 +675,8 @@
       <_MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
       <_MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoObjDir)cross/offsets-wasm32-unknown-none.h&quot;" />
       <_MonoAotCrossOffsetsToolParams Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
-	  <!-- FIXME: Linux -->
-      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.dylib&quot;" />
+      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.dylib&quot;" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />/>
+      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.so&quot;" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />/>
     </ItemGroup>
 
     <!-- Linux options -->
