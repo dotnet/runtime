@@ -3927,21 +3927,21 @@ namespace Mono.Linker.Steps {
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
 					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
-					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
-					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.Parameters.Count == 0);
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic && m.Parameters.Count == 0);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
 					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
-					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
 					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
-					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => f.IsPublic);
+					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
@@ -3953,13 +3953,13 @@ namespace Mono.Linker.Steps {
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
 					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
-					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.GetMethod == null || f.GetMethod.IsPublic) || (f.SetMethod == null || f.SetMethod.IsPublic));
+					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
 					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
-					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.AddMethod == null || f.AddMethod.IsPublic) || (f.RemoveMethod == null || f.RemoveMethod.IsPublic));
+					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 			}
 
@@ -4086,8 +4086,8 @@ namespace Mono.Linker.Steps {
 						// Ignore private properties on a base type - those are completely ignored by reflection
 						// (anything private on the base type is not visible via the derived type)
 						// Note that properties themselves are not actually private, their accessors are
-						if (onBaseType && 
-							(property.GetMethod == null || property.GetMethod.IsPrivate) && 
+						if (onBaseType &&
+							(property.GetMethod == null || property.GetMethod.IsPrivate) &&
 							(property.SetMethod == null || property.SetMethod.IsPrivate))
 							continue;
 
