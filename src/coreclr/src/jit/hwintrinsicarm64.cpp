@@ -176,6 +176,35 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
     }
 }
 
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types elemType)
+{
+    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
+
+    int immUpperBound = 0;
+
+    if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
+    {
+        immUpperBound = 255;
+    }
+    else
+    {
+        switch (intrinsic)
+        {
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_ExtractVector128:
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_Insert:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, elemType);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    return immUpperBound;
+}
+
 //------------------------------------------------------------------------
 // impNonConstFallback: generate alternate code when the imm-arg is not a compile-time constant
 //

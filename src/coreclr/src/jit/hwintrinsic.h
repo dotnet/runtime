@@ -151,6 +151,10 @@ struct HWIntrinsicInfo
     static bool isInImmRange(NamedIntrinsic id, int ival);
 #endif
 
+#ifdef TARGET_ARM64
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types elemType);
+#endif
+
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
     static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
     static bool isScalarIsa(CORINFO_InstructionSet isa);
