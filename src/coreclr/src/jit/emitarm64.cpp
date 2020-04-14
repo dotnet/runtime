@@ -475,12 +475,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidImmCondFlags(emitGetInsSC(id)));
             break;
 
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd Sn    (sha1h)
-            assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isVectorRegister(id->idReg2()));
-            break;
-
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isIntegerRegister(id->idReg1())); // SP
@@ -765,6 +759,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorDatasize(id->idOpSize()));
             elemsize = optGetElemsize(id->idInsOpt());
             assert((elemsize != EA_8BYTE) && (id->idInsOpt() != INS_OPTS_2S)); // can't use 2D or 1D or 2S
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn    (sha1h)
+            assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -2092,7 +2092,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DR_2G:
         case IF_DR_2H:
         case IF_DR_2I:
-        case IF_DR_2J:
         case IF_DR_3A:
         case IF_DR_3B:
         case IF_DR_3C:
@@ -2120,6 +2119,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DV_2P:
         case IF_DV_2R:
         case IF_DV_2T:
+        case IF_DV_2U:
         case IF_DV_3A:
         case IF_DV_3AI:
         case IF_DV_3B:
@@ -4544,7 +4544,7 @@ void emitter::emitIns_R_R(
             assert(insOptsNone(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            fmt = IF_DR_2J;
+            fmt = IF_DV_2U;
             break;
 
         case INS_sha256su0:
@@ -10210,13 +10210,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
 
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd Sn   (sha1h)
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
-            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
-            dst += emitOutput_Instr(dst, code);
-            break;
-
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
@@ -10559,6 +10552,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn   (sha1h)
+            code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
@@ -11906,7 +11906,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_DR_2E: // DR_2E   X..........mmmmm ...........ddddd      Rd    Rm
-        case IF_DR_2J: // DR_2J   ................ ......nnnnnddddd      Sd    Sn
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd    Sn
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, false);
             break;
@@ -12943,7 +12943,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         // ALU, extend, scale
         case IF_DR_3C: // add, adc, and, bic, eon, eor, orn, orr, sub, sbc
         case IF_DR_2C: // cmp
-        case IF_DR_2J: // sha1h
+        case IF_DV_2U: // sha1h
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

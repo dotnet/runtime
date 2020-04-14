@@ -1523,7 +1523,8 @@ enum __MIDL___MIDL_itf_corprof_0000_0001_0004
         COR_PRF_GC_GEN_0    = 0,
         COR_PRF_GC_GEN_1    = 1,
         COR_PRF_GC_GEN_2    = 2,
-        COR_PRF_GC_LARGE_OBJECT_HEAP    = 3
+        COR_PRF_GC_LARGE_OBJECT_HEAP    = 3,
+        COR_PRF_GC_PINNED_OBJECT_HEAP   = 4
     }   COR_PRF_GC_GENERATION;
 
 typedef struct COR_PRF_GC_GENERATION_RANGE

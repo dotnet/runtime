@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -20,7 +22,11 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            int ret = Interop.Globalization.IsNormalized(normalizationForm, strInput, strInput.Length);
+            int ret;
+            fixed (char* pInput = strInput)
+            {
+                ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+            }
 
             if (ret == -1)
             {
@@ -30,7 +36,7 @@ namespace System.Globalization
             return ret == 1;
         }
 
-        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
+        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -41,26 +47,62 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            char[] buf = new char[strInput.Length];
-
-            for (int attempts = 2; attempts > 0; attempts--)
+            char[]? toReturn = null;
+            try
             {
-                int realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
+                const int StackallocThreshold = 512;
 
-                if (realLen == -1)
+                Span<char> buffer = strInput.Length <= StackallocThreshold
+                    ? stackalloc char[StackallocThreshold]
+                    : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
+
+                for (int attempt = 0; attempt < 2; attempt++)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    int realLen;
+                    fixed (char* pInput = strInput)
+                    fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
+                    {
+                        realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                    }
+
+                    if (realLen == -1)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    }
+
+                    if (realLen <= buffer.Length)
+                    {
+                        ReadOnlySpan<char> result = buffer.Slice(0, realLen);
+                        return result.SequenceEqual(strInput)
+                            ? strInput
+                            : new string(result);
+                    }
+
+                    Debug.Assert(realLen > StackallocThreshold);
+
+                    if (attempt == 0)
+                    {
+                        if (toReturn != null)
+                        {
+                            // Clear toReturn first to ensure we don't return the same buffer twice
+                            char[] temp = toReturn;
+                            toReturn = null;
+                            ArrayPool<char>.Shared.Return(temp);
+                        }
+
+                        buffer = toReturn = ArrayPool<char>.Shared.Rent(realLen);
+                    }
                 }
 
-                if (realLen <= buf.Length)
-                {
-                    return new string(buf, 0, realLen);
-                }
-
-                buf = new char[realLen];
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
-
-            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+            finally
+            {
+                if (toReturn != null)
+                {
+                    ArrayPool<char>.Shared.Return(toReturn);
+                }
+            }
         }
 
         // -----------------------------

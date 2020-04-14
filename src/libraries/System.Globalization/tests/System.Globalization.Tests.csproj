@@ -128,6 +128,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

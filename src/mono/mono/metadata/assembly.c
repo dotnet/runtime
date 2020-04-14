@@ -4806,9 +4806,7 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		result = prevent_reference_assembly_from_running (result, refonly);
 	}
 #else
-	result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
-
-	if (!result && bundles != NULL) {
+	if (bundles != NULL) {
 		MonoImageOpenStatus status;
 		MonoImage *image;
 		image = mono_assembly_open_from_bundle (req->request.alc, aname->name, &status, FALSE);
@@ -4819,6 +4817,8 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		if (image)
 			result = mono_assembly_request_load_from (image, aname->name, &req->request, &status);
 	}
+	if (!result)
+		result = netcore_load_reference (aname, req->request.alc, req->requesting_assembly, !req->no_postload_search);
 #endif
 	return result;
 }

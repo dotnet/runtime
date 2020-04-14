@@ -280,6 +280,6 @@
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

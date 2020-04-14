@@ -418,7 +418,7 @@
     <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt16.</value>
   </data>
   <data name="SerializerCycleDetected" xml:space="preserve">
-    <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHanlding.Preserve on JsonSerializerOptions to support cycles.</value>
+    <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHandling.Preserve on JsonSerializerOptions to support cycles.</value>
   </data>
   <data name="EmptyStringToInitializeNumber" xml:space="preserve">
     <value>Expected a number, but instead got empty string.</value>

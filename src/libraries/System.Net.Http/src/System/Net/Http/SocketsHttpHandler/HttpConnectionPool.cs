@@ -749,7 +749,17 @@ namespace System.Net.Http
                 {
                     if (connection is HttpConnection)
                     {
-                        response = await SendWithNtConnectionAuthAsync((HttpConnection)connection, request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                        ((HttpConnection)connection).Acquire();
+                        try
+                        {
+                            response = await (doRequestAuth && Settings._credentials != null ?
+                                AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, (HttpConnection)connection, this, cancellationToken) :
+                                SendWithNtProxyAuthAsync((HttpConnection)connection, request, async, cancellationToken)).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            ((HttpConnection)connection).Release();
+                        }
                     }
                     else
                     {

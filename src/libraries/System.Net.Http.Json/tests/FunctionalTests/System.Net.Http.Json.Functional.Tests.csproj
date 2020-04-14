@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="HttpClientJsonExtensionsTests.cs" />
     <Compile Include="HttpContentJsonExtensionsTests.cs" />
     <Compile Include="JsonContentTests.cs" />

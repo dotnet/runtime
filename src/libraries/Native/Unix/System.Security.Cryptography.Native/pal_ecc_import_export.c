@@ -56,21 +56,12 @@ int32_t CryptoNative_GetECKeyParameters(
     const BIGNUM** qy, int32_t* cbQy,
     const BIGNUM** d, int32_t* cbD)
 {
-    // Verify the out parameters. Note out parameters used to minimize pinvoke calls.
-    if (!key ||
-        !qx || !cbQx ||
-        !qy || !cbQy ||
-        (includePrivate && (!d  || !cbD)))
-    {
-        assert(false);
-
-        // Since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (qx) *qx = NULL; if (cbQx) *cbQx = 0;
-        if (qy) *qy = NULL; if (cbQy) *cbQy = 0;
-        if (d)  *d  = NULL; if (cbD) *cbD = 0;
-
-        return 0;
-    }
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
 
     // Get the public key and curve
     int rc = 0;
@@ -158,33 +149,25 @@ int32_t CryptoNative_GetECCurveParameters(
     const BIGNUM** cofactor, int32_t* cbCofactor,
     const BIGNUM** seed, int32_t* cbSeed)
 {
+    assert(p != NULL);
+    assert(cbP != NULL);
+    assert(a != NULL);
+    assert(cbA != NULL);
+    assert(b != NULL);
+    assert(cbB != NULL);
+    assert(gx != NULL);
+    assert(cbGx != NULL);
+    assert(gy != NULL);
+    assert(cbGy != NULL);
+    assert(order != NULL);
+    assert(cbOrder != NULL);
+    assert(cofactor != NULL);
+    assert(cbCofactor != NULL);
+    assert(seed != NULL);
+    assert(cbSeed != NULL);
+
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
     int32_t rc = CryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
-
-    // Verify the out parameters. Note out parameters used to minimize pinvoke calls.
-    if (!p || !cbP ||
-        !a || !cbA ||
-        !b || !cbB ||
-        !gx || !cbGx ||
-        !gy || !cbGy ||
-        !order || !cbOrder ||
-        !cofactor || !cbCofactor ||
-        !seed || !cbSeed)
-    {
-        assert(false);
-
-        // Since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (p) *p = NULL; if (cbP) *cbP = 0;
-        if (a) *a = NULL; if (cbA) *cbA = 0;
-        if (b) *b = NULL; if (cbB) *cbB = 0;
-        if (gx) *gx = NULL; if (cbGx) *cbGx = 0;
-        if (gy) *gy = NULL; if (cbGy) *cbGy = 0;
-        if (order) *order = NULL; if (cbOrder) *cbOrder = 0;
-        if (cofactor) *cofactor = NULL; if (cbCofactor) *cbCofactor = 0;
-        if (seed) *seed = NULL; if (cbSeed) *cbSeed = 0;
-
-        return 0;
-    }
 
     const EC_GROUP* group = NULL;
     const EC_POINT* G = NULL;

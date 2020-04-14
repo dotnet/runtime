@@ -83,5 +83,14 @@ namespace System.IO.Tests
             testInfo.Create();
             testInfo.Attributes = FileAttributes.Directory | FileAttributes.Normal;
         }
+
+        [Fact]
+        public void CreateInvalidatesDirectoryInfo()
+        {
+            string testDir = Path.Combine(GetTestFilePath(), "DirectoryCreate");
+            DirectoryInfo testDirectoryInfo = new DirectoryInfo(testDir);
+            testDirectoryInfo.Create();
+            Assert.True(testDirectoryInfo.Exists);
+        }
     }
 }

@@ -1053,8 +1053,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         assert(lastOp != nullptr);
 
-        bool buildUses = true;
-
         if ((category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrinsicId))
         {
             if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
@@ -1071,132 +1069,49 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
-        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+        const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
-        // Create internal temps, and handle any other special requirements.
-        // Note that the default case for building uses will handle the RMW flag, but if the uses
-        // are built in the individual cases, buildUses is set to false, and any RMW handling (delayFree)
-        // must be handled within the case.
-        switch (intrinsicId)
+        bool tgtPrefOp1 = false;
+
+        // If we have an RMW intrinsic, we want to preference op1Reg to the target if
+        // op1 is not contained.
+        if (isRMW)
         {
-            case NI_Aes_Decrypt:
-            case NI_Aes_Encrypt:
-                assert((numArgs == 2) && (op1 != nullptr) && (op2 != nullptr));
-
-                buildUses = false;
-
-                tgtPrefUse = BuildUse(op1);
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(op2);
-                break;
-
-            case NI_Sha1_HashUpdateChoose:
-            case NI_Sha1_HashUpdateMajority:
-            case NI_Sha1_HashUpdateParity:
-                assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
-
-                if (!op2->isContained())
-                {
-                    assert(!op3->isContained());
-
-                    buildUses = false;
-
-                    srcCount += BuildOperandUses(op1);
-                    srcCount += BuildDelayFreeUses(op2);
-                    srcCount += BuildDelayFreeUses(op3);
-
-                    setInternalRegsDelayFree = true;
-                }
-
-                buildInternalFloatRegisterDefForNode(intrinsicTree);
-                break;
-
-            case NI_Sha1_FixedRotate:
-                buildInternalFloatRegisterDefForNode(intrinsicTree);
-                break;
-
-            case NI_Sha1_ScheduleUpdate0:
-            case NI_Sha256_HashUpdate1:
-            case NI_Sha256_HashUpdate2:
-            case NI_Sha256_ScheduleUpdate1:
-                assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
-
-                if (!op2->isContained())
-                {
-                    assert(!op3->isContained());
-
-                    buildUses = false;
-
-                    srcCount += BuildOperandUses(op1);
-                    srcCount += BuildDelayFreeUses(op2);
-                    srcCount += BuildDelayFreeUses(op3);
-                }
-                break;
-
-            case NI_AdvSimd_AbsoluteDifferenceAdd:
-            case NI_AdvSimd_FusedMultiplyAdd:
-            case NI_AdvSimd_FusedMultiplySubtract:
-            case NI_AdvSimd_Arm64_FusedMultiplyAdd:
-            case NI_AdvSimd_Arm64_FusedMultiplySubtract:
-            case NI_AdvSimd_MultiplyAdd:
-            case NI_AdvSimd_MultiplySubtract:
-                assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
-
-                buildUses = false;
-
-                tgtPrefUse = BuildUse(op1);
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(op2);
-                srcCount += BuildDelayFreeUses(op3);
-                break;
-
-            case NI_AdvSimd_ExtractAndNarrowHigh:
-
-                assert((numArgs == 2) && (op2 != nullptr));
-
-                buildUses = false;
-
-                tgtPrefUse = BuildUse(op1);
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(op2);
-                break;
-
-            default:
-                assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
-                break;
+            tgtPrefOp1 = !op1->isContained();
         }
 
-        if (buildUses)
+        if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
-            assert((numArgs > 0) && (numArgs < 4));
+            srcCount += BuildAddrUses(op1);
+        }
+        else if (tgtPrefOp1)
+        {
+            tgtPrefUse = BuildUse(op1);
+            srcCount++;
+        }
+        else
+        {
+            srcCount += BuildOperandUses(op1);
+        }
 
-            if (intrinsicTree->OperIsMemoryLoadOrStore())
+        if (op2 != nullptr)
+        {
+            if (isRMW)
             {
-                srcCount += BuildAddrUses(op1);
-            }
-            else
-            {
-                srcCount += BuildOperandUses(op1);
-            }
-
-            if (op2 != nullptr)
-            {
-                if (op2->OperIs(GT_HWINTRINSIC) && op2->AsHWIntrinsic()->OperIsMemoryLoad() && op2->isContained())
-                {
-                    srcCount += BuildAddrUses(op2->gtGetOp1());
-                }
-                else if (isRMW)
-                {
-                    srcCount += BuildDelayFreeUses(op2);
-                }
-                else
-                {
-                    srcCount += BuildOperandUses(op2);
-                }
+                srcCount += BuildDelayFreeUses(op2);
 
                 if (op3 != nullptr)
                 {
-                    srcCount += (isRMW) ? BuildDelayFreeUses(op3) : BuildOperandUses(op3);
+                    srcCount += BuildDelayFreeUses(op3);
+                }
+            }
+            else
+            {
+                srcCount += BuildOperandUses(op2);
+
+                if (op3 != nullptr)
+                {
+                    srcCount += BuildOperandUses(op3);
                 }
             }
         }

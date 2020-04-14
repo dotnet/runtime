@@ -54,8 +54,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 return true;
             }
         }
-
-        public bool LimitedPrivateKeySupported => true;
     }
 
     public partial class ECDsaFactory
