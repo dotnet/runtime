@@ -2179,7 +2179,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
             else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0) || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0))
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
                     // If it is the get_IsSupported method for an ISA which requires the VEX
                     // encoding we want to expand unconditionally. This will force those code
@@ -2194,7 +2194,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
             }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 #ifdef TARGET_X86
-            else if (strcmp(className, "X64") == 0)
+            else if (fIsPlatformSubArchitecture)
             {
                 // For ISAs not handled explicitly above, the IsSupported check will always
                 // be treated as a regular method call. If we are evaulating a method in the X64
