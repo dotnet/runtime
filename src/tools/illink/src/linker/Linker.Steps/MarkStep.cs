@@ -3665,8 +3665,8 @@ namespace Mono.Linker.Steps {
 						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 						//
 						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
-						  && calledMethod.HasThis
-						  && calledMethod.DeclaringType.Namespace == "System": {
+							&& calledMethod.HasThis
+							&& calledMethod.DeclaringType.Namespace == "System": {
 								
 								reflectionContext.AnalyzingPattern ();
 								var parameters = calledMethod.Parameters;
@@ -3703,9 +3703,9 @@ namespace Mono.Linker.Steps {
 						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 						//
 						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
-						  && calledMethod.Parameters.Count >= 1
-						  && calledMethod.HasThis
-						  && calledMethod.DeclaringType.Namespace == "System": {
+							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.HasThis
+							&& calledMethod.DeclaringType.Namespace == "System": {
 								
 								reflectionContext.AnalyzingPattern ();
 								BindingFlags bindingFlags = BindingFlags.Default;
