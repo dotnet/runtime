@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Managed
             new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
         };
 
-        private Recovery Recovery { get; } = new Recovery();
+        private RecoveryController Recovery { get; } = new RecoveryController();
 
         /// <summary>
         ///     QUIC transport parameters used for this endpoint.
@@ -194,6 +194,9 @@ namespace System.Net.Quic.Implementations.Managed
                     limits.UpdateMaxData(param.InitialMaxData);
                     limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
                     limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
+
+                    Recovery.MaxAckDelay = TimeSpan.FromMilliseconds(param.MaxAckDelay);
+
                     _peerTransportParameters = param;
                 }
             }

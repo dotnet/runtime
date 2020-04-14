@@ -237,7 +237,7 @@ namespace System.Net.Quic.Implementations.Managed
             var space = GetPacketSpace(packetType);
             Recovery.OnAckReceived(space, ranges, TimeSpan.FromTicks(frame.AckDelay), frame, context.Now, _tls.IsHandshakeComplete);
 
-            var ackedPackets = Recovery.GetAckedFrames(space);
+            var ackedPackets = Recovery.GetAckedPackets(space);
             foreach (SentPacket packet in ackedPackets)
             {
                 OnPacketAcked(packet, pnSpace);

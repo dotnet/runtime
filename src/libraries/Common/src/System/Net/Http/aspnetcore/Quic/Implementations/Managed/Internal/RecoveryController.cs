@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using System.Reflection;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
@@ -9,26 +10,60 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// <summary>
     ///     Class encapsulating logic on packet loss recovery.
     /// </summary>
-    internal class Recovery
+    internal class RecoveryController
     {
+        public RecoveryController()
+        {
+            CongestionController = new NewRenoCongestionController();
+            Reset();
+        }
+
+        /// <summary>
+        ///     Maximum reordering in packets before packet threshold loss detection considers a packet lost.
+        ///     The RECOMMENDED value is 3.
+        /// </summary>
+        internal const int PacketReorderingThreshold = 3;
+
+        /// <summary>
+        ///     Maximum reordering in time before time threshold loss detection considers a packet lost. Specified
+        ///     As RTT multiplier. The RECOMMENDED value is 9/8.
+        /// </summary>
+        internal const double TimeReorderingThreshold = 9.0 / 8;
+
+        /// <summary>
+        ///     Timer granularity. The value is system-dependent, but SHOULD be at least 1ms.
+        /// </summary>
+        internal static readonly TimeSpan TimerGranularity = TimeSpan.FromMilliseconds(10);
+
+        /// <summary>
+        ///     The RTT used before an RTT sample is taken. the RECOMMENDED value is 500ms.
+        /// </summary>
+        internal static readonly TimeSpan InitialRtt = TimeSpan.FromMilliseconds(500);
+
         /// <summary>
         ///     Helper structure for holding packet number space related data together.
         /// </summary>
         private class PacketNumberSpace
         {
+            internal static Comparer<PacketNumberSpace> LossTimeComparer = Comparer<PacketNumberSpace>.Create(
+                (l, r) => l.NextLossTime.CompareTo(r.NextLossTime));
+
+            internal static Comparer<PacketNumberSpace> TimeOfLastAckElicitingPacketSentComparer = Comparer<PacketNumberSpace>.Create((l, r) =>
+                l.TimeOfLastAckElicitingPacketSent.CompareTo(r.TimeOfLastAckElicitingPacketSent));
+
             /// <summary>
             ///     The largest packet number acknowledged in the packet number space so far.
             /// </summary>
             internal long LargestAckedPacketNumber { get; set; }
 
             /// <summary>
-            ///     The time the most recent ack-eliciting packet was sent.
+            ///     The time the most recent ack-eliciting packet was sent. MaxValue if no packet was sent yet.
             /// </summary>
             internal DateTime TimeOfLastAckElicitingPacketSent { get; set; }
 
             /// <summary>
             ///     The time at which the next packet in the packet number space will be considered lost based on exceeding
-            ///     the reordering window in time.
+            ///     the reordering window in time. MaxValue if no packet in flight.
             /// </summary>
             internal DateTime NextLossTime { get; set; }
 
@@ -58,94 +93,83 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     The most recent RTT measurement made when receiving ack for a previously unacked packet.
         /// </summary>
-        private TimeSpan LatestRtt { get; set; }
+        internal TimeSpan LatestRtt { get; private set; }
 
         /// <summary>
         ///     The smoothed RTT of the connection. Computed as exponentially weighted average as described in RFC6298.
         /// </summary>
-        private TimeSpan SmoothedRtt { get; set; }
+        internal TimeSpan SmoothedRtt { get; private set; }
 
         /// <summary>
         ///     The RTT variation, computed as described in RFC6298.
         /// </summary>
-        private TimeSpan RttVariation { get; set; }
+        internal TimeSpan RttVariation { get; private set; }
 
         /// <summary>
         ///     The minimum RTT seen in the connection, ignoring the ack delay.
         /// </summary>
-        private TimeSpan MinimumRtt { get; set; }
+        internal TimeSpan MinimumRtt { get; private set; }
 
         /// <summary>
         ///     The number of times a probe time out (PTO) has been sent without receiving an ack.
         /// </summary>
-        private int PtoCount { get; set; }
+        internal int PtoCount { get; private set; }
 
         /// <summary>
         ///     Time when the next loss recovery tick needs to be made.
         /// </summary>
-        internal DateTime LossRecoveryTimer { get; private set; } = DateTime.MaxValue;
+        internal DateTime LossRecoveryTimer { get; private set; }
 
         /// <summary>
         ///     Maximum delay by which the endpoint will delay sending acknowledgments. This value SHOULD include
         ///     the receiver's expected delays in alarms firing.
         /// </summary>
-        internal TimeSpan MaxAckDelay { get; set; } = TimeSpan.FromMilliseconds(25);
+        internal TimeSpan MaxAckDelay { get; set; }
 
         /// <summary>
-        ///     Maximum reordering in packets before packet threshold loss detection considers a packet lost.
-        ///     The RECOMMENDED value is 3.
+        ///     If PTO timer expired, contains number of remaining probe packets this endpoint should send as a
+        ///     reaction to the timeout. Otherwise 0.
         /// </summary>
-        internal const int PacketReorderingThreshold = 3;
+        internal int RemainingLossProbes { get; set; }
 
         /// <summary>
-        ///     Maximum reordering in time before time threshold loss detection considers a packet lost. Specified
-        ///     As RTT multiplier. The RECOMMENDED value is 9/8.
+        ///     Congestion controller algorithm used.
         /// </summary>
-        internal const double TimeReorderingThreshold = 9.0 / 8;
+        internal ICongestionController CongestionController { get; }
+
 
         /// <summary>
-        ///     Timer granularity. The value is system-dependent, but SHOULD be at least 1ms.
+        ///     The sum of the size in bytes of all sent packets that contain at least one ack-eliciting or PADDING
+        ///     frame, and have not been acked or declared lost. The size does not include IP or UDP overhead, but does
+        ///     Include the QUIC header and AEAD overhead. Packets only containing ACK frames do not count towards this
+        ///     count to ensure congestion control does not impede congestion feedback.
         /// </summary>
-        internal static readonly TimeSpan TimerGranularity = TimeSpan.FromMilliseconds(10);
-
-        /// <summary>
-        ///     The RTT used before an RTT sample is taken. the RECOMMENDED value is 500ms.
-        /// </summary>
-        internal static readonly TimeSpan InitialRtt = TimeSpan.FromMilliseconds(500);
-
-        // constants for congestion control
-        internal const int MaxDatagramSize = 1452;
-
-        /// <summary>
-        ///     Default limit on the initial amount of data in flight, in bytes. The RECOMMENDED value is the minimum
-        ///     of 10 * MaxDatagramSize and max(2 * MaxDatagramSize, 14720).
-        /// </summary>
-        internal static readonly int InitialWindowSize = Math.Min(10 * MaxDatagramSize, Math.Max(2 * MaxDatagramSize, 14720));
-
-        /// <summary>
-        ///     Minimum congestion window in bytes. The RECOMMENDED value is 2 * MaxDatagramSize.
-        /// </summary>
-        internal const int MinimumWindowSize = 2 * MaxDatagramSize;
-
-        /// <summary>
-        ///     Reduction in congestion window when a new loss event is detected. The RECOMMENDED value is 0.5.
-        /// </summary>
-        internal const double LossReductionFactor = 0.5;
-
-        /// <summary>
-        ///     Period of time for persistent congestion to be established, specified as the PTO multiplier.
-        /// </summary>
-        internal const int PersistentCongestionThreshold = 3;
+        private int AckElicitingBytesInFlight => CongestionController.BytesInFlight;
 
         /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
         void Reset()
         {
+            CongestionController.Reset();
+
             PtoCount = 0;
+            RemainingLossProbes = 0;
             LatestRtt = TimeSpan.Zero;
             SmoothedRtt = TimeSpan.Zero;
             MinimumRtt = TimeSpan.Zero;
+            LossRecoveryTimer = DateTime.MaxValue;
+            MaxAckDelay = TimeSpan.FromMilliseconds(25);
+
+            foreach (PacketNumberSpace space in _pnSpaces)
+            {
+                space.AckedPackets.Clear();
+                space.LostPackets.Clear();
+                space.SentPackets.Clear();
+                space.NextLossTime = DateTime.MaxValue;
+                space.LargestAckedPacketNumber = 0;
+                space.TimeOfLastAckElicitingPacketSent = DateTime.MaxValue;
+            }
         }
 
         internal void OnPacketSent(long packetNumber, PacketSpace space, SentPacket packet, bool handshakeComplete)
@@ -160,7 +184,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     pnSpace.TimeOfLastAckElicitingPacketSent = packet.TimeSent;
                 }
 
-                OnPacketSentCC(packet.BytesSent);
+                CongestionController.OnPacketSent(packet);
+
+                // Note that we do not set NextLossTime because we need to receive an ack for later packet in order
+                // to deem this packet lost. The NextLossTime has to be set only when receiving ack or during the
+                // loss timer processing.
                 SetLossDetectionTimer(handshakeComplete);
             }
         }
@@ -195,7 +223,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // TODO-RZ: Process ECN information
             }
 
-            DetectLostPackets(space, now);
+            DetectLostPackets(pnSpace, now);
             PtoCount = 0;
             SetLossDetectionTimer(isHandshakeComplete);
         }
@@ -239,7 +267,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (packet.InFlight)
             {
-                OnPacketAckedCC(packet);
+                CongestionController.OnPacketAcked(packet);
             }
 
             pnSpace.SentPackets.Remove(packetNumber);
@@ -271,48 +299,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                                            1.0 / 4 * Math.Abs(SmoothedRtt.Ticks - adjustedRttTicks)));
         }
 
-        private (DateTime, PacketSpace) GetEarliestLossTime(bool handshakeComplete)
+        private PacketNumberSpace GetSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
         {
-            var time = GetPacketNumberSpace(PacketSpace.Initial).NextLossTime;
-            var space = PacketSpace.Initial;
+            var epoch = _pnSpaces[0];
 
-            if (GetPacketNumberSpace(PacketSpace.Handshake).NextLossTime < time)
+            // skip the last (application) packet number space until handshake completes
+            for (int i = 1; i < (handshakeComplete ? 3 : 2); i++)
             {
-                time = GetPacketNumberSpace(PacketSpace.Handshake).NextLossTime;
-                space = PacketSpace.Handshake;
+                if (comparer.Compare(_pnSpaces[i], epoch) < 0)
+                {
+                    epoch = _pnSpaces[i];
+                }
             }
 
-            // skip application epoch until handshake completes
-            if (handshakeComplete &&
-                GetPacketNumberSpace(PacketSpace.Application).NextLossTime < time)
-            {
-                time = GetPacketNumberSpace(PacketSpace.Application).NextLossTime;
-                space = PacketSpace.Application;
-            }
-
-            return (time, space);
-        }
-
-        private (DateTime, PacketSpace) GetEarliestLastAckElicitingPacketSent(bool handshakeComplete)
-        {
-            var time = GetPacketNumberSpace(PacketSpace.Initial).TimeOfLastAckElicitingPacketSent;
-            var space = PacketSpace.Initial;
-
-            if (GetPacketNumberSpace(PacketSpace.Handshake).TimeOfLastAckElicitingPacketSent < time)
-            {
-                time = GetPacketNumberSpace(PacketSpace.Handshake).TimeOfLastAckElicitingPacketSent;
-                space = PacketSpace.Handshake;
-            }
-
-            // skip application epoch until handshake completes
-            if (handshakeComplete &&
-                GetPacketNumberSpace(PacketSpace.Application).TimeOfLastAckElicitingPacketSent < time)
-            {
-                time = GetPacketNumberSpace(PacketSpace.Application).TimeOfLastAckElicitingPacketSent;
-                space = PacketSpace.Application;
-            }
-
-            return (time, space);
+            return epoch;
         }
 
         private bool PeerNotAwaitingAddressValidation()
@@ -328,16 +328,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private void SetLossDetectionTimer(bool isHandshakeComplete)
         {
-            var (earliestLossTime, _) = GetEarliestLossTime(isHandshakeComplete);
+            var earliestLossTime = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
 
-            if (earliestLossTime != default)
+            if (earliestLossTime != DateTime.MaxValue)
             {
                 // Time threshold loss detection.
                 LossRecoveryTimer = earliestLossTime;
                 return;
             }
 
-            if ( // TODO-RZ: no ack-eliciting packets in flight &&
+            if (AckElicitingBytesInFlight == 0 && // no ack-eliciting packets in flight
                 PeerNotAwaitingAddressValidation())
             {
                 // cancel the timer
@@ -360,45 +360,47 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             timeout *= 1 << PtoCount;
 
-            var (sentTime, _) = GetEarliestLastAckElicitingPacketSent(isHandshakeComplete);
-            LossRecoveryTimer = sentTime + timeout;
+            var pnSpace = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
+            LossRecoveryTimer = pnSpace.TimeOfLastAckElicitingPacketSent + timeout;
         }
 
-        private void OnLossDetectionTimeout(bool isServer, bool isHandshakeComplete, DateTime now)
+        internal void OnLossDetectionTimeout(bool isHandshakeComplete, DateTime now)
         {
-            var (earliestLossTime, space) = GetEarliestLossTime(isHandshakeComplete);
+            var pnSpace = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer);
+            var earliestLossTime = pnSpace.NextLossTime;
 
-            if (earliestLossTime != default)
+            if (earliestLossTime != DateTime.MaxValue)
             {
                 // Time threshold loss detection
-                DetectLostPackets(space, now);
+                DetectLostPackets(pnSpace, now);
                 SetLossDetectionTimer(isHandshakeComplete);
                 return;
             }
 
+            RemainingLossProbes = 2;
+            // TODO-RZ: Move the code handling these cases to ManagedQuicConnection
             // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
-            {
+            // {
                 // TODO-RZ: Client needs to send an anti-deadlock packet:
-                throw new NotImplementedException();
-            }
+                // throw new NotImplementedException();
+            // }
             // else
-            {
+            // {
                 // TODO-RZ: PTO. Send new data if available, else retransmit old data.
                 // If neither is available, send single PING frame.
-                throw new NotImplementedException();
-            }
+                // throw new NotImplementedException();
+            // }
 
-            // PtoCount++;
-            // SetLossDetectionTimer();
+            PtoCount++;
+            SetLossDetectionTimer(isHandshakeComplete);
         }
 
-        private void DetectLostPackets(PacketSpace space, DateTime now)
+        private void DetectLostPackets(PacketNumberSpace pnSpace, DateTime now)
         {
-            var pnSpace = GetPacketNumberSpace(space);
-
+            // will be set again later, if necessary
             pnSpace.NextLossTime = DateTime.MaxValue;
 
-            var lostPackets = new List<(long pn, SentPacket packet)>();
+            var lostPackets = new List<SentPacket>();
             var lossDelayTicks = (long)(TimeReorderingThreshold *
                                         Math.Max(LatestRtt.Ticks, SmoothedRtt.Ticks));
 
@@ -420,11 +422,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 {
                     // Mark packet as lost
                     pnSpace.SentPackets.Remove(pn);
+                    pnSpace.LostPackets.Add(packet);
 
-                    // TODO-RZ: why only in-flight are to be processed this way?
                     if (packet.InFlight)
                     {
-                        lostPackets.Add((pn, packet));
+                        lostPackets.Add(packet);
                     }
                 }
                 else
@@ -437,125 +439,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
             }
 
-            // Inform the congestion controller of lost packets and let it decide whether to retransmit immediately.
-            OnPacketsLost(lostPackets, now);
+            // Inform the congestion controller of lost packets.
+            CongestionController.OnPacketsLost(lostPackets, now);
         }
 
-
-        // congestion control implementation:
-
-        /// <summary>
-        ///     The sum of the size in bytes of all sent packets that contain at least one ack-eliciting or PADDING
-        ///     frame, and have not been acked or declared lost. The size does not include IP or UDP overhead, but does
-        ///     Include the QUIC header and AEAD overhead. Packets only containing ACK frames do not count towards this
-        ///     count to ensure congestion control does not impede congestion feedback.
-        /// </summary>
-        private long BytesInFlight { get; set; }
-
-        /// <summary>
-        ///     Maximum number of bytes in flight that may be sent.
-        /// </summary>
-        private long CongestionWindow { get; set; }
-
-        /// <summary>
-        ///     The time when QUIC first detects congestion due to loss of ECN, causing it to enter congestion recovery.
-        ///     When a packet sent after this time is acknowledged, QUIC exits congestion recovery.
-        /// </summary>
-        private DateTime CongestionRecoveryStartTime { get; set; }
-
-        /// <summary>
-        ///     Slow start threshold in bytes. When the congestion window is below this value, the mode is slow start
-        ///     and the window grows by the number of bytes acknowledged.
-        /// </summary>
-        private long SlowStartThreshold { get; set; }
-
-        private void InitCongestionController()
-        {
-            CongestionWindow = InitialWindowSize;
-            BytesInFlight = 0;
-            CongestionRecoveryStartTime = DateTime.MaxValue;
-            SlowStartThreshold = Int64.MaxValue;
-
-        }
-
-        private bool InCongestionRecovery(DateTime sentTime)
-        {
-            return sentTime < CongestionRecoveryStartTime;
-        }
-
-        private bool InPersistentCongestion(SentPacket largestLostPacket)
-        {
-            // var pto = SmoothedRtt.Ticks + Math.Max(4 * RttVariation.Ticks, Recovery.TimerGranularity.Ticks) +
-                      // MaxAckDelay.Ticks;
-            // var congestionPeriod = pto * Recovery.PersistentCongestionThreshold;
-            // TODO-RZ: determine if all packets in the time period before the newest lost packet, including the edges
-            // are marked lost
-            return false;
-        }
-
-        private void OnPacketSentCC(int bytes)
-        {
-            BytesInFlight += bytes;
-        }
-
-        private void OnPacketAckedCC(SentPacket packet)
-        {
-            BytesInFlight -= packet.BytesSent;
-            if (InCongestionRecovery(packet.TimeSent))
-            {
-                // do not increase congestion window in recovery period.
-                return;
-            }
-            // TODO-RZ: Do not increase congestion window if limited by flow control or application has not supplied
-            // enough data to saturate the connection
-            // if (Is app or flow control limited) return;
-            if (CongestionWindow < SlowStartThreshold)
-            {
-                // slow start
-                CongestionWindow += packet.BytesSent;
-            }
-            else
-            {
-                // congestion avoidance
-                CongestionWindow += MaxDatagramSize * packet.BytesSent / CongestionWindow;
-            }
-        }
-
-        internal List<SentPacket> GetAckedFrames(PacketSpace space)
+        internal List<SentPacket> GetAckedPackets(PacketSpace space)
         {
             return GetPacketNumberSpace(space).AckedPackets;
         }
 
-        internal void OnCongestionEvent(DateTime sentTime, DateTime now)
+        internal List<SentPacket> GetLostPackets(PacketSpace space)
         {
-            // start a new congestion event if packet was sent after the start of the previous congestion recovery period
-            if (InCongestionRecovery(sentTime))
-                return;
-
-            CongestionRecoveryStartTime = now;
-            CongestionWindow = Math.Max(MinimumWindowSize,
-                (long) (CongestionWindow * LossReductionFactor));
-            SlowStartThreshold = CongestionWindow;
+            return GetPacketNumberSpace(space).LostPackets;
         }
-
-        internal void OnPacketsLost(List<(long, SentPacket)> lostPackets, DateTime now)
-        {
-            foreach ((_, SentPacket packet) in lostPackets)
-            {
-                BytesInFlight -= packet.BytesSent;
-            }
-
-            if (lostPackets.Count > 0)
-            {
-                var (_, lastPacket) = lostPackets[^1];
-                OnCongestionEvent(lastPacket.TimeSent, now);
-
-                if (InPersistentCongestion(lastPacket))
-                {
-                    CongestionWindow = MinimumWindowSize;
-                }
-            }
-        }
-
     }
 }

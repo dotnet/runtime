@@ -170,6 +170,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (destination.IsEmpty)
                 return;
 
+            DrainIncomingChunks();
             Debug.Assert(destination.Length <= GetNextSendableRange().count);
 
             long start = _pending.GetMin();
