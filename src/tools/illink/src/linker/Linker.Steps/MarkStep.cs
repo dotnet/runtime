@@ -3450,6 +3450,7 @@ namespace Mono.Linker.Steps {
 							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
 
 								reflectionContext.AnalyzingPattern ();
+								BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
 
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
@@ -3457,19 +3458,14 @@ namespace Mono.Linker.Steps {
 											// TODO: Change this as needed after deciding whether or not we are to keep
 											// all methods on a type that was accessed via reflection.
 											if (stringParam is KnownStringValue stringValue) {
-												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
 												reflectionContext.RecordHandledPattern ();
 											} else {
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+												RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.Methods, value, calledMethod.Parameters [0]);
 											}
 										}
-									} else if (value == NullValue.Instance) {
-										reflectionContext.RecordHandledPattern ();
-									} else if (value is MethodParameterValue) {
-										// TODO: Check if parameter is annotated.
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
 									} else {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.Methods, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
@@ -3486,6 +3482,7 @@ namespace Mono.Linker.Steps {
 							&& calledMethod.Parameters [1].ParameterType.FullName == "System.Type"): {
 
 								reflectionContext.AnalyzingPattern ();
+								DynamicallyAccessedMemberKinds memberKind = calledMethod.Name [0] == 'P' ? DynamicallyAccessedMemberKinds.Properties : DynamicallyAccessedMemberKinds.Fields;
 
 								foreach (var value in methodParams [1].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
@@ -3494,7 +3491,7 @@ namespace Mono.Linker.Steps {
 												BindingFlags bindingFlags = methodParams [0].Kind == ValueNodeKind.Null ? BindingFlags.Static : BindingFlags.Default;
 												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
 												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
-												if (calledMethod.Name [0] == 'P') {
+												if (memberKind is DynamicallyAccessedMemberKinds.Properties) {
 													MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 												} else {
 													MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
@@ -3502,16 +3499,11 @@ namespace Mono.Linker.Steps {
 
 												reflectionContext.RecordHandledPattern ();
 											} else {
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
+												RequireDynamicallyAccessedMembers (ref reflectionContext, memberKind, value, calledMethod.Parameters [2]);
 											}
 										}
-									} else if (value == NullValue.Instance) {
-										reflectionContext.RecordHandledPattern ();
-									} else if (value is MethodParameterValue) {
-										// TODO: Check if parameter is annotated.
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 									} else {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+										RequireDynamicallyAccessedMembers (ref reflectionContext, memberKind, value, calledMethod.Parameters [1]);
 									}
 								}
 							}
