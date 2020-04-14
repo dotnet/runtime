@@ -39,7 +39,7 @@
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateFileVersionProps"
           DependsOnTargets="CollectSharedFrameworkRuntimeFiles"
-          Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(BinplaceTestSharedFramework)' == 'true'"
+          Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
           AfterTargets="RestoreTestHost">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="Microsoft.NETCore.App"
