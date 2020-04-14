@@ -178,7 +178,6 @@ namespace System.Xml.Tests
             Assert.DoesNotContain("totalDigits", ex.Message);
         }
 
-
         [Fact]
         public void MinLengthLtBaseMinLength_Throws()
         {
