@@ -675,8 +675,8 @@
       <_MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
       <_MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoObjDir)cross/offsets-wasm32-unknown-none.h&quot;" />
       <_MonoAotCrossOffsetsToolParams Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
-      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.dylib&quot;" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />/>
-      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.so&quot;" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />/>
+      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.dylib&quot;" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+      <_MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(EMSDK_PATH)/upstream/lib/libclang.so&quot;" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
     </ItemGroup>
 
     <!-- Linux options -->
