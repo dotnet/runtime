@@ -6549,7 +6549,8 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			else {
 				ERROR_DECL (error);
 				this_arg = mono_object_new_checked (domain, m->klass, error);
-				mono_error_assert_ok (error);
+				if (!is_ok (error))
+					return ERR_INVALID_ARGUMENT;
 			}
 		} else {
 			return ERR_INVALID_ARGUMENT;
