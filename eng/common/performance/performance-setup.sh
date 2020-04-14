@@ -201,11 +201,8 @@ fi
 if [[ "$mono_dotnet" != "" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
-    echo $mono_dotnet_path
-    mv $core_root_directory $mono_dotnet_path
+    mv $mono_dotnet $mono_dotnet_path
 fi
-
-echo $using_mono
 
 if [[ "$use_baseline_core_run" = true ]]; then
   new_baseline_core_root=$payload_directory/Baseline_Core_Root
