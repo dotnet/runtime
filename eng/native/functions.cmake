@@ -354,6 +354,38 @@ function(install_clr)
   endforeach()
 endfunction()
 
+function(generate_moduleindex_file)
+  set(options "")
+  set(oneValueArgs OUTPUT TARGET_MODULE)
+  set(multiValueArgs DEPENDS)
+  cmake_parse_arguments(PARSE_ARGV 0 GEN_MODULEIDX "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+  set(GET_MODULEIDX_TOOL_PATH ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll)
+
+  if ("${GEN_MODULEIDX_OUTPUT}" STREQUAL "")
+    message(FATAL_ERROR "At least one output must be passed to generate_moduleindex_file")
+  endif()
+
+  if ("${GEN_MODULEIDX_TARGET_MODULE}" STREQUAL "")
+    message(FATAL_ERROR "At least one target must be passed to generate_moduleindex_file")
+  endif()
+
+  if(NOT EXISTS ${GET_MODULEIDX_TOOL_PATH})
+    message(FATAL_ERROR "GetModuleIndex tool not found. Please run the build for subset 'clr.buildtools'. Alternatively if using the build-runtime scripts and you are ok opting out of the feature, specify '-cmakeargs -DFEATURE_SINGLE_FILE_DIAGNOSTICS=OFF' as an argument.")
+  endif()
+
+  add_custom_command(
+    OUTPUT ${GEN_MODULEIDX_OUTPUT}
+    COMMAND ${CLR_DOTNET_COMMAND} ${GET_MODULEIDX_TOOL_PATH} ${GEN_MODULEIDX_TARGET_MODULE} ${GEN_MODULEIDX_OUTPUT}
+    DEPENDS ${GEN_MODULEIDX_DEPENDS}
+    COMMENT "Generating module index for file ${GEN_MODULEIDX_TARGET_MODULE}-> ${GEN_MODULEIDX_OUTPUT}"
+  )
+  set_source_files_properties(
+    ${GEN_MODULEIDX_OUTPUT}
+    PROPERTIES GENERATED TRUE
+  )
+endfunction()
+
 # Disable PAX mprotect that would prevent JIT and other codegen in coreclr from working.
 # PAX mprotect prevents:
 # - changing the executable status of memory pages that were

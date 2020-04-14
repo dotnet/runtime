@@ -121,22 +121,17 @@ endif(CLR_CMAKE_HOST_WIN32)
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
     set(
-        DBI_MODULE_INDEX_FILE 
+        DBI_MODULE_INDEX_FILE
         ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h
     )
-    add_custom_command(
+    generate_moduleindex_file(
         OUTPUT ${DBI_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordbi> ${DBI_MODULE_INDEX_FILE}
+        TARGET_MODULE $<TARGET_FILE:mscordbi>
         DEPENDS mscordbi
-        COMMENT "Generating DBI module index file -> ${DBI_MODULE_INDEX_FILE}"
-    )
-    set_source_files_properties(
-        ${DBI_MODULE_INDEX_FILE} 
-        PROPERTIES GENERATED TRUE
     )
     add_custom_target(
         dbi_module_index_header
-        DEPENDS ${DBI_MODULE_INDEX_FILE} 
+        DEPENDS ${DBI_MODULE_INDEX_FILE}
     )
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
