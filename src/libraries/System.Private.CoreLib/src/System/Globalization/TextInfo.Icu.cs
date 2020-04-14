@@ -10,8 +10,6 @@ namespace System.Globalization
     {
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
-        private void FinishInitialization() { }
-
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -25,9 +23,10 @@ namespace System.Globalization
 
         private bool IsInvariant { get { return _cultureName.Length == 0; } }
 
-        internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
+        internal unsafe void IcuChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if (IsInvariant)
             {

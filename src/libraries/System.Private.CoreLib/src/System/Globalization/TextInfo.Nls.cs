@@ -8,14 +8,10 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private unsafe void FinishInitialization()
-        {
-            _sortHandle = CompareInfo.GetSortHandle(_textInfoName);
-        }
-
-        private unsafe void ChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
+        private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(pSource != null);
             Debug.Assert(pResult != null);
             Debug.Assert(pSourceLen >= 0);

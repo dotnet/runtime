@@ -81,26 +81,26 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10 };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsWindows ? 5 : -1 };
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsNlsGlobalization ? 5 : -1 };
 
         }
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
-            bool isWindows = PlatformDetection.IsWindows;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
             // Searches for the ligature \u00C6
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
-            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, isWindows ? 24 : -1 };
+            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, useNls ? 24 : -1 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.None, 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.None, 24 };
-            yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.None, isWindows ? 9 : -1 };
+            yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.None, useNls ? 9 : -1 };
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.Ordinal, 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.Ordinal, 24 };
             yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.Ordinal, -1 };
-            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.IgnoreCase, isWindows ? 24 : 9 };
-            yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.IgnoreCase, isWindows ? 24 : 9 };
+            yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.IgnoreCase, useNls ? 24 : 9 };
+            yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.IgnoreCase, useNls ? 24 : 9 };
             yield return new object[] { s_invariantCompare, source, '\u00C6', 25, 18, CompareOptions.IgnoreCase, 24 };
             yield return new object[] { s_invariantCompare, source, '\u00E6', 25, 18, CompareOptions.IgnoreCase, 24 };
         }
@@ -233,9 +233,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void LastIndexOf_UnassignedUnicode()
         {
-            bool isWindows = PlatformDetection.IsWindows;
-            LastIndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 5, 6, CompareOptions.None, isWindows ? 0 : -1);
-            LastIndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 6, 7, CompareOptions.IgnoreNonSpace, isWindows ? 1 : -1);
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+            LastIndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 5, 6, CompareOptions.None, useNls ? 0 : -1);
+            LastIndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 6, 7, CompareOptions.IgnoreNonSpace, useNls ? 1 : -1);
         }
 
         [Fact]

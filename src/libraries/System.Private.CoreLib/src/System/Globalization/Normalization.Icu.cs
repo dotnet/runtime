@@ -11,14 +11,10 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        private static unsafe bool IcuIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return true;
-            }
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             ValidateArguments(strInput, normalizationForm);
 
@@ -36,14 +32,10 @@ namespace System.Globalization
             return ret == 1;
         }
 
-        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
+        private static unsafe string IcuNormalize(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return strInput;
-            }
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             ValidateArguments(strInput, normalizationForm);
 

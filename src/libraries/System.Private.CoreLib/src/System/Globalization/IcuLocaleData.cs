@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    internal enum LocaleDataParts
+    internal enum IcuLocaleDataParts
     {
         Lcid = 0,
         AnsiCodePage = 1,
@@ -23,7 +23,7 @@ namespace System.Globalization
         ConsoleLocaleIndex = 8
     }
 
-    internal static class LocaleData
+    internal static class IcuLocaleData
     {
         // this is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
@@ -4454,7 +4454,7 @@ namespace System.Globalization
             return null;
         }
 
-        internal static int GetLocaleDataNumericPart(string cultureName, LocaleDataParts part)
+        internal static int GetLocaleDataNumericPart(string cultureName, IcuLocaleDataParts part)
         {
             int index = SearchCultureName(cultureName);
             if (index < 0)
@@ -4480,7 +4480,7 @@ namespace System.Globalization
             return c_threeLetterWindowsLanguageName.Substring(index * 3, 3);
         }
 
-        internal static string GetLocaleDataMappedCulture(string cultureName, LocaleDataParts part)
+        internal static string GetLocaleDataMappedCulture(string cultureName, IcuLocaleDataParts part)
         {
             int indexToIndicesTable = GetLocaleDataNumericPart(cultureName, part);
             if (indexToIndicesTable < 0)
@@ -4496,12 +4496,12 @@ namespace System.Globalization
 
         internal static string GetSpecificCultureName(string cultureName)
         {
-            return GetLocaleDataMappedCulture(cultureName, LocaleDataParts.SpecificLocaleIndex);
+            return GetLocaleDataMappedCulture(cultureName, IcuLocaleDataParts.SpecificLocaleIndex);
         }
 
         internal static string GetConsoleUICulture(string cultureName)
         {
-            return GetLocaleDataMappedCulture(cultureName, LocaleDataParts.ConsoleLocaleIndex);
+            return GetLocaleDataMappedCulture(cultureName, IcuLocaleDataParts.ConsoleLocaleIndex);
         }
 
         // SearchCultureName will binary search c_localeNames using s_localeNamesIndices.
