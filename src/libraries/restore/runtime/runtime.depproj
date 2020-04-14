@@ -26,15 +26,6 @@
     <FileToExclude Include="apphost" />
   </ItemGroup>
 
-  <!-- In-tree runtime packs do not require the host, so exclude --> 
-  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
-    <FileToExclude Include="dotnet" />
-    <FileToExclude Include="libnethost" />
-    <FileToExclude Include="libhostfxr" />
-    <FileToExclude Include="libhostpolicy" />
-    <FileToExclude Include="nethost" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- System.Data.SqlClient is not live-built anymore -->
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
