@@ -3572,13 +3572,13 @@ namespace Mono.Linker.Steps {
 									if (value is SystemTypeValue systemTypeValue) {
 										foreach (var stringParam in methodParams [2].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
-												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
+												BindingFlags bindingFlags = methodParams [0].Kind == ValueNodeKind.Null ? BindingFlags.Static : BindingFlags.Default;
 												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
 												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
 												if (calledMethod.Name [0] == 'P') {
-													MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, staticOnly);
+													MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 												} else {
-													MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, staticOnly);
+													MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
 												}
 
 												reflectionContext.RecordHandledPattern ();
@@ -3852,7 +3852,7 @@ namespace Mono.Linker.Steps {
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
 					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
-					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
 					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic && m.Parameters.Count == 0);
 				}
@@ -3860,13 +3860,13 @@ namespace Mono.Linker.Steps {
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
 					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
-					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
 					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
-					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => f.IsPublic);
+					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
@@ -3878,13 +3878,13 @@ namespace Mono.Linker.Steps {
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
 					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
-					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.GetMethod == null || f.GetMethod.IsPublic) || (f.SetMethod == null || f.SetMethod.IsPublic));
+					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 
 				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
 					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
 				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
-					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.AddMethod == null || f.AddMethod.IsPublic) || (f.RemoveMethod == null || f.RemoveMethod.IsPublic));
+					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null, bindingFlags: BindingFlags.Public);
 				}
 			}
 
@@ -3955,7 +3955,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter, bool staticOnly = false)
+			void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -3971,7 +3971,16 @@ namespace Mono.Linker.Steps {
 						if (filter != null && !filter (field))
 							continue;
 
-						if (staticOnly && !field.IsStatic)
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !field.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && field.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !field.IsPublic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && field.IsPublic)
 							continue;
 
 						var methodCalling = reflectionContext.MethodCalling;
@@ -3994,7 +4003,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter, bool staticOnly = false)
+			void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -4002,17 +4011,32 @@ namespace Mono.Linker.Steps {
 						// Ignore private properties on a base type - those are completely ignored by reflection
 						// (anything private on the base type is not visible via the derived type)
 						// Note that properties themselves are not actually private, their accessors are
-						if (onBaseType && 
-							(property.GetMethod == null || property.GetMethod.IsPrivate) && 
+						if (onBaseType &&
+							(property.GetMethod == null || property.GetMethod.IsPrivate) &&
 							(property.SetMethod == null || property.SetMethod.IsPrivate))
 							continue;
 
 						if (filter != null && !filter (property))
 							continue;
 
-						if (staticOnly) {
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static) {
 							if ((property.GetMethod != null) && !property.GetMethod.IsStatic) continue;
 							if ((property.SetMethod != null) && !property.SetMethod.IsStatic) continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance) {
+							if ((property.GetMethod != null) && property.GetMethod.IsStatic) continue;
+							if ((property.SetMethod != null) && property.SetMethod.IsStatic) continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public)
+							if ((property.GetMethod == null || !property.GetMethod.IsPublic) 
+								&& (property.SetMethod == null || !property.SetMethod.IsPublic)) 
+								continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic) {
+							if (property.GetMethod != null && property.GetMethod.IsPublic) continue;
+							if (property.SetMethod != null && property.SetMethod.IsPublic) continue;
 						}
 
 						var methodCalling = reflectionContext.MethodCalling;
@@ -4033,7 +4057,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			void MarkEventsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<EventDefinition, bool> filter)
+			void MarkEventsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags bindingFlags = BindingFlags.Default)
 			{
 				bool onBaseType = false;
 				while (type != null) {
@@ -4048,6 +4072,26 @@ namespace Mono.Linker.Steps {
 
 						if (filter != null && !filter (@event))
 							continue;
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static) {
+							if ((@event.AddMethod != null) && !@event.AddMethod.IsStatic) continue;
+							if ((@event.RemoveMethod != null) && !@event.RemoveMethod.IsStatic) continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance) {
+							if ((@event.AddMethod != null) && @event.AddMethod.IsStatic) continue;
+							if ((@event.RemoveMethod != null) && @event.RemoveMethod.IsStatic) continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public) {
+							if ((@event.AddMethod == null || !@event.AddMethod.IsPublic)
+								&& (@event.RemoveMethod == null || !@event.RemoveMethod.IsPublic)) continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic) {
+							if (@event.AddMethod != null && @event.AddMethod.IsPublic) continue;
+							if (@event.RemoveMethod != null && @event.RemoveMethod.IsPublic) continue;
+						}
 
 						var methodCalling = reflectionContext.MethodCalling;
 						reflectionContext.RecordRecognizedPattern (@event, () => {
