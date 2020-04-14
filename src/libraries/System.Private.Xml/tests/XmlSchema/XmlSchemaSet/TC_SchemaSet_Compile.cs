@@ -178,9 +178,6 @@ namespace System.Xml.Tests
             Assert.DoesNotContain("totalDigits", ex.Message);
         }
 
-        /// <summary>
-        /// Test for issue #30218, resource Sch_MinLengthGtBaseMinLength
-        /// </summary>
         [Fact]
         public void MinLengthLtBaseMinLength_Throws()
         {
