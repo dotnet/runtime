@@ -9,6 +9,6 @@
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20201.2",
-    "Microsoft.NET.Sdk.IL": "5.0.0-preview.3.20180.15"
+    "Microsoft.NET.Sdk.IL": "5.0.0-preview.4.20210.10"
   }
 }
