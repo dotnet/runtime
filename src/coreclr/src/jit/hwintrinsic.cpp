@@ -537,7 +537,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
-GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand)
+GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immUpperBound)
 {
     assert(immOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
@@ -551,7 +551,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
             )
     {
         assert(!immOp->IsCnsIntOrI());
-        GenTree* upperBoundNode = gtNewIconNode(HWIntrinsicInfo::lookupImmUpperBound(intrinsic), TYP_INT);
+        GenTree* upperBoundNode = gtNewIconNode(immUpperBound, TYP_INT);
         GenTree* index          = nullptr;
         if ((immOp->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
@@ -738,7 +738,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2     = getArgForHWIntrinsic(argType, argClass);
 
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
 
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
@@ -771,15 +771,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
                 GenTree* op3 = getArgForHWIntrinsic(argType, argClass);
 
-                op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
-
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2     = getArgForHWIntrinsic(argType, argClass);
 
-                CORINFO_CLASS_HANDLE op2ArgClass = argClass;
-
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
+
+#ifdef TARGET_ARM64
+                if (intrinsic == NI_AdvSimd_Insert)
+                {
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immUpperBound);
+                }
+                else
+#endif
+                {
+                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immUpperBound);
+                }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
