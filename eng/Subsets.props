@@ -142,7 +142,7 @@
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
-  <ItemGroup Condition="$(_subset.Contains('+clr.buildtools+'))">
+  <ItemGroup Condition="$(_subset.Contains('+clr.buildtools+')) or $(_subset.Contains('+clr.runtime+'))">
     <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\GetModuleIndex\GetModuleIndex.csproj" />
   </ItemGroup>
 
