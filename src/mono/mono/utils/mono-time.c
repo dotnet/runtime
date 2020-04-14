@@ -15,6 +15,10 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HOST_DARWIN
+#include <mach/clock.h>
+#endif
+
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
 
@@ -249,7 +253,7 @@ mono_clock_get_time_ns (void)
 	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
 }
 
-#elseif defined(HOST_LINUX)
+#elif defined(HOST_LINUX)
 
 static clockid_t sampling_posix_clock;
 
