@@ -145,7 +145,7 @@ namespace System.Net.Http.Headers
         /// Find possible known header match via lookup on length and a distinguishing char for that length.
         /// </summary>
         /// <remarks>
-        /// Matching is case-insenstive. Because of this, we do not preserve the case of the original header,
+        /// Matching is case-insensitive. Because of this, we do not preserve the case of the original header,
         /// whether from the wire or from the user explicitly setting a known header using a header name string.
         /// </remarks>
         private static KnownHeader? GetCandidate<T>(T key)
