@@ -2719,110 +2719,6 @@ namespace Mono.Linker.Steps {
 				var methodCalled = reflectionContext.MethodCalled;
 				var instructionIndex = reflectionContext.InstructionIndex;
 				var methodCalledType = methodCalled.DeclaringType;
-
-				switch (methodCalledType.Name) {
-					
-					//
-					// System.AppDomain
-					//
-					case "AppDomain" when methodCalledType.Namespace == "System":
-						//
-						// CreateInstance (string assemblyName, string typeName)
-						// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName)
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceFrom (string assemblyFile, string typeName)
-						// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
-						//
-						switch (methodCalled.Name) {
-							case "CreateInstance":
-							case "CreateInstanceAndUnwrap":
-							case "CreateInstanceFrom":
-							case "CreateInstanceFromAndUnwrap":
-								ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, methodCalled.Parameters.Count < 4);
-								break;
-						}
-
-						break;
-
-					//
-					// System.Reflection.Assembly
-					//
-					case "Assembly" when methodCalledType.Namespace == "System.Reflection":
-						//
-						// CreateInstance (string typeName)
-						// CreateInstance (string typeName, bool ignoreCase)
-						// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
-						//
-						if (methodCalled.Name == "CreateInstance") {
-							//
-							// TODO: This could be supported for `this` only calls
-							//
-							reflectionContext.AnalyzingPattern ();
-							reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' is not yet supported");
-							break;
-						}
-
-						break;
-
-					//
-					// System.Activator
-					//
-					case "Activator" when methodCalledType.Namespace == "System":
-						if (!methodCalled.IsStatic)
-							break;
-
-						switch (methodCalled.Name) {
-							//
-							// static T CreateInstance<T> ()
-							//
-							case "CreateInstance" when methodCalled.ContainsGenericParameter:
-								// Not sure it's worth implementing as we cannot expant T and simple cases can be rewritten
-								reflectionContext.AnalyzingPattern ();
-								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' is not supported");
-								break;
-
-							//
-							// static CreateInstance (string assemblyName, string typeName)
-							// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
-							// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
-							case "CreateInstance": {
-
-									var parameters = methodCalled.Parameters;
-									if (parameters.Count < 1)
-										break;
-
-									if (parameters [0].ParameterType.MetadataType == MetadataType.String) {
-										reflectionContext.AnalyzingPattern ();
-										ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, parameters.Count < 4);
-										break;
-									}
-								}
-
-								break;
-
-							//
-							// static CreateInstanceFrom (string assemblyFile, string typeName)
-							// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-							// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-							//
-							case "CreateInstanceFrom":
-								ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, methodCalled.Parameters.Count < 4);
-								break;
-						}
-
-						break;
-				}
-
 			}
 
 			//
@@ -3484,6 +3380,8 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// System.Linq.Expressions.Expression
+						// 
 						// static Call (Type, String, Type[], Expression[])
 						//
 						case "Call" when calledMethod.DeclaringType.Name == "Expression"
@@ -3514,6 +3412,8 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// System.Linq.Expressions.Expression
+						// 
 						// static Field (Expression, Type, String)
 						// static Property (Expression, Type, String)
 						//
@@ -3552,6 +3452,8 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// System.Linq.Expressions.Expression
+						// 
 						// static New (Type)
 						//
 						case "New" when calledMethod.DeclaringType.Name == "Expression"
@@ -3573,6 +3475,8 @@ namespace Mono.Linker.Steps {
 							}
 							break;
 
+						//
+						// System.Type
 						//
 						// GetType (string)
 						// GetType (string, Boolean)
@@ -3616,6 +3520,193 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// GetConstructor (Type[])
+						// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
+						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
+						//
+						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
+							&& calledMethod.HasThis
+							&& calledMethod.DeclaringType.Namespace == "System":
+							{
+
+								reflectionContext.AnalyzingPattern();
+								var parameters = calledMethod.Parameters;
+								BindingFlags bindingFlags = BindingFlags.Default;
+								if (parameters.Count > 1)
+								{
+									if (methodParams[1].AsConstInt() != null)
+										bindingFlags |= (BindingFlags)methodParams[1].AsConstInt();
+								}
+								// Go over all types we've seen
+								foreach (var value in methodParams[0].UniqueValues())
+								{
+									if (value is SystemTypeValue systemTypeValue)
+									{
+										MarkConstructorsOnType(ref reflectionContext, systemTypeValue.TypeRepresented, (Func<MethodDefinition, bool>)null, bindingFlags);
+										reflectionContext.RecordHandledPattern();
+									}
+									else
+									{
+										// Otherwise fall back to the bitfield requirements
+										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
+												? DynamicallyAccessedMemberKinds.PublicConstructors
+												: DynamicallyAccessedMemberKinds.Constructors;
+										RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+									}
+								}
+							}
+							break;
+						//
+						// GetMethod (string)
+						// GetMethod (string, BindingFlags)
+						// GetMethod (string, Type[])
+						// GetMethod (string, Type[], ParameterModifier[])
+						// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[]) 6
+						// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[]) 7
+						// GetMethod (string, int, Type[])
+						// GetMethod (string, int, Type[], ParameterModifier[]?)
+						// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
+						//
+						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
+							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.HasThis
+							&& calledMethod.DeclaringType.Namespace == "System":
+							{
+
+								reflectionContext.AnalyzingPattern();
+								BindingFlags bindingFlags = BindingFlags.Default;
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt() != null)
+								{
+									bindingFlags |= (BindingFlags)methodParams[2].AsConstInt();
+								}
+								else if (calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags" && methodParams[3].AsConstInt() != null)
+								{
+									bindingFlags |= (BindingFlags)methodParams[3].AsConstInt();
+								}
+
+								foreach (var value in methodParams[0].UniqueValues())
+								{
+									if (value is SystemTypeValue systemTypeValue)
+									{
+										foreach (var stringParam in methodParams[1].UniqueValues())
+										{
+											if (stringParam is KnownStringValue stringValue)
+											{
+												MarkMethodsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+												reflectionContext.RecordHandledPattern();
+											}
+											else
+											{
+												// Otherwise fall back to the bitfield requirements
+												var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
+														? DynamicallyAccessedMemberKinds.PublicMethods
+														: DynamicallyAccessedMemberKinds.Methods;
+												RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+											}
+										}
+									}
+									else
+									{
+										// Otherwise fall back to the bitfield requirements
+										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
+												? DynamicallyAccessedMemberKinds.PublicMethods
+												: DynamicallyAccessedMemberKinds.Methods;
+										RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+									}
+								}
+							}
+							break;
+						//
+						// GetField (string)
+						// GetField (string, BindingFlags)
+						// GetEvent (string)
+						// GetEvent (string, BindingFlags)
+						// GetProperty (string)
+						// GetProperty (string, BindingFlags)
+						// GetProperty (string, Type)
+						// GetProperty (string, Type[])
+						// GetProperty (string, Type, Type[])
+						// GetProperty (string, Type, Type[], ParameterModifier[])
+						// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+						//
+						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
+							&& calledMethod.DeclaringType.Namespace == "System"
+							&& calledMethod.DeclaringType.Name == "Type"
+							&& calledMethod.Parameters[0].ParameterType.FullName == "System.String")
+							&& calledMethod.HasThis:
+							{
+
+								reflectionContext.AnalyzingPattern();
+								DynamicallyAccessedMemberKinds? memberKind = null;
+								switch (fieldPropertyOrEvent)
+								{
+									case var mt when fieldPropertyOrEvent.EndsWith("Event"):
+										memberKind = DynamicallyAccessedMemberKinds.Events;
+										break;
+
+									case var mt when fieldPropertyOrEvent.EndsWith("Field"):
+										memberKind = DynamicallyAccessedMemberKinds.Fields;
+										break;
+
+									case var mt when fieldPropertyOrEvent.EndsWith("Property"):
+										memberKind = DynamicallyAccessedMemberKinds.Properties;
+										break;
+
+									default:
+										throw new ArgumentException($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
+								}
+								if (memberKind == null)
+									break;
+
+								BindingFlags bindingFlags = BindingFlags.Default;
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt() != null)
+								{
+									bindingFlags |= (BindingFlags)methodParams[2].AsConstInt();
+								}
+
+								foreach (var value in methodParams[0].UniqueValues())
+								{
+									if (value is SystemTypeValue systemTypeValue)
+									{
+										foreach (var stringParam in methodParams[1].UniqueValues())
+										{
+											if (stringParam is KnownStringValue stringValue)
+											{
+												switch (memberKind)
+												{
+													case DynamicallyAccessedMemberKinds.Events:
+														MarkEventsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
+														break;
+													case DynamicallyAccessedMemberKinds.Fields:
+														MarkFieldsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
+														break;
+													case DynamicallyAccessedMemberKinds.Properties:
+														MarkPropertiesOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
+														break;
+													default:
+														Debug.Fail("Unreachable.");
+														break;
+												}
+												reflectionContext.RecordHandledPattern();
+											}
+											else
+											{
+												RequireDynamicallyAccessedMembers(ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters[0]);
+											}
+										}
+									}
+									else
+									{
+										RequireDynamicallyAccessedMembers(ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters[0]);
+									}
+								}
+							}
+							break;
+
+						//
+						// System.Activator
+						// 
 						// static CreateInstance (System.Type type)
 						// static CreateInstance (System.Type type, bool nonPublic)
 						// static CreateInstance (System.Type type, params object?[]? args)
@@ -3624,6 +3715,7 @@ namespace Mono.Linker.Steps {
 						// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
 						//
 						case "CreateInstance" when !calledMethod.ContainsGenericParameter
+							&& calledMethod.DeclaringType.Namespace == "System"
 							&& calledMethod.DeclaringType.Name == "Activator"
 							&& calledMethod.Parameters.Count >= 1
 							&& calledMethod.DeclaringType.Namespace == "System"
@@ -3693,161 +3785,109 @@ namespace Mono.Linker.Steps {
 								}
 							}
 							break;
-						//
-						// GetConstructor (Type[])
-						// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
-						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
-						//
-						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.HasThis
-							&& calledMethod.DeclaringType.Namespace == "System": {
-								
-								reflectionContext.AnalyzingPattern ();
-								var parameters = calledMethod.Parameters;
-								BindingFlags bindingFlags = BindingFlags.Default;
-								if (parameters.Count > 1) {
-									if (methodParams [1].AsConstInt () != null)
-										bindingFlags |= (BindingFlags)methodParams [1].AsConstInt ();
-								}
-								// Go over all types we've seen
-								foreach (var value in methodParams [0].UniqueValues ()) {
-									if (value is SystemTypeValue systemTypeValue) {
-										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, (Func<MethodDefinition, bool>)null , bindingFlags);
-										reflectionContext.RecordHandledPattern ();
-									} else {
-										// Otherwise fall back to the bitfield requirements
-										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-												? DynamicallyAccessedMemberKinds.PublicConstructors
-												: DynamicallyAccessedMemberKinds.Constructors;
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
-									}
-								}
-							}
-							break;
-						//
-						// GetMethod (string)
-						// GetMethod (string, BindingFlags)
-						// GetMethod (string, Type[])
-						// GetMethod (string, Type[], ParameterModifier[])
-						// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[]) 6
-						// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[]) 7
-						// GetMethod (string, int, Type[])
-						// GetMethod (string, int, Type[], ParameterModifier[]?)
-						// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
-						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
-						//
-						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.HasThis
-							&& calledMethod.DeclaringType.Namespace == "System": {
-								
-								reflectionContext.AnalyzingPattern ();
-								BindingFlags bindingFlags = BindingFlags.Default;
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
-									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
-								}
-								else if (calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags" && methodParams [3].AsConstInt () != null) {
-									bindingFlags |= (BindingFlags)methodParams [3].AsConstInt ();
-								}
 
-								foreach (var value in methodParams [0].UniqueValues ()) {
-									if (value is SystemTypeValue systemTypeValue) {
-										foreach (var stringParam in methodParams [1].UniqueValues ()) {
-											if (stringParam is KnownStringValue stringValue) {
-												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
-												reflectionContext.RecordHandledPattern ();
-											} else {
-												// Otherwise fall back to the bitfield requirements
-												var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-														? DynamicallyAccessedMemberKinds.PublicMethods
-														: DynamicallyAccessedMemberKinds.Methods;
-												RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
-											}
-										}
-									} else {
-										// Otherwise fall back to the bitfield requirements
-										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
-												? DynamicallyAccessedMemberKinds.PublicMethods
-												: DynamicallyAccessedMemberKinds.Methods;
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
-									}
-								}
-							}
-							break;
 						//
-						// GetField (string)
-						// GetField (string, BindingFlags)
-						// GetEvent (string)
-						// GetEvent (string, BindingFlags)
-						// GetProperty (string)
-						// GetProperty (string, BindingFlags)
-						// GetProperty (string, Type)
-						// GetProperty (string, Type[])
-						// GetProperty (string, Type, Type[])
-						// GetProperty (string, Type, Type[], ParameterModifier[])
-						// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+						// System.Activator
+						// 
+						// static CreateInstance (string assemblyName, string typeName)
+						// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+						// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
 						//
-						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
+						case "CreateInstance" when !calledMethod.ContainsGenericParameter
 							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.Parameters [0].ParameterType.FullName == "System.String")
-							&& calledMethod.HasThis: {
-								
+							&& calledMethod.DeclaringType.Name == "Activator"
+							&& calledMethod.Parameters.Count >= 2
+							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
+							break;
+
+						//
+						// System.Activator
+						// 
+						// static CreateInstanceFrom (string assemblyFile, string typeName)
+						// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+						// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+						//
+						case "CreateInstanceFrom" when !calledMethod.ContainsGenericParameter
+							&& calledMethod.DeclaringType.Namespace == "System"
+							&& calledMethod.DeclaringType.Name == "Activator"
+							&& calledMethod.Parameters.Count >= 2
+							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
+							break;
+
+						//
+						// System.Activator
+						// 
+						// static T CreateInstance<T> ()
+						//
+						case "CreateInstance" when calledMethod.ContainsGenericParameter
+							&& calledMethod.DeclaringType.Namespace == "System"
+							&& calledMethod.DeclaringType.Name == "Activator"
+							&& calledMethod.Parameters.Count == 0: {
 								reflectionContext.AnalyzingPattern ();
-								DynamicallyAccessedMemberKinds? memberKind = null;
-								switch (fieldPropertyOrEvent) {
-									case var mt when fieldPropertyOrEvent.EndsWith ("Event"):
-										memberKind = DynamicallyAccessedMemberKinds.Events;
+
+								if (calledMethod is GenericInstanceMethod genericCalledMethod && genericCalledMethod.GenericArguments.Count == 1
+									&& genericCalledMethod.GenericArguments [0] is GenericParameter genericParameter) {
+									if (genericParameter.HasDefaultConstructorConstraint) {
+										// This is safe, the linker would have marked the default .ctor already
+										reflectionContext.RecordHandledPattern ();
 										break;
-
-									case var mt when fieldPropertyOrEvent.EndsWith ("Field"):
-										memberKind = DynamicallyAccessedMemberKinds.Fields;
-										break;
-
-									case var mt when fieldPropertyOrEvent.EndsWith ("Property"):
-										memberKind = DynamicallyAccessedMemberKinds.Properties;
-										break;
-									
-									default:
-										throw new ArgumentException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
-								}
-								if (memberKind == null)
-									break;
-
-								BindingFlags bindingFlags = BindingFlags.Default;
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
-									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
-								}
-
-								foreach (var value in methodParams [0].UniqueValues ()) {
-									if (value is SystemTypeValue systemTypeValue) {
-										foreach (var stringParam in methodParams [1].UniqueValues ()) {
-											if (stringParam is KnownStringValue stringValue) {
-												switch (memberKind) {
-													case DynamicallyAccessedMemberKinds.Events:
-														MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
-														break;
-													case DynamicallyAccessedMemberKinds.Fields:
-														MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
-														break;
-													case DynamicallyAccessedMemberKinds.Properties:
-														MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
-														break;
-													default:
-														Debug.Fail ("Unreachable.");
-														break;
-												}
-												reflectionContext.RecordHandledPattern ();
-											} else {
-												RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
-											}
-										}
-									} else {
-										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
 									}
 								}
+
+								// Not yet supported in any combination
+								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' is not supported");
 							}
 							break;
+
+						//
+						// System.AppDomain
+						//
+						// CreateInstance (string assemblyName, string typeName)
+						// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+						// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
+						//
+						// CreateInstanceAndUnwrap (string assemblyName, string typeName)
+						// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+						// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
+						//
+						// CreateInstanceFrom (string assemblyFile, string typeName)
+						// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+						// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+						//
+						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
+						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
+						//
+						case var appDomainCreateInstanceMethodName when calledMethod.DeclaringType.Name == "AppDomain" && calledMethod.DeclaringType.Namespace == "System"
+							&& (appDomainCreateInstanceMethodName == "CreateInstance" || appDomainCreateInstanceMethodName == "CreateInstanceAndUnwrap"
+								|| appDomainCreateInstanceMethodName == "CreateInstanceFrom" || appDomainCreateInstanceMethodName == "CreateInstanceFromAndUnwrap")
+							&& calledMethod.Parameters.Count >= 2
+							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
+							break;
+
+						//
+						// System.Reflection.Assembly
+						//
+						// CreateInstance (string typeName)
+						// CreateInstance (string typeName, bool ignoreCase)
+						// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
+						//
+						case "CreateInstance" when calledMethod.DeclaringType.Name == "Assembly" && calledMethod.DeclaringType.Namespace == "System.Reflection"
+							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String:
+							//
+							// TODO: This could be supported for `this` only calls
+							//
+							reflectionContext.AnalyzingPattern ();
+							reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' is not yet supported");
+							break;
+
 						default:
 							if (requiresDataFlowAnalysis) {
 								reflectionContext.AnalyzingPattern ();
@@ -3916,6 +3956,48 @@ namespace Mono.Linker.Steps {
 				}
 
 				return true;
+			}
+
+			void ProcessCreateInstanceByName (ref ReflectionPatternContext reflectionContext, MethodDefinition calledMethod, ValueNodeList methodParams)
+			{
+				reflectionContext.AnalyzingPattern ();
+
+				BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+				bool parameterlessConstructor = true;
+				if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters [2].ParameterType.MetadataType == MetadataType.Boolean &&
+					methodParams [3].AsConstInt () != null) {
+					parameterlessConstructor = false;
+					bindingFlags = BindingFlags.Instance | (BindingFlags)methodParams [3].AsConstInt ();
+				}
+
+				int methodParamsOffset = calledMethod.HasImplicitThis () ? 1 : 0;
+
+				foreach (var assemblyNameValue in methodParams [methodParamsOffset].UniqueValues ()) {
+					if (assemblyNameValue is KnownStringValue assemblyNameStringValue) {
+						foreach (var typeNameValue in methodParams [methodParamsOffset + 1].UniqueValues ()) {
+							if (typeNameValue is KnownStringValue typeNameStringValue) {
+								var resolvedAssembly = _markStep._context.GetLoadedAssembly (assemblyNameStringValue.Contents);
+								if (resolvedAssembly == null) {
+									reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' references assembly '{assemblyNameStringValue.Contents}' which could not be found");
+									continue;
+								}
+
+								var resolvedType = FindType (resolvedAssembly, typeNameStringValue.Contents);
+								if (resolvedType == null) {
+									reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' references type '{typeNameStringValue}' in assembly '{resolvedAssembly.FullName}' which could not be found");
+									continue;
+								}
+
+								MarkConstructorsOnType (ref reflectionContext, resolvedType,
+									parameterlessConstructor ? m => m.Parameters.Count == 0 : (Func<MethodDefinition, bool>)null, bindingFlags);
+							} else {
+								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' has unrecognized value for the 'typeName' parameter.");
+							}
+						}
+					} else {
+						reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' has unrecognized value for the 'assemblyName' parameter.");
+					}
+				}
 			}
 
 			void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberKinds requiredMemberKinds, ValueNode value, IMetadataTokenProvider targetContext)
