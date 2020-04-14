@@ -8722,19 +8722,29 @@ calli_end:
 			if (mini_class_is_system_array (cmethod->klass)) {
 				*sp = emit_get_rgctx_method (cfg, context_used,
 											 cmethod, MONO_RGCTX_INFO_METHOD);
-				/* Optimize the common cases */
-				MonoJitICallId function = MONO_JIT_ICALL_ZeroIsReserved;;
+				MonoJitICallId function = MONO_JIT_ICALL_ZeroIsReserved;
 				int n = fsig->param_count;
-				switch (n) {
-				case 1: function = MONO_JIT_ICALL_mono_array_new_1;
-					break;
-				case 2: function = MONO_JIT_ICALL_mono_array_new_2;
-					break;
-				case 3: function = MONO_JIT_ICALL_mono_array_new_3;
-					break;
-				case 4: function = MONO_JIT_ICALL_mono_array_new_4;
-					break;
-				default:
+				/* Optimize the common cases, use ctor using length for each rank (no lbound). */
+				if (n == m_class_get_rank (cmethod->klass)) {
+					switch (n) {
+					case 1: function = MONO_JIT_ICALL_mono_array_new_1;
+						break;
+					case 2: function = MONO_JIT_ICALL_mono_array_new_2;
+						break;
+					case 3: function = MONO_JIT_ICALL_mono_array_new_3;
+						break;
+					case 4: function = MONO_JIT_ICALL_mono_array_new_4;
+						break;
+					default:
+						break;
+					}
+				}
+
+				/* Instancing jagged arrays should not end up here since ctor (int32, int32) for an array with rank 1 represent lenght and lbound. */
+				g_assert (!(m_class_get_rank (cmethod->klass) == 1 && fsig->param_count == 2 && m_class_get_rank (m_class_get_element_class (cmethod->klass))));
+
+				/* Regular case, rank > 4 or legnth, lbound specified per rank. */
+				if (function == MONO_JIT_ICALL_ZeroIsReserved) {
 					// FIXME Maximum value of param_count? Realistically 64. Fits in imm?
 					if  (!array_new_localalloc_ins) {
 						MONO_INST_NEW (cfg, array_new_localalloc_ins, OP_LOCALLOC_IMM);
@@ -8755,7 +8765,6 @@ calli_end:
 					sp [2] = ins;
 					// FIXME Adjust sp by n - 3? Attempts failed.
 					function = MONO_JIT_ICALL_mono_array_new_n_icall;
-					break;
 				}
 				alloc = mono_emit_jit_icall_id (cfg, function, sp);
 			} else if (cmethod->string_ctor) {

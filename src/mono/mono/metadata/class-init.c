@@ -33,7 +33,6 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 #ifdef ENABLE_NETCORE
@@ -4237,6 +4236,48 @@ generic_array_methods (MonoClass *klass)
 	return generic_array_method_num;
 }
 
+static int array_get_method_count (MonoClass *klass)
+{
+	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
+	if (klass_byval_arg->type == MONO_TYPE_ARRAY)
+		/* Regular array */
+		/* ctor([int32]*rank) */
+		/* ctor([int32]*rank*2) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 5;
+	else if (klass_byval_arg->type == MONO_TYPE_SZARRAY && klass->rank == 1 && klass->element_class->rank)
+		/* Jagged arrays are typed as MONO_TYPE_SZARRAY but have an extra ctor in .net which creates an array of arrays */
+		/* ctor([int32]) */
+		/* ctor([int32], [int32]) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 5;
+	else
+		/* Vectors don't have additional constructor since a zero lower bound is assumed */
+		/* ctor([int32]*rank) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 4;
+}
+
+static gboolean array_supports_additional_ctor_method (MonoClass *klass)
+{
+	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
+	if (klass_byval_arg->type == MONO_TYPE_ARRAY)
+		/* Regular array */
+		return TRUE;
+	else if (klass_byval_arg->type == MONO_TYPE_SZARRAY && klass->rank == 1 && klass->element_class->rank)
+		/* Jagged array */
+		return TRUE;
+	else
+		/* Vector */
+		return FALSE;
+}
+
 /*
  * Global pool of interface IDs, represented as a bitset.
  * LOCKING: Protected by the classes lock.
@@ -4522,7 +4563,7 @@ mono_class_init_internal (MonoClass *klass)
 	}
 
 	if (klass->rank) {
-		array_method_count = 3 + (klass->rank > 1? 2: 1);
+		array_method_count = array_get_method_count (klass);
 
 		if (klass->interface_count) {
 			int count_generic = generic_array_methods (klass);
@@ -4951,17 +4992,11 @@ mono_class_setup_methods (MonoClass *klass)
 		MonoMethodSignature *sig;
 		int count_generic = 0, first_generic = 0;
 		int method_num = 0;
-		gboolean jagged_ctor = FALSE;
 
-		count = 3 + (klass->rank > 1? 2: 1);
+		count = array_get_method_count (klass);
 
 		mono_class_setup_interfaces (klass, error);
 		g_assert (is_ok (error)); /*FIXME can this fail for array types?*/
-
-		if (klass->rank == 1 && klass->element_class->rank) {
-			jagged_ctor = TRUE;
-			count ++;
-		}
 
 		if (klass->interface_count) {
 			count_generic = generic_array_methods (klass);
@@ -4980,7 +5015,8 @@ mono_class_setup_methods (MonoClass *klass)
 
 		amethod = create_array_method (klass, ".ctor", sig);
 		methods [method_num++] = amethod;
-		if (klass->rank > 1) {
+
+		if (array_supports_additional_ctor_method (klass)) {
 			sig = mono_metadata_signature_alloc (klass->image, klass->rank * 2);
 			sig->ret = mono_get_void_type ();
 			sig->pinvoke = TRUE;
@@ -4988,18 +5024,6 @@ mono_class_setup_methods (MonoClass *klass)
 			for (i = 0; i < klass->rank * 2; ++i)
 				sig->params [i] = mono_get_int32_type ();
 
-			amethod = create_array_method (klass, ".ctor", sig);
-			methods [method_num++] = amethod;
-		}
-
-		if (jagged_ctor) {
-			/* Jagged arrays have an extra ctor in .net which creates an array of arrays */
-			sig = mono_metadata_signature_alloc (klass->image, klass->rank + 1);
-			sig->ret = mono_get_void_type ();
-			sig->pinvoke = TRUE;
-			sig->hasthis = TRUE;
-			for (i = 0; i < klass->rank + 1; ++i)
-				sig->params [i] = mono_get_int32_type ();
 			amethod = create_array_method (klass, ".ctor", sig);
 			methods [method_num++] = amethod;
 		}
