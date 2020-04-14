@@ -3665,12 +3665,9 @@ namespace Mono.Linker.Steps {
 						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 						//
 						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
+						  && calledMethod.HasThis
 						  && calledMethod.DeclaringType.Namespace == "System": {
 								
-								if (!calledMethod.HasThis) {
-									break;
-								}
-
 								reflectionContext.AnalyzingPattern ();
 								var parameters = calledMethod.Parameters;
 								BindingFlags bindingFlags = BindingFlags.Default;
@@ -3707,11 +3704,8 @@ namespace Mono.Linker.Steps {
 						//
 						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
 						  && calledMethod.Parameters.Count >= 1
+						  && calledMethod.HasThis
 						  && calledMethod.DeclaringType.Namespace == "System": {
-								
-								if (!calledMethod.HasThis) {
-									break;
-								}
 								
 								reflectionContext.AnalyzingPattern ();
 								BindingFlags bindingFlags = BindingFlags.Default;
@@ -3762,11 +3756,8 @@ namespace Mono.Linker.Steps {
 						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
 							&& calledMethod.DeclaringType.Namespace == "System"
 							&& calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.Parameters [0].ParameterType.FullName == "System.String"): {
-								
-								if (!calledMethod.HasThis) {
-									break;
-								}
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.String")
+							&& calledMethod.HasThis: {
 								
 								reflectionContext.AnalyzingPattern ();
 								DynamicallyAccessedMemberKinds? memberKind = null;
@@ -4112,9 +4103,11 @@ namespace Mono.Linker.Steps {
 							if ((property.GetMethod != null) && property.GetMethod.IsStatic) continue;
 							if ((property.SetMethod != null) && property.SetMethod.IsStatic) continue;
 						}
+
 						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public) {
-							if ((property.GetMethod != null) && !property.GetMethod.IsPublic) continue;
-							if ((property.SetMethod != null) && !property.SetMethod.IsPublic) continue;
+							if ((property.GetMethod == null || !property.GetMethod.IsPublic)
+								&& (property.SetMethod == null || !property.SetMethod.IsPublic))
+								continue;
 						}
 
 						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic) {
@@ -4165,9 +4158,11 @@ namespace Mono.Linker.Steps {
 							if ((@event.AddMethod != null) && @event.AddMethod.IsStatic) continue;
 							if ((@event.RemoveMethod != null) && @event.RemoveMethod.IsStatic) continue;
 						}
+
 						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public) {
-							if ((@event.AddMethod != null) && !@event.AddMethod.IsPublic) continue;
-							if ((@event.RemoveMethod != null) && !@event.RemoveMethod.IsPublic) continue;
+							if ((@event.AddMethod == null || !@event.AddMethod.IsPublic)
+								&& (@event.RemoveMethod == null || !@event.RemoveMethod.IsPublic)) 
+								continue;
 						}
 
 						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic) {
