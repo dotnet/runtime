@@ -143,6 +143,8 @@ namespace System.Text.Json
                                         else if (other.PropertyInfo?.Name != jsonPropertyInfo.PropertyInfo?.Name &&
                                             (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true))
                                         {
+                                            // Check for name equality is required to determine when a new slot is used for the member.
+                                            // Therefore, if names are not the same, there is conflict due to the name policy or attributes.
                                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                                         }
                                         // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.

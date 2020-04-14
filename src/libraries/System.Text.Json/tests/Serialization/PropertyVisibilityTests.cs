@@ -104,7 +104,8 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithNewSlotAttributedDecimalProperty();
             string json = JsonSerializer.Serialize(obj);
 
-            Assert.Equal(@"{""MyNewNumeric"":1.5,""MyNumeric"":1}", json);
+            Assert.Contains(@"""MyNewNumeric"":1.5", json);
+            Assert.Contains(@"""MyNumeric"":1", json);
 
             // Deserialize
             json = @"{""MyNewNumeric"":2.5,""MyNumeric"":4}";
