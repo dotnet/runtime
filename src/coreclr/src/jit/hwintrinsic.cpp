@@ -639,36 +639,84 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(sizeBytes != 0);
     }
 
-    // NOTE: The following code assumes that for all intrinsics
-    // taking an immediate operand, that operand will be last.
-    if (sig->numArgs > 0 && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    GenTree* immOp = nullptr;
+
+#ifdef TARGET_ARM64
+    if (intrinsic == NI_AdvSimd_Insert)
     {
-        GenTree* lastOp = impStackTop().val;
-        // The imm-HWintrinsics that do not accept all imm8 values may throw
-        // ArgumentOutOfRangeException when the imm argument is not in the valid range
+        assert(sig->numArgs == 3);
+        immOp = impStackTop(1).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
+    }
+    else
+#endif
+        if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    {
+        // NOTE: The following code assumes that for all intrinsics
+        // taking an immediate operand, that operand will be last.
+        immOp = impStackTop().val;
+    }
+
+    int immUpperBound = 0;
+
+    if (immOp != nullptr)
+    {
+        bool constImm = false;
+
         if (!HWIntrinsicInfo::HasFullRangeImm(intrinsic))
         {
-            if (!mustExpand && lastOp->IsCnsIntOrI() &&
-                !HWIntrinsicInfo::isInImmRange(intrinsic, (int)lastOp->AsIntCon()->IconValue()))
+            bool constImmOutOfRange = false;
+
+#if defined(TARGET_ARM64)
+            const var_types elemType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+            const int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+            immUpperBound            = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, elemType);
+
+            if (immOp->IsCnsIntOrI())
             {
+                const int ival = (int)immOp->AsIntCon()->IconValue();
+
+                constImm           = true;
+                constImmOutOfRange = ((ival < 0) || (ival >= immUpperBound));
+            }
+
+#elif defined(TARGET_XARCH)
+            if (immOp->IsCnsIntOrI())
+            {
+                const int ival = (int)immOp->AsIntCon()->IconValue();
+
+                constImm           = true;
+                constImmOutOfRange = !HWIntrinsicInfo::isInImmRange(intrinsic, ival);
+            }
+            else
+            {
+                immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+            }
+#else
+#error Unsupported platform
+#endif
+
+            if (constImmOutOfRange)
+            {
+                assert(!mustExpand);
+                // The imm-HWintrinsics that do not accept all imm8 values may throw
+                // ArgumentOutOfRangeException when the imm argument is not in the valid range
                 return nullptr;
             }
-        }
-
-        if (!lastOp->IsCnsIntOrI())
-        {
-            if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
+            else if (!constImm)
             {
-                return impNonConstFallback(intrinsic, retType, baseType);
-            }
-
-            if (!mustExpand)
-            {
-                // When the imm-argument is not a constant and we are not being forced to expand, we need to
-                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
-                // intrinsic method is recursive and will be forced to expand, at which point
-                // we emit some less efficient fallback code.
-                return nullptr;
+                if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
+                {
+                    return impNonConstFallback(intrinsic, retType, baseType);
+                }
+                else if (!mustExpand)
+                {
+                    // When the imm-argument is not a constant and we are not being forced to expand, we need to
+                    // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+                    // intrinsic method is recursive and will be forced to expand, at which point
+                    // we emit some less efficient fallback code.
+                    return nullptr;
+                }
             }
         }
     }
@@ -773,6 +821,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2     = getArgForHWIntrinsic(argType, argClass);
+
+                CORINFO_CLASS_HANDLE op2ArgClass = argClass;
 
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
