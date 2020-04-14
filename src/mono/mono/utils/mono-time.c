@@ -249,7 +249,7 @@ mono_clock_get_time_ns (void)
 	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
 }
 
-#else
+#elseif defined(HOST_LINUX)
 
 static clockid_t sampling_posix_clock;
 
@@ -262,6 +262,15 @@ mono_clock_get_time_ns (void)
 		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
 
 	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+}
+
+#else
+
+guint64
+mono_clock_get_time_ns (void)
+{
+	// TODO: need to implement time stamp function for PC
+	return 0;
 }
 
 #endif
