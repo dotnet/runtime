@@ -1,0 +1,17 @@
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/ILVerification.Tests/Tests</OutputPath>
+    <SkipTestRun>true</SkipTestRun>
+    <SkipSigning>true</SkipSigning>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).il" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
