@@ -23,6 +23,8 @@
 
 extern "C" _CRTIMP int __cdecl _flushall(void);
 
+void CrashDumpAndTerminateProcess(UINT exitCode);
+
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
@@ -456,7 +458,7 @@ bool _DbgBreakCheck(
 #endif
     // For abort, just quit the app.
     case IDABORT:
-        TerminateProcess(GetCurrentProcess(), 1);
+        CrashDumpAndTerminateProcess(1);
         break;
 
     // Tell caller to break at the correct loction.

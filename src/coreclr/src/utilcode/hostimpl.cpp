@@ -75,3 +75,8 @@ void GetLastThrownObjectExceptionFromThread(Exception** ppException)
 {
     *ppException = NULL;
 }
+
+void CrashDumpAndTerminateProcess(UINT exitCode)
+{
+    TerminateProcess(GetCurrentProcess(), exitCode);
+}

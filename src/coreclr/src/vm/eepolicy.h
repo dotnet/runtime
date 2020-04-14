@@ -149,9 +149,9 @@ private:
     // - CorHost2::ExitProcess
     // - SafeExitProcess
     friend class CorHost2;
-    friend void SafeExitProcess(UINT , BOOL , ShutdownCompleteAction);
+    friend void SafeExitProcess(UINT exitCode, BOOL fAbort, ShutdownCompleteAction sca);
 
-    static void ExitProcessViaShim(UINT exitCode);
+    static void ExitProcessViaShim(UINT exitCode, BOOL fAbort);
 };
 
 void InitEEPolicy();

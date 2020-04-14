@@ -498,14 +498,7 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
         // Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-#ifdef TARGET_UNIX
-        if (fAbort)
-        {
-            TerminateProcess(GetCurrentProcess(), exitCode);
-        }
-#endif
-
-        EEPolicy::ExitProcessViaShim(exitCode);
+        EEPolicy::ExitProcessViaShim(exitCode, fAbort);
     }
 }
 
@@ -519,7 +512,7 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
 // This function only exists to factor some common code out of the methods mentioned above.
 
 //static
-void EEPolicy::ExitProcessViaShim(UINT exitCode)
+void EEPolicy::ExitProcessViaShim(UINT exitCode, BOOL fAbort)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -528,7 +521,14 @@ void EEPolicy::ExitProcessViaShim(UINT exitCode)
     // cleanly. If we can't make the call, or if the call fails for some reason, then we
     // simply exit the process here, which is rude to the others, but the best we can do.
 
-    ExitProcess(exitCode);
+    if (fAbort)
+    {
+        CrashDumpAndTerminateProcess(exitCode);
+    }
+    else
+    {
+        ExitProcess(exitCode);
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -1235,7 +1235,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
 
-    TerminateProcess(GetCurrentProcess(), COR_E_STACKOVERFLOW);
+    CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
 
