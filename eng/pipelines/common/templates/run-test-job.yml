@@ -191,7 +191,7 @@ jobs:
         displayName: 'product build'
 
 
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:  
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
       # We need to explictly download CoreCLR for Mono
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -201,10 +201,10 @@ jobs:
           displayName: 'CoreCLR product download for Mono'
 
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-		-ci
+                -ci
                 -projects $(Build.SourcesDirectory)/src/mono
                 /t:PatchCoreClrCoreRoot
-        displaName: "Patch dotnet with mono"
+        displayName: "Patch dotnet with mono"
 
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
