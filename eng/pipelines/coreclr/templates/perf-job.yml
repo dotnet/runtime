@@ -75,7 +75,7 @@ jobs:
     - ${{ if eq(parameters.runtimeType, 'mono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(librariesDownloadDir)/mono/$(osGroup).$(archType).$(buildConfigUpper)
+          unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
           cleanUnpackFolder: false
           artifactFileName: 'MonoProduct_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
           artifactName: 'MonoProduct_$(osGroup)_$(archType)_$(buildConfig)'
