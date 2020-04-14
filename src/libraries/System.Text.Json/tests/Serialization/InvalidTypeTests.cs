@@ -116,6 +116,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return new object[] { typeof(Test<>) };
             yield return new object[] { typeof(Nullable<>) };
+            yield return new object[] { typeof(IList<>) };
             yield return new object[] { typeof(List<>) };
             yield return new object[] { typeof(List<>).MakeGenericType(typeof(Test<>)) };
             yield return new object[] { typeof(Test<>).MakeGenericType(typeof(List<>)) };
@@ -135,9 +136,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return new object[] { typeof(Span<int>) };
             yield return new object[] { typeof(Utf8JsonReader) };
+            yield return new object[] { typeof(MyRefStruct) };
         }
 
-        private static Type s_intPtrType = typeof(int*); // Unsafe code may not appear in iterators.
+        private static readonly Type s_intPtrType = typeof(int*); // Unsafe code may not appear in iterators.
 
         private static IEnumerable<object[]> PointerTypes()
         {
@@ -155,9 +157,11 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(ClassWithIntPtr), s_intPtrType, "IntPtr" };
         }
 
-        public class ClassWithIntPtr
+        private class ClassWithIntPtr
         {
             public unsafe int* IntPtr { get; }
         }
+
+        private ref struct MyRefStruct { }
     }
 }

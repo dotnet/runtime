@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -395,7 +396,22 @@ namespace System.Text.Json
 
         public static bool IsInvalidForSerialization(Type type)
         {
-            return type.IsPointer || type.IsByRefLike || type.ContainsGenericParameters;
+            return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
+        }
+
+        public static bool IsByRefLike(Type type)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return type.IsByRefLike;
+#else
+            if (!type.IsValueType)
+            {
+                return false;
+            }
+
+            object[] attributes = type.GetCustomAttributes(typeof(IsByRefLikeAttribute), inherit: false);
+            return attributes.Length == 1;
+#endif
         }
     }
 }
