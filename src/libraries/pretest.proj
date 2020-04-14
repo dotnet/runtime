@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
-    <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
+    <NETCoreAppFrameworkIdentifier>$(TargetFrameworkIdentifier)</NETCoreAppFrameworkIdentifier>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
 
