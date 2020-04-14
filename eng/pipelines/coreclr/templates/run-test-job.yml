@@ -148,7 +148,7 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 150
+      timeoutInMinutes: 200
     ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
