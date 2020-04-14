@@ -718,7 +718,6 @@ namespace System.Text.Json
 #endif
                     );
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
             AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
@@ -726,7 +725,6 @@ namespace System.Text.Json
         {
             string value = Encoding.UTF8.GetString(stream.ToArray());
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
             AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
@@ -739,7 +737,6 @@ namespace System.Text.Json
 #endif
                     );
 
-            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
             AssertContentsNotEqualAgainstJsonNet(expectedValue, value);
         }
 
