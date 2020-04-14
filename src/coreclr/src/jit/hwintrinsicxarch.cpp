@@ -1285,7 +1285,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
@@ -1313,8 +1313,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
+                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
@@ -1407,7 +1407,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
@@ -1454,8 +1454,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
                 int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
+                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
+                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
