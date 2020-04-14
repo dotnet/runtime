@@ -361,7 +361,9 @@ if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
     # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
     # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
     # but since we know that PIE is supported, we can safely skip this redundant check).
-    if(NOT CLR_CMAKE_TARGET_ANDROID)
+    #
+    # The default linker on Solaris also does not support PIE.
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS)
         # All code we build should be compiled as position independent
         get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
         if("CXX" IN_LIST languages)
@@ -374,10 +376,10 @@ if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
             message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
                       "PIE link options will not be passed to linker.")
         endif()
-    endif(NOT CLR_CMAKE_TARGET_ANDROID)
+    endif()
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
+endif()
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
 if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)

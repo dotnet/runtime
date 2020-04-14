@@ -116,6 +116,8 @@ namespace ILCompiler
                         _completeSortedMethods.AddRange(perModuleData.GenericMethodsGenerated);
                         _completeSortedGenericMethods.AddRange(perModuleData.GenericMethodsGenerated);
                     }
+                    _completeSortedMethods.Sort(sortHelper);
+                    _completeSortedGenericMethods.Sort(sortHelper);
                     _sortedMethods = true;
                 }
             }

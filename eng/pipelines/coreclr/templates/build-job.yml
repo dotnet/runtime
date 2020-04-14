@@ -115,14 +115,12 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    # # Install internal tools on official builds
-    # # Since our internal tools are behind an authenticated feed,
-    # # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
-    # # We can't do this from within the build, so we need to do this as a separate step.
+    # Install internal tools on official builds
+    # Since our internal tools are behind an authenticated feed,
+    # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
+    # We can't do this from within the build, so we need to do this as a separate step.
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
-        parameters:
-          installDotnet: true
 
     # Build CoreCLR tools needed by the native runtime build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.buildtools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)/artifacts/log/clr.buildtools.binlog

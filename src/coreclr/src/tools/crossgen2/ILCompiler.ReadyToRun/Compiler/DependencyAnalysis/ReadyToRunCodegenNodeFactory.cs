@@ -425,16 +425,20 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
-                Debug.Assert(methodNode == MethodEntrypoint(method));
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+#if DEBUG
+                IMethodNode methodNodeDebug = MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport precodeMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = precodeMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
                 }
+                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
+#endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {

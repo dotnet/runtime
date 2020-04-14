@@ -96,16 +96,15 @@ jobs:
         - _runtimeArtifactName: ''
         - _runtimeDownloadPath: ''
         - _runtimeArtifactsPathArg: ''
+        - _runtimeConfigurationArg: ''
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
-          # Download corelib dependencies for coreclr libraries and not test
-          - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
-            - _runtimeArtifactName: 'CoreLib_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           # Download full product dependencies for mono or test
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
-          - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
+            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
 
         # Windows variables
@@ -116,7 +115,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:
@@ -131,7 +130,7 @@ jobs:
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, ''))) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_runtimeDownloadPath)

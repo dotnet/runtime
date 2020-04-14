@@ -1198,6 +1198,46 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectTrueWithTooManyRedirects_ThrowsWebException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = true;
+                request.MaximumAutomaticRedirections = 1;
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
+        }
+
+        [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectFalseWithRedirect_ReturnsRedirectResponse()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = false;
+                using (WebResponse response = await request.GetResponseAsync())
+                {
+                    HttpWebResponse httpResponse = Assert.IsType<HttpWebResponse>(response);
+                    Assert.Equal(HttpStatusCode.Redirect, httpResponse.StatusCode);
+                }
+            }, server => server.HandleRequestAsync(HttpStatusCode.Redirect));
+        }
+
+        [Fact]
+        public async Task GetResponseAsync_AllowAutoRedirectFalseWithBadRequest_ThrowsWebException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.AllowAutoRedirect = false;
+                WebException ex = await Assert.ThrowsAsync<WebException>(async () => await request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.HandleRequestAsync(HttpStatusCode.BadRequest));
+        }
+
+        [Fact]
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

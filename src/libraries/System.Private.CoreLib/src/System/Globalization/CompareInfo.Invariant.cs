@@ -270,7 +270,7 @@ namespace System.Globalization
             }
         }
 
-        private int GetSortKeyInvariant(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
+        private int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
         {
             Debug.Assert(GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
@@ -298,7 +298,7 @@ namespace System.Globalization
             return source.Length * sizeof(char);
         }
 
-        private int GetSortKeyLengthInvariant(ReadOnlySpan<char> source, CompareOptions options)
+        private int InvariantGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);

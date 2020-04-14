@@ -47,8 +47,8 @@ public:
     GroupProcNo(uint16_t group, uint16_t procIndex) : m_groupProc((group << 6) | procIndex)
     {
         // Making this the same as the # of NUMA node we support.
-        assert(group < 0x40);
-        assert(procIndex <= 0x3f);
+        _ASSERTE(group < 0x40);
+        _ASSERTE(procIndex <= 0x3f);
     }
 
     uint16_t GetGroup() { return m_groupProc >> 6; }
@@ -120,7 +120,7 @@ bool GCToOSInterface::Initialize()
     uint32_t currentProcessCpuCount = PAL_GetLogicalCpuCountFromOS();
     if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, g_processAffinitySet.GetBitsetData()))
     {
-        assert(currentProcessCpuCount == g_processAffinitySet.Count());
+        _ASSERTE(currentProcessCpuCount == g_processAffinitySet.Count());
     }
     else
     {
@@ -1322,7 +1322,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        assert(m_event.IsValid());
+        _ASSERTE(m_event.IsValid());
         m_event.CloseEvent();
     }
 
@@ -1330,7 +1330,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        assert(m_event.IsValid());
+        _ASSERTE(m_event.IsValid());
         m_event.Set();
     }
 
@@ -1338,7 +1338,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        assert(m_event.IsValid());
+        _ASSERTE(m_event.IsValid());
         m_event.Reset();
     }
 
@@ -1346,7 +1346,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        assert(m_event.IsValid());
+        _ASSERTE(m_event.IsValid());
         return m_event.Wait(timeout, alertable);
     }
 
@@ -1400,7 +1400,7 @@ void GCEvent::CloseEvent()
 {
     WRAPPER_NO_CONTRACT;
 
-    assert(m_impl != nullptr);
+    _ASSERTE(m_impl != nullptr);
     m_impl->CloseEvent();
 }
 
@@ -1408,7 +1408,7 @@ void GCEvent::Set()
 {
     WRAPPER_NO_CONTRACT;
 
-    assert(m_impl != nullptr);
+    _ASSERTE(m_impl != nullptr);
     m_impl->Set();
 }
 
@@ -1416,7 +1416,7 @@ void GCEvent::Reset()
 {
     WRAPPER_NO_CONTRACT;
 
-    assert(m_impl != nullptr);
+    _ASSERTE(m_impl != nullptr);
     m_impl->Reset();
 }
 
@@ -1424,7 +1424,7 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 {
     WRAPPER_NO_CONTRACT;
 
-    assert(m_impl != nullptr);
+    _ASSERTE(m_impl != nullptr);
     return m_impl->Wait(timeout, alertable);
 }
 
@@ -1435,7 +1435,7 @@ bool GCEvent::CreateManualEventNoThrow(bool initialState)
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    assert(m_impl == nullptr);
+    _ASSERTE(m_impl == nullptr);
     NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
     if (!event)
     {
@@ -1454,7 +1454,7 @@ bool GCEvent::CreateAutoEventNoThrow(bool initialState)
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    assert(m_impl == nullptr);
+    _ASSERTE(m_impl == nullptr);
     NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
     if (!event)
     {
@@ -1473,7 +1473,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    assert(m_impl == nullptr);
+    _ASSERTE(m_impl == nullptr);
     NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
     if (!event)
     {
@@ -1492,7 +1492,7 @@ bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    assert(m_impl == nullptr);
+    _ASSERTE(m_impl == nullptr);
     NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
     if (!event)
     {

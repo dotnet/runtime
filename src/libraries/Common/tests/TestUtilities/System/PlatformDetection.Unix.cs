@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
@@ -50,9 +49,6 @@ namespace System
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-
-        private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
-        public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsSuperUser => !IsWindows ?
             libc.geteuid() == 0 :
@@ -108,25 +104,6 @@ namespace System
                     return "glibc_not_found";
                 }
             }
-        }
-
-        private static Version GetICUVersion()
-        {
-            int version = 0;
-            Type interopGlobalization = Type.GetType("Interop+Globalization");
-            if (interopGlobalization != null)
-            {
-                MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                if (methodInfo != null)
-                {
-                    version = (int)methodInfo.Invoke(null, null);
-                }
-            }
-
-            return new Version( version & 0xFF,
-                            (version >> 8)  & 0xFF,
-                            (version >> 16) & 0xFF,
-                                version >> 24);
         }
 
         private static Version GetOSXProductVersion()

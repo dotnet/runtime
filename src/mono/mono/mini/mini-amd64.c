@@ -7326,9 +7326,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
-		case OP_SSE41_ROUNDPD:
-			amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+		case OP_SSE41_ROUNDP: {
+			if (ins->inst_c1 == MONO_TYPE_R8)
+				amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			else
+				g_assert_not_reached (); // roundps, but it's not used anywhere for non-llvm back-end yet.
 			break;
+		}
 #endif
 
 		case OP_LZCNT32:
@@ -8867,8 +8871,9 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 			if (mode != -1) {
 				int xreg = alloc_xreg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R8_X, xreg, args [0]->dreg);
-				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDPD, xreg, xreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDP, xreg, xreg);
 				ins->inst_c0 = mode;
+				ins->inst_c1 = MONO_TYPE_R8;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R8, dreg, xreg);
 				return ins;
