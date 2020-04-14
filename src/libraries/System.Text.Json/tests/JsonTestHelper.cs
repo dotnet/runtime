@@ -719,8 +719,7 @@ namespace System.Text.Json
                     );
 
             // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: https://github.com/dotnet/runtime/issues/32351
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
         public static void AssertContents(string expectedValue, MemoryStream stream)
@@ -728,7 +727,7 @@ namespace System.Text.Json
             string value = Encoding.UTF8.GetString(stream.ToArray());
 
             // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            AssertContentsAgainstJsonNet(expectedValue, value);
         }
 
         public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer)
@@ -741,7 +740,16 @@ namespace System.Text.Json
                     );
 
             // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: https://github.com/dotnet/runtime/issues/32351
+            AssertContentsNotEqualAgainstJsonNet(expectedValue, value);
+        }
+
+        public static void AssertContentsAgainstJsonNet(string expectedValue, string value)
+        {
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+        }
+
+        public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value)
+        {
             Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 
