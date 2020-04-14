@@ -2723,42 +2723,6 @@ namespace Mono.Linker.Steps {
 				switch (methodCalledType.Name) {
 					
 					//
-					// System.Reflection.RuntimeReflectionExtensions
-					//
-					case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
-						switch (methodCalled.Name) {
-							//
-							// static GetRuntimeField (this Type type, string name)
-							//
-							case "GetRuntimeField":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Field, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
-							//
-							case "GetRuntimeMethod":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Method, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeProperty (this Type type, string name)
-							//
-							case "GetRuntimeProperty":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Property, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeEvent (this Type type, string name)
-							//
-							case "GetRuntimeEvent":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Event, instructionIndex - 1, thisExtension: true);
-								break;
-						}
-
-						break;
-
-					//
 					// System.AppDomain
 					//
 					case "AppDomain" when methodCalledType.Namespace == "System":
@@ -3438,6 +3402,84 @@ namespace Mono.Linker.Steps {
 								// Don't care about the actual arguments, but we don't want to lose track of the type
 								// in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
 								methodReturnValue = methodParams [0];
+							}
+							break;
+
+						//
+						// static GetRuntimeEvent (this Type type, string name)
+						// static GetRuntimeField (this Type type, string name)
+						// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
+						// static GetRuntimeProperty (this Type type, string name)
+						//
+						case var getRuntimeMember when (getRuntimeMember.StartsWith ("GetRuntime")
+							&& calledMethod.DeclaringType.Namespace == "System.Reflection"
+							&& calledMethod.DeclaringType.Name == "RuntimeReflectionExtensions"
+							&& calledMethod.Parameters.Count >= 2
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type"
+							&& calledMethod.Parameters [1].ParameterType.FullName == "System.String"): {
+
+								reflectionContext.AnalyzingPattern ();
+								DynamicallyAccessedMemberKinds? memberKind = null;
+								BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+
+								switch (getRuntimeMember) {
+									case var mt when getRuntimeMember.EndsWith ("Event"):
+										memberKind = DynamicallyAccessedMemberKinds.PublicEvents;
+										break;
+
+									case var mt when getRuntimeMember.EndsWith ("Field"):
+										memberKind = DynamicallyAccessedMemberKinds.PublicFields;
+										break;
+
+									case var mt when getRuntimeMember.EndsWith ("Method"):
+										memberKind = DynamicallyAccessedMemberKinds.PublicMethods;
+										break;
+
+									case var mt when getRuntimeMember.EndsWith ("Property"):
+										memberKind = DynamicallyAccessedMemberKinds.PublicProperties;
+										break;
+
+									default:
+										Debug.Fail ("Unsupported member type");
+										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
+										break;
+								}
+
+								if (memberKind == null)
+									break;
+
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												switch (memberKind) {
+													case DynamicallyAccessedMemberKinds.PublicEvents:
+														MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, e => e.Name == stringValue.Contents, bindingFlags);
+														reflectionContext.RecordHandledPattern ();
+														break;
+													case DynamicallyAccessedMemberKinds.PublicFields:
+														MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, f => f.Name == stringValue.Contents, bindingFlags);
+														reflectionContext.RecordHandledPattern ();
+														break;
+													case DynamicallyAccessedMemberKinds.PublicMethods:
+														MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+														reflectionContext.RecordHandledPattern ();
+														break;
+													case DynamicallyAccessedMemberKinds.PublicProperties:
+														MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, p => p.Name == stringValue.Contents, bindingFlags);
+														reflectionContext.RecordHandledPattern ();
+														break;
+													default:
+														throw new MarkException (string.Format ("Error processing reflection call: '{0}' inside {1}. Unexpected member kind.", calledMethod.FullName, callingMethodBody.Method.FullName));
+												}
+											} else {
+												RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
+											}
+										}
+									} else {
+										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
+									}
+								}
 							}
 							break;
 
