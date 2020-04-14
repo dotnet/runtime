@@ -7663,21 +7663,39 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
     {
         if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
         {
+            // When optComputeLoopSideEffectsOfBlock returns false, we encountered
+            // a block that was moved into the loop range (by fgReorderBlocks),
+            // but not marked correctly as being inside the loop.
+            // We conservatively mark this loop (and any outer loops)
+            // as having memory havoc side effects.
+            //
             // Record that all loops containing this block have memory havoc effects.
-            unsigned lnum = bbInLoop->bbNatLoopNum;
-            while (lnum != BasicBlock::NOT_IN_LOOP)
-            {
-                // We set fullMemoryKindSet, aka allMemoryKinds()
-                for (MemoryKind memoryKind : allMemoryKinds())
-                {
-                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
-                }
-                lnum = optLoopTable[lnum].lpParent;
-            }
+            //
+            optRecordLoopNestsMemoryHavoc(lnum, fullMemoryKindSet);
 
             // All done, no need to keep visiting more blocks
             break;
         }
+    }
+}
+
+void Compiler::optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc)
+{
+    // We should start out with 'lnum' set to a valid natural loop index
+    assert(lnum != BasicBlock::NOT_IN_LOOP);
+
+    while (lnum != BasicBlock::NOT_IN_LOOP)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
+            {
+                optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+            }
+        }
+
+        // Move lnum to the next outtermost loop that we need to mark
+        lnum = optLoopTable[lnum].lpParent;
     }
 }
 
@@ -7941,19 +7959,8 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
     if (memoryHavoc != emptyMemoryKindSet)
     {
-        // Record that all loops containing this block have memory havoc effects.
-        unsigned lnum = mostNestedLoop;
-        while (lnum != BasicBlock::NOT_IN_LOOP)
-        {
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
-                {
-                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
-                }
-            }
-            lnum = optLoopTable[lnum].lpParent;
-        }
+        // Record that all loops containing this block have this kind of memoryHavoc effects.
+        optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
     }
     return true;
 }

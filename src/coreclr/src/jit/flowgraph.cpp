@@ -3947,11 +3947,11 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
-        //  9) Mark Poll as rarely run.
+        // Mark Poll as rarely run.
         poll->bbSetRunRarely();
         poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        //  5) Bottom gets all the outgoing edges and inherited flags of Original.
+        // Bottom gets all the outgoing edges and inherited flags of Original.
         bottom->bbJumpDest   = top->bbJumpDest;
         bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
         if (lpIndex != BasicBlock::NOT_IN_LOOP)
@@ -3966,10 +3966,10 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
             optLoopTable[lpIndexFallThrough].lpHead = bottom;
         }
 
-        //  2) Add the GC_CALL node to Poll.
+        // Add the GC_CALL node to Poll.
         fgNewStmtAtEnd(poll, call);
 
-        //  3) Remove the last statement from Top and add it to Bottom.
+        // Remove the last statement from Top and add it to Bottom.
         if (oldJumpKind != BBJ_ALWAYS)
         {
             // if I'm always jumping to the target, then this is not a condition that needs moving.
@@ -3984,9 +3984,15 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
         // for BBJ_ALWAYS blocks, bottom is an empty block.
 
-        //  4) Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
-        //  false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
-        //  now a jump target
+        // Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
+        // false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
+        // now a jump target
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef ENABLE_FAST_GCPOLL_HELPER
+        // Prefer the fast gc poll helepr over the double indirection
+        noway_assert(pAddrOfCaptureThreadGlobal == nullptr);
+#endif
 
         GenTree* value; // The value of g_TrapReturningThreads
         if (pAddrOfCaptureThreadGlobal != nullptr)
@@ -4028,13 +4034,13 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         top->bbJumpKind = BBJ_COND;
         bottom->bbFlags |= BBF_JMP_TARGET;
 
-        //  7) Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
+        // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
         fgAddRefPred(poll, top);
 
-        //  8) Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom (1 for
-        //      jumps, 2 for conditional branches, N for switches).
+        // Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom
+        // (1 for unconditional branches, 2 for conditional branches, N for switches).
         switch (oldJumpKind)
         {
             case BBJ_NONE:
