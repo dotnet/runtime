@@ -317,6 +317,11 @@ struct HWIntrinsicInfo
 };
 
 #if defined(TARGET_XARCH)
+// These use the same names as defined by the C++ HWIntrinsics. They are
+// already defined/available on Windows but aren't available on Unix
+// without including immintrin.h and enabling AVX in the compilation, so
+// we will just redefine them here with the same values.
+
 #define _CMP_EQ_OQ 0x00    /* Equal (ordered, nonsignaling) */
 #define _CMP_LT_OS 0x01    /* Less-than (ordered, signaling) */
 #define _CMP_LE_OS 0x02    /* Less-than-or-equal (ordered, signaling) */
