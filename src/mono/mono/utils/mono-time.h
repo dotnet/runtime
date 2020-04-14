@@ -7,6 +7,7 @@
 
 #include <mono/utils/mono-compiler.h>
 #include <glib.h>
+#include <mono/metadata/profiler.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -29,7 +30,11 @@ gint64 mono_100ns_datetime (void);
 gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #endif
 
+void mono_clock_init (void);
+void mono_clock_init_for_profiler (MonoProfilerSampleMode mode);
+void mono_clock_cleanup (void);
 guint64 mono_clock_get_time_ns (void);
+void mono_clock_sleep_ns_abs (guint64 ns_abs);
 
 /* Stopwatch class for internal runtime use */
 typedef struct {

@@ -17,7 +17,9 @@
 
 #ifdef HOST_DARWIN
 #include <mach/clock.h>
+#include <mach/mach.h>
 #endif
+
 
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
@@ -237,6 +239,37 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 
 static clock_serv_t sampling_clock_service;
 
+void
+mono_clock_init (void)
+{
+	kern_return_t ret;
+
+	do {
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock_service);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
+}
+
+void
+mono_clock_init_for_profiler (MonoProfilerSampleMode mode)
+{
+}
+
+static void
+mono_clock_cleanup (void)
+{
+	kern_return_t ret;
+
+	do {
+		ret = mach_port_deallocate (mach_task_self (), sampling_clock_service);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
+}
+
 guint64
 mono_clock_get_time_ns (void)
 {
@@ -253,9 +286,67 @@ mono_clock_get_time_ns (void)
 	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
 }
 
+void
+mono_clock_sleep_ns_abs (guint64 ns_abs)
+{
+	kern_return_t ret;
+	mach_timespec_t then, remain_unused;
+
+	then.tv_sec = ns_abs / 1000000000;
+	then.tv_nsec = ns_abs % 1000000000;
+
+	do {
+		ret = clock_sleep (sampling_clock_service, TIME_ABSOLUTE, then, &remain_unused);
+
+		if (ret != KERN_SUCCESS && ret != KERN_ABORTED)
+			g_error ("%s: clock_sleep () returned %d", __func__, ret);
+	} while (ret == KERN_ABORTED && mono_atomic_load_i32 (&sampling_thread_running));
+}
+
 #elif defined(HOST_LINUX)
 
 static clockid_t sampling_posix_clock;
+
+void
+mono_clock_init (void)
+{
+}
+
+void
+mono_clock_init_for_profiler (MonoProfilerSampleMode mode)
+{
+	switch (mode) {
+	case MONO_PROFILER_SAMPLE_MODE_PROCESS: {
+	/*
+	 * If we don't have clock_nanosleep (), measuring the process time
+	 * makes very little sense as we can only use nanosleep () to sleep on
+	 * real time.
+	 */
+#if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
+		struct timespec ts = { 0 };
+
+		/*
+		 * Some systems (e.g. Windows Subsystem for Linux) declare the
+		 * CLOCK_PROCESS_CPUTIME_ID clock but don't actually support it. For
+		 * those systems, we fall back to CLOCK_MONOTONIC if we get EINVAL.
+		 */
+		if (clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
+			sampling_posix_clock = CLOCK_PROCESS_CPUTIME_ID;
+			break;
+		}
+#endif
+
+		// fallthrough
+	}
+	case MONO_PROFILER_SAMPLE_MODE_REAL: sampling_posix_clock = CLOCK_MONOTONIC; break;
+	default: g_assert_not_reached (); break;
+	}
+}
+
+void
+mono_clock_cleanup (void)
+{
+}
 
 guint64
 mono_clock_get_time_ns (void)
@@ -268,13 +359,93 @@ mono_clock_get_time_ns (void)
 	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
 }
 
+void
+mono_clock_sleep_ns_abs (guint64 ns_abs)
+{
+#if defined(HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
+	int ret;
+	struct timespec then;
+
+	then.tv_sec = ns_abs / 1000000000;
+	then.tv_nsec = ns_abs % 1000000000;
+
+	do {
+		ret = clock_nanosleep (sampling_posix_clock, TIMER_ABSTIME, &then, NULL);
+
+		if (ret != 0 && ret != EINTR)
+			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
+	} while (ret == EINTR && mono_atomic_load_i32 (&sampling_thread_running));
 #else
+	int ret;
+	gint64 diff;
+	struct timespec req;
+
+	/*
+	 * What follows is a crude attempt at emulating clock_nanosleep () on OSs
+	 * which don't provide it (e.g. FreeBSD).
+	 *
+	 * The problem with nanosleep () is that if it is interrupted by a signal,
+	 * time will drift as a result of having to restart the call after the
+	 * signal handler has finished. For this reason, we avoid using the rem
+	 * argument of nanosleep (). Instead, before every nanosleep () call, we
+	 * check if enough time has passed to satisfy the sleep request. If yes, we
+	 * simply return. If not, we calculate the difference and do another sleep.
+	 *
+	 * This should reduce the amount of drift that happens because we account
+	 * for the time spent executing the signal handler, which nanosleep () is
+	 * not guaranteed to do for the rem argument.
+	 *
+	 * The downside to this approach is that it is slightly expensive: We have
+	 * to make an extra system call to retrieve the current time whenever we're
+	 * going to restart a nanosleep () call. This is unlikely to be a problem
+	 * in practice since the sampling thread won't be receiving many signals in
+	 * the first place (it's a tools thread, so no STW), and because typical
+	 * sleep periods for the thread are many orders of magnitude bigger than
+	 * the time it takes to actually perform that system call (just a few
+	 * nanoseconds).
+	 */
+	do {
+		diff = (gint64) ns_abs - (gint64) clock_get_time_ns ();
+
+		if (diff <= 0)
+			break;
+
+		req.tv_sec = diff / 1000000000;
+		req.tv_nsec = diff % 1000000000;
+
+		if ((ret = nanosleep (&req, NULL)) == -1 && errno != EINTR)
+			g_error ("%s: nanosleep () returned -1, errno = %d", __func__, errno);
+	} while (ret == -1 && mono_atomic_load_i32 (&sampling_thread_running));
+#endif
+}
+
+#else
+
+void
+mono_clock_init (void)
+{
+}
+
+void
+mono_clock_init_for_profiler (MonoProfilerSampleMode mode)
+{
+}
+
+void
+mono_clock_cleanup (void)
+{
+}
 
 guint64
 mono_clock_get_time_ns (void)
 {
 	// TODO: need to implement time stamp function for PC
 	return 0;
+}
+
+void
+mono_clock_sleep_ns_abs (guint64 ns_abs)
+{
 }
 
 #endif
