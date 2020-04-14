@@ -271,7 +271,7 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-    
+
     <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
@@ -279,7 +279,7 @@
 
     <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)\lib-runtime-packs</NETCoreAppRuntimePackPath>
     <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)\runtimes\$(PackageRID)\lib\$(NETCoreAppFramework)</NETCoreAppRuntimePackLibPath>
-    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(PackageRID)\native</NETCoreAppRuntimePackNativePath>>
+    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)\runtimes\$(PackageRID)\native</NETCoreAppRuntimePackNativePath>
     <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
@@ -309,7 +309,6 @@
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
-    
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
     <BinPlaceTestRuntimePack Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">true</BinPlaceTestRuntimePack>
