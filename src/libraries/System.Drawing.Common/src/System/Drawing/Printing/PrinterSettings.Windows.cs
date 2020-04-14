@@ -517,8 +517,12 @@ namespace System.Drawing.Printing
         {
             get
             {
-                // If the printer supports color printing, the return value is 1; otherwise, the return value is zero. The pOutput parameter is not used.
-                return DeviceCapabilities(SafeNativeMethods.DC_COLORDEVICE, IntPtr.Zero, 0) == 1;
+                // If the printer supports color printing, the return value is 1; otherwise, the return value is zero.
+                // The pointerToBuffer parameter is not used.
+                return DeviceCapabilities(
+                    capability: SafeNativeMethods.DC_COLORDEVICE,
+                    pointerToBuffer: IntPtr.Zero,
+                    defaultValue: 0) == 1;
             }
         }
 
