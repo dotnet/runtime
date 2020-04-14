@@ -235,6 +235,8 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 
 #endif
 
+volatile gint32 sampling_thread_running;
+
 #ifdef HOST_DARWIN
 
 static clock_serv_t sampling_clock_service;
@@ -257,7 +259,7 @@ mono_clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
 }
 
-static void
+void
 mono_clock_cleanup (void)
 {
 	kern_return_t ret;

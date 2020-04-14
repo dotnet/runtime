@@ -514,8 +514,6 @@ mono_runtime_cleanup_handlers (void)
 
 #ifdef HAVE_PROFILER_SIGNAL
 
-static volatile gint32 sampling_thread_running;
-
 static int profiler_signal;
 static volatile gint32 sampling_thread_exiting;
 static MonoOSEvent sampling_thread_exited;

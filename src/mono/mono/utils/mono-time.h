@@ -30,6 +30,7 @@ gint64 mono_100ns_datetime (void);
 gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #endif
 
+extern volatile gint32 sampling_thread_running;
 void mono_clock_init (void);
 void mono_clock_init_for_profiler (MonoProfilerSampleMode mode);
 void mono_clock_cleanup (void);
