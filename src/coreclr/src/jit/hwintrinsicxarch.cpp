@@ -1195,7 +1195,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1215,7 +1215,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1236,7 +1236,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1256,7 +1256,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1277,7 +1277,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1304,7 +1304,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1331,7 +1331,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1359,7 +1359,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1433,7 +1433,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1453,7 +1453,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1493,7 +1493,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1514,7 +1514,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_Compare, baseType,
                                                    simdSize);
             }
             else
@@ -1535,7 +1535,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GT_OS), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1562,7 +1562,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_GE_OS), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1589,7 +1589,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGT_US), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
@@ -1616,7 +1616,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(_CMP_NGE_US), NI_AVX_CompareScalar,
                                                    baseType, simdSize);
             }
             else
