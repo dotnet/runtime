@@ -432,10 +432,10 @@ namespace System.Drawing.Printing.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
+        [ConditionalFact(typeof(PrinterSettingsTests), nameof(CanTestSetHdevmode_IntPtr_Success))]
         public void SupportsColor_ReturnsExpected()
         {
-            var printerSettings = new PrinterSettings() { PrinterName = "Microsoft Print to PDF" };
+            var printerSettings = new PrinterSettings() { PrinterName = GetNameOfTestPrinterSuitableForDevModeTesting() };
             Assert.True(printerSettings.SupportsColor);
         }
 
