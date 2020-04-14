@@ -73,11 +73,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_runtimePackLibFiles Include="$(NETCoreAppRuntimePackLibPath)\*.*">
+      <_runtimePackLibFiles Include="$(NETCoreAppRuntimePackLibPath)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NETCoreAppFramework)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
-      <_runtimePackNativeFiles Include="$(NETCoreAppRuntimePackNativePath)\*.*">
+      <_runtimePackNativeFiles Include="$(NETCoreAppRuntimePackNativePath)*.*">
         <TargetPath>$(RuntimePackTargetFrameworkPath)/native</TargetPath>
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>
