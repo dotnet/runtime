@@ -85,6 +85,36 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
         }
 
+        [Fact]
+        public static void SkipValue_NestedFormatException_ShouldPreserveOriginalReaderState()
+        {
+            string hexEncoding = "820181bf01ff"; // [1, [ {_ 1 : <missing value> } ]]
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+            reader.ReadInt64();
+
+            // capture current state
+            int currentBytesRead = reader.BytesRead;
+            int currentBytesRemaining = reader.BytesRemaining;
+
+            // make failing call
+            Assert.Throws<FormatException>(() => reader.SkipValue());
+
+            // ensure reader state has reverted to original
+            Assert.Equal(reader.BytesRead, currentBytesRead);
+            Assert.Equal(reader.BytesRemaining, currentBytesRemaining);
+
+            // ensure we can read every value up to the format error
+            Assert.Equal(CborReaderState.StartArray, reader.Peek());
+            reader.ReadStartArray();
+            Assert.Equal(CborReaderState.StartMap, reader.Peek());
+            reader.ReadStartMap();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            reader.ReadUInt64();
+            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+        }
+
         [Theory]
         [InlineData(50_000)]
         public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow(int depth)

@@ -52,6 +52,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int offset, int length)>? _rangeListAllocation = null;
 
+        private Checkpoint? _checkpoint = null;
+
         internal CborReader(ReadOnlyMemory<byte> buffer)
         {
             _buffer = buffer;
@@ -268,6 +270,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("No active CBOR nested data item to pop");
             }
 
+            // Checkpoint should never escape its creation scope
+            Debug.Assert(_checkpoint == null || _checkpoint.Value.Depth <= _nestedDataItemStack.Count);
+
             (CborMajorType actualType, bool isEvenNumberOfDataItemsWritten, ulong? remainingItems) = _nestedDataItemStack.Peek();
 
             if (expectedType != actualType)
@@ -335,6 +340,73 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private void ReturnRangeList(List<(int offset, int length)> ranges)
         {
             _rangeListAllocation = ranges;
+        }
+
+        // Struct containing checkpoint data for rolling back reader state in the event of a failure
+        // NB checkpoints do not contain stack information, so we can only roll back provided that the
+        // reader is within the original context in which the checkpoint was created
+        private readonly struct Checkpoint
+        {
+            public Checkpoint(
+                ReadOnlyMemory<byte> buffer,
+                int bytesRead, int depth, ulong? remainingDataItems,
+                bool isEvenNumberOfDataItemsRead, bool isTagContext)
+            {
+                Buffer = buffer;
+                BytesRead = bytesRead;
+                Depth = depth;
+                RemainingDataItems = remainingDataItems;
+                IsEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsRead;
+                IsTagContext = isTagContext;
+            }
+
+            public ReadOnlyMemory<byte> Buffer { get; }
+            public int BytesRead { get; }
+            public int Depth { get; }
+
+            public ulong? RemainingDataItems { get; }
+            public bool IsEvenNumberOfDataItemsRead { get; }
+            public bool IsTagContext { get; }
+        }
+
+        private void CreateCheckpoint()
+        {
+            Debug.Assert(_checkpoint == null);
+            _checkpoint = new Checkpoint(
+                buffer: _buffer,
+                bytesRead: _bytesRead,
+                depth: _nestedDataItemStack?.Count ?? 0,
+                remainingDataItems: _remainingDataItems,
+                isEvenNumberOfDataItemsRead: _isEvenNumberOfDataItemsRead,
+                isTagContext: _isTagContext);
+        }
+
+        private void ClearCheckpoint()
+        {
+            Debug.Assert(_checkpoint != null);
+            _checkpoint = null;
+        }
+
+        private void RestoreCheckpoint()
+        {
+            Debug.Assert(_checkpoint != null);
+            Checkpoint checkpoint = _checkpoint.Value;
+
+            _buffer = checkpoint.Buffer;
+            _bytesRead = checkpoint.BytesRead;
+            _remainingDataItems = checkpoint.RemainingDataItems;
+            _isEvenNumberOfDataItemsRead = checkpoint.IsEvenNumberOfDataItemsRead;
+            _isTagContext = checkpoint.IsTagContext;
+            _checkpoint = null;
+
+            if (_nestedDataItemStack != null)
+            {
+                // pop any nested data items introduced after the checkpoint
+                for (int i = 0; i < _nestedDataItemStack.Count - checkpoint.Depth; i++)
+                {
+                    _nestedDataItemStack.Pop();
+                }
+            }
         }
     }
 }
