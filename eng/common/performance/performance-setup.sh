@@ -82,7 +82,7 @@ while (($# > 0)); do
       shift 1
       ;;
     --monodotnet)
-      mono=$2
+      mono_dotnet=$2
       shift 2
       ;;
     --compare)
