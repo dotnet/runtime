@@ -16833,15 +16833,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 tree->SetOper(GT_LCL_VAR);
                 tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
                 tree->gtType = fieldType;
-                bool canCSE  = tree->CanCSE();
-                // That doesn't make any sense, was it supposed to clean all flags except GTF_NODE_MASK here? 2012<
-                tree->gtFlags &= GTF_NODE_MASK;
-                // If yes then why a year after (2013) was this cleaning added, that obviously does nothing.
-                tree->gtFlags &= ~GTF_GLOB_REF;
-                if (!canCSE)
-                {
-                    tree->SetDoNotCSE();
-                }
+                tree->gtFlags &= GTF_NODE_MASK; // Note: that clears all flags except `GTF_COLON_COND`.
 
                 if (parent->gtOper == GT_ASG)
                 {
