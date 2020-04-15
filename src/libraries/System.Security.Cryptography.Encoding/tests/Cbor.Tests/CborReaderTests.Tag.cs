@@ -327,6 +327,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("81c401")] // 4(1)
         [InlineData("81c480")] // [4([])]
         [InlineData("81c4826001")] // [4(["", 1])]
+        // decimal using an invalid biginteger encoding,
+        // in this case two nested state rollbacks will take place
+        [InlineData("81c48201c260")] // [4([1, 2("")])]
         public static void ReadDecimal_InvalidTagPayload_ShouldRollbackToInitialState(string hexEncoding)
         {
             var reader = new CborReader(hexEncoding.HexToByteArray());
