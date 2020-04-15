@@ -21,6 +21,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Extensions.Nls.Tests", "tests\NlsTests\System.Globalization.Extensions.Nls.Tests.csproj", "{CB60359A-D0ED-474E-B395-9589F1A5656A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2B96AA10-84C0-4927-8611-8D2474B990E8} = {2B96AA10-84C0-4927-8611-8D2474B990E8}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
