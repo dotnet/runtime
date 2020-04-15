@@ -967,8 +967,82 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
+    if (!pMT->IsInterface() && !pMT->IsValueType())
+    {
+        ValidateMethodImplRemainsInEffect(pMT);
+    }
+
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
+
+    RETURN;
+}
+
+/*static*/
+void ClassLoader::ValidateMethodImplRemainsInEffect(MethodTable* pMT)
+{
+    CONTRACT_VOID
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(!pMT->IsInterface() && !pMT->IsValueType());
+    }
+    CONTRACT_END;
+
+    MethodTable* pParentMT = pMT->GetParentMethodTable();
+    if (pParentMT == NULL)
+        RETURN;
+
+    BYTE* pVal = NULL;
+    ULONG cbVal = 0;
+    HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::ValidateMethodImplRemainsInEffectAttribute, (const void**)&pVal, &cbVal);
+    if (hr != S_OK)
+        RETURN;
+
+    for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
+    {
+        MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+        MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
+
+        DWORD originalIndex = pMD->GetSlot();
+        if (originalIndex == i)
+            continue;
+
+        DWORD originalIndexParent = pParentMD->GetSlot();
+        if (originalIndex == originalIndexParent)
+            continue;
+
+        SigTypeContext context1(pParentMD);
+        TypeHandle hType1 = pParentMD->GetSigPointer().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+        SigTypeContext context2(pMD);
+        TypeHandle hType2 = pMD->GetSigPointer().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+        // Type1 has to be equal to Type2, or a base type of Type2 (covariant returns)
+
+        if (!MetaSig::CompareTypeHandles(hType1, hType2, TRUE /* allowDerivedClass */ ))
+        {
+            SString strAssemblyName;
+            pMD->GetAssembly()->GetDisplayName(strAssemblyName);
+
+            SString strInvalidTypeName;
+            TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
+
+            SString strInvalidMethodName;
+            TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
+
+            SString strParentMethodName;
+            TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
+
+            COMPlusThrow(
+                kTypeLoadException,
+                IDS_CLASSLOAD_MI_BADRETURNTYPE,
+                strInvalidMethodName,
+                strInvalidTypeName,
+                strAssemblyName,
+                strParentMethodName);
+        }
+    }
 
     RETURN;
 }

@@ -5,6 +5,6 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ReOverrideSameReturn.il" />
+    <Compile Include="OverrideSameSigAsDecl.il" />
   </ItemGroup>
 </Project>
