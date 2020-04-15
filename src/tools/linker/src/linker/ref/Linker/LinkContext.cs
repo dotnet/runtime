@@ -13,5 +13,7 @@ namespace Mono.Linker {
 
 		public TypeDefinition GetType (string fullName) { throw null; }
 		public AssemblyDefinition GetLoadedAssembly (string name) { throw null; }
+
+		public void LogMessage (MessageContainer message) { throw null; }
 	}
 }
