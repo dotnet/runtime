@@ -1,4 +1,3 @@
-#!/usr/bin/env pwsh
 # Runs the stress test using docker-compose
 
 [CmdletBinding(PositionalBinding=$false)]

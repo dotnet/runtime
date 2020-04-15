@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Builds libraries and produces a dotnet sdk docker image
-# that contains the current bits in its shared framework folder.
+# Runs the stress test using docker-compose
 
 # Stop script if unbound variable found (use ${var:-} if intentional)
 set -u
