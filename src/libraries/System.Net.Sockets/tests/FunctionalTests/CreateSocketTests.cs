@@ -498,10 +498,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(ProtocolType.Unspecified, s.ProtocolType);
             }
 
-            // close one side
             close(ptr[0]);
-            Socket s2 = new Socket(new SafeSocketHandle((IntPtr)ptr[1], ownsHandle: false));
-            Assert.False(s2.Connected);
             close(ptr[1]);
         }
 
