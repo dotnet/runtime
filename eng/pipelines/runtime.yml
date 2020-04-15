@@ -608,7 +608,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Mono Test builds using live libraries debug build
+# Mono Test builds with CoreCLR runtime tests using live libraries debug build
 # Only when Mono is changed
 # TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -631,7 +631,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Mono Test executions using live libraries
+# Mono CoreCLR runtime Test executions using live libraries
 # Only when Mono is changed
 # TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
