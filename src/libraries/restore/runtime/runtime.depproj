@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
-    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
+    <PackageReference Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
+    <PackageReference Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <!-- System.Data.SqlClient is not live-built anymore -->
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <PackageReference Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
     <!-- Exclude live-built dependencies -->
     <FileToExclude Include="Microsoft.Win32.Registry" />
     <FileToExclude Include="System.Security.AccessControl" />
