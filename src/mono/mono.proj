@@ -681,8 +681,8 @@
 
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
-      <_MonoCFLAGS Include="-Wl,--build-id" />
-      <_MonoCXXFLAGS Include="-Wl,--build-id" />
+      <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' Or '$(TargetArchitecture)' == 'arm64')">
