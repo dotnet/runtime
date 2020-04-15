@@ -1130,10 +1130,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         assert(tree->TypeGet() == TYP_BYREF);
         if (tree->OperGet() == GT_ADDR)
         {
-            GenTree* addr = tree;
-            tree          = tree->gtGetOp1();
-            tree->ClearDoNotCSE();
-            DEBUG_DESTROY_NODE(addr);
+            tree = tree->gtGetOp1();
         }
         else
         {

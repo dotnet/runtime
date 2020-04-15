@@ -3863,13 +3863,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // to the call to the first slot of the ByReference struct.
             op1                                    = impPopStack().val;
             GenTree*             thisptr           = newobjThis;
-            GenTreeLclVar*       lclVar            = thisptr->gtGetOp1()->AsLclVar();
             CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
             GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0);
             GenTree*             assign            = gtNewAssignNode(field, op1);
-            GenTreeLclVar*       byReferenceStruct = gtCloneExpr(lclVar)->AsLclVar();
-            assert(!byReferenceStruct->CanCSE());
-            byReferenceStruct->ClearDoNotCSE();
+            GenTree*             byReferenceStruct = gtCloneExpr(thisptr->gtGetOp1());
+            assert(byReferenceStruct != nullptr);
             impPushOnStack(byReferenceStruct, typeInfo(TI_STRUCT, clsHnd));
             retNode = assign;
             break;
@@ -9123,12 +9121,7 @@ REDO_RETURN_NODE:
         if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {
             // Change '*(&X)' to 'X' and see if we can do better
-            bool canCSE = op->CanCSE();
-            op          = op1->AsOp()->gtOp1;
-            if (canCSE)
-            {
-                op->ClearDoNotCSE();
-            }
+            op = op1->AsOp()->gtOp1;
             goto REDO_RETURN_NODE;
         }
         op->ChangeOperUnchecked(GT_IND);
