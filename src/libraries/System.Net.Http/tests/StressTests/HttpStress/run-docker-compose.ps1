@@ -4,7 +4,6 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
     [string][Alias('c')]$configuration = "Release", # Build configuration for libraries and stress suite
-    [switch][Alias('w')]$useWindowsContainers, # Use windows containers, if available
     [switch][Alias('b')]$buildCurrentLibraries, # Drives the stress test using libraries built from current source
     [switch][Alias('pa')]$privateAspNetCore, # Drive the stress test using a private Asp.Net Core package, requires -b to be set
     [switch][Alias('o')]$buildOnly, # Build, but do not run the stress app
@@ -26,10 +25,7 @@ if ($buildCurrentLibraries)
     }
 
     $LIBRARIES_BUILD_ARGS = " -t $sdkImageName -c $configuration"
-    if($useWindowsContainers)
-    {
-        $LIBRARIES_BUILD_ARGS += " -w"
-    }
+
     if($privateAspNetCore)
     {
         $LIBRARIES_BUILD_ARGS += " -p"
@@ -52,10 +48,8 @@ if (![string]::IsNullOrEmpty($sdkImageName))
 {
     $BUILD_ARGS += " --build-arg SDK_BASE_IMAGE=$sdkImageName"
 }
-if ($useWindowsContainers)
-{
-    $env:DOCKERFILE="windows.Dockerfile"
-}
+
+$env:DOCKERFILE="windows.Dockerfile"
 
 docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
 

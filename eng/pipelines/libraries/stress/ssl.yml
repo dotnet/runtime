@@ -37,11 +37,11 @@ jobs:
     fetchDepth: 5
 
   - bash: |
-      $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
     displayName: Build CLR and Libraries
 
   - bash: |
-      $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+      $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
     displayName: Build SslStress
 
   - bash: |
