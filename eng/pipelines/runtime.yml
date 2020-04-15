@@ -229,7 +229,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
     runtimeFlavor: mono
-    buildConfig: debug 
+    buildConfig: debug
     platforms:
     - iOS_x64
     - iOS_arm
