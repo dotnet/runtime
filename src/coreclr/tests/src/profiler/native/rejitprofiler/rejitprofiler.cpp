@@ -204,7 +204,11 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
         {
             FunctionID inlinerFuncId = GetFunctionIDFromToken(method.moduleId, method.methodId);
 
-            AddInlining(inlinerFuncId, functionId);
+            // GetFunctionIDFromToken doesn't handle generics, will return NULL
+            if (inlinerFuncId != mdTokenNil)
+            {
+                AddInlining(inlinerFuncId, functionId);
+            }
         }
     }
 
@@ -340,7 +344,7 @@ FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef to
                                                            &functionId)))
     {
         printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
-        return hr;
+        return mdTokenNil;
     }
 
     return functionId;
