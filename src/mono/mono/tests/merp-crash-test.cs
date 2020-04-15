@@ -65,6 +65,7 @@ class C
 			Crashers.Add(new Crasher ("MerpCrashSignalKill", MerpCrashSignalBus));
 			Crashers.Add(new Crasher ("MerpCrashSignalSegv", MerpCrashSignalSegv));
 			Crashers.Add(new Crasher ("MerpCrashSignalIll", MerpCrashSignalIll));
+			Crashers.Add(new Crasher ("MerpCrashRuntimeAssert", MerpCrashRuntimeAssert, ValidateAssertionMsg));
 		}
 
 		public static void 
@@ -86,6 +87,24 @@ class C
 			string s = jsonGetKeys (json, "payload", "failfast_message") as string;
 			if (s != failfastMsg)
 				throw new ValidationException (String.Format ("incorrect fail fast message (expected: {0}, got: {1})", failfastMsg, s));
+		}
+
+		const string assertionMsg = "0 == 1"; // matches libtest.c
+
+		public static void ValidateAssertionMsg (object json)
+		{
+			string s = jsonGetKeys (json, "payload", "assertion_message") as string;
+			if (!s.Contains (assertionMsg))
+				throw new ValidationException (String.Format ("incorrect assertion message (expected: {0}, got: {1})", assertionMsg, s));
+		}
+
+		[DllImport("libtest")]
+		public static extern void mono_test_MerpCrashRuntimeAssert ();
+
+		public static void
+		MerpCrashRuntimeAssert ()
+		{
+			mono_test_MerpCrashRuntimeAssert ();
 		}
 
 		[DllImport("libtest")]

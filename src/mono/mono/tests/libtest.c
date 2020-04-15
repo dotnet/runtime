@@ -8074,6 +8074,12 @@ mono_test_MerpCrashSignalIll (void)
 #endif
 }
 
+LIBTEST_API void STDCALL
+mono_test_MerpCrashRuntimeAssert (void)
+{
+	g_assert (0 == 1);
+}
+
 #ifdef __cplusplus
 } // extern C
 #endif
