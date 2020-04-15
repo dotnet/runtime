@@ -246,7 +246,7 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
-// lookupFloatingComparisonForSwappedArgs: Get the floating-point comparison
+// lookupFloatComparisonModeForSwappedArgs: Get the floating-point comparison
 //      mode to use when the operands are swapped.
 //
 // Arguments:
@@ -255,74 +255,80 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 // Return Value:
 //     The comparison mode to use for (op2, op1)
 //
-int HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(int comparison)
+FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison)
 {
     switch (comparison)
     {
-        case _CMP_EQ_OQ:
-            return _CMP_EQ_OQ;
-        case _CMP_LT_OS:
-            return _CMP_GT_OS;
-        case _CMP_LE_OS:
-            return _CMP_GE_OS;
-        case _CMP_UNORD_Q:
-            return _CMP_UNORD_Q;
-        case _CMP_NEQ_UQ:
-            return _CMP_NEQ_UQ;
-        case _CMP_NLT_US:
-            return _CMP_NGT_US;
-        case _CMP_NLE_US:
-            return _CMP_NLE_US;
-        case _CMP_ORD_Q:
-            return _CMP_ORD_Q;
-        case _CMP_EQ_UQ:
-            return _CMP_EQ_UQ;
-        case _CMP_NGE_US:
-            return _CMP_NLE_US;
-        case _CMP_NGT_US:
-            return _CMP_NLT_US;
-        case _CMP_FALSE_OQ:
-            return _CMP_FALSE_OQ;
-        case _CMP_NEQ_OQ:
-            return _CMP_NEQ_OQ;
-        case _CMP_GE_OS:
-            return _CMP_LE_OS;
-        case _CMP_GT_OS:
-            return _CMP_LT_OS;
-        case _CMP_TRUE_UQ:
-            return _CMP_TRUE_UQ;
-        case _CMP_EQ_OS:
-            return _CMP_EQ_OS;
-        case _CMP_LT_OQ:
-            return _CMP_GT_OQ;
-        case _CMP_LE_OQ:
-            return _CMP_GE_OQ;
-        case _CMP_UNORD_S:
-            return _CMP_UNORD_S;
-        case _CMP_NEQ_US:
-            return _CMP_NEQ_US;
-        case _CMP_NLT_UQ:
-            return _CMP_NGT_UQ;
-        case _CMP_NLE_UQ:
-            return _CMP_NGE_UQ;
-        case _CMP_ORD_S:
-            return _CMP_ORD_S;
-        case _CMP_EQ_US:
-            return _CMP_EQ_US;
-        case _CMP_NGE_UQ:
-            return _CMP_NLE_UQ;
-        case _CMP_NGT_UQ:
-            return _CMP_NLT_UQ;
-        case _CMP_FALSE_OS:
-            return _CMP_FALSE_OS;
-        case _CMP_NEQ_OS:
-            return _CMP_NEQ_OS;
-        case _CMP_GE_OQ:
-            return _CMP_LE_OQ;
-        case _CMP_GT_OQ:
-            return _CMP_LT_OQ;
-        case _CMP_TRUE_US:
-            return _CMP_TRUE_US;
+        // These comparison modes are the same even if the operands are swapped
+
+        case FloatComparisonMode::OrderedEqualNonSignaling:
+            return FloatComparisonMode::OrderedEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNonSignaling:
+            return FloatComparisonMode::UnorderedNonSignaling;
+        case FloatComparisonMode::UnorderedNotEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotEqualNonSignaling;
+        case FloatComparisonMode::OrderedNonSignaling:
+            return FloatComparisonMode::OrderedNonSignaling;
+        case FloatComparisonMode::UnorderedEqualNonSignaling:
+            return FloatComparisonMode::UnorderedEqualNonSignaling;
+        case FloatComparisonMode::OrderedFalseNonSignaling:
+            return FloatComparisonMode::OrderedFalseNonSignaling;
+        case FloatComparisonMode::OrderedNotEqualNonSignaling:
+            return FloatComparisonMode::OrderedNotEqualNonSignaling;
+        case FloatComparisonMode::UnorderedTrueNonSignaling:
+            return FloatComparisonMode::UnorderedTrueNonSignaling;
+        case FloatComparisonMode::OrderedEqualSignaling:
+            return FloatComparisonMode::OrderedEqualSignaling;
+        case FloatComparisonMode::UnorderedSignaling:
+            return FloatComparisonMode::UnorderedSignaling;
+        case FloatComparisonMode::UnorderedNotEqualSignaling:
+            return FloatComparisonMode::UnorderedNotEqualSignaling;
+        case FloatComparisonMode::OrderedSignaling:
+            return FloatComparisonMode::OrderedSignaling;
+        case FloatComparisonMode::UnorderedEqualSignaling:
+            return FloatComparisonMode::UnorderedEqualSignaling;
+        case FloatComparisonMode::OrderedFalseSignaling:
+            return FloatComparisonMode::OrderedFalseSignaling;
+        case FloatComparisonMode::OrderedNotEqualSignaling:
+            return FloatComparisonMode::OrderedNotEqualSignaling;
+        case FloatComparisonMode::UnorderedTrueSignaling:
+            return FloatComparisonMode::UnorderedTrueSignaling;
+
+        // These comparison modes need a different mode if the operands are swapped
+
+        case FloatComparisonMode::OrderedLessThanSignaling:
+            return FloatComparisonMode::OrderedGreaterThanSignaling;
+        case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
+            return FloatComparisonMode::OrderedGreaterThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanSignaling;
+        case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
+            return FloatComparisonMode::OrderedLessThanOrEqualSignaling;
+        case FloatComparisonMode::OrderedGreaterThanSignaling:
+            return FloatComparisonMode::OrderedLessThanSignaling;
+        case FloatComparisonMode::OrderedLessThanNonSignaling:
+            return FloatComparisonMode::OrderedGreaterThanNonSignaling;
+        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
+            return FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanNonSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanNonSignaling;
+        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
+            return FloatComparisonMode::OrderedLessThanOrEqualNonSignaling;
+        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
+            return FloatComparisonMode::OrderedLessThanNonSignaling;
+
         default:
             unreached();
     }
@@ -1284,9 +1290,9 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
+                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
             else
@@ -1312,9 +1318,9 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
+                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
@@ -1406,9 +1412,9 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison), NI_AVX_Compare,
+                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)), NI_AVX_Compare,
                                                    baseType, simdSize);
             }
             else
@@ -1453,9 +1459,9 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                int comparison = HWIntrinsicInfo::lookupIval(intrinsic);
-                comparison     = HWIntrinsicInfo::lookupFloatingComparisonForSwappedArgs(comparison);
-                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(comparison),
+                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
