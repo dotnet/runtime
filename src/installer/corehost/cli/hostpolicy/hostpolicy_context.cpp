@@ -8,6 +8,7 @@
 #include <error_codes.h>
 #include <trace.h>
 #include "bundle/runner.h"
+#include "bundle/file_entry.h"
 
 namespace
 {
@@ -15,6 +16,39 @@ namespace
     {
         trace::error(_X("Duplicate runtime property found: %s"), property_key);
         trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+    }
+
+    // bundle_probe:
+    // Probe the app-bundle for the file 'path' and return its location ('offset', 'size') if found.
+    //
+    // This function is an API exported to the runtime via the BUNDLE_PROBE property.
+    // This function used by the runtime to probe for bundled assemblies
+    // This function assumes that the currently executing app is a single-file bundle.
+    //
+    // bundle_probe recieves its path argument as wchar_t* instead of pal::char_t*, because:
+    // * The host uses Unicode strings on Windows and UTF8 strings on Unix
+    // * The runtime uses Unicode strings on all platforms
+    // Using a unicode encoded path presents a uniform interface to the runtime
+    // and minimizes the number if Unicode <-> UTF8 conversions necessary.
+
+    bool STDMETHODCALLTYPE bundle_probe(const wchar_t* path, int64_t* offset, int64_t* size)
+    {
+        if (path == nullptr)
+        {
+            return false;
+        }
+
+        pal::string_t file_path;
+
+        if (!pal::unicode_palstring(path, &file_path))
+        {
+            trace::warning(_X("Failure probing contents of the application bundle."));
+            trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+
+            return false;
+        }
+
+        return bundle::runner_t::app()->probe(file_path, offset, size);
     }
 }
 
@@ -202,7 +236,11 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     // Single-File Bundle Probe
     if (bundle::info_t::is_single_file_bundle())
     {
-         coreclr_properties.add(common_property::BundleProbe, bundle::runner_t::get_bundle_probe().c_str());
+        // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
+
+        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
     }
 
     return StatusCode::Success;
