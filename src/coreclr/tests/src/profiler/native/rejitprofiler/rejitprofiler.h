@@ -49,6 +49,7 @@ private:
 
     HRESULT FunctionSeen(FunctionID func);
 
+    FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
     ModuleID GetModuleIDForFunction(FunctionID functionId);
     bool EndsWith(const String &lhs, const String &rhs);

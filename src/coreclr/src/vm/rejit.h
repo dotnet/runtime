@@ -89,6 +89,7 @@ private:
     COUNT_T m_currentPos;
 
     const COUNT_T s_bufferSize = 10;
+    const COUNT_T s_failurePos = -2;
 };
 #endif // DACCESS_COMPILE
 

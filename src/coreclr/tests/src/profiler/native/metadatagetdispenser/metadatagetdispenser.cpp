@@ -48,8 +48,7 @@ HRESULT MetaDataGetDispenser::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     printf("Initialize started\n");
 
-    DWORD eventMaskLow = COR_PRF_MONITOR_MODULE_LOADS |
-                         COR_PRF_DISABLE_ALL_NGEN_IMAGES;
+    DWORD eventMaskLow = COR_PRF_MONITOR_MODULE_LOADS;
     DWORD eventMaskHigh = 0x0;
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMaskLow, eventMaskHigh)))
     {

@@ -470,11 +470,11 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
 
     if (FAILED(hr))
     {
-        m_currentPos = -1;
+        m_currentPos = s_failurePos;
     }
     else
     {
-        m_currentPos = 0;
+        m_currentPos = -1;
     }
 
     return hr;
@@ -482,18 +482,19 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
 
 BOOL NativeImageInliningIterator::Next()
 {
-    if (m_currentPos < 0)
+    if (m_currentPos == s_failurePos)
     {
         return FALSE;
     }
 
     m_currentPos++;
+    _ASSERTE(m_currentPos >= 0);
     return m_currentPos < m_dynamicAvailable;
 }
 
 MethodDesc *NativeImageInliningIterator::GetMethodDesc()
 {
-    if (m_currentPos == (COUNT_T)-1 || m_currentPos >= m_dynamicAvailable)
+    if (m_currentPos == s_failurePos || m_currentPos >= m_dynamicAvailable)
     {
         return NULL;
     }

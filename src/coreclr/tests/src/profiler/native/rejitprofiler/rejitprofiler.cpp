@@ -176,8 +176,6 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
 {
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
-        printf("ReJITProfiler::JITCachedFunctionSearchFinished COR_PRF_CACHED_FUNCTION_FOUND\n");
-
         HRESULT hr;
         if(FAILED(hr = FunctionSeen(functionId)))
         {
@@ -204,14 +202,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
         COR_PRF_METHOD method;
         while (pEnum->Next(1, &method, NULL) == S_OK)
         {
-            FunctionID inlinerFuncId;
-            if (FAILED(hr = pCorProfilerInfo->GetFunctionFromToken(method.moduleId,
-                                                                              method.methodId,
-                                                                              &inlinerFuncId)))
-            {
-                printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
-                return hr;
-            }
+            FunctionID inlinerFuncId = GetFunctionIDFromToken(method.moduleId, method.methodId);
 
             AddInlining(inlinerFuncId, functionId);
         }
@@ -229,7 +220,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationStarted(FunctionID func
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl* pFunctionControl)
 {
-    INFO(L"Starting to build IL for methodDef=" << std::hex << methodId);
+    INFO(L"Starting to build IL for method " << GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId)));
     COMPtrHolder<IUnknown> pUnk;
     HRESULT hr = _profInfo10->GetModuleMetaData(moduleId, ofWrite, IID_IMetaDataEmit2, &pUnk);
     if (FAILED(hr))
@@ -338,6 +329,21 @@ void ReJITProfiler::AddInlining(FunctionID inliner, FunctionID inlinee)
     String calleeName = GetFunctionIDName(inlinee);
     String moduleName = GetModuleIDName(GetModuleIDForFunction(inlinee));
     INFO(L"Inlining occurred! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
+}
+
+FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef token)
+{
+    HRESULT hr = S_OK;
+    FunctionID functionId;
+    if (FAILED(hr = pCorProfilerInfo->GetFunctionFromToken(module,
+                                                           token,
+                                                           &functionId)))
+    {
+        printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
+        return hr;
+    }
+
+    return functionId;
 }
 
 mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)
