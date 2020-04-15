@@ -513,7 +513,7 @@ jobs:
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
 - template: /eng/pipelines/installer/installer-matrix.yml
   parameters:
