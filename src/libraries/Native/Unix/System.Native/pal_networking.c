@@ -1910,7 +1910,7 @@ int32_t SystemNative_GetSockOpt(
     int fd = ToFileDescriptor(socket);
 
     //
-    // Handle some special cases for compatibility with Windows
+    // Handle some special cases for compatibility with Windows and OSX
     //
     if (socketOptionLevel == SocketOptionLevel_SOL_SOCKET)
     {
@@ -1947,6 +1947,25 @@ int32_t SystemNative_GetSockOpt(
 #endif
             return Error_SUCCESS;
         }
+#if defined(__APPLE__) && HAVE_SYS_PROCINFO_H
+        // OSX does not have SO_ACCEPTCONN getsockopt.
+        else if (socketOptionName == SocketOptionName_SO_ACCEPTCONN)
+        {
+            if (*optionLen != sizeof(int32_t))
+            {
+                return Error_EINVAL;
+            }
+
+            struct socket_fdinfo fdi;
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+            int value = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+            *(int32_t*)optionValue = value;
+            return Error_SUCCESS;
+        }
+#endif
     }
 
     int optLevel, optName;
