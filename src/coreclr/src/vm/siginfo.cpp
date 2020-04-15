@@ -4728,8 +4728,6 @@ MetaSig::CompareMethodSigs(
     DWORD           ArgCount2;
     DWORD           i;
 
-    const Substitution* pOrigSubst2 = pSubst2;
-
     // If scopes are the same, and sigs are same, can return.
     // If the sigs aren't the same, but same scope, can't return yet, in
     // case there are two AssemblyRefs pointing to the same assembly or such.
