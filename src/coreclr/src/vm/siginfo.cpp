@@ -3566,8 +3566,7 @@ ErrExit:
 //---------------------------------------------------------------------------------------
 //
 // Compare two type handles for equality, or that hType2 is a derived class of hType1.
-// The derived type check is used by the covariant returns feature, which only supports
-// classes today (interface types are not supported right now)
+// The derived type check is used by the covariant returns feature.
 //
 // static
 BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass)
@@ -3587,7 +3586,7 @@ BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allo
     if (!allowDerivedClass)
         return FALSE;
 
-    if (hType1.IsNull() || hType2.IsValueType() || hType2.IsInterface())
+    if (hType1.IsNull() || hType2.IsValueType())
     {
         return FALSE;
     }
@@ -3658,18 +3657,13 @@ BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
         return FALSE;
     }
 
-    // Interfaces not supported with covariant return types
-    if (IsTdInterface(attr))
-    {
-        return FALSE;
-    }
-
     if (ppTypeDefModule != NULL)
         *ppTypeDefModule = pFoundModule;
     if (pTypeDefToken != NULL)
         *pTypeDefToken = typeDefToken;
     if (pParentTypeDefOrRefOrSpecToken != NULL)
         *pParentTypeDefOrRefOrSpecToken = parentTypeDefOrRefOrSpecToken;
+
     return TRUE;
 }
 
@@ -4729,6 +4723,8 @@ MetaSig::CompareMethodSigs(
     DWORD           ArgCount2;
     DWORD           i;
 
+    const Substitution* pOrigSubst2 = pSubst2;
+
     // If scopes are the same, and sigs are same, can return.
     // If the sigs aren't the same, but same scope, can't return yet, in
     // case there are two AssemblyRefs pointing to the same assembly or such.
@@ -4804,6 +4800,38 @@ MetaSig::CompareMethodSigs(
             // This would be a breaking change to make this throw... see comment above
             _ASSERT(*pSig2 != ELEMENT_TYPE_SENTINEL);
 
+            pSubst2 = pOrigSubst2;
+
+            //
+            // If we are comparing the return type signatures and allow for covariant returns,
+            // we need to check if the return type on the second signature is a generic type,
+            // and if so, chain its generic instantiation arguments to the substitution chain.
+            // This is necessary in case we need to compute the base type signature of the second
+            // type's signature, and compare that to the first type's signature, to allow for
+            // derived types.
+            //
+            SigPointer instArgSignature;
+            Substitution instArgsSubstitution;
+            if (i == 0 && allowCovariantReturn)
+            {
+                SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
+
+                CorElementType returnElementType;
+                IfFailThrow(parser.GetElemType(&returnElementType));
+
+                if (returnElementType == ELEMENT_TYPE_GENERICINST)
+                {
+                    IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
+                    IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
+                    instArgSignature = SigPointer(parser.GetPtr());
+                    instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
+
+                    // Temporarily chain the generic instantiation to the substitution chain of the
+                    // second type's signature
+                    pSubst2 = &instArgsSubstitution;
+                }
+            }
+
             // We are in bounds on both sides.  Compare the element.
             if (!CompareElementType(
                     pSig1,
@@ -4831,6 +4859,38 @@ MetaSig::CompareMethodSigs(
     // do return type as well
     for (i = 0; i <= ArgCount1; i++)
     {
+        pSubst2 = pOrigSubst2;
+
+        //
+        // If we are comparing the return type signatures and allow for covariant returns,
+        // we need to check if the return type on the second signature is a generic type,
+        // and if so, chain its generic instantiation arguments to the substitution chain.
+        // This is necessary in case we need to compute the base type signature of the second
+        // type's signature, and compare that to the first type's signature, to allow for
+        // derived types.
+        //
+        SigPointer instArgSignature;
+        Substitution instArgsSubstitution;
+        if (i == 0 && allowCovariantReturn)
+        {
+            SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
+
+            CorElementType returnElementType;
+            IfFailThrow(parser.GetElemType(&returnElementType));
+
+            if (returnElementType == ELEMENT_TYPE_GENERICINST)
+            {
+                IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
+                IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
+                instArgSignature = SigPointer(parser.GetPtr());
+                instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
+
+                // Temporarily chain the generic instantiation to the substitution chain of the
+                // second type's signature
+                pSubst2 = &instArgsSubstitution;
+            }
+        }
+
         if (!CompareElementType(
                 pSig1,
                 pSig2,
