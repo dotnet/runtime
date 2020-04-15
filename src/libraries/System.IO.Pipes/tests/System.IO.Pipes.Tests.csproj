@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />

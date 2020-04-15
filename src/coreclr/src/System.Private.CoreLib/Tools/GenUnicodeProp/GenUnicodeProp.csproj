@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\Common\tests\CoreFx.Private.TestUtilities.Unicode\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\tests\TestUtilities.Unicode\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,17 +18,7 @@ namespace System.Net.Http.Headers
 
         private ObjectCollection<NameValueHeaderValue>? _parameters;
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         public NameValueWithParametersHeaderValue(string name)
             : base(name)

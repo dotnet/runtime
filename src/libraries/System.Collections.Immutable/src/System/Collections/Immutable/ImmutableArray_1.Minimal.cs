@@ -232,7 +232,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, 0, destination, 0, self.Length);
+            Array.Copy(self.array!, destination, self.Length);
         }
 
         /// <summary>

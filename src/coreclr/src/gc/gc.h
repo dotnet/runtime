@@ -97,7 +97,8 @@ enum gc_etw_segment_type
 enum gc_etw_alloc_kind
 {
     gc_etw_alloc_soh = 0,
-    gc_etw_alloc_loh = 1
+    gc_etw_alloc_loh = 1,
+    gc_etw_alloc_poh = 2
 };
 
 /* forward declerations */

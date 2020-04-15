@@ -158,5 +158,101 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndMap();
             }
         }
+
+        public static string[] SampleCborValues =>
+            new[]
+            {
+                // numeric values
+                "01",
+                "37",
+                "3818",
+                "1818",
+                "190100",
+                "390100",
+                "1a000f4240",
+                "3affffffff",
+                // byte strings
+                "40",
+                "4401020304",
+                "5f41ab40ff",
+                // text strings
+                "60",
+                "6161",
+                "6449455446",
+                "7f62616260ff",
+                // Arrays
+                "80",
+                "840120604107",
+                "8301820203820405",
+                "9f182aff",
+                // Maps
+                "a0",
+                "a201020304",
+                "a1a1617802182a",
+                "bf01020304ff",
+                // tagged values
+                "c202",
+                "d82076687474703a2f2f7777772e6578616d706c652e636f6d",
+                // special values
+                "f4",
+                "f6",
+                "fa47c35000",
+            };
+
+        public static string[] InvalidCborValues =>
+            new[]
+            {
+                "",
+                // numeric types with missing bytes
+                "18",
+                "19ff",
+                "1affffff",
+                "1bffffffffffffff",
+                "38",
+                "39ff",
+                "3affffff",
+                "3bffffffffffffff",
+                // definite-length strings with missing bytes
+                "41",
+                "4201",
+                "61",
+                "6261",
+                // invalid utf8 strings
+                "61ff",
+                "62f090",
+                // indefinite-length strings with missing break byte
+                "5f41ab40",
+                "7f62616260",
+                // definite-length arrays with missing elements
+                "81",
+                "8201",
+                // definite-length maps with missing fields
+                "a1",
+                "a20102",
+                // maps with odd number of elements
+                "a101",
+                "a2010203",
+                "bf01ff",
+                // indefinite-length collections with missing break byte
+                "9f",
+                "9f01",
+                "bf",
+                "bf0102",
+                // tags missing data
+                "d8",
+                "d9ff",
+                "daffffff",
+                "daffffffffff",
+                // valid tag not followed by value
+                "c2",
+                // floats missing data
+                "f9ff",
+                "faffffff",
+                "fbffffffffffffff",
+                // special value missing data
+                "f8",
+                // invalid special value
+                "f81f",
+            };
     }
 }

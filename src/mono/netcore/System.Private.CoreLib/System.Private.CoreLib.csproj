@@ -18,7 +18,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(BinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64;wasm32</Platforms>
+    <Platforms>x64;x86;arm;arm64;wasm</Platforms>
 
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
@@ -82,7 +82,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'wasm32'">
+  <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>

@@ -458,11 +458,11 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(aa2);
         }
 
-        [Fact(Skip = "SignedXmlTest.DigestValue_CRLF")]
+        [Fact]
         public void AddObject_Null()
         {
             SignedXml sx = new SignedXml();
-            Assert.Throws<ArgumentNullException>(() => sx.AddObject(null));
+            sx.AddObject(null);
         }
 
         [Fact]
@@ -558,7 +558,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void DataReferenceToNonDataObject()
         {
             XmlDocument doc = new XmlDocument();
@@ -631,7 +632,8 @@ namespace System.Security.Cryptography.Xml.Tests
             return sw.ToString();
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void GetIdElement_Null()
         {
             SignedXml sign = new SignedXml();
@@ -1452,7 +1454,8 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_ZeroLength()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -1480,7 +1483,8 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "4");
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_SmallerThanMinimumLength()
         {
             // 72 is a multiple of 8 but smaller than the minimum of 80 bits
@@ -1489,7 +1493,8 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "72");
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_MinimumLength()
         {
             // 80 bits is the minimum (and the half-size of HMACSHA1)
@@ -1498,7 +1503,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_SmallerHalfLength()
         {
             // 80bits is smaller than the half-size of HMACSHA256
@@ -1507,7 +1513,8 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA256(Encoding.ASCII.GetBytes("secret")), "80");
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_HalfLength()
         {
             // 128 is the half-size of HMACSHA256
@@ -1524,7 +1531,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_HMACOutputLength_Signature_Mismatch()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -1548,7 +1556,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void VerifyHMAC_HMACOutputLength_Invalid()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>

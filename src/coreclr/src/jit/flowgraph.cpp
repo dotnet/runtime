@@ -3810,16 +3810,6 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
     addrTrap = info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-    // I never want to split blocks if we've got two indirections here.
-    // This is a size trade-off assuming the VM has ENABLE_FAST_GCPOLL_HELPER.
-    // So don't do it when that is off
-    if (pAddrOfCaptureThreadGlobal != NULL)
-    {
-        pollType = GCPOLL_CALL;
-    }
-#endif // ENABLE_FAST_GCPOLL_HELPER
-
     // If the trap and address of thread global are null, make the call.
     if (addrTrap == nullptr && pAddrOfCaptureThreadGlobal == nullptr)
     {
@@ -3958,12 +3948,6 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         //  4) Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
         //  false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
         //  now a jump target
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-        // Prefer the fast gc poll helepr over the double indirection
-        noway_assert(pAddrOfCaptureThreadGlobal == nullptr);
-#endif
 
         GenTree* value; // The value of g_TrapReturningThreads
         if (pAddrOfCaptureThreadGlobal != nullptr)

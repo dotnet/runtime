@@ -1882,7 +1882,7 @@ namespace Internal.JitInterface
                             MethodDesc md = HandleToObject(pResolvedToken.hMethod);
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
-                            if (td.IsValueType)
+                            if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
                                 md = _unboxingThunkFactory.GetUnboxingMethod(md);
                             }

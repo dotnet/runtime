@@ -25,7 +25,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteTextString(ReadOnlySpan<char> value)
         {
-            int length = s_utf8Encoding.GetByteCount(value);
+            int length;
+            try
+            {
+                length = s_utf8Encoding.GetByteCount(value);
+            }
+            catch (EncoderFallbackException e)
+            {
+                throw new ArgumentException("Provided text string is not valid UTF8.", e);
+            }
+
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
             s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));

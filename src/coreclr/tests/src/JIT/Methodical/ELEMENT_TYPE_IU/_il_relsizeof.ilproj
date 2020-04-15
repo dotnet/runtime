@@ -13,4 +13,10 @@
     <Compile Condition="'$(TargetArchitecture)' ==   'arm'" Include="sizeof-i386.il" />
     <Compile Condition="'$(TargetArchitecture)' ==   'armel'" Include="sizeof-i386.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
+  </ItemGroup>
 </Project>

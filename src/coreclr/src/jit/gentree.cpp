@@ -18423,7 +18423,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     assert(gtOper == GT_HWINTRINSIC);
     assert(comp != nullptr);
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     if (!comp->canUseVexEncoding())
     {
         return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
@@ -18454,9 +18454,11 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             return false;
         }
     }
+#elif defined(TARGET_ARM64)
+    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
 #else
     return false;
-#endif // TARGET_XARCH
+#endif
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

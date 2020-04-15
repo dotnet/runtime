@@ -20,4 +20,10 @@
   <ItemGroup Condition=" '$(PointerSize)' == '32' ">
     <Compile Include="DevDiv_278523_32.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
+  </ItemGroup>
 </Project>

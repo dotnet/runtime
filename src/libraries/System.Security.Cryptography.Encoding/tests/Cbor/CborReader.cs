@@ -174,6 +174,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
+        public ReadOnlyMemory<byte> ReadEncodedValue()
+        {
+            // keep a snapshot of the initial buffer state
+            ReadOnlyMemory<byte> initialBuffer = _buffer;
+            int initialBytesRead = _bytesRead;
+
+            // call skip to read and validate the next value
+            SkipValue();
+
+            // return the slice corresponding to the consumed value
+            return initialBuffer.Slice(0, _bytesRead - initialBytesRead);
+        }
+
         private CborInitialByte PeekInitialByte()
         {
             if (_remainingDataItems == 0)

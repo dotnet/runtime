@@ -20,7 +20,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/virtual.h"
 #include "pal/cgroup.h"
 #include <algorithm>
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/param.h>
 #include <sys/mount.h>
 #else

@@ -73,14 +73,24 @@ namespace System
         {
             get
             {
-                EnsureInitialized();
+                return Volatile.Read(ref s_stdInReader) ?? EnsureInitialized();
 
-                return Console.EnsureInitialized(
-                        ref s_stdInReader,
-                        () => SyncTextReader.GetSynchronizedTextReader(
-                            new StdInReader(
-                                encoding: Console.InputEncoding,
-                                bufferSize: InteractiveBufferSize)));
+                static SyncTextReader EnsureInitialized()
+                {
+                    EnsureConsoleInitialized();
+
+                    SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
+                                                new StdInReader(
+                                                    encoding: Console.InputEncoding,
+                                                    bufferSize: InteractiveBufferSize));
+
+                    // Don't overwrite a set reader.
+                    // The reader doesn't own resources, so we don't need to dispose
+                    // when it was already set.
+                    Interlocked.CompareExchange(ref s_stdInReader, reader, null);
+
+                    return s_stdInReader;
+                }
             }
         }
 
@@ -97,8 +107,7 @@ namespace System
                         encoding: Console.InputEncoding,
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: Console.ReadBufferSize,
-                        leaveOpen: true)
-                        );
+                        leaveOpen: true));
             }
             else
             {
@@ -143,14 +152,14 @@ namespace System
                 if (Console.IsInputRedirected)
                     return false;
 
-                EnsureInitialized();
+                EnsureConsoleInitialized();
                 return !Interop.Sys.GetSignalForBreak();
             }
             set
             {
                 if (!Console.IsInputRedirected)
                 {
-                    EnsureInitialized();
+                    EnsureConsoleInitialized();
                     if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
@@ -917,7 +926,7 @@ namespace System
         internal static byte s_veofCharacter;
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitialized()
+        internal static void EnsureConsoleInitialized()
         {
             if (!s_initialized)
             {
@@ -928,6 +937,13 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
+            // Initialization is only needed when input isn't redirected.
+            if (Console.IsInputRedirected)
+            {
+                s_initialized = true;
+                return;
+            }
+
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
@@ -1460,7 +1476,7 @@ namespace System
 
             internal void Register()
             {
-                EnsureInitialized();
+                EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
                 Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
