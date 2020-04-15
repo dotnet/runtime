@@ -106,7 +106,7 @@ jobs:
           displayName: 'live-built libraries'
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:  
-      # We need to explictly download CoreCLR for Mono
+      # We need to explictly download CoreCLR for Mono because the CoreCLR tests depend on it
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(coreClrProductRootFolderPath)
