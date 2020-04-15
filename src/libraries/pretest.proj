@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
@@ -94,4 +93,6 @@
       TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)" />
   </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 </Project>
