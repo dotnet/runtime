@@ -206,7 +206,7 @@ namespace System.Drawing.Tests
             using (var bitmap = new Bitmap(1, 1))
             {
                 var badTarget = System.IO.Path.Combine("NoSuchDirectory", "NoSuchFile");
-                AssertExtensions.Throws<DirectoryNotFoundException>(() => bitmap.Save(badTarget), @"The directory NoSuchDirectory of the filename NoSuchDirectory\NoSuchFile does not exist.");
+                AssertExtensions.Throws<DirectoryNotFoundException>(() => bitmap.Save(badTarget), $"The directory NoSuchDirectory of the filename {badTarget} does not exist.");
             }
         }
     }
