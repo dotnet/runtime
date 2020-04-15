@@ -100,7 +100,7 @@
     <!-- Corresponding libMono and system.native libraries are added to native -->
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
-      <ItemName>NativeBinPlaceItems</ItemName>
+      <ItemName>NativeBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
 
     <!-- binplace targeting packs which may be different from Build TargetFramework -->

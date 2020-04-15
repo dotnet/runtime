@@ -74,13 +74,13 @@
           Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
-      <NativeBinPlaceItems Include="@(RuntimeFiles)" />
-      <NativeBinPlaceItems Include="@(MonoCrossFiles)">
+      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
+      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
         <DestinationSubDirectory>cross/</DestinationSubDirectory>
-      </NativeBinPlaceItems>
-      <NativeBinPlaceItems Include="@(MonoIncludeFiles)">
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
-      </NativeBinPlaceItems>
+      </NativeBinPlaceItem>
     </ItemGroup>
   </Target>
 

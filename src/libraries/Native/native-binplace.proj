@@ -11,18 +11,18 @@
   <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.dll" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.pdb" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.lib" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.a" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.bc" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.so" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.dbg" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.dylib" />
-      <NativeBinPlaceItems Include="$(NativeBinDir)*.dwarf" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dll" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.a" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.so" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dwarf" />
 
-      <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItems)" />
-      <FileWrites Include="@(NativeBinPlaceItems)" />
+      <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
+      <FileWrites Include="@(NativeBinPlaceItem)" />
     </ItemGroup>
   </Target>
 
