@@ -67,6 +67,7 @@ while (($# > 0)); do
       ;;
     --kind)
       kind=$2
+      configurations="CompliationMode=$compilation_mode RunKind=$kind"
       shift 2
       ;;
     --runcategories)
