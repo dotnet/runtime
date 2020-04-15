@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
         public static void ReadDecimal_SingleValue_HappyPath(string expectedStringValue, string hexEncoding)
         {
-            decimal expectedValue = Decimal.Parse(expectedStringValue);
+            decimal expectedValue = decimal.Parse(expectedStringValue);
             byte[] data = hexEncoding.HexToByteArray();
 
             var reader = new CborReader(data);

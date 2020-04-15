@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 
@@ -46,112 +47,160 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
 
-            switch (PeekTag())
+            CreateCheckpoint();
+            DateTimeOffset result;
+
+            try
             {
-                case CborTag.DateTimeString:
-                    ReadTag();
+                switch (ReadTag())
+                {
+                    case CborTag.DateTimeString:
+                        if (Peek() != CborReaderState.TextString)
+                        {
+                            throw new FormatException("String DateTime semantic tag should annotate string value.");
+                        }
 
-                    if (Peek() != CborReaderState.TextString)
-                    {
-                        throw new FormatException("String DateTime semantic tag should annotate string value.");
-                    }
+                        string dateString = ReadTextString();
 
-                    string dateString = ReadTextString();
+                        if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out result))
+                        {
+                            throw new FormatException("DateTime string is not valid RFC3339.");
+                        }
 
-                    if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
-                    {
-                        throw new FormatException("DateTime string is not valid RFC3339.");
-                    }
+                        ClearCheckpoint();
+                        return result;
 
-                    return result;
+                    case CborTag.DateTimeUnixSeconds:
+                        switch (Peek())
+                        {
+                            case CborReaderState.UnsignedInteger:
+                            case CborReaderState.NegativeInteger:
+                                result = DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
+                                ClearCheckpoint();
+                                return result;
 
-                case CborTag.DateTimeUnixSeconds:
-                    ReadTag();
+                            case CborReaderState.HalfPrecisionFloat:
+                            case CborReaderState.SinglePrecisionFloat:
+                            case CborReaderState.DoublePrecisionFloat:
+                                // we don't (but probably should) have a float overload for DateTimeOffset.FromUnixTimeSeconds
+                                double seconds = ReadDouble();
+                                long epochTicks = DateTimeOffset.UnixEpoch.Ticks;
+                                long ticks = checked(epochTicks + (long)(seconds * TimeSpan.TicksPerSecond));
+                                result = new DateTimeOffset(ticks, TimeSpan.Zero);
+                                ClearCheckpoint();
+                                return result;
 
-                    switch (Peek())
-                    {
-                        case CborReaderState.UnsignedInteger:
-                        case CborReaderState.NegativeInteger:
-                            return DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
+                            default:
+                                throw new FormatException("Epoch DateTime semantic tag should annotate numeric value.");
+                        }
 
-                        case CborReaderState.HalfPrecisionFloat:
-                        case CborReaderState.SinglePrecisionFloat:
-                        case CborReaderState.DoublePrecisionFloat:
-                            // we don't (but probably should) have a float overload for DateTimeOffset.FromUnixTimeSeconds
-                            double seconds = ReadDouble();
-                            long epochTicks = DateTimeOffset.UnixEpoch.Ticks;
-                            long ticks = checked(epochTicks + (long)(seconds * TimeSpan.TicksPerSecond));
-                            return new DateTimeOffset(ticks, TimeSpan.Zero);
-
-                        default:
-                            throw new FormatException("Epoch DateTime semantic tag should annotate numeric value.");
-                    }
-
-                default:
-                    throw new InvalidOperationException("CBOR tag is not a recognized DateTime value.");
+                    default:
+                        throw new InvalidOperationException("CBOR tag is not a recognized DateTime value.");
+                }
+            }
+            catch
+            {
+                RestoreCheckpoint();
+                throw;
             }
         }
 
         public BigInteger ReadBigInteger()
         {
-            bool isUnsigned = PeekTag() switch
-            {
-                CborTag.UnsignedBigNum => true,
-                CborTag.NegativeBigNum => false,
-                _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
-            };
+            CreateCheckpoint();
 
-            ReadTag();
-
-            if (Peek() != CborReaderState.ByteString)
+            try
             {
-                throw new FormatException("BigNum semantic tag should annotate byte string value.");
+                bool isUnsigned = ReadTag() switch
+                {
+                    CborTag.UnsignedBigNum => true,
+                    CborTag.NegativeBigNum => false,
+                    _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
+                };
+
+                if (Peek() != CborReaderState.ByteString)
+                {
+                    throw new FormatException("BigNum semantic tag should annotate byte string value.");
+                }
+
+                byte[] unsignedBigEndianEncoding = ReadByteString();
+                BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
+                ClearCheckpoint();
+                return isUnsigned ? unsignedValue : -1 - unsignedValue;
             }
-
-            byte[] unsignedBigEndianEncoding = ReadByteString();
-            BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
-            return isUnsigned ? unsignedValue : -1 - unsignedValue;
+            catch
+            {
+                RestoreCheckpoint();
+                throw;
+            }
         }
 
         public decimal ReadDecimal()
         {
-            ReadTag(expectedTag: CborTag.DecimalFraction);
+            CreateCheckpoint();
 
-            if (Peek() != CborReaderState.StartArray || ReadStartArray() != 2)
+            try
             {
-                throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
-            }
+                ReadTag(expectedTag: CborTag.DecimalFraction);
 
-            long scale = -ReadInt64();
-            decimal mantissa;
-
-            if (scale < 0 || scale > 28)
-            {
-                // TODO support positive exponents
-                throw new OverflowException();
-            }
-
-            switch (Peek())
-            {
-                case CborReaderState.UnsignedInteger:
-                    mantissa = ReadUInt64();
-                    break;
-
-                case CborReaderState.NegativeInteger:
-                    mantissa = -1m - ReadCborNegativeIntegerEncoding();
-                    break;
-
-                case CborReaderState.Tag:
-                    mantissa = (decimal)ReadBigInteger();
-                    break;
-
-                default:
+                if (Peek() != CborReaderState.StartArray || ReadStartArray() != 2)
+                {
                     throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                }
+
+                decimal mantissa; // signed integral component of the decimal value
+                long exponent;    // base-10 exponent
+
+                switch (Peek())
+                {
+                    case CborReaderState.UnsignedInteger:
+                    case CborReaderState.NegativeInteger:
+                        exponent = ReadInt64();
+                        break;
+
+                    default:
+                        throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                }
+
+                switch (Peek())
+                {
+                    case CborReaderState.UnsignedInteger:
+                        mantissa = ReadUInt64();
+                        break;
+
+                    case CborReaderState.NegativeInteger:
+                        mantissa = -1m - ReadCborNegativeIntegerEncoding();
+                        break;
+
+                    case CborReaderState.Tag:
+                        switch(PeekTag())
+                        {
+                            case CborTag.UnsignedBigNum:
+                            case CborTag.NegativeBigNum:
+                                mantissa = (decimal)ReadBigInteger();
+                                break;
+
+                            default:
+                                throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                        }
+
+                        break;
+
+                    default:
+                        throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
+                }
+
+                ReadEndArray();
+
+                decimal result = DecimalHelpers.Reconstruct(mantissa, exponent);
+                ClearCheckpoint();
+                return result;
             }
-
-            ReadEndArray();
-
-            return DecimalHelpers.Reconstruct(mantissa, (byte)scale);
+            catch
+            {
+                RestoreCheckpoint();
+                throw;
+            }
         }
     }
 }

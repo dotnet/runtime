@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Numerics;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
@@ -81,16 +82,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private const int ScaleMask = 0x00ff0000;
         private const int ScaleShift = 16;
 
-        public static decimal Reconstruct(decimal mantissa, byte scale)
-        {
-            Span<int> buf = stackalloc int[4];
-            decimal.GetBits(mantissa, buf);
-
-            int flags = buf[3];
-            bool isNegative = (flags & SignMask) == SignMask;
-            return new decimal(lo: buf[0], mid: buf[1], hi: buf[2], isNegative: isNegative, scale: scale);
-        }
-
+        /// deconstructs a decimal value into its signed integral component and negative base-10 exponent
         public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
         {
             Span<int> buf = stackalloc int[4];
@@ -100,6 +92,52 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             bool isNegative = (flags & SignMask) == SignMask;
             mantissa = new decimal(lo: buf[0], mid: buf[1], hi: buf[2], isNegative: isNegative, scale: 0);
             scale = (byte)((flags & ScaleMask) >> ScaleShift);
+        }
+
+        /// reconstructs a decimal value out of a signed integral component and a negative base-10 exponent
+        public static decimal Reconstruct(decimal mantissa, byte scale)
+        {
+            Span<int> buf = stackalloc int[4];
+            decimal.GetBits(mantissa, buf);
+
+            int flags = buf[3];
+            bool isNegative = (flags & SignMask) == SignMask;
+            Debug.Assert((flags & ScaleMask) == 0, "mantissa argument should be integral.");
+            return new decimal(lo: buf[0], mid: buf[1], hi: buf[2], isNegative: isNegative, scale: scale);
+        }
+
+        public static decimal Reconstruct(decimal mantissa, long exponent)
+        {
+            if (exponent >= 0)
+            {
+                // for positive exponents attempt to compute its decimal value,
+                // with risk of throwing OverflowException
+                for (; exponent >= 5; exponent -= 5)
+                {
+                    mantissa *= 100_000m;
+                }
+
+                switch (exponent)
+                {
+                    case 0: return mantissa;
+                    case 1: return mantissa * 10m;
+                    case 2: return mantissa * 100m;
+                    case 3: return mantissa * 1000m;
+                    case 4: return mantissa * 10000m;
+                    default:
+                        Debug.Fail("Unreachable code in decimal exponentiation logic");
+                        throw new Exception("Unreachable code in decimal exponentiation logic");
+                }
+            }
+            else if (exponent >= -28)
+            {
+                // exponent falls within range of decimal normal-form representation
+                return Reconstruct(mantissa, (byte)(-exponent));
+            }
+            else
+            {
+                throw new OverflowException("Value was either too large or too small for a Decimal.");
+            }
         }
     }
 }

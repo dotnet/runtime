@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
         public static void WriteDecimal_SingleValue_HappyPath(string stringValue, string expectedHexEncoding)
         {
-            decimal value = Decimal.Parse(stringValue);
+            decimal value = decimal.Parse(stringValue);
             using var writer = new CborWriter();
             writer.WriteDecimal(value);
             byte[] encoding = writer.ToArray();
