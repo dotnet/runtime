@@ -8,6 +8,7 @@
     <FrameworkPackType>crossgen2</FrameworkPackType>
     <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
     <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <SkipOnMono>true</SkipOnMono>
   </PropertyGroup>
 
   <!--
