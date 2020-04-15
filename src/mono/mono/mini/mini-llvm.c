@@ -7993,6 +7993,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_I:
 		case OP_XOP_X_X: {
+			gboolean to_i1_t = FALSE;
 			IntrinsicId id = (IntrinsicId)0;
 			switch (ins->inst_c0) {
 			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
@@ -8000,9 +8001,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
 			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
 			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
+			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; to_i1_t = TRUE; break;
+			case SIMD_OP_AES_IMC: id = INTRINS_AESNI_AESIMC; break;
 			default: g_assert_not_reached (); break;
 			}
-			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			LLVMValueRef arg0 = lhs;
+			if (to_i1_t)
+				arg0 = convert (ctx, arg0, sse_i1_t);
+			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
 			break;
 		}
 		case OP_XOP_I4_X:
@@ -8020,6 +8026,32 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_I4_X_X: {
+			gboolean to_i8_t = FALSE;
+			gboolean ret_bool = FALSE;
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_TESTC:  id = INTRINS_SSE_TESTC;  to_i8_t = TRUE; ret_bool = TRUE; break;
+			case SIMD_OP_SSE_TESTZ:  id = INTRINS_SSE_TESTZ;  to_i8_t = TRUE; ret_bool = TRUE; break;
+			case SIMD_OP_SSE_TESTNZ: id = INTRINS_SSE_TESTNZ; to_i8_t = TRUE; ret_bool = TRUE; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef args [] = { lhs, rhs };
+			if (to_i8_t) {
+				args [0] = convert (ctx, args [0], sse_i8_t);
+				args [1] = convert (ctx, args [1], sse_i8_t);
+			}
+			
+			LLVMValueRef call = call_intrins (ctx, id, args, "");
+			if (ret_bool) {
+				// if return type is bool (it's still i32) we need to normalize it to 1/0
+				LLVMValueRef cmp_zero = LLVMBuildICmp (builder, LLVMIntNE, call, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+				values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
+			} else {
+				values [ins->dreg] = call;
+			}
 			break;
 		}
 		case OP_XOP_X_X_X:
@@ -8076,6 +8108,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_PSIGND: id = INTRINS_SSE_PSIGND; break;
 			case SIMD_OP_SSE_PMADDUBSW: id = INTRINS_SSE_PMADDUBSW; break;
 			case SIMD_OP_SSE_PMULHRSW: id = INTRINS_SSE_PMULHRSW; break;
+			case SIMD_OP_SSE_PACKUSDW: id = INTRINS_SSE_PACKUSDW; break;
+			case SIMD_OP_AES_DEC: id = INTRINS_AESNI_AESDEC; break;
+			case SIMD_OP_AES_DECLAST: id = INTRINS_AESNI_AESDECLAST; break;
+			case SIMD_OP_AES_ENC: id = INTRINS_AESNI_AESENC; break;
+			case SIMD_OP_AES_ENCLAST: id = INTRINS_AESNI_AESENCLAST; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
@@ -8405,25 +8442,38 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildInsertElement (builder, vector, val, insert_pos, "");
 			break;
 		}
-
-		case OP_SSE41_ROUNDSS: {
+		case OP_SSE41_ROUNDP: {
+			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE) };
+			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDPS : INTRINS_SSE_ROUNDPD, args, dname);
+			break;
+		}
+		case OP_SSE41_ROUNDS: {
 			LLVMValueRef args [3];
-
 			args [0] = lhs;
-			args [1] = lhs;
+			args [1] = ins->sreg2 != -1 ? values [ins->sreg2] : lhs;
 			args [2] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
-
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_ROUNDSS, args, dname);
+			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDSS : INTRINS_SSE_ROUNDSD, args, dname);
 			break;
 		}
 
-		case OP_SSE41_ROUNDPD: {
+		case OP_SSE41_DPPS_IMM: {
+			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPS, args, dname);
+			break;
+		}
+
+		case OP_SSE41_DPPD_IMM: {
+			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_DPPD, args, dname);
+			break;
+		}
+
+		case OP_SSE41_MPSADBW_IMM: {
 			LLVMValueRef args [3];
-
-			args [0] = lhs;
-			args [1] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
-
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_ROUNDPD, args, dname);
+			args [0] = LLVMBuildBitCast (ctx->builder, lhs, sse_i1_t, "");
+			args [1] = LLVMBuildBitCast (ctx->builder, rhs, sse_i1_t, "");
+			args [2] = LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE);
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_MPSADBW, args, dname);
 			break;
 		}
 
@@ -8445,14 +8495,103 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE41_PTESTZ: {
-			LLVMValueRef args [2];
-			args [0] = convert (ctx, lhs, sse_i8_t);
-			args [1] = convert (ctx, rhs, sse_i8_t);
-			LLVMValueRef call = call_intrins (ctx, INTRINS_SSE_PTESTZ, args, dname);
-			LLVMValueRef cmp_zero = LLVMBuildICmp (builder, LLVMIntNE, call, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
-			values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
+		case OP_SSE41_BLEND_IMM: {
+			int nelem = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			g_assert(nelem >= 2 && nelem <= 8); // I2, U2, R4, R8
+			
+			int mask_values [8];
+			for (int i = 0; i < nelem; i++) {
+				// n-bit in inst_c0 (control byte) is set to 1
+				gboolean bit_set = ((ins->inst_c0 & ( 1 << i )) >> i);
+				mask_values [i] = i + (bit_set ? 1 : 0) * nelem;
+			}
+			
+			LLVMValueRef mask = create_const_vector_i32 (mask_values, nelem);
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "");
 			break;
+		}
+
+		case OP_SSE41_BLENDV: {
+			LLVMValueRef args [] = { lhs, rhs, values [ins->sreg3] };
+			if (ins->inst_c1 == MONO_TYPE_R4) {
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_BLENDVPS, args, dname);
+			} else if (ins->inst_c1 == MONO_TYPE_R8) {
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_BLENDVPD, args, dname);
+			} else {
+				// for other non-fp type just convert to <16 x i8> and pass to @llvm.x86.sse41.pblendvb
+				args [0] = LLVMBuildBitCast (ctx->builder, args [0], sse_i1_t, "");
+				args [1] = LLVMBuildBitCast (ctx->builder, args [1], sse_i1_t, "");
+				args [2] = LLVMBuildBitCast (ctx->builder, args [2], sse_i1_t, "");
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PBLENDVB, args, dname);
+			}
+			break;
+		}
+
+		case OP_SSE_CVTII: {
+			gboolean is_signed = (ins->inst_c1 == MONO_TYPE_I1) || 
+				(ins->inst_c1 == MONO_TYPE_I2) || (ins->inst_c1 == MONO_TYPE_I4);
+
+			LLVMTypeRef vec_type;
+			if ((ins->inst_c1 == MONO_TYPE_I1) || (ins->inst_c1 == MONO_TYPE_U1))
+				vec_type = sse_i1_t;
+			else if ((ins->inst_c1 == MONO_TYPE_I2) || (ins->inst_c1 == MONO_TYPE_U2))
+				vec_type = sse_i2_t;
+			else
+				vec_type = sse_i4_t;
+
+			LLVMValueRef value;
+			if (LLVMGetTypeKind (LLVMTypeOf (lhs)) != LLVMVectorTypeKind) {
+				LLVMValueRef bitcasted = LLVMBuildBitCast (ctx->builder, lhs, LLVMPointerType (vec_type, 0), "");
+				value = mono_llvm_build_aligned_load (builder, bitcasted, "", FALSE, 1);
+			} else {
+				value = LLVMBuildBitCast (ctx->builder, lhs, vec_type, "");
+			}
+
+			const int mask_values [] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+			LLVMValueRef mask_vec;
+			LLVMTypeRef dst_type;
+			if (ins->inst_c0 == MONO_TYPE_I2) {
+				mask_vec = create_const_vector_i32 (mask_values, 8);
+				dst_type = sse_i2_t;
+			} else if (ins->inst_c0 == MONO_TYPE_I4) {
+				mask_vec = create_const_vector_i32 (mask_values, 4);
+				dst_type = sse_i4_t;
+			} else {
+				g_assert (ins->inst_c0 == MONO_TYPE_I8);
+				mask_vec = create_const_vector_i32 (mask_values, 2);
+				dst_type = sse_i8_t;
+			}
+
+			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, value,
+				LLVMGetUndef (vec_type), mask_vec, "");
+
+			if (is_signed)
+				values [ins->dreg] = LLVMBuildSExt (ctx->builder, shuffled, dst_type, "");
+			else
+				values [ins->dreg] = LLVMBuildZExt (ctx->builder, shuffled, dst_type, "");
+			break;
+		}
+
+		case OP_SSE41_LOADANT: {
+			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
+			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_sse_type (ins->inst_c1), 0), "");
+			LLVMValueRef load = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, 16);
+			set_nontemporal_flag (load);
+			values [ins->dreg] = load;
+			break;
+		}
+
+		case OP_SSE41_MUL: {
+			// NOTE: LLVM 7 and later use shifts here
+			// however, pmuldq is still available so I guess it's fine to keep using it
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULDQ, args, dname);
+			break;	
+		}
+
+		case OP_SSE41_MULLO: {
+			values [ins->dreg] = LLVMBuildMul (ctx->builder, lhs, rhs, "");
+			break;	
 		}
 
 		case OP_SSE42_CRC32:
@@ -8469,6 +8608,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_PCLMULQDQ_IMM: {
+			LLVMValueRef args [] = { lhs, rhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_PCLMULQDQ, args, "");
+			break;
+		}
+
+		case OP_AES_KEYGEN_IMM: {
+			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE) };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_AESNI_AESKEYGENASSIST, args, "");
 			break;
 		}
 #endif
@@ -8636,42 +8787,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XEXTRACT_I32:
 		case OP_XEXTRACT_I64:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_R4: {
-			LLVMBasicBlockRef bbs [64];
-			LLVMValueRef switch_ins;
-			LLVMValueRef phi_values [64];
-			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			int i;
-
-			g_assert (nelems <= 64);
-			for (i = 0; i < nelems; ++i)
-				bbs [i] = gen_bb (ctx, "XEXTRACT_CASE_BB");
-			cbb = gen_bb (ctx, "XEXTRACT_COND_BB");
-
-			switch_ins = LLVMBuildSwitch (builder, LLVMBuildAnd (builder, rhs, const_int32 (0xf), ""), bbs [0], 0);
-			for (i = 0; i < nelems; ++i) {
-				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
-				LLVMPositionBuilderAtEnd (builder, bbs [i]);
-				phi_values [i] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), i, FALSE), "");
-				LLVMBuildBr (builder, cbb);
-			}
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
-			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, nelems);
-
-			MonoTypeEnum type = (MonoTypeEnum)ins->inst_c0;
-			switch (type) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_U2:
-				values [ins->dreg] = LLVMBuildZExt (ctx->builder, values [ins->dreg], LLVMInt32Type (), "");
-				break;
-			default:
-				break;
-			}
-			ctx->bblocks [bb->block_num].end_bblock = cbb;
+		case OP_XEXTRACT_R4:
+			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, rhs, "");
 			break;
-		}
 		case OP_POPCNT32:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I32, &lhs, "");
 			break;

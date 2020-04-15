@@ -219,7 +219,7 @@ Helper
 Main
 ```
 
-until you get a Leave hook for Helper(). At this point, you need to pop Helper() from your shadow stack, but he's not at the top-- he's buried under all your "deferred pop" frames. So your profiler would need to perform the deferred pops if a frame above OR below them gets popped. Hopefully, the yuckiness of this implementation will scare you straight.  But the confusion of presenting crazy stacks to the user is the real reason to abandon Method 2 and go with Method 1.
+until you get a Leave hook for Helper(). At this point, you need to pop Helper() from your shadow stack, but he's not at the top-- he's buried under all your "deferred pop" frames. So your profiler would need to perform the deferred pops if a frame above OR below them gets popped. Hopefully, the yuckiness of this implementation will scare you straight.  But the confusion of presenting invalid stacks to the user is the real reason to abandon Method 2 and go with Method 1.
 
 ### Call tracing
 

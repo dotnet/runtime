@@ -393,33 +393,23 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x64
-    - Android_x86
     - Android_arm
-    - Android_arm64
-    - tvOS_x64
     - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
-    - iOS_arm64
     - iOS_x64
-    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Debug
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-    - Android_x64
     - Android_x86
-    - Android_arm
     - Android_arm64
     - tvOS_x64
-    - tvOS_arm64
-    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
-    - iOS_x64
     - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
@@ -513,15 +503,24 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-      - tvOS_x64
-      - tvOS_arm64
-      - iOS_x64
-      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
-      - iOS_arm64
-      - Android_x64
-      - Android_x86
-      - Android_arm
-      - Android_arm64
+    - Android_x64
+    - Android_arm
+    - tvOS_arm64
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Android_x86
+    - Android_arm64
+    - tvOS_x64
+    - iOS_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}

@@ -32,7 +32,7 @@
       <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>System\StringTests.cs</Link>
+      <Link>Common\System\StringTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
@@ -280,6 +280,6 @@
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

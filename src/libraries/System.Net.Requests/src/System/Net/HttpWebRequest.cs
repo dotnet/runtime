@@ -1445,7 +1445,7 @@ namespace System.Net
                 {
                     return DateTime.MinValue; // MinValue means header is not present
                 }
-                if (HttpDateParser.TryStringToDate(headerValue, out DateTimeOffset dateTimeOffset))
+                if (HttpDateParser.TryParse(headerValue, out DateTimeOffset dateTimeOffset))
                 {
                     return dateTimeOffset.LocalDateTime;
                 }
