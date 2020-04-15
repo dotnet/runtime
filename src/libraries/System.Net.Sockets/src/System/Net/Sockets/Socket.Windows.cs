@@ -85,7 +85,7 @@ namespace System.Net.Sockets
         }
 
         private unsafe void LoadSocketTypeFromHandle(
-            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking)
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
         {
             Interop.Winsock.WSAPROTOCOL_INFOW info = default;
             int optionLength = sizeof(Interop.Winsock.WSAPROTOCOL_INFOW);
@@ -99,6 +99,15 @@ namespace System.Net.Sockets
             addressFamily = info.iAddressFamily;
             socketType = info.iSocketType;
             protocolType = info.iProtocol;
+
+            if (SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success)
+            {
+                isListening = isListeningValue != 0;
+            }
+            else
+            {
+                isListening false;
+            }
 
             // There's no API to retrieve this (WSAIsBlocking isn't supported any more).  Assume it's blocking, but we might be wrong.
             // This affects the result of querying Socket.Blocking, which will mostly only affect user code that happens to query

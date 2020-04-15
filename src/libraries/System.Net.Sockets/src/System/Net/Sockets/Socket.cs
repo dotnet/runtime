@@ -140,12 +140,7 @@ namespace System.Net.Sockets
             try
             {
                 // Get properties like address family and blocking mode from the OS.
-                LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal);
-
-                // Determine whether the socket is in listening mode.
-                _isListening =
-                    SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListening) == SocketError.Success &&
-                    isListening != 0;
+                LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening);
 
                 // Try to get the address of the socket.
                 Span<byte> buffer = stackalloc byte[512]; // arbitrary high limit that should suffice for almost all scenarios
@@ -172,16 +167,6 @@ namespace System.Net.Sockets
                 }
 
                 buffer = buffer.Slice(0, bufferLength);
-                if (_addressFamily == AddressFamily.Unknown)
-                {
-                    _addressFamily = SocketAddressPal.GetAddressFamily(buffer);
-                }
-#if DEBUG
-                else
-                {
-                    Debug.Assert(_addressFamily == SocketAddressPal.GetAddressFamily(buffer));
-                }
-#endif
 
                 // Try to get the local end point.  That will in turn enable the remote
                 // end point to be retrieved on-demand when the property is accessed.
@@ -367,7 +352,7 @@ namespace System.Net.Sockets
                         _nonBlockingConnectInProgress = false;
                     }
 
-                    if (_rightEndPoint == null)
+                    if (_rightEndPoint == null || !_isConnected)
                     {
                         return null;
                     }

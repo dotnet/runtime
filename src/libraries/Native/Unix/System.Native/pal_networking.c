@@ -23,6 +23,10 @@
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
+#ifdef HAVE_SYS_PROCINFO_H
+#include <sys/proc_info.h>
+#include <libproc.h>
+#endif
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -2422,9 +2426,45 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType)
+#ifdef HAVE_SYS_PROCINFO_H
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
-    if (addressFamily == NULL || socketType == NULL || protocolType == NULL)
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    struct socket_fdinfo fdi;
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    {
+        return Error_EFAULT;
+    }
+
+    if (!TryConvertAddressFamilyPlatformToPal((sa_family_t)fdi.psi.soi_family, addressFamily))
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+    if (!TryConvertSocketTypePlatformToPal(fdi.psi.soi_type, socketType))
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+    if (!TryConvertProtocolTypePlatformToPal(*addressFamily, fdi.psi.soi_protocol, protocolType))
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
+    *isListening = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+
+    return Error_SUCCESS;
+}
+#else
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
+{
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
     {
         return Error_EFAULT;
     }
@@ -2461,8 +2501,20 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
         *protocolType = ProtocolType_PT_UNKNOWN;
     }
 
+    int listeningValue;
+    socklen_t protocolLength = sizeof(int);
+    if (getsocktopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &protocolLength) == 0)
+    {
+        *isListening = (listeningValue != 0);
+    }
+    else
+    {
+        *isListening = 0;
+    }
+
     return Error_SUCCESS;
 }
+#endif
 
 int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
 {

@@ -310,6 +310,7 @@ namespace System.Net.Sockets.Tests
                             break;
                     }
                 }
+                Assert.Null(copy.RemoteEndPoint);
             }
             else
             {
@@ -323,7 +324,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(addressFamily, copy.AddressFamily);
             Assert.Equal(socketType, copy.SocketType);
-            Assert.True(copy.ProtocolType == orig.ProtocolType || copy.ProtocolType == ProtocolType.Unknown, $"Expected: {protocolType} or Unknown, Actual: {copy.ProtocolType}");
+            Assert.Equal(protocolType, copy.ProtocolType);
 
             Assert.True(orig.Blocking);
             Assert.True(copy.Blocking);
@@ -367,7 +368,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(client.Connected);
             Assert.Equal(orig.AddressFamily, client.AddressFamily);
             Assert.Equal(orig.SocketType, client.SocketType);
-            Assert.True(client.ProtocolType == orig.ProtocolType || client.ProtocolType == ProtocolType.Unknown, $"Expected: {protocolType} or Unknown, Actual: {client.ProtocolType}");
+            Assert.Equal(orig.ProtocolType, client.ProtocolType);
 
             // Validate accessing end points
             Assert.Equal(orig.LocalEndPoint, client.LocalEndPoint);
@@ -409,7 +410,6 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(42, buffer[0]);
         }
 
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)] // OSX/FreeBSD doesn't support SO_ACCEPTCONN, so we can't query for whether a socket is listening
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -418,16 +418,17 @@ namespace System.Net.Sockets.Tests
             using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listener.Listen();
-            Assert.Equal(1, listener.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
 
             using var listenerCopy = new Socket(shareSafeHandle ? listener.SafeHandle : new SafeSocketHandle(listener.Handle, ownsHandle: false));
-            Assert.Equal(1, listenerCopy.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.AcceptConnection));
+            Assert.False(listenerCopy.Connected);
+            // This will throw if _isListening is set internally. (before reaching any real code)
+            Assert.Throws<InvalidOperationException>(() => listenerCopy.Connect(new IPEndPoint(IPAddress.Loopback,0)));
 
             Assert.Equal(listener.AddressFamily, listenerCopy.AddressFamily);
             Assert.Equal(listener.Handle, listenerCopy.Handle);
             Assert.Equal(listener.IsBound, listenerCopy.IsBound);
-            Assert.Equal(listener.LocalEndPoint, listener.LocalEndPoint);
-            Assert.True(listenerCopy.ProtocolType == listener.ProtocolType || listenerCopy.ProtocolType == ProtocolType.Unknown, $"Expected: {listener.ProtocolType} or Unknown, Actual: {listenerCopy.ProtocolType}");
+            Assert.Equal(listener.LocalEndPoint, listenerCopy.LocalEndPoint);
+            Assert.Equal(listener.ProtocolType, listenerCopy.ProtocolType);
             Assert.Equal(listener.SocketType, listenerCopy.SocketType);
 
             foreach (Socket listenerSocket in new[] { listener, listenerCopy })
