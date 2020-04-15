@@ -4742,6 +4742,33 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
+    //
+    // If we are comparing the return type signatures and allow for covariant returns,
+    // we need to check if the return type on the second signature is a generic type,
+    // and if so, chain its generic instantiation arguments to the substitution chain.
+    // This is necessary in case we need to compute the base type signature of the second
+    // type's signature, and compare that to the first type's signature, to allow for
+    // derived types.
+    //
+    SigPointer instArgSignature;
+    Substitution instArgsSubstitution;
+    if (allowCovariantReturn)
+    {
+        MetaSig metaSig2(pSig2, (DWORD)(pEndSig2 - pSig2), pModule2, NULL);
+        SigParser parser(metaSig2.GetReturnProps());
+
+        CorElementType returnElementType;
+        IfFailThrow(parser.GetElemType(&returnElementType));
+
+        if (returnElementType == ELEMENT_TYPE_GENERICINST)
+        {
+            IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
+            IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
+            instArgSignature = SigPointer(parser.GetPtr());
+            instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
+        }
+    }
+
     __int8 callConv = *pSig1;
 
     pSig1++;
@@ -4800,38 +4827,6 @@ MetaSig::CompareMethodSigs(
             // This would be a breaking change to make this throw... see comment above
             _ASSERT(*pSig2 != ELEMENT_TYPE_SENTINEL);
 
-            pSubst2 = pOrigSubst2;
-
-            //
-            // If we are comparing the return type signatures and allow for covariant returns,
-            // we need to check if the return type on the second signature is a generic type,
-            // and if so, chain its generic instantiation arguments to the substitution chain.
-            // This is necessary in case we need to compute the base type signature of the second
-            // type's signature, and compare that to the first type's signature, to allow for
-            // derived types.
-            //
-            SigPointer instArgSignature;
-            Substitution instArgsSubstitution;
-            if (i == 0 && allowCovariantReturn)
-            {
-                SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
-
-                CorElementType returnElementType;
-                IfFailThrow(parser.GetElemType(&returnElementType));
-
-                if (returnElementType == ELEMENT_TYPE_GENERICINST)
-                {
-                    IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
-                    IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
-                    instArgSignature = SigPointer(parser.GetPtr());
-                    instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
-
-                    // Temporarily chain the generic instantiation to the substitution chain of the
-                    // second type's signature
-                    pSubst2 = &instArgsSubstitution;
-                }
-            }
-
             // We are in bounds on both sides.  Compare the element.
             if (!CompareElementType(
                     pSig1,
@@ -4841,7 +4836,7 @@ MetaSig::CompareMethodSigs(
                     pModule1,
                     pModule2,
                     pSubst1,
-                    pSubst2,
+                    (i == 0 && allowCovariantReturn) ? &instArgsSubstitution : pSubst2,
                     i == 0 && allowCovariantReturn,
                     pVisited))
             {
@@ -4859,38 +4854,6 @@ MetaSig::CompareMethodSigs(
     // do return type as well
     for (i = 0; i <= ArgCount1; i++)
     {
-        pSubst2 = pOrigSubst2;
-
-        //
-        // If we are comparing the return type signatures and allow for covariant returns,
-        // we need to check if the return type on the second signature is a generic type,
-        // and if so, chain its generic instantiation arguments to the substitution chain.
-        // This is necessary in case we need to compute the base type signature of the second
-        // type's signature, and compare that to the first type's signature, to allow for
-        // derived types.
-        //
-        SigPointer instArgSignature;
-        Substitution instArgsSubstitution;
-        if (i == 0 && allowCovariantReturn)
-        {
-            SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
-
-            CorElementType returnElementType;
-            IfFailThrow(parser.GetElemType(&returnElementType));
-
-            if (returnElementType == ELEMENT_TYPE_GENERICINST)
-            {
-                IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
-                IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
-                instArgSignature = SigPointer(parser.GetPtr());
-                instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
-
-                // Temporarily chain the generic instantiation to the substitution chain of the
-                // second type's signature
-                pSubst2 = &instArgsSubstitution;
-            }
-        }
-
         if (!CompareElementType(
                 pSig1,
                 pSig2,
@@ -4899,7 +4862,7 @@ MetaSig::CompareMethodSigs(
                 pModule1,
                 pModule2,
                 pSubst1,
-                pSubst2,
+                (i == 0 && allowCovariantReturn) ? &instArgsSubstitution : pSubst2,
                 i == 0 && allowCovariantReturn,
                 pVisited))
         {
