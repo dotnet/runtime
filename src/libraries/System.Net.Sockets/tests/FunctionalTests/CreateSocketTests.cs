@@ -446,6 +446,25 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [DllImport("libc")]
+        static extern int socket(int domain, int type, int protocol);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Ctor_SafeHandle_UnknownSocket_Success()
+        {
+            const int PF_NETLINK = 16;
+            const int NETLINK_ROUTE = 0;
+            const int SOCK_DGRAM = 2;
+
+            int fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
+            Assert.True(fd >= 0);
+            using (Socket netlink = new Socket(new SafeSocketHandle((IntPtr)fd, ownsHandle: true)))
+            {
+                Assert.Equal(AddressFamily.Unknown, netlink.AddressFamily);
+            }
+        }
+
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
         {
             T r1 = default, r2 = default;

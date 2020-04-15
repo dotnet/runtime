@@ -23,7 +23,7 @@
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
-#ifdef HAVE_SYS_PROCINFO_H
+#if HAVE_SYS_PROCINFO_H
 #include <sys/proc_info.h>
 #include <libproc.h>
 #endif
@@ -2426,7 +2426,7 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return Error_SUCCESS;
 }
 
-#ifdef HAVE_SYS_PROCINFO_H
+#if HAVE_SYS_PROCINFO_H
 int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
     if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
@@ -2502,8 +2502,8 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
     }
 
     int listeningValue;
-    socklen_t protocolLength = sizeof(int);
-    if (getsocktopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &protocolLength) == 0)
+    socklen_t listeningLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &listeningLength) == 0)
     {
         *isListening = (listeningValue != 0);
     }
