@@ -26,6 +26,7 @@
     <Compile Remove="TypeForwarding\Dependencies\ImplementationLibrary_3.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
+    <Compile Remove="Extensibility\Dependencies\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
