@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 
@@ -47,8 +45,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
 
-            CreateCheckpoint();
-            DateTimeOffset result;
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -62,12 +59,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                         string dateString = ReadTextString();
 
-                        if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out result))
+                        if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                         {
                             throw new FormatException("DateTime string is not valid RFC3339.");
                         }
 
-                        ClearCheckpoint();
                         return result;
 
                     case CborTag.DateTimeUnixSeconds:
@@ -75,9 +71,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         {
                             case CborReaderState.UnsignedInteger:
                             case CborReaderState.NegativeInteger:
-                                result = DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
-                                ClearCheckpoint();
-                                return result;
+                                return DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
 
                             case CborReaderState.HalfPrecisionFloat:
                             case CborReaderState.SinglePrecisionFloat:
@@ -86,9 +80,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                                 double seconds = ReadDouble();
                                 long epochTicks = DateTimeOffset.UnixEpoch.Ticks;
                                 long ticks = checked(epochTicks + (long)(seconds * TimeSpan.TicksPerSecond));
-                                result = new DateTimeOffset(ticks, TimeSpan.Zero);
-                                ClearCheckpoint();
-                                return result;
+                                return new DateTimeOffset(ticks, TimeSpan.Zero);
 
                             default:
                                 throw new FormatException("Epoch DateTime semantic tag should annotate numeric value.");
@@ -100,14 +92,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint();
+                RestoreCheckpoint(checkpoint);
                 throw;
             }
         }
 
         public BigInteger ReadBigInteger()
         {
-            CreateCheckpoint();
+            // implements https://tools.ietf.org/html/rfc7049#section-2.4.2
+
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -125,19 +119,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
                 BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
-                ClearCheckpoint();
                 return isUnsigned ? unsignedValue : -1 - unsignedValue;
             }
             catch
             {
-                RestoreCheckpoint();
+                RestoreCheckpoint(checkpoint);
                 throw;
             }
         }
 
         public decimal ReadDecimal()
         {
-            CreateCheckpoint();
+            // implements https://tools.ietf.org/html/rfc7049#section-2.4.3
+
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -192,13 +187,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 ReadEndArray();
 
-                decimal result = DecimalHelpers.Reconstruct(mantissa, exponent);
-                ClearCheckpoint();
-                return result;
+                return DecimalHelpers.Reconstruct(mantissa, exponent);
             }
             catch
             {
-                RestoreCheckpoint();
+                RestoreCheckpoint(checkpoint);
                 throw;
             }
         }

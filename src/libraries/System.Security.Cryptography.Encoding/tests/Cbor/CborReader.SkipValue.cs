@@ -8,11 +8,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public void SkipValue()
         {
-            CreateCheckpoint();
-            int depth = 0;
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
 
             try
             {
+                int depth = 0;
+
                 do
                 {
                     SkipNextNode(ref depth);
@@ -20,11 +21,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint();
+                RestoreCheckpoint(checkpoint);
                 throw;
             }
-
-            ClearCheckpoint();
         }
 
         private void SkipNextNode(ref int depth)
