@@ -6783,6 +6783,44 @@ AC_COMPILE_IFELSE(
 		AC_MSG_RESULT(no)
 	])
 
+# for icu shim
+if test x$target_osx = xyes; then
+	ORIG_CPPFLAGS=$CPPFLAGS
+	CPPFLAGS="$CPPFLAGS -I/usr/local/opt/icu4c/include  -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"		
+	AC_CHECK_LIB(icucore, ucol_open, [],
+		[AC_MSG_ERROR([Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.])])
+	
+	AC_DEFINE(ICU_LIBS, -licucore, [adding -licucore])			
+
+	AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
+	if test x$have_sys_icu = xyes; then
+		ICU_CFLAGS="-DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
+		AC_MSG_NOTICE($ICU_CFLAGS)
+		AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+	fi
+	CPPFLAGS=$ORIG_CPPFLAGS
+elif test x$host_win32 = xyes; then
+		echo "TODO"
+elif test x$host_linux = xyes; then
+	ORIG_CPPFLAGS=$CPPFLAGS
+	CPPFLAGS="$CPPFLAGS -I/usr/local/opt/icu4c/include  -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"		
+	
+	AC_CHECK_LIB(icuuc, main, [],
+		[AC_MSG_ERROR([Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform).])])
+	AC_CHECK_LIB(icui18n, main, [],
+		[AC_MSG_ERROR([Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform).])])
+
+	AC_DEFINE(ICU_LIBS, [-licuuc, -licui18n], [adding -licuuc and  -licui18n])
+
+	AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
+	if test x$have_sys_icu = xyes; then
+		ICU_CFLAGS="-DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
+		AC_MSG_NOTICE($ICU_CFLAGS)
+		AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+	fi
+	CPPFLAGS=$ORIG_CPPFLAGS
+fi
+
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
