@@ -5,7 +5,7 @@
     shared framework on those platforms.
   -->
   <PropertyGroup>
-    <ExcludeHostAssets Condition="'$(TargetsMobile)' == 'iOS'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(TargetsMobile)' == 'true'">true</ExcludeHostAssets>
   </PropertyGroup>
   <!--
     Include HostPolicy and HostResolver based on legacy packages. This can be collapsed once the
@@ -16,7 +16,7 @@
 
   <!-- Keep this isolated to desktop mono for now -->
   <Target Name="MobileGetBuildRidSpecificPackageProps"
-          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' == ''"
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'"
           AfterTargets="GetBuildRidSpecificPackageProps">
     <PropertyGroup>
       <RidSpecificPackProperties>BaseId=$(MSBuildProjectName)$(RuntimeSpecificFrameworkSuffix).Mono.$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
