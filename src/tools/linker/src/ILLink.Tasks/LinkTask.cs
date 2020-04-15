@@ -13,9 +13,18 @@ namespace ILLink.Tasks
 		/// <summary>
 		///   Paths to the assembly files that should be considered as
 		///   input to the linker.
-		///   Each path can also have an "action" metadata,
-		///   which will set the illink action to take for
-		///   that assembly.
+		///   Optional metadata:
+		///       Action ("copy", "link", etc...): sets the illink action to take for this assembly.
+		///   There is an optional metadata for each optimization that can be set to "True" or "False" to
+		///   enable or disable it per-assembly:
+		///       BeforeFieldInit
+		///       OverrideRemoval
+		///       UnreachableBodies
+		///       ClearInitLocals
+		///       UnusedInterfaces
+		///       IPConstProp
+		///       Sealer
+		///   Maps to '-reference', and possibly '-p', '--enable-opt', '--disable-opt'
 		/// </summary>
 		[Required]
 		public ITaskItem [] AssemblyPaths { get; set; }
@@ -23,6 +32,7 @@ namespace ILLink.Tasks
 		/// <summary>
 		///    Paths to assembly files that are reference assemblies,
 		///    representing the surface area for compilation.
+		///    Maps to '-reference', with action set to 'skip' via '-p'.
 		/// </summary>
 		public ITaskItem [] ReferenceAssemblyPaths { get; set; }
 
@@ -41,6 +51,7 @@ namespace ILLink.Tasks
 
 		/// <summary>
 		///   The directory in which to place linked assemblies.
+		//    Maps to '-out'.
 		/// </summary>
 		[Required]
 		public ITaskItem OutputDirectory { get; set; }
@@ -49,17 +60,73 @@ namespace ILLink.Tasks
 		///   A list of XML root descriptor files specifying linker
 		///   roots at a granular level. See the mono/linker
 		///   documentation for details about the format.
+		///   Maps to '-x'.
 		/// </summary>
 		public ITaskItem [] RootDescriptorFiles { get; set; }
 
 		/// <summary>
-		///   Boolean specifying whether to clear initlocals flag on methods.
+		///   Boolean specifying whether to enable beforefieldinit optimization globally.
+		///   Maps to '--enable-opt beforefieldinit' or '--disable-opt beforefieldinit'.
 		/// </summary>
-		public bool ClearInitLocals { get; set; }
+		public bool BeforeFieldInit { set => _beforeFieldInit = value; }
+		bool? _beforeFieldInit;
+
+		/// <summary>
+		///   Boolean specifying whether to enable overrideremoval optimization globally.
+		///   Maps to '--enable-opt overrideremoval' or '--disable-opt overrideremoval'.
+		/// </summary>
+		public bool OverrideRemoval { set => _overrideRemoval = value; }
+		bool? _overrideRemoval;
+
+		/// <summary>
+		///   Boolean specifying whether to enable unreachablebodies optimization globally.
+		///   Maps to '--enable-opt unreachablebodies' or '--disable-opt unreachablebodies'.
+		/// </summary>
+		public bool UnreachableBodies { set => _unreachableBodies = value; }
+		bool? _unreachableBodies;
+
+		/// <summary>
+		///   Boolean specifying whether to enable clearinitlocals optimization globally.
+		///   Maps to '--enable-opt clearinitlocals' or '--disable-opt clearinitlocals'.
+		/// </summary>
+		public bool ClearInitLocals { set => _clearInitLocals = value; }
+		bool? _clearInitLocals;
+
+		/// <summary>
+		///   Boolean specifying whether to enable unusedinterfaces optimization globally.
+		///   Maps to '--enable-opt unusedinterfaces' or '--disable-opt unusedinterfaces'.
+		/// </summary>
+		public bool UnusedInterfaces { set => _unusedInterfaces = value; }
+		bool? _unusedInterfaces;
+
+		/// <summary>
+		///   Boolean specifying whether to enable ipconstprop optimization globally.
+		///   Maps to '--enable-opt ipconstprop' or '--disable-opt ipconstprop'.
+		/// </summary>
+		public bool IPConstProp { set => _iPConstProp = value; }
+		bool? _iPConstProp;
+
+		/// <summary>
+		///   Boolean specifying whether to enable sealer optimization globally.
+		///   Maps to '--enable-opt sealer' or '--disable-opt sealer'.
+		/// </summary>
+		public bool Sealer { set => _sealer = value; }
+		bool? _sealer;
+
+		static readonly string [] _optimizationNames = new string [] {
+			"BeforeFieldInit",
+			"OverrideRemoval",
+			"UnreachableBodies",
+			"ClearInitLocals",
+			"UnusedInterfaces",
+			"IPConstProp",
+			"Sealer"
+		};
 
 		/// <summary>
 		///   A comma-separated list of assemblies whose methods
 		///   should have initlocals flag cleared if ClearInitLocals is true.
+		///   Maps to '-m ClearInitLocalsAssemblies <list>'
 		/// </summary>
 		public string ClearInitLocalsAssemblies { get; set; }
 
@@ -70,9 +137,35 @@ namespace ILLink.Tasks
 
 		/// <summary>
 		///   Make illink dump dependencies file for linker analyzer tool.
+		///   Maps to '--dump-dependencies'.
 		/// </summary>
 		public bool DumpDependencies { get; set; }
 
+		/// <summary>
+		///   Output linked debug symbols for linked assemblies.
+		///   Maps to '-b'.
+		/// </summary>
+		public bool LinkSymbols { get; set; }
+
+		/// <summary>
+		///   Sets the default action for assemblies.
+		///   Maps to '-c' and '-u'.
+		/// </summary>
+		public string DefaultAction { get; set; }
+
+		/// <summary>
+		///   A list of custom steps to insert into the linker pipeline.
+		///   Each ItemSpec should be the path to the assembly containing the custom step.
+		///   Each Item requires "Type" metadata with the name of the custom step type.
+		///   Optional metadata:
+		///   BeforeStep: The name of a linker step. The custom step will be inserted before it.
+		///   AfterStep: The name of a linker step. The custom step will be inserted after it.
+		///   The default (if neither BeforeStep or AfterStep is specified) is to insert the
+		///   custom step at the end of the pipeline.
+		///   It is an error to specify both BeforeStep and AfterStep.
+		///   Maps to '--custom-step'.
+		/// </summary>
+		public ITaskItem [] CustomSteps { get; set; }
 
 		private readonly static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
@@ -129,6 +222,16 @@ namespace ILLink.Tasks
 			return args.ToString ();
 		}
 
+		private void SetOpt (StringBuilder args, string opt, bool enabled)
+		{
+			args.Append (enabled ? "--enable-opt " : "--disable-opt ").AppendLine (opt);
+		}
+
+		private void SetOpt (StringBuilder args, string opt, string assembly, bool enabled)
+		{
+			args.Append (enabled ? "--enable-opt " : "--disable-opt ").Append (opt).Append (" ").AppendLine (assembly);
+		}
+
 		protected override string GenerateResponseFileCommands ()
 		{
 			var args = new StringBuilder ();
@@ -152,11 +255,23 @@ namespace ILLink.Tasks
 
 				args.Append ("-reference ").AppendLine (Quote (assemblyPath));
 
-				string action = assembly.GetMetadata ("action");
-				if ((action != null) && (action.Length > 0)) {
+				string action = assembly.GetMetadata ("Action");
+				if (!String.IsNullOrEmpty (action)) {
 					args.Append ("-p ");
 					args.Append (action);
 					args.Append (" ").AppendLine (Quote (assemblyName));
+				}
+
+				// Add per-assembly optimization arguments
+				foreach (var optimization in _optimizationNames) {
+					string optimizationValue = assembly.GetMetadata (optimization);
+					if (String.IsNullOrEmpty (optimizationValue))
+						continue;
+
+					if (!Boolean.TryParse (optimizationValue, out bool enabled))
+						throw new ArgumentException ($"optimization metadata {optimization} must be True or False");
+
+					SetOpt (args, optimization, assemblyName, enabled);
 				}
 			}
 
@@ -182,11 +297,65 @@ namespace ILLink.Tasks
 			if (OutputDirectory != null)
 				args.Append ("-out ").AppendLine (Quote (OutputDirectory.ItemSpec));
 
-			if (ClearInitLocals) {
+			// Add global optimization arguments
+			if (_beforeFieldInit is bool beforeFieldInit)
+				SetOpt (args, "beforefieldinit", beforeFieldInit);
+
+			if (_overrideRemoval is bool overrideRemoval)
+				SetOpt (args, "overrideremoval", overrideRemoval);
+
+			if (_unreachableBodies is bool unreachableBodies)
+				SetOpt (args, "unreachablebodies", unreachableBodies);
+
+			if (_clearInitLocals is bool clearInitLocals) {
+				SetOpt (args, "clearinitlocals", clearInitLocals);
+			} else {
+				clearInitLocals = false;
+			}
+
+			if (_unusedInterfaces is bool unusedInterfaces)
+				SetOpt (args, "unusedinterfaces", unusedInterfaces);
+
+			if (_iPConstProp is bool iPConstProp)
+				SetOpt (args, "ipconstprop", iPConstProp);
+
+			if (_sealer is bool sealer)
+				SetOpt (args, "sealer", sealer);
+
+			if (clearInitLocals) {
 				args.AppendLine ("--enable-opt clearinitlocals");
 				if ((ClearInitLocalsAssemblies != null) && (ClearInitLocalsAssemblies.Length > 0)) {
 					args.Append ("-m ClearInitLocalsAssemblies ");
 					args.AppendLine (ClearInitLocalsAssemblies);
+				}
+			}
+
+			if (LinkSymbols)
+				args.AppendLine ("-b");
+
+			if (DefaultAction != null)
+				args.Append ("-c ").Append (DefaultAction).Append (" -u ").AppendLine (DefaultAction);
+
+			if (CustomSteps != null) {
+				foreach (var customStep in CustomSteps) {
+					args.Append ("--custom-step ");
+					var stepPath = customStep.ItemSpec;
+					var stepType = customStep.GetMetadata ("Type");
+					if (stepType == null)
+						throw new ArgumentException ("custom step requires \"Type\" metadata");
+					var customStepString = $"{stepType},{stepPath}";
+
+					// handle optional before/aftersteps
+					var beforeStep = customStep.GetMetadata ("BeforeStep");
+					var afterStep = customStep.GetMetadata ("AfterStep");
+					if (!String.IsNullOrEmpty (beforeStep) && !String.IsNullOrEmpty (afterStep))
+						throw new ArgumentException ("custom step may not have both \"BeforeStep\" and \"AfterStep\" metadata");
+					if (!String.IsNullOrEmpty (beforeStep))
+						customStepString = $"-{beforeStep}:{customStepString}";
+					if (!String.IsNullOrEmpty (afterStep))
+						customStepString = $"+{afterStep}:{customStepString}";
+
+					args.AppendLine (Quote (customStepString));
 				}
 			}
 

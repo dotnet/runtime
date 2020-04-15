@@ -199,6 +199,13 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.ExtensibilityTests))]
+		public void ExtensibilityTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.DataFlowTests))]
 		public void DataFlowTests (TestCase testCase)
 		{
