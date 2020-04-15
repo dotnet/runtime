@@ -6,7 +6,7 @@ using System;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal readonly struct LogMessageEntry
+    public readonly struct LogMessageEntry
     {
         public LogMessageEntry(string message, string timeStamp = null, string levelString = null, ConsoleColor? levelBackground = null, ConsoleColor? levelForeground = null, ConsoleColor? messageColor = null, bool logAsError = false)
         {

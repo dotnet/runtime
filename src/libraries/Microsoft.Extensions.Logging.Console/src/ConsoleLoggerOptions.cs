@@ -40,6 +40,11 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string Formatter { get; set; }
+
+        /// <summary>
         /// Gets or sets value indicating the minimum level of messaged that would get written to <c>Console.Error</c>.
         /// </summary>
         public LogLevel LogToStandardErrorThreshold { get; set; } = LogLevel.None;

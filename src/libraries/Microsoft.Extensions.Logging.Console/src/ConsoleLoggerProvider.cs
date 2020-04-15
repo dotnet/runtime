@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
 
@@ -18,6 +19,7 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
         private readonly ConsoleLoggerProcessor _messageQueue;
+        private readonly IEnumerable<ILogFormatter> _formatters;
 
         private IDisposable _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
@@ -26,10 +28,12 @@ namespace Microsoft.Extensions.Logging.Console
         /// Creates an instance of <see cref="ConsoleLoggerProvider"/>.
         /// </summary>
         /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
-        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options)
+        /// <param name="formatters"></param>
+        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ILogFormatter> formatters)
         {
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
+            _formatters = formatters;
 
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
@@ -58,7 +62,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, _messageQueue)
+            return _loggers.GetOrAdd(name, loggerName => new ConsoleLogger(name, _messageQueue, _formatters)
             {
                 Options = _options.CurrentValue,
                 ScopeProvider = _scopeProvider
