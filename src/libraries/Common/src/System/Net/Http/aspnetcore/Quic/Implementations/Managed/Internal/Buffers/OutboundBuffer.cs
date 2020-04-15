@@ -147,7 +147,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         /// <summary>
         ///     Returns length of the next contiguous range of data that can be checked out, respecting the
-        ///     <see cref="BufferBase.MaxData" /> parameter.
+        ///     <see cref="MaxData" /> parameter.
         /// </summary>
         /// <returns></returns>
         internal (long offset, long count) GetNextSendableRange()

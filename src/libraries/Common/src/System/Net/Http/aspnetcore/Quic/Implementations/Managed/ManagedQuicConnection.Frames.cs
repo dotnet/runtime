@@ -446,9 +446,11 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var buffer = stream!.OutboundBuffer!;
                 // TODO-RZ IsFlushable is not threadsafe
-                Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
+                // Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
 
                 (long offset, long count) = buffer.GetNextSendableRange();
+                if (count == 0) return;
+
                 int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, count);
                 count = Math.Min(count,  writer.BytesAvailable - overhead);
 
