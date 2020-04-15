@@ -271,7 +271,7 @@ jobs:
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         coreClrRepoRoot: $(coreClrRepoRoot)
-	runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
