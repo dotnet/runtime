@@ -989,7 +989,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains(new ViaHeaderValue("1.1", "example.com", null, "(Apache/1.1)"), resp.Headers.Via);
                     Assert.Contains(new WarningHeaderValue(199, "-", "\"Miscellaneous warning\"", DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT")), resp.Headers.Warning);
                     Assert.Contains(new AuthenticationHeaderValue("Basic"), resp.Headers.WwwAuthenticate);
-                    Assert.Contains("deny", resp.Headers.GetValues("X-Frame-Options"));
+                    Assert.Contains("deny", resp.Headers.GetValues("X-Frame-Options"), StringComparer.OrdinalIgnoreCase);
                     Assert.Contains("default-src 'self'", resp.Headers.GetValues("X-WebKit-CSP"));
                     Assert.Contains("5; url=http://www.w3.org/pub/WWW/People.html", resp.Headers.GetValues("Refresh"));
                     Assert.Contains("200 OK", resp.Headers.GetValues("Status"));
