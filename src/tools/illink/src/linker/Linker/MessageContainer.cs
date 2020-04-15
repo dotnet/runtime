@@ -53,7 +53,7 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Info, text, null);
 		}
 
-		public static MessageContainer CreateDiagnosticsMessage (string text)
+		public static MessageContainer CreateDiagnosticMessage (string text)
 		{
 			return new MessageContainer (MessageCategory.Diagnostic, text, null);
 		}
