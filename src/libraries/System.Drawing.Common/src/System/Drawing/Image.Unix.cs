@@ -189,6 +189,11 @@ namespace System.Drawing
 
         public void Save(string filename, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+            
+            CheckDirectoryExists(filename);
+
             int st;
             Guid guid = encoder.Clsid;
 

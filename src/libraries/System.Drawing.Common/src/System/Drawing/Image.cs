@@ -151,15 +151,15 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified file.
         /// </summary>
-        public void Save(string filename)
+        public void Save(string filename) => Save(filename, RawFormat);
+
+        private static void CheckDirectoryExists(string filename)
         {
             var directoryPart = System.IO.Path.GetDirectoryName(filename);
-            if (!System.IO.Directory.Exists(directoryPart))
+            if (!string.IsNullOrEmpty(directoryPart) && !System.IO.Directory.Exists(directoryPart))
             {
                 throw new DirectoryNotFoundException(SR.Format(SR.TargetDirectoryDoesNotExist, directoryPart, filename));
             }
-
-            Save(filename, RawFormat);
         }
 
         /// <summary>
