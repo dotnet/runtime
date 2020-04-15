@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
 {
@@ -51,20 +52,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         {
             CongestionWindow = InitialWindowSize;
             BytesInFlight = 0;
-            CongestionRecoveryStartTime = DateTime.MaxValue;
+            CongestionRecoveryStartTime = DateTime.MinValue;
             SlowStartThreshold = long.MaxValue;
-            CongestionRecoveryStartTime = DateTime.MaxValue;
             CongestionWindow = InitialWindowSize;
         }
 
         public void OnPacketSent(SentPacket packet)
         {
+            Debug.Assert(packet.InFlight);
             BytesInFlight += packet.BytesSent;
         }
 
-        public void OnPacketAcked(SentPacket packet)
+        public void OnPacketAcked(SentPacket packet, DateTime now)
         {
+            Debug.Assert(packet.InFlight);
             BytesInFlight -= packet.BytesSent;
+
             if (InCongestionRecovery(packet.TimeSent))
             {
                 // do not increase congestion window in recovery period.
@@ -88,14 +91,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
 
         public void OnPacketsLost(List<SentPacket> lostPackets, DateTime now)
         {
+            SentPacket? lastPacket = null;
             foreach (var packet in lostPackets)
             {
+                Debug.Assert(packet.InFlight);
                 BytesInFlight -= packet.BytesSent;
+                lastPacket = packet;
             }
 
-            if (lostPackets.Count > 0)
+            if (lastPacket != null)
             {
-                var lastPacket = lostPackets[^1];
                 OnCongestionEvent(lastPacket.TimeSent, now);
 
                 if (InPersistentCongestion(lastPacket))

@@ -204,7 +204,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace.LargestAckedPacketNumber = Math.Max(pnSpace.LargestAckedPacketNumber, largestAcked);
 
             bool isLargestAcknowledgedNewlyAcked = pnSpace.SentPackets.TryGetValue(largestAcked, out var largestAckedPacket);
-            bool newlyAckedIncludeAckEliciting = ProcessNewlyAckedPackets(ranges, pnSpace);
+            bool newlyAckedIncludeAckEliciting = ProcessNewlyAckedPackets(ranges, pnSpace, now);
 
             if (isLargestAcknowledgedNewlyAcked &&
                 newlyAckedIncludeAckEliciting)
@@ -228,7 +228,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             SetLossDetectionTimer(isHandshakeComplete);
         }
 
-        private bool ProcessNewlyAckedPackets(ReadOnlySpan<PacketNumberRange> ranges, PacketNumberSpace pnSpace)
+        private bool ProcessNewlyAckedPackets(ReadOnlySpan<PacketNumberRange> ranges, PacketNumberSpace pnSpace,
+            DateTime now)
         {
             int rangeIndex = 0;
             bool newlyAckedIncludeAckEliciting = false;
@@ -256,18 +257,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 var packet = pnSpace.SentPackets[pn];
                 newlyAckedIncludeAckEliciting |= packet.AckEliciting;
 
-                OnPacketAcked(pn, packet, pnSpace);
+                OnPacketAcked(pn, packet, pnSpace, now);
                 pnSpace.SentPackets.Remove(pn);
             }
 
             return newlyAckedIncludeAckEliciting;
         }
 
-        private void OnPacketAcked(long packetNumber, SentPacket packet, PacketNumberSpace pnSpace)
+        private void OnPacketAcked(long packetNumber, SentPacket packet, PacketNumberSpace pnSpace, DateTime now)
         {
             if (packet.InFlight)
             {
-                CongestionController.OnPacketAcked(packet);
+                CongestionController.OnPacketAcked(packet, now);
             }
 
             pnSpace.SentPackets.Remove(packetNumber);
@@ -400,7 +401,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // will be set again later, if necessary
             pnSpace.NextLossTime = DateTime.MaxValue;
 
-            var lostPackets = new List<SentPacket>();
+            // lost packets to be passed to congestion controller (with InFlight = true)
+            var lostPacketsForCc = new List<SentPacket>();
+
             var lossDelayTicks = (long)(TimeReorderingThreshold *
                                         Math.Max(LatestRtt.Ticks, SmoothedRtt.Ticks));
 
@@ -426,7 +429,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (packet.InFlight)
                     {
-                        lostPackets.Add(packet);
+                        lostPacketsForCc.Add(packet);
                     }
                 }
                 else
@@ -440,7 +443,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             // Inform the congestion controller of lost packets.
-            CongestionController.OnPacketsLost(lostPackets, now);
+            CongestionController.OnPacketsLost(lostPacketsForCc, now);
         }
 
         internal List<SentPacket> GetAckedPackets(PacketSpace space)

@@ -33,7 +33,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         ///     Called when a previously sent packet is acked.
         /// </summary>
         /// <param name="packet">Packet acked.</param>
-        void OnPacketAcked(SentPacket packet);
+        /// <param name="now">Timestamp when ack was received</param>
+        void OnPacketAcked(SentPacket packet, DateTime now);
 
         /// <summary>
         ///     Called when detecting loss of group of consecutive packets.
