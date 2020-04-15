@@ -230,11 +230,30 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
+            GenTreeLclVarCommon* const lclVar = tree->AsLclVarCommon();
+            LclVarDsc* const           varDsc = compiler->lvaGetDesc(lclVar);
             if (isCandidateVar(varDsc))
             {
                 return 0;
             }
+
+            var_types fieldType = lclVar->TypeGet();
+            if (lclVar->OperIs(GT_LCL_FLD) && varTypeIsFloating(fieldType))
+            {
+                GenTreeLclFld* fld    = lclVar->AsLclFld();
+                uint16_t       offset = fld->GetLclOffs();
+                if ((offset % emitTypeSize(fieldType)) != 0)
+                {
+                    buildInternalIntRegisterDefForNode(fld); // to generate address.
+                    buildInternalIntRegisterDefForNode(fld); // to move float into an int reg.
+                    if (fieldType == TYP_DOUBLE)
+                    {
+                        buildInternalIntRegisterDefForNode(fld); // to move the second half into an int reg.
+                    }
+                    buildInternalRegisterUses();
+                }
+            }
+
             srcCount = 0;
             BuildDef(tree);
         }

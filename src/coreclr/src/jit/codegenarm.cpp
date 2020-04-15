@@ -998,13 +998,36 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree*    data = tree->gtOp1;
-    instruction ins  = ins_Store(targetType);
-    emitAttr    attr = emitTypeSize(targetType);
+    GenTree* data = tree->gtOp1;
+    emitAttr attr = emitTypeSize(targetType);
 
     assert(!data->isContained());
     genConsumeReg(data);
-    emit->emitIns_S_R(ins, attr, data->GetRegNum(), varNum, offset);
+    regNumber dataReg = data->GetRegNum();
+    if (varTypeIsFloating(targetType) && ((offset % emitTypeSize(tree)) != 0))
+    {
+        regNumber addr = tree->ExtractTempReg();
+        emit->emitIns_R_S(INS_lea, attr, addr, varNum, offset);
+        if (targetType == TYP_FLOAT)
+        {
+            regNumber floatAsInt = tree->GetSingleTempReg();
+            emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg);
+            emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
+        }
+        else
+        {
+            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
+            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+        }
+    }
+    else
+    {
+        instruction ins = ins_Store(targetType);
+        emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
