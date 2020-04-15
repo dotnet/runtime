@@ -944,9 +944,9 @@
          to be replaced with xharness -->
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl shutdown &quot;iPhone 11&quot;" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl boot &quot;iPhone 11&quot;" />
-    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="open -a Simulator" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64' and '$(ShowIosSimulator)' != 'false'" Command="open -a Simulator" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl install &quot;iPhone 11&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch booted net.dot.$(TestName)" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch booted net.dot.$(TestName) testlib:$(TestName).dll" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->

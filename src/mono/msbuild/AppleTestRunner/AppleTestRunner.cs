@@ -32,7 +32,7 @@ public class AppleConsole : TextWriter
 
 public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 {
-    private static string[] testLibs;
+    private static List<string> testLibs;
 
     public static async Task<int> Main(string[] args)
     {
@@ -46,8 +46,19 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         }
         Console.WriteLine(".");
 
-        testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll");
-        if (testLibs.Length < 1)
+        testLibs = new List<string>();
+        foreach (string arg in args.Where(a => a.StartsWith("testlib:")))
+        {
+            testLibs.Add(arg.Remove(0, "testlib:".Length));
+        }
+
+        if (testLibs.Count < 1)
+        {
+            // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
+            testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+        }
+
+        if (testLibs.Count < 1)
         {
             Console.WriteLine("Test libs were not found (*.Tests.dll)");
             return -1;
