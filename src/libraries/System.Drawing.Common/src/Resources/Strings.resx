@@ -456,6 +456,6 @@
     <value>The value of the {0} property is not one of the {1} values</value>
   </data>
   <data name="TargetDirectoryDoesNotExist" xml:space="preserve">
-    <value>The target directory {0} of the targetPath {1} does not exist.</value>
+    <value>The directory {0} of the filename {1} does not exist.</value>
   </data>
 </root>
