@@ -23,6 +23,7 @@ internal class Xcode
     {
         // bundle everything as resources excluding native files
         string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
+
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
             .Concat(Directory.GetFiles(binDir, "*.aotdata"))
