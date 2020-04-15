@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace System.Xml.Tests
 {
@@ -1123,5 +1124,68 @@ namespace System.Xml.Tests
                 ss.Compile();
             }
         }
+
+        #region tests causing XmlSchemaException with Sch_WhiteSpaceRestriction1
+        public static IEnumerable<object[]> WhiteSpaceRestriction1_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:normalizedString'>
+            <xs:whitespace value='collapse'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }//,
+//                    new object[]
+//                    {
+//@"<?xml version='1.0' encoding='utf-8'?>
+//<xs:schema elementFormDefault='qualified'
+//            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+//    <xs:simpleType name='baseType'>
+//        <xs:restriction base='string'>
+//            <xs:whitespace value='collapse'/>
+//        </xs:restriction>
+//    </xs:simpleType>
+//    <xs:simpleType name='restrictedType'>
+//        <xs:restriction base='baseType'>
+//            <xs:whitespace value='preserve'/>
+//        </xs:restriction>
+//    </xs:simpleType>
+//</xs:schema>
+//"
+//                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WhiteSpaceRestriction1_Throws_TestData))]
+        public void WhiteSpaceRestriction1_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            // Issue 30218: invalid formatters
+            // TODO remove once invalid formatter is removed from Sch_WhiteSpaceRestriction1.
+            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+            Assert.Contains("whiteSpace", ex.Message);
+            Assert.Contains("collapse", ex.Message);
+            Assert.Contains("preserve", ex.Message);
+            Assert.Contains("replace", ex.Message);
+        }
+        #endregion
     }
 }
