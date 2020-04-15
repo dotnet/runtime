@@ -90,5 +90,15 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"\\host\", uri.LocalPath);
             Assert.Equal("/", uri.AbsolutePath);
         }
+
+        [Theory]
+        [InlineData(@"\\host")]
+        [InlineData(@"//host")]
+        [InlineData(@"\/host")]
+        [InlineData(@"/\host")]
+        public static void Uri_UncPathEquality_IgnoresCase(string uncPath)
+        {
+            Assert.Equal(new Uri(uncPath), new Uri(uncPath.ToUpper()));
+        }
     }
 }
