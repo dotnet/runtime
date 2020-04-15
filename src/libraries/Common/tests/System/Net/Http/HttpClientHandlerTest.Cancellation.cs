@@ -532,15 +532,20 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     using (var invoker = new HttpMessageInvoker(CreateHttpClientHandler()))
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion })
-                    try
+                    using (var req = new HttpRequestMessage(HttpMethod.Post, uri) {Content = content, Version = UseVersion})
                     {
-                        using (HttpResponseMessage resp = await invoker.SendAsync(req, cancellationTokenSource.Token))
+                        try
                         {
-                            Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                            using (HttpResponseMessage resp =
+                                await invoker.SendAsync(req, cancellationTokenSource.Token))
+                            {
+                                Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
                         }
                     }
-                    catch (OperationCanceledException) { }
                 },
                 async server =>
                 {
@@ -593,36 +598,25 @@ namespace System.Net.Http.Functional.Tests
             CancelPendingRequests = 0x2,
             DisposeHttpClient = 0x4
         }
-        
-        public static IEnumerable<object[]> OneBoolAndCancellationMode() =>
-            from first in Bools
-            from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
-            select new object[] { first, mode };
 
         public static IEnumerable<object[]> TwoBoolsAndCancellationMode() =>
-            from first in Bools
-            from second in Bools
+            from async in AsyncBoolValues
+            from second in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
-            select new object[] { first, second, mode };
+            select new object[] { async, second, mode };
 
         public static IEnumerable<object[]> ThreeBoolsAndCancellationMode() =>
-            from first in Bools
-            from second in Bools
-            from third in Bools
+            from async in AsyncBoolValues
+            from second in BoolValues
+            from third in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
-            select new object[] { first, second, third, mode };
-
-        public static IEnumerable<object[]> ThreeBools() =>
-            from first in Bools
-            from second in Bools
-            from third in Bools
-            select new object[] { first, second, third };
+            select new object[] { async, second, third, mode };
 
         public static IEnumerable<object[]> FourBools() =>
-            from first in Bools
-            from second in Bools
-            from third in Bools
-            from fourth in Bools
-            select new object[] { first, second, third, fourth };
+            from async in AsyncBoolValues
+            from second in BoolValues
+            from third in BoolValues
+            from fourth in BoolValues
+            select new object[] { async, second, third, fourth };
     }
 }

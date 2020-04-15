@@ -25,6 +25,7 @@ namespace System.Net.Http.Functional.Tests
             _millisecondDelayBetweenBytes = millisecondDelayBetweenBytes;
         }
 
+#if NETCOREAPP
         protected override void SerializeToStream(Stream stream, TransportContext context,
             CancellationToken cancellationToken)
         {
@@ -40,6 +41,7 @@ namespace System.Net.Http.Functional.Tests
                 Thread.Sleep(_millisecondDelayBetweenBytes);
             }
         }
+#endif
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {

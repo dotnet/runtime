@@ -484,7 +484,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in Bools
+            from useSsl in BoolValues
             select new object[] { address, useSsl };
 
         [ConditionalTheory]
@@ -1730,7 +1730,7 @@ namespace System.Net.Http.Functional.Tests
             get
             {
                 foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers) // target server
-                    foreach (bool syncCopy in Bools) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
+                    foreach (bool syncCopy in BoolValues) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
                     {
                         byte[] data = new byte[1234];
                         new Random(42).NextBytes(data);
@@ -1867,7 +1867,7 @@ namespace System.Net.Http.Functional.Tests
             var versions = new string[] {"1.0", "1.1", "2.0"};
             var expectContinue = new bool?[] {true, false, null};
             return
-                from async in Bools
+                from async in AsyncBoolValues
                 from expect in expectContinue
                 from version in versions
                 select new object[] {async, expect, version};
@@ -1943,7 +1943,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Interim1xxStatusCode()
         {
-            foreach (var async in Bools)
+            foreach (var async in BoolValues)
             {
                 yield return new object[] {async, (HttpStatusCode)100}; // 100 Continue.
                 // 101 SwitchingProtocols will be treated as a final status code.

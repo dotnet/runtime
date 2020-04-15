@@ -42,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RedirectStatusCodesOldMethodsNewMethods()
         {
-            foreach (bool value in Bools)
+            foreach (bool value in AsyncBoolValues)
             {
                 yield return new object[] {value, 300, "GET", "GET"};
                 yield return new object[] {value, 300, "POST", "GET"};

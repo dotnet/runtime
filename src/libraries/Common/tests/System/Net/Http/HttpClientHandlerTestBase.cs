@@ -70,16 +70,24 @@ namespace System.Net.Http.Functional.Tests
             };
         }
 
-        public static readonly bool[] Bools = new[] { true, false };
+        public static readonly bool[] BoolValues = new[] { true, false };
+        public static readonly bool[] AsyncBoolValues =
+            new[]
+            {
+                true,
+#if NETCORE
+                false
+#endif
+            };
 
-        public static IEnumerable<object[]> Async() => Bools.Select(b => new object[] { b });
+        public static IEnumerable<object[]> Async() => AsyncBoolValues.Select(b => new object[] { b });
 
         // For use by remote server tests
 
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
 
         public static IEnumerable<object[]> AsyncRemoteServersMemberData() => 
-            from async in Bools
+            from async in AsyncBoolValues
             from remoteServer in Configuration.Http.RemoteServers
             select new object[] { async, remoteServer };
 
@@ -145,9 +153,15 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
+#if NETCOREAPP
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => client.Send(request, completionOption, cancellationToken));
+#else
+                // Do just async for framework, since it'll never have the sync API and
+                // it shouldn't even be called due to AsyncBoolValues returning only true.
+                return client.SendAsync(request, completionOption, cancellationToken);
+#endif
             }
         }
     }
