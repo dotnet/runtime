@@ -2438,12 +2438,13 @@ namespace Mono.Linker.Steps {
 				if (eh.HandlerType == ExceptionHandlerType.Catch)
 					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method));
 
+			bool requiresReflectionMethodBodyScanner = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, body.Method);
 			foreach (Instruction instruction in body.Instructions)
-				MarkInstruction (instruction, body.Method);
+				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
 
 			MarkInterfacesNeededByBodyStack (body);
 
-			MarkReflectionLikeDependencies (body);
+			MarkReflectionLikeDependencies (body, requiresReflectionMethodBodyScanner);
 
 			PostMarkMethodBody (body);
 		}
@@ -2471,44 +2472,59 @@ namespace Mono.Linker.Steps {
 				MarkInterfaceImplementation (implementation, type);
 		}
 
-		protected virtual void MarkInstruction (Instruction instruction, MethodDefinition method)
+		protected virtual void MarkInstruction (Instruction instruction, MethodDefinition method, ref bool requiresReflectionMethodBodyScanner)
 		{
 			switch (instruction.OpCode.OperandType) {
-			case OperandType.InlineField:
-				MarkField ((FieldReference) instruction.Operand, new DependencyInfo (DependencyKind.FieldAccess, method));
-				break;
-			case OperandType.InlineMethod:
-			{
-				DependencyKind dependencyKind = instruction.OpCode.Code switch {
-					Code.Jmp => DependencyKind.DirectCall,
-					Code.Call => DependencyKind.DirectCall,
-					Code.Callvirt => DependencyKind.VirtualCall,
-					Code.Newobj => DependencyKind.Newobj,
-					Code.Ldvirtftn => DependencyKind.Ldvirtftn,
-					Code.Ldftn => DependencyKind.Ldftn,
-					_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
-				};
-				MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method));
-				break;
-			}
-			case OperandType.InlineTok:
-			{
-				object token = instruction.Operand;
-				Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
-				var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
-				if (token is TypeReference typeReference)
-					MarkType (typeReference, reason);
-				else if (token is MethodReference methodReference)
-					MarkMethod (methodReference, reason);
-				else
-					MarkField ((FieldReference) token, reason);
-				break;
-			}
-			case OperandType.InlineType:
-				MarkType ((TypeReference) instruction.Operand, new DependencyInfo (DependencyKind.InstructionTypeRef, method));
-				break;
-			default:
-				break;
+				case OperandType.InlineField:
+					switch (instruction.OpCode.Code) {
+						case Code.Stfld: // Field stores (Storing value to annotated field must be checked)
+						case Code.Stsfld:
+						case Code.Ldflda: // Field address loads (as those can be used to store values to annotated field and thus must be checked)
+						case Code.Ldsflda:
+							requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (FieldReference)instruction.Operand);
+							break;
+
+						default: // Other field operations are not interesting as they don't need to be checked
+							break;
+					}
+					MarkField ((FieldReference)instruction.Operand, new DependencyInfo (DependencyKind.FieldAccess, method));
+					break;
+
+				case OperandType.InlineMethod: {
+						DependencyKind dependencyKind = instruction.OpCode.Code switch
+						{
+							Code.Jmp => DependencyKind.DirectCall,
+							Code.Call => DependencyKind.DirectCall,
+							Code.Callvirt => DependencyKind.VirtualCall,
+							Code.Newobj => DependencyKind.Newobj,
+							Code.Ldvirtftn => DependencyKind.Ldvirtftn,
+							Code.Ldftn => DependencyKind.Ldftn,
+							_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
+						};
+						requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (MethodReference)instruction.Operand);
+						MarkMethod ((MethodReference)instruction.Operand, new DependencyInfo (dependencyKind, method));
+						break;
+					}
+
+				case OperandType.InlineTok: {
+						object token = instruction.Operand;
+						Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
+						var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
+						if (token is TypeReference typeReference) {
+							MarkType (typeReference, reason);
+						} else if (token is MethodReference methodReference) {
+							MarkMethod (methodReference, reason);
+						} else {
+							MarkField ((FieldReference)token, reason);
+						}
+						break;
+					}
+
+				case OperandType.InlineType:
+					MarkType ((TypeReference)instruction.Operand, new DependencyInfo (DependencyKind.InstructionTypeRef, method));
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -2577,13 +2593,15 @@ namespace Mono.Linker.Steps {
 		//
 		// Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
 		//
-		protected virtual void MarkReflectionLikeDependencies (MethodBody body)
+		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
 			if (HasManuallyTrackedDependency (body))
 				return;
 
-			var scanner = new ReflectionMethodBodyScanner (this);
-			scanner.ScanAndProcessReturnValue (body);
+			if (requiresReflectionMethodBodyScanner) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ScanAndProcessReturnValue (body);
+			}
 
 			var instructions = body.Instructions;
 
@@ -2701,6 +2719,25 @@ namespace Mono.Linker.Steps {
 			private readonly MarkStep _markStep;
 			private readonly FlowAnnotations _flowAnnotations;
 
+			public static bool RequiresReflectionMethodBodyScanner (FlowAnnotations flowAnnotations, MethodReference method)
+			{
+				MethodDefinition methodDefinition = method.Resolve ();
+				if (methodDefinition != null) {
+					return GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel || flowAnnotations.RequiresDataFlowAnalysis (methodDefinition);
+				}
+
+				return false;
+			}
+
+			public static bool RequiresReflectionMethodBodyScanner (FlowAnnotations flowAnnotations, FieldReference field)
+			{
+				FieldDefinition fieldDefinition = field.Resolve ();
+				if (fieldDefinition != null)
+					return flowAnnotations.RequiresDataFlowAnalysis (fieldDefinition);
+
+				return false;
+			}
+
 			public ReflectionMethodBodyScanner(MarkStep parent)
 			{
 				_markStep = parent;
@@ -2815,6 +2852,300 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
+			enum IntrinsicId
+			{
+				None = 0,
+				IntrospectionExtensions_GetTypeInfo,
+				Type_GetTypeFromHandle,
+
+				// Anything above this marker will require the method to be run through
+				// the reflection body scanner.
+				RequiresReflectionBodyScanner_Sentinel = 1000,
+				Type_MakeGenericType,
+				Type_GetType,
+				Type_GetConstructor,
+				Type_GetMethod,
+				Type_GetField,
+				Type_GetProperty,
+				Type_GetEvent,
+				Expression_Call,
+				Expression_Field,
+				Expression_Property,
+				Expression_New,
+				Activator_CreateInstance_Type,
+				Activator_CreateInstance_AssemblyName_TypeName,
+				Activator_CreateInstanceFrom,
+				Activator_CreateInstanceOfT,
+				AppDomain_CreateInstance,
+				AppDomain_CreateInstanceAndUnwrap,
+				AppDomain_CreateInstanceFrom,
+				AppDomain_CreateInstanceFromAndUnwrap,
+				Assembly_CreateInstance,
+				RuntimeReflectionExtensions_GetRuntimeEvent,
+				RuntimeReflectionExtensions_GetRuntimeField,
+				RuntimeReflectionExtensions_GetRuntimeMethod,
+				RuntimeReflectionExtensions_GetRuntimeProperty
+			}
+
+			static IntrinsicId GetIntrinsicIdForMethod (MethodDefinition calledMethod)
+			{
+				switch (calledMethod.Name) {
+					case "GetTypeInfo" when calledMethod.DeclaringType.Name == "IntrospectionExtensions"
+						&& calledMethod.DeclaringType.Namespace == "System.Reflection":
+						return IntrinsicId.IntrospectionExtensions_GetTypeInfo;
+
+					case "GetTypeFromHandle" when calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.DeclaringType.Namespace == "System":
+						return IntrinsicId.Type_GetTypeFromHandle;
+
+					case "MakeGenericType" when calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.DeclaringType.Namespace == "System":
+						return IntrinsicId.Type_MakeGenericType;
+
+					//
+					// System.Reflection.RuntimeReflectionExtensions
+					//
+					// static GetRuntimeEvent (this Type type, string name)
+					// static GetRuntimeField (this Type type, string name)
+					// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
+					// static GetRuntimeProperty (this Type type, string name)
+					//
+					case var getRuntimeMember when (getRuntimeMember.StartsWith ("GetRuntime")
+						&& calledMethod.DeclaringType.Namespace == "System.Reflection"
+						&& calledMethod.DeclaringType.Name == "RuntimeReflectionExtensions"
+						&& calledMethod.Parameters.Count >= 2
+						&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type"
+						&& calledMethod.Parameters [1].ParameterType.FullName == "System.String"):
+						return getRuntimeMember switch
+						{
+							"GetRuntimeEvent" => IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent,
+							"GetRuntimeField" => IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField,
+							"GetRuntimeMethod" => IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod,
+							"GetRuntimeProperty" => IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty,
+							_ => throw new ArgumentException($"Reflection call '{calledMethod.FullName}' is of unexpected member type.")
+						};
+
+					//
+					// System.Linq.Expressions.Expression
+					// 
+					// static Call (Type, String, Type[], Expression[])
+					//
+					case "Call" when calledMethod.DeclaringType.Name == "Expression"
+						&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+						&& calledMethod.Parameters.Count == 4
+						&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type":
+						return IntrinsicId.Expression_Call;
+
+					//
+					// System.Linq.Expressions.Expression
+					// 
+					// static Field (Expression, Type, String)
+					// static Property (Expression, Type, String)
+					//
+					case var fieldOrProperty when ((fieldOrProperty == "Field" || fieldOrProperty == "Property")
+						&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+						&& calledMethod.DeclaringType.Name == "Expression"
+						&& calledMethod.Parameters.Count == 3
+						&& calledMethod.Parameters [1].ParameterType.FullName == "System.Type"):
+						return fieldOrProperty [0] == 'P' ? IntrinsicId.Expression_Property : IntrinsicId.Expression_Field;
+
+					//
+					// System.Linq.Expressions.Expression
+					// 
+					// static New (Type)
+					//
+					case "New" when calledMethod.DeclaringType.Name == "Expression"
+						&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+						&& calledMethod.Parameters.Count == 1
+						&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type":
+						return IntrinsicId.Expression_New;
+
+					//
+					// System.Type
+					// 
+					// GetType (string)
+					// GetType (string, Boolean)
+					// GetType (string, Boolean, Boolean)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
+					// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
+					//
+					case "GetType" when calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.Parameters.Count >= 1
+						&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String:
+						return IntrinsicId.Type_GetType;
+
+					//
+					// System.Type
+					// 
+					// GetConstructor (Type[])
+					// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
+					// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
+					//
+					case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.HasThis:
+						return IntrinsicId.Type_GetConstructor;
+
+					//
+					// System.Type
+					// 
+					// GetMethod (string)
+					// GetMethod (string, BindingFlags)
+					// GetMethod (string, Type[])
+					// GetMethod (string, Type[], ParameterModifier[])
+					// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[]) 6
+					// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[]) 7
+					// GetMethod (string, int, Type[])
+					// GetMethod (string, int, Type[], ParameterModifier[]?)
+					// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+					// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
+					//
+					case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.Parameters.Count >= 1
+						&& calledMethod.HasThis:
+						return IntrinsicId.Type_GetMethod;
+
+					//
+					// System.Type
+					// 
+					// GetField (string)
+					// GetField (string, BindingFlags)
+					// GetEvent (string)
+					// GetEvent (string, BindingFlags)
+					// GetProperty (string)
+					// GetProperty (string, BindingFlags)
+					// GetProperty (string, Type)
+					// GetProperty (string, Type[])
+					// GetProperty (string, Type, Type[])
+					// GetProperty (string, Type, Type[], ParameterModifier[])
+					// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+					//
+					case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.DeclaringType.Name == "Type"
+						&& calledMethod.Parameters [0].ParameterType.FullName == "System.String")
+						&& calledMethod.HasThis:
+						return fieldPropertyOrEvent switch
+						{
+							"GetField" => IntrinsicId.Type_GetField,
+							"GetProperty" => IntrinsicId.Type_GetProperty,
+							"GetEvent" => IntrinsicId.Type_GetEvent,
+							_ => throw new ArgumentException ($"Reflection call '{calledMethod.FullName}' is of unexpected member type.")
+						};
+
+					//
+					// System.Activator
+					// 
+					// static CreateInstance (System.Type type)
+					// static CreateInstance (System.Type type, bool nonPublic)
+					// static CreateInstance (System.Type type, params object?[]? args)
+					// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
+					// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
+					// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+					//
+					case "CreateInstance" when !calledMethod.ContainsGenericParameter
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.DeclaringType.Name == "Activator"
+						&& calledMethod.Parameters.Count >= 1
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.Parameters [0].ParameterType.MetadataType != MetadataType.String:
+						return IntrinsicId.Activator_CreateInstance_Type;
+
+					//
+					// System.Activator
+					// 
+					// static CreateInstance (string assemblyName, string typeName)
+					// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+					// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
+					//
+					case "CreateInstance" when !calledMethod.ContainsGenericParameter
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.DeclaringType.Name == "Activator"
+						&& calledMethod.Parameters.Count >= 2
+						&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+						&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						return IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName;
+
+					//
+					// System.Activator
+					// 
+					// static CreateInstanceFrom (string assemblyFile, string typeName)
+					// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					case "CreateInstanceFrom" when !calledMethod.ContainsGenericParameter
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.DeclaringType.Name == "Activator"
+						&& calledMethod.Parameters.Count >= 2
+						&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+						&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						return IntrinsicId.Activator_CreateInstanceFrom;
+
+					//
+					// System.Activator
+					// 
+					// static T CreateInstance<T> ()
+					//
+					case "CreateInstance" when calledMethod.ContainsGenericParameter
+						&& calledMethod.DeclaringType.Namespace == "System"
+						&& calledMethod.DeclaringType.Name == "Activator"
+						&& calledMethod.Parameters.Count == 0:
+						return IntrinsicId.Activator_CreateInstanceOfT;
+
+					//
+					// System.AppDomain
+					//
+					// CreateInstance (string assemblyName, string typeName)
+					// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName)
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceFrom (string assemblyFile, string typeName)
+					// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+					// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
+					//
+					case var appDomainCreateInstanceMethodName when calledMethod.DeclaringType.Name == "AppDomain" && calledMethod.DeclaringType.Namespace == "System"
+						&& (appDomainCreateInstanceMethodName == "CreateInstance" || appDomainCreateInstanceMethodName == "CreateInstanceAndUnwrap"
+							|| appDomainCreateInstanceMethodName == "CreateInstanceFrom" || appDomainCreateInstanceMethodName == "CreateInstanceFromAndUnwrap")
+						&& calledMethod.Parameters.Count >= 2
+						&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
+						&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						return appDomainCreateInstanceMethodName switch
+						{
+							"CreateInstance" => IntrinsicId.AppDomain_CreateInstance,
+							"CreateInstanceAndUnwrap" => IntrinsicId.AppDomain_CreateInstanceAndUnwrap,
+							"CreateInstanceFrom" => IntrinsicId.AppDomain_CreateInstanceFrom,
+							"CreateInstanceFromAndUnwrap" => IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap,
+							_ => throw new ArgumentException ($"Reflection call '{calledMethod.FullName}' is unexpected.")
+						};
+
+					//
+					// System.Reflection.Assembly
+					//
+					// CreateInstance (string typeName)
+					// CreateInstance (string typeName, bool ignoreCase)
+					// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
+					//
+					case "CreateInstance" when calledMethod.DeclaringType.Name == "Assembly" && calledMethod.DeclaringType.Namespace == "System.Reflection"
+						&& calledMethod.Parameters.Count >= 1
+						&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String:
+						return IntrinsicId.Assembly_CreateInstance;
+
+					default:
+						return IntrinsicId.None;
+				}
+			}
+
 			public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out ValueNode methodReturnValue)
 			{
 				var reflectionContext = new ReflectionPatternContext (_markStep._context, callingMethodBody.Method, calledMethod.Resolve (), operation.Offset);
@@ -2834,8 +3165,8 @@ namespace Mono.Linker.Steps {
 					returnValueDynamicallyAccessedMemberKinds =  requiresDataFlowAnalysis ?
 						_flowAnnotations.GetReturnParameterAnnotation (calledMethodDefinition) : 0;
 
-					switch (calledMethod.Name) {
-						case "GetTypeInfo" when calledMethod.DeclaringType.Name == "IntrospectionExtensions": {
+					switch (GetIntrinsicIdForMethod (calledMethodDefinition)) {
+						case IntrinsicId.IntrospectionExtensions_GetTypeInfo: {
 								// typeof(Foo).GetTypeInfo()... will be commonly present in code targeting
 								// the dead-end reflection refactoring. The call doesn't do anything and we
 								// don't want to lose the annotation.
@@ -2843,14 +3174,14 @@ namespace Mono.Linker.Steps {
 							}
 							break;
 
-						case "GetTypeFromHandle" when calledMethod.DeclaringType.Name == "Type": {
+						case IntrinsicId.Type_GetTypeFromHandle: {
 								// Infrastructure piece to support "typeof(Foo)"
-								if (methodParams[0] is RuntimeTypeHandleValue typeHandle)
+								if (methodParams [0] is RuntimeTypeHandleValue typeHandle)
 									methodReturnValue = new SystemTypeValue (typeHandle.TypeRepresented);
 							}
 							break;
 
-						case "MakeGenericType" when calledMethod.DeclaringType.Name == "Type": {
+						case IntrinsicId.Type_MakeGenericType: {
 								// Don't care about the actual arguments, but we don't want to lose track of the type
 								// in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
 								methodReturnValue = methodParams [0];
@@ -2858,36 +3189,36 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// System.Reflection.RuntimeReflectionExtensions
+						//
 						// static GetRuntimeEvent (this Type type, string name)
 						// static GetRuntimeField (this Type type, string name)
 						// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
 						// static GetRuntimeProperty (this Type type, string name)
 						//
-						case var getRuntimeMember when (getRuntimeMember.StartsWith ("GetRuntime")
-							&& calledMethod.DeclaringType.Namespace == "System.Reflection"
-							&& calledMethod.DeclaringType.Name == "RuntimeReflectionExtensions"
-							&& calledMethod.Parameters.Count >= 2
-							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type"
-							&& calledMethod.Parameters [1].ParameterType.FullName == "System.String"): {
+						case var getRuntimeMember when getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent
+							|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField
+							|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod
+							|| getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty: {
 
 								reflectionContext.AnalyzingPattern ();
 								DynamicallyAccessedMemberKinds? memberKind = null;
 								BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
 								switch (getRuntimeMember) {
-									case var mt when getRuntimeMember.EndsWith ("Event"):
+									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
 										memberKind = DynamicallyAccessedMemberKinds.PublicEvents;
 										break;
 
-									case var mt when getRuntimeMember.EndsWith ("Field"):
+									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
 										memberKind = DynamicallyAccessedMemberKinds.PublicFields;
 										break;
 
-									case var mt when getRuntimeMember.EndsWith ("Method"):
+									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
 										memberKind = DynamicallyAccessedMemberKinds.PublicMethods;
 										break;
 
-									case var mt when getRuntimeMember.EndsWith ("Property"):
+									case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
 										memberKind = DynamicallyAccessedMemberKinds.PublicProperties;
 										break;
 
@@ -2940,11 +3271,7 @@ namespace Mono.Linker.Steps {
 						// 
 						// static Call (Type, String, Type[], Expression[])
 						//
-						case "Call" when calledMethod.DeclaringType.Name == "Expression"
-							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
-							&& calledMethod.Parameters.Count == 4
-							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
-
+						case IntrinsicId.Expression_Call: {
 								reflectionContext.AnalyzingPattern ();
 								BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
 
@@ -2973,14 +3300,9 @@ namespace Mono.Linker.Steps {
 						// static Field (Expression, Type, String)
 						// static Property (Expression, Type, String)
 						//
-						case var fieldOrProperty when ((fieldOrProperty == "Field" || fieldOrProperty == "Property")
-							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
-							&& calledMethod.DeclaringType.Name == "Expression"
-							&& calledMethod.Parameters.Count == 3
-							&& calledMethod.Parameters [1].ParameterType.FullName == "System.Type"): {
-
+						case var fieldOrPropertyInstrinsic when fieldOrPropertyInstrinsic == IntrinsicId.Expression_Field || fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property: {
 								reflectionContext.AnalyzingPattern ();
-								DynamicallyAccessedMemberKinds memberKind = calledMethod.Name [0] == 'P' ? DynamicallyAccessedMemberKinds.Properties : DynamicallyAccessedMemberKinds.Fields;
+								DynamicallyAccessedMemberKinds memberKind = fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property ? DynamicallyAccessedMemberKinds.Properties : DynamicallyAccessedMemberKinds.Fields;
 
 								foreach (var value in methodParams [1].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
@@ -3012,13 +3334,8 @@ namespace Mono.Linker.Steps {
 						// 
 						// static New (Type)
 						//
-						case "New" when calledMethod.DeclaringType.Name == "Expression"
-							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
-							&& calledMethod.Parameters.Count == 1
-							&& calledMethod.Parameters[0].ParameterType.FullName == "System.Type":
-							{
-
-								reflectionContext.AnalyzingPattern();
+						case IntrinsicId.Expression_New: {
+								reflectionContext.AnalyzingPattern ();
 
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
@@ -3041,10 +3358,7 @@ namespace Mono.Linker.Steps {
 						// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
 						// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
 						//
-						case "GetType" when calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String: {
+						case IntrinsicId.Type_GetType: {
 								reflectionContext.AnalyzingPattern ();
 
 								foreach (var typeNameValue in methodParams [0].UniqueValues ()) {
@@ -3080,38 +3394,31 @@ namespace Mono.Linker.Steps {
 						// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
 						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 						//
-						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.HasThis
-							&& calledMethod.DeclaringType.Namespace == "System":
-							{
+						case IntrinsicId.Type_GetConstructor: {
+								reflectionContext.AnalyzingPattern ();
 
-								reflectionContext.AnalyzingPattern();
 								var parameters = calledMethod.Parameters;
 								BindingFlags bindingFlags = BindingFlags.Default;
-								if (parameters.Count > 1)
-								{
-									if (methodParams[1].AsConstInt() != null)
-										bindingFlags |= (BindingFlags)methodParams[1].AsConstInt();
+								if (parameters.Count > 1) {
+									if (methodParams [1].AsConstInt () != null)
+										bindingFlags |= (BindingFlags)methodParams [1].AsConstInt ();
 								}
 								// Go over all types we've seen
-								foreach (var value in methodParams[0].UniqueValues())
-								{
-									if (value is SystemTypeValue systemTypeValue)
-									{
-										MarkConstructorsOnType(ref reflectionContext, systemTypeValue.TypeRepresented, (Func<MethodDefinition, bool>)null, bindingFlags);
-										reflectionContext.RecordHandledPattern();
-									}
-									else
-									{
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, (Func<MethodDefinition, bool>)null, bindingFlags);
+										reflectionContext.RecordHandledPattern ();
+									} else {
 										// Otherwise fall back to the bitfield requirements
 										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
 												? DynamicallyAccessedMemberKinds.PublicConstructors
 												: DynamicallyAccessedMemberKinds.Constructors;
-										RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
 							break;
+
 						//
 						// GetMethod (string)
 						// GetMethod (string, BindingFlags)
@@ -3124,55 +3431,41 @@ namespace Mono.Linker.Steps {
 						// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
 						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 						//
-						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.HasThis
-							&& calledMethod.DeclaringType.Namespace == "System":
-							{
+						case IntrinsicId.Type_GetMethod: {
+								reflectionContext.AnalyzingPattern ();
 
-								reflectionContext.AnalyzingPattern();
 								BindingFlags bindingFlags = BindingFlags.Default;
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt() != null)
-								{
-									bindingFlags |= (BindingFlags)methodParams[2].AsConstInt();
-								}
-								else if (calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags" && methodParams[3].AsConstInt() != null)
-								{
-									bindingFlags |= (BindingFlags)methodParams[3].AsConstInt();
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
+									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
+								} else if (calledMethod.Parameters.Count > 2 && calledMethod.Parameters [2].ParameterType.Name == "BindingFlags" && methodParams [3].AsConstInt () != null) {
+									bindingFlags |= (BindingFlags)methodParams [3].AsConstInt ();
 								}
 
-								foreach (var value in methodParams[0].UniqueValues())
-								{
-									if (value is SystemTypeValue systemTypeValue)
-									{
-										foreach (var stringParam in methodParams[1].UniqueValues())
-										{
-											if (stringParam is KnownStringValue stringValue)
-											{
-												MarkMethodsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
-												reflectionContext.RecordHandledPattern();
-											}
-											else
-											{
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+												reflectionContext.RecordHandledPattern ();
+											} else {
 												// Otherwise fall back to the bitfield requirements
 												var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
 														? DynamicallyAccessedMemberKinds.PublicMethods
 														: DynamicallyAccessedMemberKinds.Methods;
-												RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+												RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 											}
 										}
-									}
-									else
-									{
+									} else {
 										// Otherwise fall back to the bitfield requirements
 										var requiredMemberKinds = ((bindingFlags & BindingFlags.NonPublic) == 0)
 												? DynamicallyAccessedMemberKinds.PublicMethods
 												: DynamicallyAccessedMemberKinds.Methods;
-										RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters[0]);
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
 							break;
+
 						//
 						// GetField (string)
 						// GetField (string, BindingFlags)
@@ -3186,75 +3479,63 @@ namespace Mono.Linker.Steps {
 						// GetProperty (string, Type, Type[], ParameterModifier[])
 						// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
 						//
-						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == "GetField" || fieldPropertyOrEvent == "GetProperty" || fieldPropertyOrEvent == "GetEvent")
+						case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == IntrinsicId.Type_GetField || fieldPropertyOrEvent == IntrinsicId.Type_GetProperty || fieldPropertyOrEvent == IntrinsicId.Type_GetEvent)
 							&& calledMethod.DeclaringType.Namespace == "System"
 							&& calledMethod.DeclaringType.Name == "Type"
-							&& calledMethod.Parameters[0].ParameterType.FullName == "System.String")
-							&& calledMethod.HasThis:
-							{
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.String")
+							&& calledMethod.HasThis: {
 
-								reflectionContext.AnalyzingPattern();
+								reflectionContext.AnalyzingPattern ();
 								DynamicallyAccessedMemberKinds? memberKind = null;
-								switch (fieldPropertyOrEvent)
-								{
-									case var mt when fieldPropertyOrEvent.EndsWith("Event"):
+								switch (fieldPropertyOrEvent) {
+									case IntrinsicId.Type_GetEvent:
 										memberKind = DynamicallyAccessedMemberKinds.Events;
 										break;
 
-									case var mt when fieldPropertyOrEvent.EndsWith("Field"):
+									case IntrinsicId.Type_GetField:
 										memberKind = DynamicallyAccessedMemberKinds.Fields;
 										break;
 
-									case var mt when fieldPropertyOrEvent.EndsWith("Property"):
+									case IntrinsicId.Type_GetProperty:
 										memberKind = DynamicallyAccessedMemberKinds.Properties;
 										break;
 
 									default:
-										throw new ArgumentException($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
+										throw new ArgumentException ($"Reflection call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' is of unexpected member type.");
 								}
 								if (memberKind == null)
 									break;
 
 								BindingFlags bindingFlags = BindingFlags.Default;
-								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters[1].ParameterType.Name == "BindingFlags" && methodParams[2].AsConstInt() != null)
-								{
-									bindingFlags |= (BindingFlags)methodParams[2].AsConstInt();
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags" && methodParams [2].AsConstInt () != null) {
+									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
 								}
 
-								foreach (var value in methodParams[0].UniqueValues())
-								{
-									if (value is SystemTypeValue systemTypeValue)
-									{
-										foreach (var stringParam in methodParams[1].UniqueValues())
-										{
-											if (stringParam is KnownStringValue stringValue)
-											{
-												switch (memberKind)
-												{
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												switch (memberKind) {
 													case DynamicallyAccessedMemberKinds.Events:
-														MarkEventsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
+														MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: e => e.Name == stringValue.Contents, bindingFlags);
 														break;
 													case DynamicallyAccessedMemberKinds.Fields:
-														MarkFieldsOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
+														MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.Name == stringValue.Contents, bindingFlags);
 														break;
 													case DynamicallyAccessedMemberKinds.Properties:
-														MarkPropertiesOnTypeHierarchy(ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
+														MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 														break;
 													default:
-														Debug.Fail("Unreachable.");
+														Debug.Fail ("Unreachable.");
 														break;
 												}
-												reflectionContext.RecordHandledPattern();
-											}
-											else
-											{
-												RequireDynamicallyAccessedMembers(ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters[0]);
+												reflectionContext.RecordHandledPattern ();
+											} else {
+												RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
 											}
 										}
-									}
-									else
-									{
-										RequireDynamicallyAccessedMembers(ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters[0]);
+									} else {
+										RequireDynamicallyAccessedMembers (ref reflectionContext, (DynamicallyAccessedMemberKinds)memberKind, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
@@ -3270,13 +3551,7 @@ namespace Mono.Linker.Steps {
 						// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
 						// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
 						//
-						case "CreateInstance" when !calledMethod.ContainsGenericParameter
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.DeclaringType.Name == "Activator"
-							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.Parameters [0].ParameterType.MetadataType != MetadataType.String: {
-
+						case IntrinsicId.Activator_CreateInstance_Type: {
 								var parameters = calledMethod.Parameters;
 
 								reflectionContext.AnalyzingPattern ();
@@ -3299,7 +3574,7 @@ namespace Mono.Linker.Steps {
 									} else {
 										// Overload that has the parameters as the second or fourth argument
 										int argsParam = parameters.Count == 2 || parameters.Count == 3 ? 1 : 3;
-										
+
 										if (methodParams.Count > argsParam &&
 											methodParams [argsParam] is ArrayValue arrayValue &&
 											arrayValue.Size.AsConstInt () != null) {
@@ -3315,8 +3590,7 @@ namespace Mono.Linker.Steps {
 											bindingFlags |= BindingFlags.Public;
 										}
 									}
-								}
-								else {
+								} else {
 									// The overload with a single System.Type argument
 									ctorParameterCount = 0;
 									bindingFlags |= BindingFlags.Public;
@@ -3327,7 +3601,7 @@ namespace Mono.Linker.Steps {
 									if (value is SystemTypeValue systemTypeValue) {
 										// Special case known type values as we can do better by applying exact binding flags and parameter count.
 										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented,
-											ctorParameterCount == null ? (Func<MethodDefinition, bool>) null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
+											ctorParameterCount == null ? (Func<MethodDefinition, bool>)null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
 										reflectionContext.RecordHandledPattern ();
 									} else {
 										// Otherwise fall back to the bitfield requirements
@@ -3349,12 +3623,7 @@ namespace Mono.Linker.Steps {
 						// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
 						// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
 						//
-						case "CreateInstance" when !calledMethod.ContainsGenericParameter
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.DeclaringType.Name == "Activator"
-							&& calledMethod.Parameters.Count >= 2
-							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
-							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
 							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
 							break;
 
@@ -3365,12 +3634,7 @@ namespace Mono.Linker.Steps {
 						// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
 						// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
 						//
-						case "CreateInstanceFrom" when !calledMethod.ContainsGenericParameter
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.DeclaringType.Name == "Activator"
-							&& calledMethod.Parameters.Count >= 2
-							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
-							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						case IntrinsicId.Activator_CreateInstanceFrom:
 							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
 							break;
 
@@ -3379,10 +3643,7 @@ namespace Mono.Linker.Steps {
 						// 
 						// static T CreateInstance<T> ()
 						//
-						case "CreateInstance" when calledMethod.ContainsGenericParameter
-							&& calledMethod.DeclaringType.Namespace == "System"
-							&& calledMethod.DeclaringType.Name == "Activator"
-							&& calledMethod.Parameters.Count == 0: {
+						case IntrinsicId.Activator_CreateInstanceOfT: {
 								reflectionContext.AnalyzingPattern ();
 
 								if (calledMethod is GenericInstanceMethod genericCalledMethod && genericCalledMethod.GenericArguments.Count == 1
@@ -3418,12 +3679,10 @@ namespace Mono.Linker.Steps {
 						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
 						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
 						//
-						case var appDomainCreateInstanceMethodName when calledMethod.DeclaringType.Name == "AppDomain" && calledMethod.DeclaringType.Namespace == "System"
-							&& (appDomainCreateInstanceMethodName == "CreateInstance" || appDomainCreateInstanceMethodName == "CreateInstanceAndUnwrap"
-								|| appDomainCreateInstanceMethodName == "CreateInstanceFrom" || appDomainCreateInstanceMethodName == "CreateInstanceFromAndUnwrap")
-							&& calledMethod.Parameters.Count >= 2
-							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String
-							&& calledMethod.Parameters [1].ParameterType.MetadataType == MetadataType.String:
+						case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
+							|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
+							|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
+							|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
 							ProcessCreateInstanceByName (ref reflectionContext, calledMethodDefinition, methodParams);
 							break;
 
@@ -3434,9 +3693,7 @@ namespace Mono.Linker.Steps {
 						// CreateInstance (string typeName, bool ignoreCase)
 						// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
 						//
-						case "CreateInstance" when calledMethod.DeclaringType.Name == "Assembly" && calledMethod.DeclaringType.Namespace == "System.Reflection"
-							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String:
+						case IntrinsicId.Assembly_CreateInstance:
 							//
 							// TODO: This could be supported for `this` only calls
 							//
@@ -3447,7 +3704,7 @@ namespace Mono.Linker.Steps {
 						default:
 							if (requiresDataFlowAnalysis) {
 								reflectionContext.AnalyzingPattern ();
-								for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex ++) {
+								for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex++) {
 									var requiredMemberKinds = _flowAnnotations.GetParameterAnnotation (calledMethodDefinition, parameterIndex);
 									if (requiredMemberKinds != 0) {
 										IMetadataTokenProvider targetContext;
@@ -3456,8 +3713,7 @@ namespace Mono.Linker.Steps {
 												targetContext = calledMethodDefinition;
 											else
 												targetContext = calledMethodDefinition.Parameters [parameterIndex - 1];
-										}
-										else {
+										} else {
 											targetContext = calledMethodDefinition.Parameters [parameterIndex];
 										}
 
