@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -177,7 +178,7 @@ namespace System.Diagnostics.Tracing
 
     internal static class EventPipe
     {
-        private static ulong s_sessionID = 0;
+        internal static ConcurrentQueue<ulong> s_sessionIDs = new ConcurrentQueue<ulong>();
 
         internal static void Enable(EventPipeConfiguration configuration)
         {
@@ -193,16 +194,19 @@ namespace System.Diagnostics.Tracing
 
             EventPipeProviderConfiguration[] providers = configuration.Providers;
 
-            s_sessionID = EventPipeInternal.Enable(
+            s_sessionIDs.Enqueue(EventPipeInternal.Enable(
                 configuration.OutputFile,
                 configuration.Format,
                 configuration.CircularBufferSizeInMB,
-                providers);
+                providers));
         }
 
         internal static void Disable()
         {
-            EventPipeInternal.Disable(s_sessionID);
+            if (s_sessionIDs.TryDequeue(out ulong sessionID))
+            {
+                EventPipeInternal.Disable(sessionID);
+            }
         }
     }
 
