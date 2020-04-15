@@ -4806,6 +4806,7 @@ mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameR
 		result = prevent_reference_assembly_from_running (result, refonly);
 	}
 #else
+	result = NULL;
 	if (bundles != NULL) {
 		MonoImageOpenStatus status;
 		MonoImage *image;

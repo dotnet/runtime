@@ -890,6 +890,36 @@
 
   <Import Project="Directory.Build.targets" />
 
+  <Target Name="BuildAppleAppBuilder">
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
+  </Target>
+
+  <UsingTask TaskName="AppleAppBuilderTask" 
+             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
+
+  <Target Name="BuildAppleApp" DependsOnTargets="BuildAppleAppBuilder">
+    <AppleAppBuilderTask 
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(ProjectName)"
+        Optimized="$(Optimized)"
+        MonoInclude="$(BinDir)include\mono-2.0"
+        CrossCompiler="$(BinDir)cross\mono-aot-cross"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        NativeMainSource="$(NativeMainSource)"
+        GenerateXcodeProject="$(GenerateXcodeProject)"
+        BuildAppBundle="$(BuildAppBundle)"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BinDir)\$(ProjectName)"
+        AppDir="$(AppDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App: $(AppBundlePath)"/>
+  </Target>
+
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
   <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
