@@ -105,10 +105,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             try
             {
-                bool isUnsigned = ReadTag() switch
+                bool isNegative = ReadTag() switch
                 {
-                    CborTag.UnsignedBigNum => true,
-                    CborTag.NegativeBigNum => false,
+                    CborTag.UnsignedBigNum => false,
+                    CborTag.NegativeBigNum => true,
                     _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
                 };
 
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
                 BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
-                return isUnsigned ? unsignedValue : -1 - unsignedValue;
+                return isNegative ? -1 - unsignedValue : unsignedValue;
             }
             catch
             {

@@ -81,6 +81,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private const int SignMask = unchecked((int)0x80000000);
         private const int ScaleMask = 0x00ff0000;
         private const int ScaleShift = 16;
+        private const int ExponentUpperBound = 28;
 
         /// deconstructs a decimal value into its signed integral component and negative base-10 exponent
         public static void Deconstruct(decimal value, out decimal mantissa, out byte scale)
@@ -108,9 +109,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public static decimal Reconstruct(decimal mantissa, long exponent)
         {
-            if (exponent >= 0)
+            if (mantissa == 0)
             {
-                // for positive exponents attempt to compute its decimal value,
+                return mantissa;
+            }
+            else if (exponent > ExponentUpperBound)
+            {
+                throw new OverflowException("Value was either too large or too small for a Decimal.");
+            }
+            else if (exponent >= 0)
+            {
+                // for positive exponents attempt to compute its decimal representation,
                 // with risk of throwing OverflowException
                 for (; exponent >= 5; exponent -= 5)
                 {
@@ -129,7 +138,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         throw new Exception("Unreachable code in decimal exponentiation logic");
                 }
             }
-            else if (exponent >= -28)
+            else if (exponent >= -ExponentUpperBound)
             {
                 // exponent falls within range of decimal normal-form representation
                 return Reconstruct(mantissa, (byte)(-exponent));

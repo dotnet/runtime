@@ -186,6 +186,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("81c07330392f30342f323032302031393a35313a3530")] // [0("09/04/2020 19:51:50")]
+        [InlineData("81c06e4c617374204368726973746d6173")] // [0("Last Christmas")]
+        public static void ReadDateTimeOffset_InvalidFormat_ShouldRollbackToInitialState(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborTag.DateTimeString, reader.ReadTag());
+        }
+
+        [Theory]
         [InlineData("0", "c24100")]
         [InlineData("1", "c24101")]
         [InlineData("-1", "c34100")]
@@ -233,6 +251,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("81c280")]
+        [InlineData("81c301")]
+        public static void ReadBigInteger_InvalidTagPayload_ShouldRollbackToInitialState(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<FormatException>(() => reader.ReadBigInteger());
+
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+        }
+
+        [Theory]
         [InlineData("0", "c4820000")]
         [InlineData("1", "c4820001")]
         [InlineData("-1", "c4820020")]
@@ -242,6 +277,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("79228162514264337593543950335", "c48200c24cffffffffffffffffffffffff")] // decimal.MaxValue
         [InlineData("7922816251426433759354395033.5", "c48220c24cffffffffffffffffffffffff")]
         [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
+        [InlineData("3.9614081247908796757769715711", "c482381bc24c7fffffff7fffffff7fffffff")] // maximal number of fractional digits
+        [InlineData("2000000000", "c4820902")] // encoding with positive exponent representation in payload (2 * 10^9)
         public static void ReadDecimal_SingleValue_HappyPath(string expectedStringValue, string hexEncoding)
         {
             decimal expectedValue = decimal.Parse(expectedStringValue);
@@ -252,6 +289,58 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             decimal result = reader.ReadDecimal();
             Assert.Equal(CborReaderState.Finished, reader.Peek());
             Assert.Equal(expectedValue, result);
+        }
+
+        [Theory]
+        [InlineData("c482181d02")] // 2 * 10^29
+        [InlineData("c482381c02")] // 2 * 10^-29
+        [InlineData("c48201c24cffffffffffffffffffffffff")] // decimal.MaxValue * 10^1
+        [InlineData("c48200c24d01000000000000000000000000")] // (decimal.MaxValue + 1) * 10^0
+        [InlineData("c48200c34cffffffffffffffffffffffff")] // (decimal.MinValue - 1) * 10^0
+        public static void ReadDecimal_LargeValues_ShouldThrowOverflowException(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+            Assert.Throws<OverflowException>(() => reader.ReadDecimal());
+        }
+
+        [Theory]
+        [InlineData("c201")]
+        public static void ReadDecimal_InvalidTag_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadDecimal());
+        }
+
+        [Theory]
+        [InlineData("c401")] // 4(1)
+        [InlineData("c480")] // 4([])
+        [InlineData("c48101")] // 4([1])
+        [InlineData("c4820160")] // 4([1, ""])
+        [InlineData("c4826001")] // 4(["", 1])
+        public static void ReadDecimal_InvalidFormat_ShouldThrowFormatException(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+            Assert.Throws<FormatException>(() => reader.ReadDecimal());
+        }
+
+        [Theory]
+        [InlineData("81c401")] // 4(1)
+        [InlineData("81c480")] // [4([])]
+        [InlineData("81c4826001")] // [4(["", 1])]
+        public static void ReadDecimal_InvalidTagPayload_ShouldRollbackToInitialState(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<FormatException>(() => reader.ReadDecimal());
+
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborTag.DecimalFraction, reader.ReadTag());
         }
     }
 }

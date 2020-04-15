@@ -139,6 +139,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("79228162514264337593543950335", "c48200c24cffffffffffffffffffffffff")] // decimal.MaxValue
         [InlineData("7922816251426433759354395033.5", "c48220c24cffffffffffffffffffffffff")]
         [InlineData("-79228162514264337593543950335", "c48200c34cfffffffffffffffffffffffe")] // decimal.MinValue
+        [InlineData("3.9614081247908796757769715711", "c482381bc24c7fffffff7fffffff7fffffff")] // maximal number of fractional digits
         public static void WriteDecimal_SingleValue_HappyPath(string stringValue, string expectedHexEncoding)
         {
             decimal value = decimal.Parse(stringValue);
