@@ -141,13 +141,19 @@ namespace System.Net.Http.Headers
             public char this[int index] => (char)_p[index];
         }
 
-        // Find possible known header match via lookup on length and a distinguishing char for that length.
-        // Matching is case-insenstive.
-        // NOTE: Because of this, we do not preserve the case of the original header,
-        // whether from the wire or from the user explicitly setting a known header using a header name string.
+        /// <summary>
+        /// Find possible known header match via lookup on length and a distinguishing char for that length.
+        /// </summary>
+        /// <remarks>
+        /// Matching is case-insensitive. Because of this, we do not preserve the case of the original header,
+        /// whether from the wire or from the user explicitly setting a known header using a header name string.
+        /// </remarks>
         private static KnownHeader? GetCandidate<T>(T key)
             where T : struct, IHeaderNameAccessor     // Enforce struct for performance
         {
+            // Lookup is performed by first switching on the header name's length, and then switching
+            // on the most unique position in that length's string.
+
             int length = key.Length;
             switch (length)
             {
@@ -155,190 +161,187 @@ namespace System.Net.Http.Headers
                     return TE; // TE
 
                 case 3:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'A': case 'a': return Age; // [A]ge
-                        case 'P': case 'p': return P3P; // [P]3P
-                        case 'T': case 't': return TSV; // [T]SV
-                        case 'V': case 'v': return Via; // [V]ia
+                        case 'a': return Age; // [A]ge
+                        case 'p': return P3P; // [P]3P
+                        case 't': return TSV; // [T]SV
+                        case 'v': return Via; // [V]ia
                     }
                     break;
 
                 case 4:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'D': case 'd': return Date; // [D]ate
-                        case 'E': case 'e': return ETag; // [E]Tag
-                        case 'F': case 'f': return From; // [F]rom
-                        case 'H': case 'h': return Host; // [H]ost
-                        case 'L': case 'l': return Link; // [L]ink
-                        case 'V': case 'v': return Vary; // [V]ary
+                        case 'd': return Date; // [D]ate
+                        case 'e': return ETag; // [E]Tag
+                        case 'f': return From; // [F]rom
+                        case 'h': return Host; // [H]ost
+                        case 'l': return Link; // [L]ink
+                        case 'v': return Vary; // [V]ary
                     }
                     break;
 
                 case 5:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'A': case 'a': return Allow; // [A]llow
-                        case 'R': case 'r': return Range; // [R]ange
+                        case 'a': return Allow; // [A]llow
+                        case 'r': return Range; // [R]ange
                     }
                     break;
 
                 case 6:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'A': case 'a': return Accept; // [A]ccept
-                        case 'C': case 'c': return Cookie; // [C]ookie
-                        case 'E': case 'e': return Expect; // [E]xpect
-                        case 'O': case 'o': return Origin; // [O]rigin
-                        case 'P': case 'p': return Pragma; // [P]ragma
-                        case 'S': case 's': return Server; // [S]erver
+                        case 'a': return Accept; // [A]ccept
+                        case 'c': return Cookie; // [C]ookie
+                        case 'e': return Expect; // [E]xpect
+                        case 'o': return Origin; // [O]rigin
+                        case 'p': return Pragma; // [P]ragma
+                        case 's': return Server; // [S]erver
                     }
                     break;
 
                 case 7:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
                         case ':': return PseudoStatus; // [:]status
-                        case 'A': case 'a': return AltSvc;  // [A]lt-Svc
-                        case 'C': case 'c': return Cookie2; // [C]ookie2
-                        case 'E': case 'e': return Expires; // [E]xpires
-                        case 'R': case 'r':
-                            switch (key[3])
+                        case 'a': return AltSvc;  // [A]lt-Svc
+                        case 'c': return Cookie2; // [C]ookie2
+                        case 'e': return Expires; // [E]xpires
+                        case 'r':
+                            switch (key[3] | 0x20)
                             {
-                                case 'E': case 'e': return Referer; // [R]ef[e]rer
-                                case 'R': case 'r': return Refresh; // [R]ef[r]esh
+                                case 'e': return Referer; // [R]ef[e]rer
+                                case 'r': return Refresh; // [R]ef[r]esh
                             }
                             break;
-                        case 'T': case 't': return Trailer; // [T]railer
-                        case 'U': case 'u': return Upgrade; // [U]pgrade
-                        case 'W': case 'w': return Warning; // [W]arning
-                        case 'X': case 'x': return XCache;  // [X]-Cache
+                        case 't': return Trailer; // [T]railer
+                        case 'u': return Upgrade; // [U]pgrade
+                        case 'w': return Warning; // [W]arning
+                        case 'x': return XCache;  // [X]-Cache
                     }
                     break;
 
                 case 8:
-                    switch (key[3])
+                    switch (key[3] | 0x20)
                     {
-                        case 'M': case 'm': return IfMatch;  // If-[M]atch
-                        case 'R': case 'r': return IfRange;  // If-[R]ange
-                        case 'A': case 'a': return Location; // Loc[a]tion
+                        case '-': return AltUsed;  // Alt[-]Used
+                        case 'a': return Location; // Loc[a]tion
+                        case 'm': return IfMatch;  // If-[M]atch
+                        case 'r': return IfRange;  // If-[R]ange
                     }
                     break;
 
                 case 9:
-                    switch (key[0])
-                    {
-                        case 'E': case 'e': return ExpectCT; // [E]xpect-CT
-                    }
-                    break;
+                    return ExpectCT; // Expect-CT
 
                 case 10:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'C': case 'c': return Connection; // [C]onnection
-                        case 'K': case 'k': return KeepAlive;  // [K]eep-Alive
-                        case 'S': case 's': return SetCookie;  // [S]et-Cookie
-                        case 'U': case 'u': return UserAgent;  // [U]ser-Agent
+                        case 'c': return Connection; // [C]onnection
+                        case 'k': return KeepAlive;  // [K]eep-Alive
+                        case 's': return SetCookie;  // [S]et-Cookie
+                        case 'u': return UserAgent;  // [U]ser-Agent
                     }
                     break;
 
                 case 11:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'C': case 'c': return ContentMD5; // [C]ontent-MD5
-                        case 'R': case 'r': return RetryAfter; // [R]etry-After
-                        case 'S': case 's': return SetCookie2; // [S]et-Cookie2
+                        case 'c': return ContentMD5; // [C]ontent-MD5
+                        case 'r': return RetryAfter; // [R]etry-After
+                        case 's': return SetCookie2; // [S]et-Cookie2
                     }
                     break;
 
                 case 12:
-                    switch (key[2])
+                    switch (key[2] | 0x20)
                     {
-                        case 'C': case 'c': return AcceptPatch; // Ac[c]ept-Patch
-                        case 'N': case 'n': return ContentType; // Co[n]tent-Type
-                        case 'X': case 'x': return MaxForwards; // Ma[x]-Forwards
-                        case 'M': case 'm': return XMSEdgeRef;  // X-[M]SEdge-Ref
-                        case 'P': case 'p': return XPoweredBy;  // X-[P]owered-By
-                        case 'R': case 'r': return XRequestID;  // X-[R]equest-ID
+                        case 'c': return AcceptPatch; // Ac[c]ept-Patch
+                        case 'm': return XMSEdgeRef;  // X-[M]SEdge-Ref
+                        case 'n': return ContentType; // Co[n]tent-Type
+                        case 'p': return XPoweredBy;  // X-[P]owered-By
+                        case 'r': return XRequestID;  // X-[R]equest-ID
+                        case 'x': return MaxForwards; // Ma[x]-Forwards
                     }
                     break;
 
                 case 13:
-                    switch (key[12])
+                    switch (key[12] | 0x20)
                     {
-                        case 'S': case 's': return AcceptRanges;  // Accept-Range[s]
-                        case 'N': case 'n': return Authorization; // Authorizatio[n]
-                        case 'L': case 'l': return CacheControl;  // Cache-Contro[l]
-                        case 'E': case 'e': return ContentRange;  // Content-Rang[e]
-                        case 'H': case 'h': return IfNoneMatch;   // If-None-Matc[h]
-                        case 'D': case 'd': return LastModified;  // Last-Modifie[d]
-                        case 'T': case 't': return ProxySupport;  // Proxy-Suppor[t]
-                        case 'G': case 'g': return ServerTiming;  // Server-Timin[g]
+                        case 'd': return LastModified;  // Last-Modifie[d]
+                        case 'e': return ContentRange;  // Content-Rang[e]
+                        case 'g': return ServerTiming;  // Server-Timin[g]
+                        case 'h': return IfNoneMatch;   // If-None-Matc[h]
+                        case 'l': return CacheControl;  // Cache-Contro[l]
+                        case 'n': return Authorization; // Authorizatio[n]
+                        case 's': return AcceptRanges;  // Accept-Range[s]
+                        case 't': return ProxySupport;  // Proxy-Suppor[t]
                     }
                     break;
 
                 case 14:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'A': case 'a': return AcceptCharset; // [A]ccept-Charset
-                        case 'C': case 'c': return ContentLength; // [C]ontent-Length
+                        case 'a': return AcceptCharset; // [A]ccept-Charset
+                        case 'c': return ContentLength; // [C]ontent-Length
                     }
                     break;
 
                 case 15:
-                    switch (key[7])
+                    switch (key[7] | 0x20)
                     {
                         case '-': return XFrameOptions;  // X-Frame[-]Options
-                        case 'M': case 'm': return XUACompatible;  // X-UA-Co[m]patible
-                        case 'E': case 'e': return AcceptEncoding; // Accept-[E]ncoding
-                        case 'K': case 'k': return PublicKeyPins;  // Public-[K]ey-Pins
-                        case 'L': case 'l': return AcceptLanguage; // Accept-[L]anguage
-                        case 'R': case 'r': return ReferrerPolicy; // Referre[r]-Policy
+                        case 'e': return AcceptEncoding; // Accept-[E]ncoding
+                        case 'k': return PublicKeyPins;  // Public-[K]ey-Pins
+                        case 'l': return AcceptLanguage; // Accept-[L]anguage
+                        case 'm': return XUACompatible;  // X-UA-Co[m]patible
+                        case 'r': return ReferrerPolicy; // Referre[r]-Policy
                     }
                     break;
 
                 case 16:
-                    switch (key[11])
+                    switch (key[11] | 0x20)
                     {
-                        case 'O': case 'o': return ContentEncoding; // Content-Enc[o]ding
-                        case 'G': case 'g': return ContentLanguage; // Content-Lan[g]uage
-                        case 'A': case 'a': return ContentLocation; // Content-Loc[a]tion
-                        case 'C': case 'c':
-                            switch (key[0])
+                        case 'a': return ContentLocation; // Content-Loc[a]tion
+                        case 'c':
+                            switch (key[0] | 0x20)
                             {
-                                case 'P': case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
-                                case 'X': case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
+                                case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
+                                case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
                             }
                             break;
-                        case 'I': case 'i': return WWWAuthenticate; // WWW-Authent[i]cate
-                        case 'R': case 'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
+                        case 'g': return ContentLanguage; // Content-Lan[g]uage
+                        case 'i': return WWWAuthenticate; // WWW-Authent[i]cate
+                        case 'o': return ContentEncoding; // Content-Enc[o]ding
+                        case 'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
                     }
                     break;
 
                 case 17:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'I': case 'i': return IfModifiedSince;  // [I]f-Modified-Since
-                        case 'S': case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
-                        case 'T': case 't': return TransferEncoding; // [T]ransfer-Encoding
+                        case 'i': return IfModifiedSince;  // [I]f-Modified-Since
+                        case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
+                        case 't': return TransferEncoding; // [T]ransfer-Encoding
                     }
                     break;
 
                 case 18:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'P': case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
-                        case 'X': case 'x': return XContentDuration;  // [X]-Content-Duration
+                        case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
+                        case 'x': return XContentDuration;  // [X]-Content-Duration
                     }
                     break;
 
                 case 19:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'C': case 'c': return ContentDisposition; // [C]ontent-Disposition
-                        case 'I': case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
-                        case 'P': case 'p': return ProxyAuthorization; // [P]roxy-Authorization
+                        case 'c': return ContentDisposition; // [C]ontent-Disposition
+                        case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
+                        case 'p': return ProxyAuthorization; // [P]roxy-Authorization
                     }
                     break;
 
@@ -349,11 +352,11 @@ namespace System.Net.Http.Headers
                     return SecWebSocketVersion; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'A': case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
-                        case 'S': case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
-                        case 'X': case 'x': return XContentTypeOptions;  // [X]-Content-Type-Options
+                        case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
+                        case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
+                        case 'x': return XContentTypeOptions;  // [X]-Content-Type-Options
                     }
                     break;
 
@@ -364,10 +367,10 @@ namespace System.Net.Http.Headers
                     return SecWebSocketExtensions; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (key[0])
+                    switch (key[0] | 0x20)
                     {
-                        case 'S': case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
-                        case 'U': case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
+                        case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
+                        case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
                     }
                     break;
 
@@ -375,10 +378,10 @@ namespace System.Net.Http.Headers
                     return AccessControlAllowOrigin; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (key[21])
+                    switch (key[21] | 0x20)
                     {
-                        case 'H': case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
-                        case 'M': case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
+                        case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
+                        case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
                     }
                     break;
 
