@@ -191,7 +191,7 @@ namespace System.Drawing
         {
             if (filename == null)
                 throw new ArgumentNullException(nameof(filename));
-            
+
             CheckDirectoryExists(filename);
 
             int st;
