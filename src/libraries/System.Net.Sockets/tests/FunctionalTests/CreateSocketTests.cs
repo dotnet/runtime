@@ -447,7 +447,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [DllImport("libc")]
-        static extern int socket(int domain, int type, int protocol);
+        private static extern int socket(int domain, int type, int protocol);
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]

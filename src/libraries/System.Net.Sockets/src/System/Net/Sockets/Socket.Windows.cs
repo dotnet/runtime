@@ -100,14 +100,9 @@ namespace System.Net.Sockets
             socketType = info.iSocketType;
             protocolType = info.iProtocol;
 
-            if (SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success)
-            {
-                isListening = isListeningValue != 0;
-            }
-            else
-            {
-                isListening false;
-            }
+            isListening =
+                SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success &&
+                isListeningValue != 0;
 
             // There's no API to retrieve this (WSAIsBlocking isn't supported any more).  Assume it's blocking, but we might be wrong.
             // This affects the result of querying Socket.Blocking, which will mostly only affect user code that happens to query

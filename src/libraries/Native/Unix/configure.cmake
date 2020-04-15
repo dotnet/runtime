@@ -422,7 +422,6 @@ check_include_files(
      "sys/proc_info.h"
      HAVE_SYS_PROCINFO_H)
 
-
 check_symbol_exists(
     epoll_create1
     sys/epoll.h
