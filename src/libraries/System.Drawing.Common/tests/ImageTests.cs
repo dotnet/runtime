@@ -200,7 +200,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_InvalidDirecotry_ThrowsDirectoryNotFoundException()
         {
             using (var bitmap = new Bitmap(1, 1))
