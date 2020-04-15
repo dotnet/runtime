@@ -15,10 +15,10 @@
   </PropertyGroup>
 
   <!--
-    For mobile targets, we do not need the host, so allow depproj's to opt 
-    out and skip building. 
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    opt out.
   -->
-  <Target Name="MobileSkipBuildProps" 
+  <Target Name="MonoSkipBuildProps" 
           Condition="('$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(TargetsMobile)' == 'true') or '$(SkipOnMono)' == 'true'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>

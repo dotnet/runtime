@@ -37,9 +37,6 @@
     -->
     <DisableRarCache>true</DisableRarCache>
 
-    <!-- Since Mono does not use crossgen, ensure no crossgen targets are hit -->
-    <DisableCrossgen Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
-
     <!-- During a build from source, only current-RID assets are available from upstream repos. -->
     <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == '' and '$(DotNetBuildFromSource)' == 'true'">false</RestoreAllBuildRids>
     <!--
