@@ -17,11 +17,12 @@ internal class Xcode
         string workspace,
         string binDir,
         string monoInclude,
-        bool useConsoleUiTemplate = false,
+        bool preferDylibs,
+        bool useConsoleUiTemplate,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dylib", ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
+        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
             .Concat(Directory.GetFiles(binDir, "*.aotdata"))
@@ -49,12 +50,20 @@ internal class Xcode
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude);
 
+        string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
         string toLink = "";
         foreach (string lib in Directory.GetFiles(workspace, "*.a"))
         {
-            // these libraries are pinvoked
-            // -force_load will be removed once we enable direct-pinvokes for AOT
-            toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+            string libName = Path.GetFileNameWithoutExtension(lib);
+            // libmono must always be statically linked, for other librarires we can use dylibs
+            bool dylibExists = libName != "libmono" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
+
+            if (!preferDylibs || !dylibExists)
+            {
+                // these libraries are pinvoked
+                // -force_load will be removed once we enable direct-pinvokes for AOT
+                toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+            }
         }
         foreach (string lib in Directory.GetFiles(binDir, "*.dll.o"))
         {

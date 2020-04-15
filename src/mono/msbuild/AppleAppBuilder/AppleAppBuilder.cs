@@ -34,7 +34,7 @@ public class AppleAppBuilderTask : Task
     /// Path to Mono public headers (*.h)
     /// </summary>
     [Required]
-    public string MonoInclude { get; set; } = ""!;
+    public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
@@ -165,7 +165,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, 
-                AppDir, binDir, MonoInclude, UseConsoleUITemplate, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, NativeMainSource);
 
             if (BuildAppBundle)
             {

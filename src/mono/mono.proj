@@ -907,8 +907,10 @@
     <PropertyGroup>
       <TestDir>$(ArtifactsDir)bin\$(TestName)\$(NetCoreAppCurrent)-$(Configuration)</TestDir>
       <BclDir>$(ArtifactsDir)bin\runtime\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BclDir>
+      <BundleDir>$(TestDir)\Bundle</BundleDir>
     </PropertyGroup>
     <ItemGroup>
+      <TestBinaries Include="$(TestDir)\*.*"/>
       <AppleTestRunnerBinaries Include="msbuild\AppleTestRunner\bin\*.*" />
       <BclBinaries Include="$(BclDir)\*.*" Exclude="$(BclDir)\System.Runtime.WindowsRuntime.dll" />
       <MonoRuntimeBinaries Include="$(BinDir)\*.*" />
@@ -918,22 +920,25 @@
     <Error Condition="!Exists('$(TestDir)')" Text="TestDir=$(TestDir) doesn't exist" />
     <Error Condition="!Exists('$(BclDir)')" Text="BclDir=$(BclDir) doesn't exist" />
 
-    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(TestDir)\%(RecursiveDir)" />
-    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(TestDir)\%(RecursiveDir)" />
-    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(TestDir)\%(RecursiveDir)" />
+    <RemoveDir Directories="$(BundleDir)" />
+
+    <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" />
+    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" />
 
    <AppleAppBuilderTask 
         Arch="$(TargetArchitecture)"
         ProjectName="$(TestName)"
-        MonoInclude="$(BinDir)include\mono-2.0"
+        MonoRuntimeHeaders="$(BinDir)include\mono-2.0"
         CrossCompiler="$(BinDir)cross\mono-aot-cross"
         MainLibraryFileName="AppleTestRunner.dll"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(TestDir)\Bundle"
-        AppDir="$(TestDir)">
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
