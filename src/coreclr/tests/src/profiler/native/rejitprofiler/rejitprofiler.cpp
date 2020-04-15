@@ -72,7 +72,7 @@ HRESULT ReJITProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     DWORD eventMaskLow = COR_PRF_ENABLE_REJIT |
                          COR_PRF_MONITOR_JIT_COMPILATION |
-                         COR_PRF_DISABLE_ALL_NGEN_IMAGES;
+                         COR_PRF_MONITOR_CACHE_SEARCHES;
     DWORD eventMaskHigh = 0x0;
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMaskLow, eventMaskHigh)))
     {
@@ -119,15 +119,10 @@ HRESULT ReJITProfiler::Shutdown()
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
 {
-    ModuleID moduleId = GetModuleIDForFunction(functionId);
-    String moduleName = GetModuleIDName(moduleId);
-
-    String funcName = GetFunctionIDName(functionId);
-    INFO(L"jitting started for " << funcName << L" in module " << moduleName);
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
+HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
 {
     String functionName = GetFunctionIDName(functionId);
     ModuleID moduleId = GetModuleIDForFunction(functionId);
@@ -163,14 +158,64 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID funct
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
+{
+    return FunctionSeen(functionId);
+}
+
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITInlining(FunctionID callerId, FunctionID calleeId, BOOL* pfShouldInline)
 {
     AddInlining(callerId, calleeId);
     *pfShouldInline = TRUE;
 
-    String calleeName = GetFunctionIDName(calleeId);
-    String moduleName = GetModuleIDName(GetModuleIDForFunction(calleeId));
-    INFO(L"Inlining occurred! Inliner=" << GetFunctionIDName(callerId) << L" Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
+    return S_OK;
+}
+
+
+HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
+{
+    if (result == COR_PRF_CACHED_FUNCTION_FOUND)
+    {
+        printf("ReJITProfiler::JITCachedFunctionSearchFinished COR_PRF_CACHED_FUNCTION_FOUND\n");
+
+        HRESULT hr;
+        if(FAILED(hr = FunctionSeen(functionId)))
+        {
+            return hr;
+        }
+
+        // TODO: this only looks in the same module as the function, with version bubbles that may
+        // not hold.
+        ModuleID modId = GetModuleIDForFunction(functionId);
+        mdToken methodDef;
+        if (FAILED(hr = pCorProfilerInfo->GetFunctionInfo(functionId, NULL, NULL, &methodDef)))
+        {
+            printf("Call to GetFunctionInfo failed with hr=0x%x\n", hr);
+            return hr;
+        }
+
+        COMPtrHolder<ICorProfilerMethodEnum> pEnum = NULL;
+        if (FAILED(hr = pCorProfilerInfo->EnumNgenModuleMethodsInliningThisMethod(modId, modId, methodDef, NULL, &pEnum)))
+        {
+            printf("Call to EnumNgenModuleMethodsInliningThisMethod failed with hr=0x%x\n", hr);
+            return hr;
+        }
+
+        COR_PRF_METHOD method;
+        while (pEnum->Next(1, &method, NULL) == S_OK)
+        {
+            FunctionID inlinerFuncId;
+            if (FAILED(hr = pCorProfilerInfo->GetFunctionFromToken(method.moduleId,
+                                                                              method.methodId,
+                                                                              &inlinerFuncId)))
+            {
+                printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
+                return hr;
+            }
+
+            AddInlining(inlinerFuncId, functionId);
+        }
+    }
 
     return S_OK;
 }
@@ -289,6 +334,10 @@ void ReJITProfiler::AddInlining(FunctionID inliner, FunctionID inlinee)
     {
         inliners->insert(inliner);
     }
+
+    String calleeName = GetFunctionIDName(inlinee);
+    String moduleName = GetModuleIDName(GetModuleIDForFunction(inlinee));
+    INFO(L"Inlining occurred! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
 }
 
 mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)

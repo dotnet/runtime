@@ -37,6 +37,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock);
     virtual HRESULT STDMETHODCALLTYPE JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock);
     virtual HRESULT STDMETHODCALLTYPE JITInlining(FunctionID callerId, FunctionID calleeId, BOOL* pfShouldInline);
+    virtual HRESULT STDMETHODCALLTYPE JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result);
 
     virtual HRESULT STDMETHODCALLTYPE ReJITCompilationStarted(FunctionID functionId, ReJITID rejitId, BOOL fIsSafeToBlock);
     virtual HRESULT STDMETHODCALLTYPE GetReJITParameters(ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl* pFunctionControl);
@@ -45,6 +46,8 @@ public:
 
 private:
     void AddInlining(FunctionID inliner, FunctionID inlinee);
+
+    HRESULT FunctionSeen(FunctionID func);
 
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
     ModuleID GetModuleIDForFunction(FunctionID functionId);

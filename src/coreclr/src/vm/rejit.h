@@ -85,6 +85,7 @@ private:
     MethodDesc *m_pInlinee;
     NewArrayHolder<MethodInModule> m_dynamicBuffer;
     COUNT_T m_dynamicBufferSize;
+    COUNT_T m_dynamicAvailable;
     COUNT_T m_currentPos;
 
     const COUNT_T s_bufferSize = 10;

@@ -430,6 +430,7 @@ NativeImageInliningIterator::NativeImageInliningIterator() :
         m_pInlinee(NULL),
         m_dynamicBuffer(NULL),
         m_dynamicBufferSize(0),
+        m_dynamicAvailable(0),
         m_currentPos(-1)
 {
 
@@ -462,6 +463,8 @@ HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee
             methodsAvailable = m_pModule->GetNativeOrReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
             _ASSERTE(methodsAvailable <= m_dynamicBufferSize);
         }
+
+        m_dynamicAvailable = methodsAvailable;
     }
     EX_CATCH_HRESULT(hr);
 
@@ -485,12 +488,12 @@ BOOL NativeImageInliningIterator::Next()
     }
 
     m_currentPos++;
-    return m_currentPos < m_dynamicBufferSize;
+    return m_currentPos < m_dynamicAvailable;
 }
 
 MethodDesc *NativeImageInliningIterator::GetMethodDesc()
 {
-    if (m_currentPos == (COUNT_T)-1 || m_currentPos >= m_dynamicBufferSize)
+    if (m_currentPos == (COUNT_T)-1 || m_currentPos >= m_dynamicAvailable)
     {
         return NULL;
     }
@@ -799,7 +802,7 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
     // TODO: is the default domain enough for coreclr?
-    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded));
+    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
     NativeImageInliningIterator inlinerIter;
     while (domainAssemblyIterator.Next(pDomainAssembly.This()))
