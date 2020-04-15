@@ -199,5 +199,15 @@ namespace System.Drawing.Tests
                     paramList.Param.Select(p => p.Encoder.Guid));
             }
         }
+
+        [Fact]
+        public void Save_InvalidDirecotry_ThrowsDirectoryNotFoundException()
+        {
+            using (var bitmap = new Bitmap(1, 1))
+            {
+                var badTarget = System.IO.Path.Combine("NoSuchDirectory", "NoSuchFile");
+                AssertExtensions.Throws<DirectoryNotFoundException>(() => bitmap.Save(badTarget), @"The target directory NoSuchDirectory of the targetPath NoSuchDirectory\NoSuchFile does not exist.");
+            }
+        }
     }
 }
