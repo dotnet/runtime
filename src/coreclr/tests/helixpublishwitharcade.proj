@@ -174,10 +174,11 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
+    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' "> $(RuntimeFlavorDisplayName) $(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' "> $(RuntimeFlavorDisplayName) $(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' "> $(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' "> $(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
