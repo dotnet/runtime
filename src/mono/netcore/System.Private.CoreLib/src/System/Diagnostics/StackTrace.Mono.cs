@@ -20,12 +20,12 @@ namespace System.Diagnostics
         internal long methodAddress;
         // Unused
         internal uint methodIndex;
-        internal MethodBase methodBase;
-        internal string fileName;
+        internal MethodBase? methodBase;
+        internal string? fileName;
         internal int lineNumber;
         internal int columnNumber;
         // Unused
-        internal string internalMethodName;
+        internal string? internalMethodName;
         #endregion
 
         internal bool isLastFrameFromForeignException;
@@ -60,11 +60,11 @@ namespace System.Diagnostics
 
         private void InitializeForException(Exception e, int skipFrames, bool needFileInfo)
         {
-            var frames = get_trace(e, skipFrames, needFileInfo);
+            MonoStackFrame[] frames = get_trace(e, skipFrames, needFileInfo);
             _numOfFrames = frames.Length;
 
             int foreignFrames;
-            MonoStackFrame[] foreignExceptions = e.foreignExceptionsFrames;
+            MonoStackFrame[]? foreignExceptions = e.foreignExceptionsFrames;
 
             if (foreignExceptions != null)
             {

@@ -574,7 +574,26 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static <#= typeName #> PolynomialMultiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)PolynomialMult(op1, op2);
+<#
+        }
 
+        foreach (var type in new[] { (small: "sbyte",  wide: "short"),
+                                     (small: "short",  wide: "int"),
+                                     (small: "int",    wide: "long"),
+                                     (small: "byte",   wide: "ushort"),
+                                     (small: "ushort", wide: "uint"),
+                                     (small: "uint",   wide: "ulong") })
+        {
+#>
+        public static bool ExtractAndNarrowHigh(int i, <#= type.small  #>[] left,
+                                                <#= type.wide  #>[] right,
+                                                <#= type.small  #>[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (<#= type.small  #>)right[i - left.Length] != result[i];
+        }
 <#
         }
 #>

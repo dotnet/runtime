@@ -637,9 +637,9 @@ def call_msbuild(args):
     if g_verbose:
         command += ["/verbosity:diag"]
 
-    command += ["/p:__TargetOS=%s" % args.host_os,
-                "/p:__BuildArch=%s" % args.arch,
-                "/p:__BuildType=%s" % args.build_type,
+    command += ["/p:TargetOS=%s" % args.host_os,
+                "/p:TargetArchitecture=%s" % args.arch,
+                "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
     print(" ".join(command))

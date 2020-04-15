@@ -429,7 +429,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (state.Current.JsonClassInfo.ParameterCount != state.Current.JsonClassInfo.ParameterCache!.Count)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo, TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo!, TypeToConvert);
             }
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.

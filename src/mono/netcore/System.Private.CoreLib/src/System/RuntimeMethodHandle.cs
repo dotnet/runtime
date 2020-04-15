@@ -5,7 +5,6 @@
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -71,7 +70,7 @@ namespace System
         internal static string ConstructInstantiation(RuntimeMethodInfo method, TypeNameFormatFlags format)
         {
             var sb = new StringBuilder();
-            var gen_params = method.GetGenericArguments();
+            Type[]? gen_params = method.GetGenericArguments();
             sb.Append("[");
             for (int j = 0; j < gen_params.Length; j++)
             {

@@ -17066,7 +17066,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
         switch (simdType)
         {
             case TYP_SIMD16:
-                if (compSupports(InstructionSet_SSE))
+                if (compExactlyDependsOn(InstructionSet_SSE))
                 {
                     // We only return the HWIntrinsicNode if SSE is supported, since it is possible for
                     // the user to disable the SSE HWIntrinsic support via the COMPlus configuration knobs
@@ -17075,7 +17075,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                 }
                 return nullptr;
             case TYP_SIMD32:
-                if (compSupports(InstructionSet_AVX))
+                if (compExactlyDependsOn(InstructionSet_AVX))
                 {
                     // We only return the HWIntrinsicNode if AVX is supported, since it is possible for
                     // the user to disable the AVX HWIntrinsic support via the COMPlus configuration knobs
@@ -18423,7 +18423,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     assert(gtOper == GT_HWINTRINSIC);
     assert(comp != nullptr);
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     if (!comp->canUseVexEncoding())
     {
         return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
@@ -18454,9 +18454,11 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             return false;
         }
     }
+#elif defined(TARGET_ARM64)
+    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
 #else
     return false;
-#endif // TARGET_XARCH
+#endif
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

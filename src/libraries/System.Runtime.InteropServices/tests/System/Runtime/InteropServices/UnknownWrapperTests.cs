@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // UnknownWrapper is marked as Obsolete.
     public class UnknownWrapperTests
     {
         [Theory]
@@ -19,5 +18,4 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(value, wrapper.WrappedObject);
         }
     }
-#pragma warning restore 0618
 }

@@ -175,6 +175,56 @@ namespace
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
 
+    int run_app_with_try_except(
+        hostfxr_run_app_fn run_app,
+        const hostfxr_handle handle,
+        pal::stringstream_t &test_output)
+    {
+#if defined(WIN32)
+        __try
+#endif
+        {
+            int rc = run_app(handle);
+            if (rc != StatusCode::Success)
+                test_output << _X("hostfxr_run_app failed: ") << std::hex << std::showbase << rc << std::endl;
+
+            return rc;
+        }
+#if defined(WIN32)
+        __except(GetExceptionCode() != 0)
+        {
+            test_output << _X("hostfxr_run_app threw exception: ") << std::hex << std::showbase << GetExceptionCode() << std::endl;
+        }
+#endif
+
+        return -1;
+    }
+
+    int call_delegate_with_try_except(
+        component_entry_point_fn component_entry_point,
+        const pal::char_t *method_name,
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+#if defined(WIN32)
+        __try
+#endif
+        {
+            int result = component_entry_point((void*)(static_cast<size_t>(0xdeadbeef)), 42);
+            test_output << log_prefix << method_name << _X(" delegate result: ") << std::hex << std::showbase << result << std::endl;
+
+            return StatusCode::Success;
+        }
+#if defined(WIN32)
+        __except(GetExceptionCode() != 0)
+        {
+            test_output << log_prefix << method_name << _X(" delegate threw exception: ") << std::hex << std::showbase << GetExceptionCode() << std::endl;
+        }
+#endif
+
+        return -1;
+    }
+
     bool load_assembly_and_get_function_pointer_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
@@ -231,10 +281,7 @@ namespace
                 else
                 {
                     test_output << log_prefix << _X("load_assembly_and_get_function_pointer succeeded: ") << std::hex << std::showbase << rc << std::endl;
-
-                    int result = componentEntryPointDelegate((void*)(static_cast<size_t>(0xdeadbeef)), 42);
-
-                    test_output << log_prefix << method_name << _X(" delegate result: ") << std::hex << std::showbase << result << std::endl;
+                    rc = call_delegate_with_try_except(componentEntryPointDelegate, method_name, log_prefix, test_output);
                 }
             }
         }
@@ -296,13 +343,11 @@ bool host_context_test::app(
 
     inspect_modify_properties(check_properties, hostfxr, handle, argc, argv, app_log_prefix, test_output);
 
-    rc = hostfxr.run_app(handle);
-    if (rc != StatusCode::Success)
-        test_output << _X("hostfxr_run_app failed: ") << std::hex << std::showbase << rc << std::endl;
+    rc = run_app_with_try_except(hostfxr.run_app, handle, test_output);
 
     int rcClose = hostfxr.close(handle);
     if (rcClose != StatusCode::Success)
-        test_output << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc  << std::endl;
+        test_output << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
     return rc == StatusCode::Success && rcClose == StatusCode::Success;
 }

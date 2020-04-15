@@ -34,7 +34,7 @@
     <Compile Include="mono\System.Drawing.Imaging\GifCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\IconCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\JpegCodecTests.cs" />
-    <Compile Include="mono\System.Drawing.Imaging\PngCodecTesst.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\PngCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\TiffCodecTests.cs" />
     <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
     <Compile Include="mono\System.Imaging\MetafileTest.cs" />

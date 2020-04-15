@@ -61,10 +61,10 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encode_Basic_TestData))]
-        public void Encode(string source, int index, int count, byte[] expected)
+        public void Encode_Basic(string source, int index, int count, byte[] expected)
         {
-            Encode(true, source, index, count, expected);
-            Encode(false, source, index, count, expected);
+            Encode_Advanced(true, source, index, count, expected);
+            Encode_Advanced(false, source, index, count, expected);
 
             // UTF7Encoding performs no error checking, so even encoding invalid chars with
             // a custom fallback should never throw
@@ -108,7 +108,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encode_Advanced_TestData))]
-        public void Encode(bool allowOptionals, string source, int index, int count, byte[] expected)
+        public void Encode_Advanced(bool allowOptionals, string source, int index, int count, byte[] expected)
         {
             EncodingHelpers.Encode(new UTF7Encoding(allowOptionals), source, index, count, expected);
         }

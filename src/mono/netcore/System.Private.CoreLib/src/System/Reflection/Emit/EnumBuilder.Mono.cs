@@ -30,11 +30,8 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -84,7 +81,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get
             {
@@ -92,7 +89,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type BaseType
+        public override Type? BaseType
         {
             get
             {
@@ -100,7 +97,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get
             {
@@ -108,7 +105,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get
             {
@@ -140,7 +137,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get
             {
@@ -148,7 +145,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -188,13 +185,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public Type CreateType()
+        public Type? CreateType()
         {
-            Type res = _tb.CreateType();
-            return res;
+            return _tb.CreateType();
         }
 
-        public TypeInfo CreateTypeInfo()
+        public TypeInfo? CreateTypeInfo()
         {
             return _tb.CreateTypeInfo();
         }
@@ -207,7 +203,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void setup_enum_type(Type t);
 
-        public FieldBuilder DefineLiteral(string literalName, object literalValue)
+        public FieldBuilder DefineLiteral(string literalName, object? literalValue)
         {
             Type fieldType = this;
             FieldBuilder fieldBuilder = _tb.DefineField(literalName,
@@ -222,12 +218,11 @@ namespace System.Reflection.Emit
             return _tb.attrs;
         }
 
-        protected override ConstructorInfo GetConstructorImpl(
-            BindingFlags bindingAttr, Binder binder, CallingConventions callConvention,
-            Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(
+            BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention,
+            Type[] types, ParameterModifier[]? modifiers)
         {
-            return _tb.GetConstructor(bindingAttr, binder, callConvention, types,
-                modifiers);
+            return _tb.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
         [ComVisible(true)]
@@ -249,12 +244,12 @@ namespace System.Reflection.Emit
                 return _tb.GetCustomAttributes(attributeType, inherit);
         }
 
-        public override Type GetElementType()
+        public override Type? GetElementType()
         {
             return _tb.GetElementType();
         }
 
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             return _tb.GetEvent(name, bindingAttr);
         }
@@ -269,7 +264,7 @@ namespace System.Reflection.Emit
             return _tb.GetEvents(bindingAttr);
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _tb.GetField(name, bindingAttr);
         }
@@ -279,7 +274,7 @@ namespace System.Reflection.Emit
             return _tb.GetFields(bindingAttr);
         }
 
-        public override Type GetInterface(string name, bool ignoreCase)
+        public override Type? GetInterface(string name, bool ignoreCase)
         {
             return _tb.GetInterface(name, ignoreCase);
         }
@@ -305,10 +300,10 @@ namespace System.Reflection.Emit
             return _tb.GetMembers(bindingAttr);
         }
 
-        protected override MethodInfo GetMethodImpl(
-            string name, BindingFlags bindingAttr, Binder binder,
-            CallingConventions callConvention, Type[] types,
-            ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(
+            string name, BindingFlags bindingAttr, Binder? binder,
+            CallingConventions callConvention, Type[]? types,
+            ParameterModifier[]? modifiers)
         {
             if (types == null)
             {
@@ -324,7 +319,7 @@ namespace System.Reflection.Emit
             return _tb.GetMethods(bindingAttr);
         }
 
-        public override Type GetNestedType(string name, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             return _tb.GetNestedType(name, bindingAttr);
         }
@@ -339,12 +334,12 @@ namespace System.Reflection.Emit
             return _tb.GetProperties(bindingAttr);
         }
 
-        protected override PropertyInfo GetPropertyImpl(
-            string name, BindingFlags bindingAttr, Binder binder,
-            Type returnType, Type[] types,
-            ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(
+            string name, BindingFlags bindingAttr, Binder? binder,
+            Type? returnType, Type[]? types,
+            ParameterModifier[]? modifiers)
         {
-            throw CreateNotSupportedException();
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         protected override bool HasElementTypeImpl()
@@ -352,11 +347,11 @@ namespace System.Reflection.Emit
             return _tb.HasElementType;
         }
 
-        public override object InvokeMember(
-            string name, BindingFlags invokeAttr, Binder binder,
-            object target, object[] args,
-            ParameterModifier[] modifiers, CultureInfo culture,
-            string[] namedParameters)
+        public override object? InvokeMember(
+            string name, BindingFlags invokeAttr, Binder? binder,
+            object? target, object?[]? args,
+            ParameterModifier[]? modifiers, CultureInfo? culture,
+            string[]? namedParameters)
         {
             return _tb.InvokeMember(name, invokeAttr, binder, target,
                 args, modifiers, culture, namedParameters);
@@ -438,11 +433,6 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private Exception CreateNotSupportedException()
-        {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
-        }
-
         internal override bool IsUserType
         {
             get
@@ -456,7 +446,7 @@ namespace System.Reflection.Emit
             get { return false; }
         }
 
-        public override bool IsAssignableFrom(TypeInfo typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             return base.IsAssignableFrom(typeInfo);
         }

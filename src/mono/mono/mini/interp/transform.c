@@ -1391,7 +1391,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *tm = target_method->name;
 	int type_index = mono_class_get_magic_index (target_method->klass);
 	gboolean in_corlib = m_class_get_image (target_method->klass) == mono_defaults.corlib;
-	const char *klass_name_space = m_class_get_name_space (target_method->klass);
+	const char *klass_name_space;
+	if (m_class_get_nested_in (target_method->klass))
+		klass_name_space = m_class_get_name_space (m_class_get_nested_in (target_method->klass));
+	else
+		klass_name_space = m_class_get_name_space (target_method->klass);
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 	if (target_method->klass == mono_defaults.string_class) {
@@ -1612,6 +1616,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "SkipInit")) {
 			*op = MINT_POP;
+		} else if (!strcmp (tm, "InitBlockUnaligned")) {
+			*op = MINT_INITBLK;
 		}
 #endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
@@ -1797,14 +1803,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_CEQ_I4;
 			}
 		}
-	} else if (in_corlib &&
+	}
+#ifdef ENABLE_NETCORE
+	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
 		if (!strcmp (tm, "get_IsDynamicCodeSupported"))
 			*op = MINT_LDC_I4_1;
 		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+			!strcmp (tm, "get_IsSupported")) {
+		*op = MINT_LDC_I4_0;
 	}
+#endif
 
 	return FALSE;
 }
@@ -1954,9 +1967,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 {
 	MonoMethodHeaderSummary header;
 
-	if (td->method == method)
-		return FALSE;
-
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -1999,6 +2009,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 		return FALSE;
 
 	if (td->prof_coverage)
+		return FALSE;
+
+	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
 	return TRUE;
@@ -2884,7 +2897,7 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 	} while (0)
 
 static void
-interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header)
+interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header, MonoError *error)
 {
 	int i, offset, size, align;
 
@@ -2895,6 +2908,12 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	offset = 0;
 	for (i = 0; i < header->num_locals; ++i) {
 		size = mono_type_size (header->locals [i], &align);
+		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
+			if (mono_class_has_failure (header->locals [i]->data.klass)) {
+				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
+				return;
+			}
+		}
 		offset += align - 1;
 		offset &= ~(align - 1);
 		imethod->local_offsets [i] = offset;
@@ -2922,7 +2941,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 void
 mono_test_interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *signature, MonoMethodHeader *header)
 {
-	interp_method_compute_offsets (td, imethod, signature, header);
+	ERROR_DECL (error);
+	interp_method_compute_offsets (td, imethod, signature, header, error);
 }
 
 /* Return false is failure to init basic blocks due to being in inline method */
@@ -3429,6 +3449,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			local_locals [i] = create_interp_local (td, header->locals [i]);
 	}
 
+	td->dont_inline = g_list_prepend (td->dont_inline, method);
 	while (td->ip < end) {
 		g_assert (td->sp >= td->stack);
 		g_assert (td->vt_sp < 0x10000000);
@@ -5047,7 +5068,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_ins (td, MINT_CONV_OVF_I4_UN_I8);
+				interp_add_ins (td, MINT_CONV_OVF_I4_U8);
 #endif
 				break;
 			case STACK_TYPE_I4:
@@ -5742,6 +5763,26 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
 					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
+				const unsigned char *next_next_ip = next_ip + 5;
+				MonoMethod *next_cmethod;
+				MonoClass *tclass = mono_class_from_mono_type_internal ((MonoType *)handle);
+				// Optimize to true/false if next instruction is `call instance bool Type::get_IsValueType()`
+				if (next_next_ip < end &&
+						(inlining || !td->is_bb_start [next_next_ip - td->il_code]) &&
+						(*next_next_ip == CEE_CALL || *next_next_ip == CEE_CALLVIRT) &&
+						(next_cmethod = interp_get_method (method, read32 (next_next_ip + 1), image, generic_context, error)) &&
+						(next_cmethod->klass == mono_defaults.systemtype_class) &&
+						!strcmp (next_cmethod->name, "get_IsValueType")) {
+					g_assert (!mono_class_is_open_constructed_type (m_class_get_byval_arg (tclass)));
+					if (m_class_is_valuetype (tclass))
+						interp_add_ins (td, MINT_LDC_I4_1);
+					else
+						interp_add_ins (td, MINT_LDC_I4_0);
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I4);
+					td->ip = next_next_ip + 5;
+					break;
+				}
+
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				gpointer systype = mono_type_get_object_checked (domain, (MonoType*)handle, error);
 				goto_if_nok (error, exit);
@@ -6296,6 +6337,7 @@ exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
 	mono_basic_block_free (original_bb);
+	td->dont_inline = g_list_remove (td->dont_inline, method);
 
 	return ret;
 exit:
@@ -6770,6 +6812,14 @@ interp_local_deadce (TransformData *td, int *local_ref_count)
 		result.field_dst = (cast_type)sp->val.field_src; \
 		break;
 
+#define INTERP_FOLD_CONV_FULL(opcode,stack_type_dst,field_dst,stack_type_src,field_src,cast_type,cond) \
+	case opcode: \
+		g_assert (sp->val.type == stack_type_src); \
+		if (!(cond)) goto cfold_failed; \
+		result.type = stack_type_dst; \
+		result.field_dst = (cast_type)sp->val.field_src; \
+		break;
+
 static InterpInst*
 interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 {
@@ -6821,6 +6871,30 @@ interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 
 			INTERP_FOLD_CONV (MINT_CONV_I8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint32);
 			INTERP_FOLD_CONV (MINT_CONV_I8_U4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint32);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8, sp [0].val.i >= G_MININT8 && sp [0].val.i <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8, sp [0].val.l >= G_MININT8 && sp [0].val.l <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint8, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXUINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint8, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXUINT8);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16, sp [0].val.i >= G_MININT16 && sp [0].val.i <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, i, gint16, sp [0].val.l >= G_MININT16 && sp [0].val.l <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint16, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint16, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXUINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint16, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXUINT16);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint32, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32, sp [0].val.l >= G_MININT32 && sp [0].val.l <= G_MAXINT32);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT32);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint32, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint32, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT32);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I8_U8, STACK_VALUE_I8, l, STACK_VALUE_I8, l, gint64, sp [0].val.l >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint64, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I8, STACK_VALUE_I8, l, STACK_VALUE_I8, l, guint64, sp [0].val.l >= 0);
 
 			default:
 				goto cfold_failed;
@@ -7529,7 +7603,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	if (td->prof_coverage)
 		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
 
-	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header);
+	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header, error);
+	goto_if_nok (error, exit);
 
 	if (verbose_method_name) {
 		const char *name = verbose_method_name;

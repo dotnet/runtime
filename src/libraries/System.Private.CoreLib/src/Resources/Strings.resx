@@ -2402,7 +2402,7 @@
     <value>ILGenerator usage is invalid.</value>
   </data>
   <data name="InvalidOperation_BadInstructionOrIndexOutOfBound" xml:space="preserve">
-    <value>MSIL instruction is invalid or index is out of bounds.</value>
+    <value>Opcodes using a short-form index cannot address a local position over 255.</value>
   </data>
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
@@ -2927,7 +2927,7 @@
     <value>Cannot resolve {0} to a TypeInfo object.</value>
   </data>
   <data name="NotSupported_NYI" xml:space="preserve">
-    <value>This feature is not currently implemented.</value>
+    <value>This feature is not implemented.</value>
   </data>
   <data name="NotSupported_ObsoleteResourcesFile" xml:space="preserve">
     <value>Found an obsolete .resources file in assembly '{0}'. Rebuild that .resources file then rebuild that assembly.</value>

@@ -5,6 +5,8 @@ endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+  include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -170,7 +172,6 @@ set(SOURCES
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/heap.cpp
   memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp

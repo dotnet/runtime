@@ -156,7 +156,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal tagDBPROP[] GetPropertySet(int index, out Guid propertyset)
+        internal ItagDBPROP[] GetPropertySet(int index, out Guid propertyset)
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
@@ -173,7 +173,7 @@ namespace System.Data.OleDb
             }
 
             tagDBPROPSET propset = new tagDBPROPSET();
-            tagDBPROP[] properties = null;
+            ItagDBPROP[] properties = null;
 
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
@@ -184,10 +184,10 @@ namespace System.Data.OleDb
                 Marshal.PtrToStructure(propertySetPtr, propset);
                 propertyset = propset.guidPropertySet;
 
-                properties = new tagDBPROP[propset.cProperties];
+                properties = new ItagDBPROP[propset.cProperties];
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    properties[i] = new tagDBPROP();
+                    properties[i] = OleDbStructHelpers.CreateTagDbProp();
                     IntPtr ptr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.PtrToStructure(ptr, properties[i]);
                 }
@@ -202,7 +202,7 @@ namespace System.Data.OleDb
             return properties;
         }
 
-        internal void SetPropertySet(int index, Guid propertySet, tagDBPROP[] properties)
+        internal void SetPropertySet(int index, Guid propertySet, ItagDBPROP[] properties)
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
@@ -271,9 +271,9 @@ namespace System.Data.OleDb
 
         internal static DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
         {
-            tagDBPROP dbprop = new tagDBPROP(propertyId, required, value);
+            ItagDBPROP dbprop = OleDbStructHelpers.CreateTagDbProp(propertyId, required, value);
             DBPropSet propertyset = new DBPropSet(1);
-            propertyset.SetPropertySet(0, propertySet, new tagDBPROP[1] { dbprop });
+            propertyset.SetPropertySet(0, propertySet, new ItagDBPROP[1] { dbprop });
             return propertyset;
         }
     }

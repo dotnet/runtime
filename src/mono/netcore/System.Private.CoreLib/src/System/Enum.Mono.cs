@@ -95,11 +95,11 @@ namespace System
 
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
-            var entry = enumType.Cache.EnumInfo;
+            EnumInfo? entry = enumType.Cache.EnumInfo;
 
             if (entry == null || (getNames && entry.Names == null))
             {
-                if (!GetEnumValuesAndNames(enumType, out var values, out var names))
+                if (!GetEnumValuesAndNames(enumType, out ulong[]? values, out string[]? names))
                     Array.Sort(values, names, Collections.Generic.Comparer<ulong>.Default);
 
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);

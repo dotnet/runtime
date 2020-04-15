@@ -9,7 +9,7 @@
     <RunArguments>$(RunArguments) --logger "trx;LogFileName=$(TrxTestResultsName)"</RunArguments>
     <RunArguments>$(RunArguments) --logger "html;LogFileName=$(HtmlTestResultsName)"</RunArguments>
     <RunArguments>$(RunArguments) --framework $(TargetFramework)</RunArguments>
-    <RunArguments>$(RunArguments) --platform $(ArchGroup)</RunArguments>
+    <RunArguments>$(RunArguments) --platform $(TargetArchitecture)</RunArguments>
     <RunArguments Condition="'$(TestDisableParallelization)' != 'true'">$(RunArguments) --parallel</RunArguments>
     <RunArguments Condition="'$(TestBlame)' == 'true'">$(RunArguments) --blame</RunArguments>
 

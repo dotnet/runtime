@@ -72,7 +72,7 @@ REM __PassThroughArgs is a set of things that will be passed through to nested c
 REM when using "all".
 set __PassThroughArgs=
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -223,7 +223,7 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (

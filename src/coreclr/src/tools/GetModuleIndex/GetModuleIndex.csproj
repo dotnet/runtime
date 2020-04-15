@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PlatformTarget>AnyCpu</PlatformTarget>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <UseAppHost>false</UseAppHost>
+    <OutputPath>$(BinDir)/GetModuleIndex</OutputPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.FileFormats">
+      <Version>$(MicrosoftFileFormatsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

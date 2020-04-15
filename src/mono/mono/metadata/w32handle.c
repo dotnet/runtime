@@ -815,6 +815,34 @@ own_if_owned (MonoW32Handle *handle_data, gboolean *abandoned)
 	return TRUE;
 }
 
+gboolean
+mono_w32handle_handle_is_signalled (gpointer handle)
+{
+	MonoW32Handle *handle_data;
+	gboolean res;
+
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
+		return FALSE;
+
+	res = mono_w32handle_issignalled (handle_data);
+	mono_w32handle_unref (handle_data);
+	return res;
+}
+
+gboolean
+mono_w32handle_handle_is_owned (gpointer handle)
+{
+	MonoW32Handle *handle_data;
+	gboolean res;
+
+	if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
+		return FALSE;
+
+	res = mono_w32handle_ops_isowned (handle_data);
+	mono_w32handle_unref (handle_data);
+	return res;
+}
+
 #ifdef HOST_WIN32
 MonoW32HandleWaitRet
 mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)

@@ -11,7 +11,7 @@ namespace NetClient
         {
             Component.Contracts.IStringTesting target = (Component.Contracts.IStringTesting)WinRTNativeComponent.GetObjectFromNativeComponent("Component.Contracts.StringTesting");
             string left = "Hello C++/WinRT";
-            string right = " from .NET Core";
+            string right = " from .NET";
             Assert.AreEqual(string.Concat(left, right), target.ConcatStrings(left, right));
         }
     }

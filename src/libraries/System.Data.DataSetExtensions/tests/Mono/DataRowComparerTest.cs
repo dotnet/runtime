@@ -46,7 +46,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataRowComparer<DataRow> c = DataRowComparer.Default;
 

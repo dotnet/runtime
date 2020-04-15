@@ -3,7 +3,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -330,10 +330,10 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -344,7 +344,7 @@
     </Compile>
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
-    <Compile Include="Fakes\MacProxy.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="Fakes\MacProxy.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />
@@ -377,6 +377,7 @@
     <Compile Include="Headers\HttpResponseHeadersTest.cs" />
     <Compile Include="Headers\Int32NumberHeaderParserTest.cs" />
     <Compile Include="Headers\Int64NumberHeaderParserTest.cs" />
+    <Compile Include="Headers\KnownHeadersTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderParserTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderValueTest.cs" />
     <Compile Include="Headers\MediaTypeWithQualityHeaderValueTest.cs" />

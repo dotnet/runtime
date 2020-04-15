@@ -1018,23 +1018,24 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 // These transformations happen post-import because they may introduce
 // control flow.
 //
-void Compiler::fgTransformIndirectCalls()
+// Returns:
+//   phase status indicating if changes were made
+//
+PhaseStatus Compiler::fgTransformIndirectCalls()
 {
-    JITDUMP("\n*************** in fgTransformIndirectCalls(%s)\n", compIsForInlining() ? "inlinee" : "root");
-
+    int count = 0;
     if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization() || doesMethodHaveExpRuntimeLookup())
     {
         IndirectCallTransformer indirectCallTransformer(this);
-        int                     count = indirectCallTransformer.Run();
+        count = indirectCallTransformer.Run();
 
         if (count > 0)
         {
-            JITDUMP("\n*************** After fgTransformIndirectCalls() [%d calls transformed]\n", count);
-            INDEBUG(if (verbose) { fgDispBasicBlocks(true); });
+            JITDUMP("\n -- %d calls transformed\n", count);
         }
         else
         {
-            JITDUMP(" -- no transforms done (?)\n");
+            JITDUMP("\n -- no transforms done (?)\n");
         }
 
         clearMethodHasFatPointer();
@@ -1043,8 +1044,10 @@ void Compiler::fgTransformIndirectCalls()
     }
     else
     {
-        JITDUMP(" -- no candidates to transform\n");
+        JITDUMP("\n -- no candidates to transform\n");
     }
 
     INDEBUG(CheckNoTransformableIndirectCallsRemain(););
+
+    return (count == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

@@ -309,7 +309,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupports(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compExactlyDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
 
     if (strcmp(methodName, "get_IsSupported") == 0)
     {

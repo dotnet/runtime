@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration
                         stringBuilder
                             .Append(indent)
                             .Append(child.Key)
-                            .Append("=")
+                            .Append('=')
                             .Append(valueAndProvider.Value)
                             .Append(" (")
                             .Append(valueAndProvider.Provider)

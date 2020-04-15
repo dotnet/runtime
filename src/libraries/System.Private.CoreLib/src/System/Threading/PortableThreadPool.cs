@@ -62,7 +62,7 @@ namespace System.Threading
         private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;
 
-        private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
+        private readonly LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
 
         private volatile int _numRequestedWorkers = 0;
 

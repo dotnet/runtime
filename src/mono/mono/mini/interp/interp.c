@@ -5745,12 +5745,6 @@ call_newobj:
 			sp [-1].data.l = (gint64)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_I8)
-			if ((guint64)sp [-1].data.l > G_MAXINT32)
-				goto overflow_label;
-			sp [-1].data.i = (gint32)sp [-1].data.l;
-			++ip;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BOX) {
 			mono_interp_box (frame, ip, sp);
 			ip += 3;
@@ -6016,7 +6010,7 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT32)
+			if ((guint64)sp [-1].data.l > G_MAXINT32)
 				goto overflow_label;
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;

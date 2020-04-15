@@ -7880,9 +7880,9 @@ namespace System.Reflection
     }
     public partial class ManifestResourceInfo
     {
-        public ManifestResourceInfo(System.Reflection.Assembly containingAssembly, string containingFileName, System.Reflection.ResourceLocation resourceLocation) { }
-        public virtual string FileName { get { throw null; } }
-        public virtual System.Reflection.Assembly ReferencedAssembly { get { throw null; } }
+        public ManifestResourceInfo(System.Reflection.Assembly? containingAssembly, string? containingFileName, System.Reflection.ResourceLocation resourceLocation) { }
+        public virtual string? FileName { get { throw null; } }
+        public virtual System.Reflection.Assembly? ReferencedAssembly { get { throw null; } }
         public virtual System.Reflection.ResourceLocation ResourceLocation { get { throw null; } }
     }
     public delegate bool MemberFilter(System.Reflection.MemberInfo m, object? filterCriteria);

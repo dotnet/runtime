@@ -13,6 +13,7 @@ if (CLR_CMAKE_HOST_WIN32)
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(MSVC)
+  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
 
@@ -23,6 +24,12 @@ set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
+
+if(CLR_CMAKE_HOST_UNIX)
+    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.sh)
+elseif(CLR_CMAKE_HOST_WIN32)
+    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Avoid logging when skipping up-to-date copies
 set(CMAKE_INSTALL_MESSAGE LAZY)

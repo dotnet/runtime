@@ -476,7 +476,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_AsUInt32:
         case NI_Vector256_AsUInt64:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // We don't want to deal with TYP_SIMD32 if the compiler doesn't otherwise support the type.
                 break;
@@ -616,7 +616,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 // We support Vector256 but Vector<T> is only 16-bytes, so we should
                 // treat this method as a call to Vector256.GetLower or Vector128.ToVector256
@@ -660,7 +660,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
+            if (compExactlyDependsOn(InstructionSet_SSE2) ||
+                (compExactlyDependsOn(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -672,7 +673,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_SSE) && varTypeIsFloating(baseType))
+            if (compExactlyDependsOn(InstructionSet_SSE) && varTypeIsFloating(baseType))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 16);
@@ -686,7 +687,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -698,7 +699,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
 
-            if (compSupports(InstructionSet_SSE))
+            if (compExactlyDependsOn(InstructionSet_SSE))
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             }
@@ -719,7 +720,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -731,7 +732,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_AVX) && varTypeIsFloating(baseType))
+            if (compExactlyDependsOn(InstructionSet_AVX) && varTypeIsFloating(baseType))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 32);
@@ -743,7 +744,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             }
@@ -752,7 +753,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector256_WithElement:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
@@ -764,7 +765,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
-            if (!compSupports(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
+            if (!compExactlyDependsOn(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
             {
                 // Using software fallback if
                 // 1. JIT/hardware don't support SSE2 instructions
@@ -780,7 +781,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
@@ -788,7 +789,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compSupports(InstructionSet_SSE41_X64))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
@@ -824,7 +825,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (simdSize == 32)
             {
                 // Extract the half vector that will be modified
-                assert(compSupports(InstructionSet_AVX));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
                 // copy `vectorOp` to accept the modified half vector
                 vectorOp = impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
@@ -855,7 +856,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         // Emulate Vector128<float>.WithElement by SSE instructions
                         if (imm8 == 0)
@@ -976,7 +977,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector256_GetElement:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
@@ -988,7 +989,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
             GenTree* indexOp = impStackTop().val;
-            if (!compSupports(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
+            if (!compExactlyDependsOn(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
             {
                 // Using software fallback if
                 // 1. JIT/hardware don't support SSE2 instructions
@@ -1004,7 +1005,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
@@ -1012,7 +1013,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compSupports(InstructionSet_SSE41_X64))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
@@ -1044,7 +1045,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdSize == 32)
             {
-                assert(compSupports(InstructionSet_AVX));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
                 if (imm8 >= count / 2)
                 {
@@ -1102,7 +1103,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         assert(imm8 >= 1);
                         assert(imm8 <= 3);

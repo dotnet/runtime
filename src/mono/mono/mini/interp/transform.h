@@ -143,6 +143,7 @@ typedef struct
 	GArray *line_numbers;
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
+	GList *dont_inline;
 } TransformData;
 
 #define STACK_TYPE_I4 0

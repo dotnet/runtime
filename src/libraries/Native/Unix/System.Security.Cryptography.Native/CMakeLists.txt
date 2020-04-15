@@ -106,5 +106,5 @@ endif()
 
 include(configure.cmake)
 
-install_library_and_symbols (System.Security.Cryptography.Native.OpenSsl)
+install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)

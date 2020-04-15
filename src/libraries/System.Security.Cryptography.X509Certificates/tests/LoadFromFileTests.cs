@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("SHA384", true)]
         [InlineData("SHA512", false)]
         [InlineData("SHA512", true)]
-        public static void TestThumbprint(string hashAlgName, bool viaSpan)
+        public static void TestThumbprint_ByHashAlgorithm(string hashAlgName, bool viaSpan)
         {
             string expectedThumbprintHex;
 

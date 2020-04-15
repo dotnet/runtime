@@ -33,9 +33,9 @@ Where the `AssemblyVersion` is set to the old version before updating. To determ
 
 If you incremented the `AssemblyVersion` in the last step, you'll also need to add an entry to [packageIndex.json](https://github.com/dotnet/runtime/blob/master/src/libraries/pkg/Microsoft.Private.PackageBaseline/packageIndex.json). Find the entry for your library in that file (again, making sure you're in the correct release branch), then find the subsection labeled `AssemblyVersionInPackageVersion`. There, add an entry that maps your new `AssemblyVersion` to your new `PackageVersion`. For an example, see [this PR](https://github.com/dotnet/runtime/commit/d0e4dcc7ebf008e7b6835cafbd03878c3a0e75f8#diff-ec9fd7a62cb0c494d86029014940382cR107), where we bumped the `PackageVersion` of `Microsoft.Diagnostics.Tracing.EventSource` from `2.0.0` to `2.0.1`, and bumped the `AssemblyVersion` from `2.0.0.0` to `2.0.1.0`. Therefore, we added an entry to `packageIndex.json` of the form `"2.0.1.0": "2.0.1"`.
 
-## Add your package to packages.builds
+## Add your package to libraries-packages.proj
 
-In order to ensure that your package gets built, you need to add it to [packages.builds](https://github.com/dotnet/runtime/blob/master/src/libraries/packages.builds). In the linked example, we were building `System.Drawing.Common`. All you have to do is add a `Project` block inside the linked ItemGroup that matches the form of the linked example, but with `System.Drawing.Common` replaced by your library's name. Again, make sure to do this in the right servicing branch.
+In order to ensure that your package gets built, you need to add it to [libraries-packages.proj](https://github.com/dotnet/runtime/blob/master/src/libraries/libraries-packages.proj). In the linked example, we were building `System.Drawing.Common`. All you have to do is add a `Project` block inside the linked ItemGroup that matches the form of the linked example, but with `System.Drawing.Common` replaced by your library's name. Again, make sure to do this in the right servicing branch.
 
 ## Test your changes
 

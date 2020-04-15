@@ -150,7 +150,7 @@ namespace ComWrappersTests.GlobalInstance
                 return null;
             }
 
-            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
                 if (ReturnInvalid)
                     return null;

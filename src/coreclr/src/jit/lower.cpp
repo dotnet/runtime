@@ -5227,7 +5227,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     return nextToLower;
 }
 
-void Lowering::DoPhase()
+PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
@@ -5291,6 +5291,8 @@ void Lowering::DoPhase()
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 #ifdef DEBUG

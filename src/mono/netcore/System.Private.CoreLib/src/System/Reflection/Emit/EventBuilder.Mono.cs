@@ -30,13 +30,7 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -48,11 +42,11 @@ namespace System.Reflection.Emit
         internal string name;
         private Type type;
         private TypeBuilder typeb;
-        private CustomAttributeBuilder[] cattrs;
-        internal MethodBuilder add_method;
-        internal MethodBuilder remove_method;
-        internal MethodBuilder raise_method;
-        internal MethodBuilder[] other_methods;
+        private CustomAttributeBuilder[]? cattrs;
+        internal MethodBuilder? add_method;
+        internal MethodBuilder? remove_method;
+        internal MethodBuilder? raise_method;
+        internal MethodBuilder[]? other_methods;
         internal EventAttributes attrs;
         private int table_idx;
 #pragma warning restore 169, 414
@@ -120,7 +114,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
             RejectIfCreated();
-            string attrname = customBuilder.Ctor.ReflectedType.FullName;
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
             {
                 attrs |= EventAttributes.SpecialName;

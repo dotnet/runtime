@@ -51,7 +51,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(FromDecimal_Format_TestData))]
-        public void FromDecimal(decimal value, NumberFormatInfo format, string expected)
+        public void FromDecimal_Format(decimal value, NumberFormatInfo format, string expected)
         {
             Assert.Equal(expected, StringType.FromDecimal(value, format));
         }
@@ -66,7 +66,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(FromDouble_Format_TestData))]
-        public void FromDouble(double value, NumberFormatInfo format, string expected)
+        public void FromDouble_Format(double value, NumberFormatInfo format, string expected)
         {
             Assert.Equal(expected, StringType.FromDouble(value, format));
         }
@@ -139,7 +139,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(FromSingle_Format_TestData))]
-        public void FromSingle(float value, NumberFormatInfo format, string expected)
+        public void FromSingle_Format(float value, NumberFormatInfo format, string expected)
         {
             Assert.Equal(expected, StringType.FromSingle(value, format));
         }

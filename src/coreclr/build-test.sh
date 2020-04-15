@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:__TargetOS=$__TargetOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -90,7 +90,7 @@ generate_layout()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -311,7 +311,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -494,6 +494,9 @@ usage_list+=("-crossgen2: Precompiles the framework managed assemblies in corero
 usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
+usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
 usage_list+=("-skiprestorepackages: skip package restore.")
@@ -503,6 +506,7 @@ usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
+__BuildArch=
 
 handle_arguments_local() {
     case "$1" in
@@ -545,6 +549,14 @@ handle_arguments_local() {
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
             ;;
 
+        targetGeneric|-targetGeneric)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
+            ;;
+
+        targetSpecific|-targetSpecific)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
+            ;;
+
         rebuild|-rebuild)
             __RebuildTests=1
             ;;
@@ -570,7 +582,6 @@ handle_arguments_local() {
     esac
 }
 
-__BuildArch=
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=INCLUDE_TESTS

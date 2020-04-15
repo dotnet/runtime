@@ -27,7 +27,7 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
-msbuild.binlog
+*.binlog
 .deps/
 .dirstamp
 .libs/

@@ -93,7 +93,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValue()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<int> span = new Span<int>(new int[] { 0, 1, 2, 3, 4, 5 });
             Span<int> value = new Span<int>(new int[] { 2 });
             int index = span.IndexOf(value);
@@ -103,7 +102,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueAtVeryEnd()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<int> span = new Span<int>(new int[] { 0, 1, 2, 3, 4, 5 });
             Span<int> value = new Span<int>(new int[] { 5 });
             int index = span.IndexOf(value);
@@ -113,7 +111,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueJustPasttVeryEnd()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<int> span = new Span<int>(new int[] { 0, 1, 2, 3, 4, 5 }, 0, 5);
             Span<int> value = new Span<int>(new int[] { 5 });
             int index = span.IndexOf(value);
@@ -205,7 +202,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValue_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<string> span = new Span<string>(new string[] { "0", "1", "2", "3", "4", "5" });
             Span<string> value = new Span<string>(new string[] { "2" });
             int index = span.IndexOf(value);
@@ -215,7 +211,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueAtVeryEnd_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<string> span = new Span<string>(new string[] { "0", "1", "2", "3", "4", "5" });
             Span<string> value = new Span<string>(new string[] { "5" });
             int index = span.IndexOf(value);
@@ -225,7 +220,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueJustPasttVeryEnd_String()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<string> span = new Span<string>(new string[] { "0", "1", "2", "3", "4", "5" }, 0, 5);
             Span<string> value = new Span<string>(new string[] { "5" });
             int index = span.IndexOf(value);

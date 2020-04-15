@@ -755,6 +755,12 @@ fi
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
+# for perf jit dump support
+AC_CHECK_HEADERS(sys/mman.h)
+if test "x$host_linux" = "xyes" -a x$ac_cv_header_sys_mman_h = xyes -a  x$ac_cv_header_elf_h = xyes -a x$ac_cv_header_sys_syscall_h = xyes; then
+   AC_DEFINE(ENABLE_JIT_DUMP, 1, [Enable jit dump support on Linux])
+fi
+
 # for support
 AC_CHECK_HEADERS(poll.h)
 AC_CHECK_HEADERS(sys/poll.h)

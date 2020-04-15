@@ -2618,6 +2618,7 @@ protected:
         nomdMulticastStub         = 0x1000,
         nomdUnboxingILStub        = 0x2000,
         nomdWrapperDelegateStub   = 0x4000,
+        nomdNativeCallableStub    = 0x8000,
 
         nomdILStub          = 0x00010000,
         nomdLCGMethod       = 0x00020000,
@@ -2710,6 +2711,7 @@ public:
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
+    bool IsNativeCallableStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdNativeCallableStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }

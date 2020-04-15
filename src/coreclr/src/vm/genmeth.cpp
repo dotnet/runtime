@@ -1676,6 +1676,7 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
     //NB: according to the constructor's signature, thParent should be the declaring type,
     // but the code appears to admit derived types too.
     SigTypeContext typeContext(this,thParent);
+    InstantiationContext instContext(&typeContext, NULL);
 
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
@@ -1688,7 +1689,8 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
 
         tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
-        if (!tyvar->SatisfiesConstraints(&typeContext,thArg))
+        // Pass in the InstatiationContext so contraints can be correctly evaluated
+        if (!tyvar->SatisfiesConstraints(&typeContext,thArg, &instContext))
         {
             if (fThrowIfNotSatisfied)
             {

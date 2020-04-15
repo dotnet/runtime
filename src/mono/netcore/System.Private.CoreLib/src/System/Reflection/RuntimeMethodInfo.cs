@@ -23,7 +23,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -139,8 +138,8 @@ namespace System.Reflection
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
-        private string name;
-        private Type reftype;
+        private string? name;
+        private Type? reftype;
 #pragma warning restore 649
 
         internal BindingFlags BindingFlags
@@ -159,11 +158,11 @@ namespace System.Reflection
             }
         }
 
-        private RuntimeType ReflectedTypeInternal
+        private RuntimeType? ReflectedTypeInternal
         {
             get
             {
-                return (RuntimeType)ReflectedType;
+                return (RuntimeType?)ReflectedType;
             }
         }
 
@@ -187,7 +186,7 @@ namespace System.Reflection
             return Delegate.CreateDelegate(delegateType, this);
         }
 
-        public override Delegate CreateDelegate(Type delegateType, object target)
+        public override Delegate CreateDelegate(Type delegateType, object? target)
         {
             return Delegate.CreateDelegate(delegateType, target, this);
         }
@@ -296,7 +295,7 @@ namespace System.Reflection
 
         public override ParameterInfo[] GetParameters()
         {
-            var src = MonoMethodInfo.GetParametersInfo(mhandle, this);
+            ParameterInfo[] src = MonoMethodInfo.GetParametersInfo(mhandle, this);
             if (src.Length == 0)
                 return src;
 
@@ -323,11 +322,11 @@ namespace System.Reflection
          * Exceptions thrown by the called method propagate normally.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object obj, object[] parameters, out Exception exc);
+        internal extern object? InternalInvoke(object? obj, object?[]? parameters, out Exception? exc);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if (!IsStatic)
             {
@@ -350,8 +349,8 @@ namespace System.Reflection
             if (ContainsGenericParameters)
                 throw new InvalidOperationException("Late bound operations cannot be performed on types or methods for which ContainsGenericParameters is true.");
 
-            Exception exc;
-            object o = null;
+            Exception? exc;
+            object? o = null;
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -389,7 +388,7 @@ namespace System.Reflection
             return o;
         }
 
-        internal static void ConvertValues(Binder binder, object[] args, ParameterInfo[] pinfo, CultureInfo culture, BindingFlags invokeAttr)
+        internal static void ConvertValues(Binder binder, object?[]? args, ParameterInfo[] pinfo, CultureInfo? culture, BindingFlags invokeAttr)
         {
             if (args == null)
             {
@@ -404,8 +403,8 @@ namespace System.Reflection
 
             for (int i = 0; i < args.Length; ++i)
             {
-                var arg = args[i];
-                var pi = pinfo[i];
+                object? arg = args[i];
+                ParameterInfo pi = pinfo[i];
                 if (arg == Type.Missing)
                 {
                     if (pi.DefaultValue == DBNull.Value)
@@ -444,7 +443,7 @@ namespace System.Reflection
             }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -485,7 +484,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void GetPInvoke(out PInvokeAttributes flags, out string entryPoint, out string dllName);
 
-        internal object[] GetPseudoCustomAttributes()
+        internal object[]? GetPseudoCustomAttributes()
         {
             int count = 0;
 
@@ -514,7 +513,8 @@ namespace System.Reflection
 
         private Attribute GetDllImportAttribute()
         {
-            string entryPoint, dllName = null;
+            string entryPoint;
+            string? dllName = null;
             int token = MetadataToken;
             PInvokeAttributes flags = 0;
 
@@ -566,7 +566,7 @@ namespace System.Reflection
             };
         }
 
-        internal CustomAttributeData[] GetPseudoCustomAttributesData()
+        internal CustomAttributeData[]? GetPseudoCustomAttributesData()
         {
             int count = 0;
 
@@ -584,69 +584,44 @@ namespace System.Reflection
             count = 0;
 
             if ((info.iattrs & MethodImplAttributes.PreserveSig) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((info.attrs & MethodAttributes.PinvokeImpl) != 0)
-                attrsData[count++] = GetDllImportAttributeData();
+                attrsData[count++] = GetDllImportAttributeData()!;
 
             return attrsData;
         }
 
-        private CustomAttributeData GetDllImportAttributeData()
+        private CustomAttributeData? GetDllImportAttributeData()
         {
             if ((Attributes & MethodAttributes.PinvokeImpl) == 0)
                 return null;
 
-            string entryPoint, dllName = null;
+            string entryPoint;
+            string? dllName = null;
             PInvokeAttributes flags = 0;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
-            CharSet charSet;
-
-            switch (flags & PInvokeAttributes.CharSetMask)
+            CharSet charSet = (flags & PInvokeAttributes.CharSetMask) switch
             {
-                case PInvokeAttributes.CharSetNotSpec:
-                    charSet = CharSet.None;
-                    break;
-                case PInvokeAttributes.CharSetAnsi:
-                    charSet = CharSet.Ansi;
-                    break;
-                case PInvokeAttributes.CharSetUnicode:
-                    charSet = CharSet.Unicode;
-                    break;
-                case PInvokeAttributes.CharSetAuto:
-                    charSet = CharSet.Auto;
-                    break;
+                PInvokeAttributes.CharSetNotSpec => CharSet.None,
+                PInvokeAttributes.CharSetAnsi => CharSet.Ansi,
+                PInvokeAttributes.CharSetUnicode => CharSet.Unicode,
+                PInvokeAttributes.CharSetAuto => CharSet.Auto,
                 // Invalid: default to CharSet.None
-                default:
-                    charSet = CharSet.None;
-                    break;
-            }
+                _ => CharSet.None,
+            };
 
-            InteropServicesCallingConvention callingConvention;
-
-            switch (flags & PInvokeAttributes.CallConvMask)
+            InteropServicesCallingConvention callingConvention = (flags & PInvokeAttributes.CallConvMask) switch
             {
-                case PInvokeAttributes.CallConvWinapi:
-                    callingConvention = InteropServicesCallingConvention.Winapi;
-                    break;
-                case PInvokeAttributes.CallConvCdecl:
-                    callingConvention = InteropServicesCallingConvention.Cdecl;
-                    break;
-                case PInvokeAttributes.CallConvStdcall:
-                    callingConvention = InteropServicesCallingConvention.StdCall;
-                    break;
-                case PInvokeAttributes.CallConvThiscall:
-                    callingConvention = InteropServicesCallingConvention.ThisCall;
-                    break;
-                case PInvokeAttributes.CallConvFastcall:
-                    callingConvention = InteropServicesCallingConvention.FastCall;
-                    break;
+                PInvokeAttributes.CallConvWinapi => InteropServicesCallingConvention.Winapi,
+                PInvokeAttributes.CallConvCdecl => InteropServicesCallingConvention.Cdecl,
+                PInvokeAttributes.CallConvStdcall => InteropServicesCallingConvention.StdCall,
+                PInvokeAttributes.CallConvThiscall => InteropServicesCallingConvention.ThisCall,
+                PInvokeAttributes.CallConvFastcall => InteropServicesCallingConvention.FastCall,
                 // Invalid: default to CallingConvention.Cdecl
-                default:
-                    callingConvention = InteropServicesCallingConvention.Cdecl;
-                    break;
-            }
+                _ => InteropServicesCallingConvention.Cdecl,
+            };
 
             bool exactSpelling = (flags & PInvokeAttributes.NoMangle) != 0;
             bool setLastError = (flags & PInvokeAttributes.SupportsLastError) != 0;
@@ -658,21 +633,21 @@ namespace System.Reflection
                 new CustomAttributeTypedArgument (typeof(string), dllName),
             };
 
-            var attrType = typeof(DllImportAttribute);
+            Type attrType = typeof(DllImportAttribute);
 
             var namedArgs = new CustomAttributeNamedArgument[] {
-                new CustomAttributeNamedArgument (attrType.GetField ("EntryPoint"), entryPoint),
-                new CustomAttributeNamedArgument (attrType.GetField ("CharSet"), charSet),
-                new CustomAttributeNamedArgument (attrType.GetField ("ExactSpelling"), exactSpelling),
-                new CustomAttributeNamedArgument (attrType.GetField ("SetLastError"), setLastError),
-                new CustomAttributeNamedArgument (attrType.GetField ("PreserveSig"), preserveSig),
-                new CustomAttributeNamedArgument (attrType.GetField ("CallingConvention"), callingConvention),
-                new CustomAttributeNamedArgument (attrType.GetField ("BestFitMapping"), bestFitMapping),
-                new CustomAttributeNamedArgument (attrType.GetField ("ThrowOnUnmappableChar"), throwOnUnmappableChar)
+                new CustomAttributeNamedArgument (attrType.GetField ("EntryPoint")!, entryPoint),
+                new CustomAttributeNamedArgument (attrType.GetField ("CharSet")!, charSet),
+                new CustomAttributeNamedArgument (attrType.GetField ("ExactSpelling")!, exactSpelling),
+                new CustomAttributeNamedArgument (attrType.GetField ("SetLastError")!, setLastError),
+                new CustomAttributeNamedArgument (attrType.GetField ("PreserveSig")!, preserveSig),
+                new CustomAttributeNamedArgument (attrType.GetField ("CallingConvention")!, callingConvention),
+                new CustomAttributeNamedArgument (attrType.GetField ("BestFitMapping")!, bestFitMapping),
+                new CustomAttributeNamedArgument (attrType.GetField ("ThrowOnUnmappableChar")!, throwOnUnmappableChar)
             };
 
             return new CustomAttributeData(
-                attrType.GetConstructor(new[] { typeof(string) }),
+                attrType.GetConstructor(new[] { typeof(string) })!,
                 ctorArgs,
                 namedArgs);
         }
@@ -716,7 +691,7 @@ namespace System.Reflection
         private extern MethodInfo MakeGenericMethod_impl(Type[] types);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public override extern Type[] GetGenericArguments();
+        public extern override Type[] GetGenericArguments();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MethodInfo GetGenericMethodDefinition_impl();
@@ -730,13 +705,13 @@ namespace System.Reflection
             return res;
         }
 
-        public override extern bool IsGenericMethodDefinition
+        public extern override bool IsGenericMethodDefinition
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
-        public override extern bool IsGenericMethod
+        public extern override bool IsGenericMethod
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -774,8 +749,8 @@ namespace System.Reflection
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
-        private string name;
-        private Type reftype;
+        private string? name;
+        private Type? reftype;
 #pragma warning restore 649
 
         public override Module Module
@@ -799,11 +774,11 @@ namespace System.Reflection
             }
         }
 
-        private RuntimeType ReflectedTypeInternal
+        private RuntimeType? ReflectedTypeInternal
         {
             get
             {
-                return (RuntimeType)ReflectedType;
+                return (RuntimeType?)ReflectedType;
             }
         }
 
@@ -824,7 +799,7 @@ namespace System.Reflection
 
         internal override int GetParametersCount()
         {
-            var pi = MonoMethodInfo.GetParametersInfo(mhandle, this);
+            ParameterInfo[] pi = MonoMethodInfo.GetParametersInfo(mhandle, this);
             return pi == null ? 0 : pi.Length;
         }
 
@@ -833,11 +808,11 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object obj, object[] parameters, out Exception exc);
+        internal extern object InternalInvoke(object? obj, object?[]? parameters, out Exception exc);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if (obj == null)
             {
@@ -852,7 +827,7 @@ namespace System.Reflection
             return DoInvoke(obj, invokeAttr, binder, parameters, culture);
         }
 
-        private object DoInvoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        private object DoInvoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if (binder == null)
                 binder = Type.DefaultBinder;
@@ -869,13 +844,13 @@ namespace System.Reflection
                 throw new MemberAccessException(string.Format("Cannot create an instance of {0} because it is an abstract class", DeclaringType));
             }
 
-            return InternalInvoke(obj, parameters, (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0);
+            return InternalInvoke(obj, parameters, (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)!;
         }
 
-        public object InternalInvoke(object obj, object[] parameters, bool wrapExceptions)
+        public object? InternalInvoke(object? obj, object?[]? parameters, bool wrapExceptions)
         {
             Exception exc;
-            object o = null;
+            object? o = null;
 
             if (wrapExceptions)
             {
@@ -909,7 +884,7 @@ namespace System.Reflection
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             return DoInvoke(null, invokeAttr, binder, parameters, culture);
         }
@@ -946,7 +921,7 @@ namespace System.Reflection
             }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {

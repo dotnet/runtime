@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -52,20 +51,20 @@ namespace System
         public static extern string[] GetCommandLineArgs();
 
         [DoesNotReturn]
-        public static void FailFast(string message)
+        public static void FailFast(string? message)
         {
             FailFast(message, null, null);
         }
 
         [DoesNotReturn]
-        public static void FailFast(string message, Exception exception)
+        public static void FailFast(string? message, Exception? exception)
         {
             FailFast(message, exception, null);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DoesNotReturn]
-        public static extern void FailFast(string message, Exception exception, string errorSource);
+        public static extern void FailFast(string? message, Exception? exception, string? errorSource);
     }
 
     #region referencesource dependencies - to be removed
@@ -82,7 +81,7 @@ namespace System
             return key;
         }
 
-        internal static string GetResourceString(string key, params object[] values)
+        internal static string GetResourceString(string key, params object?[] values)
         {
             return string.Format(CultureInfo.InvariantCulture, key, values);
         }

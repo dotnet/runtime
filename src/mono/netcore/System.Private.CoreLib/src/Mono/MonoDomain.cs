@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Mono
@@ -17,8 +16,8 @@ namespace Mono
         #endregion
 #pragma warning restore 169
 
-        public event UnhandledExceptionEventHandler UnhandledException;
+        public event UnhandledExceptionEventHandler? UnhandledException;
 
-        public event EventHandler ProcessExit;
+        public event EventHandler? ProcessExit;
     }
 }

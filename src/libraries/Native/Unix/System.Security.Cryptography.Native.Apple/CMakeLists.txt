@@ -25,6 +25,10 @@ if (CLR_CMAKE_TARGET_IOS)
     add_definitions(-DTARGET_IOS)
 endif()
 
+if (CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DTARGET_TVOS)
+endif()
+
 add_library(System.Security.Cryptography.Native.Apple
     SHARED
     ${NATIVECRYPTO_SOURCES}
@@ -43,5 +47,5 @@ target_link_libraries(System.Security.Cryptography.Native.Apple
     ${SECURITY_LIBRARY}
 )
 
-install_library_and_symbols (System.Security.Cryptography.Native.Apple)
+install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION .)

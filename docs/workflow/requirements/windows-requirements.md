@@ -65,11 +65,11 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 - Ensure that `powershell.exe` is accessible via the PATH environment variable. Typically this is `%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\` and its automatically set upon Windows installation.
 - Powershell version must be 3.0 or higher. Use `$PSVersionTable.PSVersion` to determine the engine version.
 
-## DotNet Core SDK
+## .NET SDK
 
-While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.
+While not strictly needed to build or test this repository, having the .NET SDK installed lets you use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-Visual Studio should have installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .NET Core SDK](https://dotnet.microsoft.com/download) page.
+Visual Studio should have installed the .NET SDK, but in case it did not you can get it from the [Installing the .NET SDK](https://dotnet.microsoft.com/download) page.
 
 ## Adding to the default PATH variable
 

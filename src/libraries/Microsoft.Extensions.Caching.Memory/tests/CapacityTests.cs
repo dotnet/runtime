@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -143,6 +143,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task ExceedsCapacityCompacts()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -236,7 +237,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34102")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task AddingReplacementWhenTotalSizeExceedsCapacityDoesNotUpdateRemovesOldEntryAndTriggersCompaction()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -306,6 +307,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task ExpiringEntryDecreasesCacheSize()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -341,6 +343,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public async Task CompactsToLessThanLowWatermarkUsingLRUWhenHighWatermarkExceeded()
         {
             var testClock = new TestClock();

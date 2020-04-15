@@ -66,61 +66,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     return VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
 
-#undef GetProcessHeap
-HANDLE ClrGetProcessHeap()
-{
-    return GetProcessHeap();
-}
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-
-HANDLE ClrGetProcessExecutableHeap()
-{
-#ifndef CROSSGEN_COMPILE
-    return NULL;
-#else
-    return ClrGetProcessHeap();
-#endif
-}
-
-HANDLE ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
-{
-#ifdef TARGET_UNIX
-    return NULL;
-#else
-    return HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
-#endif
-}
-
-BOOL ClrHeapDestroy(HANDLE hHeap)
-{
-#ifdef TARGET_UNIX
-    return FALSE;
-#else
-    return HeapDestroy(hHeap);
-#endif
-}
-
-#undef HeapAlloc
-LPVOID ClrHeapAlloc(HANDLE hHeap, DWORD dwFlags, S_SIZE_T dwBytes)
-{
-    if (dwBytes.IsOverflow()) return NULL;
-
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack())
-        return NULL;
-#endif
-
-    return HeapAlloc(hHeap, dwFlags, dwBytes.Value());
-}
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
-
-#undef HeapFree
-BOOL ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
-{
-    return HeapFree(hHeap, dwFlags, lpMem);
-}
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-
 //------------------------------------------------------------------------------
 // Helper function to get an exception from outside the exception.  In
 //  the CLR, it may be from the Thread object.  Non-CLR users have no thread object,

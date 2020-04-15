@@ -12,6 +12,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
       <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BaseCertificateTest.cs" />
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
@@ -199,6 +200,7 @@
     <Compile Include="ClientCertificateTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
 </Project>

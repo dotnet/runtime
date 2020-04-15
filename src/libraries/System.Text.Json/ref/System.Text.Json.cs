@@ -208,6 +208,7 @@ namespace System.Text.Json
     public sealed partial class JsonSerializerOptions
     {
         public JsonSerializerOptions() { }
+        public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }
@@ -456,6 +457,12 @@ namespace System.Text.Json
 }
 namespace System.Text.Json.Serialization
 {
+    public enum JsonIgnoreCondition
+    {
+        Always = 0,
+        WhenNull = 1,
+        Never = 2,
+    }
     public abstract partial class JsonAttribute : System.Attribute
     {
         protected JsonAttribute() { }
@@ -499,6 +506,12 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
+        public System.Text.Json.Serialization.JsonIgnoreCondition Condition { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    public sealed partial class JsonIncludeAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonIncludeAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute

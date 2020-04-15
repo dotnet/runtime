@@ -21,17 +21,7 @@ namespace System.Net.Http.Headers
             get { return _value; }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         internal TransferCodingHeaderValue()
         {

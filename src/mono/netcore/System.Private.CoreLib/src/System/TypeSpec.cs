@@ -42,8 +42,8 @@ namespace System
     internal class IArraySpec : IModifierSpec
     {
         // dimensions == 1 and bound, or dimensions > 1 and !bound
-        private int dimensions;
-        private bool bound;
+        private readonly int dimensions;
+        private readonly bool bound;
 
         internal IArraySpec(int dimensions, bool bound)
         {
@@ -93,7 +93,7 @@ namespace System
 
     internal class PointerSpec : IModifierSpec
     {
-        private int pointer_level;
+        private readonly int pointer_level;
 
         internal PointerSpec(int pointer_level)
         {
@@ -121,14 +121,14 @@ namespace System
 
     internal class TypeSpec
     {
-        private ITypeIdentifier name;
-        private string assembly_name;
-        private List<ITypeIdentifier> nested;
-        private List<TypeSpec> generic_params;
-        private List<IModifierSpec> modifier_spec;
+        private ITypeIdentifier? name;
+        private string? assembly_name;
+        private List<ITypeIdentifier>? nested;
+        private List<TypeSpec>? generic_params;
+        private List<IModifierSpec>? modifier_spec;
         private bool is_byref;
 
-        private string display_fullname; // cache
+        private string? display_fullname; // cache
 
         internal bool HasModifiers
         {
@@ -145,7 +145,7 @@ namespace System
             get { return is_byref; }
         }
 
-        internal ITypeName Name
+        internal ITypeName? Name
         {
             get { return name; }
         }
@@ -190,10 +190,10 @@ namespace System
         {
             bool wantAssembly = (flags & DisplayNameFormat.WANT_ASSEMBLY) != 0;
             bool wantModifiers = (flags & DisplayNameFormat.NO_MODIFIERS) == 0;
-            var sb = new Text.StringBuilder(name.DisplayName);
+            var sb = new Text.StringBuilder(name!.DisplayName);
             if (nested != null)
             {
-                foreach (var n in nested)
+                foreach (ITypeIdentifier? n in nested)
                     sb.Append('+').Append(n.DisplayName);
             }
 
@@ -230,7 +230,7 @@ namespace System
         {
             if (modifier_spec != null)
             {
-                foreach (var md in modifier_spec)
+                foreach (IModifierSpec? md in modifier_spec)
                     md.Append(sb);
             }
 
@@ -323,9 +323,9 @@ namespace System
             return false;
         }
 
-        internal Type Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+        internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Assembly asm = null;
+            Assembly? asm = null;
             if (assemblyResolver == null && typeResolver == null)
                 return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, false, ref stackMark);
 
@@ -344,11 +344,11 @@ namespace System
                 }
             }
 
-            Type type = null;
+            Type? type = null;
             if (typeResolver != null)
-                type = typeResolver(asm, name.DisplayName, ignoreCase);
+                type = typeResolver(asm!, name!.DisplayName, ignoreCase);
             else
-                type = asm.GetType(name.DisplayName, false, ignoreCase);
+                type = asm!.GetType(name!.DisplayName, false, ignoreCase);
             if (type == null)
             {
                 if (throwOnError)
@@ -358,9 +358,9 @@ namespace System
 
             if (nested != null)
             {
-                foreach (var n in nested)
+                foreach (ITypeIdentifier? n in nested)
                 {
-                    var tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
+                    Type? tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
                     if (tmp == null)
                     {
                         if (throwOnError)
@@ -376,7 +376,7 @@ namespace System
                 Type[] args = new Type[generic_params.Count];
                 for (int i = 0; i < args.Length; ++i)
                 {
-                    var tmp = generic_params[i].Resolve(assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+                    Type? tmp = generic_params[i].Resolve(assemblyResolver!, typeResolver!, throwOnError, ignoreCase, ref stackMark);
                     if (tmp == null)
                     {
                         if (throwOnError)
@@ -390,7 +390,7 @@ namespace System
 
             if (modifier_spec != null)
             {
-                foreach (var md in modifier_spec)
+                foreach (IModifierSpec? md in modifier_spec)
                     type = md.Resolve(type);
             }
 
@@ -651,8 +651,8 @@ namespace System
 
         private class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
         {
-            private TypeSpec ts;
-            private bool want_modifiers;
+            private readonly TypeSpec ts;
+            private readonly bool want_modifiers;
 
             internal TypeSpecTypeName(TypeSpec ts, bool wantModifiers)
             {

@@ -359,6 +359,8 @@ public:
                       CORINFO_RESOLVED_TOKEN * pResolvedToken,
                       bool fMustConvert);
 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled);
+
     void getFunctionEntryPoint(
                       CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                       CORINFO_CONST_LOOKUP *  pResult,             /* OUT */

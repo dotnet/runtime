@@ -111,10 +111,10 @@ namespace Microsoft.Extensions.Internal
             var argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
             var factoryExpressionBody = BuildFactoryExpression(constructor, parameterMap, provider, argumentArray);
 
-            var factoryLamda = Expression.Lambda<Func<IServiceProvider, object[], object>>(
+            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object[], object>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            var result = factoryLamda.Compile();
+            var result = factoryLambda.Compile();
             return result.Invoke;
         }
 

@@ -31,7 +31,7 @@ namespace System.Diagnostics
         {
             const int SystemDiagnosticsStackDepth = 3;
 
-            if (skipFrames + SystemDiagnosticsStackDepth < 0 || !get_frame_info(skipFrames + SystemDiagnosticsStackDepth, needFileInfo, out var method, out var ilOffset, out var nativeOffset, out var fileName, out var line, out var column))
+            if (skipFrames + SystemDiagnosticsStackDepth < 0 || !get_frame_info(skipFrames + SystemDiagnosticsStackDepth, needFileInfo, out MethodBase? method, out int ilOffset, out int nativeOffset, out string? fileName, out int line, out int column))
                 return;
 
             _method = method;

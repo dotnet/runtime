@@ -30,7 +30,7 @@ The main reason to split the entry-point host and the `hostfxr` is to allow for 
 ## Host Policy
 The host policy library implements all the policies to actually load the runtime, apply configuration, resolve all app's dependencies and calls the runtime to run the app or load the required component.
 
-The host policy library lives in the runtime folder and is versioned alongside it. Which version is used is specified by the app as it specifies which version of the .NET Core runtime to use (done directly or indirectly by referencing the `Microsoft.NETCore.App` framework, or carrying everything app-local).
+The host policy library lives in the runtime folder and is versioned alongside it. Which version is used is specified by the app as it specifies which version of the .NET runtime to use (done directly or indirectly by referencing the `Microsoft.NETCore.App` framework, or carrying everything app-local).
 
 Host policy library reads the `.deps.json` file of the app (and the `.deps.json` of all the referenced frameworks). It resolves all the assemblies specified in the `.deps.json` for the app and frameworks and creates a list of assembly paths (also called TPA). It does a similar thing for native dependencies as well.
 

@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -999,16 +997,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, input.Value[2]);
         }
 
-        [Fact]
-        public static void ReadKeyValuePairOfKeyValuePair()
-        {
-            KeyValuePair<string, KeyValuePair<int, int>> input = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<int, int>>>(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}");
-
-            Assert.Equal("Key", input.Key);
-            Assert.Equal(1, input.Value.Key);
-            Assert.Equal(2, input.Value.Value);
-        }
-
         [Theory]
         [InlineData(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}")]
         [InlineData(@"{""Key"":""Key"", ""Value"":{""Value"":2, ""Key"":1}}")]
@@ -1219,6 +1207,65 @@ namespace System.Text.Json.Serialization.Tests
         {
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
             Assert.Contains(type.ToString(), ex.Message);
+        }
+
+        [Fact]
+        public static void DoesNotCall_CollectionPropertyGetter_EveryTimeElementIsAdded()
+        {
+            var networkList = new List<string> { "Network1", "Network2" };
+
+            string serialized = JsonSerializer.Serialize(new NetworkWrapper { NetworkList = networkList });
+            Assert.Equal(@"{""NetworkList"":[""Network1"",""Network2""]}", serialized);
+
+            NetworkWrapper obj = JsonSerializer.Deserialize<NetworkWrapper>(serialized);
+
+            int i = 0;
+            foreach (string network in obj.NetworkList)
+            {
+                Assert.Equal(networkList[i], network);
+                i++;
+            }
+        }
+
+        public class NetworkWrapper
+        {
+            private string _Networks = string.Empty;
+
+            [JsonIgnore]
+            public string Networks
+            {
+                get => _Networks;
+                set => _Networks = value ?? string.Empty;
+            }
+
+            public IEnumerable<string> NetworkList
+            {
+                get => Networks.Split(',');
+                set => Networks = value != null ? string.Join(",", value) : "";
+            }
+        }
+
+        [Fact]
+        public static void CollectionWith_BackingField_CanRoundtrip()
+        {
+            string json = "{\"AllowedGrantTypes\":[\"client_credentials\"]}";
+
+            Client obj = JsonSerializer.Deserialize<Client>(json);
+            Assert.Equal("client_credentials", obj.AllowedGrantTypes.First());
+
+            string serialized = JsonSerializer.Serialize(obj);
+            Assert.Equal(json, serialized);
+        }
+
+        private class Client
+        {
+            private ICollection<string> _allowedGrantTypes = new HashSetWithBackingCollection();
+
+            public ICollection<string> AllowedGrantTypes
+            {
+                get { return _allowedGrantTypes; }
+                set { _allowedGrantTypes = new HashSetWithBackingCollection(value); }
+            }
         }
     }
 }
