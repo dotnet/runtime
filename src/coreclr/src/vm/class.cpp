@@ -1012,11 +1012,15 @@ void ClassLoader::ValidateMethodImplRemainsInEffect(MethodTable* pMT)
         if (originalIndex == originalIndexParent)
             continue;
 
-        SigTypeContext context1(pParentMD);
-        TypeHandle hType1 = pParentMD->GetSigPointer().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+        // The context used to load the return type of the parent method has to use the generic method arguments
+        // of the overriding method, otherwise the type comparison below will not work correctly
+        SigTypeContext context1(pParentMD->GetClassInstantiation(), pMD->GetMethodInstantiation());
+        MetaSig methodSig1(pParentMD);
+        TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
         SigTypeContext context2(pMD);
-        TypeHandle hType2 = pMD->GetSigPointer().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+        MetaSig methodSig2(pMD);
+        TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
         // Type1 has to be equal to Type2, or a base type of Type2 (covariant returns)
 
