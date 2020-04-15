@@ -10,8 +10,8 @@
 
 #define _ASSERTE assert
 
-// This file contains implementation of a simple IPC mechanism - bidirectional named pipe.
-// It is implemented on top of two one-directional names pipes (fifos on UNIX)
+// This file contains a dummy implementation of the simple IPC mechanism - bidirectional named pipe.
+// It is used for the cross OS DBI where IPC is not supported.
 
 
 // Creates a server side of the pipe.
@@ -19,7 +19,7 @@
 // true - success, false - failure (use GetLastError() for more details)
 bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 {
-	return false;
+    return false;
 }
 
 
@@ -42,14 +42,14 @@ bool TwoWayPipe::WaitForConnection()
 // use GetLastError() for more details
 int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
 {
-	return -1;
+    return -1;
 }
 
 // Writes data to pipe. Returns number of bytes written or a negative number in case of an error.
 // use GetLastError() for more details
 int TwoWayPipe::Write(const void *data, DWORD dataSize)
 {
-	return -1;
+    return -1;
 }
 
 // Disconnect server or client side of the pipe.
