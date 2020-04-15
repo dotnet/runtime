@@ -80,9 +80,10 @@ mono_ios_append_output (const char* value)
     NSString* nsstr = [NSString stringWithUTF8String:strdup(value)];
     dispatch_async(dispatch_get_main_queue(), ^{
         logLabel.text = [logLabel.text stringByAppendingString:nsstr];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [logLabel scrollRangeToVisible: NSMakeRange(logLabel.text.length -1, 1)];
-        });
+        CGRect caretRect = [logLabel caretRectForPosition:logLabel.endOfDocument];
+        [logLabel scrollRectToVisible:caretRect animated:NO];
+        [logLabel setScrollEnabled:NO];
+        [logLabel setScrollEnabled:YES];
     });
 }
 
