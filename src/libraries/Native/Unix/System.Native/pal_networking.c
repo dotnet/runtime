@@ -2503,7 +2503,6 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
     return Error_SUCCESS;
 }
 
-
 int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
 {
     if (atMark == NULL)
