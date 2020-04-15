@@ -606,6 +606,43 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+
+        [DllImport("libc")]
+        private static unsafe extern int socketpair(int domain, int type, int protocol, int* ptr);
+
+        [DllImport("libc")]
+        private static extern int close(int fd);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public unsafe void Ctor_SafeHandle_SocketPair_Success()
+        {
+            // This is platform dependent but it seems like this is same on all supported platforms.
+            const int AF_UNIX = 1;
+            const int SOCK_STREAM = 1;
+            Span<int> ptr = stackalloc int[2];
+
+            fixed (int* bufferPtr = ptr)
+            {
+                int result = socketpair(AF_UNIX, SOCK_STREAM, 0, bufferPtr);
+                Assert.Equal(0, result);
+            }
+
+            for (int i = 0; i <= 1; i++)
+            {
+                Assert.InRange(ptr[0], 0, int.MaxValue);
+                Socket s = new Socket(new SafeSocketHandle((IntPtr)ptr[i], ownsHandle: false));
+
+                Assert.True(s.Connected);
+                Assert.Equal(AddressFamily.Unix, s.AddressFamily);
+                Assert.Equal(SocketType.Stream, s.SocketType);
+                Assert.Equal(ProtocolType.Unspecified, s.ProtocolType);
+            }
+
+            close(ptr[0]);
+            close(ptr[1]);
+        }
+
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
         {
             T r1 = default, r2 = default;
