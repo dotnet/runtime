@@ -202,7 +202,7 @@ jobs:
 
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
                 -ci
-                -projects $(Build.SourcesDirectory)/src/mono
+                -projects $(Build.SourcesDirectory)/src/mono/mono.proj
                 /t:PatchCoreClrCoreRoot
         displayName: "Patch dotnet with mono"
 
@@ -263,6 +263,7 @@ jobs:
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         coreClrRepoRoot: $(coreClrRepoRoot)
+	runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
