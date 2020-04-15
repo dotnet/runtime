@@ -5,15 +5,24 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public class CreateSocket
     {
+        readonly ITestOutputHelper _output;
+
+        public CreateSocket(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         public static object[][] DualModeSuccessInputs = {
             new object[] { SocketType.Stream, ProtocolType.Tcp },
             new object[] { SocketType.Dgram, ProtocolType.Udp },
@@ -449,19 +458,151 @@ namespace System.Net.Sockets.Tests
         [DllImport("libc")]
         private static extern int socket(int domain, int type, int protocol);
 
+        private const int PF_NETLINK = 16;
+
+        private class NlEndPoint : EndPoint
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct sockaddr_nl
+            {
+                internal ushort sin_family;
+                private ushort pad;
+                internal int pid;
+                private int nl_groups;
+            }
+
+            private readonly int _pid;
+
+            public NlEndPoint(int pid)
+            {
+                _pid = pid;
+            }
+
+            public override AddressFamily AddressFamily
+            {
+                get
+                {
+                    return AddressFamily.Unknown;
+                }
+            }
+
+            public class NlSocketAddress : SocketAddress
+            {
+                // We need to create base from something known.
+                public unsafe NlSocketAddress(int pid) : base(AddressFamily.Packet)
+                {
+                    Span<sockaddr_nl> addr = stackalloc sockaddr_nl[1];
+
+                    addr[0].sin_family = PF_NETLINK;
+                    addr[0].pid = pid;
+
+                    fixed (void * ptr = addr)
+                    {
+                        var bytes = new ReadOnlySpan<byte>(ptr, sizeof(sockaddr_nl));
+
+                        for (int i = 0; i< bytes.Length; i++)
+                        {
+                            this[i] = bytes[i];
+                        }
+                    }
+                }
+            }
+
+            public override SocketAddress Serialize()
+            {
+                SocketAddress a = (SocketAddress)new NlSocketAddress(_pid);
+                return a;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct nlmsghdr
+        {
+            internal int nlmsg_len;       /* Length of message including header */
+            internal ushort nlmsg_type;   /* Type of message content */
+            internal ushort nlmsg_flags;  /* Additional flags */
+            internal int nlmsg_seq;       /* Sequence number */
+            internal uint nlmsg_pid;      /* Sender port ID */
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct nlmsgerr {
+            internal int     error;
+            internal nlmsghdr msg;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct rtmsg
+        {
+            internal byte rtm_family;
+            internal byte rtm_dst_len;
+            internal byte rtm_src_len;
+            internal byte rtm_tos;
+
+            internal byte rtm_table;
+            internal byte rtm_protocol;
+            internal byte rtm_scope;
+            internal byte rtm_type;
+
+            internal uint rtm_flags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct nl_request
+        {
+            internal nlmsghdr nlh;
+            internal rtmsg rtm;
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void Ctor_SafeHandle_UnknownSocket_Success()
+        public unsafe void Ctor_SafeHandle_UnknownSocket_Success()
         {
-            const int PF_NETLINK = 16;
+            const int PF_INET = 2;
             const int NETLINK_ROUTE = 0;
             const int SOCK_DGRAM = 2;
+            const int RTM_NEWROUTE = 24;
+            const int RTM_GETROUTE = 26;
+            const int NLM_F_REQUEST = 1;
+            const int NLM_F_DUMP  = 0x300;
+            const int NLMSG_ERROR = 2;
+            const int SEQ = 42;
 
             int fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
-            Assert.True(fd >= 0);
+            Assert.InRange(fd, 0, int.MaxValue);
             using (Socket netlink = new Socket(new SafeSocketHandle((IntPtr)fd, ownsHandle: true)))
             {
                 Assert.Equal(AddressFamily.Unknown, netlink.AddressFamily);
+
+                netlink.Bind(new NlEndPoint(Process.GetCurrentProcess().Id));
+
+                nl_request req = default;
+                req.nlh.nlmsg_pid = (uint)Process.GetCurrentProcess().Id;
+                req.nlh.nlmsg_type = RTM_GETROUTE;  /* We wish to get routes */
+                req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+                req.nlh.nlmsg_len = sizeof(nl_request);
+                req.nlh.nlmsg_seq = SEQ;
+                req.rtm.rtm_family = PF_INET;
+
+                netlink.Send(new ReadOnlySpan<byte>(Unsafe.AsPointer(ref req), sizeof(nl_request)));
+
+                Assert.True(netlink.Poll(TestSettings.PassingTestTimeout, SelectMode.SelectRead));
+
+                byte[] response = new byte[4000];
+                int readBytes = netlink.Receive(response);
+                // We should get at least header.
+                Assert.True(readBytes > sizeof(nlmsghdr));
+
+                MemoryMarshal.TryRead<nlmsghdr>(response.AsSpan(), out nlmsghdr nlh);
+                Assert.Equal(SEQ, nlh.nlmsg_seq);
+
+                if (nlh.nlmsg_type == NLMSG_ERROR)
+                {
+                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan().Slice(sizeof(nlmsghdr)), out nlmsgerr err);
+                    _output.WriteLine("Netlink request failed with {0}", err.error);
+                }
+
+                Assert.Equal(RTM_NEWROUTE, nlh.nlmsg_type);
             }
         }
 

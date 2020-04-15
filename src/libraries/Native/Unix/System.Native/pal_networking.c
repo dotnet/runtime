@@ -682,7 +682,7 @@ int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t sock
 
     if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        return Error_EAFNOSUPPORT;
+        *addressFamily = AddressFamily_AF_UNKNOWN;
     }
 
     return Error_SUCCESS;
@@ -2426,7 +2426,6 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     return Error_SUCCESS;
 }
 
-#if HAVE_SYS_PROCINFO_H
 int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
 {
     if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
@@ -2436,6 +2435,7 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
 
     int fd = ToFileDescriptor(socket);
 
+#if HAVE_SYS_PROCINFO_H
     struct socket_fdinfo fdi;
     if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
     {
@@ -2458,19 +2458,7 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
     }
 
     *isListening = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
-
-    return Error_SUCCESS;
-}
 #else
-int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
-{
-    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
-    {
-        return Error_EFAULT;
-    }
-
-    int fd = ToFileDescriptor(socket);
-
 #ifdef SO_DOMAIN
     int domainValue;
     socklen_t domainLength = sizeof(int);
@@ -2511,10 +2499,10 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
     {
         *isListening = 0;
     }
-
+#endif
     return Error_SUCCESS;
 }
-#endif
+
 
 int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* atMark)
 {
