@@ -1290,10 +1290,11 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)), NI_AVX_Compare,
-                                                   baseType, simdSize);
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_Compare, baseType, simdSize);
             }
             else
             {
@@ -1318,9 +1319,10 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
@@ -1412,10 +1414,11 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)), NI_AVX_Compare,
-                                                   baseType, simdSize);
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_Compare, baseType, simdSize);
             }
             else
             {
@@ -1459,9 +1462,10 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
 
-                FloatComparisonMode comparison = static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
-                comparison     = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
-                retNode        = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
                                                    NI_AVX_CompareScalar, baseType, simdSize);
             }
             else
