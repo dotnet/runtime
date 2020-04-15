@@ -73,15 +73,15 @@
   <Target Name="SetupRuntimePackNative"
           Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
-    <Copy SourceFiles="@(RuntimeFiles)"
-          DestinationFolder="$(NETCoreAppRuntimePackNativePath)"
-          SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(MonoCrossFiles)"
-          DestinationFolder="$(NETCoreAppRuntimePackNativePath)/cross"
-          SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(MonoIncludeFiles)"
-          DestinationFolder="$(NETCoreAppRuntimePackNativePath)/include/%(RecursiveDir)"
-          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <NativeBinPlaceItems Include="@(RuntimeFiles)" />
+      <NativeBinPlaceItems Include="@(MonoCrossFiles)">
+        <DestinationSubDirectory>cross/</DestinationSubDirectory>
+      </NativeBinPlaceItems>
+      <NativeBinPlaceItems Include="@(MonoIncludeFiles)">
+        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
+      </NativeBinPlaceItems>
+    </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
