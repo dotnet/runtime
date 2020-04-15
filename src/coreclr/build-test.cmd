@@ -59,6 +59,7 @@ set __RuntimeId=
 set __TargetsWindows=1
 set __DoCrossgen=
 set __DoCrossgen2=
+set __CompositeBuildMode=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
@@ -106,6 +107,7 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -627,18 +629,45 @@ exit /b 1
 set __TotalPrecompiled=0
 set __FailedToPrecompile=0
 set __FailedAssemblies=
-for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
+set __CompositeOutputDir=%CORE_ROOT%\composite.out
+set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
+
+if defined __CompositeBuildMode (
+    mkdir !__CompositeOutputDir!
+    echo --composite>>!__CompositeResponseFile!
+    echo -O>>!__CompositeResponseFile!
+    echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
+)
+
+for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%\netstandard.dll;%CORE_ROOT%\mscorlib.dll) do (
     if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
     if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
     if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
     if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
-        call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-        echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+        if defined __CompositeBuildMode (
+            echo %%F>>!__CompositeResponseFile!
+        ) else (
+            call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+            echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+        )
     )))))
 )
 
+echo Composite response line^: %__CompositeResponseFile%
+type "%__CompositeResponseFile%"
+
+if defined __CompositeBuildMode (
+    set __CompositeCommandLine="%CORE_ROOT%\corerun"
+    set __CompositeCommandLine=!__CompositeCommandLine! "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
+    echo Building composite R2R framework^: !__CompositeCommandLine!
+    !__CompositeCommandLine!
+    set __FailedToPrecompile=!ERRORLEVEL!
+    copy /Y "!__CompositeOutputDir!\*.*" "!CORE_ROOT!\"
+)
+
 if !__FailedToPrecompile! NEQ 0 (
-    echo Failed assemblies:
+    @echo Failed assemblies:
     FOR %%G IN (!__FailedAssemblies!) do echo   %%G
 )
 
