@@ -1384,7 +1384,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_Shuffle: {
 			if (fsig->param_count == 2) {
 				g_assert (arg0_type == MONO_TYPE_I4 || arg0_type == MONO_TYPE_U4);
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, 
+					args [1]->opcode == OP_ICONST ? OP_SSE2_PSHUFD_IMM : OP_SSE2_PSHUFD, 
+					args [1]->inst_c0, arg0_type, fsig, args);
 			} else if (fsig->param_count == 3) {
 				g_assert (arg0_type == MONO_TYPE_R8);
 				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_SHUFPD, 0, arg0_type, fsig, args);
@@ -2054,6 +2056,9 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoImage *image = m_class_get_image (cmethod->klass);
 
 	if (image != mono_get_corlib ())
+		return NULL;
+
+	if (cfg->method == cmethod) // don't expand recursive intrinsics
 		return NULL;
 
 	class_ns = m_class_get_name_space (cmethod->klass);

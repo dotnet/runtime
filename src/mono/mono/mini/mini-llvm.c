@@ -8281,6 +8281,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE2_PSHUFD_IMM: {
+			LLVMValueRef mask = create_const_vector_4_i32 (
+				(ins->inst_c0 >> 0) & 0x3,
+				(ins->inst_c0 >> 2) & 0x3,
+				(ins->inst_c0 >> 4) & 0x3,
+				(ins->inst_c0 >> 6) & 0x3);
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (sse_i4_t), mask, "");
+			break;
+		}
+
 		case OP_SSE2_SHUFPD:
 		case OP_SSE2_PSHUFD:
 		case OP_SSE2_PSHUFHW:
