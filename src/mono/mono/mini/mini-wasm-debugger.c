@@ -525,7 +525,7 @@ mono_wasm_breakpoint_hit (void)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_current_bp_id (void)
 {
-	DEBUG_PRINTF (1, "COMPUTING breapoint ID\n");
+	DEBUG_PRINTF (2, "COMPUTING breakpoint ID\n");
 	//FIXME handle compiled case
 
 	/* Interpreter */
