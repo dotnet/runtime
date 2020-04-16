@@ -164,10 +164,9 @@ namespace System.Text
         public void Append(char c)
         {
             int pos = _pos;
-            Span<char> chars = _chars;
-            if ((uint)pos < (uint)chars.Length)
+            if ((uint)pos < (uint)_chars.Length)
             {
-                chars[pos] = c;
+                _chars[pos] = c;
                 _pos = pos + 1;
             }
             else

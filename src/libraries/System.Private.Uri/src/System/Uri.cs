@@ -2725,7 +2725,8 @@ namespace System
                     dest.Append(':');
                     if (InFact(Flags.AuthorityFound))
                     {
-                        dest.Append('/', '/');
+                        dest.Append('/');
+                        dest.Append('/');
                     }
                 }
             }
