@@ -1786,6 +1786,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 #ifdef TARGET_ARM
     if (varTypeIsFloating(targetType) && ((offs % emitTypeSize(TYP_FLOAT)) != 0))
     {
+        // Arm supports unaligned access only for integer types,
+        // load the floating data as 2 integer registers and convert them to float.
         regNumber addr = tree->ExtractTempReg();
         emit->emitIns_R_S(INS_lea, attr, addr, varNum, offs);
 

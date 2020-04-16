@@ -1006,6 +1006,8 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     regNumber dataReg = data->GetRegNum();
     if (varTypeIsFloating(targetType) && ((offset % emitTypeSize(TYP_FLOAT)) != 0))
     {
+        // Arm supports unaligned access only for integer types,
+        // convert the storing floating data into 2 integer registers and write them as int.
         regNumber addr = tree->ExtractTempReg();
         emit->emitIns_R_S(INS_lea, attr, addr, varNum, offset);
         if (targetType == TYP_FLOAT)
