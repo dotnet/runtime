@@ -4593,13 +4593,14 @@ namespace System
             //
             // (path is already  >= 3 chars if recognized as a DOS-like)
             //
-            if (dosPathIdx != 0 && dest[dosPathIdx + start - 1] == '|')
-                dest[dosPathIdx + start - 1] = ':';
+            int offset = start + dosPathIdx;
+            if (dosPathIdx != 0 && dest[offset - 1] == '|')
+                dest[offset - 1] = ':';
 
-            if (InFact(Flags.ShouldBeCompressed))
+            if (InFact(Flags.ShouldBeCompressed) && dest.Length - offset > 0)
             {
                 // It will also convert back slashes if needed
-                dest.Length = start + Compress(dest.RawChars.Slice(start, dest.Length - start), _syntax);
+                dest.Length = offset + Compress(dest.RawChars.Slice(offset, dest.Length - offset), _syntax);
                 if (dest[start] == '\\')
                     dest[start] = '/';
 
@@ -4789,7 +4790,7 @@ namespace System
                 else if (dotCount != 0)
                 {
                     bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
-                        && (dotCount > 2 || ch != '/' || i == 0);
+                        && (dotCount > 2 || ch != '/');
 
                     // Cases:
                     // /./                  = remove this segment
