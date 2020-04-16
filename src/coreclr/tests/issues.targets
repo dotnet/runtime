@@ -996,6 +996,24 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34624</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/ConvertToVector128_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34734</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/ConvertToVector128_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34734</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34625</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
+            <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34905</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1010,7 +1028,7 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
-	<ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddMemoryPressureTest/**">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddMemoryPressureTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddThresholdTest/**">

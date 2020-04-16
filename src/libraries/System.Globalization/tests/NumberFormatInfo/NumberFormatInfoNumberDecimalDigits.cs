@@ -17,9 +17,9 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NumberDecimalDigits_TestData))]
-        public void NumberDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedWindows, int expectedIcu)
+        public void NumberDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
         {
-            int expected = PlatformDetection.IsWindows ? expectedWindows : expectedIcu;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;
             Assert.Equal(expected, format.NumberDecimalDigits);
         }
 

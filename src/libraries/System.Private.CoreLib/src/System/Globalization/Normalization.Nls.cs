@@ -11,15 +11,10 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static unsafe bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        private static unsafe bool NlsIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return true;
-            }
-
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(strInput != null);
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
@@ -59,15 +54,10 @@ namespace System.Globalization
             return result != Interop.BOOL.FALSE;
         }
 
-        internal static unsafe string Normalize(string strInput, NormalizationForm normalizationForm)
+        private static unsafe string NlsNormalize(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return strInput;
-            }
-
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(strInput != null);
 
             if (strInput.Length == 0)

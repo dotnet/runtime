@@ -95,12 +95,9 @@ namespace System.Text.Json
             {
                 case ClassType.Object:
                     {
-                        // Create the policy property.
-                        PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(type, runtimeType, converter!, options);
-
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
-                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
                         Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
 
@@ -112,11 +109,22 @@ namespace System.Text.Json
                                 continue;
                             }
 
+                            if (IsNonPublicProperty(propertyInfo))
+                            {
+                                if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                {
+                                    ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
+                                }
+
+                                // Non-public properties should not be included for (de)serialization.
+                                continue;
+                            }
+
                             // For now we only support public getters\setters
                             if (propertyInfo.GetMethod?.IsPublic == true ||
                                 propertyInfo.SetMethod?.IsPublic == true)
                             {
-                                JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
+                                JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, type, options);
                                 Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
@@ -187,6 +195,13 @@ namespace System.Text.Json
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
             }
+        }
+
+        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
+        {
+            MethodInfo? getMethod = propertyInfo.GetMethod;
+            MethodInfo? setMethod = propertyInfo.SetMethod;
+            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
         }
 
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)

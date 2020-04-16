@@ -32,7 +32,7 @@ namespace System.Globalization.Tests
 
         private static string[] GetExpectedMonthNames()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (PlatformDetection.IsNlsGlobalization)
             {
                 return new string[]
                 {

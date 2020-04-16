@@ -8,12 +8,13 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private unsafe string GetAsciiCore(string unicodeString, char* unicode, int count)
+        private unsafe string IcuGetAsciiCore(string unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = IcuFlags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
 
             const int StackallocThreshold = 512;
@@ -51,33 +52,35 @@ namespace System.Globalization
             }
         }
 
-        private unsafe string GetUnicodeCore(string asciiString, char* ascii, int count)
+        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = IcuFlags;
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
 
             const int StackAllocThreshold = 512;
             if (count < StackAllocThreshold)
             {
                 char* output = stackalloc char[count];
-                return GetUnicodeCore(asciiString, ascii, count, flags, output, count, reattempt: true);
+                return IcuGetUnicodeCore(asciiString, ascii, count, flags, output, count, reattempt: true);
             }
             else
             {
                 char[] output = new char[count];
                 fixed (char* pOutput = &output[0])
                 {
-                    return GetUnicodeCore(asciiString, ascii, count, flags, pOutput, count, reattempt: true);
+                    return IcuGetUnicodeCore(asciiString, ascii, count, flags, pOutput, count, reattempt: true);
                 }
             }
         }
 
-        private unsafe string GetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
+        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
@@ -95,7 +98,7 @@ namespace System.Globalization
                 char[] newOutput = new char[realLen];
                 fixed (char* pNewOutput = newOutput)
                 {
-                    return GetUnicodeCore(asciiString, ascii, count, flags, pNewOutput, realLen, reattempt: false);
+                    return IcuGetUnicodeCore(asciiString, ascii, count, flags, pNewOutput, realLen, reattempt: false);
                 }
             }
 
@@ -106,7 +109,7 @@ namespace System.Globalization
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private uint Flags
+        private uint IcuFlags
         {
             get
             {

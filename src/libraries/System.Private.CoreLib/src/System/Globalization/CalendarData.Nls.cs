@@ -10,9 +10,10 @@ namespace System.Globalization
 {
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
+        private bool NlsLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             bool ret = true;
 
@@ -106,17 +107,23 @@ namespace System.Globalization
         }
 
         // Get native two digit year max
-        internal static int GetTwoDigitYearMax(CalendarId calendarId) =>
-            GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
-            CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ? twoDigitYearMax :
-            -1;
+        internal static int NlsGetTwoDigitYearMax(CalendarId calendarId)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
+        }
 
         // Call native side to figure out which calendars are allowed
-        internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
+        internal static int NlsGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
 
-            EnumCalendarsData data = default;
+            NlsEnumCalendarsData data = default;
             data.userOverride = 0;
             data.calendars = new List<int>();
 
@@ -147,9 +154,10 @@ namespace System.Globalization
             return data.calendars.Count;
         }
 
-        private static bool SystemSupportsTaiwaneseCalendar()
+        private static bool NlsSystemSupportsTaiwaneseCalendar()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             // Taiwanese calendar get listed as one of the optional zh-TW calendars only when having zh-TW UI
             return CallGetCalendarInfoEx("zh-TW", CalendarId.TAIWAN, CAL_SCALNAME, out string _);
@@ -221,7 +229,7 @@ namespace System.Globalization
                     // Taiwan calendar data is not always in all language version of OS due to Geopolical reasons.
                     // It is only available in zh-TW localized versions of Windows.
                     // Let's check if OS supports it.  If not, fallback to Greogrian localized for Taiwan calendar.
-                    if (!SystemSupportsTaiwaneseCalendar())
+                    if (!NlsSystemSupportsTaiwaneseCalendar())
                     {
                         calendar = CalendarId.GREGORIAN;
                     }
@@ -410,7 +418,7 @@ namespace System.Globalization
         //
         // struct to help our calendar data enumaration callback
         //
-        private struct EnumCalendarsData
+        public struct NlsEnumCalendarsData
         {
             public int userOverride;   // user override value (if found)
             public List<int> calendars;      // list of calendars found so far
@@ -419,7 +427,7 @@ namespace System.Globalization
         // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
-            ref EnumCalendarsData context = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)lParam);
+            ref NlsEnumCalendarsData context = ref Unsafe.As<byte, NlsEnumCalendarsData>(ref *(byte*)lParam);
             try
             {
                 // If we had a user override, check to make sure this differs

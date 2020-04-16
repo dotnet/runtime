@@ -8,8 +8,10 @@ namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
     {
-        internal static CultureInfo GetUserDefaultCulture()
+        internal static CultureInfo IcuGetUserDefaultCulture()
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
@@ -28,8 +30,10 @@ namespace System.Globalization
             return cultureInfo;
         }
 
-        private static CultureInfo GetPredefinedCultureInfo(string name)
+        private static CultureInfo IcuGetPredefinedCultureInfo(string name)
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
             if (!Interop.Globalization.IsPredefinedLocale(name))
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
@@ -38,8 +42,10 @@ namespace System.Globalization
             return GetCultureInfo(name);
         }
 
-        private static CultureInfo GetUserDefaultUICulture()
+        private static CultureInfo IcuGetUserDefaultUICulture()
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
             return InitializeUserDefaultCulture();
         }
     }

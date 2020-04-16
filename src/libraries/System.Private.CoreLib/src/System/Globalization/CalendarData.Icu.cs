@@ -31,8 +31,10 @@ namespace System.Globalization
 
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
+        private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
             bool result = true;
 
             // these can return null but are later replaced with String.Empty or other non-nullable value
@@ -79,17 +81,20 @@ namespace System.Globalization
             return result;
         }
 
-        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        internal static int IcuGetTwoDigitYearMax(CalendarId calendarId)
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
             // There is no user override for this value on Linux or in ICU.
             // So just return -1 to use the hard-coded defaults.
             return -1;
         }
 
         // Call native side to figure out which calendars are allowed
-        internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
+        internal static int IcuGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             // NOTE: there are no 'user overrides' on Linux
             int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
@@ -104,8 +109,9 @@ namespace System.Globalization
             return count;
         }
 
-        private static bool SystemSupportsTaiwaneseCalendar()
+        private static bool IcuSystemSupportsTaiwaneseCalendar()
         {
+            Debug.Assert(!GlobalizationMode.UseNls);
             return true;
         }
 
@@ -133,7 +139,7 @@ namespace System.Globalization
         {
             datePatterns = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
@@ -358,7 +364,7 @@ namespace System.Globalization
         {
             monthNames = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
@@ -406,7 +412,7 @@ namespace System.Globalization
         {
             calendarData = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
@@ -417,7 +423,7 @@ namespace System.Globalization
             return result;
         }
 
-        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref EnumCalendarsData callbackContext)
+        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
             return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
@@ -426,7 +432,7 @@ namespace System.Globalization
         {
             try
             {
-                ref EnumCalendarsData callbackContext = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)context);
+                ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)
                 {
@@ -450,7 +456,7 @@ namespace System.Globalization
             }
         }
 
-        private struct EnumCalendarsData
+        private struct IcuEnumCalendarsData
         {
             public List<string> Results;
             public bool DisallowDuplicates;
