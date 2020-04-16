@@ -719,6 +719,8 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			return NULL;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_BASE) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (info->id) {
 		case SN_get_IsSupported:
@@ -745,6 +747,8 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			return NULL;
 		
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_CRC) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (info->id) {
 		case SN_get_IsSupported:
@@ -1107,6 +1111,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE) != 0;
+		if (!supported)
+			return NULL;
 
 		/* Common case */
 		if (info->op != 0)
@@ -1164,6 +1170,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0;
+		if (!supported)
+			return NULL;
 
 		/* Common case */
 		if (info->op != 0)
@@ -1431,6 +1439,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3);
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1480,6 +1490,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1522,7 +1534,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0;
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1584,7 +1598,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE42) != 0; 
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE42) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1615,7 +1631,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_PCLMUL) != 0; 
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_PCLMUL) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_CarrylessMultiply: {
@@ -1646,7 +1664,9 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_AES) != 0; 
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_AES) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1672,6 +1692,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_POPCNT) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1679,8 +1701,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			ins->type = STACK_I4;
 			return ins;
 		case SN_PopCount:
-			if (!supported)
-				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
 			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
@@ -1698,6 +1718,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_LZCNT) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1727,6 +1749,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 
 		g_assert (id != -1);
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_BMI1) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1802,6 +1826,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_BMI2) != 0;
+		if (!supported)
+			return NULL;
 
 		switch (id) {
 		case SN_get_IsSupported:
