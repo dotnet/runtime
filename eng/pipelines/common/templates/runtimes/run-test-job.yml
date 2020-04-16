@@ -208,10 +208,10 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-                -ci
-                -projects $(Build.SourcesDirectory)/src/mono/mono.proj
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
                 /t:PatchCoreClrCoreRoot
+                -ci
         displayName: "Patch dotnet with mono"
 
 
