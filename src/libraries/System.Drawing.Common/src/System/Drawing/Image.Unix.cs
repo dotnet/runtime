@@ -192,7 +192,7 @@ namespace System.Drawing
             if (filename == null)
                 throw new ArgumentNullException(nameof(filename));
 
-            CheckDirectoryExists(filename);
+            ThrowIfDirectoryDoesntExist(filename);
 
             int st;
             Guid guid = encoder.Clsid;

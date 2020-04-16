@@ -153,7 +153,7 @@ namespace System.Drawing
         /// </summary>
         public void Save(string filename) => Save(filename, RawFormat);
 
-        private static void CheckDirectoryExists(string filename)
+        private static void ThrowIfDirectoryDoesntExist(string filename)
         {
             var directoryPart = System.IO.Path.GetDirectoryName(filename);
             if (!string.IsNullOrEmpty(directoryPart) && !System.IO.Directory.Exists(directoryPart))
