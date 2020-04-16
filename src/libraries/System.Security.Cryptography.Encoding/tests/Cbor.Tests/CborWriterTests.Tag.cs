@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3.9614081247908796757769715711", "c482381bc24c7fffffff7fffffff7fffffff")] // maximal number of fractional digits
         public static void WriteDecimal_SingleValue_HappyPath(string stringValue, string expectedHexEncoding)
         {
-            decimal value = decimal.Parse(stringValue);
+            decimal value = decimal.Parse(stringValue, Globalization.CultureInfo.InvariantCulture);
             using var writer = new CborWriter();
             writer.WriteDecimal(value);
             byte[] encoding = writer.ToArray();

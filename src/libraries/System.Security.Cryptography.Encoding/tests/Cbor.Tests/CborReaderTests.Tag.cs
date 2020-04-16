@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("2000000000", "c4820902")] // encoding with positive exponent representation in payload (2 * 10^9)
         public static void ReadDecimal_SingleValue_HappyPath(string expectedStringValue, string hexEncoding)
         {
-            decimal expectedValue = decimal.Parse(expectedStringValue);
+            decimal expectedValue = decimal.Parse(expectedStringValue, Globalization.CultureInfo.InvariantCulture);
             byte[] data = hexEncoding.HexToByteArray();
 
             var reader = new CborReader(data);
