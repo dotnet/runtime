@@ -100,5 +100,22 @@ namespace System.PrivateUri.Tests
         {
             Assert.Equal(new Uri(uncPath), new Uri(uncPath.ToUpper()));
         }
+
+        [Theory]
+        [InlineData(@"\\")]
+        [InlineData(@"//")]
+        [InlineData(@"\/")]
+        [InlineData(@"/\")]
+        public static void Uri_ShortUnc_NotRecognizedAsAbsolute(string uriString)
+        {
+            Assert.False(Uri.TryCreate(uriString, UriKind.Absolute, out _));
+
+            Assert.Throws<UriFormatException>(() => new Uri(uriString));
+
+            Assert.True(Uri.TryCreate(uriString, UriKind.Relative, out Uri uri));
+
+            // Invalid as it's a relative Uri
+            Assert.Throws<InvalidOperationException>(() => uri.IsUnc);
+        }
     }
 }
