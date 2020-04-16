@@ -1943,10 +1943,9 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // because collectible types need the generics context when gc-ing.
     if (genericsContextIsThis)
     {
-        const bool isUsed   = lvaGenericsContextInUse;
         const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
 
-        if (isUsed || mustKeep)
+        if (lvaGenericsContextInUse || mustKeep)
         {
             JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
             return true;

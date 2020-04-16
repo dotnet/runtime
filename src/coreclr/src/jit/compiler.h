@@ -3125,7 +3125,7 @@ public:
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    unsigned lvaGenericsContextInUse;
+    bool lvaGenericsContextInUse;
 
     bool lvaKeepAliveAndReportThis(); // Synchronized instance method of a reference type, or
                                       // CORINFO_GENERICS_CTXT_FROM_THIS?
