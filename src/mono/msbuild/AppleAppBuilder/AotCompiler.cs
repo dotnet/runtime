@@ -54,7 +54,8 @@ internal class AotCompiler
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
             .Append("msym-dir=").Append(Path.Combine(binDir, "Msym,"))
-            .Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
+            // TODO: enable aotdata
+            //.Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
             //  TODO: enable direct-pinvokes (to get rid of -force_loads)
             //.Append("direct-pinvoke,")
             .Append("full,");
