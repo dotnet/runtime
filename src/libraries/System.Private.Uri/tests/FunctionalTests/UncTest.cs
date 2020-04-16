@@ -117,5 +117,25 @@ namespace System.PrivateUri.Tests
             // Invalid as it's a relative Uri
             Assert.Throws<InvalidOperationException>(() => uri.IsUnc);
         }
+
+        [Theory]
+        [InlineData(@"\\host/share")]
+        [InlineData(@"\\host\share")]
+        [InlineData(@"//host/share")]
+        [InlineData(@"//host\share")]
+        [InlineData(@"\/host/share")]
+        [InlineData(@"\/host\share")]
+        [InlineData(@"/\host/share")]
+        [InlineData(@"/\host\share")]
+        public static void Uri_ImplicitToExplicitForm_StillRecognizedAsUnc(string uriString)
+        {
+            var uri = new Uri(uriString);
+            Assert.True(uri.IsUnc);
+            Assert.Equal("file://host/share", uri.AbsoluteUri);
+
+            uri = new Uri(uri.AbsoluteUri);
+            Assert.True(uri.IsUnc);
+            Assert.Equal("file://host/share", uri.AbsoluteUri);
+        }
     }
 }
