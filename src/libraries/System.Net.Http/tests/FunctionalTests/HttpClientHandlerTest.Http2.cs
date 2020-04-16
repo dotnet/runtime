@@ -1936,7 +1936,7 @@ namespace System.Net.Http.Functional.Tests
 
             public void Complete()
             {
-                _waitForCompletion.SetResult(true);
+                _waitForCompletion.SetResult(true); 
             }
 
             public void Fail(Exception e)
