@@ -10399,7 +10399,7 @@ emit_method_info_table (MonoAotCompile *acfg)
 		if (acfg->cfgs [i])
 			method_flags [acfg->cfgs [i]->method_index] = acfg->cfgs [i]->aot_method_flags;
 	}
-	emit_aot_data (acfg, MONO_AOT_TABLE_FLAGS_TABLE, "method_flags_table", method_flags, acfg->nmethods);
+	emit_aot_data (acfg, MONO_AOT_TABLE_METHOD_FLAGS_TABLE, "method_flags_table", method_flags, acfg->nmethods);
 }
 
 #endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
