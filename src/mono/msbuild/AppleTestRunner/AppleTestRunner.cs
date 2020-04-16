@@ -13,13 +13,14 @@ using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
 public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 {
-    private static List<string> testLibs;
+    private static List<string> testLibs = new List<string>();
 
     public static async Task<int> Main(string[] args)
     {
         // Redirect all Console.WriteLines to iOS UI
         Console.SetOut(new AppleConsole());
-        Console.WriteLine($"ProcessorCount = {Environment.ProcessorCount}")
+        Console.WriteLine($"ProcessorCount = {Environment.ProcessorCount}");
+
         Console.Write("Args: ");
         foreach (string arg in args)
         {
@@ -27,7 +28,6 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         }
         Console.WriteLine(".");
 
-        testLibs = new List<string>();
         foreach (string arg in args.Where(a => a.StartsWith("testlib:")))
         {
             testLibs.Add(arg.Remove(0, "testlib:".Length));
@@ -62,7 +62,7 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
-        foreach (string file in testLibs)
+        foreach (string file in testLibs!)
         {
             yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
         }
@@ -79,21 +79,21 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
-    protected override string IgnoreFilesDirectory { get; }
+    protected override string? IgnoreFilesDirectory { get; }
 
     public string BundleIdentifier => "net.dot.test-runner";
 
-    public string UniqueIdentifier { get; }
+    public string? UniqueIdentifier { get; }
 
-    public string Name { get; }
+    public string? Name { get; }
 
-    public string Model { get; }
+    public string? Model { get; }
 
-    public string SystemName { get; }
+    public string? SystemName { get; }
 
-    public string SystemVersion { get; }
+    public string? SystemVersion { get; }
 
-    public string Locale { get; }
+    public string? Locale { get; }
 }
 
 internal class AppleConsole : TextWriter
