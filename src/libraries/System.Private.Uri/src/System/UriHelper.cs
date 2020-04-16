@@ -191,7 +191,7 @@ namespace System
             {
                 dest.Append(stringToEscape.Slice(0, i));
 
-                ReadOnlySpan<bool> noEscapeCopy = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(noEscape), UnreservedReservedTable.Length);
+                ReadOnlySpan<bool> noEscapeCopy = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(noEscape), noEscape.Length);
 
                 EscapeStringToBuilder(stringToEscape.Slice(i), ref dest, noEscapeCopy, checkExistingEscaped);
             }
