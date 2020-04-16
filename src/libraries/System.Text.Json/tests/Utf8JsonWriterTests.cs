@@ -5590,7 +5590,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.Flush();
 
                 // TODO: https://github.com/dotnet/runtime/issues/32350
-                // JsonTestHelper.AssertContents(expectedStr, output);
+                JsonTestHelper.AssertContents(expectedStr, output);
             }
         }
 
@@ -5808,10 +5808,10 @@ namespace System.Text.Json.Tests
         [InlineData(true, false, "message", true)]
         [InlineData(false, true, "message", true)]
         [InlineData(false, false, "message", true)]
-        [InlineData(true, true, "mess><age", false)]
-        [InlineData(true, false, "mess><age", false)]
-        [InlineData(false, true, "mess><age", false)]
-        [InlineData(false, false, "mess><age", false)]
+        [InlineData(true, true, "mess><age", true)]
+        [InlineData(true, false, "mess><age", true)]
+        [InlineData(false, true, "mess><age", true)]
+        [InlineData(false, false, "mess><age", true)]
         [InlineData(true, true, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
         [InlineData(true, false, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
         [InlineData(false, true, ">><++>>>\">>\\>>&>>>\u6f22\u5B57>>>", false)]
@@ -7718,6 +7718,23 @@ namespace System.Text.Json.Tests
                         i++;
                         sb.Append("u002f");
                     }
+                }
+                // Convert > to \u003e
+                else if (json[i] == '>')
+                {
+                    i++;
+                    sb.Append("\\u003e");
+                }
+                // Convert < to \u003c
+                else if (json[i] == '<')
+                {
+                    i++;
+                    sb.Append("\\u003c");
+                }
+                // Remove ".0"
+                else if (json[i] == '.' && json[i+1] == '0')
+                {
+                    i+=2;
                 }
                 else
                 {
