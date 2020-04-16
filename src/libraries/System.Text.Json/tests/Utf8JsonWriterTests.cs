@@ -5589,7 +5589,6 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
-                // TODO: https://github.com/dotnet/runtime/issues/32350
                 JsonTestHelper.AssertContents(expectedStr, output);
             }
         }
