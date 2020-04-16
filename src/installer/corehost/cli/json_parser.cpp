@@ -77,16 +77,15 @@ void json_parser_t::realloc_buffer(size_t size)
 
 bool json_parser_t::parse_json(char* data, int64_t size, const pal::string_t& context)
 {
+    constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
 #ifdef _WIN32
     // Can't use in-situ parsing on Windows, as JSON data is encoded in
     // UTF-8 and the host expects wide strings.  m_document will store
     // data in UTF-16 (with pal::char_t as the character type), but it
     // has to know that data is encoded in UTF-8 to convert during parsing.
-    constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag
-        | rapidjson::ParseFlag::kParseCommentsFlag;
     m_document.Parse<flags, rapidjson::UTF8<>>(data);
 #else // _WIN32
-    m_document.ParseInsitu<rapidjson::ParseFlag::kParseCommentsFlag>(data);
+    m_document.ParseInsitu<flags>(data);
 #endif // _WIN32
 
     if (m_document.HasParseError())
@@ -140,9 +139,10 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
     if (bundle::info_t::is_single_file_bundle())
     {
+        // Due to in-situ parsing on Linux, 
+        //  * The json file is mapped as copy-on-write.
+        //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
         m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
-        // The mapping will be unmapped by the json_parser destructor.
-        // The mapping cannot be immediately released due to in-situ parsing on Linux. 
 
         if (m_bundle_data != nullptr)
         {
