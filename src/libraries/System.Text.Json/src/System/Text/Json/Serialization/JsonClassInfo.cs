@@ -20,7 +20,7 @@ namespace System.Text.Json
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
-        public object? CreateObjectWithParameterizedCtor { get; set; }
+        public object? CreateObjectWithArgs { get; set; }
 
         public ClassType ClassType { get; private set; }
 
