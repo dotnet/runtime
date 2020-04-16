@@ -3119,10 +3119,6 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
 // Third, use internal registers.
-#ifdef FEATURE_SIMD
-    buildInternalRegisterUses();
-#endif // FEATURE_SIMD
-
 #ifdef TARGET_ARM
 
     var_types fieldType = storeLoc->TypeGet();
@@ -3141,6 +3137,10 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         }
     }
 #endif // TARGET_ARM
+
+#if defined(FEATURE_SIMD) || defined(TARGET_ARM)
+    buildInternalRegisterUses();
+#endif // FEATURE_SIMD || TARGET_ARM
 
     // Fourth, define destination registers.
 
