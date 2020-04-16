@@ -90,10 +90,10 @@ private:
     // If an agent closes its socket while we're still connected,
     // Poll will return and let us know which connection hung up
     static int32_t GetNextTimeout(int32_t currentTimeoutMs);
-    constexpr static float s_pollTimeoutFalloffFactor = 2;
+    constexpr static float s_pollTimeoutFalloffFactor = 1.25;
     constexpr static int32_t s_pollTimeoutInfinite = -1;
-    constexpr static int32_t s_pollTimeoutMinMs = 250;
-    constexpr static int32_t s_pollTimeoutMaxMs = 30000;
+    constexpr static int32_t s_pollTimeoutMinMs = 10;
+    constexpr static int32_t s_pollTimeoutMaxMs = 500;
 };
 
 #endif // FEATURE_PERFTRACING
