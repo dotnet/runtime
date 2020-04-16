@@ -202,7 +202,7 @@ namespace System.Drawing.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Save_InvalidDirecotry_ThrowsDirectoryNotFoundException()
+        public void Save_InvalidDirectory_ThrowsDirectoryNotFoundException()
         {
             using (var bitmap = new Bitmap(1, 1))
             {
