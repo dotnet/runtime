@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Builds libraries and produces a dotnet sdk docker image
 # that contains the current bits in its shared framework folder.
 
@@ -5,6 +6,7 @@
 Param(
   [string][Alias('t')]$imageName = "dotnet-sdk-libs-current",
   [string][Alias('c')]$configuration = "Release",
+  [switch][Alias('w')]$buildWindowsContainers,
   [switch][Alias('pa')]$privateAspNetCore
 )
 
@@ -12,28 +14,42 @@ $ErrorActionPreference = "Stop"
 
 $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 
-# Due to size concerns, we don't currently do docker builds on windows.
-# Build on the host machine, then simply copy artifacts to the target docker image.
-# This should result in significantly lower build times, for now.
-& "$REPO_ROOT_DIR/build.cmd" clr.buildtools+clr.runtime+clr.corelib+clr.nativecorelib+libs -ci -rc release -c $configuration
+$dockerFilePrefix="$PSScriptRoot/libraries-sdk"
 
-if (!$?)
+if ($privateAspNetCore)
 {
-  exit $LASTEXITCODE
+  $dockerFilePrefix="$PSScriptRoot/libraries-sdk-aspnetcore"
 }
 
-$dockerFile="$PSScriptRoot/libraries-sdk.windows.Dockerfile"
-
-# Dockerize the build artifacts
-if($privateAspNetCore)
+if ($buildWindowsContainers)
 {
-  $dockerFile="$PSScriptRoot/libraries-sdk-aspnetcore.windows.Dockerfile"
-}
+  # Due to size concerns, we don't currently do docker builds on windows.
+  # Build on the host machine, then simply copy artifacts to the target docker image.
+  # This should result in significantly lower build times, for now.
+  & "$REPO_ROOT_DIR/build.cmd" clr.buildtools+clr.runtime+clr.corelib+clr.nativecorelib+libs -ci -rc release -c $configuration
 
-docker build --tag $imageName `
-  --build-arg CONFIGURATION=$configuration `
-  --build-arg TESTHOST_LOCATION=. `
-  --file $dockerFile `
-  "$REPO_ROOT_DIR/artifacts/bin/testhost"
+  if (!$?)
+  {
+    exit $LASTEXITCODE
+  }
+
+  $dockerFile="$dockerPrefix.windows.Dockerfile"
+
+  docker build --tag $imageName `
+    --build-arg CONFIGURATION=$configuration `
+    --build-arg TESTHOST_LOCATION=. `
+    --file $dockerFile `
+    "$REPO_ROOT_DIR/artifacts/bin/testhost"
+}
+else
+{
+  # Docker build libraries and copy to dotnet sdk image
+  $dockerFile="$dockerPrefix.linux.Dockerfile"
+
+  docker build --tag $imageName `
+      --build-arg CONFIGURATION=$configuration `
+      --file $dockerFile `
+      $REPO_ROOT_DIR
+}
 
 exit $LASTEXITCODE
