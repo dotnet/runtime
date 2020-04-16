@@ -200,6 +200,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_InvalidDirecotry_ThrowsDirectoryNotFoundException()
         {
