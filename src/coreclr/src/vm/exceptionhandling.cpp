@@ -5289,7 +5289,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             }
             else
             {
-                AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord())
+                AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
             }
             fef.InitAndLink(ex->GetContextRecord());
         }
