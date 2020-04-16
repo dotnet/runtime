@@ -8,6 +8,7 @@ set(DOTNET_PROJECT_NAME "comhost")
 
 # Include directories
 include_directories(../fxr)
+include_directories(../fxr/static)
 include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
