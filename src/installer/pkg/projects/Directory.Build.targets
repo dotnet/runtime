@@ -19,10 +19,19 @@
     opt out.
   -->
   <Target Name="MonoSkipBuildProps" 
-          Condition="('$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(TargetsMobile)' == 'true') or '$(SkipOnMono)' == 'true'"
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
       <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Keep this isolated to desktop mono for now -->
+  <Target Name="MobileGetBuildRidSpecificPackageProps"
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'"
+          AfterTargets="GetBuildRidSpecificPackageProps">
+    <PropertyGroup>
+      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName)$(RuntimeSpecificFrameworkSuffix).Mono.$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
     </PropertyGroup>
   </Target>
 
