@@ -51,9 +51,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 ReadTag(expectedTag: CborTag.DateTimeString);
 
-                if (Peek() != CborReaderState.TextString)
+                switch (Peek())
                 {
-                    throw new FormatException("String DateTime semantic tag should annotate string value.");
+                    case CborReaderState.TextString:
+                    case CborReaderState.StartTextString:
+                        break;
+                    default:
+                        throw new FormatException("String DateTime semantic tag should annotate string value.");
                 }
 
                 string dateString = ReadTextString();
@@ -127,9 +131,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
                 };
 
-                if (Peek() != CborReaderState.ByteString)
+                switch(Peek())
                 {
-                    throw new FormatException("BigNum semantic tag should annotate byte string value.");
+                    case CborReaderState.ByteString:
+                    case CborReaderState.StartByteString:
+                        break;
+                    default:
+                        throw new FormatException("BigNum semantic tag should annotate byte string value.");
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();

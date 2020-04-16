@@ -133,6 +133,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("2013-03-21T20:04:00Z", "c074323031332d30332d32315432303a30343a30305a")]
         [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
         [InlineData("2020-04-09T11:41:19.12-08:00", "c0781c323032302d30342d30395431313a34313a31392e31322d30383a3030")]
+        [InlineData("2020-04-09T11:41:19.12-08:00", "c07f781c323032302d30342d30395431313a34313a31392e31322d30383a3030ff")] // indefinite-length date string
         public static void ReadDateTimeOffset_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
         {
             DateTimeOffset expectedValue = DateTimeOffset.Parse(expectedValueString);
@@ -267,8 +268,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("0", "c240")]
         [InlineData("0", "c24100")]
         [InlineData("1", "c24101")]
+        [InlineData("1", "c2420001")] // should recognize leading zeroes in buffer
         [InlineData("-1", "c34100")]
         [InlineData("255", "c241ff")]
         [InlineData("-256", "c341ff")]
@@ -278,6 +281,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("-9223372036854775808", "c3487fffffffffffffff")]
         [InlineData("18446744073709551616", "c249010000000000000000")]
         [InlineData("-18446744073709551617", "c349010000000000000000")]
+        [InlineData("1", "c25f4101ff")] // indefinite-length buffer
         public static void ReadBigInteger_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
         {
             BigInteger expectedValue = BigInteger.Parse(expectedValueString);
