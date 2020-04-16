@@ -727,9 +727,8 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
         uControlPc = VirtualUnwindCallFrame(pContext);
 #else // !TARGET_UNIX
 
-        if (IsIPinVirtualStub(uControlPc))
+        if (AdjustContextForVirtualStub(NULL, pContext))
         {
-            AdjustContextForVirtualStub(NULL, pContext);
             uControlPc = GetIP(pContext);
             break;
         }

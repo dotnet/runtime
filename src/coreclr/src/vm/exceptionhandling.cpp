@@ -4684,9 +4684,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
         {
-            if (IsIPinVirtualStub(controlPc))
+            if (AdjustContextForVirtualStub(NULL, frameContext))
             {
-                AdjustContextForVirtualStub(NULL, frameContext);
                 controlPc = GetIP(frameContext);
                 break;
             }
@@ -5288,9 +5287,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
-            else if (IsIPinVirtualStub(controlPc))
+            else
             {
-                AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
+                AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord())
             }
             fef.InitAndLink(ex->GetContextRecord());
         }
