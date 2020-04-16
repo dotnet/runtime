@@ -1521,9 +1521,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * 5) $PATH
 	 *
 	 * Just to make things more interesting, tokens can contain
-	 * white space if they are surrounded by quotation marks.  I'm
-	 * beginning to understand just why windows apps are generally
-	 * so horrible, with an API like this :-(
+	 * white space if they are surrounded by quotation marks.
 	 */
 	if (appname != NULL) {
 		cmd = mono_unicode_to_external_checked (appname, error);
