@@ -78,7 +78,7 @@ namespace Tracing.Tests.Common
         private Socket _clientSocket; // only used on non-Windows
         private string _serverAddress;
 
-        public ReverseServer(string serverAddress)
+        public ReverseServer(string serverAddress, int bufferSize = 16 * 1024)
         {
             _serverAddress = serverAddress;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -89,8 +89,8 @@ namespace Tracing.Tests.Common
                     NamedPipeServerStream.MaxAllowedServerInstances,
                     PipeTransmissionMode.Byte,
                     PipeOptions.None,
-                    16 * 1024,
-                    16 * 1024);
+                    bufferSize,
+                    bufferSize);
             }
             else
             {

@@ -381,7 +381,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
     return 1;
 }
 
-bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead)
+bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead, const int32_t timeoutMs)
 {
     _ASSERTE(lpBuffer != nullptr);
 
@@ -396,13 +396,37 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
 
     if (!fSuccess)
     {
-        DWORD dwError = GetLastError();
-        if (dwError == ERROR_IO_PENDING)
+        if (timeoutMs == InfiniteTimeout)
         {
             fSuccess = GetOverlappedResult(_hPipe,
                                            overlap,
                                            &nNumberOfBytesRead,
                                            true) != 0;
+        }
+        else
+        {
+            DWORD dwError = GetLastError();
+            if (dwError == ERROR_IO_PENDING)
+            {
+                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+                if (dwWait == WAIT_OBJECT_0)
+                {
+                    // get the result
+                    fSuccess = GetOverlappedResult(_hPipe,
+                                                   overlap,
+                                                   &nNumberOfBytesRead,
+                                                   true) != 0;
+                }
+                else
+                {
+                    // cancel IO and ensure the cancel happened
+                    if (CancelIo(_hPipe))
+                    {
+                        // check if the async write beat the cancellation
+                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesRead, true) != 0;
+                    }
+                }
+            }
         }
         // TODO: Add error handling.
     }
@@ -411,7 +435,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     return fSuccess;
 }
 
-bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten)
+bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten, const int32_t timeoutMs)
 {
     _ASSERTE(lpBuffer != nullptr);
 
@@ -429,10 +453,35 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
         DWORD dwError = GetLastError();
         if (dwError == ERROR_IO_PENDING)
         {
-            fSuccess = GetOverlappedResult(_hPipe,
-                                           overlap,
-                                           &nNumberOfBytesWritten,
-                                           true) != 0;
+            if (timeoutMs == InfiniteTimeout)
+            {
+                // if we're waiting infinitely, don't bother with extra kernel call
+                fSuccess = GetOverlappedResult(_hPipe,
+                                               overlap,
+                                               &nNumberOfBytesWritten,
+                                                true) != 0;
+            }
+            else
+            {
+                DWORD dwWait = WaitForSingleObject(_oOverlap.hEvent, (DWORD)timeoutMs);
+                if (dwWait == WAIT_OBJECT_0)
+                {
+                    // get the result
+                    fSuccess = GetOverlappedResult(_hPipe,
+                                                   overlap,
+                                                   &nNumberOfBytesWritten,
+                                                   true) != 0;
+                }
+                else
+                {
+                    // cancel IO and ensure the cancel happened
+                    if (CancelIo(_hPipe))
+                    {
+                        // check if the async write beat the cancellation
+                        fSuccess = GetOverlappedResult(_hPipe, overlap, &nNumberOfBytesWritten, true) != 0;
+                    }
+                }
+            }
         }
         // TODO: Add error handling.
     }

@@ -323,10 +323,11 @@ void IpcStream::Close(ErrorCallback)
     }
 }
 
-bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead)
+bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead, const int32_t timeoutMs)
 {
     _ASSERTE(lpBuffer != nullptr);
 
+    // TODO: use Timeout
     const ssize_t ssize = ::recv(_clientSocket, lpBuffer, nBytesToRead, 0);
     const bool fSuccess = ssize != -1;
 
@@ -339,10 +340,11 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     return fSuccess;
 }
 
-bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten)
+bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten, const int32_t timeoutMs)
 {
     _ASSERTE(lpBuffer != nullptr);
 
+    // TODO: use timeout
     const ssize_t ssize = ::send(_clientSocket, lpBuffer, nBytesToWrite, 0);
     const bool fSuccess = ssize != -1;
 

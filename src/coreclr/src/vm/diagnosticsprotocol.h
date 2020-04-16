@@ -146,7 +146,7 @@ namespace DiagnosticsIpc
         buffer[3] = VAL64(pid);
 
         uint32_t nBytesWritten = 0;
-        if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten))
+        if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten, 100 /* ms */))
             return false;
 
         _ASSERTE(nBytesWritten == sizeof(advertiseBuffer));

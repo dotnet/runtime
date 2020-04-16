@@ -18,9 +18,10 @@ typedef void (*ErrorCallback)(const char *szMessage, uint32_t code);
 class IpcStream final
 {
 public:
+    static constexpr int32_t InfiniteTimeout = -1;
     ~IpcStream();
-    bool Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead);
-    bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten);
+    bool Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead, const int32_t timeoutMs = IpcStream::InfiniteTimeout);
+    bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten, const int32_t timeoutMs = IpcStream::InfiniteTimeout);
     bool Flush() const;
     void Close(ErrorCallback callback = nullptr);
 

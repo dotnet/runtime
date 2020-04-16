@@ -174,7 +174,6 @@ namespace Tracing.Tests.ReverseValidation
                             new Provider("Microsoft-DotNETCore-SampleProfiler")
                         });
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
-                    // await Task.Delay(10000);
                     using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
                     Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
                     using var source = new EventPipeEventSource(stream);
@@ -184,7 +183,41 @@ namespace Tracing.Tests.ReverseValidation
                     EventPipeClient.StopTracing(pid, sessionId);
                     await readerTask;
                     Logger.logger.Log("Stopped EventPipeSession over standard connection");
-                    // await Task.Delay(60000);
+                }
+            );
+
+            server.Shutdown();
+
+            return true;
+        }
+
+        public static async Task<bool> TEST_ServerIsResilientToNoBufferAgent()
+        {
+            // N.B. - this test is only testing behavior on Windows since Unix Domain Sockets get their buffer size from the
+            // system configuration and isn't set here.  Tests passing on Windows should indicate it would pass on Unix systems as well.
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName, 0);
+            await RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (int pid) =>
+                {
+                    var config = new SessionConfiguration(
+                        circularBufferSizeMB: 10,
+                        format: EventPipeSerializationFormat.NetTrace,
+                        providers: new List<Provider> { 
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
+                        });
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+                    using var source = new EventPipeEventSource(stream);
+                    Task readerTask = Task.Run(() => source.Process());
+                    await Task.Delay(500);
+                    Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                    EventPipeClient.StopTracing(pid, sessionId);
+                    await readerTask;
+                    Logger.logger.Log("Stopped EventPipeSession over standard connection");
                 }
             );
 
