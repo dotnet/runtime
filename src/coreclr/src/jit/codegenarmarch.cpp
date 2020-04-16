@@ -1775,7 +1775,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
     assert(targetReg != REG_NA);
 
-    emitAttr size   = emitTypeSize(targetType);
     unsigned offs   = tree->GetLclOffs();
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
@@ -1784,10 +1783,10 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     instruction ins  = ins_Load(targetType);
 
 #ifdef TARGET_ARM
-    if (varTypeIsFloating(targetType) && ((offs % emitTypeSize(TYP_FLOAT)) != 0))
+    if (tree->IsOffsetMisaligned())
     {
         // Arm supports unaligned access only for integer types,
-        // load the floating data as 2 integer registers and convert them to float.
+        // load the floating data as 1 or 2 integer registers and convert them to float.
         regNumber addr = tree->ExtractTempReg();
         emit->emitIns_R_S(INS_lea, attr, addr, varNum, offs);
 

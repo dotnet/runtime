@@ -3120,20 +3120,13 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // Third, use internal registers.
 #ifdef TARGET_ARM
-
-    var_types fieldType = storeLoc->TypeGet();
-    if (storeLoc->OperIs(GT_STORE_LCL_FLD) && varTypeIsFloating(fieldType))
+    if (storeLoc->OperIs(GT_STORE_LCL_FLD) && storeLoc->AsLclFld()->IsOffsetMisaligned())
     {
-        GenTreeLclFld* fld    = storeLoc->AsLclFld();
-        uint16_t       offset = fld->GetLclOffs();
-        if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
+        buildInternalIntRegisterDefForNode(storeLoc); // to generate address.
+        buildInternalIntRegisterDefForNode(storeLoc); // to move float into an int reg.
+        if (storeLoc->TypeIs(TYP_DOUBLE))
         {
-            buildInternalIntRegisterDefForNode(fld); // to generate address.
-            buildInternalIntRegisterDefForNode(fld); // to move float into an int reg.
-            if (fieldType == TYP_DOUBLE)
-            {
-                buildInternalIntRegisterDefForNode(fld); // to move the second half into an int reg.
-            }
+            buildInternalIntRegisterDefForNode(storeLoc); // to move the second half into an int reg.
         }
     }
 #endif // TARGET_ARM
