@@ -573,7 +573,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm 
@@ -594,7 +594,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
@@ -615,7 +615,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm
@@ -634,7 +634,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
@@ -657,7 +657,7 @@ jobs:
 # TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: release
     runtimeFlavor: mono
     platforms:
@@ -680,7 +680,7 @@ jobs:
 # TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: release
     runtimeFlavor: mono
     platforms:
