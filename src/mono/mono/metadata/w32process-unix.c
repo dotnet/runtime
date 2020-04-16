@@ -1525,6 +1525,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * white space if they are surrounded by quotation marks.  I'm
 	 * beginning to understand just why windows apps are generally
 	 * so crap, with an API like this :-(
+	 * so horrible, with an API like this :-(
 	 */
 	if (appname != NULL) {
 		cmd = mono_unicode_to_external_checked (appname, error);
