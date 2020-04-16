@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Tests.Runners" Version="$(MicrosoftDotNetXHarnessTestsRunnersVersion)" />

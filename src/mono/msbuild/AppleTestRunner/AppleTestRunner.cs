@@ -11,25 +11,6 @@ using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XHarness.Tests.Runners;
 using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
-public class AppleConsole : TextWriter
-{
-    public override Encoding Encoding => Encoding.Default;
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_append_output (string value);
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_set_summary (string value);
-
-    public override void Write(string? value)
-    {
-        if (value != null)
-        {
-            mono_ios_append_output(value);
-        }
-    }
-}
-
 public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 {
     private static List<string> testLibs;
@@ -38,7 +19,7 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
     {
         // Redirect all Console.WriteLines to iOS UI
         Console.SetOut(new AppleConsole());
-
+        Console.WriteLine($"ProcessorCount = {Environment.ProcessorCount}")
         Console.Write("Args: ");
         foreach (string arg in args)
         {
@@ -92,16 +73,44 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         Console.WriteLine("[TerminateWithSuccess]");
     }
 
-    protected override int? MaxParallelThreads => 4;
+    protected override int? MaxParallelThreads => Environment.ProcessorCount;
+
     protected override IDevice Device => this;
+
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
+
     protected override string IgnoreFilesDirectory { get; }
 
     public string BundleIdentifier => "net.dot.test-runner";
+
     public string UniqueIdentifier { get; }
+
     public string Name { get; }
+
     public string Model { get; }
+
     public string SystemName { get; }
+
     public string SystemVersion { get; }
+
     public string Locale { get; }
+}
+
+internal class AppleConsole : TextWriter
+{
+    public override Encoding Encoding => Encoding.Default;
+
+    [DllImport("__Internal")]
+    public extern static void mono_ios_append_output (string value);
+
+    [DllImport("__Internal")]
+    public extern static void mono_ios_set_summary (string value);
+
+    public override void Write(string? value)
+    {
+        if (value != null)
+        {
+            mono_ios_append_output(value);
+        }
+    }
 }
