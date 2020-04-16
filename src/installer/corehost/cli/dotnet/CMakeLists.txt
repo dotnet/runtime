@@ -10,4 +10,8 @@ if(CLR_CMAKE_TARGET_WIN32)
         dotnet.manifest)
 endif()
 
+list(APPEND SOURCES
+    ../apphost/shared/hostfxr_iface.cpp
+)
+
 include(../exe.cmake)
