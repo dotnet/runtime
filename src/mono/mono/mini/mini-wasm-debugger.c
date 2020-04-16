@@ -293,7 +293,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	compute_frames ();
 	memset (ss_args, 0, sizeof (*ss_args));
 
-	//If this shouldn't happen - maybe should assert here ?
+	// This shouldn't happen - maybe should assert here ?
 	if (frames->len == 0) {
 		DEBUG_PRINTF (1, "SINGLE STEPPING FOUND NO FRAMES");
 		return DBG_NOT_SUSPENDED;
