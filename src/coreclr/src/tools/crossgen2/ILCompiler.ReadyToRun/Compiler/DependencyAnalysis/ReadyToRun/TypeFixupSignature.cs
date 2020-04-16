@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Internal.ReadyToRunConstants;
+using Internal.CorConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -70,9 +71,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty;
             }
 
+            bool isHfa = defType.IsHfa && defType.Context.Target.Architecture == TargetArchitecture.ARM || defType.Context.Target.Architecture == TargetArchitecture.ARM64;
+            if (isHfa)
+            {
+                flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA;
+            }
+
             dataBuilder.EmitUInt((uint)flags);
             dataBuilder.EmitUInt((uint)size);
 
+            if (isHfa)
+            {
+                switch (defType.HfaElementType.Category)
+                {
+                    case TypeFlags.Single:
+                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R4);
+                        break;
+                    case TypeFlags.Double:
+                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R4);
+                        break;
+                }
+            }
+            
             if (alignment != pointerSize)
             {
                 dataBuilder.EmitUInt((uint)alignment);
