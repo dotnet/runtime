@@ -13082,7 +13082,7 @@ DONE_MORPHING_CHILDREN:
                             //
                             if (varTypeIsFloating(typ))
                             {
-                                if ((ival1 % emitTypeSize(typ)) != 0)
+                                if ((ival1 % emitTypeSize(TYP_FLOAT)) != 0)
                                 {
                                     tree->gtFlags |= GTF_IND_UNALIGNED;
                                     break;

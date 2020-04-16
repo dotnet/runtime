@@ -1004,7 +1004,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(!data->isContained());
     genConsumeReg(data);
     regNumber dataReg = data->GetRegNum();
-    if (varTypeIsFloating(targetType) && ((offset % emitTypeSize(tree)) != 0))
+    if (varTypeIsFloating(targetType) && ((offset % emitTypeSize(TYP_FLOAT)) != 0))
     {
         regNumber addr = tree->ExtractTempReg();
         emit->emitIns_R_S(INS_lea, attr, addr, varNum, offset);

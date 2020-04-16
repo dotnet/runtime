@@ -3130,7 +3130,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         GenTreeLclFld* fld    = storeLoc->AsLclFld();
         uint16_t       offset = fld->GetLclOffs();
-        if ((offset % emitTypeSize(fieldType)) != 0)
+        if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
         {
             buildInternalIntRegisterDefForNode(fld); // to generate address.
             buildInternalIntRegisterDefForNode(fld); // to move float into an int reg.

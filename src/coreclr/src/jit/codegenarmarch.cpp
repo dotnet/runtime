@@ -1784,7 +1784,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     instruction ins  = ins_Load(targetType);
 
 #ifdef TARGET_ARM
-    if (varTypeIsFloating(targetType) && ((offs % emitTypeSize(tree)) != 0))
+    if (varTypeIsFloating(targetType) && ((offs % emitTypeSize(TYP_FLOAT)) != 0))
     {
         regNumber addr = tree->ExtractTempReg();
         emit->emitIns_R_S(INS_lea, attr, addr, varNum, offs);
