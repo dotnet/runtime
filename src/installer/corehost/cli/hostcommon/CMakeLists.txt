@@ -8,6 +8,7 @@ set(DOTNET_PROJECT_NAME "hostcommon")
 
 # Include directories
 include_directories(../fxr)
+include_directories(../fxr/static)
 include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
@@ -19,7 +20,7 @@ set(SOURCES
     ../roll_forward_option.cpp
     ../fx_definition.cpp
     ../fx_reference.cpp
-    ../fxr/fx_ver.cpp
+    ../fxr/static/fx_ver.cpp
     ../version.cpp
     ../version_compatibility_range.cpp
     ../runtime_config.cpp
@@ -36,7 +37,7 @@ set(HEADERS
     ../roll_forward_option.h
     ../fx_definition.h
     ../fx_reference.h
-    ../fxr/fx_ver.h
+    ../fxr/static/fx_ver.h
     ../version.h
     ../version_compatibility_range.h
     ../runtime_config.h

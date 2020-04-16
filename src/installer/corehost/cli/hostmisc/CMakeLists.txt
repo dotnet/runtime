@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(SOURCES
     trace.cpp
     utils.cpp
-    ../fxr/fx_ver.cpp
+    ../fxr/static/fx_ver.cpp
 )
 
 set(HEADERS
@@ -21,7 +21,7 @@ set(HEADERS
     utils.h
     pal.h
     ../../error_codes.h
-    ../fxr/fx_ver.h
+    ../fxr/static/fx_ver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

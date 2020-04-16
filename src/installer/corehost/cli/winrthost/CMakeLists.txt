@@ -7,6 +7,7 @@ set(DOTNET_PROJECT_NAME "winrthost")
 
 # Include directories
 include_directories(../fxr)
+include_directories(../fxr/static)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 

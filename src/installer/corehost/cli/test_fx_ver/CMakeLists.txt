@@ -6,6 +6,7 @@ project(test_fx_ver)
 set(EXE_NAME "test_fx_ver")
 
 include_directories(../fxr)
+include_directories(../fxr/static)
 include_directories(../hostmisc)
 
 set(SOURCES
