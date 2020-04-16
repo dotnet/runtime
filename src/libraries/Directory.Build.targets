@@ -92,6 +92,17 @@
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
+    <!-- Setup the runtime pack structure for mobile platforms (for testing and installer) -->
+    <!-- Corresponding assemblies are added to lib -->
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
+      <RuntimePath>$(NETCoreAppRuntimePackLibPath)</RuntimePath>
+    </BinPlaceTargetFrameworks>
+    <!-- Corresponding libMono and system.native libraries are added to native -->
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
+      <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
+      <ItemName>NativeBinPlaceItem</ItemName>
+    </BinPlaceTargetFrameworks>
+
     <!-- binplace targeting packs which may be different from Build TargetFramework -->
     <BinPlaceTargetFrameworks Include="netstandard2.0">
       <RefPath>$(NetStandard20RefPath)</RefPath>
