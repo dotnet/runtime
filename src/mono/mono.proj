@@ -947,12 +947,15 @@
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
 
     <!-- Demo: use xcrun to deploy & launch on a simulator
-         to be replaced with xharness -->
+         to be replaced with xharness
+         
+         For quite mode: %dashdash%auto-exit before "testlib:" and 'open -a Simulator' can be removed
+    -->
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl shutdown &quot;iPhone 11&quot;" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl boot &quot;iPhone 11&quot;" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64' and '$(ShowIosSimulator)' != 'false'" Command="open -a Simulator" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl install &quot;iPhone 11&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch booted net.dot.$(TestName) testlib:$(TestName).dll" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch --console booted net.dot.$(TestName) testlib:$(TestName).dll" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->
