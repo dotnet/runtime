@@ -1250,23 +1250,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Regression/GitHub_17957/GitHub_17957_ro/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i4/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i8/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i8/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_il/**">
             <Issue>needs triage</Issue>
@@ -1448,12 +1436,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34380</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgarray2/**">
             <Issue>https://github.com/dotnet/runtime/issues/34378</Issue>
         </ExcludeList>
@@ -1513,12 +1495,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_487699/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_544983/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
             <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>

@@ -1101,6 +1101,9 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		case STACK_I8:
 			ins->opcode = OP_LCONV_TO_R_UN; 
 			break;
+		case STACK_R4:
+			ins->opcode = OP_RCONV_TO_R8;
+			break;
 		case STACK_R8:
 			ins->opcode = OP_FMOVE;
 			break;
@@ -8430,8 +8433,13 @@ calli_end:
 		case MONO_CEE_CONV_OVF_I1:
 		case MONO_CEE_CONV_OVF_I2:
 		case MONO_CEE_CONV_OVF_I:
-		case MONO_CEE_CONV_OVF_U:
+		case MONO_CEE_CONV_OVF_I1_UN:
+		case MONO_CEE_CONV_OVF_I2_UN:
+		case MONO_CEE_CONV_OVF_I4_UN:
+		case MONO_CEE_CONV_OVF_I8_UN:
+		case MONO_CEE_CONV_OVF_I_UN:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
+				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_I8);
 				ADD_UNOP (il_op);
 			} else {
@@ -8441,23 +8449,20 @@ calli_end:
 		case MONO_CEE_CONV_OVF_U1:
 		case MONO_CEE_CONV_OVF_U2:
 		case MONO_CEE_CONV_OVF_U4:
+		case MONO_CEE_CONV_OVF_U:
+		case MONO_CEE_CONV_OVF_U1_UN:
+		case MONO_CEE_CONV_OVF_U2_UN:
+		case MONO_CEE_CONV_OVF_U4_UN:
+		case MONO_CEE_CONV_OVF_U8_UN:
+		case MONO_CEE_CONV_OVF_U_UN:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
+				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_U8);
 				ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}
 			break;
-		case MONO_CEE_CONV_OVF_I1_UN:
-		case MONO_CEE_CONV_OVF_I2_UN:
-		case MONO_CEE_CONV_OVF_I4_UN:
-		case MONO_CEE_CONV_OVF_I8_UN:
-		case MONO_CEE_CONV_OVF_U1_UN:
-		case MONO_CEE_CONV_OVF_U2_UN:
-		case MONO_CEE_CONV_OVF_U4_UN:
-		case MONO_CEE_CONV_OVF_U8_UN:
-		case MONO_CEE_CONV_OVF_I_UN:
-		case MONO_CEE_CONV_OVF_U_UN:
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
 		case MONO_CEE_CONV_I:
