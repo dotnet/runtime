@@ -122,164 +122,100 @@ enum HWIntrinsicFlag : unsigned int
 // This mirrors the System.Runtime.Intrinsics.X86.FloatComparisonMode enumeration
 enum class FloatComparisonMode : unsigned char
 {
-    /// <summary>
-    /// _CMP_EQ_OQ
-    /// </summary>
+    // _CMP_EQ_OQ
     OrderedEqualNonSignaling = 0,
 
-    /// <summary>
-    /// _CMP_LT_OS
-    /// </summary>
+    // _CMP_LT_OS
     OrderedLessThanSignaling = 1,
 
-    /// <summary>
-    /// _CMP_LE_OS
-    /// </summary>
+    // _CMP_LE_OS
     OrderedLessThanOrEqualSignaling = 2,
 
-    /// <summary>
-    /// _CMP_UNORD_Q
-    /// </summary>
+    // _CMP_UNORD_Q
     UnorderedNonSignaling = 3,
 
-    /// <summary>
-    /// _CMP_NEQ_UQ
-    /// </summary>
+    // _CMP_NEQ_UQ
     UnorderedNotEqualNonSignaling = 4,
 
-    /// <summary>
-    /// _CMP_NLT_US
-    /// </summary>
+    // _CMP_NLT_US
     UnorderedNotLessThanSignaling = 5,
 
-    /// <summary>
-    /// _CMP_NLE_US
-    /// </summary>
+    // _CMP_NLE_US
     UnorderedNotLessThanOrEqualSignaling = 6,
 
-    /// <summary>
-    /// _CMP_ORD_Q
-    /// </summary>
+    // _CMP_ORD_Q
     OrderedNonSignaling = 7,
 
-    /// <summary>
-    /// _CMP_EQ_UQ
-    /// </summary>
+    // _CMP_EQ_UQ
     UnorderedEqualNonSignaling = 8,
 
-    /// <summary>
-    /// _CMP_NGE_US
-    /// </summary>
+    // _CMP_NGE_US
     UnorderedNotGreaterThanOrEqualSignaling = 9,
 
-    /// <summary>
-    /// _CMP_NGT_US
-    /// </summary>
+    // _CMP_NGT_US
     UnorderedNotGreaterThanSignaling = 10,
 
-    /// <summary>
-    /// _CMP_FALSE_OQ
-    /// </summary>
+    // _CMP_FALSE_OQ
     OrderedFalseNonSignaling = 11,
 
-    /// <summary>
-    /// _CMP_NEQ_OQ
-    /// </summary>
+    // _CMP_NEQ_OQ
     OrderedNotEqualNonSignaling = 12,
 
-    /// <summary>
-    /// _CMP_GE_OS
-    /// </summary>
+    // _CMP_GE_OS
     OrderedGreaterThanOrEqualSignaling = 13,
 
-    /// <summary>
-    /// _CMP_GT_OS
-    /// </summary>
+    // _CMP_GT_OS
     OrderedGreaterThanSignaling = 14,
 
-    /// <summary>
-    /// _CMP_TRUE_UQ
-    /// </summary>
+    // _CMP_TRUE_UQ
     UnorderedTrueNonSignaling = 15,
 
-    /// <summary>
-    /// _CMP_EQ_OS
-    /// </summary>
+    // _CMP_EQ_OS
     OrderedEqualSignaling = 16,
 
-    /// <summary>
-    /// _CMP_LT_OQ
-    /// </summary>
+    // _CMP_LT_OQ
     OrderedLessThanNonSignaling = 17,
 
-    /// <summary>
-    /// _CMP_LE_OQ
-    /// </summary>
+    // _CMP_LE_OQ
     OrderedLessThanOrEqualNonSignaling = 18,
 
-    /// <summary>
-    /// _CMP_UNORD_S
-    /// </summary>
+    // _CMP_UNORD_S
     UnorderedSignaling = 19,
 
-    /// <summary>
-    /// _CMP_NEQ_US
-    /// </summary>
+    // _CMP_NEQ_US
     UnorderedNotEqualSignaling = 20,
 
-    /// <summary>
-    /// _CMP_NLT_UQ
-    /// </summary>
+    // _CMP_NLT_UQ
     UnorderedNotLessThanNonSignaling = 21,
 
-    /// <summary>
-    /// _CMP_NLE_UQ
-    /// </summary>
+    // _CMP_NLE_UQ
     UnorderedNotLessThanOrEqualNonSignaling = 22,
 
-    /// <summary>
-    /// _CMP_ORD_S
-    /// </summary>
+    // _CMP_ORD_S
     OrderedSignaling = 23,
 
-    /// <summary>
-    /// _CMP_EQ_US
-    /// </summary>
+    // _CMP_EQ_US
     UnorderedEqualSignaling = 24,
 
-    /// <summary>
-    /// _CMP_NGE_UQ
-    /// </summary>
+    // _CMP_NGE_UQ
     UnorderedNotGreaterThanOrEqualNonSignaling = 25,
 
-    /// <summary>
-    /// _CMP_NGT_UQ
-    /// </summary>
+    // _CMP_NGT_UQ
     UnorderedNotGreaterThanNonSignaling = 26,
 
-    /// <summary>
-    /// _CMP_FALSE_OS
-    /// </summary>
+    // _CMP_FALSE_OS
     OrderedFalseSignaling = 27,
 
-    /// <summary>
-    /// _CMP_NEQ_OS
-    /// </summary>
+    // _CMP_NEQ_OS
     OrderedNotEqualSignaling = 28,
 
-    /// <summary>
-    /// _CMP_GE_OQ
-    /// </summary>
+    // _CMP_GE_OQ
     OrderedGreaterThanOrEqualNonSignaling = 29,
 
-    /// <summary>
-    /// _CMP_GT_OQ
-    /// </summary>
+    // _CMP_GT_OQ
     OrderedGreaterThanNonSignaling = 30,
 
-    /// <summary>
-    /// _CMP_TRUE_US
-    /// </summary>
+    // _CMP_TRUE_US
     UnorderedTrueSignaling = 31,
 };
 #endif // TARGET_XARCH
