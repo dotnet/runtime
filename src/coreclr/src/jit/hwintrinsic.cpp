@@ -639,6 +639,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(sizeBytes != 0);
     }
 
+    baseType          = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+    unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+
     GenTree* immOp = nullptr;
 
 #ifdef TARGET_ARM64
@@ -657,66 +660,33 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immOp = impStackTop().val;
     }
 
-    int immUpperBound = 0;
-
     if (immOp != nullptr)
     {
-        bool constImm = false;
-
-        if (!HWIntrinsicInfo::HasFullRangeImm(intrinsic))
+        if (!HWIntrinsicInfo::HasFullRangeImm(intrinsic) && immOp->IsCnsIntOrI())
         {
-            bool constImmOutOfRange = false;
+            const int ival = (int)immOp->AsIntCon()->IconValue();
 
-#if defined(TARGET_ARM64)
-            const var_types elemType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
-            const int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-            immUpperBound            = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, elemType);
-
-            if (immOp->IsCnsIntOrI())
-            {
-                const int ival = (int)immOp->AsIntCon()->IconValue();
-
-                constImm           = true;
-                constImmOutOfRange = ((ival < 0) || (ival >= immUpperBound));
-            }
-
-#elif defined(TARGET_XARCH)
-            if (immOp->IsCnsIntOrI())
-            {
-                const int ival = (int)immOp->AsIntCon()->IconValue();
-
-                constImm           = true;
-                constImmOutOfRange = !HWIntrinsicInfo::isInImmRange(intrinsic, ival);
-            }
-            else
-            {
-                immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
-            }
-#else
-#error Unsupported platform
-#endif
-
-            if (constImmOutOfRange)
+            if (!HWIntrinsicInfo::isInImmRange(intrinsic, ival, simdSize, baseType))
             {
                 assert(!mustExpand);
                 // The imm-HWintrinsics that do not accept all imm8 values may throw
                 // ArgumentOutOfRangeException when the imm argument is not in the valid range
                 return nullptr;
             }
-            else if (!constImm)
+        }
+        else if (!immOp->IsCnsIntOrI())
+        {
+            if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
             {
-                if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
-                {
-                    return impNonConstFallback(intrinsic, retType, baseType);
-                }
-                else if (!mustExpand)
-                {
-                    // When the imm-argument is not a constant and we are not being forced to expand, we need to
-                    // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
-                    // intrinsic method is recursive and will be forced to expand, at which point
-                    // we emit some less efficient fallback code.
-                    return nullptr;
-                }
+                return impNonConstFallback(intrinsic, retType, baseType);
+            }
+            else if (!mustExpand)
+            {
+                // When the imm-argument is not a constant and we are not being forced to expand, we need to
+                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+                // intrinsic method is recursive and will be forced to expand, at which point
+                // we emit some less efficient fallback code.
+                return nullptr;
             }
         }
     }
@@ -731,12 +701,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
     {
-        baseType                         = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
-        unsigned                simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
         bool                    isScalar = category == HW_Category_Scalar;
         CORINFO_ARG_LIST_HANDLE argList  = sig->args;
         var_types               argType  = TYP_UNKNOWN;
         CORINFO_CLASS_HANDLE    argClass;
+
+        int immUpperBound = 0;
+
+        if (immOp != nullptr)
+        {
+#if defined(TARGET_XARCH)
+            immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+#elif defined(TARGET_ARM64)
+            immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, baseType);
+#endif
+        }
 
         assert(numArgs >= 0);
         if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, baseType) == INS_invalid) ||
