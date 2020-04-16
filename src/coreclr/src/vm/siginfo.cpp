@@ -3608,10 +3608,19 @@ BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allo
 
 //---------------------------------------------------------------------------------------
 //
-// Check if a type signature is eligible for covariant return types.
+// Check if a type signature is eligible to be used with derived type signature comparison
+// and if so. Returns TRUE if the type is eligible.
+//    Inputs:
+//      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
+//      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
+//                                 as that of a base type or a derived type.
+//    Outputs:
+//      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
+//      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
+//                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
 //
 // static
-BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
+BOOL MetaSig::IsEligibleForDerivedTypeSignatureComparison(
     PCCOR_SIGNATURE     pSig,
     PCCOR_SIGNATURE     pEndSig,
     Module*             pModule,
@@ -3635,7 +3644,7 @@ BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
         IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
     }
 
-    // Getting the parent siganture is only applicable to classes, so exclude anything else
+    // Only class types are eligible for covariant returns
     if (elementType != ELEMENT_TYPE_CLASS)
     {
         return FALSE;
@@ -3652,14 +3661,17 @@ BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
         return FALSE;
     }
 
-    DWORD attr;
-    mdToken parentTypeDefOrRefOrSpecToken;
-    IfFailThrow(pFoundModule->GetMDImport()->GetTypeDefProps(typeDefToken, &attr, &parentTypeDefOrRefOrSpecToken));
-
-    // Check the validity of the parent type token if this is a signature of a derived type.
-    if(!isBaseTypeSig && !pFoundModule->GetMDImport()->IsValidToken(parentTypeDefOrRefOrSpecToken))
+    mdToken parentTypeDefOrRefOrSpecToken = mdTokenNil;
+    if (!isBaseTypeSig)
     {
-        return FALSE;
+        DWORD attr;
+        IfFailThrow(pFoundModule->GetMDImport()->GetTypeDefProps(typeDefToken, &attr, &parentTypeDefOrRefOrSpecToken));
+
+        // Check the validity of the parent type token if this is a signature of a derived type.
+        if (!pFoundModule->GetMDImport()->IsValidToken(parentTypeDefOrRefOrSpecToken))
+        {
+            return FALSE;
+        }
     }
 
     if (ppTypeDefModule != NULL)
@@ -3674,11 +3686,11 @@ BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
 
 //---------------------------------------------------------------------------------------
 //
-// Compute the base type token (it will either be a typedef or typeref token), and returns the
+// Compute the base type token (it will either be a typedef or typeref token), and return the
 // module where that base type token is declared.
 //
 // static
-BOOL MetaSig::ComputeBaseTypeTokenAndModule(
+BOOL MetaSig::GetBaseTypeTokenAndModule(
     mdToken     tk,
     Module*     pModule,
     mdToken*    pBaseTypeDefOrRefToken,
@@ -3710,6 +3722,8 @@ BOOL MetaSig::ComputeBaseTypeTokenAndModule(
 
     if (TypeFromToken(tkTypeParent) == mdtTypeSpec)
     {
+        // If the base type token is a TypeSpec of a generic instantiation, extract the type definition token
+
         ULONG cbSig;
         PCCOR_SIGNATURE pSig;
         IfFailThrow(pFoundModule->GetMDImport()->GetSigFromToken(tkTypeParent, &cbSig, &pSig));
@@ -3728,6 +3742,9 @@ BOOL MetaSig::ComputeBaseTypeTokenAndModule(
 
         IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, pBaseTypeDefOrRefToken));
         *ppBaseTypeTokenModule = pFoundModule;
+
+        _ASSERTE(pFoundModule->GetMDImport()->IsValidToken(*pBaseTypeDefOrRefToken));
+
         return TRUE;
     }
     else if (TypeFromToken(tkTypeParent) == mdtTypeRef || TypeFromToken(tkTypeParent) == mdtTypeDef)
@@ -3745,7 +3762,7 @@ BOOL MetaSig::ComputeBaseTypeTokenAndModule(
 // Extract the parent type's signature and stubstitution from the input type signature
 //
 // static
-BOOL MetaSig::GetParentSignatureAndSubstitution(
+BOOL MetaSig::GetBaseTypeSignatureAndSubstitution(
     PCCOR_SIGNATURE     pSig,
     PCCOR_SIGNATURE     pEndSig,
     Module*             pModule,
@@ -3768,13 +3785,14 @@ BOOL MetaSig::GetParentSignatureAndSubstitution(
     mdToken typeDefToken;
     mdToken parentTypeDefOrRefOrSpecToken;
     Module* pTypeDefModule;
-    if (!IsTypeSignatureEligibleForCovariantReturnType(pSig, pEndSig, pModule, FALSE, &typeDefToken, &pTypeDefModule, &parentTypeDefOrRefOrSpecToken))
+    if (!IsEligibleForDerivedTypeSignatureComparison(pSig, pEndSig, pModule, FALSE, &typeDefToken, &pTypeDefModule, &parentTypeDefOrRefOrSpecToken))
     {
         return FALSE;
     }
 
     // If the parent type token is a TypeSpec token, we need to load the substitution from the signature and
-    // chain it to the existing substitution (if there is one)
+    // chain it to the existing substitution (if one exists). This is necessary to ensure proper comparisons
+    // for generic instantiation arguments while performing comparison using one of the base type's signatures.
 
     if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeSpec)
     {
@@ -3789,7 +3807,10 @@ BOOL MetaSig::GetParentSignatureAndSubstitution(
     else if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeDef || TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeRef)
     {
         // We need to special case type System.Object since it has its own element type. We don't need to do the same for type String
-        // because it's a sealed type, and no other class can derive from it.
+        // because it's a sealed type, and no other class can derive from it. Without this special casing, we'll end up with a comparison
+        // between a ELEMENT_TYPE_OBJECT and a ELEMENT_TYPE_CLASS respresentation of object, which we'll have to special case in the
+        // implementation of MetaSig::CompareElementType() by checking the type token following ELEMENT_TYPE_CLASS (possible, but adds
+        // unnecessary complexity).
 
         Module* pParentModule;
         mdTypeDef parentTypeDefToken;
@@ -4032,7 +4053,7 @@ MetaSig::CompareElementType(
             if (allowDerivedClass)
             {
                 // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
-                if (!IsTypeSignatureEligibleForCovariantReturnType(pSig1Start, pEndSig1, pModule1, TRUE))
+                if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE))
                 {
                     return FALSE;
                 }
@@ -4046,7 +4067,7 @@ MetaSig::CompareElementType(
                 Module* pParentTypeModule;
                 Substitution parentTypeSubst;
                 SigBuilder parentTypeSigBuilder;
-                if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
+                if (GetBaseTypeSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
                 {
                     DWORD cbParentTypeSig;
                     PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
@@ -4184,7 +4205,7 @@ MetaSig::CompareElementType(
                 return TRUE;
             }
 
-            if (allowDerivedClass && Type1 == ELEMENT_TYPE_CLASS)
+            if (allowDerivedClass)
             {
                 //
                 // We need to check if Type2 derives from Type1. Note that if Type1 is a generic type,
@@ -4201,7 +4222,8 @@ MetaSig::CompareElementType(
                 //
                 // In that example, if we just look at the typedef tokens for Class0<A,B> and Class4, and traverse the
                 // parent chain of Class4 to check if it derives from Class0, we would be always returning true, which
-                // is wrong. Here's a counter example: if Class2 was declared as 'Class2<T> : Class1<string,int16>',
+                // is not necessarily correct all the times.
+                // Here's a counter example: if Class2 was declared as 'Class2<T> : Class1<string,int16>',
                 // then Class4 would be deriving from Class0<string,int16>, and not from Class0<int32,int16>.
                 //
                 // Therefore, we need to keep track of the substitutions:
@@ -4210,14 +4232,14 @@ MetaSig::CompareElementType(
                 //
                 // To handle that case, we need to compute the base type *AND* base type substitution chain of type2, and
                 // recompare that with type1. If type1 is generic, we'll return return FALSE here, so that we can properly
-                // handle this scenario correctly under ELEMENT_TYPE_GENERICINST.
+                // handle this scenario under ELEMENT_TYPE_GENERICINST.
                 //
 
                 // First, check if Type1 is eligible for covariant returns
 
                 mdToken typeDefToken1;
                 Module* pTypeDefModule1;
-                if (!IsTypeSignatureEligibleForCovariantReturnType(pSig1Start, pEndSig1, pModule1, TRUE, &typeDefToken1, &pTypeDefModule1))
+                if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE, &typeDefToken1, &pTypeDefModule1))
                 {
                     return FALSE;
                 }
@@ -4232,11 +4254,12 @@ MetaSig::CompareElementType(
                 }
 
                 // Finally, walk the base type chain of Type2 to check if it derives from Type1. At this point, we don't need to
-                // worry about generic substitutions because we know that Type1 is non-generic.
+                // worry about generic substitutions because we know that Type1 is non-generic. A simple token-based comparison
+                // will yield the correct result here.
 
-                mdToken baseType2Token;
-                Module* pBaseType2Module;
-                while (ComputeBaseTypeTokenAndModule(tk2, pModule2, &baseType2Token, &pBaseType2Module) && !(baseType2Token == tk2 && pBaseType2Module == pModule2))
+                mdToken baseType2Token = tk2;
+                Module* pBaseType2Module = pModule2;
+                while (GetBaseTypeTokenAndModule(tk2, pModule2, &baseType2Token, &pBaseType2Module) && !(baseType2Token == tk2 && pBaseType2Module == pModule2))
                 {
                     tk2 = baseType2Token;
                     pModule2 = pBaseType2Module;
@@ -4326,7 +4349,7 @@ MetaSig::CompareElementType(
                 if (allowDerivedClass)
                 {
                     // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
-                    if (!IsTypeSignatureEligibleForCovariantReturnType(pSig1Start, pEndSig1, pModule1, TRUE))
+                    if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE))
                     {
                         return FALSE;
                     }
@@ -4334,7 +4357,7 @@ MetaSig::CompareElementType(
                     Module* pParentTypeModule;
                     Substitution parentTypeSubst;
                     SigBuilder parentTypeSigBuilder;
-                    if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
+                    if (GetBaseTypeSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
                     {
                         DWORD cbParentTypeSig;
                         PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
@@ -4748,10 +4771,10 @@ MetaSig::CompareMethodSigs(
     //
     // If we are comparing the return type signatures and allow for covariant returns,
     // we need to check if the return type on the second signature is a generic type,
-    // and if so, chain its generic instantiation arguments to the substitution chain.
-    // This is necessary in case we need to compute the base type signature of the second
-    // type's signature, and compare that to the first type's signature, to allow for
-    // derived types.
+    // and if so, insert its generic instantiation arguments to the substitution chain.
+    // Doing so will enable type signature comparison to traverse the generic stubstitution
+    // chain correctly while traversing the base type hierarchy of the return type on the
+    // second method's signature.
     //
     SigPointer instArgSignature;
     Substitution instArgsSubstitution;

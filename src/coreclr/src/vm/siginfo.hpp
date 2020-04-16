@@ -970,13 +970,26 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        //------------------------------------------------------------------
         // Compare two type handles for equality. If the two types are not equal, and allowDerivedClass
         // is TRUE, return true if hType2 derives from hType1. This inheritance check is used to allow
         // for covariant return types on MethodImpls.
+        //------------------------------------------------------------------
         static BOOL CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass);
 
-        // Check if a type signature is eligible for covariant return types.
-        static BOOL IsTypeSignatureEligibleForCovariantReturnType(
+        //------------------------------------------------------------------
+        // Check if a type signature is eligible to be used with derived type signature comparison
+        // and if so. Returns TRUE if the type is eligible.
+        //    Inputs:
+        //      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
+        //      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
+        //                                 as that of a base type or a derived type.
+        //    Outputs:
+        //      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
+        //      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
+        //                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
+        //------------------------------------------------------------------
+        static BOOL IsEligibleForDerivedTypeSignatureComparison(
             PCCOR_SIGNATURE     pSig,
             PCCOR_SIGNATURE     pEndSig,
             Module*             pModule,
@@ -985,16 +998,20 @@ class MetaSig
             Module**            ppTypeDefModule = NULL,
             mdToken*            pParentTypeDefOrRefOrSpecToken = NULL);
 
+        //------------------------------------------------------------------
         // Compute the base type token (it will either be a typedef or typeref token), and returns the
         // module where that base type token is declared.
-        static BOOL ComputeBaseTypeTokenAndModule(
+        //------------------------------------------------------------------
+        static BOOL GetBaseTypeTokenAndModule(
             mdToken     tk,
             Module*     pModule,
             mdToken*    pBaseTypeDefOrRefToken,
             Module**    ppBaseTypeTokenModule);
 
-        // Extract the parent type's signature and stubstitution from the input type signature
-        static BOOL GetParentSignatureAndSubstitution(
+        //------------------------------------------------------------------
+        // Extract the base type's signature and stubstitution from the input type signature
+        //------------------------------------------------------------------
+        static BOOL GetBaseTypeSignatureAndSubstitution(
             PCCOR_SIGNATURE     pSig,
             PCCOR_SIGNATURE     pEndSig,
             Module*             pModule,
@@ -1003,9 +1020,11 @@ class MetaSig
             SigBuilder&         parentTypeSig,
             Substitution&       parentTypeSubst);
 
+        //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
+        //------------------------------------------------------------------
         static BOOL CompareElementType(
             PCCOR_SIGNATURE &    pSig1,
             PCCOR_SIGNATURE &    pSig2,
