@@ -44,11 +44,11 @@ namespace System
         // underlying API expects only utf-16
         public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static bool IsInputRedirectedCore() => true;
+        public static bool IsInputRedirectedCore() => false;
 
-        public static bool IsOutputRedirectedCore() => true;
+        public static bool IsOutputRedirectedCore() => false;
 
-        public static bool IsErrorRedirectedCore() => true;
+        public static bool IsErrorRedirectedCore() => false;
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
