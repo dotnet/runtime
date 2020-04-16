@@ -471,7 +471,7 @@ namespace
 
         if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
         {
-            return CoreHostLibMissingFailure;
+            return StatusCode::CoreHostLibMissingFailure;
         }
 
         init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));

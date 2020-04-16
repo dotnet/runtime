@@ -8,6 +8,7 @@ set(DOTNET_PROJECT_NAME "nethost")
 
 # Include directories
 include_directories(../fxr)
+include_directories(../fxr/static)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
