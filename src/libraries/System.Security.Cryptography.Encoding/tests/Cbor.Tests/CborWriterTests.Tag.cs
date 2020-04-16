@@ -97,7 +97,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(0, "c100")]
         [InlineData(-1, "c120")]
         [InlineData(-315619200, "c13a12cff77f")]
-        public static void WriteUnixTimeSeconds_SingleValue_HappyPath(long value, string expectedHexEncoding)
+        public static void WriteUnixTimeSeconds_Long_SingleValue_HappyPath(long value, string expectedHexEncoding)
+        {
+            using var writer = new CborWriter();
+            writer.WriteUnixTimeSeconds(value);
+
+            byte[] encoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
+        }
+
+        [Theory]
+        [InlineData(1363896240, "c1fb41d452d9ec000000")]
+        [InlineData(1586439081, "c1fb41d7a3c8ea400000")]
+        [InlineData(0, "c1fb0000000000000000")]
+        [InlineData(-1, "c1fbbff0000000000000")]
+        [InlineData(-315619200, "c1fbc1b2cff780000000")]
+        [InlineData(1363896240.5, "c1fb41d452d9ec200000")]
+        [InlineData(15870467036.15, "c1fb420d8fa0dee13333")]
+        public static void WriteUnixTimeSeconds_Double_SingleValue_HappyPath(double value, string expectedHexEncoding)
         {
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);

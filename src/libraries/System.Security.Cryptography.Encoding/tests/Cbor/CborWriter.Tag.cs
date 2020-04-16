@@ -30,10 +30,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteTextString(dateString);
         }
 
-        public void WriteUnixTimeSeconds(long value)
+        public void WriteUnixTimeSeconds(long seconds)
         {
             WriteTag(CborTag.DateTimeUnixSeconds);
-            WriteInt64(value);
+            WriteInt64(seconds);
+        }
+
+        public void WriteUnixTimeSeconds(double seconds)
+        {
+            if (double.IsInfinity(seconds) || double.IsNaN(seconds))
+            {
+                throw new ArgumentException("Value cannot be infinite or NaN.", nameof(seconds));
+            }
+
+            WriteTag(CborTag.DateTimeUnixSeconds);
+            WriteDouble(seconds);
         }
 
         public void WriteBigInteger(BigInteger value)
