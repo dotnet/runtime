@@ -3297,10 +3297,10 @@ public:
 
     //-------------------------------------------------------------------------
     // CopyOtherRegFlags: copy GTF_* flags associated with gtOtherRegs from
-    // the given call node.
+    // the given LclVar node.
     //
     // Arguments:
-    //    fromCall  -  GenTreeCall node from which to copy
+    //    fromCall  -  GenTreeLclVar node from which to copy
     //
     // Return Value:
     //    None
@@ -4668,7 +4668,6 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
         : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, baseType, size)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
-        assert(gtSIMDIntrinsicID == simdIntrinsicID);
     }
 
     GenTreeSIMD(
@@ -4676,7 +4675,6 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
         : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, baseType, size)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
-        assert(gtSIMDIntrinsicID == simdIntrinsicID);
     }
 
     bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
@@ -4697,14 +4695,12 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, baseType, size)
     {
         gtHWIntrinsicId = hwIntrinsicID;
-        assert(gtHWIntrinsicId == hwIntrinsicID);
     }
 
     GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, baseType, size)
     {
         gtHWIntrinsicId = hwIntrinsicID;
-        assert(gtHWIntrinsicId == hwIntrinsicID);
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
@@ -4716,7 +4712,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, baseType, size)
     {
         gtHWIntrinsicId = hwIntrinsicID;
-        assert(gtHWIntrinsicId == hwIntrinsicID);
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
