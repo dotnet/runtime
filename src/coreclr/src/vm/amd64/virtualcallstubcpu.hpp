@@ -23,14 +23,14 @@
 #pragma pack(push, 1)
 // since we are placing code, we want byte packing of the structs
 
-// Four bytes starting at the instruction in the stub where the instruction
-// access violation is converted to NullReferenceException at the caller site.
+// Codes of the instruction in the stub where the instruction access violation
+// is converted to NullReferenceException at the caller site.
 #ifdef UNIX_AMD64_ABI
-#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x013948
-#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x018b48
-#else // UNIX_AMD64_ABI
 #define X64_INSTR_CMP_IND_THIS_REG_RAX 0x073948
 #define X64_INSTR_MOV_RAX_IND_THIS_REG 0x078b48
+#else // UNIX_AMD64_ABI
+#define X64_INSTR_CMP_IND_THIS_REG_RAX 0x013948
+#define X64_INSTR_MOV_RAX_IND_THIS_REG 0x018b48
 #endif // UNIX_AMD64_ABI
 
 #define USES_LOOKUP_STUBS       1
