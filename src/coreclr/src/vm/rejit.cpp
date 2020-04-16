@@ -488,13 +488,14 @@ BOOL NativeImageInliningIterator::Next()
     }
 
     m_currentPos++;
-    _ASSERTE(m_currentPos >= 0);
     return m_currentPos < m_dynamicAvailable;
 }
 
 MethodDesc *NativeImageInliningIterator::GetMethodDesc()
 {
-    if (m_currentPos == s_failurePos || m_currentPos >= m_dynamicAvailable)
+    // this evaluates true when m_currentPos == s_failurePos or m_currentPos == (COUNT_T)-1
+    // m_currentPos is an unsigned type
+    if (m_currentPos >= m_dynamicAvailable)
     {
         return NULL;
     }
