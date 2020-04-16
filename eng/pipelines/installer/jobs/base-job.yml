@@ -97,6 +97,7 @@ jobs:
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
     - name: MsbuildSigningArguments
       value: >-
@@ -119,6 +120,7 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
 
     - name: BaseJobBuildCommand
       value: >-
@@ -184,6 +186,7 @@ jobs:
       value: >-
         /p:Configuration=$(_BuildConfig)
         /p:TargetArchitecture=${{ parameters.archType }}
+        /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
 
     - name: _PortableBuild
