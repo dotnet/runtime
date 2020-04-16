@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -132,7 +133,7 @@ namespace System
             return Number.ParseUInt64(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? s, out ulong result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out ulong result)
         {
             if (s == null)
             {
@@ -148,7 +149,7 @@ namespace System
             return Number.TryParseUInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
