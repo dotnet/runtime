@@ -69,7 +69,7 @@ repo_root=$(git rev-parse --show-toplevel)
 
 if [[ buildcurrentlibraries -eq 1 ]]; then
     libraries_args=" -t $imagename -c $configuration"
-    if [[ $privateaspnetcore -eq 1]]; then
+    if [[ $privateaspnetcore -eq 1 ]]; then
         libraries_args="$libraries_args -pa"
     fi
 
