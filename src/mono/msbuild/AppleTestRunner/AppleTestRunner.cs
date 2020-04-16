@@ -60,7 +60,7 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 
         if (testLibs.Count < 1)
         {
-            Console.WriteLine("Test libs were not found (*.Tests.dll)");
+            Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
             return -1;
         }
 
