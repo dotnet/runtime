@@ -1034,7 +1034,6 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 **s
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't get procname %p", __func__, handle);
-			/* bugger */
 			g_free (procname_ext);
 			mono_w32handle_unref (handle_data);
 			return FALSE;
@@ -1524,7 +1523,6 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * Just to make things more interesting, tokens can contain
 	 * white space if they are surrounded by quotation marks.  I'm
 	 * beginning to understand just why windows apps are generally
-	 * so crap, with an API like this :-(
 	 * so horrible, with an API like this :-(
 	 */
 	if (appname != NULL) {
