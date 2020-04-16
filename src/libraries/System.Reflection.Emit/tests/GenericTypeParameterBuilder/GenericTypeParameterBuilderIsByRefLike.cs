@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
         public void IsByRefLikeReturnsFalse()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            string[] typeParamNames = new string[] { "TFirst" };
+            var typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
             Assert.False(typeParams[0].IsByRefLike);
         }
