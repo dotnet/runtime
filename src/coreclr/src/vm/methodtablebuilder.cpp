@@ -2159,6 +2159,83 @@ BOOL MethodTableBuilder::bmtMetaDataInfo::MethodImplTokenPair::Equal(
 }
 
 //*******************************************************************************
+BOOL MethodTableBuilder::IsEligibleForCovariantReturns(mdToken methodDeclToken)
+{
+    STANDARD_VM_CONTRACT;
+
+    //
+    // Note on covariant return types: right now we only support covariant returns for MethodImpls on
+    // class, where the MethodDecl is also on a class. Interface methods are not supported. In order to allow
+    // covariant return type checking in the call to CompareMethodSigs, we need to verify whether the type with
+    // the MethodDecl is an interface.
+    // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
+    //
+
+    HRESULT hr = S_OK;
+    IMDInternalImport* pMDInternalImport = GetMDImport();
+
+    // First, check if the type with the MethodImpl is a class.
+    if (IsValueClass() || IsInterface())
+        return FALSE;
+
+    mdToken tkParent;
+    hr = pMDInternalImport->GetParentToken(methodDeclToken, &tkParent);
+    if (FAILED(hr))
+        BuildMethodTableThrowException(hr, *bmtError);
+
+    // Second, check that the type with the MethodImpl is not the same as the type with the MethodDecl
+    if (GetCl() == tkParent)
+        return FALSE;
+
+    // Finally, check that the type with the MethodDecl is not an interface. To do so, we need to compute the TypeDef
+    // token of the type with the MethodDecl, as well as its module, in order to use the metadata to check if the type
+    // is an interface.
+    mdToken declTypeDefToken = mdTokenNil;
+    Module* pDeclModule = GetModule();
+    if (TypeFromToken(tkParent) == mdtTypeRef || TypeFromToken(tkParent) == mdtTypeDef)
+    {
+        if (!ClassLoader::ResolveTokenToTypeDefThrowing(GetModule(), tkParent, &pDeclModule, &declTypeDefToken))
+            return FALSE;
+    }
+    else if (TypeFromToken(tkParent) == mdtTypeSpec)
+    {
+        ULONG cbTypeSig;
+        PCCOR_SIGNATURE pTypeSig;
+        hr = pMDInternalImport->GetSigFromToken(tkParent, &cbTypeSig, &pTypeSig);
+        if (FAILED(hr))
+            BuildMethodTableThrowException(hr, *bmtError);
+
+        SigParser parser(pTypeSig, cbTypeSig);
+
+        CorElementType elementType;
+        IfFailThrow(parser.GetElemType(&elementType));
+
+        if (elementType == ELEMENT_TYPE_GENERICINST)
+            IfFailThrow(parser.GetElemType(&elementType));
+
+        if (elementType == ELEMENT_TYPE_CLASS)
+        {
+            mdToken declTypeDefOrRefToken;
+            IfFailThrow(parser.GetToken(&declTypeDefOrRefToken));
+            if (!ClassLoader::ResolveTokenToTypeDefThrowing(GetModule(), declTypeDefOrRefToken, &pDeclModule, &declTypeDefToken))
+                return FALSE;
+        }
+    }
+
+    if (declTypeDefToken == mdTokenNil)
+        return FALSE;
+
+    // Now that we have computed the TypeDef token and the module, check its attributes to verify it is not an interface.
+
+    DWORD attr;
+    hr = pDeclModule->GetMDImport()->GetTypeDefProps(declTypeDefToken, &attr, NULL);
+    if (FAILED(hr))
+        BuildMethodTableThrowException(hr, *bmtError);
+
+    return !IsTdInterface(attr);
+}
+
+//*******************************************************************************
 VOID
 MethodTableBuilder::EnumerateMethodImpls()
 {
@@ -2368,39 +2445,7 @@ MethodTableBuilder::EnumerateMethodImpls()
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MISSING_SIG_BODY);
                 }
 
-                BOOL allowCovariantReturn = FALSE;
-                if (!IsValueClass() && !IsInterface())
-                {
-                    // Note on covariant return types: right now we only support covariant returns for MethodImpls on
-                    // class, where the MethodDecl is also on a class. Interface methods are not supported. In order to allow
-                    // covariant return type checking in the call to CompareMethodSigs, we need to verify whether the type with
-                    // the MethodDecl is an interface.
-                    // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
-
-                    hr = pMDInternalImport->GetParentToken(theDecl, &tkParent);
-                    if (FAILED(hr))
-                        BuildMethodTableThrowException(hr, *bmtError);
-
-                    if (GetCl() != tkParent)
-                    {
-                        CONTRACT_VIOLATION(LoadsTypeViolation);
-                        MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                            GetModule(),
-                            tkParent,
-                            &bmtGenerics->typeContext,
-                            ClassLoader::ThrowIfNotFound,
-                            ClassLoader::PermitUninstDefOrRef,
-                            ClassLoader::LoadTypes,
-                            CLASS_LOAD_APPROXPARENTS).GetMethodTable()->GetCanonicalMethodTable();
-
-                        CONSISTENCY_CHECK(pDeclMT != NULL);
-
-                        if (!pDeclMT->IsInterface() && !pDeclMT->IsValueType())
-                        {
-                            allowCovariantReturn = TRUE;
-                        }
-                    }
-                }
+                BOOL allowCovariantReturn = IsEligibleForCovariantReturns(theDecl);
 
                 // Can't use memcmp because there may be two AssemblyRefs
                 // in this scope, pointing to the same assembly, etc.).

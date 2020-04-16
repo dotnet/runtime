@@ -2563,6 +2563,9 @@ private:
         mdToken* pDeclaration, // Method definition for Member
         BOOL fSameClass);      // Does the declaration need to be in this class
 
+    BOOL
+    IsEligibleForCovariantReturns(mdToken methodDeclToken);
+
     // --------------------------------------------------------------------------------------------
     // Enumerates the method impl token pairs and resolves the impl tokens to mdtMethodDef
     // tokens, since we currently have the limitation that all impls are in the current class.
