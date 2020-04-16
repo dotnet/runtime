@@ -145,8 +145,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
     CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle> rgIpcPollHandles;
 
     int32_t pollTimeoutMs = s_pollTimeoutInfinite;
-    int32_t nextPollTimeoutMs = 0;
-    bool fConnectSuccess =true;
+    bool fConnectSuccess = true;
     uint32_t nPollAttempts = 0;
 
     while (pStream == nullptr)

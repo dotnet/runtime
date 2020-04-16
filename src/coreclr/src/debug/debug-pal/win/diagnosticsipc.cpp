@@ -386,7 +386,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesRead = 0;
-    LPOVERLAPPED overlap = const_cast<LPOVERLAPPED>(&_oOverlap);
+    LPOVERLAPPED overlap = &_oOverlap;
     bool fSuccess = ::ReadFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to receive data
@@ -416,7 +416,7 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesWritten = 0;
-    LPOVERLAPPED overlap = const_cast<LPOVERLAPPED>(&_oOverlap);
+    LPOVERLAPPED overlap = &_oOverlap;
     bool fSuccess = ::WriteFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to write from

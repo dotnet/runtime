@@ -66,11 +66,11 @@ namespace Tracing.Tests.Common
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return Path.GetRandomFileName();
+                return "DOTNET_TRACE_TESTS_" + Path.GetRandomFileName();
             }
             else
             {
-                return Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                return Path.Combine(Path.GetTempPath(), "DOTNET_TRACE_TESTS_" + Path.GetRandomFileName());
             }
         }
 
@@ -83,7 +83,14 @@ namespace Tracing.Tests.Common
             _serverAddress = serverAddress;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _server = new NamedPipeServerStream(serverAddress);
+                _server = new NamedPipeServerStream(
+                    serverAddress,
+                    PipeDirection.InOut,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.None,
+                    16 * 1024,
+                    16 * 1024);
             }
             else
             {
@@ -119,15 +126,22 @@ namespace Tracing.Tests.Common
             switch (_server)
             {
                 case NamedPipeServerStream serverStream:
-                    serverStream.Disconnect();
-                    serverStream.Dispose();
+                    try
+                    {
+                        serverStream.Disconnect();
+                    }
+                    catch {}
+                    finally
+                    {
+                        serverStream.Dispose();
+                    }
                     break;
                 case Socket socket:
                     try
                     {
                         socket.Shutdown(SocketShutdown.Both);
                     }
-                    catch (Exception e) {}
+                    catch {}
                     finally
                     {
                         _clientSocket?.Close();
@@ -153,46 +167,6 @@ namespace Tracing.Tests.Common
             IpcAdvertise advertise = IpcAdvertise.Parse(stream);
             server.Shutdown();
             return advertise;
-            // if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            // {
-            //     using var serverStream = new NamedPipeServerStream(serverAddress);
-            //     Logger.logger.Log("Waiting for connection");
-            //     await serverStream.WaitForConnectionAsync();
-            //     Logger.logger.Log("Got a connection");
-            //     IpcAdvertise advertise = IpcAdvertise.Parse(serverStream);
-            //     serverStream.Disconnect();
-            //     return advertise;
-            // }
-            // else
-            // {
-            //     if (File.Exists(serverAddress))
-            //         File.Delete(serverAddress);
-            //     var remoteEP = new UnixDomainSocketEndPoint(serverAddress);
-
-            //     using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            //     socket.Bind(remoteEP);
-            //     socket.Listen(255);
-            //     socket.LingerState.Enabled = false;
-            //     Logger.logger.Log("Waiting for connection");
-            //     using Socket clientSocket = await socket.AcceptAsync();
-            //     Logger.logger.Log("Got a connection");
-            //     using var socketStream = new NetworkStream(clientSocket);
-            //     IpcAdvertise advertise = IpcAdvertise.Parse(socketStream);
-            //     try
-            //     {
-            //         socket.Shutdown(SocketShutdown.Both);
-            //     }
-            //     catch (Exception e) {}
-            //     finally
-            //     {
-            //         clientSocket.Close();
-            //         socket.Close();
-            //         if (File.Exists(serverAddress))
-            //             File.Delete(serverAddress);
-            //     }
-
-            //     return advertise;
-            // }
         }
     }
 }
