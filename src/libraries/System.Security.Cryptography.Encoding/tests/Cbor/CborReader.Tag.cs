@@ -49,45 +49,60 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             try
             {
-                switch (ReadTag())
+                ReadTag(expectedTag: CborTag.DateTimeString);
+
+                if (Peek() != CborReaderState.TextString)
                 {
-                    case CborTag.DateTimeString:
-                        if (Peek() != CborReaderState.TextString)
+                    throw new FormatException("String DateTime semantic tag should annotate string value.");
+                }
+
+                string dateString = ReadTextString();
+
+                if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
+                {
+                    throw new FormatException("DateTime string is not valid RFC3339 format.");
+                }
+
+                return result;
+            }
+            catch
+            {
+                RestoreCheckpoint(checkpoint);
+                throw;
+            }
+        }
+
+        public DateTimeOffset ReadUnixTimeSeconds()
+        {
+            // implements https://tools.ietf.org/html/rfc7049#section-2.4.1
+
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+
+            try
+            {
+                ReadTag(expectedTag: CborTag.UnixTimeSeconds);
+
+                switch (Peek())
+                {
+                    case CborReaderState.UnsignedInteger:
+                    case CborReaderState.NegativeInteger:
+                        return DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
+
+                    case CborReaderState.HalfPrecisionFloat:
+                    case CborReaderState.SinglePrecisionFloat:
+                    case CborReaderState.DoublePrecisionFloat:
+                        double seconds = ReadDouble();
+
+                        if (double.IsNaN(seconds) || double.IsInfinity(seconds))
                         {
-                            throw new FormatException("String DateTime semantic tag should annotate string value.");
+                            throw new FormatException("Unix time representation cannot be infinity or NaN.");
                         }
 
-                        string dateString = ReadTextString();
-
-                        if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
-                        {
-                            throw new FormatException("DateTime string is not valid RFC3339.");
-                        }
-
-                        return result;
-
-                    case CborTag.DateTimeUnixSeconds:
-                        switch (Peek())
-                        {
-                            case CborReaderState.UnsignedInteger:
-                            case CborReaderState.NegativeInteger:
-                                return DateTimeOffset.FromUnixTimeSeconds(ReadInt64());
-
-                            case CborReaderState.HalfPrecisionFloat:
-                            case CborReaderState.SinglePrecisionFloat:
-                            case CborReaderState.DoublePrecisionFloat:
-                                // we don't (but probably should) have a float overload for DateTimeOffset.FromUnixTimeSeconds
-                                double seconds = ReadDouble();
-                                long epochTicks = DateTimeOffset.UnixEpoch.Ticks;
-                                long ticks = checked(epochTicks + (long)(seconds * TimeSpan.TicksPerSecond));
-                                return new DateTimeOffset(ticks, TimeSpan.Zero);
-
-                            default:
-                                throw new FormatException("Epoch DateTime semantic tag should annotate numeric value.");
-                        }
+                        TimeSpan timespan = TimeSpan.FromSeconds(seconds);
+                        return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
-                        throw new InvalidOperationException("CBOR tag is not a recognized DateTime value.");
+                        throw new FormatException("UnixDateTime tag should annotate a numeric value.");
                 }
             }
             catch

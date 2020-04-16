@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Encoding.Tests
     internal enum CborTag : ulong
     {
         DateTimeString = 0,
-        DateTimeUnixSeconds = 1,
+        UnixTimeSeconds = 1,
         UnsignedBigNum = 2,
         NegativeBigNum = 3,
         DecimalFraction = 4,

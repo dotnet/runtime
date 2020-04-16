@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteUnixTimeSeconds(long seconds)
         {
-            WriteTag(CborTag.DateTimeUnixSeconds);
+            WriteTag(CborTag.UnixTimeSeconds);
             WriteInt64(seconds);
         }
 
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new ArgumentException("Value cannot be infinite or NaN.", nameof(seconds));
             }
 
-            WriteTag(CborTag.DateTimeUnixSeconds);
+            WriteTag(CborTag.UnixTimeSeconds);
             WriteDouble(seconds);
         }
 

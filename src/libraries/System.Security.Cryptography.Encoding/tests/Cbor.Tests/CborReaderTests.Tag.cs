@@ -131,14 +131,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData("2013-03-21T20:04:00Z", "c074323031332d30332d32315432303a30343a30305a")]
-        [InlineData("2013-03-21T20:04:00Z", "c11a514b67b0")]
-        [InlineData("2013-03-21T20:04:00.5Z", "c1fb41d452d9ec200000")]
         [InlineData("2020-04-09T14:31:21.3535941+01:00", "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030")]
         [InlineData("2020-04-09T11:41:19.12-08:00", "c0781c323032302d30342d30395431313a34313a31392e31322d30383a3030")]
-        [InlineData("2020-04-09T13:31:21Z", "c11a5e8f23a9")]
-        [InlineData("1970-01-01T00:00:00Z", "c100")]
-        [InlineData("1969-12-31T23:59:59Z", "c120")]
-        [InlineData("1960-01-01T00:00:00Z", "c13a12cff77f")]
         public static void ReadDateTimeOffset_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
         {
             DateTimeOffset expectedValue = DateTimeOffset.Parse(expectedValueString);
@@ -154,7 +148,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData("c01a514b67b0")] // string datetime tag with unix time payload
-        [InlineData("c174323031332d30332d32315432303a30343a30305a")] // epoch datetime tag with string payload
         public static void ReadDateTimeOffset_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
@@ -201,6 +194,76 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(CborReaderState.Tag, reader.Peek());
             Assert.Equal(CborTag.DateTimeString, reader.ReadTag());
+        }
+
+        [Theory]
+        [InlineData("2013-03-21T20:04:00Z", "c11a514b67b0")]
+        [InlineData("2013-03-21T20:04:00.5Z", "c1fb41d452d9ec200000")]
+        [InlineData("2020-04-09T13:31:21Z", "c11a5e8f23a9")]
+        [InlineData("1970-01-01T00:00:00Z", "c100")]
+        [InlineData("1969-12-31T23:59:59Z", "c120")]
+        [InlineData("1960-01-01T00:00:00Z", "c13a12cff77f")]
+        public static void ReadUnixTimeSeconds_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
+        {
+            DateTimeOffset expectedValue = DateTimeOffset.Parse(expectedValueString);
+            byte[] data = hexEncoding.HexToByteArray();
+
+            var reader = new CborReader(data);
+
+            DateTimeOffset result = reader.ReadUnixTimeSeconds();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(TimeSpan.Zero, result.Offset);
+        }
+
+        [Theory]
+        [InlineData("c174323031332d30332d32315432303a30343a30305a")] // epoch datetime tag with string payload
+        public static void ReadUnixTimeSeconds_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+        }
+
+        [Theory]
+        [InlineData("c1f97e00")] // 0(NaN)
+        [InlineData("c1f9fc00")] // 0(-Infinity)
+        public static void ReadUnixTimeSeconds_InvalidFloatPayload_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+        }
+
+        [Theory]
+        [InlineData("01")] // numeric value without tag
+        [InlineData("c301")] // non-datetime tag
+        public static void ReadUnixTimeSeconds_InvalidTag_ShouldThrowInvalidOperationxception(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+        }
+
+        [Theory]
+        [InlineData("81c17330392f30342f323032302031393a35313a3530")] // [1("09/04/2020 19:51:50")]
+        [InlineData("81c16e4c617374204368726973746d6173")] // [1("Last Christmas")]
+        public static void ReadUnixTimeSeconds_InvalidFormat_ShouldRollbackToInitialState(string hexEncoding)
+        {
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborTag.UnixTimeSeconds, reader.ReadTag());
         }
 
         [Theory]
