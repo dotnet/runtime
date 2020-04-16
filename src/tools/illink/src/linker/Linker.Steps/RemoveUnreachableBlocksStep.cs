@@ -311,7 +311,7 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
-				bodySweeper.Process (conditionInstrsToRemove);
+				bodySweeper.Process (conditionInstrsToRemove, out var nopInstructions);
 				InstructionsReplaced = bodySweeper.InstructionsReplaced;
 				if (InstructionsReplaced == 0)
 					return false;
@@ -319,6 +319,13 @@ namespace Mono.Linker.Steps
 				reachableInstrs = GetReachableInstructionsMap (out _);
 				if (reachableInstrs != null)
 					RemoveUnreachableInstructions (reachableInstrs);
+
+				if (nopInstructions != null) {
+					ILProcessor processor = Body.GetILProcessor ();
+
+					foreach (var instr in nopInstructions)
+						processor.Remove (instr);
+				}
 
 				return true;
 			}
@@ -829,7 +836,7 @@ namespace Mono.Linker.Steps
 				return true;
 			}
 
-			public void Process (List<int> conditionInstrsToRemove)
+			public void Process (List<int> conditionInstrsToRemove, out List<Instruction> sentinelNops)
 			{
 				List<VariableDefinition> removedVariablesReferences = null;
 
@@ -865,6 +872,8 @@ namespace Mono.Linker.Steps
 
 				CleanExceptionHandlers ();
 
+				sentinelNops = null;
+
 				//
 				// Process list of conditional jump which should be removed. They cannot be
 				// replaced with nops as they alter the stack
@@ -885,8 +894,14 @@ namespace Mono.Linker.Steps
 							// One of the operands is most likely constant and could just be removed instead of additional pop
 							//
 							if (index > 0 && IsSideEffectFreeLoad (instrs [index - 1])) {
+								var nop = Instruction.Create (OpCodes.Nop);
+
+								if (sentinelNops == null)
+									sentinelNops = new List<Instruction> ();
+								sentinelNops.Add (nop);
+
 								ilprocessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
-								ilprocessor.Replace (index, Instruction.Create (OpCodes.Nop));
+								ilprocessor.Replace (index, nop);
 							} else {
 								var pop = Instruction.Create (OpCodes.Pop);
 								ilprocessor.Replace (index, pop);
