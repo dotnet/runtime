@@ -124,6 +124,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(double.NaN)]
+        [InlineData(double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity)]
+        public static void WriteUnixTimeSeconds_Double_InvalidInput_ShouldThrowArgumentException(double value)
+        {
+            using var writer = new CborWriter();
+            Assert.Throws<ArgumentException>(() => writer.WriteUnixTimeSeconds(value));
+        }
+
+        [Theory]
         [InlineData("0", "c24100")]
         [InlineData("1", "c24101")]
         [InlineData("-1", "c34100")]
