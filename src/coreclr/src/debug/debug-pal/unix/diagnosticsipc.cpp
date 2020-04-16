@@ -327,7 +327,20 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
 {
     _ASSERTE(lpBuffer != nullptr);
 
-    // TODO: use Timeout
+    if (timeoutMs != InfiniteTimeout)
+    {
+        pollfd pfd;
+        pfd.fd = _clientSocket;
+        pfd.events = POLLIN;
+        int retval = poll(&pfd, 1, timeoutMs);
+        if (retval <= 0 || pfd.revents != POLLIN)
+        {
+            // timeout or error
+            return false;
+        }
+        // else fallthrough
+    }
+
     const ssize_t ssize = ::recv(_clientSocket, lpBuffer, nBytesToRead, 0);
     const bool fSuccess = ssize != -1;
 
@@ -344,7 +357,20 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
 {
     _ASSERTE(lpBuffer != nullptr);
 
-    // TODO: use timeout
+    if (timeoutMs != InfiniteTimeout)
+    {
+        pollfd pfd;
+        pfd.fd = _clientSocket;
+        pfd.events = POLLOUT;
+        int retval = poll(&pfd, 1, timeoutMs);
+        if (retval <= 0 || pfd.revents != POLLOUT)
+        {
+            // timeout or error
+            return false;
+        }
+        // else fallthrough
+    }
+
     const ssize_t ssize = ::send(_clientSocket, lpBuffer, nBytesToWrite, 0);
     const bool fSuccess = ssize != -1;
 

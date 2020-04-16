@@ -99,6 +99,9 @@ namespace Tracing.Tests.Common
                 var remoteEP = new UnixDomainSocketEndPoint(serverAddress);
 
                 var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                // socket(7) states that SO_RCVBUF has a minimum of 128 and SO_SNDBUF has minimum of 1024
+                socket.SendBufferSize = Math.Max(bufferSize, 1024);
+                socket.ReceiveBufferSize = Math.Max(bufferSize, 128);
                 socket.Bind(remoteEP);
                 socket.Listen(255);
                 socket.LingerState.Enabled = false;
