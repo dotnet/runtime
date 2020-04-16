@@ -146,15 +146,16 @@ struct HWIntrinsicInfo
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
     static int lookupNumArgs(const GenTreeHWIntrinsic* node);
     static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
-#ifdef TARGET_XARCH
-    static int lookupImmUpperBound(NamedIntrinsic id);
-    static bool isInImmRange(NamedIntrinsic id, int ival);
+
+#if defined(TARGET_XARCH)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic);
+#elif defined(TARGET_ARM64)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType);
+#else
+#error Unsupported platform
 #endif
 
-#ifdef TARGET_ARM64
-    static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types elemType);
-#endif
-
+    static bool isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType);
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
     static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
     static bool isScalarIsa(CORINFO_InstructionSet isa);
