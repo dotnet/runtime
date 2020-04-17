@@ -229,7 +229,8 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = IntPtr.Zero;
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+
                     try
                     {
                         result = Interop.IpHlpApi.GetUdpTable(buffer, ref size, true);
