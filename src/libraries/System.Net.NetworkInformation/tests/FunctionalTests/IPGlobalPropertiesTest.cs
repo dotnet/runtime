@@ -77,6 +77,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
