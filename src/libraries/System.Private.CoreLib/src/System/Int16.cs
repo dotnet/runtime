@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -141,7 +142,7 @@ namespace System
             return (short)i;
         }
 
-        public static bool TryParse(string? s, out short result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out short result)
         {
             if (s == null)
             {
@@ -157,7 +158,7 @@ namespace System
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out short result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out short result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 

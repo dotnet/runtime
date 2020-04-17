@@ -34,7 +34,7 @@ public class AppleAppBuilderTask : Task
     /// Path to Mono public headers (*.h)
     /// </summary>
     [Required]
-    public string MonoInclude { get; set; } = ""!;
+    public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
@@ -122,8 +122,10 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
-        // escape spaces
-        ProjectName = ProjectName.Replace(" ", "-");
+        if (ProjectName.Contains(" "))
+        {
+            throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
+        }
 
         string[] excludes = new string[0];
         if (ExcludeFromAppDir != null)
@@ -163,7 +165,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, 
-                AppDir, binDir, MonoInclude, UseConsoleUITemplate, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -179,7 +181,6 @@ public class AppleAppBuilderTask : Task
                         Arch, Optimized, DevTeamProvisioning);
                 }
             }
-            Utils.LogInfo($"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         }
 
         return true;

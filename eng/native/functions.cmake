@@ -338,7 +338,7 @@ function(install_clr)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
         strip_symbols(${targetName} symbol_file)
 
-        foreach(destination in ${destinations})
+        foreach(destination ${destinations})
           # We don't need to install the export libraries for our DLLs
           # since they won't be directly linked against.
           install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})

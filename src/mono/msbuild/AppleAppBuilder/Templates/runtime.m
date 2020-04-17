@@ -233,9 +233,11 @@ mono_ios_runtime_init (void)
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
-    register_dllmap ();
+    // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
+    monovm_initialize(0, NULL, NULL);
 
 #if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
+    register_dllmap ();
     // register modules
     mono_ios_register_modules ();
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);

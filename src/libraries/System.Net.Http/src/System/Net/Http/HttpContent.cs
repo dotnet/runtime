@@ -131,11 +131,6 @@ namespace System.Net.Http
             get { return _bufferedContent != null; }
         }
 
-        internal void SetBuffer(byte[] buffer, int offset, int count)
-        {
-            _bufferedContent = new MemoryStream(buffer, offset, count, writable: false, publiclyVisible: true);
-        }
-
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
             if (_bufferedContent != null)

@@ -792,7 +792,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 if (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256)
                 {
                     assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->gtIndexBaseType = getBaseTypeOfSIMDType(op2ArgClass);
+                    retNode->AsHWIntrinsic()->SetOtherBaseType(getBaseTypeOfSIMDType(op2ArgClass));
                 }
 #endif
                 break;
