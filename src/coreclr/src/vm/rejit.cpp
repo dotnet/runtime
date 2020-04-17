@@ -418,12 +418,6 @@ COR_IL_MAP* ProfilerFunctionControl::GetInstrumentedMapEntries()
     return m_rgInstrumentedMapEntries;
 }
 
-//---------------------------------------------------------------------------------------
-// ReJitManager implementation
-
-// All the state-changey stuff is kept up here in the !DACCESS_COMPILE block.
-// The more read-only inspection-y stuff follows the block.
-
 #ifndef DACCESS_COMPILE
 NativeImageInliningIterator::NativeImageInliningIterator() :
         m_pModule(NULL),
@@ -505,6 +499,12 @@ MethodDesc *NativeImageInliningIterator::GetMethodDesc()
     mdMethodDef mdInliner = mm.m_methodDef;
     return pModule->LookupMethodDef(mdInliner);
 }
+
+//---------------------------------------------------------------------------------------
+// ReJitManager implementation
+
+// All the state-changey stuff is kept up here in the !DACCESS_COMPILE block.
+// The more read-only inspection-y stuff follows the block.
 
 //---------------------------------------------------------------------------------------
 //
