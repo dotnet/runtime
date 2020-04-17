@@ -13,6 +13,7 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -182,7 +183,7 @@ namespace System
             return s[0];
         }
 
-        public static bool TryParse(string? s, out char result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
             result = '\0';
             if (s == null)

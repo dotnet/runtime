@@ -1069,7 +1069,7 @@ namespace System
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
                     byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
 
                     UInt64ToNumber(value, ref number);
 

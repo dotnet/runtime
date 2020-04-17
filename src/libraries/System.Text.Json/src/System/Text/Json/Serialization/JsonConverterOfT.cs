@@ -285,7 +285,16 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
+            Debug.Assert(value != null);
+
+            if (!IsInternalConverter)
+            {
+                return TryWrite(writer, value, options, ref state);
+            }
+
             Debug.Assert(this is JsonDictionaryConverter<T>);
+
+            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
