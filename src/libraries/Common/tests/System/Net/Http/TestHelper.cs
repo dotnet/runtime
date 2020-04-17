@@ -133,6 +133,7 @@ namespace System.Net.Http.Functional.Tests
             EnableUncryptedHttp2((SocketsHttpHandler) socketsHttpHandler);
         }
 
+#if !NETFRAMEWORK
         public static void EnableUnencryptedHttp2IfNecessary(SocketsHttpHandler socketsHttpHandler)
         {
             if (PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback())
@@ -142,8 +143,9 @@ namespace System.Net.Http.Functional.Tests
 
             EnableUncryptedHttp2(socketsHttpHandler);
         }
+#endif
 
-        private static void EnableUncryptedHttp2(SocketsHttpHandler socketsHttpHandler)
+        private static void EnableUncryptedHttp2(object socketsHttpHandler)
         {
             // Get HttpConnectionSettings object from SocketsHttpHandler.
             Type socketsHttpHandlerType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
