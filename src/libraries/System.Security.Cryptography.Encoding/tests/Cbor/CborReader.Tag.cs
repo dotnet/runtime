@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 ReadTag(expectedTag: CborTag.DateTimeString);
 
-                switch (Peek())
+                switch (PeekState())
                 {
                     case CborReaderState.TextString:
                     case CborReaderState.StartTextString:
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 ReadTag(expectedTag: CborTag.UnixTimeSeconds);
 
-                switch (Peek())
+                switch (PeekState())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
                 };
 
-                switch(Peek())
+                switch(PeekState())
                 {
                     case CborReaderState.ByteString:
                     case CborReaderState.StartByteString:
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 ReadTag(expectedTag: CborTag.DecimalFraction);
 
-                if (Peek() != CborReaderState.StartArray || ReadStartArray() != 2)
+                if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
                     throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
                 }
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 decimal mantissa; // signed integral component of the decimal value
                 long exponent;    // base-10 exponent
 
-                switch (Peek())
+                switch (PeekState())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         throw new FormatException("DecimalFraction tag should annotate a list of two numeric elements.");
                 }
 
-                switch (Peek())
+                switch (PeekState())
                 {
                     case CborReaderState.UnsignedInteger:
                         mantissa = ReadUInt64();

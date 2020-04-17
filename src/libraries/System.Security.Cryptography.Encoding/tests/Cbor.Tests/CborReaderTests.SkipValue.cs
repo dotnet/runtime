@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.SkipValue();
             reader.ReadInt64();
             reader.ReadEndArray();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             reader.ReadTag();
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Fact]
@@ -114,13 +114,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(reader.BytesRemaining, currentBytesRemaining);
 
             // ensure we can read every value up to the format error
-            Assert.Equal(CborReaderState.StartArray, reader.Peek());
+            Assert.Equal(CborReaderState.StartArray, reader.PeekState());
             reader.ReadStartArray();
-            Assert.Equal(CborReaderState.StartMap, reader.Peek());
+            Assert.Equal(CborReaderState.StartMap, reader.PeekState());
             reader.ReadStartMap();
-            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             reader.ReadUInt64();
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
         }
 
         [Theory]
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         public static IEnumerable<object[]> SkipTestInputs => SampleCborValues.Select(x => new [] { x });

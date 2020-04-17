@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = Peek()) == CborReaderState.Tag)
+            while ((state = PeekState()) == CborReaderState.Tag)
             {
                 ReadTag();
             }

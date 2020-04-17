@@ -28,12 +28,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             CborTag tag = reader.ReadTag();
             Assert.Equal(expectedTag, (ulong)tag);
 
             Helpers.VerifyValue(reader, expectedValue);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -49,13 +49,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             foreach (ulong expectedTag in expectedTags)
             {
-                Assert.Equal(CborReaderState.Tag, reader.Peek());
+                Assert.Equal(CborReaderState.Tag, reader.PeekState());
                 CborTag tag = reader.ReadTag();
                 Assert.Equal(expectedTag, (ulong)tag);
             }
 
             Helpers.VerifyValue(reader, expectedValue);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadTag();
-            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
         }
 
         [Theory]
@@ -97,10 +97,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             CborTag tag = reader.PeekTag();
             Assert.Equal(expectedTag, (ulong)tag);
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(0, reader.BytesRead);
         }
 
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
             Assert.Throws<FormatException>(() => reader.ReadEndArray());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadTag();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadTag();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             DateTimeOffset result = reader.ReadDateTimeOffset();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedValue.Offset, result.Offset);
         }
@@ -242,7 +242,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Equal(bytesRead, reader.BytesRead);
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.DateTimeString, reader.ReadTag());
         }
 
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             DateTimeOffset result = reader.ReadUnixTimeSeconds();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
             Assert.Equal(expectedValue, result);
             Assert.Equal(TimeSpan.Zero, result.Offset);
         }
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Equal(bytesRead, reader.BytesRead);
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.UnixTimeSeconds, reader.ReadTag());
         }
 
@@ -342,7 +342,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             BigInteger result = reader.ReadBigInteger();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
             Assert.Equal(expectedValue, result);
         }
 
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Equal(bytesRead, reader.BytesRead);
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
         }
 
         [Theory]
@@ -408,7 +408,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             decimal result = reader.ReadDecimal();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
             Assert.Equal(expectedValue, result);
         }
 
@@ -469,7 +469,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Equal(bytesRead, reader.BytesRead);
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
-            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
             Assert.Equal(CborTag.DecimalFraction, reader.ReadTag());
         }
     }

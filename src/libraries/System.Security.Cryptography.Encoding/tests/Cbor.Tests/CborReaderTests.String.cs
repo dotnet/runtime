@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
             byte[] output = reader.ReadByteString();
             Assert.Equal(expectedValue, output);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedValue.Length, bytesWritten);
             Assert.Equal(expectedValue, buffer[..bytesWritten]);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
             string actualResult = reader.ReadTextString();
             Assert.Equal(expectedValue, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue.ToCharArray(), buffer[..charsWritten]);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -107,10 +107,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Equal(CborReaderState.StartByteString, reader.Peek());
+            Assert.Equal(CborReaderState.StartByteString, reader.PeekState());
             byte[] actualValue = reader.ReadByteString();
             Assert.Equal(expectedHexValue.ToUpper(), actualValue.ByteArrayToHex());
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Equal(CborReaderState.StartByteString, reader.Peek());
+            Assert.Equal(CborReaderState.StartByteString, reader.PeekState());
 
             Span<byte> buffer = new byte[32];
             bool result = reader.TryReadByteString(buffer, out int bytesWritten);
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedHexValue.Length / 2, bytesWritten);
             Assert.Equal(expectedHexValue.ToUpper(), buffer.Slice(0, bytesWritten).ByteArrayToHex());
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal("AB", reader.ReadByteString().ByteArrayToHex());
             Assert.Equal("AB", reader.ReadByteString().ByteArrayToHex());
             reader.ReadEndArray();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -167,10 +167,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Equal(CborReaderState.StartTextString, reader.Peek());
+            Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
             string actualValue = reader.ReadTextString();
             Assert.Equal(expectedValue, actualValue);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Fact]
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal("ab", reader.ReadTextString());
             Assert.Equal("ab", reader.ReadTextString());
             reader.ReadEndArray();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Equal(CborReaderState.StartTextString, reader.Peek());
+            Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
 
             Span<char> buffer = new char[32];
             bool result = reader.TryReadTextString(buffer, out int charsWritten);
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue, new string(buffer.Slice(0, charsWritten)));
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -550,7 +550,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadByteString();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
@@ -566,7 +566,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadTextString();
 
             int bytesRemaining = reader.BytesRemaining;
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);

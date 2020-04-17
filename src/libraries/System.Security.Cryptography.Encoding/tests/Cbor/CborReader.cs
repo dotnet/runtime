@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public int BytesRead => _bytesRead;
         public int BytesRemaining => _buffer.Length;
 
-        public CborReaderState Peek()
+        public CborReaderState PeekState()
         {
             if (_remainingDataItems == 0)
             {
