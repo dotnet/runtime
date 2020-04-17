@@ -30,8 +30,8 @@ two approaches.
 
 ### 1. `(CLASS | VALUETYPE)` cannot be followed by TypeSpec in practice
 
-In II.23.2.12 and II.23.2.14, it is implied that the token in `(CLASS
-| VALUETYPE) TypeDefOrRefOrSpecEncoded` can be a `TypeSpec`, when in
+In II.23.2.12 and II.23.2.14, it is implied that the token in
+`(CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded` can be a `TypeSpec`, when in
 fact it must be a `TypeDef` or `TypeRef`.
 
 peverify gives the following error:
@@ -129,9 +129,8 @@ also allowed by ilasm, csc, peverify, and the CLR.
 
 Note, in particular, that TypeSpecs are used there by C++/CLI to
 represent strongly-typed boxing in C++/CLI. e.g. `Nullable<int>^`
-in C++/CLI becomes `[mscorlib]System.ValueType
-modopt([mscorlib]System.Nullable`1<int>)
-modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)`
+in C++/CLI becomes
+``[mscorlib]System.ValueType modopt([mscorlib]System.Nullable`1<int>) modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)``
 in IL.
 
 This tolerance adds a loophole to the rule above whereby cyclical
@@ -258,16 +257,16 @@ SZARRAY Type
 ### 4. BYREF can come before custom modifiers
 
 Everywhere `BYREF` appears in the spec's box and pointer diagrams, it
-comes after any custom modifiers, but the C++/CLI declaration `const
-int&` is emitted as `BYREF CMOD_OPT IsConst I4`, and a call-site using
+comes after any custom modifiers, but the C++/CLI declaration `const int&`
+is emitted as `BYREF CMOD_OPT IsConst I4`, and a call-site using
 `CMOD_OPT IsConst BYREF I4` will not match.
 
 Under the interpretation that `BYREF` is just a managed pointer type, it
 makes sense that there should be parity between `PTR` and `BYREF` with
 respect to modifiers. Consider, `const int*` vs. `int* const` in
 C++. The former (pointer to constant int) is `PTR CMOD_OPT IsConst I4`
-and the latter (constant pointer to int) is `CMOD_OPT IsConst PTR
-I4`. The analogy from `const int*` to `const int&` justifies C++'s
+and the latter (constant pointer to int) is `CMOD_OPT IsConst PTR I4`.
+The analogy from `const int*` to `const int&` justifies C++'s
 encoding of `BYREF` before `CMOD_OPT` in defiance of the spec.
 
 #### Proposed specification change
@@ -306,8 +305,8 @@ typespec with signature I4.
 
 Even more obscurely, this gives us a way to use `VOID`, `TYPEDBYREF`,
 `CMOD_OPT`, and `CMOD_REQ` at the root of a `TypeSpec`, which are not even
-specified as valid at the root of a `Type`: `modopt(int32
-modopt(int32))`, `modopt(void)`, and `modopt(typedref)` all work in
+specified as valid at the root of a `Type`: `modopt(int32 modopt(int32))`,
+`modopt(void)`, and `modopt(typedref)` all work in
 practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be obtained by putting
 a modifier on the type used with `constrained.`.
 
