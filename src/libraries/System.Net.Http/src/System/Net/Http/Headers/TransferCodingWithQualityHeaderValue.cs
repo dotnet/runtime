@@ -49,7 +49,7 @@ namespace System.Net.Http.Headers
                 .ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out TransferCodingWithQualityHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out TransferCodingWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

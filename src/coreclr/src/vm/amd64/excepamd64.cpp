@@ -26,6 +26,7 @@
 #include "asmconstants.h"
 
 #include "exceptionhandling.h"
+#include "virtualcallstub.h"
 
 
 
@@ -573,9 +574,52 @@ AdjustContextForVirtualStub(
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Nothing to adjust
+    Thread * pThread = GetThread();
 
-    return FALSE;
+    // We may not have a managed thread object. Example is an AV on the helper thread.
+    // (perhaps during StubManager::IsStub)
+    if (pThread == NULL)
+    {
+        return FALSE;
+    }
+
+    PCODE f_IP = GetIP(pContext);
+
+    VirtualCallStubManager::StubKind sk;
+    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+
+    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    {
+        if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_CMP_IND_THIS_REG_RAX) // cmp [THIS_REG], rax
+        {
+            _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            return FALSE;
+        }
+    }
+    else
+    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    {
+        if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_MOV_RAX_IND_THIS_REG) // mov rax, [THIS_REG]
+        {
+            _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            return FALSE;
+        }
+        SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // rollback push rdx
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext)); 
+    if (pExceptionRecord != NULL)
+    {
+        pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    }
+    SetIP(pContext, callsite);
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // Move SP to where it was at the call site
+
+    return TRUE;
 }
 
 #endif

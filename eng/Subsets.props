@@ -39,10 +39,20 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+installer</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">mono+libs+installer</DefaultSubsets>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'WebAssembly'">mono+libs</DefaultSubsetCategories>
+    <DefaultSubsets Condition="'$(TargetOS)' == 'WebAssembly'">mono+libs</DefaultSubsets>
+  </PropertyGroup>
+
+  <!-- Init _subSet here in to allow RuntimeFlavor to be set as early as possible -->
+  <PropertyGroup>
+    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
+    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
 
   <PropertyGroup>
+    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'WebAssembly'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime')))">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.buildtools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
@@ -51,12 +61,10 @@
     <DefaultLibrariesSubsets>libs.depprojs+libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles+installers+installer.tests</DefaultInstallerSubsets>
-    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">installer.depprojs+installer.pkgprojs</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">installer.pkgprojs</DefaultInstallerSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
-    <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
-    <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
@@ -64,12 +72,6 @@
 
     <!-- Surround _subset in dashes to simplify checks below -->
     <_subset>+$(_subset.Trim('+'))+</_subset>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'WebAssembly'">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and $(_subset.Contains('+mono.runtime+')) and !$(_subset.Contains('+clr.runtime+'))">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
 
   <ItemGroup>
