@@ -51,7 +51,8 @@ extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
 extern void mono_wasm_begin_value_type_var (const char*, const char*);
 extern void mono_wasm_end_value_type_var (void);
 extern void mono_wasm_add_enum_var (const char*, const char*, guint64);
-extern void mono_wasm_add_func_var (const char*, guint64);
+extern void mono_wasm_add_func_var (const char*, const char*, guint64);
+extern void mono_wasm_add_symbol_var (const char*);
 extern void mono_wasm_add_array_var (const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
@@ -706,6 +707,28 @@ typedef struct {
 	int *pos;
 } FrameDescData;
 
+/*
+ * this returns a string formatted like
+ *
+ *  <ret_type>:[<comma separated list of arg types>]:<method name>
+ *
+ *  .. which is consumed by `mono_wasm_add_func_var`. It is used for
+ *  generating this for the delegate, and it's target.
+ */
+static char*
+mono_method_to_desc_for_js (MonoMethod *method, gboolean include_namespace)
+{
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	char *ret_desc = mono_type_full_name (sig->ret);
+	char *args_desc = mono_signature_get_desc (sig, include_namespace);
+
+	char *sig_desc = g_strdup_printf ("%s:%s:%s", ret_desc, args_desc, method->name);
+
+	g_free (ret_desc);
+	g_free (args_desc);
+	return sig_desc;
+}
+
 static guint64
 read_enum_value (const char *mem, int type)
 {
@@ -814,10 +837,27 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			char *class_name = mono_type_full_name (type);
 			int obj_id = get_object_id (obj);
 
-			if (type->type == MONO_TYPE_SZARRAY || type->type == MONO_TYPE_ARRAY) {
-				mono_wasm_add_array_var (class_name, obj_id);
-			} else if (m_class_is_delegate (klass)) {
-				mono_wasm_add_func_var (class_name, obj_id);
+			if (type-> type == MONO_TYPE_ARRAY || type->type == MONO_TYPE_SZARRAY) {
+				mono_wasm_add_array_var(class_name, obj_id);
+			} else if (m_class_is_delegate (klass) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (type->data.generic_class->container_class))) {
+				MonoMethod *method;
+
+				if (type->type == MONO_TYPE_GENERICINST)
+					klass = type->data.generic_class->container_class;
+
+				method = mono_get_delegate_invoke_internal (klass);
+				if (!method) {
+					DEBUG_PRINTF (1, "Could not get a method for the delegate for %s\n", class_name);
+					break;
+				}
+
+				MonoMethod *tm = ((MonoDelegate *)obj)->method;
+				char *tm_desc = NULL;
+				if (tm)
+					tm_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
+				g_free (tm_desc);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
@@ -993,6 +1033,28 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 	}
 }
 
+/*
+ * We return a `Target` property only for now.
+ * In future, we could add a `MethodInfo` too.
+ */
+static gboolean
+describe_delegate_properties (MonoObject *obj)
+{
+	MonoClass *klass = mono_object_class(obj);
+	if (!m_class_is_delegate (klass))
+		return FALSE;
+
+	// Target, like in VS - what is this field supposed to be, anyway??
+	MonoMethod *tm = ((MonoDelegate *)obj)->method;
+	char * sig_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+	mono_wasm_add_properties_var ("Target", -1);
+	mono_wasm_add_func_var (NULL, sig_desc, -1);
+
+	g_free (sig_desc);
+	return TRUE;
+}
+
 static gboolean
 describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolean expandValueType)
 {
@@ -1009,7 +1071,13 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 		return FALSE;
 	}
 
-	describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, expandValueType);
+	if (m_class_is_delegate (mono_object_class (obj))) {
+		// delegates get the same id format as regular objects
+		describe_delegate_properties (obj);
+	} else {
+		describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, expandValueType);
+	}
+
 	return TRUE;
 }
 
