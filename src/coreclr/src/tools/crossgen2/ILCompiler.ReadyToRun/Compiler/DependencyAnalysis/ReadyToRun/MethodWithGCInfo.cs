@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IReadyToRunMethodCodeNode, IMethodBodyNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, ISymbolDefinitionNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
