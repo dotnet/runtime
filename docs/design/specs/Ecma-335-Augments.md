@@ -12,10 +12,10 @@ as Microsoft implementation quirks.
 There is a general philosophical issue whereby the spec defines the
 *syntax* of signatures to exclude errors such as:
 
- * using void outside of return types or pointer element types
- * instantiating a generic with a byref type
- * having a field of byref type
- * etc.
+* using void outside of return types or pointer element types
+* instantiating a generic with a byref type
+* having a field of byref type
+* etc.
 
 Another approach is to syntactically treat `VOID`, `TYPEDBYREF`,
 `BYREF Type`, `CMOD_OPT Type`, `CMOD_REQ Type` as the other `Type`s
