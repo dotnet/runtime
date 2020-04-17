@@ -25,13 +25,17 @@ namespace
     // This function used by the runtime to probe for bundled assemblies
     // This function assumes that the currently executing app is a single-file bundle.
     //
-    // bundle_probe recieves its path argument as wchar_t* instead of pal::char_t*, because:
+    // bundle_probe recieves its path argument as cha16_t* instead of pal::char_t*, because:
     // * The host uses Unicode strings on Windows and UTF8 strings on Unix
     // * The runtime uses Unicode strings on all platforms
-    // Using a unicode encoded path presents a uniform interface to the runtime
-    // and minimizes the number if Unicode <-> UTF8 conversions necessary.
+    // * Using a unicode encoded path presents a uniform interface to the runtime
+    //   and minimizes the number if Unicode <-> UTF8 conversions necessary.
+    //
+    // The unicode char type is char16_t* instead of whcar_t*, because:
+    // * wchar_t is 16-bit encoding on Windows while it is 32-bit encoding on most Unix systems
+    // * The runtime uses 16-bit encoded unicode characters.
 
-    bool STDMETHODCALLTYPE bundle_probe(const wchar_t* path, int64_t* offset, int64_t* size)
+    bool STDMETHODCALLTYPE bundle_probe(const char16_t* path, int64_t* offset, int64_t* size)
     {
         if (path == nullptr)
         {

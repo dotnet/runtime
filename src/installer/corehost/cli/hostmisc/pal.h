@@ -300,7 +300,7 @@ namespace pal
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 
     int xtoi(const char_t* input);
-    bool unicode_palstring(const wchar_t* str, pal::string_t* out);
+    bool unicode_palstring(const char16_t* str, pal::string_t* out);
 
     bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
     bool load_library(const string_t* path, dll_t* dll);

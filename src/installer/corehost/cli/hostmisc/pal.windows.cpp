@@ -643,9 +643,9 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
 }
 
-bool pal::unicode_palstring(const wchar_t* str, pal::string_t* out)
+bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
 {
-    out->assign(str);
+    out->assign((const wchar_t *)str);
     return true;
 }
 
