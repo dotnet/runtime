@@ -8,18 +8,29 @@
       // Test comment - the name of the test class
       "JsonAnnotations": {
 
-        "_typeWithDefaultConstructor": "DefaultConstructor",
+        "_typeWithDefaultConstructor": {
+          "System.DoesNotExistAttribute": "0",
+          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+        },
 
         "TwoAnnotatedParameters(System.Type,System.Type)": {
-          "type": "DefaultConstructor",
-          "type2": "PublicConstructors"
+          "type": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          },
+          "type2": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "PublicConstructors"
+          }
         },
 
         "ReturnConstructorsFailure(System.Type)": {
-          "return": "DefaultConstructor"
+          "return": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          }
         },
 
-        "PropertyWithDefaultConstructor": "DefaultConstructor"
+        "PropertyWithDefaultConstructor": {
+          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+        }
       }
     }
   }
