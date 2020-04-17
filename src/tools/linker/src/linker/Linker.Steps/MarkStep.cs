@@ -164,7 +164,7 @@ namespace Mono.Linker.Steps {
 					.Append (annotationSource));
 			}
 
-			_flowAnnotations = new FlowAnnotations (annotationSource, _context);
+			_flowAnnotations = new FlowAnnotations (annotationSource);
 
 
 			Initialize ();
