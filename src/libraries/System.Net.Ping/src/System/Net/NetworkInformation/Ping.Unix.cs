@@ -92,7 +92,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 socket.DualMode = false;
             }
