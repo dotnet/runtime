@@ -45,6 +45,8 @@
     <LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
     <GLIB_CFLAGS_INCLUDE>$(MONO_EGLIB_SOURCE_DIR)</GLIB_CFLAGS_INCLUDE>
     <MONO_LLVM_DEFAULT_API_VERSION>610</MONO_LLVM_DEFAULT_API_VERSION>
+    <SHIM_GLOBALIZATION>$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native</SHIM_GLOBALIZATION>
+    <SHIM_GLOBALIZATION_COMMON>$(top_srcdir)/../libraries/Native/Unix/Common</SHIM_GLOBALIZATION_COMMON>
     <MONO_LLVM_DEFAULT_INCLUDE_DIR>$(MONO_DIR)/external/llvm-project/llvm/include</MONO_LLVM_DEFAULT_INCLUDE_DIR>
   </PropertyGroup>
   <PropertyGroup Label="Static-C-Runtime" Condition="'$(MONO_USE_STATIC_C_RUNTIME)'=='true'">
