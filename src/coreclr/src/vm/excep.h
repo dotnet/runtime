@@ -22,14 +22,8 @@ class Thread;
 #include <excepcpu.h>
 #include "interoputil.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define VSD_STUB_CAN_THROW_AV
-#endif // TARGET_ARM || TARGET_X86
-
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
-#ifdef VSD_STUB_CAN_THROW_AV
 BOOL IsIPinVirtualStub(PCODE f_IP);
-#endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
