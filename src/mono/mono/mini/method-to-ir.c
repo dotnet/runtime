@@ -11058,7 +11058,7 @@ mono_ldptr:
 						ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
 					if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
-						/*LAME IMPL: We must not add a null check for virtual invoke delegates.*/
+						/*BAD IMPL: We must not add a null check for virtual invoke delegates.*/
 						if (mono_method_signature_internal (invoke)->param_count == mono_method_signature_internal (cmethod)->param_count) {
 							MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, target_ins->dreg, 0);
 							MONO_EMIT_NEW_COND_EXC (cfg, EQ, "ArgumentException");
