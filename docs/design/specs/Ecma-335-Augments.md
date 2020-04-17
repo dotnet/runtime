@@ -75,7 +75,7 @@ to
 
 c) In section II.23.2.12 replace
 
-```
+```ebnf
 Type ::=
       ...
       CLASS TypeDefOrRefOrSpecEncoded
@@ -88,7 +88,7 @@ Type ::=
 
 with
 
-```
+```ebnf
 Type ::=
       ...
       (CLASS | VALUETYPE) TypeDefOrRefEncoded
@@ -100,7 +100,7 @@ Note also the correction of ```Type*``` to ```Type+```. A generic type instantia
 
 d) In section II.23.2.14 replace
 
-```
+```ebnf
 TypeSpecBlob ::=
       ...
       GENERICINST (CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded GenArgCount Type Type*
@@ -109,7 +109,7 @@ TypeSpecBlob ::=
 
 with
 
-```
+```ebnf
 TypeSpecBlob ::=
       ...
       GENERICINST (CLASS | VALUETYPE) TypeDefOrRefEncoded GenArgCount Type+
@@ -184,13 +184,13 @@ and return types.
 
 a) In section II.23.2.4 FieldSig, replace the diagram with a production rule:
 
-```
+```ebnf
 FieldSig ::= FIELD Type
 ```
 
 b) In section II.23.2.5 PropertySig, replace the diagram with a production rule:
 
-```
+```ebnf
 PropertySig ::= PROPERTY HASTHIS? ParamCount RetType Param*
 ```
 
@@ -198,7 +198,7 @@ Note that this change also allows properties to have BYREF type.
 
 c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 
-```
+```ebnf
 LocalVarSig ::=
   LOCAL_SIG Count LocalVarType+
   
@@ -212,7 +212,7 @@ LocalVarType ::=
 
 d) In section II.23.2.10 Param, replace the diagram with production rules:
 
-```
+```ebnf
 Param ::=
   Type
   CustomMod* BYREF Type
@@ -221,7 +221,7 @@ Param ::=
 
 e) In section II.23.2.11 RetType, replace the diagram with production rules:
 
-```
+```ebnf
 RetType ::=
   Type
   CustomMod* BYREF Type
@@ -231,32 +231,32 @@ RetType ::=
 
 f) In section II.23.2.12 Type, add a production rule to the definition of ```Type```:
 
-```
+```ebnf
 Type ::= CustomMod* Type
   
 ```
 
 g) In sections II.23.2.12 Type and II.23.2.14 TypeSpec replace production rule
 
-```
+```ebnf
 PTR CustomMod* Type
 ```
 
 with
 
-```
+```ebnf
 PTR Type
 ```
 
 and replace production rule
 
-```
+```ebnf
 SZARRAY CustomMod* Type
 ```
 
 with
 
-```
+```ebnf
 SZARRAY Type
 ```
 
