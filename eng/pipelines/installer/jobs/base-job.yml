@@ -439,12 +439,12 @@ jobs:
 
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
-    - task: CopyFiles@2
-      displayName: 'Copy built Portable linux-x64 binaries to staging directory'
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
-        TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
-      condition: eq(${{ parameters.runtimeFlavor }}, 'coreclr')
+    - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+      - task: CopyFiles@2
+        displayName: 'Copy built Portable linux-x64 binaries to staging directory'
+        inputs:
+          SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
+          TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
 
     - ${{ each packageBuild in parameters.packageDistroList }}:
       # This leg's RID matches the build image. Build its distro-dependent packages, as well as
