@@ -3,12 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <windows.h>
-#include <stdio.h>
-#include <wchar.h>
-#include <assert.h>
 #include "twowaypipe.h"
-
-#define _ASSERTE assert
 
 // This file contains a dummy implementation of the simple IPC mechanism - bidirectional named pipe.
 // It is used for the cross OS DBI where IPC is not supported.
