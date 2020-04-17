@@ -1935,6 +1935,7 @@ static FILE *perf_dump_file;
 static mono_mutex_t perf_dump_mutex;
 static void *perf_dump_mmap_addr = MAP_FAILED;
 static guint32 perf_dump_pid;
+static clockid_t clock_id = CLOCK_MONOTONIC;
 
 enum {
 	JIT_DUMP_MAGIC = 0x4A695444,
@@ -2021,7 +2022,7 @@ add_file_header_info (FileHeader *header)
 	header->elf_mach = ELF_MACHINE;
 	header->pad1 = 0;
 	header->pid = perf_dump_pid;
-	header->timestamp = mono_clock_get_time_ns ();
+	header->timestamp = mono_clock_get_time_ns (&clock_id);
 	header->flags = 0;
 }
 
@@ -2047,7 +2048,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
 		
-		record.header.timestamp = mono_clock_get_time_ns ();
+		record.header.timestamp = mono_clock_get_time_ns (&clock_id);
 		
 		fwrite (&record, sizeof (record), 1, perf_dump_file);
 		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
@@ -2061,7 +2062,7 @@ static void
 add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
 {
 	record->header.id = JIT_CODE_LOAD;
-	record->header.timestamp = mono_clock_get_time_ns ();
+	record->header.timestamp = mono_clock_get_time_ns (&clock_id);
 	record->pid = perf_dump_pid;
 	record->tid = syscall (SYS_gettid);
 }
