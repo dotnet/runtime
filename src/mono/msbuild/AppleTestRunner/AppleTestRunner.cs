@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XHarness.Tests.Runners;
 using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
-public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
+public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
     private static List<string> testLibs = new List<string>();
 
@@ -62,7 +62,7 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
-        foreach (string file in testLibs!)
+        foreach (string file in testLibs)
         {
             yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
         }
