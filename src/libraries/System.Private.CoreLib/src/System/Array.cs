@@ -536,15 +536,27 @@ namespace System
                                 result = GenericBinarySearch<ushort>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I4:
+#if TARGET_32BIT
+                            case CorElementType.ELEMENT_TYPE_I:
+#endif
                                 result = GenericBinarySearch<int>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                            case CorElementType.ELEMENT_TYPE_U:
+#endif
                                 result = GenericBinarySearch<uint>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I8:
+#if TARGET_64BIT
+                            case CorElementType.ELEMENT_TYPE_I:
+#endif
                                 result = GenericBinarySearch<long>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                            case CorElementType.ELEMENT_TYPE_U:
+#endif
                                 result = GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_R4:
@@ -553,10 +565,6 @@ namespace System
                             case CorElementType.ELEMENT_TYPE_R8:
                                 result = GenericBinarySearch<double>(array, adjustedIndex, length, value);
                                 break;
-                            case CorElementType.ELEMENT_TYPE_I:
-                                result = GenericBinarySearch<IntPtr>(array, adjustedIndex, length, value);
-                            case CorElementType.ELEMENT_TYPE_U:
-                                result = GenericBinarySearch<UIntPtr>(array, adjustedIndex, length, value);
                             default:
                                 Debug.Fail("All primitive types should be handled above");
                                 break;
