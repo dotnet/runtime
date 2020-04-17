@@ -444,6 +444,7 @@ jobs:
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
         TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
+      condition: eq(${{ parameters.runtimeFlavor }}, 'coreclr')
 
     - ${{ each packageBuild in parameters.packageDistroList }}:
       # This leg's RID matches the build image. Build its distro-dependent packages, as well as
@@ -467,6 +468,7 @@ jobs:
             packageStepDescription: Runtime Deps installers
             packagingArgs: /p:BuildDistroIndependentInstallers=false
             subsetArg: $(installersSubsetArg)
+          condition: eq(${{ parameters.runtimeFlavor }}, 'coreclr')
 
   - ${{ if ne(parameters.container, '') }}:
     # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in

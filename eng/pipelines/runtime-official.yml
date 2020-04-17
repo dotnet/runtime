@@ -187,6 +187,7 @@ stages:
       runtimeFlavor: mono
       platforms:
       - OSX_x64
+      - Linux_x64
       - tvOS_x64
       - tvOS_arm64
       # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
