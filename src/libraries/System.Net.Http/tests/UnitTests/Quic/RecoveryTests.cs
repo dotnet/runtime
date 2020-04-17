@@ -77,8 +77,9 @@ namespace System.Net.Quic.Tests
             Recovery.OnLossDetectionTimeout(handshakeComplete, Recovery.LossRecoveryTimer);
 
             // packet should not be declared lost yet.
-            Assert.Empty(Recovery.GetLostPackets(PacketSpace.Initial));
-            Assert.NotEqual(0, Recovery.RemainingLossProbes);
+            var pnSpace = Recovery.GetPacketNumberSpace(PacketSpace.Initial);
+            Assert.Empty(pnSpace.LostPackets);
+            Assert.NotEqual(0, pnSpace.RemainingLossProbes);
         }
 
         [Fact]

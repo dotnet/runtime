@@ -454,7 +454,7 @@ namespace System.Net.Quic.Implementations.Managed
             var pnSpace = GetPacketNumberSpace(level);
             var seal = pnSpace.SendCryptoSeal!;
 
-            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(Recovery.GetLargestAckedPacketNumber(packetSpace));
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(Recovery.GetPacketNumberSpace(packetSpace).LargestAckedPacketNumber);
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
@@ -469,7 +469,11 @@ namespace System.Net.Quic.Implementations.Managed
                 // use minimum size for packets during handshake
                 : QuicConstants.MinimumClientInitialDatagramSize);
 
-            // TODO-RZ: respect control flow limits and congestion window
+            // limit outbound packet by available congestion window
+            // TODO-RZ: ignore congestion window when sending probe packets
+            maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
+
+            // TODO-RZ: respect control flow limits
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 

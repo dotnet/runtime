@@ -43,12 +43,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Helper structure for holding packet number space related data together.
         /// </summary>
-        private class PacketNumberSpace
+        internal class PacketNumberSpace
         {
-            internal static Comparer<PacketNumberSpace> LossTimeComparer = Comparer<PacketNumberSpace>.Create(
+            internal static readonly Comparer<PacketNumberSpace> LossTimeComparer = Comparer<PacketNumberSpace>.Create(
                 (l, r) => l.NextLossTime.CompareTo(r.NextLossTime));
 
-            internal static Comparer<PacketNumberSpace> TimeOfLastAckElicitingPacketSentComparer = Comparer<PacketNumberSpace>.Create((l, r) =>
+            internal static readonly Comparer<PacketNumberSpace> TimeOfLastAckElicitingPacketSentComparer = Comparer<PacketNumberSpace>.Create((l, r) =>
                 l.TimeOfLastAckElicitingPacketSent.CompareTo(r.TimeOfLastAckElicitingPacketSent));
 
             /// <summary>
@@ -81,6 +81,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             ///     List of packets newly acked by the peer.
             /// </summary>
             internal List<SentPacket> AckedPackets { get; } = new List<SentPacket>();
+
+            /// <summary>
+            ///     If PTO timer expired, contains number of remaining probe packets this endpoint should send as a
+            ///     reaction to the timeout. Otherwise 0.
+            /// </summary>
+            internal int RemainingLossProbes { get; set; }
         }
 
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[]
@@ -88,14 +94,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
         };
 
-        private PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
-
-        /// <summary>
-        ///     Returns largest acknowledged packet number in the given packet space.
-        /// </summary>
-        /// <param name="space">The packet space.</param>
-        internal long GetLargestAckedPacketNumber(PacketSpace space) =>
-            GetPacketNumberSpace(space).LargestAckedPacketNumber;
+        internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
 
         /// <summary>
         ///     The most recent RTT measurement made when receiving ack for a previously unacked packet.
@@ -134,16 +133,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal TimeSpan MaxAckDelay { get; set; }
 
         /// <summary>
-        ///     If PTO timer expired, contains number of remaining probe packets this endpoint should send as a
-        ///     reaction to the timeout. Otherwise 0.
-        /// </summary>
-        internal int RemainingLossProbes { get; set; }
-
-        /// <summary>
         ///     Congestion controller algorithm used.
         /// </summary>
         internal ICongestionController CongestionController { get; }
 
+        /// <summary>
+        ///     Returns bytes available with respect to the current congestion window
+        /// </summary>
+        /// <returns></returns>
+        internal int GetAvailableCongestionWindowBytes()
+        {
+            // for (int i = 0; i < _pnSpaces.Length; i++)
+            // {
+                // if (_pnSpaces[i].RemainingLossProbes > 0)
+                    // return int.MaxValue;
+            // }
+
+            return Math.Max(0, CongestionController.CongestionWindow - AckElicitingBytesInFlight);
+        }
 
         /// <summary>
         ///     The sum of the size in bytes of all sent packets that contain at least one ack-eliciting or PADDING
@@ -153,6 +160,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         private int AckElicitingBytesInFlight => CongestionController.BytesInFlight;
 
+
         /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
@@ -161,7 +169,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             CongestionController.Reset();
 
             PtoCount = 0;
-            RemainingLossProbes = 0;
             LatestRtt = TimeSpan.Zero;
             SmoothedRtt = TimeSpan.Zero;
             MinimumRtt = TimeSpan.Zero;
@@ -170,6 +177,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             foreach (PacketNumberSpace space in _pnSpaces)
             {
+                space.RemainingLossProbes = 0;
                 space.AckedPackets.Clear();
                 space.LostPackets.Clear();
                 space.SentPackets.Clear();
@@ -385,7 +393,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            RemainingLossProbes = 2;
+            pnSpace.RemainingLossProbes = 2;
             // TODO-RZ: Move the code handling these cases to ManagedQuicConnection
             // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
             // {
