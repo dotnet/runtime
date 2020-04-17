@@ -2,6 +2,8 @@
 
 project(DacTableGen LANGUAGES CSharp)
 
+file(TO_CMAKE_PATH "$ENV{VSInstallDir}\\DIA SDK" DIASDK_DIR)
+file(COPY "${DIASDK_DIR}/bin/msdia140.dll" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 set(DACTABLEGEN_SOURCES
     cvconst.cs
     diautil.cs
