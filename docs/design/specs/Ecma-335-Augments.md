@@ -50,6 +50,7 @@ An insightful comment in CLR source code notes that this rule prevents
 cycles in signatures, but see #2 below.
 
 Related issue:
+
 * https://github.com/dotnet/roslyn/issues/7970
 
 #### Proposed specification change
@@ -150,6 +151,7 @@ permitted, and ideally readers would detect such cycles and handle the
 error with a suitable message rather than a stack overflow.
 
 Related issues:
+
 * https://github.com/dotnet/roslyn/issues/7971
 * https://github.com/dotnet/coreclr/issues/2674
 
