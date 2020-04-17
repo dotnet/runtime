@@ -1651,6 +1651,8 @@ protected:
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
     PER_HEAP
+    size_t decommit_ephemeral_pages_step();
+    PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
@@ -2450,8 +2452,6 @@ protected:
     void check_loh_compact_mode  (BOOL all_heaps_compacted_p);
 #endif //FEATURE_LOH_COMPACTION
 
-    PER_HEAP
-    void decommit_ephemeral_segment_pages (int condemned_gen_number);
     PER_HEAP
     void fix_generation_bounds (int condemned_gen_number,
                                 generation* consing_gen);
@@ -3788,6 +3788,11 @@ protected:
     PER_HEAP_ISOLATED
     BOOL proceed_with_gc_p;
 
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED
+    BOOL gradual_decommit_in_progress_p;
+#endif //MULTIPLE_HEAPS
+
 #define youngest_generation (generation_of (0))
 #define large_object_generation (generation_of (loh_generation))
 #define pinned_object_generation (generation_of (poh_generation))
@@ -4702,6 +4707,7 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
+    uint8_t*        decommit_target;
 #endif //MULTIPLE_HEAPS
     uint8_t*        plan_allocated;
     uint8_t*        saved_bg_allocated;
@@ -4738,6 +4744,13 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
+#ifdef MULTIPLE_HEAPS
+inline
+uint8_t*& heap_segment_decommit_target (heap_segment* inst)
+{
+    return inst->decommit_target;
+}
+#endif //MULTIPLE_HEAPS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
