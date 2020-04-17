@@ -29,31 +29,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public long ReadInt64()
         {
-            long value;
-            int additionalBytes;
+            long value = PeekSignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
 
-            CborInitialByte header = PeekInitialByte();
-
-            switch (header.MajorType)
-            {
-                case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    AdvanceDataItemCounters();
-                    return value;
-
-                case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    AdvanceDataItemCounters();
-                    return value;
-
-                default:
-                    throw new InvalidOperationException("Data item major type mismatch.");
-            }
+        public int ReadInt32()
+        {
+            int value = checked((int)PeekSignedInteger(out int additionalBytes));
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
         }
 
         // Returns the next CBOR negative integer encoding according to
@@ -97,7 +86,28 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
 
                 default:
-                    throw new FormatException("initial byte contains invalid integer encoding data");
+                    throw new FormatException("initial byte contains invalid integer encoding data.");
+            }
+        }
+
+        // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        private long PeekSignedInteger(out int additionalBytes)
+        {
+            CborInitialByte header = PeekInitialByte();
+            long value;
+
+            switch (header.MajorType)
+            {
+                case CborMajorType.UnsignedInteger:
+                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    return value;
+
+                case CborMajorType.NegativeInteger:
+                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    return value;
+
+                default:
+                    throw new InvalidOperationException("Data item major type mismatch.");
             }
         }
     }

@@ -63,6 +63,39 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(100, "1864")]
         [InlineData(1000, "1903e8")]
         [InlineData(1000000, "1a000f4240")]
+        [InlineData(-1, "20")]
+        [InlineData(-10, "29")]
+        [InlineData(-100, "3863")]
+        [InlineData(-1000, "3903e7")]
+        [InlineData(byte.MaxValue, "18ff")]
+        [InlineData(byte.MaxValue + 1, "190100")]
+        [InlineData(-1 - byte.MaxValue, "38ff")]
+        [InlineData(-2 - byte.MaxValue, "390100")]
+        [InlineData(ushort.MaxValue, "19ffff")]
+        [InlineData(ushort.MaxValue + 1, "1a00010000")]
+        [InlineData(-1 - ushort.MaxValue, "39ffff")]
+        [InlineData(-2 - ushort.MaxValue, "3a00010000")]
+        [InlineData(int.MaxValue, "1a7fffffff")]
+        [InlineData(int.MinValue, "3a7fffffff")]
+        public static void ReadInt32_SingleValue_HappyPath(int expectedResult, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            long actualResult = reader.ReadInt32();
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(0, "00")]
+        [InlineData(1, "01")]
+        [InlineData(10, "0a")]
+        [InlineData(23, "17")]
+        [InlineData(24, "1818")]
+        [InlineData(25, "1819")]
+        [InlineData(100, "1864")]
+        [InlineData(1000, "1903e8")]
+        [InlineData(1000000, "1a000f4240")]
         [InlineData(1000000000000, "1b000000e8d4a51000")]
         [InlineData(byte.MaxValue, "18ff")]
         [InlineData(byte.MaxValue + 1, "190100")]
@@ -146,6 +179,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("1a80000000")]         // int.MaxValue + 1
+        [InlineData("3a80000000")]         // int.MinValue - 1
+        [InlineData("1b8000000000000000")] // long.MaxValue + 1
+        [InlineData("3a8000000000000000")] // long.MinValue - 1
+        [InlineData("1bffffffffffffffff")] // ulong.MaxValue
+        public static void ReadInt32_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<OverflowException>(() => reader.ReadInt32());
+        }
+
+        [Theory]
         [InlineData("20")] // -1
         [InlineData("3863")] // -100
         [InlineData("3b7fffffffffffffff")] // long.MinValue
@@ -169,6 +216,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+
+            Assert.Equal("Data item major type mismatch.", exn.Message);
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void ReadInt32_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
 
             Assert.Equal("Data item major type mismatch.", exn.Message);
         }

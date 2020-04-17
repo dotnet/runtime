@@ -61,6 +61,38 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(100, "1864")]
         [InlineData(1000, "1903e8")]
         [InlineData(1000000, "1a000f4240")]
+        [InlineData(-1, "20")]
+        [InlineData(-10, "29")]
+        [InlineData(-100, "3863")]
+        [InlineData(-1000, "3903e7")]
+        [InlineData(byte.MaxValue, "18ff")]
+        [InlineData(byte.MaxValue + 1, "190100")]
+        [InlineData(-1 - byte.MaxValue, "38ff")]
+        [InlineData(-2 - byte.MaxValue, "390100")]
+        [InlineData(ushort.MaxValue, "19ffff")]
+        [InlineData(ushort.MaxValue + 1, "1a00010000")]
+        [InlineData(-1 - ushort.MaxValue, "39ffff")]
+        [InlineData(-2 - ushort.MaxValue, "3a00010000")]
+        [InlineData(int.MaxValue, "1a7fffffff")]
+        [InlineData(int.MinValue, "3a7fffffff")]
+        public static void WriteInt32_SingleValue_HappyPath(int input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            using var writer = new CborWriter();
+            writer.WriteInt32(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+        }
+
+        [Theory]
+        [InlineData(0, "00")]
+        [InlineData(1, "01")]
+        [InlineData(10, "0a")]
+        [InlineData(23, "17")]
+        [InlineData(24, "1818")]
+        [InlineData(25, "1819")]
+        [InlineData(100, "1864")]
+        [InlineData(1000, "1903e8")]
+        [InlineData(1000000, "1a000f4240")]
         [InlineData(1000000000000, "1b000000e8d4a51000")]
         [InlineData(byte.MaxValue, "18ff")]
         [InlineData(byte.MaxValue + 1, "190100")]
