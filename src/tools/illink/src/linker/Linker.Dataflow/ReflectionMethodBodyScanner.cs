@@ -156,6 +156,7 @@ namespace Mono.Linker.Dataflow
 			None = 0,
 			IntrospectionExtensions_GetTypeInfo,
 			Type_GetTypeFromHandle,
+			Type_get_TypeHandle,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -183,7 +184,8 @@ namespace Mono.Linker.Dataflow
 			RuntimeReflectionExtensions_GetRuntimeEvent,
 			RuntimeReflectionExtensions_GetRuntimeField,
 			RuntimeReflectionExtensions_GetRuntimeMethod,
-			RuntimeReflectionExtensions_GetRuntimeProperty
+			RuntimeReflectionExtensions_GetRuntimeProperty,
+			RuntimeHelpers_RunClassConstructor
 		}
 
 		static IntrinsicId GetIntrinsicIdForMethod (MethodDefinition calledMethod)
@@ -195,6 +197,9 @@ namespace Mono.Linker.Dataflow
 
 				// System.Type.GetTypeInfo (Type type)
 				"GetTypeFromHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_GetTypeFromHandle,
+
+				// System.Type.GetTypeHandle (Type type)
+				"get_TypeHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_get_TypeHandle,
 
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_MakeGenericType,
@@ -379,7 +384,15 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "String")
 					=> IntrinsicId.Assembly_CreateInstance,
 
-				_ => IntrinsicId.None,
+				//
+				// System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor (RuntimeTypeHandle type)
+				//
+				"RunClassConstructor" when calledMethod.DeclaringType.Name == "RuntimeHelpers"
+					&& calledMethod.Parameters.Count == 1
+					&& calledMethod.DeclaringType.Namespace == "System.Runtime.CompilerServices"
+					=> IntrinsicId.RuntimeHelpers_RunClassConstructor,
+
+			_ => IntrinsicId.None,
 			};
 		}
 
@@ -415,6 +428,12 @@ namespace Mono.Linker.Dataflow
 							// Infrastructure piece to support "typeof(Foo)"
 							if (methodParams [0] is RuntimeTypeHandleValue typeHandle)
 								methodReturnValue = new SystemTypeValue (typeHandle.TypeRepresented);
+						}
+						break;
+
+					case IntrinsicId.Type_get_TypeHandle: {
+							if (methodParams [0] is SystemTypeValue typeHandle)
+								methodReturnValue = new RuntimeTypeHandleValue (((SystemTypeValue)methodParams [0]).TypeRepresented);
 						}
 						break;
 
@@ -924,6 +943,25 @@ namespace Mono.Linker.Dataflow
 						//
 						reflectionContext.AnalyzingPattern ();
 						reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' is not yet supported");
+						break;
+
+					//
+					// System.Runtime.CompilerServices.RuntimeHelpers
+					//
+					// RunClassConstructor (RuntimeTypeHandle type)
+					//
+					case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
+							reflectionContext.AnalyzingPattern ();
+							var parameters = calledMethod.Parameters;
+							foreach (var TypeHandleValue in methodParams [0].UniqueValues ()) {
+								if (TypeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
+									_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.MethodCalling));
+									reflectionContext.RecordHandledPattern ();
+								} else {
+									RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, TypeHandleValue, calledMethod.Parameters [0]);
+								}
+							}
+						}
 						break;
 
 					default:
