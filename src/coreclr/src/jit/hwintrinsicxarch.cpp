@@ -1370,7 +1370,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     GenTree*  op2      = nullptr;
     int       ival     = -1;
     int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-    var_types baseType = TYP_UNKNOWN;
+    var_types baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
     var_types retType  = TYP_UNKNOWN;
 
     // The  fencing intrinsics don't take any operands and simdSize is 0
@@ -1388,7 +1388,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
                 assert(sig->numArgs == 2);
                 op2      = impSIMDPopStack(TYP_SIMD16);
                 op1      = impSIMDPopStack(TYP_SIMD16);
-                baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
 
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
@@ -1406,7 +1405,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
             op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -1432,7 +1430,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
             op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
 
             if (baseType == TYP_DOUBLE)
             {
@@ -1454,7 +1451,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
             op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
             assert(baseType == TYP_DOUBLE);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
