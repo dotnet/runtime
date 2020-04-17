@@ -172,10 +172,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("1bffffffffffffffff")] // ulong.MaxValue
         public static void ReadInt64_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt64());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -186,10 +187,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("1bffffffffffffffff")] // ulong.MaxValue
         public static void ReadInt32_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt32());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -198,9 +200,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3b7fffffffffffffff")] // long.MinValue
         public static void ReadUInt64_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadUInt64());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -213,11 +216,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadInt64_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
             Assert.Equal("Data item major type mismatch.", exn.Message);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -230,11 +235,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadInt32_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
             Assert.Equal("Data item major type mismatch.", exn.Message);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -247,12 +254,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadUInt64_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
-
             Assert.Equal("Data item major type mismatch.", exn.Message);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -267,12 +275,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadCborNegativeIntegerEncoding_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
-
             Assert.Equal("Data item major type mismatch.", exn.Message);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -294,9 +303,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3b00000000000000")]
         public static void ReadInt64_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -311,10 +322,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3b00000000000000")]
         public static void ReadCborNegativeIntegerEncoding_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -322,10 +334,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3f")]
         public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -335,6 +348,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadUInt64());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -344,6 +358,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }

@@ -75,7 +75,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -131,7 +133,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -150,7 +154,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -172,7 +178,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndArray();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -199,7 +207,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -221,7 +231,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndArray();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -231,6 +243,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -244,9 +257,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadStartArray_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
             Assert.Throws<InvalidOperationException>(() => reader.ReadStartArray());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -261,22 +276,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("9b00000000000000")]
         public static void ReadStartArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
-        [InlineData("81")]
-        [InlineData("830102")]
+        [InlineData("82")]
+        [InlineData("870102")]
         [InlineData("9b7fffffffffffffff")] // long.MaxValue
         public static void ReadStartArray_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }

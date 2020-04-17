@@ -74,7 +74,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(buffer);
             reader.ReadInt64();
             Assert.Equal(CborReaderState.Finished, reader.Peek());
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -109,8 +112,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-
             Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });

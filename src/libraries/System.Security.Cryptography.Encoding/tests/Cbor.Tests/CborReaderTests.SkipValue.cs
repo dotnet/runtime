@@ -59,7 +59,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.ReadStartArray();
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.SkipValue());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -70,6 +73,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -83,6 +87,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -99,7 +105,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int currentBytesRemaining = reader.BytesRemaining;
 
             // make failing call
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
 
             // ensure reader state has reverted to original
             Assert.Equal(reader.BytesRead, currentBytesRead);

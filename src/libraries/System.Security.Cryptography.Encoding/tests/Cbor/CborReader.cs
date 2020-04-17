@@ -249,6 +249,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void PushDataItem(CborMajorType type, ulong? expectedNestedItems)
         {
+            // a conservative check intended to filter out malicious payloads
             if (expectedNestedItems > (ulong)_buffer.Length)
             {
                 throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
@@ -258,6 +259,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _nestedDataItems.Push((type, _bytesRead, _isEvenNumberOfDataItemsRead, _remainingDataItems));
             _remainingDataItems = expectedNestedItems;
             _isEvenNumberOfDataItemsRead = true;
+            _isTagContext = false;
         }
 
         private void PopDataItem(CborMajorType expectedType)

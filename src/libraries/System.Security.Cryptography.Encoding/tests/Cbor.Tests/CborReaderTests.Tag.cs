@@ -78,11 +78,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadTag_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadTag());
-
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadTag());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -115,23 +114,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void PeekTag_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadTag_NestedTagWithMissingPayload_ShouldThrowFormatException()
         {
-            byte[] data = "9fc2ff".HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = "9fc2ff".HexToByteArray();
+            var reader = new CborReader(encoding);
 
             reader.ReadStartArray();
             reader.ReadTag();
+
+            int bytesRemaining = reader.BytesRemaining;
+
             Assert.Equal(CborReaderState.FormatError, reader.Peek());
             Assert.Throws<FormatException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -146,8 +149,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadStartArray();
             reader.ReadInt64();
             reader.ReadTag();
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -162,8 +168,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadStartMap();
             reader.ReadInt64();
             reader.ReadTag();
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -188,10 +197,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c01a514b67b0")] // string datetime tag with unix time payload
         public static void ReadDateTimeOffset_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -199,10 +209,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c06e4c617374204368726973746d6173")] // 0("Last Christmas")
         public static void ReadDateTimeOffset_InvalidDateString_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -210,10 +221,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c301")] // non-datetime tag
         public static void ReadDateTimeOffset_InvalidTag_ShouldThrowInvalidOperationxception(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadDateTimeOffset());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -258,10 +270,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c174323031332d30332d32315432303a30343a30305a")] // epoch datetime tag with string payload
         public static void ReadUnixTimeSeconds_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -269,10 +282,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c1f9fc00")] // 0(-Infinity)
         public static void ReadUnixTimeSeconds_InvalidFloatPayload_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -280,10 +294,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c301")] // non-datetime tag
         public static void ReadUnixTimeSeconds_InvalidTag_ShouldThrowInvalidOperationxception(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -337,10 +352,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c001")]
         public static void ReadBigInteger_InvalidCborTag_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadBigInteger());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -348,10 +364,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c301")]
         public static void ReadBigInteger_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadBigInteger());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -403,16 +420,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c48200c34cffffffffffffffffffffffff")] // (decimal.MinValue - 1) * 10^0
         public static void ReadDecimal_LargeValues_ShouldThrowOverflowException(string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadDecimal());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
         [InlineData("c201")]
         public static void ReadDecimal_InvalidTag_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadDecimal());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -423,8 +444,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c4826001")] // 4(["", 1])
         public static void ReadDecimal_InvalidFormat_ShouldThrowFormatException(string hexEncoding)
         {
-            var reader = new CborReader(hexEncoding.HexToByteArray());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadDecimal());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]

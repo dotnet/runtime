@@ -306,10 +306,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadByteString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -323,10 +324,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadTextString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             
             Assert.Throws<InvalidOperationException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -340,11 +342,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void TryReadByteString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
+            byte[] encoding = hexEncoding.HexToByteArray();
             byte[] buffer = new byte[32];
-            var reader = new CborReader(data);
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.TryReadByteString(buffer, out int _));
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -358,11 +361,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void TryReadTextString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
+            byte[] encoding = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
-            var reader = new CborReader(data);
+            var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.TryReadTextString(buffer, out int _));
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -383,9 +387,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("5a00010000ff")]
         public static void ReadByteString_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -406,9 +411,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("7a00010000ff")]
         public static void ReadTextString_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -429,11 +435,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("5a00010000ff")]
         public static void TryReadByteString_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
+            byte[] encoding = hexEncoding.HexToByteArray();
             byte[] buffer = new byte[32];
-            var reader = new CborReader(data);
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.TryReadByteString(buffer, out int _));
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -467,9 +474,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("5bffffffffffffffff")]
         public static void ReadByteString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -478,9 +486,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("7bffffffffffffffff")]
         public static void ReadTextString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -488,11 +497,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("62f090")]
         public static void ReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -500,13 +510,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("62f090")]
         public static void TryReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
+            byte[] encoding = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
-            var reader = new CborReader(data);
+            var reader = new CborReader(encoding);
 
             FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -516,6 +527,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -525,96 +537,109 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadByteString_IndefiniteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "5f4001ff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             reader.ReadStartByteStringIndefiniteLength();
             reader.ReadByteString();
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.FormatError, reader.Peek());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadTextString_IndefiniteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "7f6001ff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             reader.ReadStartTextStringIndefiniteLength();
             reader.ReadTextString();
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Equal(CborReaderState.FormatError, reader.Peek());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadByteString_IndefiniteLength_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
         {
             string hexEncoding = "5f5fffff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             reader.ReadStartByteStringIndefiniteLength();
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadStartByteStringIndefiniteLength());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadByteString_IndefiniteLengthConcatenated_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
         {
             string hexEncoding = "5f5fffff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadTextString_IndefiniteLength_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
         {
             string hexEncoding = "7f7fffff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             reader.ReadStartTextStringIndefiniteLength();
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadStartTextStringIndefiniteLength());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadTextString_IndefiniteLengthConcatenated_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
         {
             string hexEncoding = "7f7fffff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadByteString_IndefiniteLengthConcatenated_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "5f4001ff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadByteString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
         public static void ReadTextString_IndefiniteLengthConcatenated_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "7f6001ff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Fact]
@@ -624,9 +649,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             // which is in violation of the CBOR format.
 
             string hexEncoding = "7f62f090628591ff";
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }
