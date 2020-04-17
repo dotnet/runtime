@@ -9,17 +9,21 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		public static void Main ()
 		{
 			TestByName ();
+			TestNameBindingFlags ();
+			TestNameWrongBindingFlags ();
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
 			TestNullType ();
 			TestDataFlowType ();
+			TestIfElse (1);
+			TestFieldInBaseType ();
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
 			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
-			typeof (FieldUsedViaReflection), nameof (FieldUsedViaReflection.field), (Type[]) null)]
+			typeof (FieldUsedViaReflection), nameof (FieldUsedViaReflection.field), (Type [])null)]
 		static void TestByName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField ("field");
@@ -27,32 +31,39 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) })]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string), typeof(BindingFlags) },
+			typeof (Foo), nameof (Foo.field), (Type [])null)]
+		static void TestNameBindingFlags ()
+		{
+			var field = typeof (Foo).GetField ("field", BindingFlags.Static);
+		}
+
+		[Kept]
+		static void TestNameWrongBindingFlags ()
+		{
+			var field = typeof (Foo).GetField ("nonStatic", BindingFlags.Static);
+		}
+
+		[Kept]
 		static void TestNullName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField (null);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) })]
 		static void TestEmptyName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField (string.Empty);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) })]
 		static void TestNonExistingName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField ("NonExisting");
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) })]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -74,8 +85,85 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			var field = type.GetField ("field");
 		}
 
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string)},
+			typeof (IfClass), nameof (IfClass.ifField), (Type [])null)]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.elseField), (Type [])null)]
+		static void TestIfElse (int i)
+		{
+			Type myType;
+			if (i == 1) {
+				myType = typeof (IfClass);
+			} else {
+				myType = typeof (ElseClass);
+			}
+			String myString;
+			if (i == 1) {
+				myString = "ifField";
+			} else {
+				myString = "elseField";
+			}
+			var field = myType.GetField (myString);
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.publicFieldOnBase), (Type [])null)]
+		static void TestFieldInBaseType ()
+		{
+			var protectedField = typeof(DerivedClass).GetField ("protectedFieldOnBase");
+			var publicField = typeof(DerivedClass).GetField ("publicFieldOnBase");
+		}
 
 		[Kept]
 		static int field;
+
+		[Kept]
+		private class Foo 
+		{
+			[Kept]
+			public static int field;
+			public int nonStatic;
+			private static int nonKept;
+		}
+
+		[Kept]
+		private class IfClass
+		{
+			[Kept]
+			public static int ifField;
+			[Kept]
+			private int elseField;
+			protected int nonKept;
+		}
+
+		[Kept]
+		private class ElseClass
+		{
+			[Kept]
+			public int elseField;
+			[Kept]
+			static string ifField;
+			volatile char nonKept;
+		}
+
+		[Kept]
+		class BaseClass
+		{
+			[Kept]
+			protected int protectedFieldOnBase;
+			[Kept]
+			public char publicFieldOnBase;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (BaseClass))]
+		class DerivedClass : BaseClass
+		{
+		}
 	}
 }

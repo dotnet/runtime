@@ -120,9 +120,12 @@ namespace Mono.Linker {
 
 		public List<string> Substitutions { get; private set; }
 
+		public List<string> AttributeDefinitions { get; private set; }
+
 		public List<PInvokeInfo> PInvokes { get; private set; }
 
 		public string PInvokesListFile;
+
 
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
@@ -222,6 +225,19 @@ namespace Mono.Linker {
 				return;
 
 			Substitutions.Add (file);
+		}
+
+		public void AddAttributeDefinitionFile (string file)
+		{
+			if (AttributeDefinitions == null) {
+				AttributeDefinitions = new List<string> { file };
+				return;
+			}
+
+			if (AttributeDefinitions.Contains (file))
+				return;
+
+			AttributeDefinitions.Add (file);
 		}
 
 		public TypeDefinition GetType (string fullName)

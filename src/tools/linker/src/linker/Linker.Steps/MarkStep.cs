@@ -32,10 +32,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using Mono.Linker.Dataflow;
 
 namespace Mono.Linker.Steps {
 
@@ -50,13 +50,13 @@ namespace Mono.Linker.Steps {
 		protected List<MethodBody> _unreachableBodies;
 
 #if DEBUG
-		static DependencyKind [] _entireTypeReasons = new DependencyKind [] {
+		static readonly DependencyKind [] _entireTypeReasons = new DependencyKind [] {
 			DependencyKind.NestedType,
 			DependencyKind.PreservedDependency,
 			DependencyKind.TypeInAssembly,
 		};
 
-		static DependencyKind [] _fieldReasons = new DependencyKind [] {
+		static readonly DependencyKind [] _fieldReasons = new DependencyKind [] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.Custom,
@@ -72,7 +72,7 @@ namespace Mono.Linker.Steps {
 			DependencyKind.TypePreserve,
 		};
 
-		static DependencyKind [] _typeReasons = new DependencyKind [] {
+		static readonly DependencyKind [] _typeReasons = new DependencyKind [] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeType,
@@ -98,7 +98,7 @@ namespace Mono.Linker.Steps {
 			DependencyKind.VariableType,
 		};
 
-		static DependencyKind [] _methodReasons = new DependencyKind [] {
+		static readonly DependencyKind [] _methodReasons = new DependencyKind [] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeConstructor,
@@ -138,6 +138,8 @@ namespace Mono.Linker.Steps {
 		};
 #endif
 
+		FlowAnnotations _flowAnnotations;
+
 		public MarkStep ()
 		{
 			_methods = new Queue<(MethodDefinition, DependencyInfo)> ();
@@ -154,6 +156,16 @@ namespace Mono.Linker.Steps {
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
+
+			IFlowAnnotationSource annotationSource = new AttributeFlowAnnotationSource ();
+			if (_context.AttributeDefinitions != null && _context.AttributeDefinitions.Count > 0) {
+				annotationSource = new AggregateFlowAnnotationSource (
+					_context.AttributeDefinitions.Select (s => new JsonFlowAnnotationSource (_context, s))
+					.Append (annotationSource));
+			}
+
+			_flowAnnotations = new FlowAnnotations (annotationSource);
+
 
 			Initialize ();
 			Process ();
@@ -580,7 +592,7 @@ namespace Mono.Linker.Steps {
 
 			TypeDefinition td;
 			if (args.Count >= 2 && args [1].Value is string typeName) {
-				td = FindType (assembly ?? context.Module.Assembly, typeName);
+				td = (assembly ?? context.Module.Assembly).FindType (typeName);
 
 				if (td == null) {
 					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' type dependency");
@@ -617,14 +629,6 @@ namespace Mono.Linker.Steps {
 				return;
 
 			_context.LogMessage (MessageImportance.High, $"Could not resolve dependency member '{member}' declared in type '{td.FullName}'");
-		}
-
-		static TypeDefinition FindType (AssemblyDefinition assembly, string fullName)
-		{
-			fullName = fullName.ToCecilName ();
-
-			var type = assembly.MainModule.GetType (fullName);
-			return type?.Resolve ();
 		}
 
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature, in DependencyInfo reason)
@@ -835,6 +839,11 @@ namespace Mono.Linker.Steps {
 				MarkMethod (property.SetMethod, reason);
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (property != null && _flowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+			}
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -868,6 +877,11 @@ namespace Mono.Linker.Steps {
 				MarkField (field, new DependencyInfo (DependencyKind.CustomAttributeField, ca));
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (field != null && _flowAnnotations.RequiresDataFlowAnalysis (field)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
+			}
 		}
 
 		FieldDefinition GetField (TypeDefinition type, string fieldname)
@@ -907,6 +921,12 @@ namespace Mono.Linker.Steps {
 
 			foreach (var argument in ca.ConstructorArguments)
 				MarkCustomAttributeArgument (argument, ca);
+
+			var resolvedConstructor = ca.Constructor.Resolve ();
+			if (resolvedConstructor != null && _flowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
+			}
 		}
 
 		void MarkCustomAttributeArgument (CustomAttributeArgument argument, ICustomAttribute ca)
@@ -1081,7 +1101,7 @@ namespace Mono.Linker.Steps {
 			return markOccurred;
 		}
 
-		protected void MarkField (FieldReference reference, DependencyInfo reason)
+		internal protected void MarkField (FieldReference reference, DependencyInfo reason)
 		{
 			if (reference.DeclaringType is GenericInstanceType) {
 				Debug.Assert (reason.Kind == DependencyKind.FieldAccess || reason.Kind == DependencyKind.Ldtoken);
@@ -1161,7 +1181,7 @@ namespace Mono.Linker.Steps {
 				MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
 		}
 
-		protected virtual TypeDefinition MarkType (TypeReference reference, DependencyInfo reason)
+		internal protected virtual TypeDefinition MarkType (TypeReference reference, DependencyInfo reason)
 		{
 #if DEBUG
 			if (!_typeReasons.Contains (reason.Kind))
@@ -1418,7 +1438,7 @@ namespace Mono.Linker.Steps {
 			TypeDefinition tdef = null;
 			switch (attribute.ConstructorArguments [0].Value) {
 			case string s:
-				tdef = ResolveFullyQualifiedTypeName (s);
+				tdef = AssemblyUtilities.ResolveFullyQualifiedTypeName (_context, s);
 				break;
 			case TypeReference type:
 				tdef = type.Resolve ();
@@ -1690,7 +1710,7 @@ namespace Mono.Linker.Steps {
 				parameters [1].ParameterType.Name == "StreamingContext";
 		}
 
-		protected bool MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason)
+		internal protected bool MarkMethodsIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason)
 		{
 			bool marked = false;
 			foreach (MethodDefinition method in methods) {
@@ -1798,25 +1818,6 @@ namespace Mono.Linker.Steps {
 		protected virtual void MarkMulticastDelegate (TypeDefinition type)
 		{
 			MarkMethodCollection (type.Methods, new DependencyInfo (DependencyKind.MethodForSpecialType, type));
-		}
-
-		TypeDefinition ResolveFullyQualifiedTypeName (string name)
-		{
-			if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (name, out string typeName, out string assemblyName))
-				return null;
-
-			foreach (var assemblyDefinition in _context.GetAssemblies ()) {
-				if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
-					continue;
-
-				var foundType = assemblyDefinition.MainModule.GetType (typeName);
-				if (foundType == null)
-					continue;
-
-				return foundType;
-			}
-
-			return null;
 		}
 
 		protected (TypeReference, DependencyInfo) GetOriginalType (TypeReference type, DependencyInfo reason)
@@ -2017,7 +2018,7 @@ namespace Mono.Linker.Steps {
 				MarkMethod (method, reason);
 		}
 
-		protected void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason)
+		internal protected void MarkIndirectlyCalledMethod (MethodDefinition method, in DependencyInfo reason)
 		{
 			MarkMethod (method, reason);
 			Annotations.MarkIndirectlyCalledMethod (method);
@@ -2368,7 +2369,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
+		internal protected void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
 		{
 			Tracer.AddDirectDependency (prop, reason, marked: false);
 			// Consider making this more similar to MarkEvent method?
@@ -2376,7 +2377,7 @@ namespace Mono.Linker.Steps {
 			DoAdditionalPropertyProcessing (prop);
 		}
 
-		protected virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
+		internal protected virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
 		{
 			// Record the event without marking it in Annotations.
 			Tracer.AddDirectDependency (evt, reason, marked: false);
@@ -2387,7 +2388,7 @@ namespace Mono.Linker.Steps {
 			DoAdditionalEventProcessing (evt);
 		}
 
-		void MarkMethodIfNotNull (MethodReference method, in DependencyInfo reason)
+		internal void MarkMethodIfNotNull (MethodReference method, in DependencyInfo reason)
 		{
 			if (method == null)
 				return;
@@ -2410,12 +2411,13 @@ namespace Mono.Linker.Steps {
 				if (eh.HandlerType == ExceptionHandlerType.Catch)
 					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method));
 
+			bool requiresReflectionMethodBodyScanner = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, body.Method);
 			foreach (Instruction instruction in body.Instructions)
-				MarkInstruction (instruction, body.Method);
+				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
 
 			MarkInterfacesNeededByBodyStack (body);
 
-			MarkReflectionLikeDependencies (body);
+			MarkReflectionLikeDependencies (body, requiresReflectionMethodBodyScanner);
 
 			PostMarkMethodBody (body);
 		}
@@ -2443,44 +2445,59 @@ namespace Mono.Linker.Steps {
 				MarkInterfaceImplementation (implementation, type);
 		}
 
-		protected virtual void MarkInstruction (Instruction instruction, MethodDefinition method)
+		protected virtual void MarkInstruction (Instruction instruction, MethodDefinition method, ref bool requiresReflectionMethodBodyScanner)
 		{
 			switch (instruction.OpCode.OperandType) {
-			case OperandType.InlineField:
-				MarkField ((FieldReference) instruction.Operand, new DependencyInfo (DependencyKind.FieldAccess, method));
-				break;
-			case OperandType.InlineMethod:
-			{
-				DependencyKind dependencyKind = instruction.OpCode.Code switch {
-					Code.Jmp => DependencyKind.DirectCall,
-					Code.Call => DependencyKind.DirectCall,
-					Code.Callvirt => DependencyKind.VirtualCall,
-					Code.Newobj => DependencyKind.Newobj,
-					Code.Ldvirtftn => DependencyKind.Ldvirtftn,
-					Code.Ldftn => DependencyKind.Ldftn,
-					_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
-				};
-				MarkMethod ((MethodReference) instruction.Operand, new DependencyInfo (dependencyKind, method));
-				break;
-			}
-			case OperandType.InlineTok:
-			{
-				object token = instruction.Operand;
-				Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
-				var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
-				if (token is TypeReference typeReference)
-					MarkType (typeReference, reason);
-				else if (token is MethodReference methodReference)
-					MarkMethod (methodReference, reason);
-				else
-					MarkField ((FieldReference) token, reason);
-				break;
-			}
-			case OperandType.InlineType:
-				MarkType ((TypeReference) instruction.Operand, new DependencyInfo (DependencyKind.InstructionTypeRef, method));
-				break;
-			default:
-				break;
+				case OperandType.InlineField:
+					switch (instruction.OpCode.Code) {
+						case Code.Stfld: // Field stores (Storing value to annotated field must be checked)
+						case Code.Stsfld:
+						case Code.Ldflda: // Field address loads (as those can be used to store values to annotated field and thus must be checked)
+						case Code.Ldsflda:
+							requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (FieldReference)instruction.Operand);
+							break;
+
+						default: // Other field operations are not interesting as they don't need to be checked
+							break;
+					}
+					MarkField ((FieldReference)instruction.Operand, new DependencyInfo (DependencyKind.FieldAccess, method));
+					break;
+
+				case OperandType.InlineMethod: {
+						DependencyKind dependencyKind = instruction.OpCode.Code switch
+						{
+							Code.Jmp => DependencyKind.DirectCall,
+							Code.Call => DependencyKind.DirectCall,
+							Code.Callvirt => DependencyKind.VirtualCall,
+							Code.Newobj => DependencyKind.Newobj,
+							Code.Ldvirtftn => DependencyKind.Ldvirtftn,
+							Code.Ldftn => DependencyKind.Ldftn,
+							_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
+						};
+						requiresReflectionMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScanner (_flowAnnotations, (MethodReference)instruction.Operand);
+						MarkMethod ((MethodReference)instruction.Operand, new DependencyInfo (dependencyKind, method));
+						break;
+					}
+
+				case OperandType.InlineTok: {
+						object token = instruction.Operand;
+						Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
+						var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
+						if (token is TypeReference typeReference) {
+							MarkType (typeReference, reason);
+						} else if (token is MethodReference methodReference) {
+							MarkMethod (methodReference, reason);
+						} else {
+							MarkField ((FieldReference)token, reason);
+						}
+						break;
+					}
+
+				case OperandType.InlineType:
+					MarkType ((TypeReference)instruction.Operand, new DependencyInfo (DependencyKind.InstructionTypeRef, method));
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -2549,13 +2566,17 @@ namespace Mono.Linker.Steps {
 		//
 		// Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
 		//
-		protected virtual void MarkReflectionLikeDependencies (MethodBody body)
+		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
 			if (HasManuallyTrackedDependency (body))
 				return;
 
+			if (requiresReflectionMethodBodyScanner) {
+				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
+				scanner.ScanAndProcessReturnValue (body);
+			}
+
 			var instructions = body.Instructions;
-			ReflectionPatternDetector detector = new ReflectionPatternDetector (this, body.Method);
 
 			//
 			// Starting at 1 because all patterns require at least 1 instruction backward lookup
@@ -2568,969 +2589,7 @@ namespace Mono.Linker.Steps {
 
 				if (ProcessReflectionDependency (body, instruction))
 					continue;
-
-				if (!(instruction.Operand is MethodReference methodCalled))
-					continue;
-
-				var methodCalledDefinition = methodCalled.Resolve ();
-				if (methodCalledDefinition == null)
-					continue;
-
-				ReflectionPatternContext reflectionContext = new ReflectionPatternContext (_context, body.Method, methodCalledDefinition, i);
-				try {
-					detector.Process (ref reflectionContext);
-				}
-				finally {
-					reflectionContext.Dispose ();
-				}
 			}
-		}
-
-		/// <summary>
-		/// Helper struct to pass around context information about reflection pattern
-		/// as a single parameter (and have a way to extend this in the future if we need to easily).
-		/// Also implements a simple validation mechanism to check that the code does report patter recognition
-		/// results for all methods it works on.
-		/// The promise of the pattern recorder is that for a given reflection method, it will either not talk
-		/// about it ever, or it will always report recognized/unrecognized.
-		/// </summary>
-		struct ReflectionPatternContext : IDisposable
-		{
-			readonly LinkContext _context;
-#if DEBUG
-			bool _patternAnalysisAttempted;
-			bool _patternReported;
-#endif
-
-			public MethodDefinition MethodCalling { get; private set; }
-			public MethodDefinition MethodCalled { get; private set; }
-			public int InstructionIndex { get; private set; }
-
-			public ReflectionPatternContext (LinkContext context, MethodDefinition methodCalling, MethodDefinition methodCalled, int instructionIndex)
-			{
-				_context = context;
-				MethodCalling = methodCalling;
-				MethodCalled = methodCalled;
-				InstructionIndex = instructionIndex;
-
-#if DEBUG
-				_patternAnalysisAttempted = false;
-				_patternReported = false;
-#endif
-			}
-
-			[Conditional("DEBUG")]
-			public void AnalyzingPattern ()
-			{
-#if DEBUG
-				_patternAnalysisAttempted = true;
-#endif
-			}
-
-			public void RecordRecognizedPattern<T> (T accessedItem, Action mark)
-				where T : IMemberDefinition
-			{
-#if DEBUG
-				if (!_patternAnalysisAttempted)
-					throw new InvalidOperationException ($"Internal error: To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first. {MethodCalling} -> {MethodCalled}");
-
-				_patternReported = true;
-#endif
-
-				mark ();
-				_context.ReflectionPatternRecorder.RecognizedReflectionAccessPattern (MethodCalling, MethodCalled, accessedItem);
-			}
-
-			public void RecordUnrecognizedPattern (string message)
-			{
-#if DEBUG
-				if (!_patternAnalysisAttempted)
-					throw new InvalidOperationException ($"Internal error: To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first. {MethodCalling} -> {MethodCalled}");
-
-				_patternReported = true;
-#endif
-
-				_context.ReflectionPatternRecorder.UnrecognizedReflectionAccessPattern (MethodCalling, MethodCalled, message);
-			}
-
-			public void Dispose ()
-			{
-#if DEBUG
-				if (_patternAnalysisAttempted && !_patternReported)
-					throw new InvalidOperationException ($"Internal error: A reflection pattern was analyzed, but no result was reported. {MethodCalling} -> {MethodCalled}");
-#endif
-			}
-		}
-
-		class ReflectionPatternDetector
-		{
-			readonly MarkStep _markStep;
-			readonly MethodDefinition _methodCalling;
-			readonly Collection<Instruction> _instructions;
-
-			public ReflectionPatternDetector (MarkStep markStep, MethodDefinition callingMethod)
-			{
-				_markStep = markStep;
-				_methodCalling = callingMethod;
-				_instructions = _methodCalling.Body.Instructions;
-			}
-
-			public void Process (ref ReflectionPatternContext reflectionContext)
-			{
-				var methodCalled = reflectionContext.MethodCalled;
-				var instructionIndex = reflectionContext.InstructionIndex;
-				var methodCalledType = methodCalled.DeclaringType;
-
-				switch (methodCalledType.Name) {
-					//
-					// System.Type
-					//
-					case "Type" when methodCalledType.Namespace == "System":
-
-						// Some of the overloads are implemented by calling another overload of the same name.
-						// These "internal" calls are not interesting to analyze, the outermost call is the one
-						// which needs to be analyzed. The assumption is that all overloads have the same semantics.
-						// (for example that all overload of GetConstructor if used require the specified type to have a .ctor).
-						if (_methodCalling.DeclaringType == methodCalled.DeclaringType && _methodCalling.Name == methodCalled.Name)
-							break;
-
-						switch (methodCalled.Name) {
-							//
-							// GetConstructor (Type [])
-							// GetConstructor (BindingFlags, Binder, Type [], ParameterModifier [])
-							// GetConstructor (BindingFlags, Binder, CallingConventions, Type [], ParameterModifier [])
-							//
-							case "GetConstructor":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Constructor, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetMethod (string)
-							// GetMethod (string, BindingFlags)
-							// GetMethod (string, Type[])
-							// GetMethod (string, Type[], ParameterModifier[])
-							// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
-							// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
-							//
-							// TODO: .NET Core extensions
-							// GetMethod (string, int, Type[])
-							// GetMethod (string, int, Type[], ParameterModifier[]?)
-							// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
-							// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
-							//
-							case "GetMethod":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Method, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetField (string)
-							// GetField (string, BindingFlags)
-							//
-							case "GetField":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Field, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetEvent (string)
-							// GetEvent (string, BindingFlags)
-							//
-							case "GetEvent":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Event, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetProperty (string)
-							// GetProperty (string, BindingFlags)
-							// GetProperty (string, Type)
-							// GetProperty (string, Type[])
-							// GetProperty (string, Type, Type[])
-							// GetProperty (string, Type, Type[], ParameterModifier[])
-							// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
-							//
-							case "GetProperty":
-								if (!methodCalled.IsStatic)
-									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Property, instructionIndex - 1);
-
-								break;
-
-							//
-							// GetType (string)
-							// GetType (string, Boolean)
-							// GetType (string, Boolean, Boolean)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
-							//
-							case "GetType":
-								if (!methodCalled.IsStatic) {
-									break;
-								} else {
-									reflectionContext.AnalyzingPattern ();
-									
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									//
-									// The next value must be string constant (we don't handle anything else)
-									//
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with argument which cannot be analyzed");
-										break;
-									}
-
-									string typeName = (string)first_arg.Operand;
-									TypeDefinition foundType = _markStep.ResolveFullyQualifiedTypeName (typeName);
-									if (foundType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with type name `{typeName}` which can't be resolved.");
-										break;
-									}
-
-									var methodCalling = reflectionContext.MethodCalling;
-									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkType (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-								}
-								break;
-						}
-
-						break;
-
-					//
-					// System.Linq.Expressions.Expression
-					//
-					case "Expression" when methodCalledType.Namespace == "System.Linq.Expressions":
-						Instruction second_argument;
-						TypeDefinition declaringType;
-
-						if (!methodCalled.IsStatic)
-							break;
-
-						switch (methodCalled.Name) {
-
-							//
-							// static Call (Type, String, Type[], Expression[])
-							//
-							case "Call": {
-									reflectionContext.AnalyzingPattern ();
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 4);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode == OpCodes.Ldtoken)
-										first_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument which cannot be analyzed");
-										break;
-									}
-
-									var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 3);
-									second_argument = _instructions [second_arg_instr];
-									if (second_argument.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 2nd argument which cannot be analyzed");
-										break;
-									}
-
-									var name = (string)second_argument.Operand;
-
-									MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, name, null, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-								}
-
-								break;
-
-							//
-							// static Property(Expression, Type, String)
-							// static Field (Expression, Type, String)
-							//
-							case "Property":
-							case "Field": {
-									reflectionContext.AnalyzingPattern ();
-
-									var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 2);
-									if (second_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var second_arg = _instructions [second_arg_instr];
-									if (second_arg.OpCode == OpCodes.Ldtoken)
-										second_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, second_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 2nd argument which cannot be analyzed");
-										break;
-									}
-
-									var third_arg_inst = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 1);
-									var third_argument = _instructions [third_arg_inst];
-									if (third_argument.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with the 3rd argument which cannot be analyzed");
-										break;
-									}
-
-									var name = (string)third_argument.Operand;
-
-									//
-									// The first argument can be any expression but we are looking only for simple null
-									// which we can convert to static only field lookup
-									//
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 3);
-									bool staticOnly = false;
-
-									if (first_arg_instr >= 0) {
-										var first_arg = _instructions [first_arg_instr];
-										if (first_arg.OpCode == OpCodes.Ldnull)
-											staticOnly = true;
-									}
-
-									if (methodCalled.Name [0] == 'P')
-										MarkPropertiesFromReflectionCall (ref reflectionContext, declaringType, name, staticOnly);
-									else
-										MarkFieldsFromReflectionCall (ref reflectionContext, declaringType, name, staticOnly);
-								}
-
-								break;
-
-							//
-							// static New (Type)
-							//
-							case "New": {
-									reflectionContext.AnalyzingPattern ();
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 1);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode == OpCodes.Ldtoken)
-										first_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument which cannot be analyzed");
-										break;
-									}
-
-									MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, BindingFlags.Instance, parametersCount: 0);
-								}
-								break;
-						}
-
-						break;
-
-					//
-					// System.Reflection.RuntimeReflectionExtensions
-					//
-					case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
-						switch (methodCalled.Name) {
-							//
-							// static GetRuntimeField (this Type type, string name)
-							//
-							case "GetRuntimeField":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Field, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeMethod (this Type type, string name, Type[] parameters)
-							//
-							case "GetRuntimeMethod":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Method, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeProperty (this Type type, string name)
-							//
-							case "GetRuntimeProperty":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Property, instructionIndex - 1, thisExtension: true);
-								break;
-
-							//
-							// static GetRuntimeEvent (this Type type, string name)
-							//
-							case "GetRuntimeEvent":
-								ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Event, instructionIndex - 1, thisExtension: true);
-								break;
-						}
-
-						break;
-
-					//
-					// System.AppDomain
-					//
-					case "AppDomain" when methodCalledType.Namespace == "System":
-						//
-						// CreateInstance (string assemblyName, string typeName)
-						// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName)
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceFrom (string assemblyFile, string typeName)
-						// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-						//
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-						// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
-						//
-						switch (methodCalled.Name) {
-							case "CreateInstance":
-							case "CreateInstanceAndUnwrap":
-							case "CreateInstanceFrom":
-							case "CreateInstanceFromAndUnwrap":
-								ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, methodCalled.Parameters.Count < 4);
-								break;
-						}
-
-						break;
-
-					//
-					// System.Reflection.Assembly
-					//
-					case "Assembly" when methodCalledType.Namespace == "System.Reflection":
-						//
-						// CreateInstance (string typeName)
-						// CreateInstance (string typeName, bool ignoreCase)
-						// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
-						//
-						if (methodCalled.Name == "CreateInstance") {
-							//
-							// TODO: This could be supported for `this` only calls
-							//
-							reflectionContext.AnalyzingPattern ();
-							reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' is not yet supported");
-							break;
-						}
-
-						break;
-
-					//
-					// System.Activator
-					//
-					case "Activator" when methodCalledType.Namespace == "System":
-						if (!methodCalled.IsStatic)
-							break;
-
-						switch (methodCalled.Name) {
-							//
-							// static T CreateInstance<T> ()
-							//
-							case "CreateInstance" when methodCalled.ContainsGenericParameter:
-								// Not sure it's worth implementing as we cannot expant T and simple cases can be rewritten
-								reflectionContext.AnalyzingPattern ();
-								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' is not supported");
-								break;
-
-							//
-							// static CreateInstance (string assemblyName, string typeName)
-							// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
-							// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
-							//
-							// static CreateInstance (System.Type type)
-							// static CreateInstance (System.Type type, bool nonPublic)
-							// static CreateInstance (System.Type type, params object?[]? args)
-							// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
-							// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
-							// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
-							//
-							case "CreateInstance": {
-									reflectionContext.AnalyzingPattern ();
-
-									var parameters = methodCalled.Parameters;
-									if (parameters.Count < 1)
-										break;
-
-									if (parameters [0].ParameterType.MetadataType == MetadataType.String) {
-										ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, parameters.Count < 4);
-										break;
-									}
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									if (parameters [0].ParameterType.IsTypeOf ("System", "Type")) {
-										declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr + 1);
-										if (declaringType == null) {
-											reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument expression which cannot be analyzed");
-											break;
-										}
-
-										BindingFlags bindingFlags = BindingFlags.Instance;
-										int? parametersCount = null;
-
-										if (methodCalled.Parameters.Count == 1) {
-											parametersCount = 0;
-										} else {
-											var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count - 1);
-											second_argument = _instructions [second_arg_instr];
-											switch (second_argument.OpCode.Code) {
-												case Code.Ldc_I4_0 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
-													parametersCount = 0;
-													bindingFlags |= BindingFlags.Public;
-													break;
-												case Code.Ldc_I4_1 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
-													parametersCount = 0;
-													break;
-												case Code.Ldc_I4_S when parameters [1].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags"):
-													bindingFlags = (BindingFlags)(sbyte)second_argument.Operand;
-													break;
-											}
-										}
-
-										MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, bindingFlags, parametersCount);
-									}
-									else {
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument expression which cannot be analyzed");
-									}
-
-								}
-
-								break;
-
-							//
-							// static CreateInstanceFrom (string assemblyFile, string typeName)
-							// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-							// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-							//
-							case "CreateInstanceFrom":
-								ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, methodCalled.Parameters.Count < 4);
-								break;
-						}
-
-						break;
-				}
-
-			}
-
-			//
-			// Handles static method calls in form of Create (string assemblyFile, string typeName, ......)
-			//
-			void ProcessActivatorCallWithStrings (ref ReflectionPatternContext reflectionContext, int startIndex, bool defaultCtorOnly)
-			{
-				reflectionContext.AnalyzingPattern ();
-
-				var parameters = reflectionContext.MethodCalled.Parameters;
-				if (parameters.Count < 2) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' is not supported");
-					return;
-				}
-
-				if (parameters [0].ParameterType.MetadataType != MetadataType.String && parameters [1].ParameterType.MetadataType != MetadataType.String) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' is not supported");
-					return;
-				}
-
-				var first_arg_instr = GetInstructionAtStackDepth (_instructions, startIndex, reflectionContext.MethodCalled.Parameters.Count);
-				if (first_arg_instr < 0) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-					return;
-				}
-
-				var first_arg = _instructions [first_arg_instr];
-				if (first_arg.OpCode != OpCodes.Ldstr) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with the 1st argument which cannot be analyzed");
-					return;
-				}
-
-				var second_arg_instr = GetInstructionAtStackDepth (_instructions, startIndex, reflectionContext.MethodCalled.Parameters.Count - 1);
-				if (second_arg_instr < 0) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-					return;
-				}
-
-				var second_arg = _instructions [second_arg_instr];
-				if (second_arg.OpCode != OpCodes.Ldstr) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with the 2nd argument which cannot be analyzed");
-					return;
-				}
-
-				string assembly_name = (string)first_arg.Operand;
-				var assembly = _markStep._context.GetLoadedAssembly (assembly_name);
-				if (assembly == null) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' references assembly '{assembly_name}' which could not be found");
-					return;
-				}
-
-				string type_name = (string)second_arg.Operand;
-				var declaringType = FindType (assembly, type_name);
-
-				if (declaringType == null) {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' references type '{type_name}' which could not be found");
-					return;
-				}
-
-				MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, null, defaultCtorOnly ? 0 : (int?)null);
-			}
-
-			//
-			// Handles instance methods called over typeof (Foo) with string name as the first argument
-			//
-			void ProcessSystemTypeGetMemberLikeCall (ref ReflectionPatternContext reflectionContext, System.Reflection.MemberTypes memberTypes, int startIndex, bool thisExtension = false)
-			{
-				reflectionContext.AnalyzingPattern ();
-
-				int first_instance_arg = reflectionContext.MethodCalled.Parameters.Count;
-				if (thisExtension)
-					--first_instance_arg;
-
-				var first_arg_instr = GetInstructionAtStackDepth (_instructions, startIndex, first_instance_arg);
-				if (first_arg_instr < 0) {
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-					return;
-				}
-
-				var first_arg = _instructions [first_arg_instr];
-				BindingFlags? bindingFlags = default;
-				string name = default;
-
-				if (memberTypes == System.Reflection.MemberTypes.Constructor) {
-					if (first_arg.OpCode == OpCodes.Ldc_I4_S && reflectionContext.MethodCalled.Parameters.Count > 0 && reflectionContext.MethodCalled.Parameters [0].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags")) {
-						bindingFlags = (BindingFlags)(sbyte)first_arg.Operand;
-					}
-				} else {
-					//
-					// The next value must be string constant (we don't handle anything else)
-					//
-					if (first_arg.OpCode != OpCodes.Ldstr) {
-						reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with argument which cannot be analyzed");
-						return;
-					}
-
-					name = (string)first_arg.Operand;
-
-					var pos_arg = _instructions [first_arg_instr + 1];
-					if (pos_arg.OpCode == OpCodes.Ldc_I4_S && reflectionContext.MethodCalled.Parameters.Count > 1 && reflectionContext.MethodCalled.Parameters [1].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags")) {
-						bindingFlags = (BindingFlags)(sbyte)pos_arg.Operand;
-					}
-				}
-
-				var declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr - 1);
-				if (declaringType == null) {
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' does not use detectable instance type extraction");
-					return;
-				}
-
-				switch (memberTypes) {
-					case System.Reflection.MemberTypes.Constructor:
-						MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, bindingFlags);
-						break;
-					case System.Reflection.MemberTypes.Method:
-						MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, name, 0, bindingFlags);
-						break;
-					case System.Reflection.MemberTypes.Field:
-						MarkFieldsFromReflectionCall (ref reflectionContext, declaringType, name);
-						break;
-					case System.Reflection.MemberTypes.Property:
-						MarkPropertiesFromReflectionCall (ref reflectionContext, declaringType, name);
-						break;
-					case System.Reflection.MemberTypes.Event:
-						MarkEventsFromReflectionCall (ref reflectionContext, declaringType, name);
-						break;
-					default:
-						Debug.Fail ("Unsupported member type");
-						reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' is of unexpected member type.");
-						break;
-				}
-			}
-
-			//
-			// arity == null for name match regardless of arity
-			//
-			void MarkMethodsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, int? arity, BindingFlags? bindingFlags, int? parametersCount = null)
-			{
-				bool foundMatch = false;
-				foreach (var method in declaringType.Methods) {
-					var mname = method.Name;
-
-					// Either exact match or generic method with any arity when unspecified
-					if (mname != name && !(arity == null && mname.StartsWith (name, StringComparison.Ordinal) && mname.Length > name.Length + 2 && mname [name.Length + 1] == '`')) {
-						continue;
-					}
-
-					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && method.IsStatic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !method.IsPublic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
-						continue;
-
-					if (parametersCount != null && parametersCount != method.Parameters.Count)
-						continue;
-
-					foundMatch = true;
-					var methodCalling = reflectionContext.MethodCalling;
-					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve method `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				var methodCalling = reflectionContext.MethodCalling;
-				foreach (var property in declaringType.Properties) {
-					if (property.Name != name)
-						continue;
-
-					bool markedAny = false;
-
-					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
-					// Be conservative and mark everything for the property.
-					var getter = property.GetMethod;
-					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
-					}
-
-					var setter = property.SetMethod;
-					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
-					}
-
-					if (markedAny) {
-						foundMatch = true;
-						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					}
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				var methodCalling = reflectionContext.MethodCalling;
-				foreach (var field in declaringType.Fields) {
-					if (field.Name != name)
-						continue;
-
-					if (staticOnly && !field.IsStatic)
-						continue;
-
-					foundMatch = true;
-					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					break;
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkEventsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name)
-			{
-				bool foundMatch = false;
-				var methodCalling = reflectionContext.MethodCalling;
-				foreach (var eventInfo in declaringType.Events) {
-					if (eventInfo.Name != name)
-						continue;
-
-					foundMatch = true;
-					reflectionContext.RecordRecognizedPattern (eventInfo, () => _markStep.MarkEvent (eventInfo, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve event `{name}` on type `{declaringType.FullName}`.");
-			}
-		}
-
-		static int GetInstructionAtStackDepth (Collection<Instruction> instructions, int startIndex, int stackSizeToBacktrace)
-		{
-			for (int i = startIndex; i >= 0; --i) {
-				var instruction = instructions [i];
-
-				switch (instruction.OpCode.StackBehaviourPop) {
-				case StackBehaviour.Pop0:
-					break;
-				case StackBehaviour.Pop1:
-				case StackBehaviour.Popi:
-				case StackBehaviour.Popref:
-					stackSizeToBacktrace++;
-					break;
-				case StackBehaviour.Pop1_pop1:
-				case StackBehaviour.Popi_pop1:
-				case StackBehaviour.Popi_popi:
-				case StackBehaviour.Popi_popi8:
-				case StackBehaviour.Popi_popr4:
-				case StackBehaviour.Popi_popr8:
-				case StackBehaviour.Popref_pop1:
-				case StackBehaviour.Popref_popi:
-					stackSizeToBacktrace += 2;
-					break;
-				case StackBehaviour.Popref_popi_popi:
-				case StackBehaviour.Popref_popi_popi8:
-				case StackBehaviour.Popref_popi_popr4:
-				case StackBehaviour.Popref_popi_popr8:
-				case StackBehaviour.Popref_popi_popref:
-					stackSizeToBacktrace += 3;
-					break;
-				case StackBehaviour.Varpop:
-					switch (instruction.OpCode.Code) {
-					case Code.Call:
-					case Code.Calli:
-					case Code.Callvirt:
-						if (instruction.Operand is MethodReference mr) {
-							stackSizeToBacktrace += mr.Parameters.Count;
-							if (mr.Resolve ()?.IsStatic == false)
-								stackSizeToBacktrace++;
-						}
-
-						break;
-					case Code.Newobj:
-						if (instruction.Operand is MethodReference ctor) {
-							stackSizeToBacktrace += ctor.Parameters.Count;
-						}
-						break;
-					case Code.Ret:
-						// TODO: Need method return type for correct stack size but this path should not be hit yet
-						break;
-					default:
-						return -3;
-					}
-					break;
-				}
-
-				switch (instruction.OpCode.StackBehaviourPush) {
-				case StackBehaviour.Push0:
-					break;
-				case StackBehaviour.Push1:
-				case StackBehaviour.Pushi:
-				case StackBehaviour.Pushi8:
-				case StackBehaviour.Pushr4:
-				case StackBehaviour.Pushr8:
-				case StackBehaviour.Pushref:
-					stackSizeToBacktrace--;
-					break;
-				case StackBehaviour.Push1_push1:
-					stackSizeToBacktrace -= 2;
-					break;
-				case StackBehaviour.Varpush:
-					//
-					// Only call, calli, callvirt will hit this
-					//
-					if (instruction.Operand is MethodReference mr && mr.ReturnType.MetadataType != MetadataType.Void) {
-						stackSizeToBacktrace--;
-					}
-					break;
-				}
-
-				if (stackSizeToBacktrace == 0)
-					return i;
-
-				if (stackSizeToBacktrace < 0)
-					return -1;
-			}
-
-			return -2;
-		}
-
-		static TypeDefinition FindReflectionTypeForLookup (Collection<Instruction> instructions, int startIndex)
-		{
-			while (startIndex >= 1) {
-				int storeIndex = -1;
-				var instruction = instructions [startIndex];
-				switch (instruction.OpCode.Code) {
-				//
-				// Pattern #1
-				//
-				// typeof (Foo).ReflectionCall ()
-				//
-				case Code.Call:
-					if (!(instruction.Operand is MethodReference mr) || mr.Name != "GetTypeFromHandle")
-						return null;
-
-					var ldtoken = instructions [startIndex - 1];
-
-					if (ldtoken.OpCode != OpCodes.Ldtoken)
-						return null;
-
-					return (ldtoken.Operand as TypeReference).Resolve ();
-
-				//
-				// Patern #2
-				//
-				// var temp = typeof (Foo);
-				// temp.ReflectionCall ()
-				//
-				case Code.Ldloc_0:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_0, startIndex - 1);
-					startIndex = storeIndex - 1;
-					break;
-				case Code.Ldloc_1:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_1, startIndex - 1);
-					startIndex = storeIndex - 1;
-					break;
-				case Code.Ldloc_2:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_2, startIndex - 1);
-					startIndex = storeIndex - 1;
-					break;
-				case Code.Ldloc_3:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_3, startIndex - 1);
-					startIndex = storeIndex - 1;
-					break;
-				case Code.Ldloc_S:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc_S, startIndex - 1, l => (VariableReference)l.Operand == (VariableReference)instruction.Operand);
-					startIndex = storeIndex - 1;
-					break;
-				case Code.Ldloc:
-					storeIndex = GetIndexOfInstruction (instructions, OpCodes.Stloc, startIndex - 1, l => (VariableReference)l.Operand == (VariableReference)instruction.Operand);
-					startIndex = storeIndex - 1;
-					break;
-
-				case Code.Nop:
-					startIndex--;
-					break;
-
-				default:
-					return null;
-				}
-			}
-
-			return null;
-		}
-
-		static int GetIndexOfInstruction (Collection<Instruction> instructions, OpCode opcode, int startIndex, Predicate<Instruction> comparer = null)
-		{
-			while (startIndex >= 0) {
-				var instr = instructions [startIndex];
-				if (instr.OpCode == opcode && (comparer == null || comparer (instr)))
-					return startIndex;
-
-				startIndex--;
-			}
-
-			return -1;
 		}
 
 		protected class AttributeProviderPair {

@@ -206,6 +206,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.DataFlowTests))]
+		public void DataFlowTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		protected virtual void Run (TestCase testCase)
 		{
 			var runner = new TestRunner (new ObjectFactory ());

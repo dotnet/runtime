@@ -328,6 +328,32 @@ More comprehensive example is bellow which show more advanced configuration opti
 </linker>
 ```
 
+## Syntax of supplementary custom attribute annotations
+
+Linker supports specifying a JSON file that has a set of custom attributes that the linker will pretend are applied to members in the input assemblies.
+
+The structure is:
+
+```json
+{
+  "[assembly-name]": {
+    "[namespace-name]": {
+      "[type-name]": {
+        "[field-or-property-name]": {
+          "[attribute-name]": "[attribute-value]"
+        },
+
+        "[method-name]([method-signature])": {
+          "[parameter-name]": {
+            "[attribute-name]": "[attribute-value]"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 # Inside the linker
 
 The linker is a quite small piece of code, and it pretty simple to address.

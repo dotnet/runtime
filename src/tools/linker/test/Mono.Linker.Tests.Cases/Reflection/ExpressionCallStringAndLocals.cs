@@ -8,17 +8,23 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 	public class ExpressionCallStringAndLocals {
 		public static void Main ()
 		{
-			var t1 = typeof (ExpressionCallStringAndLocals);
-			var t2 = t1;
-
-			var expr = Expression.Call (t2, "OnlyCalledViaExpression", Type.EmptyTypes);
-			Console.WriteLine (expr.Method);
+			Branch_SystemTypeValueNode_KnownStringValue ();
 		}
 
 		[Kept]
 		private static int OnlyCalledViaExpression ()
 		{
 			return 42;
+		}
+
+		[Kept]
+		static void Branch_SystemTypeValueNode_KnownStringValue ()
+		{
+			var t1 = typeof (ExpressionCallStringAndLocals);
+			var t2 = t1;
+
+			var expr = Expression.Call (t2, "OnlyCalledViaExpression", Type.EmptyTypes);
+			Console.WriteLine (expr.Method);
 		}
 	}
 }

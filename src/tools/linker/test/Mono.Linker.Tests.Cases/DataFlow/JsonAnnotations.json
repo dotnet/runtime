@@ -1,0 +1,37 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+{
+  "test": {
+    "Mono.Linker.Tests.Cases.DataFlow": {
+      // Test comment - the name of the test class
+      "JsonAnnotations": {
+
+        "_typeWithDefaultConstructor": {
+          "System.DoesNotExistAttribute": "0",
+          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+        },
+
+        "TwoAnnotatedParameters(System.Type,System.Type)": {
+          "type": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          },
+          "type2": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "PublicConstructors"
+          }
+        },
+
+        "ReturnConstructorsFailure(System.Type)": {
+          "return": {
+            "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+          }
+        },
+
+        "PropertyWithDefaultConstructor": {
+          "System.Runtime.CompilerServices.DynamicallyAccessedMembers": "DefaultConstructor"
+        }
+      }
+    }
+  }
+}

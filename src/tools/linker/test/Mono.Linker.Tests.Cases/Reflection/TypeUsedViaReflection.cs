@@ -3,7 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection {
-	[SetupCSharpCompilerToUse ("csc")]
 	public class TypeUsedViaReflection {
 		public static void Main ()
 		{
@@ -23,11 +22,11 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestMultiDimensionalArrayAsmName ();
 			TestDeeplyNested ();
 			TestTypeOf ();
+			TestTypeFromBranch (3);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetType), new Type [] { typeof (string), typeof (bool) })]
+		[RecognizedReflectionAccessPattern]
 		public static void TestNull ()
 		{
 			const string reflectionTypeKeptString = null;
@@ -35,8 +34,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetType), new Type [] { typeof (string), typeof (bool) })]
 		public static void TestEmptyString ()
 		{
 			const string reflectionTypeKeptString = "";
@@ -187,9 +184,32 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		class TypeOfToKeep { }
 
 		[Kept]
-		static void TestTypeOf()
+		static void TestTypeOf ()
 		{
 			var typeKept = typeof(TypeOfToKeep);
+		}
+
+		[Kept]
+		class TypeFromBranchA { }
+		[Kept]
+		class TypeFromBranchB { }
+
+		[Kept]
+		static void TestTypeFromBranch (int b)
+		{
+			string name = null;
+			switch (b) {
+				case 0:
+					name = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+TypeFromBranchA";
+					break;
+				case 1:
+					name = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+TypeFromBranchB";
+					break;
+				default:
+					break;
+			}
+
+			var typeKept = Type.GetType (name);
 		}
 	}
 }
