@@ -87,8 +87,8 @@
     PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n) \
-    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n) \
-    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n) \
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n) \
     PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n) \
     PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n) \
@@ -105,9 +105,9 @@
     PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc) \
-    PER_FUNCTION_BLOCK(uldn_close, libicui18n) \
-    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
-    PER_FUNCTION_BLOCK(uldn_open, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_close, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_open, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc) \
