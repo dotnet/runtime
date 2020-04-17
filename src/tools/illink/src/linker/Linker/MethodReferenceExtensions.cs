@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -19,6 +22,16 @@ namespace Mono.Linker
 				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters [parameterIndex].ParameterType);
 
 			return method.Parameters [parameterIndex].ParameterType;
+		}
+
+		public static bool IsDeclaredOnType (this MethodReference method, string namespaceName, string typeName)
+		{
+			return method.DeclaringType.IsTypeOf (namespaceName, typeName);
+		}
+
+		public static bool HasParameterOfType (this MethodReference method, int parameterIndex, string namespaceName, string typeName)
+		{
+			return method.Parameters.Count > parameterIndex && method.Parameters [parameterIndex].ParameterType.IsTypeOf (namespaceName, typeName);
 		}
 	}
 }

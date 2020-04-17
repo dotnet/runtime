@@ -361,9 +361,20 @@ namespace Mono.Linker {
 
 						continue;
 
-					case "--version":
-						Version ();
-						return 1;
+						case "--attribute-defs":
+							if (arguments.Count < 1) {
+								ErrorMissingArgument (token);
+								return -1;
+							}
+
+							if (!GetStringParam (token, l => context.AddAttributeDefinitionFile (l)))
+								return -1;
+
+							continue;
+
+						case "--version":
+							Version ();
+							return 1;
 
 					case "--about":
 						About ();
@@ -947,6 +958,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
 			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
+			Console.WriteLine ("  --attribute-defs FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");
