@@ -142,7 +142,7 @@ namespace System.Net.Quic.Implementations.Managed
             var localEndpoint = options.LocalEndPoint ?? new IPEndPoint(_remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
                 ? IPAddress.Any
                 : IPAddress.IPv6Any, 0);
-            _socketContext = new QuicSocketContext(localEndpoint, this);
+            _socketContext = new QuicClientSocketContext(localEndpoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
             _tls = new Tls(_gcHandle, options, _localTransportParameters);
@@ -160,7 +160,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         // server constructor
-        public ManagedQuicConnection(QuicListenerOptions options, QuicSocketContext socketContext, IPEndPoint remoteEndpoint)
+        public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext, IPEndPoint remoteEndpoint)
         {
             _isServer = true;
             _serverOpts = options;
@@ -176,6 +176,25 @@ namespace System.Net.Quic.Implementations.Managed
         public ConnectionId? SourceConnectionId { get; private set; }
 
         public ConnectionId? DestinationConnectionId { get; private set; }
+
+        /// <summary>
+        ///     Returns timestamp of the next timer event, after timeout, <see cref="OnTimeout"/> should be called.
+        /// </summary>
+        /// <returns>Timestamp in ticks of the next timer or long.MaxValue if no timer is needed.</returns>
+        internal long GetNextTimerTimestamp()
+        {
+            return Recovery.LossRecoveryTimer;
+        }
+
+        /// <summary>
+        ///     Called to process a timeout event.
+        /// </summary>
+        /// <param name="now">Current timestamp</param>
+        /// <returns></returns>
+        internal void OnTimeout(long now)
+        {
+            // TODO-RZ
+        }
 
         private void DoHandshake()
         {
@@ -195,7 +214,7 @@ namespace System.Net.Quic.Implementations.Managed
                     limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
                     limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
 
-                    Recovery.MaxAckDelay = TimeSpan.FromMilliseconds(param.MaxAckDelay);
+                    Recovery.MaxAckDelay = Timestamp.FromMilliseconds(param.MaxAckDelay);
 
                     _peerTransportParameters = param;
                 }
@@ -219,7 +238,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal void ReceiveData(QuicReader reader, IPEndPoint sender, DateTime now)
+        internal void ReceiveData(QuicReader reader, IPEndPoint sender, long now)
         {
             var buffer = reader.Buffer;
             var context = new RecvContext(now);
@@ -329,7 +348,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (pnSpace.LargestReceivedPacketNumber < packetNumber)
             {
                 pnSpace.LargestReceivedPacketNumber = packetNumber;
-                pnSpace.LargestReceivedPacketTimestamp = DateTime.Now; //TODO-RZ: pass time externally
+                pnSpace.LargestReceivedPacketTimestamp = context.Timestamp;
             }
 
             pnSpace.UnackedPacketNumbers.Add(packetNumber);
@@ -554,7 +573,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal void SendData(QuicWriter writer, out IPEndPoint? receiver, DateTime now)
+        internal void SendData(QuicWriter writer, out IPEndPoint? receiver, long now)
         {
             receiver = _remoteEndpoint;
             // TODO-RZ: process lost packets
@@ -588,7 +607,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (nextLevel <= level)
                     break;
 
-                context.SentPacket = new SentPacket {TimeSent = context.Now};
+                context.SentPacket = new SentPacket {TimeSent = context.Timestamp};
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
@@ -687,20 +706,20 @@ namespace System.Net.Quic.Implementations.Managed
 
         private class ContextBase
         {
-            public ContextBase(DateTime now)
+            public ContextBase(long now)
             {
-                Now = now;
+                Timestamp = now;
             }
 
             /// <summary>
             ///     Timestamp when the next tick of internal processing was requested.
             /// </summary>
-            internal DateTime Now { get; }
+            internal long Timestamp { get; }
         }
 
         private sealed class RecvContext : ContextBase
         {
-            public RecvContext(DateTime now) : base(now)
+            public RecvContext(long now) : base(now)
             {
             }
 
@@ -714,7 +733,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private sealed class SendContext : ContextBase
         {
-            public SendContext(DateTime now)
+            public SendContext(long now)
                 : base(now)
             {
             }

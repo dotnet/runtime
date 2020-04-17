@@ -33,10 +33,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             Math.Min(10 * MaxDatagramSize, Math.Max(2 * MaxDatagramSize, 14720));
 
         /// <summary>
-        ///     The time when QUIC first detects congestion due to loss of ECN, causing it to enter congestion recovery.
-        ///     When a packet sent after this time is acknowledged, QUIC exits congestion recovery.
+        ///     The timestamp when QUIC first detects congestion due to loss of ECN, causing it to enter congestion
+        ///     recovery. When a packet sent after this time is acknowledged, QUIC exits congestion recovery.
         /// </summary>
-        private DateTime CongestionRecoveryStartTime { get; set; }
+        private long CongestionRecoveryStartTime { get; set; }
 
         /// <summary>
         ///     Slow start threshold in bytes. When the congestion window is below this value, the mode is slow start
@@ -52,7 +52,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         {
             CongestionWindow = InitialWindowSize;
             BytesInFlight = 0;
-            CongestionRecoveryStartTime = DateTime.MinValue;
+            CongestionRecoveryStartTime = 0;
             SlowStartThreshold = long.MaxValue;
             CongestionWindow = InitialWindowSize;
         }
@@ -63,7 +63,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             BytesInFlight += packet.BytesSent;
         }
 
-        public void OnPacketAcked(SentPacket packet, DateTime now)
+        public void OnPacketAcked(SentPacket packet, long now)
         {
             Debug.Assert(packet.InFlight);
             BytesInFlight -= packet.BytesSent;
@@ -89,7 +89,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             }
         }
 
-        public void OnPacketsLost(List<SentPacket> lostPackets, DateTime now)
+        public void OnPacketsLost(List<SentPacket> lostPackets, long now)
         {
             SentPacket? lastPacket = null;
             foreach (var packet in lostPackets)
@@ -110,9 +110,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             }
         }
 
-        private bool InCongestionRecovery(DateTime sentTime)
+        private bool InCongestionRecovery(long sentTimestamp)
         {
-            return sentTime < CongestionRecoveryStartTime;
+            return sentTimestamp < CongestionRecoveryStartTime;
         }
 
         private bool InPersistentCongestion(SentPacket largestLostPacket)
@@ -125,10 +125,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             return false;
         }
 
-        internal void OnCongestionEvent(DateTime sentTime, DateTime now)
+        internal void OnCongestionEvent(long sentTimestamp, long now)
         {
             // start a new congestion event if packet was sent after the start of the previous congestion recovery period
-            if (InCongestionRecovery(sentTime))
+            if (InCongestionRecovery(sentTimestamp))
                 return;
 
             CongestionRecoveryStartTime = now;

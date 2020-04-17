@@ -10,7 +10,7 @@ namespace System.Net.Quic.Tests
 {
     internal class TestHarness
     {
-        internal static readonly QuicSocketContext DummySocketContet = new QuicSocketContext(new IPEndPoint(IPAddress.Any, 0), null);
+        internal static readonly QuicServerSocketContext DummySocketContet = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0), null, null);
         internal static IPEndPoint IpAnyEndpoint = new IPEndPoint(IPAddress.Any, 0);
 
         private readonly byte[] buffer = new byte[16 * 1024];
@@ -20,6 +20,8 @@ namespace System.Net.Quic.Tests
 
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
+
+        internal long Timestamp = Implementations.Managed.Timestamp.Now;
 
         internal static ManagedQuicConnection CreateClient(QuicClientConnectionOptions options)
         {
@@ -47,7 +49,7 @@ namespace System.Net.Quic.Tests
         internal PacketFlight GetFlightToSend(ManagedQuicConnection from)
         {
             _writer.Reset(buffer);
-            from.SendData(_writer, out _, DateTime.Now);
+            from.SendData(_writer, out _, Timestamp);
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
@@ -110,7 +112,7 @@ namespace System.Net.Quic.Tests
             }
 
             _reader.Reset(buffer.AsMemory(0, written));
-            destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
+            destination.ReceiveData(_reader, IpAnyEndpoint, Timestamp);
         }
 
         internal void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
@@ -130,7 +132,7 @@ namespace System.Net.Quic.Tests
         internal PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
         {
             _writer.Reset(buffer);
-            source.SendData(_writer, out _, DateTime.Now);
+            source.SendData(_writer, out _, Timestamp);
 
             // make a copy of the buffer, because decryption happens in-place
             int written = _writer.BytesWritten;
@@ -141,7 +143,7 @@ namespace System.Net.Quic.Tests
             LogFlightPackets(packets, source == _client);
 
             _reader.Reset(buffer.AsMemory(0, written));
-            destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
+            destination.ReceiveData(_reader, IpAnyEndpoint, Timestamp);
 
             return new PacketFlight(packets, written);
         }

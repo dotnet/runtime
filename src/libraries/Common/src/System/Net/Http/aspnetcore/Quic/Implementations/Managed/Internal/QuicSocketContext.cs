@@ -11,75 +11,26 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    /// <summary>
-    ///     Class responsible for serving a socket for QUIC connections.
-    /// </summary>
-    internal class QuicSocketContext
+    internal sealed class QuicServerSocketContext : QuicSocketContext
     {
-        // server only
-        private readonly ChannelWriter<ManagedQuicConnection>? _newConnections;
+        private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
         private readonly QuicListenerOptions? _listenerOptions;
-        private readonly Dictionary<ConnectionId, ManagedQuicConnection>? _connections;
+        private readonly Dictionary<ConnectionId, ManagedQuicConnection> _connections;
         private readonly ConnectionIdCollection? _connectionIds;
 
-        // client only
-        private readonly ManagedQuicConnection? _client;
-
-        private readonly IPEndPoint _localEndpoint;
-        private readonly CancellationTokenSource _socketTaskCts;
-
-        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
-
-        private Task? _backgroundWorkerTask;
-
-        // constructor for server
-        internal QuicSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
+        internal QuicServerSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
             ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
-            : this(localEndpoint)
+            : base(localEndpoint)
         {
             _newConnections = newConnectionsWriter;
             _listenerOptions = listenerOptions;
-        }
-
-        // constructor for client
-        internal QuicSocketContext(IPEndPoint localEndpoint, ManagedQuicConnection clientConnection)
-            : this(localEndpoint)
-        {
-            _client = clientConnection;
-        }
-
-        private QuicSocketContext(IPEndPoint localEndpoint)
-        {
-            _localEndpoint = localEndpoint;
-
-            _socketTaskCts = new CancellationTokenSource();
 
             _connections = new Dictionary<ConnectionId, ManagedQuicConnection>();
             _connectionIds = new ConnectionIdCollection();
         }
 
-        internal void Start()
-        {
-            Debug.Assert(_backgroundWorkerTask == null);
-            _backgroundWorkerTask = Task.Run(BackgroundWorker);
-        }
-
-        /// <summary>
-        ///     Used to signal the thread that one of the connections has data to send.
-        /// </summary>
-        internal void Ping()
-        {
-            _signalTcs.TrySetResult(0);
-        }
-
         private ManagedQuicConnection? DispatchPacket(QuicReader reader, IPEndPoint remoteEp)
         {
-            if (_client != null)
-            {
-                _client.ReceiveData(reader, remoteEp, DateTime.Now);
-                return _client;
-            }
-
             ManagedQuicConnection? connection;
             // we need to dispatch packets to appropriate connection based on the connection Id, so we need to parse the headers
             byte first = reader.Peek();
@@ -117,7 +68,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             reader.Seek(0);
             bool connected = connection!.Connected;
-            connection.ReceiveData(reader, remoteEp, DateTime.Now);
+            connection.ReceiveData(reader, remoteEp, Timestamp.Now);
             // TODO-RZ: handle failed connection attempts
             if (!connected && connection!.Connected)
             {
@@ -128,45 +79,163 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return connection;
         }
 
+        protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
+        {
+            var connection = DispatchPacket(reader, sender);
+            return connection != null ? SendAsync(connection) : Task.CompletedTask;
+        }
+
+        protected override async Task OnSignal()
+        {
+            foreach (var (_, connection) in _connections)
+            {
+                await SendAsync(connection);
+            }
+        }
+
+        protected override async Task OnTimeout()
+        {
+            // TODO-RZ: do timeout only on the one connection which needs it
+            long now = Timestamp.Now;
+            foreach (var (_, connection) in _connections)
+            {
+                connection.OnTimeout(now);
+                await SendAsync(connection);
+            }
+        }
+    }
+
+    internal sealed class QuicClientSocketContext : QuicSocketContext
+    {
+        private readonly ManagedQuicConnection _client;
+
+        internal QuicClientSocketContext(IPEndPoint localEndpoint, ManagedQuicConnection clientConnection)
+            : base(localEndpoint)
+        {
+            _client = clientConnection;
+        }
+
+        protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
+        {
+            _client.ReceiveData(reader, sender, Timestamp.Now);
+            return SendAsync(_client);
+        }
+
+        protected override async Task OnSignal()
+        {
+             await SendAsync(_client);
+        }
+
+        protected override Task OnTimeout()
+        {
+            _client.OnTimeout(Timestamp.Now);
+            return SendAsync(_client);
+        }
+    }
+
+    /// <summary>
+    ///     Class responsible for serving a socket for QUIC connections.
+    /// </summary>
+    internal abstract class QuicSocketContext
+    {
+        protected readonly IPEndPoint _localEndpoint;
+        protected readonly CancellationTokenSource _socketTaskCts;
+
+        protected TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
+
+        protected Task? _backgroundWorkerTask;
+
+        protected QuicReader _reader;
+        protected QuicWriter _writer;
+
+        private readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
+        private Task _timeoutTask;
+        private long _currentTimeout = long.MaxValue;
+
+        private Task[] _waitingTasks = new Task[3];
+
+        private Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+
+        private readonly byte[] _sendBuffer = new byte[64 * 1024];
+        private readonly byte[] _recvBuffer = new byte[64 * 1024];
+
+        protected QuicSocketContext(IPEndPoint localEndpoint)
+        {
+            _localEndpoint = localEndpoint;
+
+            _socketTaskCts = new CancellationTokenSource();
+            _timeoutTask = _infiniteTimeoutTask;
+
+            _reader = new QuicReader(_recvBuffer);
+            _writer = new QuicWriter(_sendBuffer);
+        }
+
+        internal void Start()
+        {
+            Debug.Assert(_backgroundWorkerTask == null);
+            if (_localEndpoint != null)
+            {
+                _socket.Bind(_localEndpoint);
+            }
+            _backgroundWorkerTask = Task.Run(BackgroundWorker);
+        }
+
+        /// <summary>
+        ///     Used to signal the thread that one of the connections has data to send.
+        /// </summary>
+        internal void Ping()
+        {
+            _signalTcs.TrySetResult(0);
+        }
+
+        protected Task SendAsync(ManagedQuicConnection sender)
+        {
+            _writer.Reset(_sendBuffer);
+            sender.SendData(_writer, out var receiver, Timestamp.Now);
+            SetTimeout(sender.GetNextTimerTimestamp());
+            return _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten), SocketFlags.None,
+                receiver);
+        }
+
+        protected void SetTimeout(long timestamp)
+        {
+            if (timestamp < _currentTimeout)
+            {
+                ClearTimeout();
+                _timeoutTask = Task.Delay((int) Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp)));
+                _waitingTasks[2] = _timeoutTask;
+            }
+        }
+
+        protected void ClearTimeout()
+        {
+            // TODO-RZ: gracefully stop the current timeout task
+            _timeoutTask = _infiniteTimeoutTask;
+        }
+
+        protected abstract Task OnReceived(QuicReader reader, IPEndPoint sender);
+
+        protected abstract Task OnSignal();
+
+        protected abstract Task OnTimeout();
 
         private async Task BackgroundWorker()
         {
             var token = _socketTaskCts.Token;
 
-            async Task SendData(ManagedQuicConnection c, QuicWriter w, Socket s, byte[] buf)
-            {
-                w.Reset(buf);
-                c.SendData(w, out var addr, DateTime.Now);
-                int written = w.BytesWritten;
-                if (written > 0)
-                {
-                    await s.SendToAsync(new ArraySegment<byte>(buf, 0, written), SocketFlags.None, addr)
-                        .ConfigureAwait(false);
-                }
-            }
-
-            byte[] recvBuffer = new byte[64 * 1024]; // max UDP packet size
-            var reader = new QuicReader(recvBuffer);
-            byte[] sendBuffer = new byte[64 * 1024]; // max UDP packet size
-            var writer = new QuicWriter(sendBuffer);
-
-            // TODO-RZ we need a way to notify clientside QuicConnection of newly assigned port number if none was specified beforehand
-            var socket = new Socket(_localEndpoint?.AddressFamily ?? AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            if (_localEndpoint != null)
-            {
-                socket.Bind(_localEndpoint);
-            }
-
             Task<SocketReceiveFromResult> socketReceiveTask =
-                socket.ReceiveFromAsync(recvBuffer, SocketFlags.None, _localEndpoint);
+                _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _localEndpoint);
 
-            Task[] waitingTasks = {socketReceiveTask, _signalTcs.Task};
+            _waitingTasks[0] = socketReceiveTask;
+            _waitingTasks[1] = _signalTcs.Task;
+            _waitingTasks[2] = _timeoutTask;
 
+            // TODO-RZ: allow timers for multiple connections on server
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await Task.WhenAny(waitingTasks).ConfigureAwait(false);
+                    await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
 
                     if (socketReceiveTask.IsCompleted)
                     {
@@ -175,38 +244,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         // process only datagrams big enough to contain valid QUIC packets
                         if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                         {
-                            reader.Reset(recvBuffer.AsMemory(0, result.ReceivedBytes));
-                            var connection = DispatchPacket(reader, (IPEndPoint) result.RemoteEndPoint);
-                            if (connection != null)
-                            {
-                                // also query the connection for data to be sent back
-                                await SendData(connection!, writer, socket, sendBuffer).ConfigureAwait(false);
-                            }
+                            _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
+                            await OnReceived(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
                         }
 
                         // start new receiving task
-                        waitingTasks[0] = socketReceiveTask =
-                            socket.ReceiveFromAsync(recvBuffer, SocketFlags.None, _localEndpoint);
+                        _waitingTasks[0] = socketReceiveTask =
+                            _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _localEndpoint);
                     }
 
                     if (_signalTcs.Task.IsCompleted)
                     {
                         _signalTcs = new TaskCompletionSource<int>();
-                        waitingTasks[1] = _signalTcs.Task;
-
-                        if (_client != null)
-                        {
-                            await SendData(_client, writer, socket, sendBuffer).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            foreach (ManagedQuicConnection connection in _connections!.Values)
-                            {
-                                await SendData(connection, writer, socket, sendBuffer).ConfigureAwait(false);
-                            }
-                        }
+                        _waitingTasks[1] = _signalTcs.Task;
+                        await OnSignal().ConfigureAwait(false);
                     }
 
+                    if (_timeoutTask.IsCompleted)
+                    {
+                        _waitingTasks[2] = _infiniteTimeoutTask;
+                        await OnTimeout().ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception e)

@@ -11,7 +11,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Timestamp when the packet was sent.
         /// </summary>
-        internal DateTime TimeSent { get; set; }
+        internal long TimeSent { get; set; }
 
         /// <summary>
         ///     Ranges of values which have been acked in the Ack frame in this packet, empty if nothing was acked.

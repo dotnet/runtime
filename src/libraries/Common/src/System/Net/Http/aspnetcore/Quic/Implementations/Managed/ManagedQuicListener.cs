@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Managed
             });
 
             _acceptQueue = channel.Reader;
-            _socketContext = new QuicSocketContext(_listenEndPoint, options, channel.Writer);
+            _socketContext = new QuicServerSocketContext(_listenEndPoint, options, channel.Writer);
         }
 
         internal override IPEndPoint ListenEndPoint => new IPEndPoint(_listenEndPoint.Address, _listenEndPoint.Port);

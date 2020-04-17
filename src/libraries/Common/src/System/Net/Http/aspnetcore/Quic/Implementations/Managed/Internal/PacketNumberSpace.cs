@@ -20,7 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Timestamp when packet with <see cref="LargestReceivedPacketNumber"/> was received.
         /// </summary>
-        internal DateTime LargestReceivedPacketTimestamp { get; set; }
+        internal long LargestReceivedPacketTimestamp { get; set; }
 
         /// <summary>
         ///     Number for the next packet to be send with.

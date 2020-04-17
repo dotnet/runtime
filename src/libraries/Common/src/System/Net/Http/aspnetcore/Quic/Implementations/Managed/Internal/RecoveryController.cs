@@ -31,14 +31,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const double TimeReorderingThreshold = 9.0 / 8;
 
         /// <summary>
-        ///     Timer granularity. The value is system-dependent, but SHOULD be at least 1ms.
+        ///     Timer granularity in ticks. The value is system-dependent, but SHOULD be at least 1ms.
         /// </summary>
-        internal static readonly TimeSpan TimerGranularity = TimeSpan.FromMilliseconds(10);
+        internal static readonly long TimerGranularity = Timestamp.FromMilliseconds(15);
 
         /// <summary>
-        ///     The RTT used before an RTT sample is taken. the RECOMMENDED value is 500ms.
+        ///     The RTT used before an RTT sample is taken in ticks. the RECOMMENDED value is 500ms.
         /// </summary>
-        internal static readonly TimeSpan InitialRtt = TimeSpan.FromMilliseconds(500);
+        internal static readonly long InitialRtt = Timestamp.FromMilliseconds(500);
 
         /// <summary>
         ///     Helper structure for holding packet number space related data together.
@@ -59,13 +59,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             /// <summary>
             ///     The time the most recent ack-eliciting packet was sent. MaxValue if no packet was sent yet.
             /// </summary>
-            internal DateTime TimeOfLastAckElicitingPacketSent { get; set; }
+            internal long TimeOfLastAckElicitingPacketSent { get; set; }
 
             /// <summary>
             ///     The time at which the next packet in the packet number space will be considered lost based on exceeding
             ///     the reordering window in time. MaxValue if no packet in flight.
             /// </summary>
-            internal DateTime NextLossTime { get; set; }
+            internal long NextLossTime { get; set; }
 
             /// <summary>
             ///     All sent packets, for which we are still awaiting acknowledgement.
@@ -97,24 +97,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
 
         /// <summary>
-        ///     The most recent RTT measurement made when receiving ack for a previously unacked packet.
+        ///     The most recent RTT measurement in ticks made when receiving ack for a previously unacked packet.
         /// </summary>
-        internal TimeSpan LatestRtt { get; private set; }
+        internal long LatestRtt { get; private set; }
 
         /// <summary>
-        ///     The smoothed RTT of the connection. Computed as exponentially weighted average as described in RFC6298.
+        ///     The smoothed RTT of the connection in ticks. Computed as exponentially weighted average as described in RFC6298.
         /// </summary>
-        internal TimeSpan SmoothedRtt { get; private set; }
+        internal long SmoothedRtt { get; private set; }
 
         /// <summary>
-        ///     The RTT variation, computed as described in RFC6298.
+        ///     The RTT variation in ticks, computed as described in RFC6298.
         /// </summary>
-        internal TimeSpan RttVariation { get; private set; }
+        internal long RttVariation { get; private set; }
 
         /// <summary>
-        ///     The minimum RTT seen in the connection, ignoring the ack delay.
+        ///     The minimum RTT seen in the connection in ticks, ignoring the ack delay.
         /// </summary>
-        internal TimeSpan MinimumRtt { get; private set; }
+        internal long MinimumRtt { get; private set; }
 
         /// <summary>
         ///     The number of times a probe time out (PTO) has been sent without receiving an ack.
@@ -124,13 +124,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Time when the next loss recovery tick needs to be made.
         /// </summary>
-        internal DateTime LossRecoveryTimer { get; private set; }
+        internal long LossRecoveryTimer { get; private set; }
 
         /// <summary>
         ///     Maximum delay by which the endpoint will delay sending acknowledgments. This value SHOULD include
-        ///     the receiver's expected delays in alarms firing.
+        ///     the receiver's expected delays in alarms firing. The value is in ticks.
         /// </summary>
-        internal TimeSpan MaxAckDelay { get; set; }
+        internal long MaxAckDelay { get; set; }
 
         /// <summary>
         ///     Congestion controller algorithm used.
@@ -169,11 +169,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             CongestionController.Reset();
 
             PtoCount = 0;
-            LatestRtt = TimeSpan.Zero;
-            SmoothedRtt = TimeSpan.Zero;
-            MinimumRtt = TimeSpan.Zero;
-            LossRecoveryTimer = DateTime.MaxValue;
-            MaxAckDelay = TimeSpan.FromMilliseconds(25);
+            LatestRtt = 0;
+            SmoothedRtt = 0;
+            MinimumRtt = 0;
+            LossRecoveryTimer = long.MaxValue;
+            MaxAckDelay = Timestamp.FromMilliseconds(25);
 
             foreach (PacketNumberSpace space in _pnSpaces)
             {
@@ -181,9 +181,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 space.AckedPackets.Clear();
                 space.LostPackets.Clear();
                 space.SentPackets.Clear();
-                space.NextLossTime = DateTime.MaxValue;
+                space.NextLossTime = long.MaxValue;
                 space.LargestAckedPacketNumber = 0;
-                space.TimeOfLastAckElicitingPacketSent = DateTime.MaxValue;
+                space.TimeOfLastAckElicitingPacketSent = long.MaxValue;
             }
         }
 
@@ -208,8 +208,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal void OnAckReceived(PacketSpace space, ReadOnlySpan<PacketNumberRange> ranges, TimeSpan ackDelay,
-            in AckFrame frame, DateTime now, bool isHandshakeComplete)
+        internal void OnAckReceived(PacketSpace space, ReadOnlySpan<PacketNumberRange> ranges, long ackDelay,
+            in AckFrame frame, long now, bool isHandshakeComplete)
         {
             Debug.Assert(!ranges.IsEmpty);
 
@@ -227,7 +227,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 LatestRtt = now - largestAckedPacket!.TimeSent;
                 if (space != PacketSpace.Application)
                 {
-                    ackDelay = TimeSpan.Zero;
+                    ackDelay = 0;
                 }
 
                 UpdateRtt(ackDelay);
@@ -244,7 +244,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         }
 
         private bool ProcessNewlyAckedPackets(ReadOnlySpan<PacketNumberRange> ranges, PacketNumberSpace pnSpace,
-            DateTime now)
+            long now)
         {
             int rangeIndex = 0;
             bool newlyAckedIncludeAckEliciting = false;
@@ -279,7 +279,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return newlyAckedIncludeAckEliciting;
         }
 
-        private void OnPacketAcked(long packetNumber, SentPacket packet, PacketNumberSpace pnSpace, DateTime now)
+        private void OnPacketAcked(long packetNumber, SentPacket packet, PacketNumberSpace pnSpace, long now)
         {
             if (packet.InFlight)
             {
@@ -290,10 +290,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace.AckedPackets.Add(packet);
         }
 
-        internal void UpdateRtt(TimeSpan ackDelay)
+        internal void UpdateRtt(long ackDelay)
         {
             // First RTT sample
-            if (SmoothedRtt == TimeSpan.Zero)
+            if (SmoothedRtt == 0)
             {
                 MinimumRtt = LatestRtt;
                 SmoothedRtt = LatestRtt;
@@ -301,18 +301,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            // do the calculation in ticks to simplify math
-            MinimumRtt = TimeSpan.FromTicks(Math.Min(MinimumRtt.Ticks, LatestRtt.Ticks));
-            long ackDelayTicks = Math.Min(ackDelay.Ticks, MaxAckDelay.Ticks);
+            MinimumRtt = Math.Min(MinimumRtt, LatestRtt);
+            ackDelay = Math.Min(ackDelay, MaxAckDelay);
 
             // adjust for ack delay if plausible
-            long adjustedRttTicks = LatestRtt.Ticks;
-            if (adjustedRttTicks > MinimumRtt.Ticks + ackDelayTicks)
-                adjustedRttTicks = LatestRtt.Ticks - ackDelayTicks;
+            long adjustedRttTicks = LatestRtt;
+            if (adjustedRttTicks > MinimumRtt + ackDelay)
+                adjustedRttTicks = LatestRtt - ackDelay;
 
-            RttVariation =
-                TimeSpan.FromTicks((long) (3.0 / 4 * RttVariation.Ticks +
-                                           1.0 / 4 * Math.Abs(SmoothedRtt.Ticks - adjustedRttTicks)));
+            RttVariation = (long)(3.0 / 4 * RttVariation +
+                                  1.0 / 4 * Math.Abs(SmoothedRtt - adjustedRttTicks));
         }
 
         private PacketNumberSpace GetSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
@@ -346,7 +344,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             var earliestLossTime = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
 
-            if (earliestLossTime != DateTime.MaxValue)
+            if (earliestLossTime != long.MaxValue)
             {
                 // Time threshold loss detection.
                 LossRecoveryTimer = earliestLossTime;
@@ -357,12 +355,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 PeerNotAwaitingAddressValidation())
             {
                 // cancel the timer
-                LossRecoveryTimer = DateTime.MaxValue;
+                LossRecoveryTimer = long.MaxValue;
                 return;
             }
 
-            TimeSpan timeout;
-            if (SmoothedRtt == TimeSpan.Zero)
+            long timeout;
+            if (SmoothedRtt == 0)
             {
                 // use a default timeout if there are no RTT measurements
                 timeout = 2 * InitialRtt;
@@ -370,7 +368,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             else
             {
                 timeout = SmoothedRtt +
-                          TimeSpan.FromTicks(Math.Max(4 * RttVariation.Ticks, TimerGranularity.Ticks)) +
+                          Math.Max(4 * RttVariation, TimerGranularity) +
                           MaxAckDelay;
             }
 
@@ -380,12 +378,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             LossRecoveryTimer = pnSpace.TimeOfLastAckElicitingPacketSent + timeout;
         }
 
-        internal void OnLossDetectionTimeout(bool isHandshakeComplete, DateTime now)
+        internal void OnLossDetectionTimeout(bool isHandshakeComplete, long now)
         {
             var pnSpace = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer);
-            var earliestLossTime = pnSpace.NextLossTime;
+            long earliestLossTime = pnSpace.NextLossTime;
 
-            if (earliestLossTime != DateTime.MaxValue)
+            if (earliestLossTime != long.MaxValue)
             {
                 // Time threshold loss detection
                 DetectLostPackets(pnSpace, now);
@@ -411,26 +409,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             SetLossDetectionTimer(isHandshakeComplete);
         }
 
-        private void DetectLostPackets(PacketNumberSpace pnSpace, DateTime now)
+        private void DetectLostPackets(PacketNumberSpace pnSpace, long now)
         {
             // will be set again later, if necessary
-            pnSpace.NextLossTime = DateTime.MaxValue;
+            pnSpace.NextLossTime = long.MaxValue;
 
             // lost packets to be passed to congestion controller (with InFlight = true)
             var lostPacketsForCc = new List<SentPacket>();
 
-            var lossDelayTicks = (long)(TimeReorderingThreshold *
-                                        Math.Max(LatestRtt.Ticks, SmoothedRtt.Ticks));
+            long lossDelay = (long)(TimeReorderingThreshold * Math.Max(LatestRtt, SmoothedRtt));
 
             // minimum time based on timer granularity before packets are deemded lost.
-            lossDelayTicks = Math.Max(lossDelayTicks, TimerGranularity.Ticks);
+            lossDelay = Math.Max(lossDelay, TimerGranularity);
 
-            var lostSendTime = now - TimeSpan.FromTicks(lossDelayTicks);
-
+            long lostSendTime = now - lossDelay;
             long largestAcked = pnSpace.LargestAckedPacketNumber;
 
             // make a copy before iterating because we are going to remove items from the collection
-            foreach (var (pn, packet) in pnSpace.SentPackets.ToArray())
+            foreach ((long pn, var packet) in pnSpace.SentPackets.ToArray())
             {
                 if (pn > largestAcked)
                     continue;
@@ -450,10 +446,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 else
                 {
                     // set time when the packet should be marked lost
-                    if (packet.TimeSent.AddTicks(lossDelayTicks) < pnSpace.NextLossTime )
-                    {
-                        pnSpace.NextLossTime = packet.TimeSent.AddTicks(lossDelayTicks);
-                    }
+                    pnSpace.NextLossTime = Math.Min(pnSpace.NextLossTime, packet.TimeSent + lossDelay);
                 }
             }
 

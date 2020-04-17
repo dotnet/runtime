@@ -7,6 +7,20 @@ using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed
 {
+    /// <summary>
+    ///     Helper class for managing timestamps.
+    /// </summary>
+    internal static class Timestamp
+    {
+        public static long Now => Stopwatch.GetTimestamp();
+
+        public static long FromMilliseconds(long milliseconds) => TimeSpan.TicksPerMillisecond * milliseconds;
+        public static long FromMicroseconds(long microseconds) => TimeSpan.TicksPerMillisecond * 1000 * microseconds;
+
+        public static long GetMilliseconds(long timeDiff) => timeDiff / TimeSpan.TicksPerMillisecond;
+        public static long GetMicroseconds(long timeDiff) => timeDiff / (TimeSpan.TicksPerMillisecond * 1000);
+    }
+
     internal partial class ManagedQuicConnection
     {
         private static bool IsAckEliciting(FrameType frameType)
@@ -234,9 +248,9 @@ namespace System.Net.Quic.Implementations.Managed
                 ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
-            // TODO-RZ: convert microseconds to TimeSpan
             var space = GetPacketSpace(packetType);
-            Recovery.OnAckReceived(space, ranges, TimeSpan.FromTicks(frame.AckDelay), frame, context.Now, _tls.IsHandshakeComplete);
+            long ackDelay = Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int) _peerTransportParameters.AckDelayExponent));
+            Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, _tls.IsHandshakeComplete);
 
             var ackedPackets = Recovery.GetAckedPackets(space);
             foreach (SentPacket packet in ackedPackets)
@@ -394,7 +408,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static unsafe void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
+        private void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
         {
             if (!pnSpace.AckElicited)
             {
@@ -405,8 +419,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
 
-            // TODO-RZ check max ack delay to avoid sending acks every packet
-            long ackDelay = (context.Now - pnSpace.LargestReceivedPacketTimestamp).Ticks;
+            // TODO-RZ check max ack delay to avoid sending acks every packet?
+            long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
+                            (int) _localTransportParameters.AckDelayExponent;
 
             long largest = ranges.GetMax();
             var firstRange = ranges[^1];

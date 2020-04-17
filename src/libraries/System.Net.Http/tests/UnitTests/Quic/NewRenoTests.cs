@@ -8,7 +8,7 @@ namespace System.Net.Quic.Tests
     {
         private readonly NewRenoCongestionController reno;
 
-        private DateTime Now = DateTime.Now;
+        private long Now = Timestamp.Now;
 
         public NewRenoTests()
         {
@@ -50,12 +50,12 @@ namespace System.Net.Quic.Tests
         public void ReducesWindowAfterCongestionEvent()
         {
             int window = reno.CongestionWindow;
-            reno.OnCongestionEvent(Now.AddMilliseconds(-15), Now);
+            reno.OnCongestionEvent(Now - Timestamp.FromMilliseconds(15), Now);
 
             Assert.Equal(window / 2, reno.CongestionWindow);
 
             // further congestion events should not change the window
-            reno.OnCongestionEvent(Now.AddMilliseconds(-15), Now);
+            reno.OnCongestionEvent(Now - Timestamp.FromMilliseconds(15), Now);
             Assert.Equal(window / 2, reno.CongestionWindow);
         }
 
@@ -69,7 +69,7 @@ namespace System.Net.Quic.Tests
             reno.OnPacketSent(packet);
             reno.OnPacketSent(packet);
 
-            reno.OnCongestionEvent(Now, Now.AddMilliseconds(15));
+            reno.OnCongestionEvent(Now, Now + Timestamp.FromMilliseconds(15));
             int window = reno.CongestionWindow;
             reno.OnPacketAcked(packet, Now); // sent before congestion recovery started
             Assert.Equal(window, reno.CongestionWindow);
@@ -87,17 +87,17 @@ namespace System.Net.Quic.Tests
 
             // experience congestion to set slow start threshold
             int window = reno.CongestionWindow;
-            reno.OnCongestionEvent(Now, Now.AddMilliseconds(15));
+            reno.OnCongestionEvent(Now, Now + Timestamp.FromMilliseconds(15));
             Assert.Equal(window/2, reno.CongestionWindow);
 
             // send another packet some time later
-            Now = Now.AddMilliseconds(15);
+            Now += Timestamp.FromMilliseconds(15);
             packet = new SentPacket {TimeSent = Now, BytesSent = 5000, InFlight = true};
             reno.OnPacketSent(packet);
 
             // this one gets acked
             window = reno.CongestionWindow;
-            reno.OnPacketAcked(packet, Now.AddMilliseconds(10));
+            reno.OnPacketAcked(packet, Now + Timestamp.FromMilliseconds(10));
 
             // congestion window should be increased by smaller value than packet size
             Assert.True(reno.CongestionWindow - window < packet.BytesSent);

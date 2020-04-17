@@ -33,14 +33,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         ///     Called when a previously sent packet is acked.
         /// </summary>
         /// <param name="packet">Packet acked.</param>
-        /// <param name="now">Timestamp when ack was received</param>
-        void OnPacketAcked(SentPacket packet, DateTime now);
+        /// <param name="now">Timestamp when ack was received in ticks</param>
+        void OnPacketAcked(SentPacket packet, long now);
 
         /// <summary>
         ///     Called when detecting loss of group of consecutive packets.
         /// </summary>
         /// <param name="packets">Packets lost.</param>
-        /// <param name="now">Timestamp when loss occured.</param>
-        void OnPacketsLost(List<SentPacket> packets, DateTime now);
+        /// <param name="now">Timestamp when loss occured in ticks.</param>
+        void OnPacketsLost(List<SentPacket> packets, long now);
     }
 }
