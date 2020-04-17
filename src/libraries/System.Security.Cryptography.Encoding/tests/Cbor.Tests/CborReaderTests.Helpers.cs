@@ -28,8 +28,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         break;
                     case int expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
-                        long i = reader.ReadInt64();
-                        Assert.Equal(expected, (int)i);
+                        int i = reader.ReadInt32();
+                        Assert.Equal(expected, i);
                         break;
                     case long expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
