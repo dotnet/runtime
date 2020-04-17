@@ -337,9 +337,8 @@ namespace System.Text.Json
             out Type runtimeType,
             JsonSerializerOptions options)
         {
-            ValidateType(type, parentClassType, propertyInfo);
-
             Debug.Assert(type != null);
+            ValidateType(type, parentClassType, propertyInfo);
 
             JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
@@ -409,8 +408,17 @@ namespace System.Text.Json
                 return false;
             }
 
-            object[] attributes = type.GetCustomAttributes(typeof(IsByRefLikeAttribute), inherit: false);
-            return attributes.Length == 1;
+            object[] attributes = type.GetCustomAttributes(inherit: false);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
 #endif
         }
     }
