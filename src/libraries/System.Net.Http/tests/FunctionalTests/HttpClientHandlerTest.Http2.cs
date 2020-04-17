@@ -1862,7 +1862,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31220")]
         public async Task PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent()
         {
             string responseContent = "no no!";
@@ -1870,7 +1869,7 @@ namespace System.Net.Http.Functional.Tests
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (var handler = new SocketsHttpHandler())
-                using (HttpClient client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
@@ -1899,7 +1898,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(responseContent));
 
                 // Client should send empty request body
-                byte[] requestBody = await connection.ReadBodyAsync();
+                byte[] requestBody = await connection.ReadBodyAsync(expectEndOfStream:true);
                 Assert.Null(requestBody);
 
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
