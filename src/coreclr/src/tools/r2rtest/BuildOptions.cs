@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     public class BuildOptions
     {

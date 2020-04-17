@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     public class BuildFolder
     {
