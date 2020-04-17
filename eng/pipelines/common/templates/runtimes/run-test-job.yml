@@ -211,7 +211,6 @@ jobs:
       - script: $(_msbuildCommand)
                 $(Build.SourcesDirectory)/src/mono/mono.proj
                 /t:PatchCoreClrCoreRoot
-                -ci
         displayName: "Patch dotnet with mono"
 
 
