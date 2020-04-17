@@ -904,7 +904,7 @@ namespace System.Net.NetworkInformation.Tests
 
             _output.WriteLine($"pinging '{localIpAddress}'");
 
-            using (RemoteExecutor.Invoke(address  =>
+            RemoteExecutor.Invoke(address  =>
             {
                 byte[] buffer = TestSettings.PayloadAsBytes;
                 SendBatchPing(
@@ -914,9 +914,7 @@ namespace System.Net.NetworkInformation.Tests
                         PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
                         Assert.Equal(buffer, pingReply.Buffer);
                     });
-            }, localIpAddress.ToString(), new RemoteInvokeOptions { RunAsSudo = true }))
-            {
-            }
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
     }
 }

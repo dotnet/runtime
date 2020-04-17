@@ -19,8 +19,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
-        private static bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         [ThreadStatic]
         private static Random? t_idGenerator;
 
@@ -63,7 +63,7 @@ namespace System.Net.NetworkInformation
              {
                 iph.VersionAndLength = 0x45;
                 // On OSX this strangely must be host byte order.
-                iph.TotalLength = (ushort)(sizeof(IpHeader) + sizeof(IcmpHeader) +  buffer.Length);
+                iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
                 iph.Protocol = 1; // ICMP
                 iph.Ttl = (byte)options!.Ttl;
                 iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
@@ -448,13 +448,13 @@ namespace System.Net.NetworkInformation
         {
             int icmpHeaderSize = sizeof(IcmpHeader);
             int offset = 0;
-            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : icmpHeaderSize + payload.Length;
+            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : checked(icmpHeaderSize + payload.Length);
             byte[] result = new byte[packetSize];
 
             if (ipHeader.TotalLength != 0)
             {
                 int ipHeaderSize = sizeof(IpHeader);
-                Marshal.Copy(new IntPtr(&ipHeader), result, 0, ipHeaderSize);
+                new Span<byte>(&ipHeader, sizeof(IpHeader)).CopyTo(result);
                 offset = ipHeaderSize;
             }
 
