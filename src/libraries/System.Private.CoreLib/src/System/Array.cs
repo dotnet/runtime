@@ -553,6 +553,10 @@ namespace System
                             case CorElementType.ELEMENT_TYPE_R8:
                                 result = GenericBinarySearch<double>(array, adjustedIndex, length, value);
                                 break;
+                            case CorElementType.ELEMENT_TYPE_I:
+                                result = GenericBinarySearch<IntPtr>(array, adjustedIndex, length, value);
+                            case CorElementType.ELEMENT_TYPE_U:
+                                result = GenericBinarySearch<UIntPtr>(array, adjustedIndex, length, value);
                             default:
                                 Debug.Fail("All primitive types should be handled above");
                                 break;
@@ -1269,8 +1273,6 @@ namespace System
                         case CorElementType.ELEMENT_TYPE_R8:
                             result = GenericLastIndexOf<double>(array, value, adjustedIndex, count);
                             break;
-
-                            result = GenericBinarySearch<IntPtr>(array, value, adjustedIndex, count);
                         default:
                             Debug.Fail("All primitive types should be handled above");
                             break;
@@ -1460,20 +1462,20 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                case CorElementType.ELEMENT_TYPE_R4:
 #if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
+                case CorElementType.ELEMENT_TYPE_R4:
                     UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                case CorElementType.ELEMENT_TYPE_R8:
 #if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
+                case CorElementType.ELEMENT_TYPE_R8:
                     UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_OBJECT:
