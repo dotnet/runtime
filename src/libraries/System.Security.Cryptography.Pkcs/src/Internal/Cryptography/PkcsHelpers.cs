@@ -569,18 +569,16 @@ namespace Internal.Cryptography
             return value.UtcDateTime;
         }
 
-        public static string DecodeOid(byte[] encodedOid)
+        public static string DecodeOid(ReadOnlySpan<byte> encodedOid)
         {
-            ReadOnlySpan<byte> invalidEmptyOid = new byte[] { 0x06, 0x00 };
-
-            // Windows compat.
-            if (invalidEmptyOid.SequenceEqual(encodedOid))
+            // Windows compat for a zero length OID.
+            if (encodedOid.Length == 2 && encodedOid[0] == 0x06 && encodedOid[1] == 0x00)
             {
                 return string.Empty;
             }
 
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedOid, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(encodedOid, AsnEncodingRules.BER);
             string value = reader.ReadObjectIdentifierAsString();
             reader.ThrowIfNotEmpty();
             return value;
