@@ -2998,12 +2998,12 @@ mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
+		/* allocate len + 1 utf16 characters plus pointer-size integer for length*/
+		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + SIZEOF_VOID_P);
 		if (ret == NULL)
 			return NULL;
-		mono_bstr const s = (mono_bstr)(ret + 1);
-		*ret = slen * sizeof (gunichar2);
+		mono_bstr const s = (mono_bstr)(ret + (SIZEOF_VOID_P / 4));
+		*(ret + 1) = slen * sizeof (gunichar2);
 		if (ptr)
 			memcpy (s, ptr, slen * sizeof (gunichar2));
 		s [slen] = 0;
@@ -3079,7 +3079,7 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-		g_free (((char *)bstr) - 4);
+		g_free (((char *)bstr) - SIZEOF_VOID_P);
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		sys_free_string_ms ((mono_bstr_const)bstr);
