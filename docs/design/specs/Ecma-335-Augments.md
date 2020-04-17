@@ -33,7 +33,6 @@ grammars and diagrams.
 Many of the specific issues below arise from the tension between these
 two approaches.
 
-
 ### 1. `(CLASS | VALUETYPE)` cannot be followed by TypeSpec in practice
 
 In II.23.2.12 and II.23.2.14, it is implied that the token in `(CLASS
@@ -328,4 +327,3 @@ We propose the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is an
 2)      0.5 GB is a very large heap. Having such a big PE file seems unreasonable and very rare scenario (if it exists at all).
 
 3)      Having 3 spare bits available is very beneficial for the implementation. It allows to represent WinRT projected strings, namespaces, etc. in very efficient way. If we had to represent heap indices with all 32 bits it would bloat various structures and increase memory pressure. PE files over 0.5 GB of size are very rare, but the overhead would affect all compilers and tools working with the metadata reader.
-
