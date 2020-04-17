@@ -3,5 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
+    <!-- Set CONTRACTS_FULL to preserve usage of Contracts attributes -->
+    <DefineConstants>$(DefineConstants),CONTRACTS_FULL</DefineConstants>
   </PropertyGroup>
 </Project>
