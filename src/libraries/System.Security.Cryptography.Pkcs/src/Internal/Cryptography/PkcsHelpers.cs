@@ -532,8 +532,6 @@ namespace Internal.Cryptography
             }
         }
 
-        private static readonly byte[] s_invalidEmptyOid = { 0x06, 0x00 };
-
         public static byte[] EncodeUtcTime(DateTime utcTime)
         {
             const int maxLegalYear = 2049;
@@ -575,8 +573,10 @@ namespace Internal.Cryptography
 
         public static string DecodeOid(byte[] encodedOid)
         {
+            ReadOnlySpan<byte> invalidEmptyOid = new byte[] { 0x06, 0x00 };
+
             // Windows compat.
-            if (s_invalidEmptyOid.AsSpan().SequenceEqual(encodedOid))
+            if (invalidEmptyOid.SequenceEqual(encodedOid))
             {
                 return string.Empty;
             }
