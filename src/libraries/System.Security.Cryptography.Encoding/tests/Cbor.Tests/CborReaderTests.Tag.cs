@@ -85,6 +85,43 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal("Data item major type mismatch.", exn.Message);
         }
 
+        [Theory]
+        [InlineData(2, "c202")]
+        [InlineData(0, "c074323031332d30332d32315432303a30343a30305a")]
+        [InlineData(1, "c11a514b67b0")]
+        [InlineData(23, "d74401020304")]
+        [InlineData(32, "d82076687474703a2f2f7777772e6578616d706c652e636f6d")]
+        [InlineData(int.MaxValue, "da7fffffff02")]
+        [InlineData(ulong.MaxValue, "dbffffffffffffffff820102")]
+        public static void PeekTag_SingleValue_HappyPath(ulong expectedTag, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            CborTag tag = reader.PeekTag();
+            Assert.Equal(expectedTag, (ulong)tag);
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void PeekTag_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.PeekTag());
+
+            Assert.Equal("Data item major type mismatch.", exn.Message);
+        }
+
         [Fact]
         public static void ReadTag_NestedTagWithMissingPayload_ShouldThrowFormatException()
         {
