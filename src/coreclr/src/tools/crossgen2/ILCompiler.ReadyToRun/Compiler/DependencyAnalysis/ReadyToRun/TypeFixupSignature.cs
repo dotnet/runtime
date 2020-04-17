@@ -71,8 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty;
             }
 
-            bool isHfa = defType.IsHfa && defType.Context.Target.Architecture == TargetArchitecture.ARM || defType.Context.Target.Architecture == TargetArchitecture.ARM64;
-            if (isHfa)
+            if (defType.IsHfa)
             {
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA;
             }
@@ -80,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitUInt((uint)flags);
             dataBuilder.EmitUInt((uint)size);
 
-            if (isHfa)
+            if (defType.IsHfa)
             {
                 switch (defType.HfaElementType.Category)
                 {
@@ -88,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R4);
                         break;
                     case TypeFlags.Double:
-                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R4);
+                        dataBuilder.EmitUInt((uint)CorElementType.ELEMENT_TYPE_R8);
                         break;
                 }
             }
@@ -109,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     if (bit)
                     {
-                        encodedGCRefMap[bitIndex / 8] += (byte)(1 << (bitIndex & 7));
+                        encodedGCRefMap[bitIndex / 8] |= (byte)(1 << (bitIndex & 7));
                     }
 
                     ++bitIndex;
@@ -126,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             int alignment = type.Context.Target.PointerSize;
 
-            if (((MetadataType)type).HasLayout())
+            if (type.HasLayout())
             {
                 if (type.IsSequentialLayout || MarshalUtils.IsBlittableType(type))
                 {

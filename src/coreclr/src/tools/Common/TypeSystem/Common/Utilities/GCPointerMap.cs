@@ -16,7 +16,7 @@ namespace Internal.TypeSystem
     public partial struct GCPointerMap : IEquatable<GCPointerMap>, IComparable<GCPointerMap>
     {
         // Each bit in this array represents a pointer-sized cell.
-        private int[] _gcFlags;
+        private uint[] _gcFlags;
 
         private int _numCells;
 
@@ -86,7 +86,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public GCPointerMap(int[] gcFlags, int numCells)
+        public GCPointerMap(uint[] gcFlags, int numCells)
         {
             Debug.Assert(numCells <= gcFlags.Length << 5);
             _gcFlags = gcFlags;
@@ -119,7 +119,7 @@ namespace Internal.TypeSystem
         {
             int hashCode = 0;
             for (int i = 0; i < _gcFlags.Length; i++)
-                hashCode ^= _gcFlags[i];
+                hashCode ^= (int)_gcFlags[i];
             return hashCode;
         }
 
@@ -139,7 +139,7 @@ namespace Internal.TypeSystem
             for (int i = 0; i < _gcFlags.Length; i++)
             {
                 if (_gcFlags[i] != other._gcFlags[i])
-                    return _gcFlags[i] - other._gcFlags[i];
+                    return (int)(_gcFlags[i] - other._gcFlags[i]);
             }
 
             Debug.Assert(Equals(other));
@@ -154,7 +154,7 @@ namespace Internal.TypeSystem
     {
         // Each bit in this array represents a pointer-sized cell.
         // Bits start at the least significant bit.
-        private int[] _gcFlags;
+        private uint[] _gcFlags;
 
         private int _pointerSize;
 
@@ -172,12 +172,12 @@ namespace Internal.TypeSystem
             {
                 // Given the number of cells, how many Int32's do we need to represent them?
                 // (It's one bit per cell, but this time we need to round up.)
-                _gcFlags = new int[((numPointerSizedCells - 1) >> 5) + 1];
+                _gcFlags = new uint[((numPointerSizedCells - 1) >> 5) + 1];
             }
             else
             {
                 // Not big enough to fit even a single pointer.
-                _gcFlags = Array.Empty<int>();
+                _gcFlags = Array.Empty<uint>();
             }
 
             _pointerSize = pointerSize;
@@ -197,7 +197,7 @@ namespace Internal.TypeSystem
 
             int cellIndex = absoluteOffset / _pointerSize;
 
-            _gcFlags[cellIndex >> 5] |= 1 << (cellIndex & 0x1F);
+            _gcFlags[cellIndex >> 5] |= 1u << (cellIndex & 0x1F);
         }
 
         public GCPointerMapBuilder GetInnerBuilder(int offset, int size)
@@ -241,11 +241,11 @@ namespace Internal.TypeSystem
 
     public struct BitEnumerator
     {
-        private int[] _buffer;
+        private uint[] _buffer;
         private int _limitBit;
         private int _currentBit;
 
-        public BitEnumerator(int[] buffer, int startBit, int numBits)
+        public BitEnumerator(uint[] buffer, int startBit, int numBits)
         {
             Debug.Assert(startBit >= 0 && numBits >= 0);
             Debug.Assert(startBit + numBits <= buffer.Length << 5);
