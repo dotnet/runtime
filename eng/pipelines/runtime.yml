@@ -521,6 +521,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
+    - OSX_x64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
