@@ -1022,7 +1022,7 @@ namespace Internal.NativeCrypto
             }
 
             SafeKeyHandle hKey;
-            if (!CryptImportKey(saveProvHandle, keyBlob, keyBlob.Length, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
+            if (!CryptImportKey(saveProvHandle, keyBlob, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
 
@@ -1330,7 +1330,7 @@ namespace Internal.NativeCrypto
             try
             {
                 // Import the public key
-                if (!CryptImportKey(hProv, RgbPubKey, RgbPubKey.Length, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
+                if (!CryptImportKey(hProv, RgbPubKey, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
@@ -1472,14 +1472,13 @@ namespace Internal.NativeCrypto
         public static unsafe bool CryptImportKey(
             SafeProvHandle hProv,
             ReadOnlySpan<byte> pbData,
-            int dwDataLen,
             SafeKeyHandle hPubKey,
             int dwFlags,
             out SafeKeyHandle phKey)
         {
             fixed (byte* pbDataPtr = pbData)
             {
-                bool response = Interop.Advapi32.CryptImportKey(hProv, pbDataPtr, dwDataLen, hPubKey, dwFlags, out phKey);
+                bool response = Interop.Advapi32.CryptImportKey(hProv, pbDataPtr, pbData.Length, hPubKey, dwFlags, out phKey);
 
                 phKey.SetParent(hProv);
 
