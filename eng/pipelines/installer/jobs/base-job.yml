@@ -458,17 +458,17 @@ jobs:
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
           subsetArg: $(installersSubsetArg)
 
-      - ${{ each rid in packageBuild.rids }}:
-        # Build distro-dependent packages.
-        - template: steps/build-linux-package.yml
-          parameters:
-            distroRid: ${{ rid }}
-            image: ${{ packageBuild.image }}
-            outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
-            packageStepDescription: Runtime Deps installers
-            packagingArgs: /p:BuildDistroIndependentInstallers=false
-            subsetArg: $(installersSubsetArg)
-          condition: eq(${{ parameters.runtimeFlavor }}, 'coreclr')
+      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+        - ${{ each rid in packageBuild.rids }}:
+          # Build distro-dependent packages.
+          - template: steps/build-linux-package.yml
+            parameters:
+              distroRid: ${{ rid }}
+              image: ${{ packageBuild.image }}
+              outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
+              packageStepDescription: Runtime Deps installers
+              packagingArgs: /p:BuildDistroIndependentInstallers=false
+              subsetArg: $(installersSubsetArg)
 
   - ${{ if ne(parameters.container, '') }}:
     # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
