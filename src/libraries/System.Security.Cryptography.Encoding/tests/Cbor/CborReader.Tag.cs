@@ -62,6 +62,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 string dateString = ReadTextString();
 
+                // TODO determine if conformance levels should allow inexact date sting parsing
                 if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                 {
                     throw new FormatException("DateTime string is not valid RFC3339 format.");
