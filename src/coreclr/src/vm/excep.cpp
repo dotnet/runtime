@@ -6658,7 +6658,6 @@ EXTERN_C void JIT_WriteBarrier_Debug();
 EXTERN_C void JIT_WriteBarrier_Debug_End();
 #endif
 
-#ifdef VSD_STUB_CAN_THROW_AV
 //Return TRUE if pContext->Pc is in VirtualStub
 BOOL IsIPinVirtualStub(PCODE f_IP)
 {
@@ -6689,7 +6688,6 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 }
-#endif // VSD_STUB_CAN_THROW_AV
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.

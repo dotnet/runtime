@@ -136,7 +136,7 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
-        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private MethodWithGCInfo _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
@@ -204,7 +204,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -1503,7 +1503,7 @@ namespace Internal.JitInterface
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            _methodCodeNode.Fixups.Add(node);
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -2115,7 +2115,7 @@ namespace Internal.JitInterface
             pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
             if (_profileDataNode == null)
             {
-                _profileDataNode = _compilation.NodeFactory.ProfileData((MethodWithGCInfo)_methodCodeNode);
+                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
             }
             return 0;
         }

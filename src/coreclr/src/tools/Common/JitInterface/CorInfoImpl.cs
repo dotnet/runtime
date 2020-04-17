@@ -291,7 +291,7 @@ namespace Internal.JitInterface
 
                 InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             PublishProfileData();

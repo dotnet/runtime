@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -22,7 +23,7 @@ namespace System
         // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
         private const int WriteBufferSize = 256;
 
-        private static object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
+        private static readonly object s_syncObject = new object();
         private static TextReader? s_in;
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
@@ -33,21 +34,52 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
-        internal static T EnsureInitialized<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
-            LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
+        public static TextReader In
+        {
+            get
+            {
+                return Volatile.Read(ref s_in) ?? EnsureInitialized();
 
-        public static TextReader In => EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
+                static TextReader EnsureInitialized()
+                {
+                    // Must be placed outside s_syncObject lock. See Out getter.
+                    ConsolePal.EnsureConsoleInitialized();
+
+                    lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
+                    {
+                        if (s_in == null)
+                        {
+                            Volatile.Write(ref s_in, ConsolePal.GetOrCreateReader());
+                        }
+                        return s_in;
+                    }
+                }
+            }
+        }
 
         public static Encoding InputEncoding
         {
             get
             {
-                return EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
+                Encoding? encoding = Volatile.Read(ref s_inputEncoding);
+                if (encoding == null)
+                {
+                    lock (s_syncObject)
+                    {
+                        if (s_inputEncoding == null)
+                        {
+                            Volatile.Write(ref s_inputEncoding, ConsolePal.InputEncoding);
+                        }
+                        encoding = s_inputEncoding;
+                    }
+                }
+                return encoding;
             }
             set
             {
                 CheckNonNull(value, nameof(value));
-                lock (InternalSyncObject)
+
+                lock (s_syncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleInputEncoding(value);
@@ -66,13 +98,25 @@ namespace System
         {
             get
             {
-                return EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
+                Encoding? encoding = Volatile.Read(ref s_outputEncoding);
+                if (encoding == null)
+                {
+                    lock (s_syncObject)
+                    {
+                        if (s_outputEncoding == null)
+                        {
+                            Volatile.Write(ref s_outputEncoding, ConsolePal.OutputEncoding);
+                        }
+                        encoding = s_outputEncoding;
+                    }
+                }
+                return encoding;
             }
             set
             {
                 CheckNonNull(value, nameof(value));
 
-                lock (InternalSyncObject)
+                lock (s_syncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleOutputEncoding(value);
@@ -80,14 +124,14 @@ namespace System
                     // Before changing the code page we need to flush the data
                     // if Out hasn't been redirected. Also, have the next call to
                     // s_out reinitialize the console code page.
-                    if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
+                    if (s_out != null && !s_isOutTextWriterRedirected)
                     {
-                        s_out!.Flush();
+                        s_out.Flush();
                         Volatile.Write(ref s_out, null);
                     }
-                    if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
+                    if (s_error != null && !s_isErrorTextWriterRedirected)
                     {
-                        s_error!.Flush();
+                        s_error.Flush();
                         Volatile.Write(ref s_error, null);
                     }
 
@@ -119,9 +163,54 @@ namespace System
             return ConsolePal.ReadKey(intercept);
         }
 
-        public static TextWriter Out => EnsureInitialized(ref s_out, () => CreateOutputWriter(OpenStandardOutput()));
+        public static TextWriter Out
+        {
+            get
+            {
+                // Console.Out shouldn't be locked while holding a lock on s_syncObject.
+                // Otherwise there can be a deadlock when another thread locks these
+                // objects in opposite order.
+                //
+                // Some functionality requires the console to be initialized.
+                // On Linux, this initialization requires a lock on Console.Out.
+                // The EnsureConsoleInitialized call must be placed outside the s_syncObject lock.
+                Debug.Assert(!Monitor.IsEntered(s_syncObject));
 
-        public static TextWriter Error => EnsureInitialized(ref s_error, () => CreateOutputWriter(OpenStandardError()));
+                return Volatile.Read(ref s_out) ?? EnsureInitialized();
+
+                static TextWriter EnsureInitialized()
+                {
+                    lock (s_syncObject) // Ensures Out and OutputEncoding are synchronized.
+                    {
+                        if (s_out == null)
+                        {
+                            Volatile.Write(ref s_out, CreateOutputWriter(OpenStandardOutput()));
+                        }
+                        return s_out;
+                    }
+                }
+            }
+        }
+
+        public static TextWriter Error
+        {
+            get
+            {
+                return Volatile.Read(ref s_error) ?? EnsureInitialized();
+
+                static TextWriter EnsureInitialized()
+                {
+                    lock (s_syncObject) // Ensures Error and OutputEncoding are synchronized.
+                    {
+                        if (s_error == null)
+                        {
+                            Volatile.Write(ref s_error, CreateOutputWriter(OpenStandardError()));
+                        }
+                        return s_error;
+                    }
+                }
+            }
+        }
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
@@ -145,8 +234,14 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ?? EnsureInitialized();
                 return redirected.Value;
+
+                static StrongBox<bool> EnsureInitialized()
+                {
+                    Volatile.Write(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                    return _isStdInRedirected;
+                }
             }
         }
 
@@ -154,8 +249,14 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ?? EnsureInitialized();
                 return redirected.Value;
+
+                static StrongBox<bool> EnsureInitialized()
+                {
+                    Volatile.Write(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                    return _isStdOutRedirected;
+                }
             }
         }
 
@@ -163,8 +264,14 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ?? EnsureInitialized();
                 return redirected.Value;
+
+                static StrongBox<bool> EnsureInitialized()
+                {
+                    Volatile.Write(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                    return _isStdErrRedirected;
+                }
             }
         }
 
@@ -331,7 +438,10 @@ namespace System
         {
             add
             {
-                lock (InternalSyncObject)
+                // Must be placed outside s_syncObject lock. See Out getter.
+                ConsolePal.EnsureConsoleInitialized();
+
+                lock (s_syncObject)
                 {
                     s_cancelCallbacks += value;
 
@@ -345,7 +455,7 @@ namespace System
             }
             remove
             {
-                lock (InternalSyncObject)
+                lock (s_syncObject)
                 {
                     s_cancelCallbacks -= value;
                     if (s_registrar != null && s_cancelCallbacks == null)
@@ -412,7 +522,7 @@ namespace System
         {
             CheckNonNull(newIn, nameof(newIn));
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
-            lock (InternalSyncObject)
+            lock (s_syncObject)
             {
                 Volatile.Write(ref s_in, newIn);
             }
@@ -422,10 +532,9 @@ namespace System
         {
             CheckNonNull(newOut, nameof(newOut));
             newOut = TextWriter.Synchronized(newOut);
-            Volatile.Write(ref s_isOutTextWriterRedirected, true);
-
-            lock (InternalSyncObject)
+            lock (s_syncObject)
             {
+                s_isOutTextWriterRedirected = true;
                 Volatile.Write(ref s_out, newOut);
             }
         }
@@ -434,10 +543,9 @@ namespace System
         {
             CheckNonNull(newError, nameof(newError));
             newError = TextWriter.Synchronized(newError);
-            Volatile.Write(ref s_isErrorTextWriterRedirected, true);
-
-            lock (InternalSyncObject)
+            lock (s_syncObject)
             {
+                s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
         }

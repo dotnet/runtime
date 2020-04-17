@@ -10,35 +10,35 @@ partial class FunctionPtr
     public delegate bool DelegateWithLong(long l); //Singlecast delegate
     public delegate void MultiDelegateWithLong(long l); //Multicast delegate
 
+    public static DelegateWithLong s_DelWithLongBool = new DelegateWithLong(MethodWithLongBool);
+    public static MultiDelegateWithLong s_MultidelWithLong = new MultiDelegateWithLong(MethodWithLong);
+
     public static void RunGetFcnPtrSingleMulticastTest()
     {
         Console.WriteLine($"Running {nameof(RunGetFcnPtrSingleMulticastTest)}...");
 
-        DelegateWithLong del = new DelegateWithLong(Method);
-        MultiDelegateWithLong multidel = new MultiDelegateWithLong(Method2);
-
         {
-            IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<DelegateWithLong>(del);
+            IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<DelegateWithLong>(s_DelWithLongBool);
             Assert.IsTrue(FunctionPointerNative.CheckFcnPtr(fcnptr));
         }
 
         {
-            IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<MultiDelegateWithLong>(multidel);
+            IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<MultiDelegateWithLong>(s_MultidelWithLong);
             FunctionPointerNative.CheckFcnPtr(fcnptr);
         }
+    }
 
-        bool Method(long l)
-        {
-            if (l != 999999999999)
-                return false;
-            else
-                return true;
-        }
+    private static bool MethodWithLongBool(long l)
+    {
+        if (l != 999999999999)
+            return false;
+        else
+            return true;
+    }
 
-        void Method2(long l)
-        {
-            if (l != 999999999999)
-                throw new Exception("Failed multicast call");
-        }
+    private static void MethodWithLong(long l)
+    {
+        if (l != 999999999999)
+            throw new Exception("Failed multicast call");
     }
 }

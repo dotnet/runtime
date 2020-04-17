@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Security;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32;
@@ -148,6 +149,35 @@ namespace System
 
                 return $"Distro={v.Id} VersionId={v.VersionId}";
             }
+        }
+
+        private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
+        public static Version ICUVersion => m_icuVersion.Value;
+
+        public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
+        public static bool IsNlsGlobalization => !IsIcuGlobalization;
+
+        private static Version GetICUVersion()
+        {
+            int version = 0;
+            try
+            {
+                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                if (interopGlobalization != null)
+                {
+                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                    if (methodInfo != null)
+                    {
+                        version = (int)methodInfo.Invoke(null, null);
+                    }
+                }
+            }
+            catch { }
+
+            return new Version(version >> 24,
+                              (version >> 16) & 0xFF,
+                              (version >> 8) & 0xFF,
+                              version & 0xFF);
         }
 
         private static bool GetIsInContainer()

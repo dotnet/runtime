@@ -18,8 +18,8 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS or Android"
-  echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android or WebAssembly"
+  echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
@@ -89,9 +89,19 @@ source $scriptroot/native/init-os-and-arch.sh
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
+firstArgumentChecked=0
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+
+  if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
+    arguments="$arguments /p:Subset=$1"
+    shift 1
+    continue
+  fi
+
+  firstArgumentChecked=1
+
   case "$opt" in
      -help|-h)
       usage

@@ -120,6 +120,7 @@ namespace System.Tests
             yield return new object[] { (ulong)123, "E", customFormat, "1~230000E&002" };
             yield return new object[] { (ulong)123, "F", customFormat, "123~00" };
             yield return new object[] { (ulong)123, "P", customFormat, "12,300.00000 @" };
+            yield return new object[] { ulong.MaxValue, "n5", customFormat, "18*446*744*073*709*551*615~00000" };
         }
 
         [Theory]

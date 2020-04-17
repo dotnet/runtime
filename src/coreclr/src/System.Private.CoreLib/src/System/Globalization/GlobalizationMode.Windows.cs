@@ -6,9 +6,12 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        private static bool GetGlobalizationInvariantMode()
-        {
-            return GetInvariantSwitchValue();
-        }
+        // Order of these properties in Windows matter because GetUseIcuMode is dependent on Invariant.
+        // So we need Invariant to be initialized first.
+        internal static bool Invariant { get; } = GetInvariantSwitchValue();
+
+        internal static bool UseNls { get; } = !Invariant &&
+            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
+                Interop.Globalization.LoadICU() == 0);
     }
 }
