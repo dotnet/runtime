@@ -512,7 +512,6 @@ namespace System.Collections.Generic
                             if (behavior == InsertionBehavior.OverwriteExisting)
                             {
                                 entries[i].value = value;
-                                _version++;
                                 return true;
                             }
 
@@ -555,7 +554,6 @@ namespace System.Collections.Generic
                             if (behavior == InsertionBehavior.OverwriteExisting)
                             {
                                 entries[i].value = value;
-                                _version++;
                                 return true;
                             }
 
@@ -595,7 +593,6 @@ namespace System.Collections.Generic
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
                             entries[i].value = value;
-                            _version++;
                             return true;
                         }
 

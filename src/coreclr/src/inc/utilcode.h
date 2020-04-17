@@ -4844,37 +4844,6 @@ inline T* InterlockedCompareExchangeT(
 // to the appropriate pointer type.
 template <typename T>
 inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, reinterpret_cast<T*>(value));
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, reinterpret_cast<T*>(exchange), comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, reinterpret_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
     T* volatile *  target,
     std::nullptr_t value) // When nullptr is provided as argument.
 {
@@ -4900,6 +4869,37 @@ inline T* InterlockedCompareExchangeT(
 {
     //STATIC_ASSERT(comparand == 0);
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
+}
+
+// NULL pointer variants of the above to avoid having to cast NULL
+// to the appropriate pointer type.
+template <typename T>
+inline T* InterlockedExchangeT(
+    T* volatile *   target,
+    int             value) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(value == 0);
+    return InterlockedExchangeT(target, nullptr);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    int             exchange,  // When NULL is provided as argument.
+    T*              comparand)
+{
+    //STATIC_ASSERT(exchange == 0);
+    return InterlockedCompareExchangeT(destination, nullptr, comparand);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    T*              exchange,
+    int             comparand) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(comparand == 0);
+    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 #undef InterlockedExchangePointer

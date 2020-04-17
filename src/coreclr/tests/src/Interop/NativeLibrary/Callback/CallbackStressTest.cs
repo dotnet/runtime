@@ -24,21 +24,26 @@ public class CallbackStressTest
     public static void SetResolve()
     {
         Console.WriteLine("Setting PInvoke Resolver");
-        
+
         DllImportResolver resolver =
             (string libraryName, Assembly asm, DllImportSearchPath? dllImportSearchPath) =>
             {
-                if (dllImportSearchPath != DllImportSearchPath.System32)
+                if (string.Equals(libraryName, NativeLibraryToLoad.InvalidName))
                 {
-                    Console.WriteLine($"Unexpected dllImportSearchPath: {dllImportSearchPath.ToString()}");
-                    throw new ArgumentException();
+                    if (dllImportSearchPath != DllImportSearchPath.System32)
+                    {
+                        Console.WriteLine($"Unexpected dllImportSearchPath: {dllImportSearchPath.ToString()}");
+                        throw new ArgumentException();
+                    }
+
+                    return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
                 }
 
-                return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
+                return IntPtr.Zero;
             };
 
         NativeLibrary.SetDllImportResolver(
-            Assembly.GetExecutingAssembly(), 
+            Assembly.GetExecutingAssembly(),
             resolver);
     }
 
@@ -61,7 +66,7 @@ public class CallbackStressTest
                 s_PInvokesExecuted += (a == 20 ? 1 : 0);
         }
         catch (DllNotFoundException) { s_CatchCalled++; }
-        
+
         throw new ArgumentException();
     }
 
@@ -97,7 +102,7 @@ public class CallbackStressTest
         }
         finally { s_FinallyCalled++; }
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void ManualRaiseException()
     {
@@ -111,7 +116,7 @@ public class CallbackStressTest
         // TODO: test on Unix when implementing pinvoke inlining
         s_SEHExceptionCatchCalled++;
 #endif
-    }        
+    }
 
     public static int Main()
     {
@@ -123,13 +128,13 @@ public class CallbackStressTest
                 s_WrongPInvokesExecuted++;
             }
             catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
-            
+
             try { DoCall(); }
             catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
-            
+
             try { DoCallTryFinally(); }
             catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
-            
+
             try { DoCallTryCatch(true); }
             catch (ArgumentException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
 
@@ -138,10 +143,10 @@ public class CallbackStressTest
 
             try { DoCallTryRethrowDifferentExceptionInCatch(); }
             catch (InvalidOperationException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
-            
+
             ManualRaiseException();
         }
-        
+
         SetResolve();
 
         for(int i = 0; i < s_LoopCounter; i++)
@@ -152,11 +157,11 @@ public class CallbackStressTest
 
             try { DoCallTryCatch(false); }
             catch (ArgumentException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
-            
+
             ManualRaiseException();
         }
-        
-        if (s_FinallyCalled == s_LoopCounter && 
+
+        if (s_FinallyCalled == s_LoopCounter &&
             s_CatchCalled == (s_LoopCounter * 7) &&
             s_OtherExceptionCatchCalled == (s_LoopCounter * 3) &&
             s_WrongPInvokesExecuted == 0 &&
@@ -166,7 +171,7 @@ public class CallbackStressTest
             Console.WriteLine("PASS");
             return 100;
         }
-            
+
         Console.WriteLine("s_FinallyCalled = " + s_FinallyCalled);
         Console.WriteLine("s_CatchCalled = " + s_CatchCalled);
         Console.WriteLine("s_OtherExceptionCatchCalled = " + s_OtherExceptionCatchCalled);
@@ -179,7 +184,7 @@ public class CallbackStressTest
     [DllImport(NativeLibraryToLoad.InvalidName)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
-    
+
 #if WINDOWS
     [DllImport("kernel32")]
     static extern void RaiseException(uint dwExceptionCode, uint dwExceptionFlags, uint nNumberOfArguments, IntPtr lpArguments);

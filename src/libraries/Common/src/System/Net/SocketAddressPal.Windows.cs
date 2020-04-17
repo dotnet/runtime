@@ -11,9 +11,9 @@ namespace System.Net
         public const int IPv6AddressSize = 28;
         public const int IPv4AddressSize = 16;
 
-        public static unsafe AddressFamily GetAddressFamily(byte[] buffer)
+        public static unsafe AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {
-            return (AddressFamily)BitConverter.ToInt16(buffer, 0);
+            return (AddressFamily)BitConverter.ToInt16(buffer);
         }
 
         public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
@@ -35,7 +35,7 @@ namespace System.Net
 #endif
         }
 
-        public static unsafe ushort GetPort(byte[] buffer)
+        public static unsafe ushort GetPort(ReadOnlySpan<byte> buffer)
         {
             return buffer.NetworkBytesToHostUInt16(2);
         }

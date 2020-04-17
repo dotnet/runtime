@@ -143,7 +143,7 @@ namespace System.Net.Http.Headers
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
@@ -298,7 +298,7 @@ namespace System.Net.Http.Headers
                 }
 
                 DateTimeOffset temp;
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
+                if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
                 {
                     return false;
                 }

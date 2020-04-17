@@ -183,12 +183,22 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
+    local compositeCommandLine="$overlayDir/corerun"
+    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" --composite"
+    compositeCommandLine+=" -O"
+    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
     declare -a failedAssemblies
 
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
     for fileToPrecompile in ${filesToPrecompile}; do
         local filename="$fileToPrecompile"
         if is_skip_crossgen_test "$(basename $filename)"; then
+            continue
+        fi
+
+        if [[ "$__CompositeBuildMode" != 0 ]]; then
+            compositeCommandLine+=" $filename"
             continue
         fi
 
@@ -223,6 +233,17 @@ precompile_coreroot_fx()
         totalPrecompiled=$((totalPrecompiled+1))
         echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
     done
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        # Compile the entire framework in composite build mode
+        echo "Compiling composite R2R framework: $compositeCommandLine"
+        $compositeCommandLine
+        local exitCode="$?"
+        if [[ "$exitCode" != 0 ]]; then
+            echo Unable to precompile composite framework, exit code is "$exitCode".
+            exit 1
+        fi
+    fi
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
@@ -494,6 +515,9 @@ usage_list+=("-crossgen2: Precompiles the framework managed assemblies in corero
 usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
+usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
 usage_list+=("-skiprestorepackages: skip package restore.")
@@ -503,6 +527,7 @@ usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
+__BuildArch=
 
 handle_arguments_local() {
     case "$1" in
@@ -532,6 +557,12 @@ handle_arguments_local() {
             __TestBuildMode=crossgen2
             ;;
 
+        composite|-composite)
+            __CompositeBuildMode=1
+            __DoCrossgen2=1
+            __TestBuildMode=crossgen2
+            ;;
+
         generatetesthostonly|-generatetesthostonly)
             __GenerateTestHostOnly=1
             ;;
@@ -543,6 +574,14 @@ handle_arguments_local() {
         priority1|-priority1)
             __priority1=1
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
+            ;;
+
+        targetGeneric|-targetGeneric)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
+            ;;
+
+        targetSpecific|-targetSpecific)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
             ;;
 
         rebuild|-rebuild)
@@ -570,7 +609,6 @@ handle_arguments_local() {
     esac
 }
 
-__BuildArch=
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=INCLUDE_TESTS
@@ -592,6 +630,7 @@ __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
+__CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=

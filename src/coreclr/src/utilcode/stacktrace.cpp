@@ -793,8 +793,10 @@ CONTEXT * pContext      // Context to use (or NULL to use current)
 
 #ifdef HOST_64BIT
     #define FMT_ADDR_BARE      "%08x`%08x"
+    #define FMT_ADDR_OFFSET    "%llX"
 #else
     #define FMT_ADDR_BARE      "%08x"
+    #define FMT_ADDR_OFFSET    "%lX"
 #endif
 
 void GetStringFromSymbolInfo
@@ -816,7 +818,7 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     {
         sprintf_s(pszString,
                   cchMaxAssertStackLevelStringLen,
-                  "%s! %s + 0x%X (0x" FMT_ADDR_BARE ")",
+                  "%s! %s + 0x" FMT_ADDR_OFFSET " (0x" FMT_ADDR_BARE ")",
                   (psi->achModule[0]) ? psi->achModule : "<no module>",
                   (psi->achSymbol[0]) ? psi->achSymbol : "<no symbol>",
                   psi->dwOffset,
@@ -824,7 +826,6 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     }
     else
     {
-
         sprintf_s(pszString, cchMaxAssertStackLevelStringLen, "<symbols not available> (0x%p)", (void *)dwAddr);
     }
 

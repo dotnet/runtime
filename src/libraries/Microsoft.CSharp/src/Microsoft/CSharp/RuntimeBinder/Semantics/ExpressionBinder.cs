@@ -900,7 +900,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // and no ExpressionKind.EK_CAST is generated. We'd rather not give a "you're writing
                     // to a read-only property" error in the case where the property access
                     // is not explicit in the source code.  Fortunately in this case the
-                    // cast is still hanging around in the parse tree, so we can look for it.
+                    // cast is still present in the parse tree, so we can look for it.
 
                     // POSSIBLE ERROR: It would be nice to also give this error for other situations
                     // POSSIBLE ERROR: in which the user is attempting to assign to a value, such as

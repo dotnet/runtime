@@ -16,7 +16,7 @@ namespace ComWrappersTests.Common
         void SetValue(int i);
     }
 
-    class Test : ITest
+    class Test : ITest, ICustomQueryInterface
     {
         public static int InstanceCount = 0;
 
@@ -26,6 +26,27 @@ namespace ComWrappersTests.Common
 
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;
+
+        public bool EnableICustomQueryInterface { get; set; } = false;
+        public Guid ICustomQueryInterface_GetInterfaceIID { get; set; }
+        public IntPtr ICustomQueryInterface_GetInterfaceResult { get; set; }
+
+        CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
+        {
+            ppv = IntPtr.Zero;
+            if (!EnableICustomQueryInterface)
+            {
+                return CustomQueryInterfaceResult.NotHandled;
+            }
+
+            if (iid != ICustomQueryInterface_GetInterfaceIID)
+            {
+                return CustomQueryInterfaceResult.Failed;
+            }
+
+            ppv = this.ICustomQueryInterface_GetInterfaceResult;
+            return CustomQueryInterfaceResult.Handled;
+        }
     }
 
     public struct IUnknownVtbl

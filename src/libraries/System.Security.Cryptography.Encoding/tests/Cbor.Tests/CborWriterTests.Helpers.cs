@@ -5,6 +5,7 @@
 #nullable enable
 
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
@@ -15,11 +16,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             public const string MapPrefixIdentifier = "_map";
 
+            public const string EncodedPrefixIdentifier = "_encodedValue";
+
             // Since we inject test data using attributes, meed to represent both arrays and maps using object arrays.
             // To distinguish between the two types, we prepend map representations using a string constant.
             public static bool IsCborMapRepresentation(object[] values)
             {
                 return values.Length % 2 == 1 && values[0] is string s && s == MapPrefixIdentifier;
+            }
+
+            public static bool IsEncodedValueRepresentation(object[] values)
+            {
+                return values.Length == 2 &&
+                       values[0] is string s && s == EncodedPrefixIdentifier &&
+                       values[1] is string;
             }
 
             public static void WriteValue(CborWriter writer, object value, bool useDefiniteLengthCollections = true)
@@ -38,6 +48,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case byte[][] chunks: WriteChunkedByteString(writer, chunks); break;
                     case string[] chunks: WriteChunkedTextString(writer, chunks); break;
                     case object[] nested when IsCborMapRepresentation(nested): WriteMap(writer, nested, useDefiniteLengthCollections); break;
+                    case object[] nested when IsEncodedValueRepresentation(nested):
+                        byte[] encodedValue = ((string)nested[1]).HexToByteArray();
+                        writer.WriteEncodedValue(encodedValue);
+                        break;
+
                     case object[] nested: WriteArray(writer, nested, useDefiniteLengthCollections); break;
                     default: throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
                 };

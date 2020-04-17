@@ -399,12 +399,6 @@ public:
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
 #endif
 
-#ifdef STRESS_HEAP
-
-    bool    IsGCStressMix  ()               const {LIMITED_METHOD_CONTRACT;  return iGCStressMix != 0;}
-    int     GetGCStressStep()               const {LIMITED_METHOD_CONTRACT;  return iGCStressStep; }
-#endif
-
     bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT;  return fGCBreakOnOOM; }
 
     size_t  GetGCgen0size  ()               const {LIMITED_METHOD_CONTRACT;  return iGCgen0size;   }
@@ -691,11 +685,6 @@ private: //----------------------------------------------------------------
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     int  iGCStress;
-#endif
-
-#ifdef STRESS_HEAP
-    int  iGCStressMix;
-    int  iGCStressStep;
 #endif
 
 #define DEFAULT_GC_PRN_LVL 3

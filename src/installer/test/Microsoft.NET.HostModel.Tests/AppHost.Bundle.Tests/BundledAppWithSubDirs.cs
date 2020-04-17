@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using BundleTests.Helpers;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel.Bundle;
+using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using Xunit;
-using Microsoft.DotNet.Cli.Build.Framework;
-using BundleTests.Helpers;
-using Microsoft.DotNet.CoreSetup.Test;
 
 namespace AppHost.Bundle.Tests
 {
@@ -31,11 +32,16 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        [Fact]
-        public void Bundled_Framework_dependent_App_Run_Succeeds()
+        // BundleOptions.BundleNativeBinaries: Test when the payload data files are unbundled, and beside the single-file app.
+        // BundleOptions.BundleAllContent: Test when the payload data files are bundled and extracted to temporary directory. 
+        // Once the runtime can load assemblies from the bundle, BundleOptions.None can be used in place of BundleOptions.BundleNativeBinaries.
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile);
@@ -44,11 +50,13 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
-        [Fact]
-        public void Bundled_Self_Contained_App_Run_Succeeds()
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile);
@@ -57,11 +65,13 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
-        [Fact]
-        public void Bundled_With_Empty_File_Succeeds()
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the app
             RunTheApp(singleFile);

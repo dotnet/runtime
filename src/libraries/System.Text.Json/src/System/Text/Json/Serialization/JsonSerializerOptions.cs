@@ -20,6 +20,8 @@ namespace System.Text.Json
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
 
+        // For any new option added, adding it to the options copied in the copy constructor below must be considered.
+
         private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
@@ -42,6 +44,44 @@ namespace System.Text.Json
         public JsonSerializerOptions()
         {
             Converters = new ConverterList(this);
+        }
+
+        /// <summary>
+        /// Copies the options from a <see cref="JsonSerializerOptions"/> instance to a new instance.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> instance to copy options from.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="options"/> is <see langword="null"/>.
+        /// </exception>
+        public JsonSerializerOptions(JsonSerializerOptions options)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            _memberAccessorStrategy = options.MemberAccessorStrategy;
+            _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
+            _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
+            _readCommentHandling = options._readCommentHandling;
+            _referenceHandling = options._referenceHandling;
+            _encoder = options._encoder;
+
+            _defaultBufferSize = options._defaultBufferSize;
+            _maxDepth = options._maxDepth;
+            _allowTrailingCommas = options._allowTrailingCommas;
+            _ignoreNullValues = options._ignoreNullValues;
+            _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
+            _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
+            _writeIndented = options._writeIndented;
+
+            Converters = new ConverterList(this, (ConverterList)options.Converters);
+            EffectiveMaxDepth = options.EffectiveMaxDepth;
+
+            // _classes is not copied as sharing the JsonClassInfo and JsonPropertyInfo caches can result in
+            // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
+
+            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occured.
         }
 
         /// <summary>

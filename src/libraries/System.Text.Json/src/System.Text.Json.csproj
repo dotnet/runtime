@@ -140,6 +140,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTTypeToConvert.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />

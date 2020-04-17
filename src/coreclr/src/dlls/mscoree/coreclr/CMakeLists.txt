@@ -35,7 +35,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options("LINKER:-Bsymbolic,-Bsymbolic-functions")
+        add_link_options("LINKER:-Bsymbolic")
 
         # The following linked options can be inserted into the linker libraries list to
         # ensure proper resolving of circular references between a subset of the libraries.
@@ -163,6 +163,29 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+
+# Create the runtime module index header file containing the coreclr build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    set(
+        RUNTIME_MODULE_INDEX_FILE 
+        ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
+    )
+    add_custom_command(
+        OUTPUT ${RUNTIME_MODULE_INDEX_FILE}
+        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:coreclr> ${RUNTIME_MODULE_INDEX_FILE}
+        DEPENDS coreclr
+        COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
+    )
+    set_source_files_properties(
+        ${RUNTIME_MODULE_INDEX_FILE} 
+        PROPERTIES GENERATED TRUE
+    )
+    add_custom_target(
+        runtime_module_index_header
+        DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
+    )
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")

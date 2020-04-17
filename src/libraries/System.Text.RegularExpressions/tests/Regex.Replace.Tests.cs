@@ -178,7 +178,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [MemberData(nameof(Replace_MatchEvaluator_TestData))]
         [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_MatchEvaluator_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
-        public void Replace(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
+        public void Replace_MatchEvaluator_Test(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);

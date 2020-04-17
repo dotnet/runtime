@@ -138,9 +138,9 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError GetSockName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetSockName(SafeSocketHandle handle, byte* buffer, int* nameLen)
         {
-            SocketError errorCode = Interop.Winsock.getsockname(handle, buffer, ref nameLen);
+            SocketError errorCode = Interop.Winsock.getsockname(handle, buffer, nameLen);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 

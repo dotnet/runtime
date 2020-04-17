@@ -31,7 +31,7 @@
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
 
   <!--
-    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    Get '<subset>Project' items. Using the items lets projects handle
     $(Subset) automatically when creating project-to-project dependencies.
   -->
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
