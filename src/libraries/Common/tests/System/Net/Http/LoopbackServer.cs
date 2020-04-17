@@ -77,8 +77,8 @@ namespace System.Net.Test.Common
         {
             return CreateServerAsync(async server =>
             {
-                Task clientTask = Task.Run(() => clientFunc(server.Address));
-                Task serverTask = Task.Run(() => serverFunc(server));
+                Task clientTask = clientFunc(server.Address);
+                Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
             }, options);
