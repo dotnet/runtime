@@ -21,8 +21,6 @@ namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
-        private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
-
 #if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
@@ -623,8 +621,10 @@ namespace Internal.Cryptography
                     return false;
                 }
 
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+
                 if (oaepParameters.PSourceFunc.Parameters != null &&
-                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(s_pSpecifiedDefaultParameters))
+                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     return false;
