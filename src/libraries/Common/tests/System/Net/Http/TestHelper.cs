@@ -130,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
             object socketsHttpHandler = socketsHttpHandlerField.GetValue(handler);
             Assert.NotNull(socketsHttpHandler);
 
-            EnableUncryptedHttp2((SocketsHttpHandler) socketsHttpHandler);
+            EnableUncryptedHttp2(socketsHttpHandler);
         }
 
 #if !NETFRAMEWORK
