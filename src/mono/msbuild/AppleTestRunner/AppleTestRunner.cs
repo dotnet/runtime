@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XHarness.Tests.Runners;
 using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
-public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
+public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 {
     private static List<string> testLibs = new List<string>();
 

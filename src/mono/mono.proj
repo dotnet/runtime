@@ -943,19 +943,20 @@
     <PropertyGroup>
       <TestDir>$(ArtifactsDir)bin\$(TestName)\$(NetCoreAppCurrent)-$(Configuration)</TestDir>
       <TestDir Condition="!Exists('$(TestDir)')">$(ArtifactsDir)bin\$(TestName)\$(NetCoreAppCurrent)-Unix-$(Configuration)</TestDir>
-      <BclDir>$(ArtifactsDir)bin\runtime\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BclDir>
+      <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
       <BundleDir>$(TestDir)\Bundle</BundleDir>
     </PropertyGroup>
     <ItemGroup>
       <TestBinaries Include="$(TestDir)\*.*"/>
       <AppleTestRunnerBinaries Include="msbuild\AppleTestRunner\bin\*.*" />
-      <BclBinaries Include="$(BclDir)\*.*" Exclude="$(BclDir)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
       <MonoRuntimeBinaries Include="$(BinDir)\*.*" />
     </ItemGroup>
 
     <Error Condition="'$(TestName)' == ''" Text="TestName is not set" />
     <Error Condition="!Exists('$(TestDir)')" Text="TestDir=$(TestDir) doesn't exist" />
-    <Error Condition="!Exists('$(BclDir)')" Text="BclDir=$(BclDir) doesn't exist" />
+    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
 
     <RemoveDir Directories="$(BundleDir)" />
 
@@ -967,8 +968,8 @@
    <AppleAppBuilderTask 
         Arch="$(TargetArchitecture)"
         ProjectName="$(TestName)"
-        MonoRuntimeHeaders="$(BinDir)include\mono-2.0"
-        CrossCompiler="$(BinDir)cross\mono-aot-cross"
+        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        CrossCompiler="$(RuntimePackDir)\native\cross\mono-aot-cross"
         MainLibraryFileName="AppleTestRunner.dll"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"

@@ -26,7 +26,7 @@ internal class AotCompiler
     {
         Parallel.ForEach(libsToPrecompile,
             new ParallelOptions { MaxDegreeOfParallelism = parallel ? Environment.ProcessorCount : 1 },
-            lib => PrecompileLibrary(crossCompiler, arch, binDir, lib, envVariables, optimize));
+            lib => PrecompileLibrary(crossCompiler, arch, binDir, lib, envVariables, optimize, useLlvm, llvmPath));
     }
 
     private static void PrecompileLibrary(
@@ -37,7 +37,7 @@ internal class AotCompiler
         IDictionary<string, string> envVariables,
         bool optimize,
         bool useLlvm,
-        string llvmPath)
+        string? llvmPath)
     {
         Utils.LogInfo($"[AOT] {libToPrecompile}");
 
@@ -45,7 +45,7 @@ internal class AotCompiler
         crossArgs
             .Append(" -O=gsharedvt")
             .Append(" -O=-float32")
-            .Append(useLlvm ? " --llvm" : "--nollvm")
+            .Append(useLlvm ? " --llvm" : " --nollvm")
             .Append(" --debug");
 
         string libName = Path.GetFileNameWithoutExtension(libToPrecompile);
