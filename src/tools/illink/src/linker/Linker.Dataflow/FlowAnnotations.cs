@@ -16,7 +16,7 @@ namespace Mono.Linker.Dataflow
 		readonly IFlowAnnotationSource _source;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations>();
 
-		public FlowAnnotations (IFlowAnnotationSource annotationSource, LinkContext context)
+		public FlowAnnotations (IFlowAnnotationSource annotationSource)
 		{
 			_source = annotationSource;
 		}
@@ -291,17 +291,6 @@ namespace Mono.Linker.Dataflow
 			// override System.Type - as it creates too many issues.
 			return (typeReference.Name.StartsWith ("Type") || typeReference.Name == "String") &&
 				typeReference.Namespace == "System";
-		}
-
-		struct ArrayBuilder<T>
-		{
-			private List<T> _list;
-
-			public void Add (T value) => (_list ?? (_list = new List<T> ())).Add (value);
-
-			public bool Any (Predicate<T> callback) => _list == null ? false : _list.Exists (callback);
-
-			public T [] ToArray () => _list?.ToArray ();
 		}
 
 		readonly struct TypeAnnotations

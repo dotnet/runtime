@@ -224,17 +224,6 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		struct ArrayBuilder<T>
-		{
-			private List<T> _list;
-
-			public void Add (T value) => (_list ??= new List<T> ()).Add (value);
-
-			public T [] ToArray () => _list?.ToArray ();
-
-			public int Count => _list?.Count ?? 0;
-		}
-
 		private struct AnnotatedMethod
 		{
 			public readonly DynamicallyAccessedMemberKinds ReturnAnnotation;
