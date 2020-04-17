@@ -11285,6 +11285,8 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
             }
 
+            gtDispCommonEndLine(tree);
+
             if (tree->AsField()->gtFldObj && !topOnly)
             {
                 gtDispVN(tree);

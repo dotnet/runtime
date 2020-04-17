@@ -5376,7 +5376,12 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree->ChangeOper(GT_IND);
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
+        bool canCSE               = indir->CanCSE();
         indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
+        if (!canCSE)
+        {
+            indir->SetDoNotCSE();
+        }
 
 #ifdef DEBUG
         indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
@@ -13384,9 +13389,6 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
-
-            /* op1 of a GT_ADDR is an l-value. Only r-values can be CSEed */
-            op1->gtFlags |= GTF_DONT_CSE;
             break;
 
         case GT_COLON:
@@ -16831,8 +16833,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 tree->SetOper(GT_LCL_VAR);
                 tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
                 tree->gtType = fieldType;
-                tree->gtFlags &= GTF_NODE_MASK;
-                tree->gtFlags &= ~GTF_GLOB_REF;
+                tree->gtFlags &= GTF_NODE_MASK; // Note: that clears all flags except `GTF_COLON_COND`.
 
                 if (parent->gtOper == GT_ASG)
                 {
@@ -17676,7 +17677,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     if (verbose)
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
-        printf("From " FMT_BB ", stmt", block->bbNum);
+        printf("From " FMT_BB ", stmt ", block->bbNum);
         printStmtID(stmt);
         printf(" to stmt");
         printStmtID(lastStmt);
@@ -17742,12 +17743,15 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n" FMT_BB " stmt", block->bbNum);
+        printf("\n" FMT_BB " stmt ", block->bbNum);
         printStmtID(stmt);
         printf("(before)\n");
         gtDispStmt(stmt);
     }
 #endif
+
+    assert(!simdStructNode->CanCSE());
+    simdStructNode->ClearDoNotCSE();
 
     tree = gtNewAssignNode(dstNode, simdStructNode);
 

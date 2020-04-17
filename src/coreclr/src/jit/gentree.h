@@ -1941,6 +1941,21 @@ public:
         ClearRegOptional();
     }
 
+    bool CanCSE() const
+    {
+        return ((gtFlags & GTF_DONT_CSE) == 0);
+    }
+
+    void SetDoNotCSE()
+    {
+        gtFlags |= GTF_DONT_CSE;
+    }
+
+    void ClearDoNotCSE()
+    {
+        gtFlags &= ~GTF_DONT_CSE;
+    }
+
     bool IsReverseOp() const
     {
         return (gtFlags & GTF_REVERSE_OPS) ? true : false;
