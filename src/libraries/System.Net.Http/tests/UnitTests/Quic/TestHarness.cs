@@ -149,10 +149,13 @@ namespace System.Net.Quic.Tests
 
         internal void EstablishConnection(ManagedQuicConnection client, ManagedQuicConnection server)
         {
-            SendFlight(client, server);
-            SendFlight(server, client);
-            SendFlight(client, server);
-            SendFlight(server, client);
+            int flights = 0;
+            do
+            {
+                SendFlight(client, server);
+                SendFlight(server, client);
+                flights++;
+            } while (!client.Connected && !server.Connected && flights < 10);
 
             Assert.True(client.Connected);
             Assert.True(server.Connected);

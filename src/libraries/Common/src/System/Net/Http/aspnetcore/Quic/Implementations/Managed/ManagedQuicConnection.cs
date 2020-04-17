@@ -442,39 +442,38 @@ namespace System.Net.Quic.Implementations.Managed
 
         private bool SendOne(QuicWriter writer, EncryptionLevel level, SendContext context)
         {
-            var packetType = level switch
+            (PacketType packetType, PacketSpace packetSpace) = level switch
             {
-                EncryptionLevel.Initial => PacketType.Initial,
-                EncryptionLevel.EarlyData => PacketType.ZeroRtt,
-                EncryptionLevel.Handshake => PacketType.Handshake,
-                EncryptionLevel.Application => PacketType.OneRtt,
+                EncryptionLevel.Initial => (PacketType.Initial, PacketSpace.Initial),
+                EncryptionLevel.EarlyData => (PacketType.ZeroRtt, PacketSpace.Application),
+                EncryptionLevel.Handshake => (PacketType.Handshake, PacketSpace.Handshake),
+                EncryptionLevel.Application => (PacketType.OneRtt, PacketSpace.Application),
                 _ => throw new InvalidOperationException()
             };
 
             var pnSpace = GetPacketNumberSpace(level);
             var seal = pnSpace.SendCryptoSeal!;
 
-            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber();
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(Recovery.GetLargestAckedPacketNumber(packetSpace));
             WritePacketHeader(writer, packetType, pnLength);
 
-            // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
+            // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
             var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2, 2);
 
             int pnOffset = writer.BytesWritten;
             writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
 
-            int maxPacketLength = Math.Min(12000, writer.Buffer.Length);
-            // int maxPacketLength = (int)(Connected
-            //     // Limit maximum size so that it can be always encoded using 2B varint
-            //     ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
-            //     // use minimum size for packets during handshake
-            //     : QuicConstants.MinimumClientInitialDatagramSize);
+            int maxPacketLength = (int)(_tls.IsHandshakeComplete
+                // Limit maximum size so that it can be always encoded into the reserved 2 bytes of `payloadLengthSpan`
+                ? Math.Min((1 << 14) - 1, _peerTransportParameters.MaxPacketSize)
+                // use minimum size for packets during handshake
+                : QuicConstants.MinimumClientInitialDatagramSize);
 
             // TODO-RZ: respect control flow limits and congestion window
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 
-            writer.Reset(origBuffer.Slice(0, maxPacketLength - seal.TagLength), written);
+            writer.Reset(origBuffer.Slice(0, Math.Min(origBuffer.Length, maxPacketLength - seal.TagLength)), written);
 
             WriteFrames(writer, packetType, level, context);
 

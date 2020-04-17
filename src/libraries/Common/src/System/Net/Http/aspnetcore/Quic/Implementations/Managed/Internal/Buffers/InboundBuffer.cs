@@ -17,16 +17,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private StreamChunk _deliveryLeftoverChunk;
 
         /// <summary>
-        ///     Channel for producing chunks of from the user to read.
+        ///     Channel for producing chunks for the user to read.
         /// </summary>
-        private readonly Channel<StreamChunk> _boundaryChannel =
+        private readonly Channel<StreamChunk> _deliverableChannel =
             Channel.CreateUnbounded<StreamChunk>(new UnboundedChannelOptions
             {
                 SingleReader = true, SingleWriter = true
             });
 
         /// <summary>
-        ///     Individual, deduplicated parts of the stream, ordered by stream offset.
+        ///     Received stream chunks which cannot be delivered yet because of out of order delivery of frames.
         /// </summary>
         internal List<StreamChunk> _chunks = new List<StreamChunk>();
 
@@ -52,10 +52,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Ranges of data which are received, but not delivered.
         /// </summary>
-        private RangeSet _undelivered = new RangeSet();
+        private readonly RangeSet _undelivered = new RangeSet();
 
         /// <summary>
-        ///     Number of bytes streamed through the <see cref="_boundaryChannel"/>.
+        ///     Number of bytes streamed through the <see cref="_deliverableChannel"/>.
         /// </summary>
         internal long _bytesChanneled;
 
@@ -78,9 +78,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
         internal long BytesAvailable => _bytesChanneled - BytesRead;
-        // internal long BytesAvailable => _undelivered.Count > 0 && BytesRead == _undelivered.GetMin()
-            // ? _undelivered[0].Length
-            // : 0;
 
         /// <summary>
         ///     Receives a chunk of data and buffers it for delivery.
@@ -147,7 +144,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         {
             // push chunks to the output channel for the user thread to read.
             int pushed = 0;
-            var channelWriter = _boundaryChannel.Writer;
+            var channelWriter = _deliverableChannel.Writer;
             while (pushed < _chunks.Count && _chunks[pushed].StreamOffset == _bytesChanneled)
             {
                 var chunk = _chunks[pushed];
@@ -168,7 +165,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (delivered > 0)
                 return delivered;
 
-            _deliveryLeftoverChunk = await _boundaryChannel.Reader.ReadAsync();
+            _deliveryLeftoverChunk = await _deliverableChannel.Reader.ReadAsync();
 
             return Deliver(destination.Span);
         }
@@ -187,7 +184,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 {
                     ReturnMemory(_deliveryLeftoverChunk);
 
-                    if (!_boundaryChannel.Reader.TryRead(out _deliveryLeftoverChunk))
+                    if (!_deliverableChannel.Reader.TryRead(out _deliveryLeftoverChunk))
                     {
                         break;
                     }
@@ -223,7 +220,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 _deliveryLeftoverChunk = default;
             }
 
-            while (_boundaryChannel.Reader.TryRead(out var chunk))
+            while (_deliverableChannel.Reader.TryRead(out var chunk))
             {
                 process(chunk.Memory);
                 BytesRead += chunk.Memory.Length;

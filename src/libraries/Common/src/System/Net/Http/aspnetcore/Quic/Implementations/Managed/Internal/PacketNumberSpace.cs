@@ -66,9 +66,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.
         /// </summary>
         /// <returns>Truncated packet number and it's length.</returns>
-        internal (int truncatedPn, int pnLength) GetNextPacketNumber()
+        internal (int truncatedPn, int pnLength) GetNextPacketNumber(long largestAcked)
         {
-            return QuicPrimitives.EncodePacketNumber(LargestReceivedPacketNumber, NextPacketNumber);
+            return QuicPrimitives.EncodePacketNumber(largestAcked, NextPacketNumber);
         }
     }
 }

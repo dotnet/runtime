@@ -119,8 +119,8 @@ namespace System.Net.Quic.Tests.Harness
             int read = 0;
             while (read < frame.AckRangesRaw.Length)
             {
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long ack);
+                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
+                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long ack);
                 AckRanges.Add(new AckRange{ Acked = ack, Gap = gap});
             }
 

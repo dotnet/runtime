@@ -214,6 +214,7 @@ namespace System.Net.Quic.Implementations.Managed
             Span<PacketNumberRange> ranges =
                 stackalloc PacketNumberRange[(int)frame.AckRangeCount + 1];
 
+            // TODO-RZ: it is really unnecessary to have yet another class for ranges
             ranges[^1] = new PacketNumberRange(
                 frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
 
@@ -221,8 +222,8 @@ namespace System.Net.Quic.Implementations.Managed
             // read the ranges in reverse order, so the `ranges` are in ascending order
             for (int i = (int)frame.AckRangeCount - 1; i > 0; i--)
             {
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
-                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
+                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
+                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
 
                 if (ranges[i].Start < gap + acked - 2)
                 {
@@ -449,7 +450,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
 
                 (long offset, long count) = buffer.GetNextSendableRange();
-                if (count == 0) return;
+                if (count == 0 && !buffer.SizeKnown) return;
 
                 int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, count);
                 count = Math.Min(count,  writer.BytesAvailable - overhead);

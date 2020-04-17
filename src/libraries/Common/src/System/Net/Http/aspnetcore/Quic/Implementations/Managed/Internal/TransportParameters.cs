@@ -181,7 +181,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         parameters.OriginalConnectionId = new ConnectionId(data.ToArray());
                         break;
                     case TransportParameterName.MaxIdleTimeout:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.MaxIdleTimeout = varIntValue;
                         break;
                     case TransportParameterName.StatelessResetToken:
@@ -189,41 +189,41 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         parameters.StatelessResetToken = Frames.StatelessResetToken.FromSpan(data);
                         break;
                     case TransportParameterName.MaxPacketSize:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0 ||
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
                             varIntValue < MinimumPacketSize) goto Error;
                         parameters.MaxPacketSize = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxData:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxData = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataBidiLocal:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxStreamDataBidiLocal = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataBidiRemote:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxStreamDataBidiRemote = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataUni:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxStreamDataUni = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamsBidi:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxStreamsBidi = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamsUni:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.InitialMaxStreamsUni = varIntValue;
                         break;
                     case TransportParameterName.AckDelayExponent:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0 ||
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
                             varIntValue > MaxAckDelayExponent) goto Error;
                         parameters.AckDelayExponent = varIntValue;
                         break;
                     case TransportParameterName.MaxAckDelay:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0 ||
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
                             varIntValue > MaxMaxAckDelay) goto Error;
                         parameters.MaxAckDelay = varIntValue;
                         break;
@@ -243,7 +243,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         break;
                     }
                     case TransportParameterName.ActiveConnectionIdLimit:
-                        if (QuicPrimitives.ReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
                         parameters.ActiveConnectionIdLimit = varIntValue;
                         break;
                     default:

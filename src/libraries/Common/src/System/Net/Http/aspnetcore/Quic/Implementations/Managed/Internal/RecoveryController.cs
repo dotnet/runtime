@@ -91,6 +91,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
 
         /// <summary>
+        ///     Returns largest acknowledged packet number in the given packet space.
+        /// </summary>
+        /// <param name="space">The packet space.</param>
+        internal long GetLargestAckedPacketNumber(PacketSpace space) =>
+            GetPacketNumberSpace(space).LargestAckedPacketNumber;
+
+        /// <summary>
         ///     The most recent RTT measurement made when receiving ack for a previously unacked packet.
         /// </summary>
         internal TimeSpan LatestRtt { get; private set; }
