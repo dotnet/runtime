@@ -49,6 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, int bytesRead, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItems;
         private bool _isTagContext = false; // true if reader is expecting a tagged value
+        private CborReaderState _cachedState = CborReaderState.Unknown; // caches the current reader state
 
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int offset, int length)>? _rangeListAllocation = null;
@@ -62,6 +63,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public int BytesRemaining => _buffer.Length;
 
         public CborReaderState PeekState()
+        {
+            if (_cachedState == CborReaderState.Unknown)
+            {
+                _cachedState = PeekStateCore();
+            }
+
+            return _cachedState;
+        }
+
+        private CborReaderState PeekStateCore()
         {
             if (_remainingDataItems == 0)
             {
@@ -289,6 +300,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _nestedDataItems.Pop();
             _remainingDataItems = remainingItems;
             _isEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsWritten;
+            // Popping items from the stack can change the reader state
+            // without necessarily needing to advance the buffer
+            // (e.g. we're at the end of a definite-length collection).
+            // We therefore need to invalidate the cache here.
+            _cachedState = CborReaderState.Unknown;
         }
 
         private void AdvanceDataItemCounters()
@@ -302,6 +318,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             _buffer = _buffer.Slice(length);
             _bytesRead += length;
+            // invalidate the state cache
+            _cachedState = CborReaderState.Unknown;
         }
 
         private void EnsureBuffer(int length)
@@ -373,6 +391,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _remainingDataItems = checkpoint.RemainingDataItems;
             _isEvenNumberOfDataItemsRead = checkpoint.IsEvenNumberOfDataItemsRead;
             _isTagContext = checkpoint.IsTagContext;
+            // invalidate the state cache
+            _cachedState = CborReaderState.Unknown;
         }
     }
 
