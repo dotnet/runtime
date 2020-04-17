@@ -926,8 +926,12 @@
 
   <Import Project="Directory.Build.targets" />
 
+
   <Target Name="BuildAppleAppBuilder">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleTestRunner\AppleTestRunner.csproj"
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
@@ -935,25 +939,59 @@
   <UsingTask TaskName="AppleAppBuilderTask" 
              AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
 
-  <Target Name="BuildAppleApp" DependsOnTargets="BuildAppleAppBuilder">
-    <AppleAppBuilderTask 
+  <Target Name="BuildAppleTestBundle" DependsOnTargets="BuildAppleAppBuilder">
+    <PropertyGroup>
+      <TestDir>$(ArtifactsDir)bin\$(TestName)\$(NetCoreAppCurrent)-$(Configuration)</TestDir>
+      <TestDir Condition="!Exists('$(TestDir)')">$(ArtifactsDir)bin\$(TestName)\$(NetCoreAppCurrent)-Unix-$(Configuration)</TestDir>
+      <BclDir>$(ArtifactsDir)bin\runtime\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BclDir>
+      <BundleDir>$(TestDir)\Bundle</BundleDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <TestBinaries Include="$(TestDir)\*.*"/>
+      <AppleTestRunnerBinaries Include="msbuild\AppleTestRunner\bin\*.*" />
+      <BclBinaries Include="$(BclDir)\*.*" Exclude="$(BclDir)\System.Runtime.WindowsRuntime.dll" />
+      <MonoRuntimeBinaries Include="$(BinDir)\*.*" />
+    </ItemGroup>
+
+    <Error Condition="'$(TestName)' == ''" Text="TestName is not set" />
+    <Error Condition="!Exists('$(TestDir)')" Text="TestDir=$(TestDir) doesn't exist" />
+    <Error Condition="!Exists('$(BclDir)')" Text="BclDir=$(BclDir) doesn't exist" />
+
+    <RemoveDir Directories="$(BundleDir)" />
+
+    <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
+   <AppleAppBuilderTask 
         Arch="$(TargetArchitecture)"
-        ProjectName="$(ProjectName)"
-        Optimized="$(Optimized)"
-        MonoInclude="$(BinDir)include\mono-2.0"
+        ProjectName="$(TestName)"
+        MonoRuntimeHeaders="$(BinDir)include\mono-2.0"
         CrossCompiler="$(BinDir)cross\mono-aot-cross"
-        MainLibraryFileName="$(MainLibraryFileName)"
-        NativeMainSource="$(NativeMainSource)"
-        GenerateXcodeProject="$(GenerateXcodeProject)"
-        BuildAppBundle="$(BuildAppBundle)"
+        MainLibraryFileName="AppleTestRunner.dll"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BinDir)\$(ProjectName)"
-        AppDir="$(AppDir)">
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
+
+    <!-- Demo: use xcrun to deploy & launch on a simulator
+         to be replaced with xharness
+         
+         For quite mode: %dashdash%auto-exit before "testlib:" and 'open -a Simulator' can be removed
+    -->
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl shutdown &quot;iPhone 11&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl boot &quot;iPhone 11&quot;" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64' and '$(ShowIosSimulator)' != 'false'" Command="open -a Simulator" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl install &quot;iPhone 11&quot; $(AppBundlePath)" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch --console booted net.dot.$(TestName) testlib:$(TestName).dll" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->

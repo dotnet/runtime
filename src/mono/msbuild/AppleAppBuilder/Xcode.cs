@@ -17,11 +17,13 @@ internal class Xcode
         string workspace,
         string binDir,
         string monoInclude,
-        bool useConsoleUiTemplate = false,
+        bool preferDylibs,
+        bool useConsoleUiTemplate,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dylib", ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
+        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a"};
+
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
             .Concat(Directory.GetFiles(binDir, "*.aotdata"))
@@ -49,12 +51,20 @@ internal class Xcode
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude);
 
+        string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
         string toLink = "";
         foreach (string lib in Directory.GetFiles(workspace, "*.a"))
         {
-            // these libraries are pinvoked
-            // -force_load will be removed once we enable direct-pinvokes for AOT
-            toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+            string libName = Path.GetFileNameWithoutExtension(lib);
+            // libmono must always be statically linked, for other librarires we can use dylibs
+            bool dylibExists = libName != "libmono" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
+
+            if (!preferDylibs || !dylibExists)
+            {
+                // these libraries are pinvoked
+                // -force_load will be removed once we enable direct-pinvokes for AOT
+                toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+            }
         }
         foreach (string lib in Directory.GetFiles(binDir, "*.dll.o"))
         {
@@ -83,12 +93,20 @@ internal class Xcode
             Utils.GetEmbeddedResource("runtime.h"));
 
         // forward pinvokes to "__Internal"
-        string dllMap = string.Join(Environment.NewLine, Directory.GetFiles(workspace, "*.a")
-            .Select(f => $"    mono_dllmap_insert (NULL, \"{Path.GetFileNameWithoutExtension(f)}\", NULL, \"__Internal\", NULL);"));
+        var dllMap = new StringBuilder();
+        foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
+        {
+            string aFileName = Path.GetFileNameWithoutExtension(aFile);
+            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+
+            // also register with or without "lib" prefix
+            aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
+            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+        }
 
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
-                .Replace("//%DllMap%", dllMap)
+                .Replace("//%DllMap%", dllMap.ToString())
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);
