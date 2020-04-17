@@ -35,10 +35,11 @@ namespace System.Net.Quic.Tests.Harness
             (PacketNumberLength, PacketNumber) = DeserializePayloadWithFrames(reader, context, Frames, PacketType, reader.BytesLeft);
 
             // read these fields after decryption
-            KeyPhase = HeaderHelpers.GetKeyPhase(reader.Buffer[0]);
-            FixedBit = HeaderHelpers.GetFixedBit(reader.Buffer[0]);
-            SpinBit = HeaderHelpers.GetSpinBit(reader.Buffer[0]);
-            ReservedBits = HeaderHelpers.GetShortHeaderReservedBits(reader.Buffer[0]);
+            byte firstByte = reader.Buffer.Span[0];
+            KeyPhase = HeaderHelpers.GetKeyPhase(firstByte);
+            FixedBit = HeaderHelpers.GetFixedBit(firstByte);
+            SpinBit = HeaderHelpers.GetSpinBit(firstByte);
+            ReservedBits = HeaderHelpers.GetShortHeaderReservedBits(firstByte);
         }
     }
 }

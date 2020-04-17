@@ -25,7 +25,7 @@ namespace System.Net.Quic.Tests
         {
             // init packet data for reader
             HexHelpers.FromHexString(ReferenceData.ClientInitialPacketHeaderHex, buffer);
-            reader.Reset(new ArraySegment<byte>(buffer, 0 , ReferenceData.ClientInitialPacketHeaderHex.Length / 2));
+            reader.Reset(buffer.AsMemory(0, ReferenceData.ClientInitialPacketHeaderHex.Length / 2));
 
             Assert.True(HeaderHelpers.IsLongHeader(buffer[0]));
 
@@ -60,7 +60,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(PacketType.Initial, expected.PacketType);
 
             LongPacketHeader.Write(writer, expected);
-            reader.Reset(buffer, 0, writer.BytesWritten);
+            reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(LongPacketHeader.Read(reader, out var actual));
 
             Assert.Equal(expected.FirstByte, actual.FirstByte);
@@ -85,7 +85,7 @@ namespace System.Net.Quic.Tests
             var expected = new RetryPacketData(token, tag);
 
             RetryPacketData.Write(writer, expected);
-            reader.Reset(buffer, 0, writer.BytesWritten);
+            reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(RetryPacketData.Read(reader, out var actual));
 
             Assert.True(actual.RetryToken.SequenceEqual(token));
@@ -104,7 +104,7 @@ namespace System.Net.Quic.Tests
             var expected = new SharedPacketData(firstByte, token, 1234);
 
             SharedPacketData.Write(writer, expected);
-            reader.Reset(buffer, 0, writer.BytesWritten);
+            reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(SharedPacketData.Read(reader, firstByte, out var actual));
 
             Assert.Equal(expected.Length, actual.Length);
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Tests
             var expected = new ShortPacketHeader(true, false, 2, dcid);
 
             ShortPacketHeader.Write(writer, expected);
-            reader.Reset(buffer, 0, writer.BytesWritten);
+            reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(ShortPacketHeader.Read(reader, idCollection, out var actual));
 
             Assert.Equal(expected.FirstByte, actual.FirstByte);
@@ -144,7 +144,7 @@ namespace System.Net.Quic.Tests
         {
             QuicVersion[] versions = {QuicVersion.Draft27, QuicVersion.Negotiation, QuicVersion.Quic1};
             VersionNegotiationPacketData.Write(writer, versions);
-            reader.Reset(buffer, 0, writer.BytesWritten);
+            reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(VersionNegotiationPacketData.Read(reader, out var data));
 
             Assert.Equal(versions.Length, data.SupportedVersions.Count);

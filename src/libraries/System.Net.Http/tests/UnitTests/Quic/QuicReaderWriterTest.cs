@@ -35,10 +35,10 @@ namespace System.Net.Quic.Tests
             long lastAcked = 0xa82f30ea;
             long truncated = 0x9b32;
 
-            int bytes = QuicPrimitives.GetPacketNumberByteCount(lastAcked, packetNumber);
-            Assert.Equal(2, bytes);
+            (_, int length) = QuicPrimitives.EncodePacketNumber(lastAcked, packetNumber);
+            Assert.Equal(2, length);
 
-            long actual = QuicPrimitives.DecodePacketNumber(lastAcked, truncated, 2);
+            long actual = QuicPrimitives.DecodePacketNumber(lastAcked, truncated, length);
 
             Assert.Equal(packetNumber, actual);
         }

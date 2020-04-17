@@ -34,7 +34,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal static List<PacketBase> ParseMany(byte[] buffer, int count, TestHarnessContext context)
         {
-            var segment = new ArraySegment<byte>(buffer, 0, count);
+            var segment = buffer.AsMemory();
             var reader = new QuicReader(segment);
 
             var packets = new List<PacketBase>();
@@ -77,7 +77,7 @@ namespace System.Net.Quic.Tests.Harness
             int pnOffset = writer.BytesWritten;
 
             writer.WriteTruncatedPacketNumber(PacketNumberLength, (int) PacketNumber);
-            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - PacketNumberLength, 2);
+            var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2 - PacketNumberLength, 2);
 
             foreach (FrameBase frame in frames)
             {
@@ -94,7 +94,7 @@ namespace System.Net.Quic.Tests.Harness
                 QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
-            seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, (uint) PacketNumber);
+            seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, (uint) PacketNumber);
         }
 
         protected (int pnLength, long packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
@@ -108,9 +108,9 @@ namespace System.Net.Quic.Tests.Harness
             var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
-            Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, Math.Max(0, (int) pnSpace.NextPacketNumber - 3)));
+            Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) pnSpace.NextPacketNumber - 3)));
 
-            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
+            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
 
             var originalSegment = reader.Buffer;

@@ -9,21 +9,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class QuicReader
     {
         // Underlying buffer from which data are read.
-        private ArraySegment<byte> _buffer;
+        private Memory<byte> _buffer;
 
         // number of bytes read from the buffer.
         private int _consumed;
 
-        internal QuicReader(ArraySegment<byte> buffer)
+        internal QuicReader(Memory<byte> buffer)
         {
             _buffer = buffer;
         }
 
         public int BytesRead => _consumed;
 
-        public int BytesLeft => _buffer.Count - _consumed;
+        public int BytesLeft => _buffer.Length - _consumed;
 
-        public ArraySegment<byte> Buffer => _buffer;
+        public Memory<byte> Buffer => _buffer;
 
         internal bool TryReadUInt8(out byte result)
         {
@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return false;
             }
 
-            result = _buffer[_consumed];
+            result = _buffer.Span[_consumed];
             Advance(sizeof(byte));
             return true;
         }
@@ -41,7 +41,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal byte ReadUInt8()
         {
             CheckSizeAvailable(sizeof(byte));
-            byte value = _buffer[_consumed];
+            byte value = _buffer.Span[_consumed];
             Advance(sizeof(byte));
             return value;
         }
@@ -98,14 +98,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal bool TryReadVarInt(out long result)
         {
-            int bytes =  QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out result);
+            int bytes =  QuicPrimitives.TryReadVarInt(PeekSpan(BytesLeft), out result);
             Advance(bytes);
             return bytes > 0;
         }
 
         internal long PeekVarInt()
         {
-            QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out long result);
+            QuicPrimitives.TryReadVarInt(PeekSpan(BytesLeft), out long result);
             return result;
         }
 
@@ -120,15 +120,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _consumed += bytes;
         }
 
-        internal void Reset(ArraySegment<byte> buffer, int consumed = 0)
+        internal void Reset(Memory<byte> buffer, int consumed = 0)
         {
             _buffer = buffer;
             Seek(consumed);
-        }
-
-        internal void Reset(byte[] buffer, int start, int count)
-        {
-            Reset(new ArraySegment<byte>(buffer, start, count));
         }
 
         internal void Seek(int pos)
@@ -158,12 +153,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal ReadOnlySpan<byte> PeekSpan(int length)
         {
             CheckSizeAvailable(length);
-            return _buffer.AsSpan(_consumed, length);
+            return _buffer.Span.Slice(_consumed, length);
         }
 
         internal byte Peek()
         {
-            return _buffer[_consumed];
+            return _buffer.Span[_consumed];
         }
 
         private void CheckSizeAvailable(int size)

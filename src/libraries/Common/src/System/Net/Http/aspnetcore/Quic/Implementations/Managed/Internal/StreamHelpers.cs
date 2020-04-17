@@ -6,9 +6,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private const long StreamTypeUnidirectionalMask = 0x02;
         private const long StreamTypeServerInitiationMask = 0x01;
 
-        internal const long MaxStreamId = QuicPrimitives.MaxVarintValue;
+        internal const long MaxStreamId = QuicPrimitives.MaxVarIntValue;
         internal const long MaxStreamIndex = MaxStreamId >> 2;
-        internal const long MaxStreamOffset = QuicPrimitives.MaxVarintValue;
+        internal const long MaxStreamOffset = QuicPrimitives.MaxVarIntValue;
 
         internal static StreamType GetStreamType(long streamId)
         {

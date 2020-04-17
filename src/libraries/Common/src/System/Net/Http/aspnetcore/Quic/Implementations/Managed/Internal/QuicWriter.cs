@@ -8,22 +8,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class QuicWriter
     {
         // underlying buffer to which data are being written.
-        private ArraySegment<byte> _buffer;
+        private Memory<byte> _buffer;
         // number of bytes already written into the buffer.
         private int _written;
 
-        public QuicWriter(ArraySegment<byte> buffer)
+        public QuicWriter(Memory<byte> buffer)
         {
             _buffer = buffer;
         }
 
         internal int BytesWritten => _written;
 
-        internal int BytesAvailable => _buffer.Count - BytesWritten;
+        internal int BytesAvailable => _buffer.Length - BytesWritten;
 
-        internal ArraySegment<byte> Buffer => _buffer;
+        internal Memory<byte> Buffer => _buffer;
 
-        internal void Reset(ArraySegment<byte> buffer, int offset = 0)
+        internal void Reset(Memory<byte> buffer, int offset = 0)
         {
             _buffer = buffer;
             _written = offset;
@@ -31,13 +31,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void Reset(byte[] buffer)
         {
-            Reset(new ArraySegment<byte>(buffer, 0, buffer.Length));
+            Reset(new Memory<byte>(buffer, 0, buffer.Length));
         }
 
         internal void WriteUInt8(byte value)
         {
             CheckSizeAvailable(sizeof(byte));
-            _buffer[_written] = value;
+            _buffer.Span[_written] = value;
             Advance(sizeof(byte));
         }
 
@@ -66,7 +66,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteVarInt(long value)
         {
-            QuicPrimitives.WriteVarInt(GetWritableSpan(1 << QuicPrimitives.GetVarIntLengthLogarithm(value)), value);
+            int written = QuicPrimitives.WriteVarInt(GetSpan(BytesAvailable), value);
+            Advance(written);
         }
 
         internal void WriteSpan(ReadOnlySpan<byte> data)
@@ -89,7 +90,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private Span<byte> GetSpan(int length)
         {
             CheckSizeAvailable(length);
-            return _buffer.AsSpan(BytesWritten, length);
+            return _buffer.Span.Slice(BytesWritten, length);
         }
 
         private void CheckSizeAvailable(int size)

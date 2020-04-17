@@ -221,16 +221,17 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void ReceiveData(QuicReader reader, IPEndPoint sender, DateTime now)
         {
-            var segment = reader.Buffer;
+            var buffer = reader.Buffer;
             var context = new RecvContext(now);
 
             while (reader.BytesLeft > 0)
             {
                 var status = ReceiveOne(reader, context);
 
-                // Receive will adjust the buffer length once it is known
-                segment = segment.Slice(reader.Buffer.Count);
-                reader.Reset(segment);
+                // Receive will adjust the buffer length once it is known, thus the length here skips the
+                // just processed coalesced packet
+                buffer = buffer.Slice(reader.Buffer.Length);
+                reader.Reset(buffer);
             }
         }
 
@@ -280,7 +281,9 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
-                if (reader.Buffer.Offset + reader.Buffer.Count < QuicConstants.MinimumClientInitialDatagramSize)
+                // TODO-RZ: in rare cases when initial is not the first of the coalesced packets this can falsely close the connection.
+                // as the QUIC does only recommend, not mandate order of the coalesced packets
+                if (reader.Buffer.Length < QuicConstants.MinimumClientInitialDatagramSize)
                 {
                     return CloseConnection(TransportErrorCode.ProtocolViolation,
                         QuicError.InitialPacketTooShort);
@@ -303,7 +306,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             var seal = pnSpace.RecvCryptoSeal!;
 
-            if (!seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength,
+            if (!seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
                 pnSpace.LargestReceivedPacketNumber))
             {
                 // decryption failed, drop the packet.
@@ -312,7 +315,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // TODO-RZ: read in a better way
-            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
+            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out int truncatedPn);
 
             long packetNumber = QuicPrimitives.DecodePacketNumber(pnSpace.LargestReceivedPacketNumber,
@@ -455,12 +458,12 @@ namespace System.Net.Quic.Implementations.Managed
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
-            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2, 2);
+            var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2, 2);
 
             int pnOffset = writer.BytesWritten;
             writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
 
-            int maxPacketLength = Math.Min(12000, writer.Buffer.Count);
+            int maxPacketLength = Math.Min(12000, writer.Buffer.Length);
             // int maxPacketLength = (int)(Connected
             //     // Limit maximum size so that it can be always encoded using 2B varint
             //     ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
@@ -516,7 +519,7 @@ namespace System.Net.Quic.Implementations.Managed
                 QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
-            seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
+            seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, truncatedPn);
 
             return true;
         }
@@ -542,7 +545,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 // HACK: reserve 2 bytes for payload length and overwrite it later
                 SharedPacketData.Write(writer, new SharedPacketData(
-                    writer.Buffer[0],
+                    writer.Buffer.Span[0],
                     ReadOnlySpan<byte>.Empty,
                     1000 /*arbitrary number with 2-byte encoding*/));
             }
@@ -557,6 +560,8 @@ namespace System.Net.Quic.Implementations.Managed
             var context = new SendContext(now);
 
             var level = GetWriteLevel();
+            var origMemory = writer.Buffer;
+            int written = 0;
 
             while (true)
             {
@@ -568,6 +573,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (!SendOne(writer, level, context))
                     break;
+                written += writer.BytesWritten;
 
                 // 0-RTT packets do not have Length, so they may not be coalesced
                 if (level == EncryptionLevel.Application)
@@ -583,6 +589,8 @@ namespace System.Net.Quic.Implementations.Managed
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
+
+            writer.Reset(origMemory, written);
         }
 
         private static PacketSpace GetPacketSpace(PacketType packetType)

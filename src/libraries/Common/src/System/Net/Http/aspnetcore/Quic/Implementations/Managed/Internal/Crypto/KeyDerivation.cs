@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Data;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -17,26 +19,33 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public static byte[] ExpandLabel(ReadOnlySpan<byte> prk, string label, ushort length)
         {
-            // create the hkdfLabel structure locally, as defined by the RFC8446, Section 7.1
-            // Context is empty string (with null terminator) in our case
+            // create the hkdfLabel structure locally, as defined by the RFC8446, Section 7.1.
+            // both label and context fields are length prefixed
+            //
             // struct {
             //     uint16 length = Length;
             //     opaque label<7..255> = "tls13 " + Label;
             //     opaque context<0..255> = Context;
             // } HkdfLabel;
 
-            const string prefix = "tls13 ";
-            Span<byte> hkdfLabel = stackalloc byte[sizeof(short) + 1 + prefix.Length + label.Length + 1];
+            const string tls13Prefix = "tls13 ";
+            int hkdfLabelSize = sizeof(short) +
+                                1 + tls13Prefix.Length + label.Length +
+                                1; // context is empty string in our case
+
+            Debug.Assert(hkdfLabelSize < 32);
+            Span<byte> hkdfLabel = stackalloc byte[hkdfLabelSize];
             // length is in big endian
             BinaryPrimitives.WriteUInt16BigEndian(hkdfLabel, length);
 
-            // label is length prefixed
-            hkdfLabel[2] = (byte)(label.Length + prefix.Length);
-            Encoding.ASCII.GetBytes(prefix, hkdfLabel.Slice(3));
-            Encoding.ASCII.GetBytes(label, hkdfLabel.Slice(3 + prefix.Length));
+            // write label
+            hkdfLabel[2] = (byte)(label.Length + tls13Prefix.Length);
+            Encoding.ASCII.GetBytes(tls13Prefix, hkdfLabel.Slice(3));
+            Encoding.ASCII.GetBytes(label, hkdfLabel.Slice(3 + tls13Prefix.Length));
+
+            // no need to write zero for context length, it is zero by default
 
             var result = new byte[length];
-
             HKDF.Expand(hashAlgorithm, prk, result, hkdfLabel);
             return result;
         }

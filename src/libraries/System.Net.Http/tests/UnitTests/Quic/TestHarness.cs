@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
         {
             _writer.Reset(buffer);
             from.SendData(_writer, out _, DateTime.Now);
-            int written = _writer.BytesWritten + _writer.Buffer.Offset;
+            int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
 
@@ -58,14 +58,14 @@ namespace System.Net.Quic.Tests
         internal OneRttPacket Get1RttToSend(ManagedQuicConnection from)
         {
             var flight = GetFlightToSend(from);
-            return Assert.IsType<OneRttPacket>(flight.Packets[0]);
+            return Assert.IsType<OneRttPacket>(Assert.Single(flight.Packets));
         }
 
         internal OneRttPacket Send1Rtt(ManagedQuicConnection source,
             ManagedQuicConnection destination)
         {
             var flight = SendFlight(source, destination);
-            return Assert.IsType<OneRttPacket>(flight.Packets[0]);
+            return Assert.IsType<OneRttPacket>(Assert.Single(flight.Packets));
         }
 
         internal TFrame Send1RttWithFrame<TFrame>(ManagedQuicConnection source,
@@ -101,13 +101,15 @@ namespace System.Net.Quic.Tests
             LogFlightPackets(packets, source == _client);
 
             _writer.Reset(buffer);
+            int written = 0;
             foreach (PacketBase packet in packets)
             {
                 packet.Serialize(_writer, testHarness);
+                written += _writer.BytesWritten;
                 _writer.Reset(_writer.Buffer.Slice(_writer.BytesWritten));
             }
 
-            _reader.Reset(buffer, 0, _writer.BytesWritten + _writer.Buffer.Offset);
+            _reader.Reset(buffer.AsMemory(0, written));
             destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
         }
 
@@ -131,14 +133,14 @@ namespace System.Net.Quic.Tests
             source.SendData(_writer, out _, DateTime.Now);
 
             // make a copy of the buffer, because decryption happens in-place
-            int written = _writer.BytesWritten + _writer.Buffer.Offset;
+            int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
 
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(source));
 
             LogFlightPackets(packets, source == _client);
 
-            _reader.Reset(buffer, 0, written);
+            _reader.Reset(buffer.AsMemory(0, written));
             destination.ReceiveData(_reader, IpAnyEndpoint, DateTime.Now);
 
             return new PacketFlight(packets, written);

@@ -44,7 +44,7 @@ namespace System.Net.Quic.Tests.Harness
         {
             base.Deserialize(reader, context);
 
-            SharedPacketData.Read(reader, reader.Buffer[0], out var data);
+            SharedPacketData.Read(reader, reader.Buffer.Span[0], out var data);
 
             Token = data.Token.IsEmpty ? null : data.Token.ToArray();
             Length = data.Length;
@@ -52,8 +52,9 @@ namespace System.Net.Quic.Tests.Harness
             (PacketNumberLength, PacketNumber) = DeserializePayloadWithFrames(reader, context, Frames, PacketType, (int) Length);
 
             // read these fields after decryption
-            FixedBit = HeaderHelpers.GetFixedBit(reader.Buffer[0]);
-            ReservedBits = HeaderHelpers.GetShortHeaderReservedBits(reader.Buffer[0]);
+            byte firstByte = reader.Buffer.Span[0];
+            FixedBit = HeaderHelpers.GetFixedBit(firstByte);
+            ReservedBits = HeaderHelpers.GetShortHeaderReservedBits(firstByte);
         }
     }
 }

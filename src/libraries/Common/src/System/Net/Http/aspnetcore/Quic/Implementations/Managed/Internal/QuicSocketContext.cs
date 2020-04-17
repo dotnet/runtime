@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
@@ -28,6 +29,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly CancellationTokenSource _socketTaskCts;
 
         private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
+
+        private Task? _backgroundWorkerTask;
 
         // constructor for server
         internal QuicSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
@@ -57,8 +60,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void Start()
         {
-            // TODO-RZ: check if already running
-            _ = BackgroundWorker(_socketTaskCts.Token);
+            Debug.Assert(_backgroundWorkerTask == null);
+            _backgroundWorkerTask = Task.Run(BackgroundWorker);
         }
 
         /// <summary>
@@ -126,27 +129,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         }
 
 
-        private async Task BackgroundWorker(CancellationToken token)
+        private async Task BackgroundWorker()
         {
+            var token = _socketTaskCts.Token;
+
             async Task SendData(ManagedQuicConnection c, QuicWriter w, Socket s, byte[] buf)
             {
                 w.Reset(buf);
                 c.SendData(w, out var addr, DateTime.Now);
-                int written = w.BytesWritten + w.Buffer.Offset;
+                int written = w.BytesWritten;
                 if (written > 0)
                 {
-                    await s.SendToAsync(new ArraySegment<byte>(buf, 0, written), SocketFlags.None, addr);
+                    await s.SendToAsync(new ArraySegment<byte>(buf, 0, written), SocketFlags.None, addr)
+                        .ConfigureAwait(false);
                 }
             }
-
-            await Task.Yield();
 
             byte[] recvBuffer = new byte[64 * 1024]; // max UDP packet size
             var reader = new QuicReader(recvBuffer);
             byte[] sendBuffer = new byte[64 * 1024]; // max UDP packet size
             var writer = new QuicWriter(sendBuffer);
 
-            var socket = new Socket(_localEndpoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            // TODO-RZ we need a way to notify clientside QuicConnection of newly assigned port number if none was specified beforehand
+            var socket = new Socket(_localEndpoint?.AddressFamily ?? AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             if (_localEndpoint != null)
             {
                 socket.Bind(_localEndpoint);
@@ -161,21 +166,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await Task.WhenAny(waitingTasks);
+                    await Task.WhenAny(waitingTasks).ConfigureAwait(false);
 
                     if (socketReceiveTask.IsCompleted)
                     {
-                        var result = await socketReceiveTask;
+                        var result = await socketReceiveTask.ConfigureAwait(false);
 
-                        // discard too small datagrams as they cannot be valid packets
+                        // process only datagrams big enough to contain valid QUIC packets
                         if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                         {
-                            reader.Reset(recvBuffer, 0, result.ReceivedBytes);
+                            reader.Reset(recvBuffer.AsMemory(0, result.ReceivedBytes));
                             var connection = DispatchPacket(reader, (IPEndPoint) result.RemoteEndPoint);
                             if (connection != null)
                             {
                                 // also query the connection for data to be sent back
-                                await SendData(connection!, writer, socket, sendBuffer);
+                                await SendData(connection!, writer, socket, sendBuffer).ConfigureAwait(false);
                             }
                         }
 
@@ -191,13 +196,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                         if (_client != null)
                         {
-                            await SendData(_client, writer, socket, sendBuffer);
+                            await SendData(_client, writer, socket, sendBuffer).ConfigureAwait(false);
                         }
                         else
                         {
                             foreach (ManagedQuicConnection connection in _connections!.Values)
                             {
-                                await SendData(connection, writer, socket, sendBuffer);
+                                await SendData(connection, writer, socket, sendBuffer).ConfigureAwait(false);
                             }
                         }
                     }
