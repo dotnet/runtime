@@ -553,10 +553,6 @@ namespace System
                             case CorElementType.ELEMENT_TYPE_R8:
                                 result = GenericBinarySearch<double>(array, adjustedIndex, length, value);
                                 break;
-                            case CorElementType.ELEMENT_TYPE_I:
-                                result = GenericBinarySearch<IntPtr>(array, adjustedIndex, length, value);
-                            case CorElementType.ELEMENT_TYPE_U:
-                                result = GenericBinarySearch<UIntPtr>(array, adjustedIndex, length, value);
                             default:
                                 Debug.Fail("All primitive types should be handled above");
                                 break;
@@ -1023,10 +1019,18 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             result = GenericIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             result = GenericIndexOf<long>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_R4:
@@ -1035,9 +1039,6 @@ namespace System
                         case CorElementType.ELEMENT_TYPE_R8:
                             result = GenericIndexOf<double>(array, value, adjustedIndex, count);
                             break;
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-                                result = GenericBinarySearch<IntPtr>(array, adjustedIndex, length, value);
                         default:
                             Debug.Fail("All primitive types should be handled above");
                             break;
@@ -1248,10 +1249,18 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             result = GenericLastIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             result = GenericLastIndexOf<long>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_R4:
@@ -1260,8 +1269,7 @@ namespace System
                         case CorElementType.ELEMENT_TYPE_R8:
                             result = GenericLastIndexOf<double>(array, value, adjustedIndex, count);
                             break;
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
+
                             result = GenericBinarySearch<IntPtr>(array, value, adjustedIndex, count);
                         default:
                             Debug.Fail("All primitive types should be handled above");
@@ -1453,16 +1461,21 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
                 case CorElementType.ELEMENT_TYPE_R4:
+#if TARGET_32BIT
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+#endif
                     UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
                 case CorElementType.ELEMENT_TYPE_R8:
-                    UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
-                    return;
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
-                    result = UnsafeArrayAsSpan<IntPtr>(array, adjustedIndex, length, value).Reverse();
+#endif
+                    UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
+                    return;
                 case CorElementType.ELEMENT_TYPE_OBJECT:
                 case CorElementType.ELEMENT_TYPE_ARRAY:
                 case CorElementType.ELEMENT_TYPE_SZARRAY:
