@@ -1,4 +1,4 @@
-# Known Issues in ECMA-335 CLI Specification 
+# Known Issues in ECMA-335 CLI Specification
 
 This is an informal list of notes on issues that have been encountered
 with the ECMA-335 CLI specification, primarily during development,
@@ -9,7 +9,7 @@ as Microsoft implementation quirks.
 
 ## Signatures
 
-There is a general philosophical issue whereby the spec defines the 
+There is a general philosophical issue whereby the spec defines the
 *syntax* of signatures to exclude errors such as:
 
  * using void outside of return types or pointer element types
@@ -19,7 +19,7 @@ There is a general philosophical issue whereby the spec defines the
 
 Another approach is to syntactically treat `VOID`, `TYPEDBYREF`,
 `BYREF Type`, `CMOD_OPT Type`, `CMOD_REQ Type` as the other `Type`s
-and then deal with the cases like those above as semantic errors in their use. 
+and then deal with the cases like those above as semantic errors in their use.
 That is closer to how many implementations work. It is also how type syntax
 is defined in the grammar for IL, with many of the semantic errors
 deferred to peverify and/or runtime checking rather than being checked
@@ -59,11 +59,11 @@ b) Replace
 
 > These items are compact ways to store a TypeDef, TypeRef, or TypeSpec token in a Signature (§II.23.2.12).
 
-with 
+with
 
 > TypeDefOrRefEncoded is a compact representation of either TypeDef or TypeRef token in a Signature (§II.23.2.12). TypeDefOrRefOrSpecEncoded is a compact representation of either TypeDef, TypeRef or TypeSpec token in a Signature.
 
-Also correct 
+Also correct
 
 > The encoded version of this TypeRef token is made up as follows:
 
@@ -127,13 +127,13 @@ TypeSpecBlob ::=
 ### 2. `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
 
 In II.23.2.7, it is noted that CMOD_OPT or CMOD_REQD is followed
-by a TypeRef or TypeDef metadata token, but TypeSpec tokens are 
+by a TypeRef or TypeDef metadata token, but TypeSpec tokens are
 also allowed by ilasm, csc, peverify, and the CLR.
 
 Note, in particular, that TypeSpecs are used there by C++/CLI to
 represent strongly-typed boxing in C++/CLI. e.g. `Nullable<int>^`
-in C++/CLI becomes `[mscorlib]System.ValueType 
-modopt([mscorlib]System.Nullable`1<int>) 
+in C++/CLI becomes `[mscorlib]System.ValueType
+modopt([mscorlib]System.Nullable`1<int>)
 modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)`
 in IL.
 
@@ -163,8 +163,8 @@ for details
 with
 
 > The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
-table, TypeRef table, or TypeSpec table. However, these tokens are encoded and compressed – 
-see §II.23.2.8 for details. Furthermore, if a row in the TypeSpec table is indicated, 
+table, TypeRef table, or TypeSpec table. However, these tokens are encoded and compressed –
+see §II.23.2.8 for details. Furthermore, if a row in the TypeSpec table is indicated,
 it must not create cycle.
 
 ### 3. Custom modifiers can go in more places than specified
@@ -196,7 +196,7 @@ Note that this change also allows properties to have BYREF type.
 c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 
 ```
-LocalVarSig ::= 
+LocalVarSig ::=
   LOCAL_SIG Count LocalVarType+
   
 LocalVarType ::=
@@ -210,7 +210,7 @@ LocalVarType ::=
 d) In section II.23.2.10 Param, replace the diagram with production rules:
 
 ```
-Param ::= 
+Param ::=
   Type
   CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
@@ -239,7 +239,7 @@ g) In sections II.23.2.12 Type and II.23.2.14 TypeSpec replace production rule
 PTR CustomMod* Type
 ```
 
-with 
+with
 
 ```
 PTR Type
@@ -251,7 +251,7 @@ and replace production rule
 SZARRAY CustomMod* Type
 ```
 
-with 
+with
 
 ```
 SZARRAY Type
