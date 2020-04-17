@@ -90,7 +90,7 @@ with
 Type ::=
       ...
       (CLASS | VALUETYPE) TypeDefOrRefEncoded
-      GENERICINST (CLASS | VALUETYPE) TypeDefOrRefEncoded  GenArgCount Type+
+      GENERICINST (CLASS | VALUETYPE) TypeDefOrRefEncoded GenArgCount Type+
       ...
 ```
 
@@ -122,18 +122,18 @@ TypeSpecBlob ::=
 
 2. Potential TypeSpec recursion is prevented.
 
-3. PEVerify, the CLR runtime and C# compiler prior to VS 2015 report an error when encountering an encoded TypeSpec in the positions decribed above.
+3. PEVerify, the CLR runtime and C# compiler prior to VS 2015 report an error when encountering an encoded TypeSpec in the positions described above.
 
-### 2.  `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
+### 2. `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
 
 In II.23.2.7, it is noted that CMOD_OPT or CMOD_REQD is followed
 by a TypeRef or TypeDef metadata token, but TypeSpec tokens are 
 also allowed by ilasm, csc, peverify, and the CLR.
 
 Note, in particular, that TypeSpecs are used there by C++/CLI to
-represent strongly-typed  boxing in C++/CLI. e.g. `Nullable<int>^`
+represent strongly-typed boxing in C++/CLI. e.g. `Nullable<int>^`
 in C++/CLI becomes `[mscorlib]System.ValueType 
-modopt([mscorlib]System.Nulllable`1<int>) 
+modopt([mscorlib]System.Nullable`1<int>) 
 modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)`
 in IL.
 
@@ -157,13 +157,13 @@ Related issues:
 In section II.23.2.7, replace
 
 > The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
- table or the TypeRef table.  However, these tokens are encoded and compressed – see §II.23.2.8
+ table or the TypeRef table. However, these tokens are encoded and compressed – see §II.23.2.8
 for details
 
 with
 
 > The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
-table, TypeRef table, or TypeSpec table.  However, these tokens are encoded and compressed – 
+table, TypeRef table, or TypeSpec table. However, these tokens are encoded and compressed – 
 see §II.23.2.8 for details. Furthermore, if a row in the TypeSpec table is indicated, 
 it must not create cycle.
 
@@ -310,7 +310,7 @@ Even more obscurely, this gives us a way to use `VOID`, `TYPEDBYREF`,
 `CMOD_OPT`, and `CMOD_REQ` at the root of a `TypeSpec`, which are not even
 specified as valid at the root of a `Type`: `modopt(int32
 modopt(int32))`, `modopt(void)`, and `modopt(typedref)` all work in
-practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be otained by putting
+practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be obtained by putting
 a modifier on the type used with `constrained.`.
 
 ## Heap sizes
@@ -319,7 +319,7 @@ The ECMA-335-II specification isn't clear on the maximum sizes of #String, #Blob
 
 #### Proposed specification change
 
-We propose  the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is any index to these heaps fits into 29 bits.
+We propose the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is any index to these heaps fits into 29 bits.
 
 #### Rationale of the proposal
 
