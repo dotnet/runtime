@@ -96,7 +96,7 @@ Type ::=
       ...
 ```
 
-Note also the correction of ```Type*``` to ```Type+```. A generic type instantiation shall have at least one type argument.
+Note also the correction of `Type*` to `Type+`. A generic type instantiation shall have at least one type argument.
 
 d) In section II.23.2.14 replace
 
@@ -116,7 +116,7 @@ TypeSpecBlob ::=
       ...
 ```
 
-```Type Type*``` is simplified to ```Type+```.
+`Type Type*` is simplified to `Type+`.
 
 #### Rationale of the proposal
 
@@ -229,7 +229,7 @@ RetType ::=
   CustomMod* VOID
 ```
 
-f) In section II.23.2.12 Type, add a production rule to the definition of ```Type```:
+f) In section II.23.2.12 Type, add a production rule to the definition of `Type`:
 
 ```ebnf
 Type ::= CustomMod* Type
