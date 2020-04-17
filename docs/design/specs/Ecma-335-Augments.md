@@ -1,11 +1,6 @@
-# Known Issues in ECMA-335 CLI Specification
+# ECMA-335 CLI Specification Addendum
 
-This is an informal list of notes on issues that have been encountered
-with the ECMA-335 CLI specification, primarily during development,
-testing, and support of System.Reflection.Metadata.
-
-Some of these are definite spec errors while others could be reasoned
-as Microsoft implementation quirks.
+This is a list of additions and edits to be made in ECMA-335 specifications. It includes both documentation of new runtime features and issues encountered during development. Some of the issues are definite spec errors while others could be reasoned as Microsoft implementation quirks.
 
 ## Signatures
 
