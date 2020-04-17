@@ -40,10 +40,12 @@ In II.23.2.12 and II.23.2.14, it is implied that the token in `(CLASS
 fact it must be a `TypeDef` or `TypeRef`.
 
 peverify gives the following error:
+
 ```
 [MD]: Error: Signature has token following ELEMENT_TYPE_CLASS
 (_VALUETYPE) that is not a TypeDef or TypeRef
 ```
+
 An insightful comment in CLR source code notes that this rule prevents
 cycles in signatures, but see #2 below.
 
