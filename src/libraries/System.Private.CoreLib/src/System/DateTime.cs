@@ -576,15 +576,15 @@ namespace System
         // DateTime becomes 2/28. Otherwise, the month, day, and time-of-day
         // parts of the result are the same as those of this DateTime.
         //
-        public DateTime AddYears(int value)
+        public DateTime AddYears(int years)
         {
-            if (value < -10000 || value > 10000)
+            if (years < -10000 || years > 10000)
             {
                 // DateTimeOffset.AddYears(int years) is implemented on top of DateTime.AddYears(int value). Use the more appropriate
                 // parameter name out of the two for the exception.
-                throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
+                throw new ArgumentOutOfRangeException(nameof(years), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
-            return AddMonths(value * 12);
+            return AddMonths(years * 12);
         }
 
         // Compares two DateTime values, returning an integer that indicates

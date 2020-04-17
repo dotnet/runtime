@@ -813,7 +813,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if (!(i + 1 < value.Length))
                         {
-                            throw new ArgumentException(SR.EventSource_EvenHexDigits, "traits");
+                            throw new ArgumentException(SR.EventSource_EvenHexDigits, nameof(value));
                         }
                         metaData.Add((byte)(HexDigit(value[i]) * 16 + HexDigit(value[i + 1])));
                         i++;
@@ -826,7 +826,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.EventSource_IllegalValue, value), "traits");
+                throw new ArgumentException(SR.Format(SR.EventSource_IllegalValue, value), nameof(value));
             }
 
             return metaData.Count - startPos;
@@ -850,7 +850,7 @@ namespace System.Diagnostics.Tracing
                 return c - 'A' + 10;
             }
 
-            throw new ArgumentException(SR.Format(SR.EventSource_BadHexDigit, c), "traits");
+            throw new ArgumentException(SR.Format(SR.EventSource_BadHexDigit, c), nameof(c));
         }
 
         private NameInfo? UpdateDescriptor(

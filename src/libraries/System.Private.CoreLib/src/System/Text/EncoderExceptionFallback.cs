@@ -109,7 +109,7 @@ namespace System.Text
             }
             if (!char.IsLowSurrogate(charUnknownLow))
             {
-                throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
+                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
                     SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
 

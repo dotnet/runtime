@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
                         Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, IntPtr.Zero, IntPtr.Zero);
                     if (byteLength <= 0)
-                        throw new ArgumentException();
+                        throw new ArgumentException(null, nameof(chars));
                 }
             }
 
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, IntPtr.Zero, IntPtr.Zero);
                     if (byteLength <= 0)
-                        throw new ArgumentException();
+                        throw new ArgumentException(null, nameof(bytes));
                 }
             }
 

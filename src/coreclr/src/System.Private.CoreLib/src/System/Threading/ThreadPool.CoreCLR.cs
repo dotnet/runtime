@@ -287,7 +287,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ArgumentNullException(nameof(WaitOrTimerCallback));
+                throw new ArgumentNullException(nameof(callBack));
             }
             return registeredWaitHandle;
         }

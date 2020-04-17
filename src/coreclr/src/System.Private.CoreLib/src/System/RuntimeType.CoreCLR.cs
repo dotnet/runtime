@@ -1896,7 +1896,7 @@ namespace System
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParamters)
         {
             if (genericArguments == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(genericArguments));
 
             for (int i = 0; i < genericArguments.Length; i++)
             {
@@ -2752,7 +2752,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -2788,7 +2788,7 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
@@ -2814,7 +2814,7 @@ namespace System
 
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
@@ -2851,7 +2851,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -2885,7 +2885,7 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
@@ -2913,7 +2913,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;

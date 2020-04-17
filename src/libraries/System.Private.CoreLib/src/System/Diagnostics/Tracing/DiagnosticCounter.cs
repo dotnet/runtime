@@ -32,12 +32,12 @@ namespace System.Diagnostics.Tracing
         {
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(Name));
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (eventSource == null)
             {
-                throw new ArgumentNullException(nameof(EventSource));
+                throw new ArgumentNullException(nameof(eventSource));
             }
 
             Name = name;

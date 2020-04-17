@@ -371,7 +371,7 @@ namespace System
             // and thus always throw rather than returning false.
             if (!typeof(TEnum).IsEnum)
             {
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(TEnum));
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(result));
             }
 
             ReadOnlySpan<char> valueSpan = value.AsSpan().TrimStart();

@@ -262,7 +262,7 @@ namespace System.Diagnostics.Tracing
             if (this.state != State.Started)
                 throw new InvalidOperationException();      // Write after stop.
             if (eventName == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(eventName));
 
             eventSource.Write(eventName, ref options, ref this.activityId, ref s_empty, ref data);
         }

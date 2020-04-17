@@ -63,7 +63,7 @@ namespace System.Reflection
             if (pkt != null)
             {
                 if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(pkt));
 
                 sb.Append(", PublicKeyToken=");
                 if (pkt.Length == 0)

@@ -961,7 +961,7 @@ namespace System.Text
 
             if ((uint)newLength > (uint)m_MaxCapacity)
             {
-                throw new ArgumentOutOfRangeException(nameof(Capacity), SR.ArgumentOutOfRange_Capacity);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Capacity);
             }
 
             while (count > 0)
@@ -1144,7 +1144,7 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(bool value) => Append(value.ToString());
+        public StringBuilder Append(bool value) => Append(value);
 
         public StringBuilder Append(char value)
         {
@@ -2401,7 +2401,7 @@ namespace System.Text
 
             if ((minBlockCharCount + Length) > m_MaxCapacity || minBlockCharCount + Length < minBlockCharCount)
             {
-                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException(nameof(minBlockCharCount), SR.ArgumentOutOfRange_SmallCapacity);
             }
 
             // - We always need to make the new chunk at least as big as was requested (`minBlockCharCount`).
@@ -2490,7 +2490,7 @@ namespace System.Text
 
             if (count + Length > m_MaxCapacity || count + Length < count)
             {
-                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_SmallCapacity);
             }
 
             chunk = this;
