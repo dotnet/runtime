@@ -12,7 +12,7 @@ using System.Text;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	[SetupLinkerDataflowAnnotationsFile ("JsonAnnotations.json")]
+	[SetupLinkerAttributeDefinitionsFile ("JsonAnnotations.json")]
 	class JsonAnnotations
 	{
 		public static void Main()

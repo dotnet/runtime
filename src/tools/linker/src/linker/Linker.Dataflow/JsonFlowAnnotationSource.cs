@@ -64,10 +64,18 @@ namespace Mono.Linker.Dataflow
 			return 0;
 		}
 
-		static DynamicallyAccessedMemberKinds ParseKinds(string s)
+		static DynamicallyAccessedMemberKinds ParseKinds(JsonElement attributes)
 		{
-			// Enum.Parse accepts a comma as a separator for Flags
-			return (DynamicallyAccessedMemberKinds)Enum.Parse (typeof (DynamicallyAccessedMemberKinds), s);
+			foreach (var attribute in attributes.EnumerateObject ()) {
+				if (attribute.Name == "System.Runtime.CompilerServices.DynamicallyAccessedMembers") {
+					string value = attribute.Value.GetString ();
+					
+					// Enum.Parse accepts a comma as a separator for Flags
+					return (DynamicallyAccessedMemberKinds)Enum.Parse (typeof (DynamicallyAccessedMemberKinds), value);
+				}
+			}
+
+			return 0;
 		}
 
 		private void Initialize(LinkContext context, string jsonFile)
@@ -105,7 +113,10 @@ namespace Mono.Linker.Dataflow
 						foreach (var member in typeElement.Value.EnumerateObject ()) {
 							string memberName = member.Name;
 
-							if (member.Value.ValueKind == JsonValueKind.Object) {
+							// Technically, '(' is a valid character in both method and field names,
+							// but the existing PreserveDependencyAttribute parser has a limitation in supporting
+							// that anyway, so we will use '(' to distinguish methods from fields/properties.
+							if (memberName.Contains("(")) {
 								// This is a method
 
 								// Parser uses same format as PreserveDependencyAttribute
@@ -155,13 +166,17 @@ namespace Mono.Linker.Dataflow
 								DynamicallyAccessedMemberKinds returnAnnotation = 0;
 								var parameterAnnotations = new ArrayBuilder<(string ParamName, DynamicallyAccessedMemberKinds Annotation)> ();
 								foreach (var parameter in member.Value.EnumerateObject ()) {
-									if (parameter.Name == "return")
-										returnAnnotation = ParseKinds (parameter.Value.GetString ());
-									else
-										parameterAnnotations.Add ((parameter.Name, ParseKinds (parameter.Value.GetString ())));
+									if (parameter.Name == "return") {
+										returnAnnotation = ParseKinds (parameter.Value);
+									} else {
+										DynamicallyAccessedMemberKinds paramAnnotation = ParseKinds (parameter.Value);
+										if (paramAnnotation != 0)
+											parameterAnnotations.Add ((parameter.Name, paramAnnotation));
+									}
 								}
 
-								_methods [method] = new AnnotatedMethod (returnAnnotation, parameterAnnotations.ToArray ());
+								if (returnAnnotation != 0 || parameterAnnotations.Count > 0)
+									_methods [method] = new AnnotatedMethod (returnAnnotation, parameterAnnotations.ToArray ());
 							} else {
 								// This is a field or property
 								FieldDefinition field = null;
@@ -175,7 +190,10 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (field != null) {
-									_fields [field] = ParseKinds (member.Value.GetString ());
+									DynamicallyAccessedMemberKinds fieldAnnotation = ParseKinds (member.Value);
+
+									if (fieldAnnotation != 0)
+										_fields [field] = fieldAnnotation;
 									continue;
 								}
 
@@ -190,7 +208,10 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (property != null) {
-									_properties [property] = ParseKinds (member.Value.GetString ());
+									DynamicallyAccessedMemberKinds propertyAnnotation = ParseKinds (member.Value);
+
+									if (propertyAnnotation != 0)
+										_properties [property] = propertyAnnotation;
 								}
 
 								if (field == null && property == null) {
@@ -210,6 +231,8 @@ namespace Mono.Linker.Dataflow
 			public void Add (T value) => (_list ??= new List<T> ()).Add (value);
 
 			public T [] ToArray () => _list?.ToArray ();
+
+			public int Count => _list?.Count ?? 0;
 		}
 
 		private struct AnnotatedMethod

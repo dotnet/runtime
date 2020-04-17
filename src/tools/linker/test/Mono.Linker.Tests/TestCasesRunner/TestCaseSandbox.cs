@@ -102,7 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
-			foreach (var res in metadataProvider.GetDataflowAnnotationFiles ()) {
+			foreach (var res in metadataProvider.GetAttributeDefinitionFiles ()) {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 

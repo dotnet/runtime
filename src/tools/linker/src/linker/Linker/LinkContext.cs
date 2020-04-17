@@ -120,7 +120,7 @@ namespace Mono.Linker {
 
 		public List<string> Substitutions { get; private set; }
 
-		public List<string> DataflowAnnotations { get; private set; }
+		public List<string> AttributeDefinitions { get; private set; }
 
 		public List<PInvokeInfo> PInvokes { get; private set; }
 
@@ -227,17 +227,17 @@ namespace Mono.Linker {
 			Substitutions.Add (file);
 		}
 
-		public void AddDataflowAnnotationsFile (string file)
+		public void AddAttributeDefinitionFile (string file)
 		{
-			if (DataflowAnnotations == null) {
-				DataflowAnnotations = new List<string> { file };
+			if (AttributeDefinitions == null) {
+				AttributeDefinitions = new List<string> { file };
 				return;
 			}
 
-			if (DataflowAnnotations.Contains (file))
+			if (AttributeDefinitions.Contains (file))
 				return;
 
-			DataflowAnnotations.Add (file);
+			AttributeDefinitions.Add (file);
 		}
 
 		public TypeDefinition GetType (string fullName)
