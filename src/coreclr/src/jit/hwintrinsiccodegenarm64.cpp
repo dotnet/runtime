@@ -193,7 +193,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(intrin.op1 != nullptr);
             op1Reg = intrin.op1->GetRegNum();
             break;
-
+        case 0:
+            assert(HWIntrinsicInfo::lookupNumArgs(intrin.id) == 0);
+            break;
         default:
             unreached();
     }
@@ -268,7 +270,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     else
     {
         instruction ins = INS_invalid;
-
+        int         ival = -1;
         switch (intrin.id)
         {
             case NI_Crc32_ComputeCrc32:
@@ -305,6 +307,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
+                ival = HWIntrinsicInfo::lookupIval(intrin.id);
                 break;
         }
 
@@ -484,6 +487,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            // mvni won't take 8B/16B, so hard-code the size and reinterpret the bits. The behaviour is the same.
+            case NI_Vector64_get_Zero:
+            case NI_Vector64_get_AllBitsSet:
+                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, ival, INS_OPTS_2S);
+                break;
+            case NI_Vector128_get_Zero:
+            case NI_Vector128_get_AllBitsSet:
+                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, ival, INS_OPTS_4S);
+                break;
             default:
                 unreached();
         }
