@@ -336,7 +336,7 @@ There are no limitations on what code is permitted in a module initializer. Modu
 
 The CLI shall provide the following guarantees regarding module initialization:
 
-1. A module initializer is executed at, or sometime before, first access to any types, methods, or data defined in the module.
+1. A module initializer is executed at, or sometime before, first access to any static field or first invocation of any method defined in the module.
 
 2. A module initializer shall run exactly once for any given module unless explicitly called by user code.
 
