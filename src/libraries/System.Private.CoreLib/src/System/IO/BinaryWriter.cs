@@ -453,17 +453,52 @@ namespace System.IO
             }
         }
 
-        protected void Write7BitEncodedInt(int value)
+        public void Write7BitEncodedInt(int value) => Write7BitEncodedUInt32((uint)value);
+
+        public void Write7BitEncodedInt64(long value) => Write7BitEncodedUInt64((ulong)value);
+
+        private void Write7BitEncodedUInt32(uint value)
         {
-            // Write out an int 7 bits at a time.  The high bit of the byte,
-            // when on, tells reader to continue reading more bytes.
-            uint v = (uint)value;   // support negative numbers
-            while (v >= 0x80)
+            // On 64-bit platforms, always use the 64-bit overload.
+            // It's just a small optimization that allows AOT compilers
+            // to eliminate this method implementation entirely.
+
+            if (IntPtr.Size >= 8)
             {
-                Write((byte)(v | 0x80));
-                v >>= 7;
+                Write7BitEncodedUInt64(value);
+                return;
             }
-            Write((byte)v);
+
+            // Write out an int 7 bits at a time. The high bit of the byte,
+            // when on, tells reader to continue reading more bytes.
+            //
+            // Using the constants 0x7F and ~0x7F below offers smaller
+            // codegen than using the constant 0x80.
+
+            while (value > 0x7Fu)
+            {
+                Write((byte)(value | ~0x7Fu));
+                value >>= 7;
+            }
+
+            Write((byte)value);
+        }
+
+        private void Write7BitEncodedUInt64(ulong value)
+        {
+            // Write out an int 7 bits at a time. The high bit of the byte,
+            // when on, tells reader to continue reading more bytes.
+            //
+            // Using the constants 0x7F and ~0x7F below offers smaller
+            // codegen than using the constant 0x80.
+
+            while (value > 0x7Fu)
+            {
+                Write((byte)((uint)value | ~0x7Fu));
+                value >>= 7;
+            }
+
+            Write((byte)value);
         }
     }
 }
