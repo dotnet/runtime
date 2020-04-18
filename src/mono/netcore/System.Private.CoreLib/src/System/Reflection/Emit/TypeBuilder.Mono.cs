@@ -2042,6 +2042,8 @@ namespace System.Reflection.Emit
         }
 
         public override bool IsTypeDefinition => true;
+
+        public override bool IsByRefLike => false;
     }
 }
 #endif
