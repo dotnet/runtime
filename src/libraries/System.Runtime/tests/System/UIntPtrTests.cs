@@ -172,8 +172,6 @@ namespace System.Tests
             Assert.False(ptr == new UIntPtr(expected + 1));
             Assert.True(ptr != new UIntPtr(expected + 1));
         }
-    }
-
 
         [Fact]
         public static void Ctor_Empty()
