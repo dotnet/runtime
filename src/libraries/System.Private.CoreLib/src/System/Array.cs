@@ -1713,12 +1713,6 @@ namespace System
                         case CorElementType.ELEMENT_TYPE_R8:
                             GenericSort<double>(keys, items, adjustedIndex, length);
                             return;
-                        case CorElementType.ELEMENT_TYPE_I:
-                            GenericSort<IntPtr>(keys, items, adjustedIndex, length);
-                            return;
-                        case CorElementType.ELEMENT_TYPE_U:
-                            GenericSort<UIntPtr>(keys, items, adjustedIndex, length);
-                            return;
                     }
 
                     static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T: struct
