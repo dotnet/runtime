@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     /// <summary>
     /// No-op runner keeping the original IL assemblies to be directly run with full jitting.
