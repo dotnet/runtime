@@ -276,8 +276,18 @@ namespace System.Text.Json
             if (jsonPropertyInfo != null)
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
+
+                bool isImmutableReadOnly = declaredPropertyType.IsImmutableDictionaryType() &&
+                    (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
+                     typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType));
+
+                bool isReadOnlyDictionaryInterface = declaredPropertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                     declaredPropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
+
                 if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
+                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
+                    isImmutableReadOnly||
+                    isReadOnlyDictionaryInterface)
                 {
                     JsonConverter converter = Options.GetConverter(declaredPropertyType);
                     Debug.Assert(converter != null);
