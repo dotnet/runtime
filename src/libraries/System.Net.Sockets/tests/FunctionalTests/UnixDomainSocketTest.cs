@@ -166,6 +166,8 @@ namespace System.Net.Sockets.Tests
                         using var clientClone = new Socket(client.SafeHandle);
                         using var acceptedClone = new Socket(accepted.SafeHandle);
 
+                        Assert.True(clientClone.Connected);
+                        Assert.True(acceptedClone.Connected);
                         Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
                         Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
                         Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
