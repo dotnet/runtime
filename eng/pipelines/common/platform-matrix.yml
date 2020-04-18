@@ -180,23 +180,25 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
-
-# FreeBSD machines are currently offline. Re-enable in the official build when
-# the machines are healthy.
-
-# - template: xplat-setup.yml
-#   parameters:
-#     jobTemplate: ${{ parameters.jobTemplate }}
-#     osGroup: FreeBSD
-#     archType: x64
-#     jobParameters:
-#       runtimeFlavor: ${{ parameters.runtimeFlavor }}
-#       buildConfig: ${{ parameters.buildConfig }}
-#       # There are no FreeBSD helix queues, so we don't run tests at the moment.
-#       helixQueues:
-#         asString: ''
-#         asArray: []
-#       ${{ insert }}: ${{ parameters.jobParameters }}
+- ${{ if containsValue(parameters.platforms, 'FreeBSD_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: FreeBSD
+      archType: x64
+      platform: FreeBSD_x64
+      container:
+        image: ubuntu-18.04-cross-freebsd-11-20200407092345-a84b0d2
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossrootfsDir: '/crossrootfs/x64'
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android x64
 
