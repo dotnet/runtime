@@ -510,7 +510,7 @@ namespace System
             if (comparer == Comparer.Default)
             {
                 CorElementType et = array.GetCorElementTypeOfElementType();
-                if (et.IsPrimitiveType()
+                if (et.IsPrimitiveType())
                 {
                     if (value == null)
                         return ~index;
@@ -1684,15 +1684,27 @@ namespace System
                             GenericSort<ushort>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+#endif
                             GenericSort<int>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             GenericSort<uint>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+#endif
                             GenericSort<long>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             GenericSort<ulong>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_R4:
