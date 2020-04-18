@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -903,8 +905,6 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>(@"{}");
             JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>(@"{}");
 
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>("{\"hello\":\"world\"}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>("{\"hello\":\"world\"}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
@@ -1065,6 +1065,54 @@ namespace System.Text.Json.Serialization.Tests
                 writer.WriteString("Hi", "There");
                 writer.WriteEndObject();
             }
+        }
+
+        [Theory]
+        [InlineData(typeof(HasExtensionData<Dictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<SortedDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<IDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<IReadOnlyDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<ImmutableDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<ImmutableSortedDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<IImmutableDictionary<string, JsonElement>>))]
+        [InlineData(typeof(HasExtensionData<ConcurrentDictionary<string, JsonElement>>))]
+        public static void TypeValidityAsExtensionDataWithJsonElementValue(Type type)
+        {
+            const string json = "{\"foo\": 123}";
+
+            object obj = JsonSerializer.Deserialize(json, type);
+            IDictionary<string, JsonElement> extData = (IDictionary<string, JsonElement>)type.GetProperty("ExtensionData").GetValue(obj)!;
+            Assert.True(extData.ContainsKey("foo"));
+
+            int value = extData["foo"].GetInt32();
+            Assert.Equal(123, value);
+        }
+
+        [Theory]
+        [InlineData(typeof(HasExtensionData<Dictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<SortedDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<IDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<IReadOnlyDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<ImmutableDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<ImmutableSortedDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<IImmutableDictionary<string, object>>))]
+        [InlineData(typeof(HasExtensionData<ConcurrentDictionary<string, object>>))]
+        public static void TypeValidityAsExtensionDataWithObjectValue(Type type)
+        {
+            const string json = "{\"foo\": 123}";
+
+            object obj = JsonSerializer.Deserialize(json, type);
+            IDictionary<string, object> extData = (IDictionary<string, object>)type.GetProperty("ExtensionData").GetValue(obj)!;
+            Assert.True(extData.ContainsKey("foo"));
+
+            int value = ((JsonElement)extData["foo"]).GetInt32();
+            Assert.Equal(123, value);
+        }
+
+        private class HasExtensionData<T>
+        {
+            [JsonExtensionData]
+            public T ExtensionData { get; set; }
         }
     }
 }
