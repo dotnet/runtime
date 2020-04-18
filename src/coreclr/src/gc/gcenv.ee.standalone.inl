@@ -203,22 +203,22 @@ inline MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return g_theGCToCLR->GetFreeObjectMethodTable();
 }
 
-inline bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+inline bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetBooleanConfigValue(key, value);
+    return g_theGCToCLR->GetBooleanConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+inline bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetIntConfigValue(key, value);
+    return g_theGCToCLR->GetIntConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+inline bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetStringConfigValue(key, value);
+    return g_theGCToCLR->GetStringConfigValue(privateKey, publicKey, value);
 }
 
 inline void GCToEEInterface::FreeStringConfigValue(const char* value)
