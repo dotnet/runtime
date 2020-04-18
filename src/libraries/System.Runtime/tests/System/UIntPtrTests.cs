@@ -206,7 +206,7 @@ namespace System.Tests
         [InlineData(234, 456, -1)]
         [InlineData(234, uint.MaxValue, -1)]
         [InlineData(234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(uint i0, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(uint i0, object value, int expected)
         {
             var i = (UIntPtr)i0;
             if (value is uint uintValue)
@@ -220,7 +220,7 @@ namespace System.Tests
         [Theory]
         [InlineData("a")]
         [InlineData(234)]
-        public void CompareTo_ObjectNotUint_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotUint_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((UIntPtr)123).CompareTo(value));
         }

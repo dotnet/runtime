@@ -224,7 +224,7 @@ namespace System.Tests
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
         [InlineData(234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(int l, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(int l, object value, int expected)
         {
             var i = (IntPtr)l;
             if (value is IntPtr IntPtrValue)
@@ -239,7 +239,7 @@ namespace System.Tests
         [Theory]
         [InlineData("a")]
         [InlineData((long)234)]
-        public void CompareTo_ObjectNotIntPtr_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotIntPtr_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((IntPtr)123).CompareTo(value));
         }
