@@ -1374,8 +1374,11 @@ namespace System.Drawing
 
             public static StartupInput GetDefault()
             {
+                OperatingSystem os = Environment.OSVersion;
                 StartupInput result = default;
-                result.GdiplusVersion = 1;
+
+                // In Windows 7 GDI+1.1 story is different as there are different binaries per GDI+ version.
+                result.GdiplusVersion = os.Platform != PlatformID.Unix && os.Version.Major == 6 && os.Version.Minor == 1 ? 1 : 2;
                 // result.DebugEventCallback = null;
                 result.SuppressBackgroundThread = false;
                 result.SuppressExternalCodecs = false;
