@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Ctor_NullEventName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => new ComAwareEventInfo(typeof(NonComObject), null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new ComAwareEventInfo(typeof(NonComObject), null));
         }
 
         [Fact]
