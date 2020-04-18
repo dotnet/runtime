@@ -191,7 +191,10 @@ namespace System.Buffers
                     // no-op; the handle will be disposed separately
                 }
 
-                public override Span<T> GetSpan() => _impl.Span;
+                public override Span<T> GetSpan()
+                {
+                    throw new NotImplementedException();
+                }
 
                 public override MemoryHandle Pin(int elementIndex)
                 {

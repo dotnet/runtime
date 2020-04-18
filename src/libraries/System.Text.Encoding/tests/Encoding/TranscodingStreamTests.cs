@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -291,15 +290,15 @@ namespace System.Text.Tests
         {
             // Tests TranscodingStream.Read(Span<byte>)
 
-            using BoundedMemory<byte> boundedMemoryBuffer = BoundedMemory.Allocate<byte>(bufferLength);
+            byte[] buffer = new byte[bufferLength];
 
             RunReadTest((transcodingStream, sink) =>
             {
-                int numBytesRead = transcodingStream.Read(boundedMemoryBuffer.Span);
+                int numBytesRead = transcodingStream.Read(buffer.AsSpan());
                 Assert.True(numBytesRead >= 0);
                 Assert.True(numBytesRead <= bufferLength);
 
-                sink.Write(boundedMemoryBuffer.Span[0..numBytesRead]);
+                sink.Write(buffer.AsSpan(0..numBytesRead));
                 return numBytesRead;
             });
         }
@@ -423,15 +422,15 @@ namespace System.Text.Tests
         {
             // Tests TranscodingStream.ReadAsync(Memory<byte>, CancellationToken)
 
-            using BoundedMemory<byte> boundedMemoryBuffer = BoundedMemory.Allocate<byte>(bufferLength);
+            byte[] buffer = new byte[bufferLength];
 
             await RunReadTestAsync(async (transcodingStream, cancellationToken, sink) =>
             {
-                int numBytesRead = await transcodingStream.ReadAsync(boundedMemoryBuffer.Memory, cancellationToken);
+                int numBytesRead = await transcodingStream.ReadAsync(buffer.AsMemory(), cancellationToken);
                 Assert.True(numBytesRead >= 0);
                 Assert.True(numBytesRead <= bufferLength);
 
-                sink.Write(boundedMemoryBuffer.Span[0..numBytesRead]);
+                sink.Write(buffer.AsSpan(0..numBytesRead));
                 return numBytesRead;
             });
         }

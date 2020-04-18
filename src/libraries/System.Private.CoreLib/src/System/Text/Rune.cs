@@ -20,9 +20,6 @@ namespace System.Text
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct Rune : IComparable<Rune>, IEquatable<Rune>
     {
-        internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
-        internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
-
         private const char HighSurrogateStart = '\ud800';
         private const char LowSurrogateStart = '\udc00';
         private const int HighSurrogateRange = 0x3FF;
@@ -188,8 +185,8 @@ namespace System.Text
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(textInfo != null, "This should've been checked by the caller.");
 
-            Span<char> original = stackalloc char[MaxUtf16CharsPerRune];
-            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune];
+            Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
+            Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
 
             int charCount = rune.EncodeToUtf16(original);
             original = original.Slice(0, charCount);
@@ -223,8 +220,8 @@ namespace System.Text
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(culture != null, "This should've been checked by the caller.");
 
-            Span<char> original = stackalloc char[MaxUtf16CharsPerRune];
-            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune];
+            Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
+            Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
 
             int charCount = rune.EncodeToUtf16(original);
             original = original.Slice(0, charCount);
