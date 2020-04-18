@@ -42,7 +42,7 @@
     <DefaultSubsets Condition="'$(TargetOS)' == 'WebAssembly'">mono+libs</DefaultSubsets>
   </PropertyGroup>
 
-  <!-- Init _subSet here in to allow RuntimeFlavor to be set as early as possible -->
+  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
   <PropertyGroup>
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
@@ -50,9 +50,11 @@
 
   <PropertyGroup>
     <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'WebAssembly'">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime')))">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+  </PropertyGroup>
 
+  <PropertyGroup>
     <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.buildtools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
