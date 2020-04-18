@@ -1386,8 +1386,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             if (baseType != TYP_DOUBLE)
             {
                 assert(sig->numArgs == 2);
-                op2      = impSIMDPopStack(TYP_SIMD16);
-                op1      = impSIMDPopStack(TYP_SIMD16);
+                op2 = impSIMDPopStack(TYP_SIMD16);
+                op1 = impSIMDPopStack(TYP_SIMD16);
 
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
@@ -1403,8 +1403,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
         case NI_SSE2_CompareNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
             assert(baseType == TYP_DOUBLE);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -1428,8 +1428,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
         case NI_SSE2_CompareLessThan:
         {
             assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
 
             if (baseType == TYP_DOUBLE)
             {
@@ -1449,8 +1449,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
         case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
             assert(baseType == TYP_DOUBLE);
 
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
