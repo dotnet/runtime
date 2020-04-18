@@ -190,6 +190,13 @@ namespace System.Net.Sockets
                     case AddressFamily.Unix:
                         socketAddress = new Internals.SocketAddress(_addressFamily, buffer);
                         _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            // GetPeerName() bellow will fail if given buffer is too small.
+                            // Give it at least old Windows max path.
+                            socketAddress = new Internals.SocketAddress(_addressFamily, new byte[260]);
+                        }
+
                         break;
                 }
 

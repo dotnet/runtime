@@ -10,11 +10,20 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public class UnixDomainSocketTest
     {
+        private readonly ITestOutputHelper _log;
+
+        public UnixDomainSocketTest(ITestOutputHelper output)
+        {
+            _log = output;
+        }
+
+
         [Fact]
         public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
         {
@@ -165,6 +174,9 @@ namespace System.Net.Sockets.Tests
                     {
                         using var clientClone = new Socket(client.SafeHandle);
                         using var acceptedClone = new Socket(accepted.SafeHandle);
+
+                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
 
                         Assert.True(clientClone.Connected);
                         Assert.True(acceptedClone.Connected);
