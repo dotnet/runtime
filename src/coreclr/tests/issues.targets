@@ -1493,9 +1493,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
             <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578214/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34382</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578217/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
