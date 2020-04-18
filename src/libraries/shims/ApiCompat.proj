@@ -107,7 +107,7 @@
       <_previousNetCoreAppBaselineParam Condition="'$(UpdatePreviousNetCoreAppBaseline)' == 'true'">&gt; &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
     </PropertyGroup>
  
-    <Error Condition="'$(NetCoreAppCurrent)' != 'netcoreapp5.0'" Text="Update value of PreviousNetCoreApp" />
+    <Error Condition="'$(NetCoreAppCurrent)' != 'net5.0'" Text="Update value of PreviousNetCoreApp" />
     <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(PreviousNetCoreApp)'" />
     <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
