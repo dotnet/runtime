@@ -7,7 +7,7 @@
 
   <PropertyGroup>
     <ApiCompatTarget>$(TargetFramework)</ApiCompatTarget>
-    <ApiCompatTarget Condition="$(BuildTargetFramework.Contains('netcoreapp'))">netcoreapp</ApiCompatTarget>
+    <ApiCompatTarget Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</ApiCompatTarget>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
     <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
     <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
