@@ -207,9 +207,9 @@ namespace System.Text.Json
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
 
-        public bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        public bool ReadJsonAndAddExtensionProperty(ref ReadStack state, ref Utf8JsonReader reader)
         {
-            object propValue = GetValueAsObject(obj)!;
+            object propValue = state.Current.DataExtensionData!;
 
             if (propValue is IDictionary<string, object?> dictionaryObject)
             {

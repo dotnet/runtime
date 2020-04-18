@@ -42,6 +42,9 @@ namespace System.Text.Json
         public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
 
+        // Holds properties that should be serialized into the data extension property
+        public object? DataExtensionData;
+
         public void EndConstructorParameter()
         {
             CtorArgumentState!.JsonParameterInfo = null;
@@ -65,6 +68,7 @@ namespace System.Text.Json
         {
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
+            DataExtensionData = null;
         }
 
         public void InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName)
@@ -106,6 +110,7 @@ namespace System.Text.Json
             PropertyIndex = 0;
             PropertyRefCache = null;
             ReturnValue = null;
+            DataExtensionData = null;
 
             EndProperty();
         }

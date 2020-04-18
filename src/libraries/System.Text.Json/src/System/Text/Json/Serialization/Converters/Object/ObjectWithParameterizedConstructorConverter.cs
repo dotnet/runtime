@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonClassInfo.DataExtensionProperty);
                             state.Current.JsonPropertyNameAsString = dataExtKey;
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
+                            JsonSerializer.CreateDataExtensionProperty(ref state, jsonPropertyInfo);
                         }
 
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
@@ -105,8 +105,8 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonClassInfo.DataExtensionProperty);
 
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
-                            object extDictionary = jsonPropertyInfo.GetValueAsObject(obj)!;
+                            JsonSerializer.CreateDataExtensionProperty(ref state, jsonPropertyInfo);
+                            object extDictionary = state.Current.DataExtensionData!;
 
                             if (extDictionary is IDictionary<string, JsonElement> dict)
                             {
@@ -133,6 +133,13 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CtorArgumentState!.ParameterRefCache != null)
             {
                 state.Current.JsonClassInfo.UpdateSortedParameterCache(ref state.Current);
+            }
+
+            if (state.Current.DataExtensionData != null)
+            {
+                JsonPropertyInfo prop = state.Current.JsonClassInfo.DataExtensionProperty!;
+                object? converted = prop.ConverterBase.ConvertToDictionary(ref state, state.Current.DataExtensionData, options);
+                prop.SetValueAsObject(obj, converted);
             }
 
             value = (T)obj;

@@ -205,7 +205,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                         else
                         {
-                            if (!jsonPropertyInfo.ReadJsonAndAddExtensionProperty(obj, ref state, ref reader))
+                            if (!jsonPropertyInfo.ReadJsonAndAddExtensionProperty(ref state, ref reader))
                             {
                                 // No need to set 'value' here since JsonElement must be read in full.
                                 state.Current.ReturnValue = obj;
@@ -223,6 +223,13 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.PropertyRefCache != null)
             {
                 state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
+            }
+
+            if (state.Current.DataExtensionData != null)
+            {
+                JsonPropertyInfo prop = state.Current.JsonClassInfo.DataExtensionProperty!;
+                object? converted = prop.ConverterBase.ConvertToDictionary(ref state, state.Current.DataExtensionData, options);
+                prop.SetValueAsObject(obj, converted);
             }
 
             value = (T)obj;
@@ -380,7 +387,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    jsonPropertyInfo.ReadJsonAndAddExtensionProperty(obj, ref state, ref reader);
+                    jsonPropertyInfo.ReadJsonAndAddExtensionProperty(ref state, ref reader);
                 }
             }
 

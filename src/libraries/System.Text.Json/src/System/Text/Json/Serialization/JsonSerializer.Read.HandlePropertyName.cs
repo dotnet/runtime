@@ -44,7 +44,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        CreateDataExtensionProperty(obj, dataExtProperty);
+                        CreateDataExtensionProperty(ref state, dataExtProperty);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
@@ -120,19 +120,23 @@ namespace System.Text.Json
         }
 
         internal static void CreateDataExtensionProperty(
-            object obj,
+            ref ReadStack state,
             JsonPropertyInfo jsonPropertyInfo)
         {
             Debug.Assert(jsonPropertyInfo != null);
 
-            object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
+            object? extensionData = state.Current.DataExtensionData;
             if (extensionData == null)
             {
+                Type? underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>));
+                if (underlyingIDictionaryType is null)
+                {
+                    underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))!;
+                }
+
+                Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
-                Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
-
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
@@ -142,11 +146,20 @@ namespace System.Text.Json
 #endif
                 if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                    // Special case for immutable dictionaries since we build up a dictionary and convert
+                    if (!jsonPropertyInfo.DeclaredPropertyType.IsImmutableDictionaryType())
+                    {
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                    }
+
+                    extensionData = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(genericArgs));
+                }
+                else
+                {
+                    extensionData = jsonPropertyInfo.RuntimeClassInfo.CreateObject();
                 }
 
-                extensionData = jsonPropertyInfo.RuntimeClassInfo.CreateObject();
-                jsonPropertyInfo.SetValueAsObject(obj, extensionData);
+                state.Current.DataExtensionData = extensionData;
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.
