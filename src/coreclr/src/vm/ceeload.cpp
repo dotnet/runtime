@@ -10513,10 +10513,20 @@ void Module::RunEagerFixupsUnlocked()
                 SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
                 if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
                 {
-                    _ASSERTE(!"LoadDynamicInfoEntry failed");
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                    if (IsReadyToRun())
+                    {
+                        GetReadyToRunInfo()->DisableAllR2RCode();
+                    }
+                    else
+                    {
+                        _ASSERTE(!"LoadDynamicInfoEntry failed");
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
                 }
-                _ASSERTE(*fixupCell != NULL);
+                else
+                {
+                    _ASSERTE(*fixupCell != NULL);
+                }
             }
         }
         else
@@ -10532,8 +10542,15 @@ void Module::RunEagerFixupsUnlocked()
                 {
                     if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
                     {
-                        _ASSERTE(!"LoadDynamicInfoEntry failed");
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                        if (IsReadyToRun())
+                        {
+                            GetReadyToRunInfo()->DisableAllR2RCode();
+                        }
+                        else
+                        {
+                            _ASSERTE(!"LoadDynamicInfoEntry failed");
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
+                        }
                     }
                     _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
                 }

@@ -78,6 +78,11 @@ namespace ILCompiler
         public abstract bool IsCompositeBuildMode { get; }
 
         /// <summary>
+        /// Returns true when the compiler is running in large version bubble mode
+        /// </summary>
+        public abstract bool IsInputBubble { get; }
+
+        /// <summary>
         /// List of input modules to use for the compilation.
         /// </summary>
         public abstract IEnumerable<EcmaModule> CompilationModuleSet { get; }

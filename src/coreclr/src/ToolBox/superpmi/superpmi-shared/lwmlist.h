@@ -112,6 +112,7 @@ LWM(GetMethodSync, DWORDLONG, DLDL)
 LWM(GetMethodVTableOffset, DWORDLONG, DDD)
 LWM(GetNewArrHelper, DWORDLONG, DWORD)
 LWM(GetNewHelper, Agnostic_GetNewHelper, DD)
+LWM(GetOSRInfo, DWORD, Agnostic_GetOSRInfo)
 LWM(GetParentType, DWORDLONG, DWORDLONG)
 LWM(GetProfilingHandle, DWORD, Agnostic_GetProfilingHandle)
 LWM(GetReadyToRunHelper, GetReadyToRunHelper_TOKENin, GetReadyToRunHelper_TOKENout)
@@ -151,6 +152,7 @@ LWM(ResolveVirtualMethod, Agnostic_ResolveVirtualMethod, DWORDLONG)
 LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
+
 
 #undef LWM
 #undef DENSELWM

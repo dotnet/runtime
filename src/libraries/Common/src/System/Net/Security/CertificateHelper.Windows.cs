@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
     internal static partial class CertificateHelper
     {
-        internal static X509Certificate2 GetEligibleClientCertificate()
+        internal static X509Certificate2? GetEligibleClientCertificate()
         {
             // Get initial list of client certificates from the MY store.
             X509Certificate2Collection candidateCerts;

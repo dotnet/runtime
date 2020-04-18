@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 
@@ -14,7 +15,7 @@ namespace System.Net.Http
     internal class WinInetProxyHelper
     {
         private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
-        private readonly string _autoConfigUrl, _proxy, _proxyBypass;
+        private readonly string? _autoConfigUrl, _proxy, _proxyBypass;
         private readonly bool _autoDetect;
         private readonly bool _useProxy = false;
         private bool _autoDetectionFailed;
@@ -28,10 +29,10 @@ namespace System.Net.Http
             {
                 if (Interop.WinHttp.WinHttpGetIEProxyConfigForCurrentUser(out proxyConfig))
                 {
-                    _autoConfigUrl = Marshal.PtrToStringUni(proxyConfig.AutoConfigUrl);
+                    _autoConfigUrl = Marshal.PtrToStringUni(proxyConfig.AutoConfigUrl)!;
                     _autoDetect = proxyConfig.AutoDetect;
-                    _proxy = Marshal.PtrToStringUni(proxyConfig.Proxy);
-                    _proxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass);
+                    _proxy = Marshal.PtrToStringUni(proxyConfig.Proxy)!;
+                    _proxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass)!;
 
                     if (NetEventSource.IsEnabled)
                     {
@@ -59,7 +60,7 @@ namespace System.Net.Http
             }
         }
 
-        public string AutoConfigUrl => _autoConfigUrl;
+        public string? AutoConfigUrl => _autoConfigUrl;
 
         public bool AutoDetect => _autoDetect;
 
@@ -69,16 +70,16 @@ namespace System.Net.Http
 
         public bool ManualSettingsOnly => !AutoSettingsUsed && ManualSettingsUsed;
 
-        public string Proxy => _proxy;
+        public string? Proxy => _proxy;
 
-        public string ProxyBypass => _proxyBypass;
+        public string? ProxyBypass => _proxyBypass;
 
         public bool RecentAutoDetectionFailure =>
             _autoDetectionFailed &&
             Environment.TickCount - _lastTimeAutoDetectionFailed <= RecentAutoDetectionInterval;
 
         public bool GetProxyForUrl(
-            SafeWinHttpHandle sessionHandle,
+            SafeWinHttpHandle? sessionHandle,
             Uri uri,
             out Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo)
         {
@@ -123,7 +124,7 @@ namespace System.Net.Http
             {
                 _autoDetectionFailed = false;
                 if (Interop.WinHttp.WinHttpGetProxyForUrl(
-                    sessionHandle,
+                    sessionHandle!,
                     uri.AbsoluteUri,
                     ref autoProxyOptions,
                     out proxyInfo))

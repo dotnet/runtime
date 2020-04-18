@@ -155,8 +155,8 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 throw new InvalidOperationException(
                     IsAction(type)
-                    ? Resources.Error_NoIConfigureOptionsAndAction
-                    : Resources.Error_NoIConfigureOptions);
+                    ? SR.Error_NoIConfigureOptionsAndAction
+                    : SR.Error_NoIConfigureOptions);
             }
             return serviceTypes;
         }

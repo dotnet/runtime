@@ -136,12 +136,6 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return 0;
 }
 
-guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
-	return 0;
-}
-
 gboolean
 mono_arch_have_fast_tls (void)
 {

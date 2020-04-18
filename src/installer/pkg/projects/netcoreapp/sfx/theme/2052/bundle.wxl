@@ -58,16 +58,16 @@
   <String Id="FilesInUseDontCloseRadioButton">不关闭应用程序(&amp;D)。需要重启。</String>
   <String Id="FilesInUseOkButton">确定(&amp;O)</String>
   <String Id="FilesInUseCancelButton">取消(&amp;C)</String>
-  <String Id="WelcomeHeaderMessage">.NET Core Runtime</String>
-  <String Id="WelcomeDescription">.NET Core 是一种开发平台，可用于生成命令行应用程序、微服务和新式网站。它是开源、跨平台的，且受 Microsoft 支持。希望你喜欢!</String>
-  <String Id="LearnMoreTitle">了解有关 .NET Core 的详细信息</String>
+  <String Id="WelcomeHeaderMessage">.NET Runtime</String>
+  <String Id="WelcomeDescription">.NET 是一种开发平台，可用于生成命令行应用程序、微服务和新式网站。它是开源、跨平台的，且受 Microsoft 支持。希望你喜欢!</String>
+  <String Id="LearnMoreTitle">了解有关 .NET 的详细信息</String>
   <String Id="SuccessInstallLocation">以下项已安装到 [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">资源</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;文档&lt;/A&gt;</String>
   <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;发行说明&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;教程&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET Core 遥测&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET 遥测&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;隐私声明&lt;/A&gt;</String>
   <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET 库 EULA&lt;/A&gt;</String>
   

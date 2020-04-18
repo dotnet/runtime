@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -21,23 +22,23 @@ namespace System.Net.WebSockets
         private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
         /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
-        private static SocketsHttpHandler s_defaultHandler;
+        private static SocketsHttpHandler? s_defaultHandler;
 
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
-        private WebSocket _webSocket;
+        private WebSocket? _webSocket;
 
         public static WebSocketHandle Create() => new WebSocketHandle();
 
-        public static bool IsValid(WebSocketHandle handle) => handle != null;
+        public static bool IsValid([NotNullWhen(true)] WebSocketHandle? handle) => handle != null;
 
         public WebSocketCloseStatus? CloseStatus => _webSocket?.CloseStatus;
 
-        public string CloseStatusDescription => _webSocket?.CloseStatusDescription;
+        public string? CloseStatusDescription => _webSocket?.CloseStatusDescription;
 
         public WebSocketState State => _webSocket?.State ?? _state;
 
-        public string SubProtocol => _webSocket?.SubProtocol;
+        public string? SubProtocol => _webSocket?.SubProtocol;
 
         public static void CheckPlatformSupport() { /* nop */ }
 
@@ -54,36 +55,36 @@ namespace System.Net.WebSockets
         }
 
         public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+            _webSocket!.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
 
         public ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+            _webSocket!.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
 
         public Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken) =>
-            _webSocket.ReceiveAsync(buffer, cancellationToken);
+            _webSocket!.ReceiveAsync(buffer, cancellationToken);
 
         public ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-            _webSocket.ReceiveAsync(buffer, cancellationToken);
+            _webSocket!.ReceiveAsync(buffer, cancellationToken);
 
-        public Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken) =>
-            _webSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
+        public Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
+            _webSocket!.CloseAsync(closeStatus, statusDescription, cancellationToken);
 
-        public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken) =>
-            _webSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
+        public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
+            _webSocket!.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
 
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            HttpResponseMessage response = null;
-            SocketsHttpHandler handler = null;
+            HttpResponseMessage? response = null;
+            SocketsHttpHandler? handler = null;
             bool disposeHandler = true;
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                 {
-                    foreach (string key in options.RequestHeaders)
+                    foreach (string? key in options.RequestHeaders) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
                     {
-                        request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
+                        request.Headers.TryAddWithoutValidation(key!, options.RequestHeaders[key!]);
                     }
                 }
 
@@ -153,7 +154,8 @@ namespace System.Net.WebSockets
                 }
 
                 // Issue the request.  The response must be status code 101.
-                CancellationTokenSource linkedCancellation, externalAndAbortCancellation;
+                CancellationTokenSource? linkedCancellation;
+                CancellationTokenSource externalAndAbortCancellation;
                 if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
                 {
                     linkedCancellation =
@@ -185,9 +187,8 @@ namespace System.Net.WebSockets
                 // The SecWebSocketProtocol header is optional.  We should only get it with a non-empty value if we requested subprotocols,
                 // and then it must only be one of the ones we requested.  If we got a subprotocol other than one we requested (or if we
                 // already got one in a previous header), fail. Otherwise, track which one we got.
-                string subprotocol = null;
-                IEnumerable<string> subprotocolEnumerableValues;
-                if (response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketProtocol, out subprotocolEnumerableValues))
+                string? subprotocol = null;
+                if (response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketProtocol, out IEnumerable<string>? subprotocolEnumerableValues))
                 {
                     Debug.Assert(subprotocolEnumerableValues is string[]);
                     string[] subprotocolArray = (string[])subprotocolEnumerableValues;
@@ -201,6 +202,11 @@ namespace System.Net.WebSockets
                                 SR.Format(SR.net_WebSockets_AcceptUnsupportedProtocol, string.Join(", ", options.RequestedSubProtocols), string.Join(", ", subprotocolArray)));
                         }
                     }
+                }
+
+                if (response.Content is null)
+                {
+                    throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
                 }
 
                 // Get the response stream and wrap it in a web socket.
@@ -273,7 +279,7 @@ namespace System.Net.WebSockets
 
         private static void ValidateHeader(HttpHeaders headers, string name, string expectedValue)
         {
-            if (!headers.TryGetValues(name, out IEnumerable<string> values))
+            if (!headers.TryGetValues(name, out IEnumerable<string>? values))
             {
                 throw new WebSocketException(WebSocketError.Faulted, SR.Format(SR.net_WebSockets_MissingResponseHeader, name));
             }

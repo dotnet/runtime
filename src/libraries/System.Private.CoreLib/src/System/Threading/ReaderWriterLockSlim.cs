@@ -58,7 +58,7 @@ namespace System.Threading
 
         // Lock specification for _spinLock:  This lock protects exactly the local fields associated with this
         // instance of ReaderWriterLockSlim.  It does NOT protect the memory associated with
-        // the events that hang off this lock (eg writeEvent, readEvent upgradeEvent).
+        // the events that are raised by this lock (eg writeEvent, readEvent upgradeEvent).
         private SpinLock _spinLock;
 
         // These variables allow use to avoid Setting events (which is expensive) if we don't have to.

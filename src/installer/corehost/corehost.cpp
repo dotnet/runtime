@@ -11,8 +11,7 @@
 #include "utils.h"
 
 #if defined(FEATURE_APPHOST)
-#include "cli/apphost/bundle/marker.h"
-#include "cli/apphost/bundle/runner.h"
+#include "bundle_marker.h"
 
 #if defined(_WIN32)
 #include "cli/apphost/apphost.windows.h"
@@ -84,6 +83,14 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 #define CURHOST_EXE
 #endif
 
+void need_newer_framework_error()
+{
+    pal::string_t url = get_download_url();
+    trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
+    trace::error(_X(""));
+    trace::error(_X("  - %s&apphost_version=%s"), url.c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
+}
+
 #if defined(CURHOST_EXE)
 
 int exe_start(const int argc, const pal::char_t* argv[])
@@ -97,8 +104,8 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
     pal::string_t app_path;
     pal::string_t app_root;
-    bool requires_v2_hostfxr_interface = false;
-    
+    bool requires_hostfxr_startupinfo_interface = false;
+
 #if defined(FEATURE_APPHOST)
     pal::string_t embedded_app_name;
     if (!is_exe_enabled_for_execution(&embedded_app_name))
@@ -115,29 +122,17 @@ int exe_start(const int argc, const pal::char_t* argv[])
     auto pos_path_char = embedded_app_name.find(DIR_SEPARATOR);
     if (pos_path_char != pal::string_t::npos)
     {
-        requires_v2_hostfxr_interface = true;
+        requires_hostfxr_startupinfo_interface = true;
     }
 
-    if (bundle::marker_t::is_bundle())
-    {
-        bundle::runner_t bundle_runner(host_path);
-        StatusCode bundle_status = bundle_runner.extract();
-
-        if (bundle_status != StatusCode::Success)
-        {
-            trace::error(_X("A fatal error was encountered. Could not extract contents of the bundle"));
-            return bundle_status;
-        }
-
-        app_path.assign(bundle_runner.extraction_dir());
-    }
-    else
-    {
-        app_path.assign(get_directory(host_path));
-    }
-
+    app_path.assign(get_directory(host_path));
     append_path(&app_path, embedded_app_name.c_str());
-    if (!pal::realpath(&app_path))
+
+    if (bundle_marker_t::is_bundle())
+    {
+        trace::info(_X("Detected Single-File app bundle"));
+    }
+    else if (!pal::realpath(&app_path))
     {
         trace::error(_X("The application to execute does not exist: '%s'."), app_path.c_str());
         return StatusCode::LibHostAppRootFindFailure;
@@ -166,7 +161,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::println();
         trace::println(_X("Options:"));
         trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET Core information."));
+        trace::println(_X("  --info            Display .NET information."));
         trace::println(_X("  --list-sdks       Display the installed SDKs."));
         trace::println(_X("  --list-runtimes   Display the installed runtimes."));
         trace::println();
@@ -193,65 +188,95 @@ int exe_start(const int argc, const pal::char_t* argv[])
     if (!pal::load_library(&fxr_path, &fxr))
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
-        trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
+        trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
         trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
         return StatusCode::CoreHostLibLoadFailure;
     }
 
     // Obtain the entrypoints.
     int rc;
-    hostfxr_main_startupinfo_fn main_fn_v2 = reinterpret_cast<hostfxr_main_startupinfo_fn>(pal::get_symbol(fxr, "hostfxr_main_startupinfo"));
-    if (main_fn_v2 != nullptr)
+#if defined(FEATURE_APPHOST)
+    if (bundle_marker_t::is_bundle())
     {
-        const pal::char_t* host_path_cstr = host_path.c_str();
-        const pal::char_t* dotnet_root_cstr = dotnet_root.empty() ? nullptr : dotnet_root.c_str();
-        const pal::char_t* app_path_cstr = app_path.empty() ? nullptr : app_path.c_str();
-
-        trace::info(_X("Invoking fx resolver [%s] v2"), fxr_path.c_str());
-        trace::info(_X("Host path: [%s]"), host_path.c_str());
-        trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
-        trace::info(_X("App path: [%s]"), app_path.c_str());
-
-        hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
+        hostfxr_main_bundle_startupinfo_fn hostfxr_main_bundle_startupinfo = reinterpret_cast<hostfxr_main_bundle_startupinfo_fn>(pal::get_symbol(fxr, "hostfxr_main_bundle_startupinfo"));
+        if (hostfxr_main_bundle_startupinfo != nullptr)
         {
+            const pal::char_t* host_path_cstr = host_path.c_str();
+            const pal::char_t* dotnet_root_cstr = dotnet_root.empty() ? nullptr : dotnet_root.c_str();
+            const pal::char_t* app_path_cstr = app_path.empty() ? nullptr : app_path.c_str();
+            int64_t bundle_header_offset = bundle_marker_t::header_offset();
+
+            trace::info(_X("Invoking fx resolver [%s] hostfxr_main_bundle_startupinfo"), fxr_path.c_str());
+            trace::info(_X("Host path: [%s]"), host_path.c_str());
+            trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
+            trace::info(_X("App path: [%s]"), app_path.c_str());
+            trace::info(_X("Bundle Header Offset: [%lx]"), bundle_header_offset);
+
+            hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
-
-            rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
-
-            if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && !set_error_writer_fn)
-            {
-                pal::string_t url = get_download_url();
-                trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
-                trace::error(_X(""));
-                trace::error(_X("  - %s"), url.c_str());
-            }
-        }
-    }
-    else
-    {
-        if (requires_v2_hostfxr_interface)
-        {
-            trace::error(_X("The required library %s does not support relative app dll paths."), fxr_path.c_str());
-            rc = StatusCode::CoreHostEntryPointFailure;
+            rc = hostfxr_main_bundle_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr, bundle_header_offset);
         }
         else
         {
-            trace::info(_X("Invoking fx resolver [%s] v1"), fxr_path.c_str());
+            // The host components will be statically linked with the app-host: https://github.com/dotnet/runtime/issues/32823
+            // Once this work is completed, an outdated hostfxr can only be found for framework-related apps.
+            trace::error(_X("The required library %s does not support single-file apps."), fxr_path.c_str());			
+            need_newer_framework_error();
+            rc = StatusCode::FrameworkMissingFailure;
+        }
+    }
+    else
+#endif // defined(FEATURE_APPHOST)
+    {
+        hostfxr_main_startupinfo_fn hostfxr_main_startupinfo = reinterpret_cast<hostfxr_main_startupinfo_fn>(pal::get_symbol(fxr, "hostfxr_main_startupinfo"));
+        if (hostfxr_main_startupinfo != nullptr)
+        {
+            const pal::char_t* host_path_cstr = host_path.c_str();
+            const pal::char_t* dotnet_root_cstr = dotnet_root.empty() ? nullptr : dotnet_root.c_str();
+            const pal::char_t* app_path_cstr = app_path.empty() ? nullptr : app_path.c_str();
 
-            // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
-            trace::flush();
+            trace::info(_X("Invoking fx resolver [%s] hostfxr_main_startupinfo"), fxr_path.c_str());
+            trace::info(_X("Host path: [%s]"), host_path.c_str());
+            trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
+            trace::info(_X("App path: [%s]"), app_path.c_str());
 
-            // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
-            // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
-            hostfxr_main_fn main_fn_v1 = reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(fxr, "hostfxr_main"));
-            if (main_fn_v1 != nullptr)
+            hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
+            propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
+
+            rc = hostfxr_main_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
+
+            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection. 
+            if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && !set_error_writer_fn)
             {
-                rc = main_fn_v1(argc, argv);
+                need_newer_framework_error();
+            }
+        }
+        else
+        {
+            if (requires_hostfxr_startupinfo_interface)
+            {
+                trace::error(_X("The required library %s does not support relative app dll paths."), fxr_path.c_str());
+                rc = StatusCode::CoreHostEntryPointFailure;
             }
             else
             {
-                trace::error(_X("The required library %s does not contain the expected entry point."), fxr_path.c_str());
-                rc = StatusCode::CoreHostEntryPointFailure;
+                trace::info(_X("Invoking fx resolver [%s] v1"), fxr_path.c_str());
+
+                // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
+                trace::flush();
+
+                // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
+                // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
+                hostfxr_main_fn main_fn_v1 = reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(fxr, "hostfxr_main"));
+                if (main_fn_v1 != nullptr)
+                {
+                    rc = main_fn_v1(argc, argv);
+                }
+                else
+                {
+                    trace::error(_X("The required library %s does not contain the expected entry point."), fxr_path.c_str());
+                    rc = StatusCode::CoreHostEntryPointFailure;
+                }
             }
         }
     }

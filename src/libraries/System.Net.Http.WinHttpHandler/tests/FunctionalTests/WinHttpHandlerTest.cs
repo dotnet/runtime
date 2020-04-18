@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Net;
-using System.Net.Http;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Test.Common;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -129,6 +130,46 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 _output.WriteLine(ex.ToString());
             }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+        public async Task GetAsync_SetCookieContainerMultipleCookies_CookiesSent()
+        {
+            var cookies = new Cookie[]
+            {
+                new Cookie("hello", "world"),
+                new Cookie("foo", "bar"),
+                new Cookie("ABC", "123")
+            };
+
+            WinHttpHandler handler = new WinHttpHandler();
+            var cookieContainer = new CookieContainer();
+
+            foreach (Cookie c in cookies)
+            {
+                cookieContainer.Add(Configuration.Http.Http2RemoteEchoServer, c);
+            }
+
+            handler.CookieContainer = cookieContainer;
+            handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+            handler.ServerCertificateValidationCallback = (m, cert, chain, err) => true;
+            string payload = "Cookie Test";
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+            request.Content = new StringContent(payload);
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.SendAsync(request))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(HttpVersion20.Value, response.Version);
+                string responsePayload = await response.Content.ReadAsStringAsync();
+                var responseContent = Newtonsoft.Json.JsonConvert
+                    .DeserializeAnonymousType(responsePayload, new { Method = "_", BodyContent = "_", Cookies = new Dictionary<string, string>() });
+                Assert.Equal("POST", responseContent.Method);
+                Assert.Equal(payload, responseContent.BodyContent);
+                Assert.Equal(cookies.ToDictionary(c => c.Name, c => c.Value), responseContent.Cookies);
+
+            };
         }
 
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)

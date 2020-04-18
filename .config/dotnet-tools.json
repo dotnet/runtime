@@ -9,9 +9,15 @@
       ]
     },
     "dotnet-reportgenerator-globaltool": {
-      "version": "4.5.0",
+      "version": "4.5.2",
       "commands": [
         "reportgenerator"
+      ]
+    },
+    "microsoft.dotnet.xharness.cli": {
+      "version": "1.0.0-prerelease.20214.1",
+      "commands": [
+        "xharness"
       ]
     }
   }

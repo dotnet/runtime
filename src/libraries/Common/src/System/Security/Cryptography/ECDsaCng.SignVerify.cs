@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography;
 
-using ErrorCode = Interop.NCrypt.ErrorCode;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace System.Security.Cryptography
@@ -48,12 +46,57 @@ namespace System.Security.Cryptography
             }
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+        public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            return TrySignHashCore(
+                source,
+                destination,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                out bytesWritten);
+        }
+
+        protected override unsafe bool TrySignHashCore(
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
+        {
+#else
         public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
+            ReadOnlySpan<byte> hash = source;
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                return keyHandle.TrySignHash(source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
+                if (!keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
             }
+
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+            {
+                return true;
+            }
+
+            if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+            {
+                Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                throw new CryptographicException(
+                    SR.Cryptography_UnknownSignatureFormat,
+                    signatureFormat.ToString());
+            }
+
+            return AsymmetricAlgorithmHelpers.TryConvertIeee1363ToDer(
+                destination.Slice(0, bytesWritten),
+                destination,
+                out bytesWritten);
+#else
+            return true;
+#endif
         }
 
         /// <summary>
@@ -66,14 +109,37 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+#else
             return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+#endif
         }
 
-        public override unsafe bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+            VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
+        protected override bool VerifyHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            DSASignatureFormat signatureFormat)
+#else
+        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
         {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+            {
+                signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+            }
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
+                unsafe
+                {
+                    return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
+                }
             }
         }
     }

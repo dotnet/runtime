@@ -2935,8 +2935,6 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
     return argv;
 }
 
-Volatile<PVOID> ForbidCallsIntoHostOnThisThread::s_pvOwningFiber = NULL;
-
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
@@ -3083,11 +3081,6 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*
 }
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-void EnableTerminationOnHeapCorruption()
-{
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
 
 namespace Clr
 {

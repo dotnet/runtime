@@ -564,7 +564,7 @@ mono_config_parse_file_with_context (MonoConfigParseState *state, const char *fi
 	gsize len;
 	gint offset;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_CONFIG,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG,
 			"Config attempting to parse: '%s'.", filename);
 
 	if (!g_file_get_contents (filename, &text, &len, NULL))

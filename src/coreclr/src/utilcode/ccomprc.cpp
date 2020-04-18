@@ -15,6 +15,7 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 #endif
 #include "sstring.h"
 #include "stringarraylist.h"
+#include "corpriv.h"
 
 #include <stdlib.h>
 
@@ -672,19 +673,21 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
     // The resources are embeded into the .exe itself for crossgen
     *pHInst = GetModuleInst();
 #else
+
+#ifdef SELF_NO_HOST
+    _ASSERTE(!"CCompRC::LoadLibraryThrows not implemented for SELF_NO_HOST");
+    hr = E_NOTIMPL;
+#else
     PathString       rcPath;      // Path to resource DLL.
 
     // Try first in the same directory as this dll.
 
-    VALIDATECORECLRCALLBACKS();
-
-
-    hr = g_CoreClrCallbacks.m_pfnGetCORSystemDirectory(rcPath);
+    hr = GetCORSystemDirectoryInternaL(rcPath);
     if (FAILED(hr))
         return hr;
 
     hr = LoadLibraryHelper(pHInst, rcPath);
-
+#endif
 
 #endif // CROSSGEN_COMPILE
 

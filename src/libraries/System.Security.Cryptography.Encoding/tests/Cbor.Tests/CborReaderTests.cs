@@ -4,6 +4,8 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
@@ -57,7 +59,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
         [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
         [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
-        [InlineData(CborMajorType.Special, CborReaderState.Special)]
+        [InlineData(CborMajorType.Special, CborReaderState.SpecialValue)]
         internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
         {
             ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };
@@ -74,5 +76,44 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.Finished, reader.Peek());
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
         }
+
+        [Theory]
+        [MemberData(nameof(EncodedValueInputs))]
+        public static void ReadEncodedValue_RootValue_HappyPath(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            byte[] encodedValue = reader.ReadEncodedValue().ToArray();
+            Assert.Equal(hexEncoding, encodedValue.ByteArrayToHex().ToLower());
+        }
+
+        [Theory]
+        [MemberData(nameof(EncodedValueInputs))]
+        public static void ReadEncodedValue_NestedValue_HappyPath(string hexEncoding)
+        {
+            byte[] encoding = $"8301{hexEncoding}60".HexToByteArray();
+
+            var reader = new CborReader(encoding);
+
+            reader.ReadStartArray();
+            reader.ReadInt64();
+            byte[] encodedValue = reader.ReadEncodedValue().ToArray();
+
+            Assert.Equal(hexEncoding, encodedValue.ByteArrayToHex().ToLower());
+        }
+
+        [Theory]
+        [MemberData(nameof(EncodedValueInvalidInputs))]
+        public static void ReadEncodedValue_InvalidCbor_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
+        }
+
+        public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });
+        public static IEnumerable<object[]> EncodedValueInvalidInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
     }
 }

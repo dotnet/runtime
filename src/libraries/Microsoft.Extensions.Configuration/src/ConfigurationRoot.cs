@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (!_providers.Any())
                 {
-                    throw new InvalidOperationException(Resources.Error_NoSources);
+                    throw new InvalidOperationException(SR.Error_NoSources);
                 }
 
                 foreach (var provider in _providers)

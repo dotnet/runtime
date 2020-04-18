@@ -38,7 +38,7 @@ jobs:
       archType: arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-14.04-23cacb0-20200121150126
+        image: ubuntu-16.04-cross-20200413125008-09ec757
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -62,7 +62,7 @@ jobs:
       archType: arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-cfdd435-20200121150126
+        image: ubuntu-16.04-cross-arm64-20200413125008-cfdd435
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -119,7 +119,7 @@ jobs:
       archType: arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-406629a-20200127195039
+        image: ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -143,7 +143,7 @@ jobs:
       archType: x64
       platform: Linux_x64
       container:
-        image: centos-7-203142e-20200131220214
+        image: centos-7-359e48e-20200313130914
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -169,7 +169,7 @@ jobs:
       archType: wasm
       platform: WebAssembly_wasm
       container:
-        image: ubuntu-16.04-bfcd90a-20200121150106
+        image: ubuntu-18.04-webassembly-20200409132031-f70ea41
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -197,6 +197,194 @@ jobs:
 #         asString: ''
 #         asArray: []
 #       ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Android x64
+
+- ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Android
+      archType: x64
+      platform: Android_x64
+      container:
+        image: ubuntu-18.04-android-20200401093035-1517ea2
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Android x86
+
+- ${{ if containsValue(parameters.platforms, 'Android_x86') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Android
+      archType: x86
+      platform: Android_x86
+      container:
+        image: ubuntu-18.04-android-20200401093035-1517ea2
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Android arm
+
+- ${{ if containsValue(parameters.platforms, 'Android_arm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Android
+      archType: arm
+      platform: Android_arm
+      container:
+        image: ubuntu-18.04-android-20200401093035-1517ea2
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Android arm64
+
+- ${{ if containsValue(parameters.platforms, 'Android_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Android
+      archType: arm64
+      platform: Android_arm64
+      container:
+        image: ubuntu-18.04-android-20200401093035-1517ea2
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# tvOS x64
+
+- ${{ if containsValue(parameters.platforms, 'tvOS_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: tvOS
+      archType: x64
+      platform: tvOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# tvOS arm64
+
+- ${{ if containsValue(parameters.platforms, 'tvOS_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: tvOS
+      archType: arm64
+      platform: tvOS_arm64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS x64
+
+- ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: x64
+      platform: iOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS arm
+
+- ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: arm
+      platform: iOS_arm
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS arm64
+
+- ${{ if containsValue(parameters.platforms, 'iOS_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: arm64
+      platform: iOS_arm64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
 

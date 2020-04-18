@@ -32,5 +32,4 @@ endif()
 
 target_link_libraries(winrthost RuntimeObject.lib libhostmisc libhostcommon)
 
-install(TARGETS winrthost DESTINATION corehost)
-install_symbols(winrthost corehost)
+install_with_stripped_symbols(winrthost TARGETS corehost)

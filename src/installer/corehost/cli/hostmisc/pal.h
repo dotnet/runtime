@@ -46,6 +46,7 @@
 #define xout std::cout
 #define DIR_SEPARATOR '/'
 #define PATH_SEPARATOR ':'
+#undef _X
 #define _X(s) s
 
 #define S_OK        0x00000000
@@ -68,7 +69,7 @@
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
 #define FALLBACK_HOST_RID _X("win10")
-#elif defined(__APPLE__)
+#elif defined(TARGET_OSX)
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
 #define FALLBACK_HOST_RID _X("osx.10.12")
@@ -164,7 +165,7 @@ namespace pal
     inline bool rmdir (const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
-    inline bool unmap_file(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
+    inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
 #else
@@ -176,7 +177,7 @@ namespace pal
 
     #define __cdecl    /* nothing */
     #define __stdcall  /* nothing */
-    #if !defined(__FreeBSD__)
+    #if !defined(TARGET_FREEBSD)
         #define __fastcall /* nothing */
     #else
         #include <sys/types.h>
@@ -221,7 +222,7 @@ namespace pal
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::remove(path); }
-    inline bool unmap_file(void* addr, size_t length) { return munmap(addr, length) == 0; }
+    inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
 
@@ -256,7 +257,9 @@ namespace pal
         return fallbackRid;
     }
 
-    void* map_file_readonly(const string_t& path, size_t& length);
+    const void* mmap_read(const string_t& path, size_t* length = nullptr);
+    void* mmap_copy_on_write(const string_t& path, size_t* length = nullptr);
+
     bool touch_file(const string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);

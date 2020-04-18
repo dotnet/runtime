@@ -21,11 +21,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "98190102030405060708090a0b0c0d0e0f101112131415161718181819")]
         [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "840120604107")]
         [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "83656c6f72656d65697073756d65646f6c6f72")]
+        [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "84f4f6faffc00000fb7ff0000000000000")]
         public static void ReadArray_SimpleValues_HappyPath(object[] expectedValues, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            ArrayReaderHelper.VerifyArray(reader, expectedValues);
+            Helpers.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -37,7 +38,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            ArrayReaderHelper.VerifyArray(reader, expectedValues);
+            Helpers.VerifyArray(reader, expectedValues);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(new object[] { }, "9fff")]
+        [InlineData(new object[] { 42 }, "9f182aff")]
+        [InlineData(new object[] { 1, 2, 3 }, "9f010203ff")]
+        [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff")]
+        [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "9f0120604107ff")]
+        [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "9f656c6f72656d65697073756d65646f6c6f72ff")]
+        [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "9ff4f6faffc00000fb7ff0000000000000ff")]
+        public static void ReadArray_IndefiniteLength_HappyPath(object[] expectedValues, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Helpers.VerifyArray(reader, expectedValues, expectDefiniteLengthCollections: false);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -81,6 +98,40 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+        }
+
+        [Theory]
+        [InlineData("9f")]
+        [InlineData("9f01")]
+        [InlineData("9f0102")]
+        public static void ReadArray_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartArray();
+            while (reader.Peek() == CborReaderState.UnsignedInteger)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData("9f01ff", 1)]
+        [InlineData("9f0102ff", 2)]
+        [InlineData("9f010203ff", 3)]
+        public static void ReadArray_IndefiniteLength_PrematureEndArrayCall_ShouldThrowInvalidOperationException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartArray();
+            for (int i = 1; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
         }
 
         [Theory]
@@ -133,9 +184,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("81", 1, 0)]
-        [InlineData("8201", 2, 1)]
-        [InlineData("860102", 6, 2)]
+        [InlineData("821907e4", 2, 1)]
+        [InlineData("861907e41907e4", 6, 2)]
         public static void ReadArray_IncorrectDefiniteLength_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -153,9 +203,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("81", 1, 0)]
         [InlineData("828101", 2, 1)]
-        [InlineData("8681018102", 6, 2)]
+        [InlineData("868101811907e4", 6, 2)]
         public static void ReadArray_IncorrectDefiniteLength_NestedValues_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -176,7 +225,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void BeginReadArray_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadStartArray_EmptyBuffer_ShouldThrowFormatException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
@@ -193,7 +242,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("a0")] // {}
         [InlineData("f97e00")] // NaN
         [InlineData("fb3ff199999999999a")] // 1.1
-        public static void BeginReadArray_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadStartArray_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
@@ -210,63 +259,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("9912")]
         [InlineData("9a000000")]
         [InlineData("9b00000000000000")]
-        public static void BeginReadArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadStartArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
             Assert.Throws<FormatException>(() => reader.ReadStartArray());
         }
-    }
 
-    static class ArrayReaderHelper
-    {
-        public static void VerifyArray(CborReader reader, params object[] expectedValues)
+        [Theory]
+        [InlineData("81")]
+        [InlineData("830102")]
+        [InlineData("9b7fffffffffffffff")] // long.MaxValue
+        public static void ReadStartArray_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
         {
-            Assert.Equal(CborReaderState.StartArray, reader.Peek());
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
 
-            ulong? length = reader.ReadStartArray();
-
-            Assert.NotNull(length);
-            Assert.Equal(expectedValues.Length, (int)length!.Value);
-
-            foreach (object value in expectedValues)
-            {
-                switch (value)
-                {
-                    case int expected:
-                        if (expected >= 0)
-                        {
-                            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
-                        }
-                        else
-                        {
-                            Assert.Equal(CborReaderState.NegativeInteger, reader.Peek());
-                        }
-
-                        long i = reader.ReadInt64();
-                        Assert.Equal(expected, (int)i);
-                        break;
-                    case string expected:
-                        Assert.Equal(CborReaderState.TextString, reader.Peek());
-                        string s = reader.ReadTextString();
-                        Assert.Equal(expected, s);
-                        break;
-                    case byte[] expected:
-                        Assert.Equal(CborReaderState.ByteString, reader.Peek());
-                        byte[] b = reader.ReadByteString();
-                        Assert.Equal(expected, b);
-                        break;
-                    case object[] nested:
-                        VerifyArray(reader, nested);
-                        break;
-                    default:
-                        throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
-                }
-            }
-
-            Assert.Equal(CborReaderState.EndArray, reader.Peek());
-            reader.ReadEndArray();
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
         }
     }
 }

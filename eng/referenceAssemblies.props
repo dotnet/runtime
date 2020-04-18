@@ -1,17 +1,6 @@
 <Project>
   <PropertyGroup>
-    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
-
-    <!-- Assembly bin directory where implementation and ref output are placed -->
-    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
     <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>    
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(Configuration)</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
@@ -26,7 +15,7 @@
     <NoWarn>$(NoWarn);CS8617</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+  <ItemGroup>
     <!-- All reference assemblies should have the 0x70 flag which prevents them from loading
          and the ReferenceAssemblyAttribute. -->
     <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />

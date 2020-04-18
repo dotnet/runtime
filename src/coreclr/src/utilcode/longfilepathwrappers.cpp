@@ -770,7 +770,7 @@ FindFirstFileExWrapper(
 #ifdef HOST_WINDOWS
 
 #if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-extern HINSTANCE            g_pMSCorEE;
+extern HINSTANCE            g_hThisInst;
 #endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
 
 BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
@@ -783,7 +783,7 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
     HINSTANCE hinst = NULL;
 
 #if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-    hinst = g_pMSCorEE;
+    hinst = g_hThisInst;
 #endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
 
 #ifndef CROSSGEN_COMPILE

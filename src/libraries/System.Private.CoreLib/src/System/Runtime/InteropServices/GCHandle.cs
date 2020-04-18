@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices
 
             // Get the address.
 
-            object target = InternalGet(GetHandleValue(handle));
+            object? target = InternalGet(GetHandleValue(handle));
             if (target is null)
             {
                 return default;

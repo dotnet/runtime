@@ -11,93 +11,109 @@ using Mono;
 
 namespace System
 {
-	partial class Environment
-	{
-		private static Dictionary<string, string> s_environment;
+    public partial class Environment
+    {
+        private static Dictionary<string, string>? s_environment;
 
-		static string GetEnvironmentVariableCore (string variable)
-		{
-			Debug.Assert(variable != null);
+        private static string? GetEnvironmentVariableCore(string variable)
+        {
+            Debug.Assert(variable != null);
 
-			if (s_environment == null) {
-				using (var h = RuntimeMarshal.MarshalString (variable)) {
-					return internalGetEnvironmentVariable_native (h.Value);
-				}
-			}
+            if (s_environment == null)
+            {
+                return InternalGetEnvironmentVariable(variable);
+            }
 
-			variable = TrimStringOnFirstZero (variable);
-			lock (s_environment) {
-				s_environment.TryGetValue (variable, out string value);
-				return value;
-			}
-		}
+            variable = TrimStringOnFirstZero(variable);
+            lock (s_environment)
+            {
+                s_environment.TryGetValue(variable, out string? value);
+                return value;
+            }
+        }
 
-		static unsafe void SetEnvironmentVariableCore (string variable, string? value)
-		{
-			Debug.Assert(variable != null);
+        private static string InternalGetEnvironmentVariable(string name)
+        {
+            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(name))
+            {
+                return internalGetEnvironmentVariable_native(handle.Value);
+            }
+        }
 
-			EnsureEnvironmentCached ();
-			lock (s_environment) {
-				variable = TrimStringOnFirstZero (variable);
-				value = value == null ? null : TrimStringOnFirstZero (value);
-				if (string.IsNullOrEmpty (value)) {
-					s_environment.Remove (variable);
-				} else {
-					s_environment[variable] = value;
-				}
-			}
-		}
+        private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
+        {
+            Debug.Assert(variable != null);
 
-		public static IDictionary GetEnvironmentVariables ()
-		{
-			var results = new Hashtable();
+            EnsureEnvironmentCached();
+            lock (s_environment!)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                value = value == null ? null : TrimStringOnFirstZero(value);
+                if (string.IsNullOrEmpty(value))
+                {
+                    s_environment.Remove(variable);
+                }
+                else
+                {
+                    s_environment[variable] = value;
+                }
+            }
+        }
 
-			EnsureEnvironmentCached();
-			lock (s_environment) {
-				foreach (var keyValuePair in s_environment) {
-					results.Add(keyValuePair.Key, keyValuePair.Value);
-				}
-			}
+        public static IDictionary GetEnvironmentVariables()
+        {
+            var results = new Hashtable();
 
-			return results;
-		}
+            EnsureEnvironmentCached();
+            lock (s_environment!)
+            {
+                foreach (var keyValuePair in s_environment)
+                {
+                    results.Add(keyValuePair.Key, keyValuePair.Value);
+                }
+            }
 
-		private static string TrimStringOnFirstZero (string value)
-		{
-			int index = value.IndexOf ('\0');
-			if (index >= 0) {
-				return value.Substring (0, index);
-			}
-			return value;
-		}
+            return results;
+        }
 
-		private static void EnsureEnvironmentCached ()
-		{
-			if (s_environment == null) {
-				Interlocked.CompareExchange (ref s_environment, GetSystemEnvironmentVariables (), null);
-			}
-		}
+        private static string TrimStringOnFirstZero(string value)
+        {
+            int index = value.IndexOf('\0');
+            if (index >= 0)
+            {
+                return value.Substring(0, index);
+            }
+            return value;
+        }
 
-		private static Dictionary<string, string> GetSystemEnvironmentVariables ()
-		{
-			var results = new Dictionary<string, string>();
+        private static void EnsureEnvironmentCached()
+        {
+            if (s_environment == null)
+            {
+                Interlocked.CompareExchange(ref s_environment, GetSystemEnvironmentVariables(), null);
+            }
+        }
 
-			foreach (string name in GetEnvironmentVariableNames ()) {
-				if (name != null) {
-					using (var h = RuntimeMarshal.MarshalString (name)) {
-						results.Add (name, internalGetEnvironmentVariable_native (h.Value));
-					}
-				}
-			}
+        private static Dictionary<string, string> GetSystemEnvironmentVariables()
+        {
+            var results = new Dictionary<string, string>();
 
-			return results;
-		}
+            foreach (string name in GetEnvironmentVariableNames())
+            {
+                if (name != null)
+                {
+                    results.Add(name, InternalGetEnvironmentVariable(name));
+                }
+            }
+
+            return results;
+        }
 
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static string internalGetEnvironmentVariable_native (IntPtr variable);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern string internalGetEnvironmentVariable_native(IntPtr variable);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern static string [] GetEnvironmentVariableNames ();
-	}
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern string[] GetEnvironmentVariableNames();
+    }
 }

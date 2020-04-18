@@ -38,6 +38,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
+    
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &lt;= 2.0" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>

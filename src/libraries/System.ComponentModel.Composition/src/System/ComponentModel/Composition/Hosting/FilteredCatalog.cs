@@ -230,7 +230,7 @@ namespace System.ComponentModel.Composition.Hosting
                 e.AtomicComposition);
 
             // Only fire if we need to
-            if (result.AddedDefinitions.FastAny() || result.RemovedDefinitions.FastAny())
+            if (result.AddedDefinitions.Any() || result.RemovedDefinitions.Any())
             {
                 return result;
             }

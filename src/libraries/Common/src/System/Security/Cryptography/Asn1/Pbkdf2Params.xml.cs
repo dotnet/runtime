@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct Pbkdf2Params
     {
-        private static readonly byte[] s_defaultPrf = { 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultPrf => new byte[] { 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00 };
 
         internal System.Security.Cryptography.Asn1.Pbkdf2SaltChoice Salt;
         internal int IterationCount;
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Asn1
             ReadOnlyMemory<byte> rebind = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultPrf, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultPrf, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.Prf);
             reader.ThrowIfNotEmpty();
         }
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Asn1
                     Prf.Encode(tmp);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultPrf))
+                    if (!encoded.SequenceEqual(DefaultPrf))
                     {
                         writer.WriteEncodedValue(encoded);
                     }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultPrf, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultPrf, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.Prf);
             }
 

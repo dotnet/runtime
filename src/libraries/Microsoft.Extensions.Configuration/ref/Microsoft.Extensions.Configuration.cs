@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -22,28 +25,28 @@ namespace Microsoft.Extensions.Configuration
     public partial class ChainedConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public ChainedConfigurationSource() { }
-        public Microsoft.Extensions.Configuration.IConfiguration Configuration { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public bool ShouldDisposeConfiguration { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } set { } }
+        public bool ShouldDisposeConfiguration { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
     public partial class ConfigurationBuilder : Microsoft.Extensions.Configuration.IConfigurationBuilder
     {
         public ConfigurationBuilder() { }
-        public System.Collections.Generic.IDictionary<string, object> Properties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationSource> Sources { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.IDictionary<string, object> Properties { get { throw null; } }
+        public System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationSource> Sources { get { throw null; } }
         public Microsoft.Extensions.Configuration.IConfigurationBuilder Add(Microsoft.Extensions.Configuration.IConfigurationSource source) { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationRoot Build() { throw null; }
     }
     public partial class ConfigurationKeyComparer : System.Collections.Generic.IComparer<string>
     {
         public ConfigurationKeyComparer() { }
-        public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer Instance { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public static Microsoft.Extensions.Configuration.ConfigurationKeyComparer Instance { get { throw null; } }
         public int Compare(string x, string y) { throw null; }
     }
     public abstract partial class ConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
     {
         protected ConfigurationProvider() { }
-        protected System.Collections.Generic.IDictionary<string, string> Data { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected System.Collections.Generic.IDictionary<string, string> Data { get { throw null; } set { } }
         public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public virtual void Load() { }
@@ -90,14 +93,14 @@ namespace Microsoft.Extensions.Configuration
     public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
         public StreamConfigurationProvider(Microsoft.Extensions.Configuration.StreamConfigurationSource source) { }
-        public Microsoft.Extensions.Configuration.StreamConfigurationSource Source { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public Microsoft.Extensions.Configuration.StreamConfigurationSource Source { get { throw null; } }
         public override void Load() { }
         public abstract void Load(System.IO.Stream stream);
     }
     public abstract partial class StreamConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         protected StreamConfigurationSource() { }
-        public System.IO.Stream Stream { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.IO.Stream Stream { get { throw null; } set { } }
         public abstract Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder);
     }
 }
@@ -113,7 +116,7 @@ namespace Microsoft.Extensions.Configuration.Memory
     public partial class MemoryConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public MemoryConfigurationSource() { }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> InitialData { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> InitialData { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
 }

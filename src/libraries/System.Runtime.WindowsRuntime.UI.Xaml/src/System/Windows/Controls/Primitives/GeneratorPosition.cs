@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -47,7 +43,7 @@ namespace Windows.UI.Xaml.Controls.Primitives
             return string.Concat("GeneratorPosition (", _index.ToString(CultureInfo.InvariantCulture), ",", _offset.ToString(CultureInfo.InvariantCulture), ")");
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             if (o is GeneratorPosition)
             {

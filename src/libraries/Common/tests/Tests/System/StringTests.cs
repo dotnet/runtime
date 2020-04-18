@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 #pragma warning disable xUnit2009 // these are the tests for String and so should be using the explicit methods on String
@@ -1119,7 +1120,7 @@ namespace System.Tests
         [InlineData("", "", true)]
         [InlineData("", "hello", false)]
         [InlineData("Hello", "", true)]
-        public static void Contains(string s, string value, bool expected)
+        public static void Contains_String(string s, string value, bool expected)
         {
             Assert.Equal(expected, s.Contains(value));
             Assert.Equal(expected, s.AsSpan().Contains(value.AsSpan(), StringComparison.Ordinal));
@@ -1666,7 +1667,7 @@ namespace System.Tests
         [InlineData("Hello", "llo" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EndsWith(string s, string value, StringComparison comparisonType, bool expected)
+        public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {
@@ -1678,8 +1679,10 @@ namespace System.Tests
             Assert.Equal(expected, s.AsSpan().EndsWith(value.AsSpan(), comparisonType));
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // For desired behavior, use ordinal comparison instead of linguistic comparison.
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -1699,11 +1702,10 @@ namespace System.Tests
             Assert.False("test".AsSpan().EndsWith("\0st".AsSpan(), comparison));
         }
 
-        // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
-        // This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.InvariantCulture)]
         [InlineData(StringComparison.InvariantCultureIgnoreCase)]
         public static void EndsWith_NullInStrings_NonOrdinal(StringComparison comparison)
@@ -1862,11 +1864,11 @@ namespace System.Tests
                     string s1 = new string(first);
                     string s2 = new string(second);
 
-                    //On Linux there are some characters in the range of 0~32 which has a sort weight.
-                    //For example null character on Linux will be ignored if it is compared to anything
-                    //while on Windows null will be always compared as ordinal.
-                    //For desired behavior, use ordinal comparison instead of linguistic comparison.
-                    //This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
+                    // On ICU there are some characters in the range of 0~32 which have a sort weight.
+                    // For example null character on ICU will be ignored if it is compared to anything
+                    // while on NLS null will be always compared as ordinal.
+                    // For desired behavior, use ordinal comparison instead of linguistic comparison.
+                    // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
                     bool b = s1.EndsWith(s2, StringComparison.Ordinal);
                     Assert.False(b);
 
@@ -2482,7 +2484,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void Equals(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -2524,9 +2526,9 @@ namespace System.Tests
             yield return new object[] { StringComparison.Ordinal, false };
             yield return new object[] { StringComparison.OrdinalIgnoreCase, false };
 
-            // Windows and ICU disagree about how these strings compare in the default locale.
-            yield return new object[] { StringComparison.InvariantCulture, PlatformDetection.IsWindows };
-            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, PlatformDetection.IsWindows };
+            // NLS and ICU disagree about how these strings compare in the default locale.
+            yield return new object[] { StringComparison.InvariantCulture, PlatformDetection.IsNlsGlobalization };
+            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, PlatformDetection.IsNlsGlobalization };
         }
 
         [Theory]
@@ -2616,7 +2618,7 @@ namespace System.Tests
 #pragma warning restore IDE0043 // Format string contains invalid placeholder
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("Hello", 'l', 0, 5, 2)]
         [InlineData("Hello", 'x', 0, 5, -1)]
         [InlineData("Hello", 'l', 1, 4, 2)]
@@ -2628,9 +2630,7 @@ namespace System.Tests
         [InlineData("Hello", 'l', 0, 3, 2)]
         [InlineData("Hello", 'o', 5, 0, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'e', 0, 3, 2)]
-        // For some reason, this is failing on *nix with ordinal comparisons.
-        // Possibly related issue: https://github.com/dotnet/runtime/issues/4673
-        // [InlineData("Hello", '\0', 0, 5, -1)] // .NET strings are terminated with a null character, but they should not be included as part of the string
+        [InlineData("Hello", '\0', 0, 5, -1)] // .NET strings are terminated with a null character, but they should not be included as part of the string
         [InlineData("\ud800\udfff", '\ud800', 0, 1, 0)] // Surrogate characters
         [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 'A', 0, 26, 0)]
         [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 'B', 1, 25, 1)]
@@ -2668,6 +2668,14 @@ namespace System.Tests
         [InlineData("", 'H', 0, 0, -1)]
         public static void IndexOf_SingleLetter(string s, char target, int startIndex, int count, int expected)
         {
+            // This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
+            // For desired behavior, use ordinal comparison instead of linguistic comparison.
+            // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+            if (target == '\0' && PlatformDetection.IsIcuGlobalization)
+            {
+                throw new SkipTestException("Target \\0 is not supported in ICU");
+            }
+
             bool safeForCurrentCulture =
                 IsSafeForCurrentCultureComparisons(s)
                 && IsSafeForCurrentCultureComparisons(target.ToString());
@@ -2774,8 +2782,10 @@ namespace System.Tests
             return true;
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // For desired behavior, use ordinal comparison instead of linguistic comparison.
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -2934,14 +2944,14 @@ namespace System.Tests
                 string target = "ddzs";
 
                 /*
-                    There are differences between Windows and ICU regarding contractions.
-                    Windows has equal contraction collation weights, including case (target="Ddzs" same behavior as "ddzs").
+                    There are differences between NLS and ICU regarding contractions.
+                    NLS has equal contraction collation weights, including case (target="Ddzs" same behavior as "ddzs").
                     ICU has different contraction collation weights, depending on locale collation rules.
                     If CurrentCultureIgnoreCase is specified, ICU will use 'secondary' collation rules
                     which ignore the contraction collation weights (defined as 'tertiary' rules)
                 */
-                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target));
-                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
                 Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
@@ -2949,7 +2959,7 @@ namespace System.Tests
 
                 ReadOnlySpan<char> span = source.AsSpan();
 
-                Assert.Equal(PlatformDetection.IsWindows ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
                 Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
@@ -3379,7 +3389,6 @@ namespace System.Tests
             Assert.Equal(2, index);
             Assert.Equal(index, s1.IndexOf(s2, StringComparison.Ordinal));
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.IndexOf(value);
@@ -3396,7 +3405,6 @@ namespace System.Tests
             Assert.Equal(5, index);
             Assert.Equal(index, s1.IndexOf(s2, StringComparison.Ordinal));
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.IndexOf(value);
@@ -3413,7 +3421,6 @@ namespace System.Tests
             Assert.Equal(-1, index);
             Assert.Equal(index, s1.IndexOf(s2, StringComparison.Ordinal));
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.IndexOf(value);
@@ -3864,8 +3871,10 @@ namespace System.Tests
             }
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // For desired behavior, use ordinal comparison instead of linguistic comparison.
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -3887,18 +3896,23 @@ namespace System.Tests
 
             if (value.Length == 0)
             {
-                int expectedIndex = s.Length > 0 ? s.Length - 1 : 0;
-                int expectedStartIndex = startIndex == s.Length ? startIndex - 1 : startIndex;
+                int expectedStartIndex = startIndex;
                 if (s.Length == 0 && (startIndex == -1 || startIndex == 0))
-                    expectedStartIndex = (value.Length == 0) ? 0 : -1;
-                Assert.Equal(expectedIndex, s.LastIndexOf(value, comparison));
+                    expectedStartIndex = 0; // empty string occurs at beginning of search space
+                if (s.Length > 0 && startIndex < s.Length)
+                    expectedStartIndex = startIndex + 1; // empty string occurs just after the last char included in the search space
+
+                Assert.Equal(s.Length, s.LastIndexOf(value, comparison));
                 Assert.Equal(expectedStartIndex, s.LastIndexOf(value, startIndex, comparison));
-                Assert.Equal(expectedIndex, s.AsSpan().LastIndexOf(value.AsSpan(), comparison));
+                Assert.Equal(s.Length, s.AsSpan().LastIndexOf(value.AsSpan(), comparison));
                 return;
             }
 
             if (s.Length == 0)
             {
+                // unit test shouldn't have passed a weightless string to this routine
+                Assert.NotEqual(value, string.Empty, StringComparer.FromComparison(comparison));
+
                 Assert.Equal(-1, s.LastIndexOf(value, comparison));
                 Assert.Equal(-1, s.LastIndexOf(value, startIndex, comparison));
                 Assert.Equal(-1, s.AsSpan().LastIndexOf(value.AsSpan(), comparison));
@@ -4068,8 +4082,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("foo", 2)]
-        [InlineData("hello", 4)]
+        [InlineData("foo", 3)]
+        [InlineData("hello", 5)]
         [InlineData("", 0)]
         public static void LastIndexOf_EmptyString(string s, int expected)
         {
@@ -4325,13 +4339,13 @@ namespace System.Tests
             string s1 = "0172377457778667789";
             string s2 = string.Empty;
             int index = s1.LastIndexOf(s2);
-            Assert.Equal(s1.Length - 1, index);
+            Assert.Equal(s1.Length, index);
 
-            // A zero-length value is always "found" at the start of the span.
+            // A zero-length value is always "found" at the end of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.LastIndexOf(value);
-            Assert.Equal(0, index);
+            Assert.Equal(span.Length, index);
         }
 
         [Fact]
@@ -4356,7 +4370,6 @@ namespace System.Tests
             int index = s1.LastIndexOf(s2);
             Assert.Equal(2, index);
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.LastIndexOf(value);
@@ -4371,7 +4384,6 @@ namespace System.Tests
             int index = s1.LastIndexOf(s2);
             Assert.Equal(5, index);
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.LastIndexOf(value);
@@ -4386,7 +4398,6 @@ namespace System.Tests
             int index = s1.LastIndexOf(s2);
             Assert.Equal(5, index);
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.LastIndexOf(value);
@@ -4401,7 +4412,6 @@ namespace System.Tests
             int index = s1.LastIndexOf(s2);
             Assert.Equal(-1, index);
 
-            // A zero-length value is always "found" at the start of the span.
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> value = s2.AsSpan();
             index = span.LastIndexOf(value);
@@ -4518,7 +4528,7 @@ namespace System.Tests
                     "Mauris nulla sapien, convallis et quam quis, accumsan sodales mi. Praesent dapibus urna fermentum, sollicitudin posuere.",
                     'e', 'E',
                     "LorEm ipsum dolor sit amEt, consEctEtur adipiscing Elit. Proin maximus convallis luctus. Curabitur porttitor mi blandit tEllus maximus varius. " +
-                    "Mauris nulla sapiEn, convallis Et quam quis, accumsan sodalEs mi. PraEsEnt dapibus urna fErmEntum, sollicitudin posuErE.")] 
+                    "Mauris nulla sapiEn, convallis Et quam quis, accumsan sodalEs mi. PraEsEnt dapibus urna fErmEntum, sollicitudin posuErE.")]
         public static void Replace_Char_Char(string s, char oldChar, char newChar, string expected)
         {
             Assert.Equal(expected, s.Replace(oldChar, newChar));
@@ -4639,7 +4649,7 @@ namespace System.Tests
         [InlineData("Hello", SoftHyphen + "Hel", StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
-        public static void StartsWith(string s, string value, StringComparison comparisonType, bool expected)
+        public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {
@@ -4650,8 +4660,10 @@ namespace System.Tests
             Assert.Equal(expected, s.AsSpan().StartsWith(value.AsSpan(), comparisonType));
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // For desired behavior, use ordinal comparison instead of linguistic comparison.
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -5018,7 +5030,7 @@ namespace System.Tests
         [InlineData("hElLo", "hello")]
         [InlineData("HeLlO", "hello")]
         [InlineData("", "")]
-        public static void ToLower(string s, string expected)
+        public static void ToLower_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToLower());
 
@@ -5125,7 +5137,7 @@ namespace System.Tests
             Assert.Equal(expected, s1.ToLower(CultureInfo.CurrentCulture).ToArray());
             Assert.Equal(expected, s1.ToLowerInvariant().ToArray());
             {
-                AssertExtensions.AssertThrows<InvalidOperationException, char>(a, a => 
+                AssertExtensions.AssertThrows<InvalidOperationException, char>(a, a =>
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5158,7 +5170,7 @@ namespace System.Tests
                 var source = new ReadOnlySpan<char>(a, 1, 3);
 
                 AssertExtensions.AssertThrows<InvalidOperationException,char>(source, source =>
-                { 
+                {
                     var destination = new Span<char>(a, 3, 3);
                     source.ToLower(destination, CultureInfo.CurrentCulture);
                 });
@@ -5222,7 +5234,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToLower()
+        public static void ToLower_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'a', 'b', 'c' };
@@ -5434,7 +5446,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToUpper()
+        public static void ToUpper_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'A', 'B', 'C' };
@@ -5544,7 +5556,7 @@ namespace System.Tests
         [Theory]
         [InlineData("")]
         [InlineData("hello")]
-        public static void ToString(string s)
+        public static void ToStringTest(string s)
         {
             Assert.Same(s, s.ToString());
             Assert.Same(s, s.ToString(null));
@@ -5559,7 +5571,7 @@ namespace System.Tests
         [InlineData("hElLo", "HELLO")]
         [InlineData("HeLlO", "HELLO")]
         [InlineData("", "")]
-        public static void ToUpper(string s, string expected)
+        public static void ToUpper_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToUpper());
 
@@ -7076,11 +7088,10 @@ namespace System.Tests
             Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
         }
 
-        // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
-        // This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.InvariantCulture)]
@@ -7217,6 +7228,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static unsafe void NormalizationTest() // basic test; more tests in globalization tests
         {
             // U+0063  LATIN SMALL LETTER C

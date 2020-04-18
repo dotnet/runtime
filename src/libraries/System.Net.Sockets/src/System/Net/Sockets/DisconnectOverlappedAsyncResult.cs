@@ -18,7 +18,7 @@ namespace System.Net.Sockets
         {
             if (ErrorCode == (int)SocketError.Success)
             {
-                Socket socket = (Socket)AsyncObject;
+                Socket socket = (Socket)AsyncObject!;
                 socket.SetToDisconnected();
                 socket._remoteEndPoint = null;
             }

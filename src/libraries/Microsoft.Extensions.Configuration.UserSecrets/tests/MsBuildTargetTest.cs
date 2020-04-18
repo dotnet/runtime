@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
         }
 
         [Theory]
-        [InlineData(".csproj", ".cs")]
+        [InlineData(".csproj", ".cs", Skip = "https://github.com/dotnet/runtime/issues/33989")]
         [InlineData(".fsproj", ".fs", Skip = "https://github.com/dotnet/aspnetcore/issues/13303")]
         public void GeneratesAssemblyAttributeFile(string projectExt, string sourceExt)
         {
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .First(f => f.Key == "MicrosoftNETCoreAppRefPackageVersion")
                 .Value;
-            var target = Path.Combine(_solutionRoot.FullName, "src", "Configuration", "Config.UserSecrets", "src", "build", "netstandard2.0", "Microsoft.Extensions.Configuration.UserSecrets.targets");
+            var target = Path.Combine(_solutionRoot.FullName, "src", "libraries", "Microsoft.Extensions.Configuration.UserSecrets", "src", "build", "netstandard2.0", "Microsoft.Extensions.Configuration.UserSecrets.targets");
             Directory.CreateDirectory(Path.Combine(_tempDir, "obj"));
             var libName = "Microsoft.Extensions.Configuration.UserSecrets.dll";
             File.Copy(Path.Combine(AppContext.BaseDirectory, libName), Path.Combine(_tempDir, libName));

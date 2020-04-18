@@ -364,7 +364,7 @@ namespace System.Runtime.Loader
             byte[]? arrSymbols = null;
             if (assemblySymbols != null)
             {
-                var iSymbolLength = (int)assemblySymbols.Length;
+                int iSymbolLength = (int)assemblySymbols.Length;
                 arrSymbols = new byte[iSymbolLength];
 
                 assemblySymbols.Read(arrSymbols, 0, iSymbolLength);

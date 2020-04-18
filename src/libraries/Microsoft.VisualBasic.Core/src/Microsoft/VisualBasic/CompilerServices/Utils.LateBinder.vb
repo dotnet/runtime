@@ -454,9 +454,9 @@ GetSpecialValue:
             '
             Do
 
-                arraySuffix.Append("(")
+                arraySuffix.Append("("c)
                 arraySuffix.Append(","c, typ.GetArrayRank() - 1)
-                arraySuffix.Append(")")
+                arraySuffix.Append(")"c)
 
                 typ = typ.GetElementType
 
@@ -495,7 +495,7 @@ GetSpecialValue:
                 End If
             Next
 
-            genericArgsSuffix.Append(")")
+            genericArgsSuffix.Append(")"c)
 
             Return genericArgsSuffix.ToString
         End Function

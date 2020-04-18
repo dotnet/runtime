@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.Primitives
         bool HasChanged { get; }
         System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state);
     }
+    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version.")]
     public partial struct InplaceStringBuilder
     {
         private object _dummy;

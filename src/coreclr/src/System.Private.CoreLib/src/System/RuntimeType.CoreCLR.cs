@@ -367,7 +367,6 @@ namespace System
                 {
                     bool lockTaken = false;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         Monitor.Enter(this, ref lockTaken);
@@ -1392,7 +1391,7 @@ namespace System
             private MemberInfoCache<RuntimePropertyInfo>? m_propertyInfoCache;
             private MemberInfoCache<RuntimeEventInfo>? m_eventInfoCache;
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
-            private static object s_methodInstantiationsLock = null!;
+            private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
             private object? m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
@@ -1576,7 +1575,6 @@ namespace System
                     Interlocked.CompareExchange(ref s_methodInstantiationsLock!, new object(), null);
 
                 bool lockTaken = false;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     Monitor.Enter(s_methodInstantiationsLock, ref lockTaken);
@@ -2340,7 +2338,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     Debug.Assert(cache == null || cache is RuntimeTypeCache);
                     return Unsafe.As<RuntimeTypeCache>(cache);
                 }
@@ -2355,7 +2353,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     if (cache != null)
                     {
                         Debug.Assert(cache is RuntimeTypeCache);
@@ -2378,7 +2376,7 @@ namespace System
                     th.FreeGCHandle(newgcHandle);
             }
 
-            RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
+            RuntimeTypeCache? cache = (RuntimeTypeCache?)GCHandle.InternalGet(m_cache);
             if (cache == null)
             {
                 cache = new RuntimeTypeCache(this);
@@ -3474,7 +3472,19 @@ namespace System
                 // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
                 int lcid = (culture == null ? 0x0409 : culture.LCID);
 
-                return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                // If a request to not wrap exceptions was made, we will unwrap
+                // the TargetInvocationException since that is what will be thrown.
+                bool unwrapExceptions = (bindingFlags & BindingFlags.DoNotWrapExceptions) != 0;
+                try
+                {
+                    return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                }
+                catch (TargetInvocationException e) when (unwrapExceptions)
+                {
+                    // For target invocation exceptions, we need to unwrap the inner exception and
+                    // re-throw it.
+                    throw e.InnerException!;
+                }
             }
 #endif // FEATURE_COMINTEROP
 

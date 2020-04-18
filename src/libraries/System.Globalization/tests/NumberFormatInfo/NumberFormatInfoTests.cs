@@ -87,6 +87,20 @@ namespace System.Globalization.Tests
             Assert.Equal(newDigits, nfi.NativeDigits);
         }
 
+        [Fact]
+        public void TestNFIFormatLimits()
+        {
+            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.AllCultures))
+            {
+                NumberFormatInfo nfi = ci.NumberFormat;
+                Assert.InRange(nfi.CurrencyNegativePattern, 0, 16);
+                Assert.InRange(nfi.CurrencyPositivePattern, 0, 3);
+                Assert.InRange(nfi.PercentNegativePattern, 0, 11);
+                Assert.InRange(nfi.PercentPositivePattern, 0, 3);
+                Assert.InRange(nfi.NumberNegativePattern, 0, 4);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(DigitSubstitution_TestData))]
         public void DigitSubstitutionListTest(string cultureName, DigitShapes shape)

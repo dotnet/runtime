@@ -630,7 +630,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     innerLdapFilter.Append(')');
 
-                    ldapFilter.Append(innerLdapFilter.ToString());
+                    ldapFilter.Append(innerLdapFilter);
                 }
 
                 // Wrap off the filter

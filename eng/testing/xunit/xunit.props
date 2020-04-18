@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
     <TestRunner Condition="'$(TestRunner)' == ''">xunit.console</TestRunner>
-    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.runner.json</TestRunnerConfigPath>
-    <TestResultsName>testResults.xml</TestResultsName>
   </PropertyGroup>
 
   <ItemGroup>

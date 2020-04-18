@@ -23,6 +23,9 @@ export COMPlus_GcStressOnDirectCalls=1
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="BitSpecific" />
   </ItemGroup>

@@ -81,13 +81,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.First());
         }
 
-        private static IEnumerable<T> EmptySource<T>()
-        {
-            yield break;
-        }
-
         private static void TestEmptyNotIList<T>()
         {
+            static IEnumerable<T1> EmptySource<T1>()
+            {
+                yield break;
+            }
+
             var source = EmptySource<T>();
 
             Assert.Null(source as IList<T>);

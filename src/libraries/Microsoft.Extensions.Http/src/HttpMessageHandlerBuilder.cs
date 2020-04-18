@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Http
                 var handler = additionalHandlersList[i];
                 if (handler == null)
                 {
-                    var message = Resources.FormatHttpMessageHandlerBuilder_AdditionalHandlerIsNull(nameof(additionalHandlers));
+                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
                     throw new InvalidOperationException(message);
                 }
 
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Http
                 // work the way you want and it can be tricky for callers to figure out.
                 if (handler.InnerHandler != null)
                 {
-                    var message = Resources.FormatHttpMessageHandlerBuilder_AdditionHandlerIsInvalid(
+                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
                         nameof(DelegatingHandler.InnerHandler),
                         nameof(DelegatingHandler),
                         nameof(HttpMessageHandlerBuilder),

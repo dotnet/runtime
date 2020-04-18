@@ -11,11 +11,11 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##id, name, InstructionSet_##isa, static_cast<int>(ival), static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, ival, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, static_cast<int>(ival), static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -61,12 +61,11 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
 
-    if (category == HW_Category_MemoryStore || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) ||
-        HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
+    if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
 
-        if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
+        if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
         {
             arg = info.compCompHnd->getArgNext(arg);
         }
@@ -303,14 +302,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
                                          const char* enclosingClassName)
 {
     // TODO-Throughput: replace sequential search by binary search
-    InstructionSet isa = lookupIsa(className, enclosingClassName);
+    CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupports(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compExactlyDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
 
     if (strcmp(methodName, "get_IsSupported") == 0)
     {
@@ -585,7 +584,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
 //
 // Return Value:
 //    true iff the given instruction set is supported in the current compilation.
-bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
+bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
     return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
            (
@@ -630,11 +629,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    InstructionSet      isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs  = sig->numArgs;
-    var_types           retType  = JITtype2varType(sig->retType);
-    var_types           baseType = TYP_UNKNOWN;
+    CORINFO_InstructionSet isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
+    HWIntrinsicCategory    category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                    numArgs  = sig->numArgs;
+    var_types              retType  = JITtype2varType(sig->retType);
+    var_types              baseType = TYP_UNKNOWN;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
@@ -793,7 +792,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 if (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256)
                 {
                     assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->gtIndexBaseType = getBaseTypeOfSIMDType(op2ArgClass);
+                    retNode->AsHWIntrinsic()->SetOtherBaseType(getBaseTypeOfSIMDType(op2ArgClass));
                 }
 #endif
                 break;

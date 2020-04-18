@@ -28,12 +28,11 @@ namespace System.Net.Http.Headers
             _transferCodingCreator = transferCodingCreator;
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue)
+        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue)
         {
-            TransferCodingHeaderValue temp = null;
             int resultLength = TransferCodingHeaderValue.GetTransferCodingLength(value, startIndex,
-                _transferCodingCreator, out temp);
+                _transferCodingCreator, out TransferCodingHeaderValue? temp);
 
             parsedValue = temp;
             return resultLength;

@@ -67,6 +67,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
+  patchpoint.cpp
   phase.cpp
   rangecheck.cpp
   rationalize.cpp
@@ -313,10 +314,10 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_TARGET_DARWIN)
+  elseif(CLR_CMAKE_TARGET_OSX)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
   endif()
 
@@ -358,6 +359,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
+# optional arguments: ADDITIONAL_DESTINATION path
 function(add_jit jitName)
     if(CLR_CMAKE_TARGET_WIN32)
         add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
@@ -384,7 +386,7 @@ function(add_jit jitName)
     )
 
     # add the install targets
-    install_clr(TARGETS ${jitName})
+    install_clr(TARGETS ${jitName} ${ARGN})
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})

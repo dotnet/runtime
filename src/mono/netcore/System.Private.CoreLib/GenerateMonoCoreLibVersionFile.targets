@@ -9,13 +9,19 @@
     <PropertyGroup>
       <_MonoCoreLibVersionNumber>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MonoProjectRoot)\configure.ac')), 'MONO_CORLIB_VERSION=([a-fA-F0-9\-]+)').Groups[1].Value)</_MonoCoreLibVersionNumber>
       <_MonoCoreLibVersionFileLines>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 // This is a generated file. Do not edit.
+
+#pragma warning disable CA1823 // unused field
 namespace System
 {
-  partial class Environment
-  {
-    const string mono_corlib_version = "$(_MonoCoreLibVersionNumber)"%3B
-  }
+    public partial class Environment
+    {
+        private const string mono_corlib_version = "$(_MonoCoreLibVersionNumber)"%3B
+    }
 }
       </_MonoCoreLibVersionFileLines>
     </PropertyGroup>

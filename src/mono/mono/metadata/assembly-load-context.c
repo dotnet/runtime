@@ -15,13 +15,15 @@
 GENERATE_GET_CLASS_WITH_CACHE (assembly_load_context, "System.Runtime.Loader", "AssemblyLoadContext");
 
 void
-mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain)
+mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible)
 {
 	MonoLoadedImages *li = g_new0 (MonoLoadedImages, 1);
 	mono_loaded_images_init (li, alc);
 	alc->domain = domain;
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
+	alc->unloading = FALSE;
+	alc->collectible = collectible;
 	alc->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	mono_coop_mutex_init (&alc->assemblies_lock);
 	mono_coop_mutex_init (&alc->pinvoke_lock);
@@ -31,37 +33,80 @@ void
 mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 {
 	/*
-	 * As it stands, ALC and domain cleanup is probably broken on netcore. Without ALC collectability, this should not
-	 * be hit. I've documented roughly the things that still need to be accomplish, but the implementation is TODO and
-	 * the ideal order and locking unclear.
+	 * This is still very much WIP. It needs to be split up into various other functions and adjusted to work with the 
+	 * managed LoaderAllocator design. For now, I've put it all in this function, but don't look at it too closely.
 	 * 
-	 * For now, this makes two important assumptions:
-	 *   1. The minimum refcount on assemblies is 2: one for the domain and one for the ALC. The domain refcount might 
-	 *        be less than optimal on netcore, but its removal is too likely to cause issues for now.
-	 *   2. An ALC will have been removed from the domain before cleanup.
+	 * Of particular note: the minimum refcount on assemblies is 2: one for the domain and one for the ALC. 
+	 * The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	 */
-	//GSList *tmp;
-	//MonoDomain *domain = alc->domain;
+	GSList *tmp;
+	MonoDomain *domain = alc->domain;
 
-	/*
-	 * Missing steps:
-	 * 
-	 * + Release GC roots for all assemblies in the ALC
-	 * + Iterate over the domain_assemblies and remove ones that belong to the ALC, which will probably require
-	 *     converting domain_assemblies to a doubly-linked list, ideally GQueue
-	 * + Close dynamic and then remaining assemblies, potentially nulling the data field depending on refcount
-	 * + Second pass to call mono_assembly_close_finish on remaining assemblies
-	 * + Free the loaded_assemblies list itself
-	 */
+	g_assert (alc != mono_domain_default_alc (domain));
+	g_assert (alc->collectible == TRUE);
 
+	// FIXME: alc unloading profiler event
+
+	// Remove the assemblies from domain_assemblies
+	mono_domain_assemblies_lock (domain);
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
+		g_slist_remove (domain->domain_assemblies, assembly);
+		mono_atomic_dec_i32 (&assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from domain_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
+	}
+	mono_domain_assemblies_unlock (domain);
+
+	// Some equivalent to mono_gc_clear_domain? I guess in our case we just have to assert that we have no lingering references?
+
+	// Release the GC roots
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
+		mono_assembly_release_gc_roots (assembly);
+	}
+
+	// Close dynamic assemblies
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
+		if (!assembly->image || !image_is_dynamic (assembly->image))
+			continue;
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], dynamic assembly %s[%p], ref_count=%d", domain, assembly->aname.name, assembly, assembly->ref_count);
+		if (!mono_assembly_close_except_image_pools (assembly))
+			tmp->data = NULL;
+	}
+
+	// Close the remaining assemblies
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
+		if (!assembly)
+			continue;
+		if (!assembly->image || image_is_dynamic (assembly->image))
+			continue;
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], non-dynamic assembly %s[%p], ref_count=%d", domain, assembly->aname.name, assembly, assembly->ref_count);
+		if (!mono_assembly_close_except_image_pools (assembly))
+			tmp->data = NULL;
+	}
+
+	// Complete the second closing pass on lingering assemblies
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
+		if (assembly)
+			mono_assembly_close_finish (assembly);
+	}
+
+	// Free the loaded_assemblies
+	g_slist_free (alc->loaded_assemblies);
 	alc->loaded_assemblies = NULL;
+
+	// FIXME: alc unloaded profiler event
+
 	g_hash_table_destroy (alc->pinvoke_scopes);
 	mono_coop_mutex_destroy (&alc->assemblies_lock);
 	mono_coop_mutex_destroy (&alc->pinvoke_lock);
 
 	mono_loaded_images_free (alc->loaded_images);
 
-	g_assert_not_reached ();
+	// TODO: free mempool stuff/jit info tables, see domain freeing for an example
 }
 
 void
@@ -80,11 +125,7 @@ gpointer
 ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)
 {
 	/* If the ALC is collectible, this_gchandle is weak, otherwise it's strong. */
-	uint32_t this_gchandle = (uint32_t)GPOINTER_TO_UINT (this_gchandle_ptr);
-	if (collectible) {
-		mono_error_set_execution_engine (error, "Collectible AssemblyLoadContexts are not yet supported by MonoVM");
-		return NULL;
-	}
+	MonoGCHandle this_gchandle = (MonoGCHandle)this_gchandle_ptr;
 
 	MonoDomain *domain = mono_domain_get ();
 	MonoAssemblyLoadContext *alc = NULL;
@@ -101,13 +142,28 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC 
 	return alc;
 }
 
+void
+ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContextRelease (gpointer alc_pointer, gpointer strong_gchandle_ptr, MonoError *error)
+{
+	MonoGCHandle strong_gchandle = (MonoGCHandle)strong_gchandle_ptr;
+	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_pointer;
+
+	g_assert (alc->collectible == TRUE);
+	g_assert (alc->unloading == FALSE);
+	alc->unloading = TRUE;
+
+	MonoGCHandle weak_gchandle = alc->gchandle;
+	alc->gchandle = strong_gchandle;
+	mono_gchandle_free_internal (weak_gchandle);
+}
+
 gpointer
 ves_icall_System_Runtime_Loader_AssemblyLoadContext_GetLoadContextForAssembly (MonoReflectionAssemblyHandle assm_obj, MonoError *error)
 {
 	MonoAssembly *assm = MONO_HANDLE_GETVAL (assm_obj, assembly);
 	MonoAssemblyLoadContext *alc = mono_assembly_get_alc (assm);
 
-	return GUINT_TO_POINTER (alc->gchandle);
+	return (gpointer)alc->gchandle;
 }
 
 gboolean
@@ -134,7 +190,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	MonoReflectionAssemblyHandle assm;
 	gpointer gchandle;
-	gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gchandle = (gpointer)alc->gchandle;
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);
@@ -175,7 +231,7 @@ mono_alc_invoke_resolve_using_load_nofail (MonoAssemblyLoadContext *alc, MonoAss
 
 	result = mono_alc_invoke_resolve_using_load (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Load(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Load(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -208,7 +264,7 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 
 	result = mono_alc_invoke_resolve_using_resolving_event (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Resolving(\"%s\") event: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Resolving(\"%s\") event: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -241,7 +297,7 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 	result = mono_alc_invoke_resolve_using_resolve_satellite (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolveSatelliteAssembly(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolveSatelliteAssembly(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 

@@ -22,6 +22,16 @@
         "Unix"
         ]
       },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Android": {
+      "#import": [
+        "Linux"
+        ]
+      },
     "FreeBSD": {
       "#import": [
         "Unix"

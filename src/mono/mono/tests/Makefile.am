@@ -727,6 +727,7 @@ TESTS_CS_SRC=		\
 	async-generic-enum.cs \
 	null-blob-main.cs \
 	last-error.cs \
+	rgctx-thread-static.cs \
 	bug-gh-17285.cs
 
 # some tests fail to compile on mcs

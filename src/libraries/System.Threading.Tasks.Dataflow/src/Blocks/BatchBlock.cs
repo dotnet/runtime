@@ -55,8 +55,8 @@ namespace System.Threading.Tasks.Dataflow
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
             // Initialize bounding actions
-            Action<ISourceBlock<T[]>, int> onItemsRemoved = null;
-            Func<ISourceBlock<T[]>, T[], IList<T[]>, int> itemCountingFunc = null;
+            Action<ISourceBlock<T[]>, int>? onItemsRemoved = null;
+            Func<ISourceBlock<T[]>, T[], IList<T[]>?, int>? itemCountingFunc = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
             {
                 onItemsRemoved = (owningSource, count) => ((BatchBlock<T>)owningSource)._target.OnItemsRemoved(count);
@@ -81,14 +81,14 @@ namespace System.Threading.Tasks.Dataflow
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
             {
-                var thisBlock = ((BatchBlock<T>)state) as IDataflowBlock;
+                var thisBlock = ((BatchBlock<T>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                thisBlock.Fault(completed.Exception);
+                thisBlock.Fault(completed.Exception!);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchBlockTargetCore)state).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
+                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchBlockTargetCore)state!).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
 #if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -127,13 +127,15 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        public bool TryReceive(Predicate<T[]> filter, out T[] item)
+#pragma warning disable CS8614 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/42470
+        public bool TryReceive(Predicate<T[]>? filter, [NotNullWhen(true)] out T[]? item)
+#pragma warning restore CS8614
         {
             return _source.TryReceive(filter, out item);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        public bool TryReceiveAll(out IList<T[]> items) { return _source.TryReceiveAll(out items); }
+        public bool TryReceiveAll([NotNullWhen(true)] out IList<T[]>? items) { return _source.TryReceiveAll(out items); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="OutputCount"]/*' />
         public int OutputCount { get { return _source.OutputCount; } }
@@ -149,12 +151,13 @@ namespace System.Threading.Tasks.Dataflow
         public int BatchSize { get { return _target.BatchSize; } }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
+        DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
         {
             return _target.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
+        [return: MaybeNull]
         T[] ISourceBlock<T[]>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T[]> target, out bool messageConsumed)
         {
             return _source.ConsumeMessage(messageHeader, target, out messageConsumed);
@@ -220,9 +223,9 @@ namespace System.Threading.Tasks.Dataflow
             public long BatchesCompleted { get { return _targetDebuggingInformation.NumberOfBatchesCompleted; } }
 
             /// <summary>Gets the task being used for input processing.</summary>
-            public Task TaskForInputProcessing { get { return _targetDebuggingInformation.TaskForInputProcessing; } }
+            public Task? TaskForInputProcessing { get { return _targetDebuggingInformation.TaskForInputProcessing; } }
             /// <summary>Gets the task being used for output processing.</summary>
-            public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
+            public Task? TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             public GroupingDataflowBlockOptions DataflowBlockOptions { get { return _targetDebuggingInformation.DataflowBlockOptions; } }
@@ -236,11 +239,11 @@ namespace System.Threading.Tasks.Dataflow
             public int Id { get { return Common.GetBlockId(_batchBlock); } }
 
             /// <summary>Gets the messages postponed by this batch.</summary>
-            public QueuedMap<ISourceBlock<T>, DataflowMessageHeader> PostponedMessages { get { return _targetDebuggingInformation.PostponedMessages; } }
+            public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _targetDebuggingInformation.PostponedMessages; } }
             /// <summary>Gets the set of all targets linked from this block.</summary>
             public TargetRegistry<T[]> LinkedTargets { get { return _sourceDebuggingInformation.LinkedTargets; } }
             /// <summary>Gets the set of all targets linked from this block.</summary>
-            public ITargetBlock<T[]> NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
+            public ITargetBlock<T[]>? NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
         }
 
         /// <summary>Provides the core target implementation for a Batch.</summary>
@@ -260,9 +263,9 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>The batch size.</summary>
             private readonly int _batchSize;
             /// <summary>State used when in non-greedy mode.</summary>
-            private readonly NonGreedyState _nonGreedyState;
+            private readonly NonGreedyState? _nonGreedyState;
             /// <summary>Bounding state for when the block is executing in bounded mode.</summary>
-            private readonly BoundingState _boundingState;
+            private readonly BoundingState? _boundingState;
             /// <summary>The options associated with this block.</summary>
             private readonly GroupingDataflowBlockOptions _dataflowBlockOptions;
             /// <summary>The action invoked with a completed batch.</summary>
@@ -288,7 +291,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <remarks>This value may be read not under a lock, but it must only be written to protected by the IncomingLock.</remarks>
                 internal bool AcceptFewerThanBatchSize;
                 /// <summary>The task used to process messages.</summary>
-                internal Task TaskForInputProcessing;
+                internal Task? TaskForInputProcessing;
 
                 /// <summary>Initializes the NonGreedyState.</summary>
                 /// <param name="batchSize">The batch size used by the BatchBlock.</param>
@@ -356,7 +359,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-            internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
+            internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
@@ -380,7 +383,7 @@ namespace System.Threading.Tasks.Dataflow
                     if (_dataflowBlockOptions.Greedy &&
                             (_boundingState == null
                                 ||
-                             (_boundingState.CountIsLessThanBound && _nonGreedyState.PostponedMessages.Count == 0 && _nonGreedyState.TaskForInputProcessing == null)))
+                             (_boundingState.CountIsLessThanBound && _nonGreedyState!.PostponedMessages.Count == 0 && _nonGreedyState.TaskForInputProcessing == null)))
                     {
                         // Consume the message from the source if necessary
                         if (consumeToAccept)
@@ -393,7 +396,7 @@ namespace System.Threading.Tasks.Dataflow
                         }
 
                         // Once consumed, enqueue it.
-                        _messages.Enqueue(messageValue);
+                        _messages.Enqueue(messageValue!);
                         if (_boundingState != null) _boundingState.CurrentCount += 1; // track this new item against our bound
 
                         // Now start declining if the number of batches we've already made plus
@@ -432,7 +435,7 @@ namespace System.Threading.Tasks.Dataflow
             /// In general, it is not safe to pass releaseReservedMessages:true, because releasing of reserved messages
             /// is done without taking a lock. We pass releaseReservedMessages:true only when an exception has been
             /// caught inside the message processing loop which is a single instance at any given moment.</summary>
-            internal void Complete(Exception exception, bool dropPendingMessages, bool releaseReservedMessages, bool revertProcessingState = false)
+            internal void Complete(Exception? exception, bool dropPendingMessages, bool releaseReservedMessages, bool revertProcessingState = false)
             {
                 // Ensure that no new messages may be added
                 lock (IncomingLock)
@@ -531,10 +534,10 @@ namespace System.Threading.Tasks.Dataflow
                         // completion task continuations in that case, do it in a separate task.
                         Task.Factory.StartNew(thisTargetCore =>
                         {
-                            var targetCore = (BatchBlockTargetCore)thisTargetCore;
+                            var targetCore = (BatchBlockTargetCore)thisTargetCore!;
 
                             // Release any postponed messages
-                            List<Exception> exceptions = null;
+                            List<Exception>? exceptions = null;
                             if (targetCore._nonGreedyState != null)
                             {
                                 // Note: No locks should be held at this point
@@ -637,7 +640,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Create task and store into _taskForInputProcessing prior to scheduling the task
                 // so that _taskForInputProcessing will be visibly set in the task loop.
-                _nonGreedyState.TaskForInputProcessing = new Task(thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget).ProcessMessagesLoopCore(), this,
+                _nonGreedyState!.TaskForInputProcessing = new Task(thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget!).ProcessMessagesLoopCore(), this,
                                                     Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
@@ -651,11 +654,11 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                Exception exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception? exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. Complete re-acquires the locks it needs.
-                    Task.Factory.StartNew(exc => Complete(exception: (Exception)exc, dropPendingMessages: true, releaseReservedMessages: true, revertProcessingState: true),
+                    Task.Factory.StartNew(exc => Complete(exception: (Exception)exc!, dropPendingMessages: true, releaseReservedMessages: true, revertProcessingState: true),
                                         exception, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
                 }
             }
@@ -793,7 +796,7 @@ namespace System.Threading.Tasks.Dataflow
                     KeyValuePair<ISourceBlock<T>, DataflowMessageHeader> sourceAndMessage = postponedTemp[i];
                     if (sourceAndMessage.Key.ReserveMessage(sourceAndMessage.Value, _owningBatch))
                     {
-                        var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
+                        var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T)!);
                         var reservedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, reservedMessage);
                         reserved.Add(reservedSourceAndMessage);
                     }
@@ -811,7 +814,7 @@ namespace System.Threading.Tasks.Dataflow
                     } // Release the lock.  We must not hold it while calling Reserve/Consume/Release.
                     if (sourceAndMessage.Key.ReserveMessage(sourceAndMessage.Value, _owningBatch))
                     {
-                        var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
+                        var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T)!);
                         var reservedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, reservedMessage);
                         reserved.Add(reservedSourceAndMessage);
                     }
@@ -908,7 +911,7 @@ namespace System.Threading.Tasks.Dataflow
                 for (int i = 0; i < poppedInitially; i++)
                 {
                     KeyValuePair<ISourceBlock<T>, DataflowMessageHeader> sourceAndMessage = postponedTemp[i];
-                    var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
+                    var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T)!);
                     var reservedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, reservedMessage);
                     reserved.Add(reservedSourceAndMessage);
                 }
@@ -924,7 +927,7 @@ namespace System.Threading.Tasks.Dataflow
                         if (!postponed.TryPop(out sourceAndMessage)) break;
                     } // Release the lock.  We must not hold it while calling Reserve/Consume/Release.
 
-                    var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
+                    var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T)!);
                     var reservedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, reservedMessage);
                     reserved.Add(reservedSourceAndMessage);
                 }
@@ -1007,7 +1010,7 @@ namespace System.Threading.Tasks.Dataflow
                         throw new InvalidOperationException(SR.InvalidOperation_FailedToConsumeReservedMessage);
                     }
 
-                    var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue);
+                    var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue!);
                     var consumedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, consumedMessage);
                     reserved[i] = consumedSourceAndMessage;
                 }
@@ -1052,7 +1055,7 @@ namespace System.Threading.Tasks.Dataflow
                     T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (consumed)
                     {
-                        var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue);
+                        var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue!);
                         var consumedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, consumedMessage);
                         reserved[i] = consumedSourceAndMessage;
 
@@ -1087,7 +1090,7 @@ namespace System.Threading.Tasks.Dataflow
                 Debug.Assert(_nonGreedyState != null, "Non-greedy state is required for non-greedy mode.");
                 Debug.Assert(_nonGreedyState.ReservedSourcesTemp != null, "Should have been initialized");
 
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
 
                 List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
@@ -1139,7 +1142,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Counts the input items in a single output item or in a list of output items.</summary>
             /// <param name="singleOutputItem">A single output item. Only considered if multipleOutputItems == null.</param>
             /// <param name="multipleOutputItems">A list of output items. May be null.</param>
-            internal static int CountItems(T[] singleOutputItem, IList<T[]> multipleOutputItems)
+            internal static int CountItems(T[] singleOutputItem, IList<T[]>? multipleOutputItems)
             {
                 // If multipleOutputItems == null, then singleOutputItem is the subject of counting
                 if (multipleOutputItems == null) return singleOutputItem.Length;
@@ -1181,9 +1184,9 @@ namespace System.Threading.Tasks.Dataflow
                 /// <summary>Gets the messages waiting to be processed.</summary>
                 public IEnumerable<T> InputQueue { get { return _target._messages.ToList(); } }
                 /// <summary>Gets the task being used for input processing.</summary>
-                public Task TaskForInputProcessing { get { return _target._nonGreedyState != null ? _target._nonGreedyState.TaskForInputProcessing : null; } }
+                public Task? TaskForInputProcessing { get { return _target._nonGreedyState != null ? _target._nonGreedyState.TaskForInputProcessing : null; } }
                 /// <summary>Gets the collection of postponed messages.</summary>
-                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader> PostponedMessages { get { return _target._nonGreedyState != null ? _target._nonGreedyState.PostponedMessages : null; } }
+                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState != null ? _target._nonGreedyState.PostponedMessages : null; } }
                 /// <summary>Gets whether the block is declining further messages.</summary>
                 public bool IsDecliningPermanently { get { return _target._decliningPermanently; } }
                 /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

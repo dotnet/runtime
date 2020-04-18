@@ -115,7 +115,7 @@ internal static partial class Interop
     // Represents a platform-agnostic Error and underlying platform-specific errno
     internal struct ErrorInfo
     {
-        private Error _error;
+        private readonly Error _error;
         private int _rawErrno;
 
         internal ErrorInfo(int errno)

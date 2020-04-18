@@ -98,5 +98,12 @@ namespace System.Text.Json
         public const int LowSurrogateStartValue = 0xDC00;
         public const int LowSurrogateEndValue = 0xDFFF;
         public const int BitShiftBy10 = 0x400;
+
+        // The maximum number of parameters a constructor can have where it can be considered
+        // for a path on deserialization where we don't box the constructor arguments.
+        public const int UnboxedParameterCountThreshold = 4;
+
+        // The maximum number of parameters a constructor can have where it can be supported.
+        public const int MaxParameterCount = 64;
     }
 }

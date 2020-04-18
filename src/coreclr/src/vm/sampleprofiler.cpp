@@ -6,7 +6,6 @@
 #include "eventpipebuffermanager.h"
 #include "eventpipeeventinstance.h"
 #include "sampleprofiler.h"
-#include "hosting.h"
 #include "threadsuspend.h"
 
 #ifdef FEATURE_PERFTRACING

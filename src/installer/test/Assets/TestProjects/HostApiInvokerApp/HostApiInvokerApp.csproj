@@ -4,7 +4,6 @@
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <LangVersion>Latest</LangVersion>
     <DefineConstants Condition="'$(OS)' == 'Windows_NT'">WINDOWS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 

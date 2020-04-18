@@ -179,7 +179,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     bool cardinalityCheckResult = provider.TryGetExports(definition, atomicComposition, out IEnumerable<Export>? exports);
                     Debug.Assert(exports != null);
-                    bool anyExports = exports.FastAny();
+                    bool anyExports = exports.Any();
                     if (cardinalityCheckResult && anyExports)
                     {
                         // NOTE : if the provider returned nothing, we need to proceed, even if it indicated that the

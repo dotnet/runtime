@@ -8,6 +8,6 @@ namespace System.Net.Http
 {
     internal interface IHttpTrace
     {
-        void Trace(string message, [CallerMemberName] string memberName = null);
+        void Trace(string message, [CallerMemberName] string? memberName = null);
     }
 }

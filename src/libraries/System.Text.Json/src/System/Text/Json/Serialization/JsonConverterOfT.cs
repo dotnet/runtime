@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
 
         // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.
@@ -75,7 +80,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -202,7 +207,7 @@ namespace System.Text.Json.Serialization
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             if (CanBePolymorphic)
@@ -280,11 +285,20 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
+            Debug.Assert(value != null);
+
+            if (!IsInternalConverter)
+            {
+                return TryWrite(writer, value, options, ref state);
+            }
+
             Debug.Assert(this is JsonDictionaryConverter<T>);
+
+            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             bool success;

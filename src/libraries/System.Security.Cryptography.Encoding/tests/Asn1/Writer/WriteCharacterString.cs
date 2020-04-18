@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             "not have died in vain-that this nation, under God, shall have a new birth of freedom-and " +
             "that government of the people, by the people, for the people, shall not perish from the earth.";
 
-        protected void VerifyWrite_BER_String(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_String_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_String_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_String_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_String(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_String_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_String_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_String_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_String(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_String_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_String_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_String_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_Span(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_Span_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_Span_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_Span_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_Span(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_Span_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_Span_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_Span_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_Span(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_Span_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_Span_CustomTag(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_Span_CustomTag_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_String_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_String_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_String_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_Span_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_Span_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_BER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_BER_Span_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_String_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_String_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_String_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_Span_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_Span_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -250,7 +250,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_CER_Span_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_String_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_String_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -274,7 +274,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_String_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_String_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -286,7 +286,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_Span_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_Span_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -298,7 +298,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_DER_Span_CustomTag_ClearsConstructed(string input, string expectedPayloadHex)
+        protected void VerifyWrite_DER_Span_CustomTag_ClearsConstructed_Helper(string input, string expectedPayloadHex)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -310,7 +310,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_String_Null(PublicEncodingRules ruleSet)
+        protected void VerifyWrite_String_Null_Helper(PublicEncodingRules ruleSet)
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_String_Null_CustomTag(PublicEncodingRules ruleSet)
+        protected void VerifyWrite_String_Null_CustomTag_Helper(PublicEncodingRules ruleSet)
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_EndOfContents_String(PublicEncodingRules ruleSet)
+        protected void VerifyWrite_EndOfContents_String_Helper(PublicEncodingRules ruleSet)
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
@@ -340,7 +340,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_EndOfContents_Span(PublicEncodingRules ruleSet)
+        protected void VerifyWrite_EndOfContents_Span_Helper(PublicEncodingRules ruleSet)
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(encodedSize, encoded.Length);
         }
 
-        protected void VerifyWrite_CERSegmented_String(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_String_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -390,7 +390,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_String_CustomTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_String_CustomTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_String_ConstructedTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_String_ConstructedTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -415,7 +415,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_String_CustomPrimitiveTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_String_CustomPrimitiveTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_Span(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_Span_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_Span_CustomTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_Span_CustomTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_Span_ConstructedTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_Span_ConstructedTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -466,7 +466,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_CERSegmented_Span_CustomPrimitiveTag(string input, int contentByteCount)
+        protected void VerifyWrite_CERSegmented_Span_CustomPrimitiveTag_Helper(string input, int contentByteCount)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
@@ -479,7 +479,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_String_NonEncodable(string input)
+        protected void VerifyWrite_String_NonEncodable_Helper(string input)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -487,7 +487,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void VerifyWrite_Span_NonEncodable(string input)
+        protected void VerifyWrite_Span_NonEncodable_Helper(string input)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
@@ -495,7 +495,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void WriteAfterDispose_Span(bool empty)
+        protected void WriteAfterDispose_Span_Helper(bool empty)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -520,7 +520,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        protected void WriteAfterDispose_String(bool empty)
+        protected void WriteAfterDispose_String_Helper(bool empty)
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {

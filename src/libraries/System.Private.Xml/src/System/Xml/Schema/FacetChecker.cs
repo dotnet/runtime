@@ -338,7 +338,7 @@ namespace System.Xml.Schema
                 {
                     if (_derivedRestriction.FractionDigits > _datatype.Restriction.FractionDigits)
                     {
-                        throw new XmlSchemaException(SR.Sch_TotalDigitsMismatch, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_FractionDigitsMismatch, string.Empty);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.FractionDigits);

@@ -29,7 +29,7 @@ namespace Windows.Foundation
 
     internal static class TokenizerHelper
     {
-        internal static char GetNumericListSeparator(IFormatProvider provider)
+        internal static char GetNumericListSeparator(IFormatProvider? provider)
         {
             char numericSeparator = ',';
 

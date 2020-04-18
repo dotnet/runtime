@@ -113,6 +113,11 @@ HRESULT GetExceptionHResult(OBJECTREF throwable)
     return E_FAIL;
 }
 
+DWORD GetCurrentExceptionCode()
+{
+    return 0;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Dynamically unreachable implementation of profiler callbacks. Note that we can't just

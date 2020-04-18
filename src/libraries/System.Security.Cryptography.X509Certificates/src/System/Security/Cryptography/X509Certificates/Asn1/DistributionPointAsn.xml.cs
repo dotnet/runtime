@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     {
         internal System.Security.Cryptography.X509Certificates.Asn1.DistributionPointNameAsn? DistributionPoint;
         internal System.Security.Cryptography.X509Certificates.Asn1.ReasonFlagsAsn? Reasons;
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn[] CRLIssuer;
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? CRLIssuer;
 
         internal void Encode(AsnWriter writer)
         {

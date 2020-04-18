@@ -14,7 +14,7 @@ Below table shows the combined area owners on this repository:
 | area-HostModel | @vitek-karas @swaroop-sridhar | |
 | area-ILTools-coreclr | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
-| area-Infrastructure-installer | @dleeapho @dagood | |
+| area-Infrastructure-installer | @dleeapho @NikolaMilosavljevic | |
 | area-Infrastructure-libraries | @ViktorHofer @ericstj @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop-coreclr | @jeffschwMSFT @AaronRobinsonMSFT | |
@@ -22,7 +22,7 @@ Below table shows the combined area owners on this repository:
 | area-PAL-coreclr | @janvorli | |
 | area-R2RDump-coreclr | @nattress | |
 | area-ReadyToRun-coreclr | @nattress | |
-| area-Setup | @dagood @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
+| area-Setup | @NikolaMilosavljevic @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
 | area-Single-File | @swaroop-sridhar | |
 | area-SDK | @janvorli | General development issues and overlap with the SDK and CLI |
 | area-Serialization | @StephenMolloy @HongGit | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
@@ -48,10 +48,10 @@ Below table shows the combined area owners on this repository:
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
 | **System namespaces** | | |
-| area-System.Buffers | @tannergooding @JeremyKuhne | |
+| area-System.Buffers | @tannergooding @GrabYourPitchforks @pgovind | |
 | area-System.CodeDom | @buyaa-n @krwq | |
 | area-System.Collections | @eiriktsarpalis @layomia | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
-| area-System.ComponentModel | @JeremyKuhne @safern | |
+| area-System.ComponentModel | @safern | |
 | area-System.ComponentModel.Composition | @maryamariyan @ViktorHofer | |
 | area-System.ComponentModel.DataAnnotations | @lajones @ajcvickers | |
 | area-System.Composition | @maryamariyan @ViktorHofer | |
@@ -63,10 +63,10 @@ Below table shows the combined area owners on this repository:
 | area-System.Diagnostics.Process | @adamsitnik @eiriktsarpalis | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @tarekgh @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
-| area-System.Drawing | @JeremyKuhne @safern | |
+| area-System.Drawing | @safern @tannergooding | |
 | area-System.Dynamic.Runtime | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Globalization | @safern @tarekgh @krwq | |
-| area-System.IO | @JeremyKuhne @carlossanlop @jozkee | |
+| area-System.IO | @carlossanlop @jozkee | |
 | area-System.IO.Compression | @carlossanlop @ericstj | <ul><li>Also includes System.IO.Packaging</li></ul> |
 | area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse | |
 | area-System.Linq | @eiriktsarpalis @adamsitnik | |
@@ -90,7 +90,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
 | area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @echesakovMSFT | |
 | area-System.Security | @bartonjs @GrabYourPitchforks @krwq | |
-| area-System.ServiceModel | @StephenBonikowsky @HongGit @mconnew | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul> |
+| area-System.ServiceModel | @HongGit @mconnew | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul> |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |
 | area-System.ServiceProcess | @Anipik | |
 | area-System.Text.Encoding | @layomia @krwq @tarekgh | |

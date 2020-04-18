@@ -82,4 +82,3 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
     }
 }
-

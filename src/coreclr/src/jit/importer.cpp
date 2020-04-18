@@ -1288,9 +1288,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             src->gtType  = genActualType(returnType);
             call->gtType = src->gtType;
 
-            // !!! The destination could be on stack. !!!
-            // This flag will let us choose the correct write barrier.
-            destFlags = GTF_IND_TGTANYWHERE;
+            if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
+            {
+                // !!! The destination could be on stack. !!!
+                // This flag will let us choose the correct write barrier.
+                destFlags = GTF_IND_TGTANYWHERE;
+            }
         }
     }
     else if (src->OperIsBlk())
@@ -1532,7 +1535,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // Notes:
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
-//    for full enregistration, e.g. TYP_SIMD16.
+//    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
 {
@@ -1550,7 +1554,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-            if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
+            if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
                 var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
@@ -4132,7 +4136,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compSupports(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -6780,9 +6784,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -7387,10 +7398,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Also, popping arguments in a varargs function is more work and NYI
     // If we have a security object, we have to keep our frame around for callers
     // to see any imperative security.
+    // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
+    // at the end, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is synchronized";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is Reverse P/Invoke";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -7672,7 +7690,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // it may cause registered args to be spilled. Simply spill it.
 
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -8524,10 +8542,37 @@ DONE:
     if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
     {
         assert(verCurrentState.esStackDepth == 0);
+        BasicBlock* loopHead = nullptr;
+        if (opts.IsOSR())
+        {
+            // We might not have been planning on importing the method
+            // entry block, but now we must.
+
+            // We should have remembered the real method entry block.
+            assert(fgEntryBB != nullptr);
+
+            JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
+                    fgEntryBB->bbNum);
+            impImportBlockPending(fgEntryBB);
+
+            // Note there is no explicit flow to this block yet,
+            // make sure it stays around until we actually try
+            // the optimization.
+            fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
+
+            loopHead = fgEntryBB;
+        }
+        else
+        {
+            // For normal jitting we'll branch back to the firstBB; this
+            // should already be imported.
+            loopHead = fgFirstBB;
+        }
+
         JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
                 " as having a backward branch.\n",
-                fgFirstBB->bbNum, compCurBB->bbNum);
-        fgMarkBackwardJump(fgFirstBB, compCurBB);
+                loopHead->bbNum, compCurBB->bbNum);
+        fgMarkBackwardJump(loopHead, compCurBB);
     }
 
     // Note: we assume that small return types are already normalized by the managed callee
@@ -10547,6 +10592,35 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     impBeginTreeList();
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+    // Are there any places in the method where we might add a patchpoint?
+    if (compHasBackwardJump)
+    {
+        // Are patchpoints enabled?
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        {
+            // We don't inline at Tier0, if we do, we may need rethink our approach.
+            // Could probably support inlines that don't introduce flow.
+            assert(!compIsForInlining());
+
+            // Is the start of this block a suitable patchpoint?
+            // Current strategy is blocks that are stack-empty and backwards branch targets
+            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+        }
+    }
+    else
+    {
+        // Should not see backward branch targets w/o backwards branches
+        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+    }
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
     /* Walk the opcodes that comprise the basic block */
 
     const BYTE* codeAddr = info.compCode + block->bbCodeOffs;
@@ -11464,6 +11538,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* CEE_JMP does not make sense in some "protected" regions. */
 
                     BADCODE("Jmp not allowed in protected region");
+                }
+
+                if (opts.IsReversePInvoke())
+                {
+                    BADCODE("Jmp not allowed in reverse P/Invoke");
                 }
 
                 if (verCurrentState.esStackDepth != 0)
@@ -16771,10 +16850,13 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                     assert(HBtab->HasFaultHandler());
                 }
             }
+        }
 
-            /* Recursively process the handler block */
-            BasicBlock* hndBegBB = HBtab->ebdHndBeg;
+        // Recursively process the handler block, if we haven't already done so.
+        BasicBlock* hndBegBB = HBtab->ebdHndBeg;
 
+        if (((hndBegBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(hndBegBB) == 0))
+        {
             //  Construct the proper verification stack state
             //   either empty or one that contains just
             //   the Exception Object that we are dealing with
@@ -16810,18 +16892,22 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
             // Queue up the handler for importing
             //
             impImportBlockPending(hndBegBB);
+        }
 
-            if (HBtab->HasFilter())
+        // Process the filter block, if we haven't already done so.
+        if (HBtab->HasFilter())
+        {
+            /* @VERIFICATION : Ideally the end of filter state should get
+               propagated to the catch handler, this is an incompleteness,
+               but is not a security/compliance issue, since the only
+               interesting state is the 'thisInit' state.
+            */
+
+            BasicBlock* filterBB = HBtab->ebdFilter;
+
+            if (((filterBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(filterBB) == 0))
             {
-                /* @VERIFICATION : Ideally the end of filter state should get
-                   propagated to the catch handler, this is an incompleteness,
-                   but is not a security/compliance issue, since the only
-                   interesting state is the 'thisInit' state.
-                   */
-
                 verCurrentState.esStackDepth = 0;
-
-                BasicBlock* filterBB = HBtab->ebdFilter;
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
@@ -16831,7 +16917,9 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 impImportBlockPending(filterBB);
             }
         }
-        else if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
+
+        // This seems redundant ....??
+        if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
         {
             /* Recursively process the handler block */
 
@@ -17898,7 +17986,7 @@ void Compiler::impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* bl
  *  basic flowgraph has already been constructed and is passed in.
  */
 
-void Compiler::impImport(BasicBlock* method)
+void Compiler::impImport()
 {
 #ifdef DEBUG
     if (verbose)
@@ -17960,21 +18048,45 @@ void Compiler::impImport(BasicBlock* method)
 
     impPendingList = impPendingFree = nullptr;
 
-    /* Add the entry-point to the worker-list */
+    // Skip leading internal blocks.
+    // These can arise from needing a leading scratch BB, from EH normalization, and from OSR entry redirects.
+    //
+    // We expect a linear flow to the first non-internal block. But not necessarily straght-line flow.
+    BasicBlock* entryBlock = fgFirstBB;
 
-    // Skip leading internal blocks. There can be one as a leading scratch BB, and more
-    // from EH normalization.
-    // NOTE: It might be possible to always just put fgFirstBB on the pending list, and let everything else just fall
-    // out.
-    for (; method->bbFlags & BBF_INTERNAL; method = method->bbNext)
+    while (entryBlock->bbFlags & BBF_INTERNAL)
     {
-        // Treat these as imported.
-        assert(method->bbJumpKind == BBJ_NONE); // We assume all the leading ones are fallthrough.
-        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", method->bbNum);
-        method->bbFlags |= BBF_IMPORTED;
+        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
+        entryBlock->bbFlags |= BBF_IMPORTED;
+
+        if (entryBlock->bbJumpKind == BBJ_NONE)
+        {
+            entryBlock = entryBlock->bbNext;
+        }
+        else if (entryBlock->bbJumpKind == BBJ_ALWAYS)
+        {
+            // Only expected for OSR
+            assert(opts.IsOSR());
+            entryBlock = entryBlock->bbJumpDest;
+        }
+        else
+        {
+            assert(!"unexpected bbJumpKind in entry sequence");
+        }
     }
 
-    impImportBlockPending(method);
+    // Note for OSR we'd like to be able to verify this block must be
+    // stack empty, but won't know that until we've imported...so instead
+    // we'll BADCODE out if we mess up.
+    //
+    // (the concern here is that the runtime asks us to OSR a
+    // different IL version than the one that matched the method that
+    // triggered OSR).  This should not happen but I might have the
+    // IL versioning stuff wrong.
+    //
+    // TODO: we also currently expect this block to be a join point,
+    // which we should verify over when we find jump targets.
+    impImportBlockPending(entryBlock);
 
     /* Import blocks in the worker-list until there are no more */
 
@@ -19749,7 +19861,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;

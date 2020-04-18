@@ -242,7 +242,7 @@ extern UINT32 g_nClrInstanceId;
 
 #endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 
-#if defined(FEATURE_PERFTRACING)
+#if defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
 /***************************************/
 /* Tracing levels supported by CLR ETW */
@@ -397,7 +397,7 @@ private:
     NewArrayHolder<WCHAR> _argument;
     bool _isValid;
 };
-#endif // FEATURE_PERFTRACING
+#endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 

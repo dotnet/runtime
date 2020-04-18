@@ -5,6 +5,7 @@
 #if NETFRAMEWORK || NETCOREAPP
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -53,6 +54,110 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Ret);
 
             return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
+        }
+
+        public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        {
+            Type type = typeof(T);
+
+            Debug.Assert(!type.IsAbstract);
+            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Contains(constructor));
+
+            ParameterInfo[] parameters = constructor.GetParameters();
+            int parameterCount = parameters.Length;
+
+            if (parameterCount > JsonConstants.MaxParameterCount)
+            {
+                return null;
+            }
+
+            var dynamicMethod = new DynamicMethod(
+                ConstructorInfo.ConstructorName,
+                type,
+                new[] { typeof(object[]) },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            for (int i = 0; i < parameterCount; i++)
+            {
+                Type paramType = parameters[i].ParameterType;
+
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldc_I4_S, i);
+                generator.Emit(OpCodes.Ldelem_Ref);
+
+                if (paramType.IsValueType)
+                {
+                    generator.Emit(OpCodes.Unbox_Any, paramType);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Castclass, paramType);
+                };
+            }
+
+            generator.Emit(OpCodes.Newobj, constructor);
+            generator.Emit(OpCodes.Ret);
+
+            return (JsonClassInfo.ParameterizedConstructorDelegate<T>)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ParameterizedConstructorDelegate<T>));
+        }
+
+        public override JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
+            CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor)
+        {
+            Type type = typeof(T);
+
+            Debug.Assert(!type.IsAbstract);
+            // If ctor is non-public, we've verified upstream that it has the [JsonConstructorAttribute].
+            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Contains(constructor));
+
+            ParameterInfo[] parameters = constructor.GetParameters();
+            int parameterCount = parameters.Length;
+
+            Debug.Assert(parameterCount <= JsonConstants.UnboxedParameterCountThreshold);
+
+            var dynamicMethod = new DynamicMethod(
+                ConstructorInfo.ConstructorName,
+                type,
+                new[] { typeof(TArg0), typeof(TArg1), typeof(TArg2), typeof(TArg3) },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            for (int index = 0; index < parameterCount; index++)
+            {
+                switch (index)
+                {
+                    case 0:
+                        generator.Emit(OpCodes.Ldarg_0);
+                        break;
+                    case 1:
+                        generator.Emit(OpCodes.Ldarg_1);
+                        break;
+                    case 2:
+                        generator.Emit(OpCodes.Ldarg_2);
+                        break;
+                    case 3:
+                        generator.Emit(OpCodes.Ldarg_3);
+                        break;
+                    default:
+                        Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                        throw new InvalidOperationException();
+                }
+            }
+
+            generator.Emit(OpCodes.Newobj, constructor);
+            generator.Emit(OpCodes.Ret);
+
+            return (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
+                dynamicMethod.CreateDelegate(
+                    typeof(JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>));
         }
 
         public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
@@ -127,7 +232,7 @@ namespace System.Text.Json.Serialization
 
         private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
-            MethodInfo? realMethod = propertyInfo.GetGetMethod();
+            MethodInfo? realMethod = propertyInfo.GetMethod;
             Type objectType = typeof(object);
 
             Debug.Assert(realMethod != null);
@@ -163,7 +268,7 @@ namespace System.Text.Json.Serialization
 
         private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
-            MethodInfo? realMethod = propertyInfo.GetSetMethod();
+            MethodInfo? realMethod = propertyInfo.SetMethod;
             Type objectType = typeof(object);
 
             Debug.Assert(realMethod != null);

@@ -4338,6 +4338,8 @@ public:
 
 #if !defined(DACCESS_COMPILE)
 
+extern thread_local size_t t_ThreadType;
+
 // check if current thread is a GC thread (concurrent or server)
 inline BOOL IsGCSpecialThread ()
 {
@@ -4346,7 +4348,7 @@ inline BOOL IsGCSpecialThread ()
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_GC);
+    return !!(t_ThreadType & ThreadType_GC);
 }
 
 // check if current thread is a Gate thread
@@ -4356,7 +4358,7 @@ inline BOOL IsGateSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Gate);
+    return !!(t_ThreadType & ThreadType_Gate);
 }
 
 // check if current thread is a Timer thread
@@ -4366,7 +4368,7 @@ inline BOOL IsTimerSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Timer);
+    return !!(t_ThreadType & ThreadType_Timer);
 }
 
 // check if current thread is a debugger helper thread
@@ -4376,7 +4378,7 @@ inline BOOL IsDbgHelperSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_DbgHelper);
+    return !!(t_ThreadType & ThreadType_DbgHelper);
 }
 
 // check if current thread is a debugger helper thread
@@ -4386,7 +4388,7 @@ inline BOOL IsETWRundownSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ETWRundownThread);
+    return !!(t_ThreadType & ThreadType_ETWRundownThread);
 }
 
 // check if current thread is a generic instantiation lookup compare thread
@@ -4396,7 +4398,7 @@ inline BOOL IsGenericInstantiationLookupCompareThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_GenericInstantiationCompare);
+    return !!(t_ThreadType & ThreadType_GenericInstantiationCompare);
 }
 
 // check if current thread is a thread which is performing shutdown
@@ -4406,7 +4408,7 @@ inline BOOL IsShutdownSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Shutdown);
+    return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
 inline BOOL IsThreadPoolIOCompletionSpecialThread ()
@@ -4415,7 +4417,7 @@ inline BOOL IsThreadPoolIOCompletionSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Threadpool_IOCompletion);
+    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
 }
 
 inline BOOL IsThreadPoolWorkerSpecialThread ()
@@ -4424,7 +4426,7 @@ inline BOOL IsThreadPoolWorkerSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Threadpool_Worker);
+    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
 }
 
 inline BOOL IsWaitSpecialThread ()
@@ -4433,7 +4435,7 @@ inline BOOL IsWaitSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Wait);
+    return !!(t_ThreadType & ThreadType_Wait);
 }
 
 // check if current thread is a thread which is performing shutdown
@@ -4443,7 +4445,7 @@ inline BOOL IsSuspendEEThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_DynamicSuspendEE);
+    return !!(t_ThreadType & ThreadType_DynamicSuspendEE);
 }
 
 inline BOOL IsFinalizerThread ()
@@ -4452,7 +4454,7 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Finalizer);
+    return !!(t_ThreadType & ThreadType_Finalizer);
 }
 
 inline BOOL IsShutdownHelperThread ()
@@ -4461,7 +4463,7 @@ inline BOOL IsShutdownHelperThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ShutdownHelper);
+    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()
@@ -4470,54 +4472,16 @@ inline BOOL IsProfilerAttachThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ProfAPI_Attach);
+    return !!(t_ThreadType & ThreadType_ProfAPI_Attach);
 }
 
-// set specical type for current thread
-inline void ClrFlsSetThreadType (TlsThreadTypeFlag flag)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    ClrFlsSetValue (TlsIdx_ThreadType, (LPVOID)(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) |flag));
-}
-
-// clear specical type for current thread
-inline void ClrFlsClearThreadType (TlsThreadTypeFlag flag)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    ClrFlsSetValue (TlsIdx_ThreadType, (LPVOID)(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ~flag));
-}
+// set special type for current thread
+void ClrFlsSetThreadType(TlsThreadTypeFlag flag);
+void ClrFlsClearThreadType(TlsThreadTypeFlag flag);
 
 #endif //!DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER()
-#else   // DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)   ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER() ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, NULL)
-#endif  // DACCESS_COMPILE
-
 HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription);
-
-inline BOOL IsStackWalkerThread()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-#if defined(DACCESS_COMPILE)
-    return FALSE;
-#else
-    return ClrFlsGetValue (TlsIdx_StackWalkerWalkingThread) != NULL;
-#endif
-}
 
 inline BOOL IsGCThread ()
 {
@@ -4544,11 +4508,11 @@ public:
 
 #ifndef DACCESS_COMPILE
         m_flag = flag;
-        m_fPreviouslySet = (((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & flag);
+        m_fPreviouslySet = (t_ThreadType & flag);
 
         // In debug builds, remember the full group of flags that were set at the time
         // the constructor was called.  This will be used in ASSERTs in the destructor
-        INDEBUG(m_nPreviousFlagGroup = (size_t)ClrFlsGetValue (TlsIdx_ThreadType));
+        INDEBUG(m_nPreviousFlagGroup = t_ThreadType);
 
         if (!m_fPreviouslySet)
         {
@@ -4573,7 +4537,7 @@ public:
         // The expression below says that the only difference between the previous flag
         // group and the current flag group should be m_flag (or no difference at all, if
         // m_flag's state didn't actually change).
-        _ASSERTE(((m_nPreviousFlagGroup ^ (size_t) ClrFlsGetValue(TlsIdx_ThreadType)) | (size_t) m_flag) == (size_t) m_flag);
+        _ASSERTE(((m_nPreviousFlagGroup ^ t_ThreadType) | (size_t) m_flag) == (size_t) m_flag);
 
         if (m_fPreviouslySet)
         {
@@ -4591,81 +4555,6 @@ private:
     BOOL m_fPreviouslySet;
     INDEBUG(size_t m_nPreviousFlagGroup);
 };
-
-class ClrFlsValueSwitch
-{
-public:
-    ClrFlsValueSwitch (PredefinedTlsSlots slot, PVOID value)
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        m_slot = slot;
-        m_PreviousValue = ClrFlsGetValue(slot);
-        ClrFlsSetValue(slot, value);
-#endif // DACCESS_COMPILE
-    }
-
-    ~ClrFlsValueSwitch ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        ClrFlsSetValue(m_slot, m_PreviousValue);
-#endif // DACCESS_COMPILE
-    }
-
-private:
-    PVOID m_PreviousValue;
-    PredefinedTlsSlots m_slot;
-};
-
-//*********************************************************************************
-
-// When we're hosted, operations called by the host (such as Thread::YieldTask)
-// may not cause calls back into the host, as the host needs not be reentrant.
-// Use the following holder for code in which calls into the host are forbidden.
-// (If a call into the host is attempted nevertheless, an assert will fire.)
-
-class ForbidCallsIntoHostOnThisThread
-{
-private:
-    static Volatile<PVOID> s_pvOwningFiber;
-
-    FORCEINLINE static BOOL Enter(BOOL)
-    {
-        WRAPPER_NO_CONTRACT;
-        return InterlockedCompareExchangePointer(
-            &s_pvOwningFiber, ClrTeb::GetFiberPtrId(), NULL) == NULL;
-    }
-
-    FORCEINLINE static void Leave(BOOL)
-    {
-        LIMITED_METHOD_CONTRACT;
-        s_pvOwningFiber = NULL;
-    }
-
-public:
-    typedef ConditionalStateHolder<BOOL, ForbidCallsIntoHostOnThisThread::Enter, ForbidCallsIntoHostOnThisThread::Leave> Holder;
-
-    FORCEINLINE static BOOL CanThisThreadCallIntoHost()
-    {
-        WRAPPER_NO_CONTRACT;
-        return s_pvOwningFiber != ClrTeb::GetFiberPtrId();
-    }
-};
-
-typedef ForbidCallsIntoHostOnThisThread::Holder ForbidCallsIntoHostOnThisThreadHolder;
-
-FORCEINLINE BOOL CanThisThreadCallIntoHost()
-{
-    WRAPPER_NO_CONTRACT;
-    return ForbidCallsIntoHostOnThisThread::CanThisThreadCallIntoHost();
-}
 
 //*********************************************************************************
 
@@ -4792,7 +4681,7 @@ template<class T> void DeleteExecutable(T *p)
     {
         p->T::~T();
 
-        ClrHeapFree(ClrGetProcessExecutableHeap(), 0, p);
+        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
     }
 }
 
@@ -4824,50 +4713,7 @@ typedef HMODULE HMODULE_TGT;
 
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
-//----------------------------------------------------------------------------------------
-// The runtime invokes InitUtilcode() in its dllmain and passes along all of the critical
-// callback pointers. For the desktop CLR, all DLLs loaded by the runtime must also call
-// InitUtilcode with the same callbacks as the runtime used. To achieve this, the runtime
-// calls a special initialization routine exposed by the loaded module with the callbacks,
-// which in turn calls InitUtilcode.
-//
-// This structure collects all of the critical callback info passed in InitUtilcode().
-//----------------------------------------------------------------------------------------
-struct CoreClrCallbacks
-{
-    typedef IExecutionEngine* (* pfnIEE_t)();
-    typedef HRESULT (* pfnGetCORSystemDirectory_t)(SString& pbuffer);
-
-    HINSTANCE                   m_hmodCoreCLR;
-    pfnIEE_t                    m_pfnIEE;
-    pfnGetCORSystemDirectory_t  m_pfnGetCORSystemDirectory;
-};
-
-
-// For DAC, we include this functionality only when EH SxS is enabled.
-
-//----------------------------------------------------------------------------------------
-// CoreCLR must invoke this before CRT initialization to ensure utilcode has all the callback
-// pointers it needs.
-//----------------------------------------------------------------------------------------
-VOID InitUtilcode(const CoreClrCallbacks &cccallbacks);
-CoreClrCallbacks const & GetClrCallbacks();
-
-//----------------------------------------------------------------------------------------
-// Stuff below is for utilcode.lib eyes only.
-//----------------------------------------------------------------------------------------
-
-// Stores callback pointers provided by InitUtilcode().
-extern CoreClrCallbacks g_CoreClrCallbacks;
-
-// Throws up a helpful dialog if InitUtilcode() wasn't called.
-#ifdef _DEBUG
-void OnUninitializedCoreClrCallbacks();
-#define VALIDATECORECLRCALLBACKS() if (g_CoreClrCallbacks.m_hmodCoreCLR == NULL) OnUninitializedCoreClrCallbacks()
-#else  //_DEBUG
-#define VALIDATECORECLRCALLBACKS()
-#endif //_DEBUG
-
+extern HINSTANCE g_hmodCoreCLR;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
@@ -4998,37 +4844,6 @@ inline T* InterlockedCompareExchangeT(
 // to the appropriate pointer type.
 template <typename T>
 inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, reinterpret_cast<T*>(value));
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, reinterpret_cast<T*>(exchange), comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, reinterpret_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
     T* volatile *  target,
     std::nullptr_t value) // When nullptr is provided as argument.
 {
@@ -5056,6 +4871,37 @@ inline T* InterlockedCompareExchangeT(
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
 }
 
+// NULL pointer variants of the above to avoid having to cast NULL
+// to the appropriate pointer type.
+template <typename T>
+inline T* InterlockedExchangeT(
+    T* volatile *   target,
+    int             value) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(value == 0);
+    return InterlockedExchangeT(target, nullptr);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    int             exchange,  // When NULL is provided as argument.
+    T*              comparand)
+{
+    //STATIC_ASSERT(exchange == 0);
+    return InterlockedCompareExchangeT(destination, nullptr, comparand);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    T*              exchange,
+    int             comparand) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(comparand == 0);
+    return InterlockedCompareExchangeT(destination, exchange, nullptr);
+}
+
 #undef InterlockedExchangePointer
 #define InterlockedExchangePointer Use_InterlockedExchangeT
 #undef InterlockedCompareExchangePointer
@@ -5070,13 +4916,6 @@ HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt
 // This is a slight variation that can be used for anything else
 typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
 void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
-
-
-// Helper to support termination due to heap corruption
-// It's not supported on Win2K, so we have to manually delay load it
-void EnableTerminationOnHeapCorruption();
-
 
 
 namespace Clr { namespace Util

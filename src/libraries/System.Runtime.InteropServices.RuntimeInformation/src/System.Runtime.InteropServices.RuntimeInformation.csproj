@@ -32,14 +32,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

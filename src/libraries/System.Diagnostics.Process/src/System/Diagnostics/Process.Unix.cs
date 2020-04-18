@@ -5,10 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -86,11 +83,11 @@ namespace System.Diagnostics
         private bool GetHasExited(bool refresh)
             => GetWaitState().GetExited(out _, refresh);
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
             List<Exception>? exceptions = null;
             KillTree(ref exceptions);
-            return exceptions ?? Enumerable.Empty<Exception>();
+            return exceptions;
         }
 
         private void KillTree(ref List<Exception>? exceptions)
@@ -111,7 +108,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
                 return;
             }
@@ -125,7 +122,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
             }
 
@@ -133,15 +130,6 @@ namespace System.Diagnostics
             {
                 childProcess.KillTree(ref exceptions);
                 childProcess.Dispose();
-            }
-
-            void AddException(ref List<Exception>? list, Exception e)
-            {
-                if (list == null)
-                {
-                    list = new List<Exception>();
-                }
-                list.Add(e);
             }
         }
 

@@ -11,6 +11,12 @@ namespace System.Text.Json.Serialization
     public sealed class JsonIgnoreAttribute : JsonAttribute
     {
         /// <summary>
+        /// Specifies the condition that must be met before a property will be ignored.
+        /// </summary>
+        /// <remarks>The default value is <see cref="JsonIgnoreCondition.Always"/>.</remarks>
+        public JsonIgnoreCondition Condition { get; set; } = JsonIgnoreCondition.Always;
+
+        /// <summary>
         /// Initializes a new instance of <see cref="JsonIgnoreAttribute"/>.
         /// </summary>
         public JsonIgnoreAttribute() { }

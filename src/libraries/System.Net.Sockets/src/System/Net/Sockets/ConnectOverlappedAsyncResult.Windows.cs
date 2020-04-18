@@ -11,7 +11,7 @@ namespace System.Net.Sockets
         internal override unsafe object? PostCompletion(int numBytes)
         {
             SocketError errorCode = (SocketError)ErrorCode;
-            Socket socket = (Socket)AsyncObject;
+            Socket socket = (Socket)AsyncObject!;
 
             if (errorCode == SocketError.Success)
             {
