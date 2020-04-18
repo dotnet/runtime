@@ -266,7 +266,7 @@ namespace System.Tests
 
             // IntPtr
 
-            IntPtr[] intPtrArray = new IntPtr { IntPtr.MinValue, 0, 0, IntPtr.MaxValue };
+            IntPtr[] intPtrArray = new IntPtr { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
 
             yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
             yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
