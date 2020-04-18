@@ -25,6 +25,11 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
+            state.Current.ReturnValue = ConvertToDictionary(ref state, state.Current.ReturnValue!, options);
+        }
+
+        internal override object? ConvertToDictionary(ref ReadStack state, object value, JsonSerializerOptions options)
+        {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
             Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
@@ -34,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
                 classInfo.CreateObjectWithArgs = creator;
             }
 
-            state.Current.ReturnValue = creator((Dictionary<string, TValue>)state.Current.ReturnValue!);
+            return creator((Dictionary<string, TValue>)value);
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)

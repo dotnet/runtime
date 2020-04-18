@@ -79,5 +79,8 @@ namespace System.Text.Json.Serialization
         internal virtual bool ConstructorIsParameterized => false;
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
+
+        internal virtual object? ConvertToDictionary(ref ReadStack state, object value, JsonSerializerOptions options)
+            => value;
     }
 }
