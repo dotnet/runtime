@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -89,6 +90,16 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult DiscardPadding(QuicReader reader)
+        {
+            while (reader.BytesLeft > 0 && reader.Peek() == 0)
+            {
+                reader.ReadUInt8();
+            }
+
+            return ProcessPacketResult.Ok;
+        }
+
         private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, RecvContext context)
         {
             while (reader.BytesLeft > 0)
@@ -107,7 +118,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 ProcessPacketResult result = frameType switch
                 {
-                    FrameType.Padding => DiscardFrameType(reader),
+                    FrameType.Padding => DiscardPadding(reader),
                     FrameType.Ping => DiscardFrameType(reader),
                     FrameType.Ack => ProcessAckFrame(reader, packetType, context),
                     FrameType.AckWithEcn => ProcessAckFrame(reader, packetType, context),
@@ -233,19 +244,29 @@ namespace System.Net.Quic.Implementations.Managed
                 frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
 
             int read = 0;
+
+            long prevSmallestAcked = ranges[^1].End;
+
             // read the ranges in reverse order, so the `ranges` are in ascending order
-            for (int i = (int)frame.AckRangeCount - 1; i > 0; i--)
+            for (int i = (int)frame.AckRangeCount; i > 0; i--)
             {
                 read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
                 read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
 
-                if (ranges[i].Start < gap + acked - 2)
+                // the numbers are always encoded as one lesser, meaning sending 0 in gap means actually 1,
+                // implying that     nextLargestAcked = prevSmallestAck - gap - 2
+
+                long nextLargestAcked = prevSmallestAcked - gap - 2;
+                long nextSmallestAcked = nextLargestAcked - acked;
+
+                if (nextLargestAcked < 0)
                 {
                     return CloseConnection(TransportErrorCode.FrameEncodingError,
                         QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
                 }
 
-                ranges[i - 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
+                ranges[i - 1] = new PacketNumberRange(nextSmallestAcked, nextLargestAcked);
+                prevSmallestAcked = nextSmallestAcked;
             }
 
             var space = GetPacketSpace(packetType);
@@ -404,20 +425,25 @@ namespace System.Net.Quic.Implementations.Managed
                 count = Math.Min(count, (long) writer.BytesAvailable - minSize);
                 pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
-                context.SentPacket.CryptoRanges.Add(offset, offset + count - 1);
+                context.SentPacket.SentStreamData.Add(
+                    SentPacket.StreamChunkInfo.ForCryptoStream(offset, offset + count - 1));
             }
         }
 
         private void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
         {
-            if (!pnSpace.AckElicited)
-            {
-                return; // no need for ack now
-            }
-
             var ranges = pnSpace.UnackedPacketNumbers;
 
-            Debug.Assert(ranges.Count > 0); // implied by AckElicited
+            if (ranges.Count == 0)
+            {
+                return;
+            }
+
+            // if (!pnSpace.AckElicited)
+            // {
+                // return; // no need for ack now
+            // }
+            // Debug.Assert(ranges.Count > 0); // implied by AckElicited
 
             // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
@@ -433,15 +459,23 @@ namespace System.Net.Quic.Implementations.Managed
                 ? stackalloc byte[lengthEstimate]
                 : new byte[lengthEstimate];
 
-            long gapStart = largest - firstRange.Length;
+            long prevSmallestAcked = firstRange.Start;
+
             for (int i = ranges.Count - 2; i >= 0; i--)
             {
-                // the numbers are always encoded as one lesser, meaning sending 0 means 1
-                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written),
-                    gapStart - ranges[i].End);
-                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written),
-                    ranges[i].End - ranges[i].Start);
-                gapStart = ranges[i].Start - 1;
+                var range = ranges[i];
+
+                long nextLargestAcked = range.End;
+
+                // the numbers are always encoded as one lesser, meaning sending 0 in gap means actually 1,
+                // implying that     nextLargestAcked = prevSmallestAck - gap - 2
+
+                long gap = prevSmallestAcked - nextLargestAcked - 2;
+                long ack = range.Length - 1;
+
+                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written), gap);
+                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written), ack);
+                prevSmallestAcked = ranges[i].Start;
             }
 
             // record that the ranges have been sent
@@ -449,7 +483,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             // TODO-RZ implement ECN counts
             AckFrame.Write(writer,
-                new AckFrame(largest, ackDelay, (long)(ranges.Count - 1) / 2, firstRange.Length - 1, ReadOnlySpan<byte>.Empty,
+                new AckFrame(largest, ackDelay, ranges.Count - 1,
+                    firstRange.Length - 1, ackRangesRaw.Slice(0, written),
                     false, 0, 0, 0));
 
             pnSpace.AckElicited = false;
@@ -458,7 +493,7 @@ namespace System.Net.Quic.Implementations.Managed
         private void WriteStreamFrames(QuicWriter writer, SendContext context)
         {
             ManagedQuicStream? stream;
-            while ((stream = _streams.GetFirstFlushableStream()) != null)
+            while (writer.BytesAvailable > 0 && (stream = _streams.GetFirstFlushableStream()) != null)
             {
                 var buffer = stream!.OutboundBuffer!;
                 // TODO-RZ IsFlushable is not threadsafe
@@ -467,7 +502,7 @@ namespace System.Net.Quic.Implementations.Managed
                 (long offset, long count) = buffer.GetNextSendableRange();
                 if (count == 0 && !buffer.SizeKnown) return;
 
-                int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, count);
+                int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));
                 count = Math.Min(count,  writer.BytesAvailable - overhead);
 
                 // TODO-RZ: respect stream MaxData limits
@@ -478,17 +513,16 @@ namespace System.Net.Quic.Implementations.Managed
 
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
 
-                var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int) count, fin);
-
-                if (count > 0)
+                if (count > 0 || fin)
                 {
-                    // TODO-RZ: we need to note the sent FIN bit even if we sent no data.
-                    buffer.CheckOut(data);
+                    var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int) count, fin);
 
-                    if (!context.SentPacket.SentStreamData.TryGetValue(stream!.StreamId, out var ranges))
-                        ranges = context.SentPacket.SentStreamData[stream!.StreamId] = new RangeSet();
+                    if (count > 0)
+                    {
+                        buffer.CheckOut(data);
+                    }
 
-                    ranges.Add(offset, offset + count - 1);
+                    context.SentPacket.SentStreamData.Add(new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
                 }
 
                 if (!buffer.IsFlushable)
@@ -499,24 +533,25 @@ namespace System.Net.Quic.Implementations.Managed
         private void OnPacketAcked(SentPacket packet, PacketNumberSpace pnSpace)
         {
             // mark all sent data as acked
-            foreach (var r in packet.CryptoRanges)
+            foreach (var data in packet.SentStreamData)
             {
-                pnSpace.CryptoOutboundStream.OnAck(
-                    r.Start, r.Length);
-            }
-
-            foreach ((long streamId, RangeSet ranges) in packet.SentStreamData)
-            {
-                var buffer = _streams[streamId].OutboundBuffer!;
-                foreach (var r in ranges)
+                if (data.IsCryptoStream)
                 {
-                    buffer.OnAck(r.Start, r.Length);
+                    pnSpace.CryptoOutboundStream.OnAck(data.Offset, data.Count);
+                }
+                else
+                {
+                    // empty frames are sent only to send the FIN bit
+                    Debug.Assert(data.Count > 0 || data.Fin);
+                    if (data.Count > 0)
+                    {
+                        _streams[data.StreamId].OutboundBuffer!.OnAck(data.Offset, data.Count);
+                    }
                 }
             }
 
             // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
             pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
-
         }
     }
 }

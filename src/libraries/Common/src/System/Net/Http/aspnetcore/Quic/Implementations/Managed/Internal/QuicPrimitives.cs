@@ -134,7 +134,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // twice as large a range than the difference between the largest
             // acknowledged packet and packet number being sent.
 
-            long range = 2 * (currentPn - largestAckedPn);
+            long range = 2 * (currentPn - largestAckedPn) + 1;
 
             // log gives us 0 or index of highest bit, from that we can calculate the size needed
             // to represent the range

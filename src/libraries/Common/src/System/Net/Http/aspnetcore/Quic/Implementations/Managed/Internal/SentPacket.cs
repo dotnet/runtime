@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Reflection.Metadata;
 
 namespace System.Net.Quic.Implementations.Managed
 {
@@ -8,6 +9,50 @@ namespace System.Net.Quic.Implementations.Managed
     /// </summary>
     internal class SentPacket
     {
+        /// <summary>
+        ///     Structure containing data about sent data in Stream frames.
+        /// </summary>
+        internal readonly struct StreamChunkInfo
+        {
+            internal StreamChunkInfo(long streamId, long offset, long count, bool fin)
+            {
+                StreamId = streamId;
+                Offset = offset;
+                Count = count;
+                Fin = fin;
+            }
+
+            internal static StreamChunkInfo ForCryptoStream(long offset, long length)
+            {
+                return new StreamChunkInfo(-1, offset, length, false);
+            }
+
+            /// <summary>
+            ///     Id of the stream to which data were sent. -1 if data were sent in Crypto stream.
+            /// </summary>
+            internal readonly long StreamId;
+
+            /// <summary>
+            ///     True if the data were sent on a crypto stream.
+            /// </summary>
+            internal bool IsCryptoStream => StreamId == -1;
+
+            /// <summary>
+            ///     Offset on which the data were sent.
+            /// </summary>
+            internal readonly long Offset;
+
+            /// <summary>
+            ///     Number of bytes sent.
+            /// </summary>
+            internal readonly long Count;
+
+            /// <summary>
+            ///     True if this the Fin bit was set in the stream frame.
+            /// </summary>
+            internal readonly bool Fin;
+        }
+
         /// <summary>
         ///     Timestamp when the packet was sent.
         /// </summary>
@@ -19,14 +64,9 @@ namespace System.Net.Quic.Implementations.Managed
         internal RangeSet AckedRanges { get; } = new RangeSet();
 
         /// <summary>
-        ///     Ranges sent in the Crypto frames.
+        ///     Offset and lengths of data sent in Stream and Crypto frames.
         /// </summary>
-        internal RangeSet CryptoRanges { get; } = new RangeSet();
-
-        /// <summary>
-        ///     Data ranges set in Stream frames.
-        /// </summary>
-        internal SortedList<long, RangeSet> SentStreamData { get; } = new SortedList<long, RangeSet>();
+        internal List<StreamChunkInfo> SentStreamData { get; } = new List<StreamChunkInfo>();
 
         /// <summary>
         ///     True if HANDSHAKE_DONE frame is sent in the packet.
@@ -56,7 +96,6 @@ namespace System.Net.Quic.Implementations.Managed
         internal void Reset()
         {
             AckedRanges.Clear();
-            CryptoRanges.Clear();
             SentStreamData.Clear();
             HandshakeDoneSent = false;
             BytesSent = 0;

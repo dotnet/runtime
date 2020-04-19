@@ -224,10 +224,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal void OnAck(long offset, long count)
         {
             long end = offset + count - 1;
+
             Debug.Assert(_checkedOut.Includes(offset, end));
 
             _checkedOut.Remove(offset, end);
             _acked.Add(offset, end);
+
+            if (_acked[0].Start != 0)
+            {
+                // do not discard data yet, as the very first data to be discared were not acked
+                return;
+            }
 
             // release unneeded data
             long processed = _acked[0].End + 1;

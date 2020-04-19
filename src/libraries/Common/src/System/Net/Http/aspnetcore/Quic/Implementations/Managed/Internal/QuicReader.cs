@@ -71,9 +71,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal int ReadInt24()
         {
             var source = ReadSpan(3);
+            // Source data is in big endian, and bit shift opreation is endianness-agnostic,
+            // so this works on all platforms.
             return (source[0] << 16) |
                    (source[1] << 8) |
-                   source[0];
+                   source[2];
         }
 
         internal bool TryReadInt32(out int result)

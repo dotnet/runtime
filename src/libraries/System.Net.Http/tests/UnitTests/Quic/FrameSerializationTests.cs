@@ -46,6 +46,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.CeCount, actual.CeCount);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -61,6 +62,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.ReasonPhrase, actual.ReasonPhrase);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -75,6 +77,7 @@ namespace System.Net.Quic.Tests
             Assert.True(expected.CryptoData.SequenceEqual(actual.CryptoData));
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -87,6 +90,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.DataLimit, actual.DataLimit);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -99,6 +103,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.MaximumData, actual.MaximumData);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -112,6 +117,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.MaximumStreamData, actual.MaximumStreamData);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -125,6 +131,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.Bidirectional, actual.Bidirectional);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -143,6 +150,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.StatelessResetToken, actual.StatelessResetToken);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -157,6 +165,7 @@ namespace System.Net.Quic.Tests
             Assert.True(expected.Token.SequenceEqual(actual.Token));
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -170,6 +179,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.IsChallenge, actual.IsChallenge);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -184,6 +194,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.FinalSize, actual.FinalSize);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -196,6 +207,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.SequenceNumber, actual.SequenceNumber);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -209,6 +221,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.ApplicationErrorCode, actual.ApplicationErrorCode);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -222,6 +235,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.StreamDataLimit, actual.StreamDataLimit);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -239,6 +253,7 @@ namespace System.Net.Quic.Tests
             Assert.True(expected.StreamData.SequenceEqual(actual.StreamData));
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
 
         [Fact]
@@ -252,6 +267,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.Bidirectional, actual.Bidirectional);
 
             Assert.Equal(writer.BytesWritten, expected.GetSerializedLength());
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
         }
     }
 }

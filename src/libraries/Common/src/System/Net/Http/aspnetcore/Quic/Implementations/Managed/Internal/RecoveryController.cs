@@ -52,7 +52,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 l.TimeOfLastAckElicitingPacketSent.CompareTo(r.TimeOfLastAckElicitingPacketSent));
 
             /// <summary>
-            ///     The largest packet number acknowledged in the packet number space so far.
+            ///     The largest packet number sent by this endpoint which was acknowledged in the packet number space so far.
             /// </summary>
             internal long LargestAckedPacketNumber { get; set; }
 

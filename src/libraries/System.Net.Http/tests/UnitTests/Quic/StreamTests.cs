@@ -15,7 +15,6 @@ namespace System.Net.Quic.Tests
 
         private readonly TestHarness _harness;
 
-
         public StreamTests(ITestOutputHelper output)
         {
             _clientOpts = new QuicClientConnectionOptions();
@@ -176,6 +175,31 @@ namespace System.Net.Quic.Tests
             _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
                 TransportErrorCode.StreamLimitError,
                 QuicError.StreamMaxDataExceeded);
+        }
+
+        [Fact]
+        public void ResendsDataAfterLoss()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+
+            // lose the first packet
+            _harness.Get1RttToSend(_client).ShouldHaveFrame<StreamFrame>();
+
+            clientStream.Write(data);
+            _harness.Timestamp += RecoveryController.InitialRtt * 3;
+            // deliver second packet
+            _harness.Send1Rtt(_client, _server).ShouldHaveFrame<StreamFrame>();
+
+            // send ack back, leading the client to believe that first packet was lost
+            _harness.Timestamp += RecoveryController.InitialRtt * 3;
+            _harness.Send1Rtt(_server, _client).ShouldHaveFrame<AckFrame>();
+
+            // resend original data
+            var frame = _harness.Send1Rtt(_client, _server).ShouldHaveFrame<StreamFrame>();
+            Assert.Equal(0, frame.Offset);
+            Assert.Equal(data, frame.StreamData);
         }
     }
 }

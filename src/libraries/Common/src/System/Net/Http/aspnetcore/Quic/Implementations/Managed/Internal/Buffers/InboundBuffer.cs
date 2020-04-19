@@ -94,7 +94,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
 
             long deliverable = BytesRead + BytesAvailable;
-            if (offset + data.Length < deliverable)
+            if (offset + data.Length <= deliverable)
             {
                 return; // entirely duplicate
             }

@@ -121,6 +121,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                 }
             }
 
+
             rawRanges = rawRanges.Slice(0, reader.BytesRead - start);
 
             if (type == FrameType.AckWithEcn &&

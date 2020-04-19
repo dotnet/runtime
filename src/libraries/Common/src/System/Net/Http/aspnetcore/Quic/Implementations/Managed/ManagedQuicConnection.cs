@@ -340,10 +340,11 @@ namespace System.Net.Quic.Implementations.Managed
             long packetNumber = QuicPrimitives.DecodePacketNumber(pnSpace.LargestReceivedPacketNumber,
                 truncatedPn, pnLength);
 
-            // if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
-            // {
-            //     return ProcessPacketResult.Ok; // already processed;
-            // }
+            if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
+            {
+                throw new NotImplementedException("Duplicate receipt should not happen yet");
+                // return ProcessPacketResult.Ok; // already processed;
+            }
 
             if (pnSpace.LargestReceivedPacketNumber < packetNumber)
             {
@@ -362,8 +363,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
+            int originalBytesRead = reader.BytesRead;
             int tagLength = GetPacketNumberSpace(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
-            reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
+            int length = reader.BytesLeft - tagLength;
+            reader.Reset(originalSegment.Slice(originalBytesRead, length));
             var retval = ProcessFrames(reader, packetType, context);
             reader.Reset(originalSegment);
             return retval;
@@ -470,10 +473,14 @@ namespace System.Net.Quic.Implementations.Managed
                 _ => throw new InvalidOperationException()
             };
 
+
             var pnSpace = GetPacketNumberSpace(level);
+            var recoverySpace = Recovery.GetPacketNumberSpace(packetSpace);
             var seal = pnSpace.SendCryptoSeal!;
 
-            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(Recovery.GetPacketNumberSpace(packetSpace).LargestAckedPacketNumber);
+            ProcessLostPackets(pnSpace, recoverySpace);
+
+            (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestAckedPacketNumber);
             WritePacketHeader(writer, packetType, pnLength);
 
             // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
@@ -576,7 +583,6 @@ namespace System.Net.Quic.Implementations.Managed
         internal void SendData(QuicWriter writer, out IPEndPoint? receiver, long now)
         {
             receiver = _remoteEndpoint;
-            // TODO-RZ: process lost packets
             // TODO-RZ: pool SentPacket, SendContext and QuicWriter instances
 
             var context = new SendContext(now);
@@ -659,6 +665,47 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.ConnectionClose;
         }
 
+        private void ProcessLostPackets(PacketNumberSpace pnSpace, RecoveryController.PacketNumberSpace recoverySpace)
+        {
+            foreach (var lostPacket in recoverySpace.LostPackets)
+            {
+                if (lostPacket.AckEliciting)
+                {
+                    pnSpace.AckElicited = true;
+                }
+
+                foreach (var data in lostPacket.SentStreamData)
+                {
+                    if (data.IsCryptoStream)
+                    {
+                        pnSpace.CryptoOutboundStream.OnLost(data.Offset, data.Count);
+                    }
+                    else
+                    {
+                        var stream = _streams[data.StreamId];
+
+                        // empty stream frames are only sent to send the Fin bit
+                        Debug.Assert(data.Count > 0 || data.Fin);
+                        if (data.Count > 0)
+                        {
+                            stream.OutboundBuffer!.OnLost(data.Offset, data.Count);
+                        }
+
+                        // TODO: mark only if wasn't already flushable
+                        _streams.MarkFlushable(stream, true);
+                    }
+                }
+
+                if (lostPacket.HandshakeDoneSent)
+                {
+                    _handshakeDoneSent = false;
+                }
+
+                // acked ranges are deleted only when the packet was acked, so no action needed here
+            }
+
+            recoverySpace.LostPackets.Clear();
+        }
 
         public override void Dispose()
         {
