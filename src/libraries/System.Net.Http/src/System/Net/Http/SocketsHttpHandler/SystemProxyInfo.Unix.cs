@@ -11,7 +11,7 @@ namespace System.Net.Http
         // the "no proxy" object.
         public static IWebProxy ConstructSystemProxy()
         {
-            return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : new HttpNoProxy();
+            return HttpEnvironmentProxy.TryCreate(out IWebProxy? proxy) ? proxy : new HttpNoProxy();
         }
     }
 }

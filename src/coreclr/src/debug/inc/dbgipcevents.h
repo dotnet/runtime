@@ -131,9 +131,10 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     void   *m_raiseExceptionAddr;                       // The address of kernel32!RaiseException in the debuggee
     DWORD   m_debuggerWordTLSIndex;                     // The TLS slot for the debugger word used in the debugger hijack functions
 #endif // FEATURE_INTEROP_DEBUGGING
-    SIZE_T  m_TLSIndex;                                 // The TLS index the CLR is using to hold Thread objects
-    SIZE_T  m_TLSIsSpecialIndex;                        // The index into the Predef block of the the "IsSpecial" status for a thread.
-    SIZE_T  m_TLSCantStopIndex;                         // The index into the Predef block of the the Can't-Stop count.
+    SIZE_T  m_TLSIndex;                                 // The TLS index of the thread-local storage for coreclr.dll
+    SIZE_T  m_TLSEEThreadOffset;                        // TLS Offset of the Thread pointer.
+    SIZE_T  m_TLSIsSpecialOffset;                       // TLS Offset of the "IsSpecial" status for a thread.
+    SIZE_T  m_TLSCantStopOffset;                        // TLS Offset of the Can't-Stop count.
     SIZE_T  m_EEThreadStateOffset;                      // Offset of m_state in a Thread
     SIZE_T  m_EEThreadStateNCOffset;                    // Offset of m_stateNC in a Thread
     SIZE_T  m_EEThreadPGCDisabledOffset;                // Offset of the bit for whether PGC is disabled or not in a Thread
@@ -143,7 +144,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     DWORD   m_EEThreadSteppingStateMask;                // Mask for Thread::TSNC_DebuggerIsStepping
     DWORD   m_EEMaxFrameValue;                          // The max Frame value
     SIZE_T  m_EEThreadDebuggerFilterContextOffset;      // Offset of debugger's filter context within a Thread Object.
-    SIZE_T  m_EEThreadCantStopOffset;                   // Offset of the can't stop count in a Thread
     SIZE_T  m_EEFrameNextOffset;                        // Offset of the next ptr in a Frame
     DWORD   m_EEIsManagedExceptionStateMask;            // Mask for Thread::TSNC_DebuggerIsManagedException
     void   *m_pPatches;                                 // Addr of patch table

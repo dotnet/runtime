@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);ActivatorUtilities_In_DependencyInjection</DefineConstants>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
+      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilities.cs">
+      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilities.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs">
+      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs">
+      <Link>Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>

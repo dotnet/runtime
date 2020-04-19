@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
     if(CLR_CMAKE_HOST_LINUX)
 
@@ -76,7 +76,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     # The following linked options can be inserted into the linker libraries list to
     # ensure proper resolving of circular references between a subset of the libraries.
@@ -91,10 +91,10 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
@@ -177,7 +177,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
-        mscorrc_debug
+        mscorrc
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
@@ -187,9 +187,31 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
+# Create the DAC module index header file containing the DAC build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    set(
+        DAC_MODULE_INDEX_FILE 
+        ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h
+    )
+    add_custom_command(
+        OUTPUT ${DAC_MODULE_INDEX_FILE}
+        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> ${DAC_MODULE_INDEX_FILE}
+        DEPENDS mscordaccore
+        COMMENT "Generating DAC module index file -> ${DAC_MODULE_INDEX_FILE}"
+    )
+    set_source_files_properties(
+        ${DAC_MODULE_INDEX_FILE} 
+        PROPERTIES GENERATED TRUE
+    )
+    add_custom_target(
+        dac_module_index_header
+        DEPENDS ${DAC_MODULE_INDEX_FILE} 
+    )
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+
 # add the install targets
-install_clr(TARGETS mscordaccore)
-install_clr(TARGETS mscordaccore DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATION sharedFramework)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})

@@ -79,11 +79,11 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
-    InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                 ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
-    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
+    NamedIntrinsic         intrinsicId = node->gtHWIntrinsicId;
+    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                    ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
+    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 
@@ -1135,7 +1135,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
 
-    assert(compiler->compSupports(InstructionSet_SSE));
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE));
     assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
     GenTree* op1 = node->gtGetOp1();
@@ -1731,7 +1731,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             bool isVector128GatherWithVector256Index = (targetType == TYP_SIMD16) && (indexOp->TypeGet() == TYP_SIMD32);
 
             // hwintrinsiclistxarch.h uses Dword index instructions in default
-            if (varTypeIsLong(node->gtIndexBaseType))
+            if (varTypeIsLong(node->GetOtherBaseType()))
             {
                 switch (ins)
                 {

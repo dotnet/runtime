@@ -154,6 +154,7 @@ public:
         void        **pContext);            // Stored context here.
 
 private:
+    DAC_ALIGNAS(StgPool) // Align first member to alignment of base class
     UINT32 m_cbRec;                // How large is each record?
 
 };  // class RecordPool

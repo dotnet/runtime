@@ -306,96 +306,6 @@ LOCAL_LABEL(LNullThis):
 
         NESTED_END TheUMEntryPrestub,_TEXT
 
-//
-// r12 = UMEntryThunk*
-//
-        NESTED_ENTRY UMThunkStub,_TEXT,UnhandledExceptionHandlerUnix
-        PROLOG_PUSH         "{r4,r5,r7,r11,lr}"
-        PROLOG_STACK_SAVE_OFFSET   r7, #8
-
-        alloc_stack         4 * 5
-        stm                 sp, {r0-r3,r12}
-
-        //GBLA UMThunkStub_HiddenArgOffest // offset of saved UMEntryThunk *
-        //GBLA UMThunkStub_StackArgsOffest // offset of original stack args
-        //GBLA UMThunkStub_StackArgsSize   // total size of UMThunkStub frame
-UMThunkStub_HiddenArgOffset = (-3)*4
-UMThunkStub_StackArgsOffset = 3*4
-UMThunkStub_StackArgsSize = 10*4
-
-        CHECK_STACK_ALIGNMENT
-
-        bl                  C_FUNC(GetThread)
-        cbz                 r0, LOCAL_LABEL(UMThunkStub_DoThreadSetup)
-
-LOCAL_LABEL(UMThunkStub_HaveThread):
-        mov                 r5, r0                  // r5 = Thread *
-
-        ldr                 r2, =g_TrapReturningThreads
-
-        mov                 r4, 1
-        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
-
-        ldr                 r3, [r2]
-        cbnz                r3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
-
-LOCAL_LABEL(UMThunkStub_InCooperativeMode):
-        ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
-        ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
-        ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
-        cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
-
-        add                 r0, r7, #UMThunkStub_StackArgsOffset // Source pointer
-        add                 r0, r0, r2
-        lsr                 r1, r2, #2      // Count of stack slots to copy
-
-        and                 r2, r2, #4      // Align the stack
-        sub                 sp, sp, r2
-
-LOCAL_LABEL(UMThunkStub_StackLoop):
-        ldr                 r2, [r0,#-4]!
-        str                 r2, [sp,#-4]!
-        subs                r1, r1, #1
-        bne                 LOCAL_LABEL(UMThunkStub_StackLoop)
-
-LOCAL_LABEL(UMThunkStub_ArgumentsSetup):
-        ldr                 r4, [r3, #UMThunkMarshInfo__m_pILStub]
-
-        // reload argument registers
-        sub                 r0, r7, #28
-        ldm                 r0, {r0-r3}
-
-        CHECK_STACK_ALIGNMENT
-
-        blx                 r4
-
-LOCAL_LABEL(UMThunkStub_PostCall):
-        mov                 r4, 0
-        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
-
-        EPILOG_STACK_RESTORE_OFFSET    r7, #8
-        EPILOG_POP           "{r4,r5,r7,r11,pc}"
-
-LOCAL_LABEL(UMThunkStub_DoThreadSetup):
-        sub                 sp, #SIZEOF__FloatArgumentRegisters
-        vstm                sp, {d0-d7}
-        bl                  C_FUNC(CreateThreadBlockThrow)
-        vldm                sp, {d0-d7}
-        add                 sp, #SIZEOF__FloatArgumentRegisters
-        b                   LOCAL_LABEL(UMThunkStub_HaveThread)
-
-LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads):
-        sub                 sp, #SIZEOF__FloatArgumentRegisters
-        vstm                sp, {d0-d7}
-        mov                 r0, r5              // Thread* pThread
-        ldr                 r1, [r7, #UMThunkStub_HiddenArgOffset]  // UMEntryThunk* pUMEntry
-        bl                  C_FUNC(UMThunkStubRareDisableWorker)
-        vldm                sp, {d0-d7}
-        add                 sp, #SIZEOF__FloatArgumentRegisters
-        b                   LOCAL_LABEL(UMThunkStub_InCooperativeMode)
-
-        NESTED_END UMThunkStub,_TEXT
-
 // ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub, _TEXT, NoHandler
@@ -1057,103 +967,6 @@ LOCAL_LABEL(CallCppHelper3):
 
 #endif
 
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY JIT_Stelem_Ref, _TEXT
-
-    // We retain arguments as they were passed and use r0 == array// r1 == idx// r2 == val
-
-    // check for null array
-    cbz     r0, LOCAL_LABEL(ThrowNullReferenceException)
-
-    // idx bounds check
-    ldr     r3,[r0,#ArrayBase__m_NumComponents]
-    cmp     r3,r1
-    bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
-
-    // fast path to null assignment (doesn't need any write-barriers)
-    cbz     r2, LOCAL_LABEL(AssigningNull)
-
-    // Verify the array-type and val-type matches before writing
-    ldr     r12, [r0] // r12 = array MT
-    ldr     r3, [r2] // r3 = val->GetMethodTable()
-    ldr     r12, [r12, #MethodTable__m_ElementType] // array->GetArrayElementTypeHandle()
-    cmp     r3, r12
-    beq     C_FUNC(JIT_Stelem_DoWrite)
-
-    // Types didnt match but allow writing into an array of objects
-    ldr     r3, =g_pObjectClass
-    ldr     r3, [r3]  // r3 = *g_pObjectClass
-    cmp     r3, r12   // array type matches with Object*
-    beq     C_FUNC(JIT_Stelem_DoWrite)
-
-    // array type and val type do not exactly match. Raise frame and do detailed match
-    b       C_FUNC(JIT_Stelem_Ref_NotExactMatch)
-
-LOCAL_LABEL(AssigningNull):
-    // Assigning null doesn't need write barrier
-    adds    r0, r0, r1, LSL #2           // r0 = r0 + (r1 x 4) = array->m_array[idx]
-    str     r2, [r0, #PtrArray__m_Array] // array->m_array[idx] = val
-    bx      lr
-
-LOCAL_LABEL(ThrowNullReferenceException):
-    // Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     r0, =CORINFO_NullReferenceException_ASM
-    b       C_FUNC(JIT_InternalThrow)
-
-LOCAL_LABEL(ThrowIndexOutOfRangeException):
-    // Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     r0, =CORINFO_IndexOutOfRangeException_ASM
-    b       C_FUNC(JIT_InternalThrow)
-
-    LEAF_END JIT_Stelem_Ref, _TEXT
-
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
-//                                                       unsigned idx, Object* val)
-//   r12 = array->GetArrayElementTypeHandle()
-//
-    NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
-    PROLOG_PUSH {lr}
-    PROLOG_PUSH {r0-r2}
-
-    CHECK_STACK_ALIGNMENT
-
-    // allow in case val can be casted to array element type
-    // call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
-    mov     r1, r12 // array->GetArrayElementTypeHandle()
-    mov     r0, r2
-    bl      C_FUNC(ObjIsInstanceOfCached)
-    cmp     r0, TypeHandle_CanCast
-    beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
-
-    // check via raising frame
-LOCAL_LABEL(NeedFrame):
-    mov     r1, sp                  // r1 = &array
-    adds    r0, sp, #8              // r0 = &val
-    bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
-
-LOCAL_LABEL(DoWrite):
-    EPILOG_POP {r0-r2}
-    EPILOG_POP {lr}
-    b C_FUNC(JIT_Stelem_DoWrite)
-
-    NESTED_END JIT_Stelem_Ref_NotExactMatch, _TEXT
-
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY  JIT_Stelem_DoWrite, _TEXT
-
-    // Setup args for JIT_WriteBarrier. r0 = &array->m_array[idx]// r1 = val
-    adds    r0, #PtrArray__m_Array     // r0 = &array->m_array
-    adds    r0, r0, r1, LSL #2
-    mov     r1, r2                     // r1 = val
-
-    // Branch to the write barrier (which is already correctly overwritten with
-    // single or multi-proc code based on the current CPU
-    b       C_FUNC(JIT_WriteBarrier)
-
-    LEAF_END JIT_Stelem_DoWrite, _TEXT
 
 #define __wbScratch r3
 #define pShadow r7
@@ -1485,3 +1298,19 @@ ProbeLoop:
         EPILOG_POP "{r7}"
         EPILOG_BRANCH_REG lr
         LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+    NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     r0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+        mov     r1, r12 // stub-identifying token
+        bl      C_FUNC(OnCallCountThresholdReached)
+        mov     r12, r0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        EPILOG_BRANCH_REG r12
+    NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION

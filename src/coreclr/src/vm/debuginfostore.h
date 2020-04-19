@@ -83,6 +83,7 @@ public:
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
+        IN PatchpointInfo * patchpointInfo,
         IN OUT SBuffer    * pDebugInfoBuffer,
         IN LoaderHeap     * pLoaderHeap
     );
@@ -95,11 +96,18 @@ public:
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
-        OUT ICorDebugInfo::NativeVarInfo    **ppVars
+        OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+        BOOL hasFlagByte
     );
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    static PatchpointInfo * RestorePatchpointInfo(
+        IN PTR_BYTE pDebugInfo
+    );
+#endif
+
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);
+    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);
 #endif
 };
 

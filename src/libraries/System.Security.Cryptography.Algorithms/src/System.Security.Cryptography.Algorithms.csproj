@@ -3,10 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <NoWarn>CS1573;CS3016;CA5350;CA5351;CA5379;CA5384;CA5385;$(NoWarn)</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets"/>
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
@@ -30,6 +30,7 @@
     <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\DES.cs" />
+    <Compile Include="System\Security\Cryptography\DSASignatureFormat.cs" />
     <Compile Include="System\Security\Cryptography\DSA.cs" />
     <Compile Include="System\Security\Cryptography\DSA.Xml.cs" />
     <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
@@ -85,6 +86,9 @@
     <Compile Include="System\Security\Cryptography\SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipher.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
     </Compile>
@@ -93,6 +97,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs">
       <Link>Internal\Cryptography\HashProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs">
+      <Link>Common\Internal\Cryptography\PemKeyImportHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs">
       <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
@@ -129,6 +136,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs">
       <Link>Common\System\Security\Cryptography\PasswordBasedEncryption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs">
+      <Link>Common\System\Security\Cryptography\PemLabels.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs">
       <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
@@ -483,7 +493,7 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -582,7 +592,8 @@
     </Compile>
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true'" Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="Internal\Cryptography\HashProviderDispenser.Android.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
@@ -590,7 +601,7 @@
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>
@@ -696,9 +707,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
-      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>

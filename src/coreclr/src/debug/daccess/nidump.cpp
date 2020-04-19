@@ -8338,9 +8338,6 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
                               EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_cbManagedSize, eecli->m_cbManagedSize,
                               EEClassLayoutInfo, VERBOSE_TYPES );
-        DisplayWriteFieldInt( m_LargestAlignmentRequirementOfAllMembers,
-                              eecli->m_LargestAlignmentRequirementOfAllMembers,
-                              EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_ManagedLargestAlignmentRequirementOfAllMembers,
                               eecli->m_ManagedLargestAlignmentRequirementOfAllMembers,
                               EEClassLayoutInfo, VERBOSE_TYPES );

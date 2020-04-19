@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,8 +14,32 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IHttpTrace
     {
+        /// <summary>Cached string for the last Date header received on this connection.</summary>
+        private string? _lastDateHeaderValue;
+        /// <summary>Cached string for the last Server header received on this connection.</summary>
+        private string? _lastServerHeaderValue;
+
+        /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
+        public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+        {
+            return
+                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Date) ? GetOrAddCachedValue(ref _lastDateHeaderValue, descriptor, value) :
+                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Server) ? GetOrAddCachedValue(ref _lastServerHeaderValue, descriptor, value) :
+                descriptor.GetHeaderValue(value);
+
+            static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+            {
+                string? lastValue = cache;
+                if (lastValue is null || !ByteArrayHelpers.EqualsOrdinalAscii(lastValue, value))
+                {
+                    cache = lastValue = descriptor.GetHeaderValue(value);
+                }
+                return lastValue;
+            }
+        }
+
         public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
-        public abstract void Trace(string message, [CallerMemberName] string memberName = null);
+        public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
         {

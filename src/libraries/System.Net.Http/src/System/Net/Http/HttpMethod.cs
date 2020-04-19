@@ -11,7 +11,7 @@ namespace System.Net.Http
     public class HttpMethod : IEquatable<HttpMethod>
     {
         private readonly string _method;
-        private readonly byte[] _http3EncodedBytes;
+        private readonly byte[]? _http3EncodedBytes;
         private int _hashcode;
 
         private static readonly HttpMethod s_getMethod = new HttpMethod("GET", http3StaticTableIndex: H3StaticTable.MethodGet);
@@ -90,7 +90,7 @@ namespace System.Net.Http
             get { return _method; }
         }
 
-        internal byte[] Http3EncodedBytes
+        internal byte[]? Http3EncodedBytes
         {
             get { return _http3EncodedBytes; }
         }
@@ -119,9 +119,9 @@ namespace System.Net.Http
 
         #region IEquatable<HttpMethod> Members
 
-        public bool Equals(HttpMethod other)
+        public bool Equals(HttpMethod? other)
         {
-            if ((object)other == null)
+            if ((object?)other == null)
             {
                 return false;
             }
@@ -138,7 +138,7 @@ namespace System.Net.Http
 
         #endregion
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as HttpMethod);
         }
@@ -158,14 +158,14 @@ namespace System.Net.Http
             return _method;
         }
 
-        public static bool operator ==(HttpMethod left, HttpMethod right)
+        public static bool operator ==(HttpMethod? left, HttpMethod? right)
         {
-            return (object)left == null || (object)right == null ?
+            return (object?)left == null || (object?)right == null ?
                 ReferenceEquals(left, right) :
                 left.Equals(right);
         }
 
-        public static bool operator !=(HttpMethod left, HttpMethod right)
+        public static bool operator !=(HttpMethod? left, HttpMethod? right)
         {
             return !(left == right);
         }
@@ -177,7 +177,7 @@ namespace System.Net.Http
         internal static HttpMethod Normalize(HttpMethod method)
         {
             Debug.Assert(method != null);
-            return s_knownMethods.TryGetValue(method, out HttpMethod normalized) ?
+            return s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ?
                 normalized :
                 method;
         }

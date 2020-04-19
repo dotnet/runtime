@@ -180,6 +180,15 @@ void getGSCookie(GSCookie*  pCookieVal, // OUT
                  GSCookie** ppCookieVal // OUT
                  );
 
+// Provide patchpoint info for the method currently being jitted.
+void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            );
+
+PatchpointInfo* getOSRInfo(
+           unsigned * ilOffset   // OUT
+           );
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1016,4 +1025,5 @@ DWORD getJitFlags(CORJIT_FLAGS* flags,      /* IN: Points to a buffer that will 
                                                    version number for the CORJIT_FLAGS value. */
                   );
 
+void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported);
 #endif // _ICorJitInfoImpl

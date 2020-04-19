@@ -838,49 +838,6 @@ _PrecodeFixupThunk@0 proc public
 
 _PrecodeFixupThunk@0 endp
 
-; LPVOID __stdcall CTPMethodTable__CallTargetHelper2(
-;     const void *pTarget,
-;     LPVOID pvFirst,
-;     LPVOID pvSecond)
-CTPMethodTable__CallTargetHelper2 proc stdcall public,
-                                  pTarget : DWORD,
-                                  pvFirst : DWORD,
-                                  pvSecond : DWORD
-    mov     ecx, pvFirst
-    mov     edx, pvSecond
-
-    call    pTarget
-ifdef _DEBUG
-    nop                         ; Mark this as a special call site that can
-                                ; directly call unmanaged code
-endif
-    ret
-CTPMethodTable__CallTargetHelper2 endp
-
-; LPVOID __stdcall CTPMethodTable__CallTargetHelper3(
-;     const void *pTarget,
-;     LPVOID pvFirst,
-;     LPVOID pvSecond,
-;     LPVOID pvThird)
-CTPMethodTable__CallTargetHelper3 proc stdcall public,
-                                  pTarget : DWORD,
-                                  pvFirst : DWORD,
-                                  pvSecond : DWORD,
-                                  pvThird : DWORD
-    push    pvThird
-
-    mov     ecx, pvFirst
-    mov     edx, pvSecond
-
-    call    pTarget
-ifdef _DEBUG
-    nop                         ; Mark this as a special call site that can
-                                ; directly call unmanaged code
-endif
-    ret
-CTPMethodTable__CallTargetHelper3 endp
-
-
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
     mov     ecx, [esp+4]
@@ -1767,5 +1724,34 @@ DYNAMICHELPER DynamicHelperFrameFlags_ObjectArg, _Obj
 DYNAMICHELPER <DynamicHelperFrameFlags_ObjectArg OR DynamicHelperFrameFlags_ObjectArg2>, _ObjObj
 
 endif ; FEATURE_READYTORUN
+
+ifdef FEATURE_TIERED_COMPILATION
+
+EXTERN _OnCallCountThresholdReached@8:proc
+
+_OnCallCountThresholdReachedStub@0 proc public
+    ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
+    pop     eax
+    jmp     _OnCallCountThresholdReachedStub2@0
+_OnCallCountThresholdReachedStub@0 endp
+
+_OnCallCountThresholdReachedStub2@0 proc public
+    STUB_PROLOG
+
+    mov     esi, esp
+
+    push    eax ; stub-identifying token, see OnCallCountThresholdReachedStub
+    push    esi ; TransitionBlock *
+    call    _OnCallCountThresholdReached@8
+
+    STUB_EPILOG
+    jmp     eax
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+_OnCallCountThresholdReachedStub2@0 endp
+
+endif ; FEATURE_TIERED_COMPILATION
 
     end

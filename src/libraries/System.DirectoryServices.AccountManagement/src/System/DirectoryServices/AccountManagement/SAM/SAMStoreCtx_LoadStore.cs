@@ -485,11 +485,10 @@ namespace System.DirectoryServices.AccountManagement
 
             string name;
             string domainName;
-            int accountUsage;
 
             // Map the SID to a machine and account name
             // If this fails, there's no match
-            int err = Utils.LookupSid(this.MachineUserSuppliedName, _credentials, sid, out name, out domainName, out accountUsage);
+            int err = Utils.LookupSid(this.MachineUserSuppliedName, _credentials, sid, out name, out domainName, out _);
 
             if (err != 0)
             {
@@ -784,7 +783,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             byte[] sid = (byte[])de.Properties["objectSid"][0];
 
-            string stringizedSid = Utils.ByteArrayToString(sid);
             string sddlSid = Utils.ConvertSidToSDDL(sid);
             SecurityIdentifier SidObj = new SecurityIdentifier(sddlSid);
             p.LoadValueIntoProperty(propertyName, (object)SidObj);

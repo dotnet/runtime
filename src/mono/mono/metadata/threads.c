@@ -1356,8 +1356,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	mono_threads_lock ();
 	if (shutting_down && !(flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE)) {
 		mono_threads_unlock ();
-		mono_error_set_execution_engine (error, "Couldn't create thread. Runtime is shutting down.");
-		return FALSE;
+		/* We're already shutting down, don't create the new
+		 * thread. Instead detach and exit from the current thread.
+		 * Don't expect mono_threads_set_shutting_down to return.
+		 */
+		mono_threads_set_shutting_down ();
+		g_assert_not_reached ();
 	}
 	if (threads_starting_up == NULL) {
 		threads_starting_up = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Starting Table");
@@ -1712,6 +1716,11 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 	gboolean res;
 	MonoThread *this_obj = MONO_HANDLE_RAW (thread_handle);
 	MonoObject *start = MONO_HANDLE_RAW (start_handle);
+
+#ifdef DISABLE_THREADS
+	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
+	return FALSE;
+#endif
 
 	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this_obj, start));
 
@@ -2309,6 +2318,22 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	guint32 timeoutLeft = timeout;
 
 	MonoW32HandleWaitRet ret;
+
+#ifdef DISABLE_THREADS
+	if (numhandles == 1 && timeout == MONO_INFINITE_WAIT) {
+		gboolean signalled = FALSE;
+		for (int i = 0; i < numhandles; ++i) {
+			if (mono_w32handle_handle_is_owned (handles [i]) || mono_w32handle_handle_is_signalled (handles [i])) {
+				signalled = TRUE;
+				break;
+			}
+		}
+		if (!signalled) {
+			mono_error_set_synchronization_lock (error, "Cannot wait on events on this runtime.");
+			return 0;
+		}
+	}
+#endif
 
 	HANDLE_LOOP_PREPARE;
 
@@ -6519,6 +6544,9 @@ summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, si
 		mono_get_eh_callbacks ()->mono_summarize_managed_stack (threads [i]);
 	}
 
+	/* The value of the breadcrumb should match the "StackHash" value written by `mono_merp_write_fingerprint_payload` */
+	mono_create_crash_hash_breadcrumb (controlling);
+
 	MonoStateWriter writer;
 	memset (&writer, 0, sizeof (writer));
 
@@ -6723,12 +6751,12 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
-
 #ifdef DISABLE_THREADS
-	mono_error_set_not_supported (error, NULL);
+	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif
+
+	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
 
 	LOCK_THREAD (internal);
 

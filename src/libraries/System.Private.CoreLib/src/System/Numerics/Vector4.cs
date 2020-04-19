@@ -130,17 +130,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float ls = Vector4.Dot(this, this);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float ls = X * X + Y * Y + Z * Z + W * W;
-
-                return MathF.Sqrt(ls);
-            }
+            float ls = Vector4.Dot(this, this);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -150,14 +141,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                return Vector4.Dot(this, this);
-            }
-            else
-            {
-                return X * X + Y * Y + Z * Z + W * W;
-            }
+            return Vector4.Dot(this, this);
         }
         #endregion Public Instance Methods
 
@@ -171,23 +155,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector4 value1, Vector4 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector4 difference = value1 - value2;
-                float ls = Vector4.Dot(difference, difference);
-                return MathF.Sqrt(ls);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-                float dz = value1.Z - value2.Z;
-                float dw = value1.W - value2.W;
-
-                float ls = dx * dx + dy * dy + dz * dz + dw * dw;
-
-                return MathF.Sqrt(ls);
-            }
+            Vector4 difference = value1 - value2;
+            float ls = Vector4.Dot(difference, difference);
+            return MathF.Sqrt(ls);
         }
 
         /// <summary>
@@ -199,20 +169,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector4 value1, Vector4 value2)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                Vector4 difference = value1 - value2;
-                return Vector4.Dot(difference, difference);
-            }
-            else
-            {
-                float dx = value1.X - value2.X;
-                float dy = value1.Y - value2.Y;
-                float dz = value1.Z - value2.Z;
-                float dw = value1.W - value2.W;
-
-                return dx * dx + dy * dy + dz * dz + dw * dw;
-            }
+            Vector4 difference = value1 - value2;
+            return Vector4.Dot(difference, difference);
         }
 
         /// <summary>
@@ -223,22 +181,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Normalize(Vector4 vector)
         {
-            if (Vector.IsHardwareAccelerated)
-            {
-                float length = vector.Length();
-                return vector / length;
-            }
-            else
-            {
-                float ls = vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z + vector.W * vector.W;
-                float invNorm = 1.0f / MathF.Sqrt(ls);
-
-                return new Vector4(
-                    vector.X * invNorm,
-                    vector.Y * invNorm,
-                    vector.Z * invNorm,
-                    vector.W * invNorm);
-            }
+            float length = vector.Length();
+            return vector / length;
         }
 
         /// <summary>

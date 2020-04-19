@@ -4,7 +4,6 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AssemblyBuilderTests.cs" />
     <Compile Include="OpCodesTests.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderDefineParameter.cs" />

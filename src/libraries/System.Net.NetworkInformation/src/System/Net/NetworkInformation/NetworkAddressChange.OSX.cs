@@ -21,16 +21,16 @@ namespace System.Net.NetworkInformation
 
         // The dynamic store. We listen to changes in the IPv4 and IPv6 address keys.
         // When those keys change, our callback below is called (OnAddressChanged).
-        private static SafeCreateHandle s_dynamicStoreRef;
+        private static SafeCreateHandle? s_dynamicStoreRef;
 
         // The callback used when registered keys in the dynamic store change.
         private static readonly Interop.SystemConfiguration.SCDynamicStoreCallBack s_storeCallback = OnAddressChanged;
 
         // The RunLoop source, created over the above SCDynamicStore.
-        private static SafeCreateHandle s_runLoopSource;
+        private static SafeCreateHandle? s_runLoopSource;
 
         // Listener thread that adds the RunLoopSource to its RunLoop.
-        private static Thread s_runLoopThread;
+        private static Thread? s_runLoopThread;
 
         // The listener thread's CFRunLoop.
         private static CFRunLoopRef s_runLoop;
@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation
         private static readonly AutoResetEvent s_runLoopStartedEvent = new AutoResetEvent(false);
         private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
 
-        public static event NetworkAddressChangedEventHandler NetworkAddressChanged
+        public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
             {
@@ -78,7 +78,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
             {
@@ -193,7 +193,7 @@ namespace System.Net.NetworkInformation
             s_runLoop = Interop.RunLoop.CFRunLoopGetCurrent();
             Interop.RunLoop.CFRunLoopAddSource(
                 s_runLoop,
-                s_runLoopSource.DangerousGetHandle(),
+                s_runLoopSource!.DangerousGetHandle(),
                 Interop.RunLoop.kCFRunLoopDefaultMode.DangerousGetHandle());
 
             s_runLoopStartedEvent.Set();
@@ -209,7 +209,7 @@ namespace System.Net.NetworkInformation
             s_runLoopSource.Dispose();
             s_runLoopSource = null;
 
-            s_dynamicStoreRef.Dispose();
+            s_dynamicStoreRef!.Dispose();
             s_dynamicStoreRef = null;
 
             s_runLoopEndedEvent.Set();
@@ -230,28 +230,28 @@ namespace System.Net.NetworkInformation
 
         private static void OnAddressChanged(IntPtr store, IntPtr changedKeys, IntPtr info)
         {
-            Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> addressChangedSubscribers = null;
-            Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> availabilityChangedSubscribers = null;
+            Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;
+            Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>? availabilityChangedSubscribers = null;
 
             lock (s_lockObj)
             {
                 if (s_addressChangedSubscribers.Count > 0)
                 {
-                    addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>(s_addressChangedSubscribers);
+                    addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>(s_addressChangedSubscribers);
                 }
                 if (s_availabilityChangedSubscribers.Count > 0)
                 {
-                    availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext>(s_availabilityChangedSubscribers);
+                    availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>(s_availabilityChangedSubscribers);
                 }
             }
 
             if (addressChangedSubscribers != null)
             {
-                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext>
+                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                     subscriber in addressChangedSubscribers)
                 {
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
-                    ExecutionContext ec = subscriber.Value;
+                    ExecutionContext? ec = subscriber.Value;
 
                     if (ec == null) // Flow supressed
                     {
@@ -269,11 +269,11 @@ namespace System.Net.NetworkInformation
                 bool isAvailable = NetworkInterface.GetIsNetworkAvailable();
                 NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
                 ContextCallback callbackContext = isAvailable ? s_runHandlerAvailable : s_runHandlerNotAvailable;
-                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext>
+                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext?>
                     subscriber in availabilityChangedSubscribers)
                 {
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
-                    ExecutionContext ec = subscriber.Value;
+                    ExecutionContext? ec = subscriber.Value;
 
                     if (ec == null) // Flow supressed
                     {

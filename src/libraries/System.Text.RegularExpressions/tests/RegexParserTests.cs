@@ -349,6 +349,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-[b]] ", RegexOptions.None, null)]
         [InlineData(@"[a-b-[c]] ", RegexOptions.None, null)]
         [InlineData(@"[a-[b]-c] ", RegexOptions.None, RegexParseError.SubtractionMustBeLast)]
+        [InlineData(@"[a-z-[b]12]", RegexOptions.None, RegexParseError.SubtractionMustBeLast)]
         [InlineData(@"[[a]-b] ", RegexOptions.None, null)]
         [InlineData(@"[[a]-[b]] ", RegexOptions.None, null)]
         [InlineData(@"[\w-a] ", RegexOptions.None, null)]
@@ -587,6 +588,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?imn", RegexOptions.None, RegexParseError.UnrecognizedGrouping)]
         [InlineData(@"(?'cat'", RegexOptions.None, RegexParseError.NotEnoughParentheses)]
         [InlineData(@"(?'", RegexOptions.None, RegexParseError.UnrecognizedGrouping)]
+        [InlineData(@"(?'=)", RegexOptions.None, RegexParseError.UnrecognizedGrouping)]
+        [InlineData(@"(?'!)", RegexOptions.None, RegexParseError.UnrecognizedGrouping)]
         [InlineData(@"[^", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         [InlineData(@"[cat", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         [InlineData(@"[^cat", RegexOptions.None, RegexParseError.UnterminatedBracket)]
@@ -815,7 +818,9 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegexParseException_Serializes()
         {
+#pragma warning disable RE0001 // Regex issue: Not enough )'s
             ArgumentException e = Assert.ThrowsAny<ArgumentException>(() => new Regex("(abc|def"));
+#pragma warning restore RE0001 // Regex issue: Not enough )'s
 
             var bf = new BinaryFormatter();
             var s = new MemoryStream();

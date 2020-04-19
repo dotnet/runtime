@@ -10,11 +10,6 @@
  **                                                                                  **
  **************************************************************************************/
 
-cpp_quote("#define DECLARE_DEPRECATED ")
-cpp_quote("#define DEPRECATED_CLR_STDAPI STDAPI")
-
-cpp_quote("")
-
 //
 // Interface descriptions
 //
@@ -301,7 +296,3 @@ interface ICLRRuntimeHost4 : ICLRRuntimeHost2
                                           [in] BOOL fWaitUntilDone,
                                           [out] int *pLatchedExitCode);
 };
-
-cpp_quote("#undef DEPRECATED_CLR_STDAPI")
-cpp_quote("#undef DECLARE_DEPRECATED")
-cpp_quote("#undef DEPRECATED_CLR_API_MESG")

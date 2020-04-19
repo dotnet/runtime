@@ -65,7 +65,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(MonthNames_SetInvalidLength_TestData))]
-        public void MonthNames_SetNullValueInValues_ThrowsArgumentNullException(string[] value)
+        public void MonthNames_SetNullValueInValues_ThrowsArgumentException(string[] value)
         {
             var format = new DateTimeFormatInfo();
             AssertExtensions.Throws<ArgumentException>("value", () => format.MonthNames = value);

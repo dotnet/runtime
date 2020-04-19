@@ -837,16 +837,9 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError GetSockName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetSockName(SafeSocketHandle handle, byte* buffer, int* nameLen)
         {
-            Interop.Error err;
-            int addrLen = nameLen;
-            fixed (byte* rawBuffer = buffer)
-            {
-                err = Interop.Sys.GetSockName(handle, rawBuffer, &addrLen);
-            }
-
-            nameLen = addrLen;
+            Interop.Error err = Interop.Sys.GetSockName(handle, buffer, nameLen);
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
@@ -1218,6 +1211,27 @@ namespace System.Net.Sockets
             }
         }
 
+        public static unsafe SocketError SetRawSockOpt(SafeSocketHandle handle, int optionLevel, int optionName, ReadOnlySpan<byte> optionValue)
+        {
+            fixed (byte* optionValuePtr = optionValue)
+            {
+                Interop.Error err = Interop.Sys.SetRawSockOpt(handle, optionLevel, optionName, optionValuePtr, optionValue.Length);
+
+                if (err == Interop.Error.SUCCESS)
+                {
+                    // When dealing with SocketOptionLevel/SocketOptionName, we know what the values mean and can use GetErrorAndTrackSetting
+                    // to keep track of changed values.  But since we don't know what these levels/names mean (hence, "raw"), we have to
+                    // assume it's not tracked, and thus call SetExposed.  It's a reasonable assumption, given that the only values we
+                    // track are ones for which we have portable names, and if a portable name exists for it, why would the caller choose
+                    // the more difficult path of using the "raw" level/name?
+                    handle.SetExposed();
+                    return SocketError.Success;
+                }
+
+                return GetSocketErrorForErrorCode(err);
+            }
+        }
+
         public static unsafe SocketError SetMulticastOption(SafeSocketHandle handle, SocketOptionName optionName, MulticastOption optionValue)
         {
             Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership, $"Unexpected optionName: {optionName}");
@@ -1356,6 +1370,25 @@ namespace System.Net.Sockets
             }
 
             return GetSocketErrorForErrorCode(err);
+        }
+
+        public static unsafe SocketError GetRawSockOpt(SafeSocketHandle handle, int optionLevel, int optionName, Span<byte> optionValue, ref int optionLength)
+        {
+            Debug.Assert((uint)optionLength <= optionValue.Length);
+
+            int optLen = optionLength;
+            fixed (byte* pinnedValue = optionValue)
+            {
+                Interop.Error err = Interop.Sys.GetRawSockOpt(handle, optionLevel, optionName, pinnedValue, &optLen);
+
+                if (err == Interop.Error.SUCCESS)
+                {
+                    optionLength = optLen;
+                    return SocketError.Success;
+                }
+
+                return GetSocketErrorForErrorCode(err);
+            }
         }
 
         public static unsafe SocketError GetMulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out MulticastOption? optionValue)
@@ -1806,7 +1839,7 @@ namespace System.Net.Sockets
             asyncResult.SocketAddress = socketAddress;
 
             bool isIPv4, isIPv6;
-            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject).AddressFamily, socketAddress, out isIPv4, out isIPv6);
+            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject!).AddressFamily, socketAddress, out isIPv4, out isIPv6);
 
             int socketAddressSize = socketAddress.InternalSize;
             int bytesReceived;

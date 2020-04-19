@@ -28,7 +28,7 @@
 
   <Target Name="SignCombinedInstallers"
           Condition="
-            '$(OSGroup)' == 'Windows_NT' and
+            '$(TargetOS)' == 'Windows_NT' and
             '$(SkipSigning)' != 'true'"
           DependsOnTargets="
             EnsureSignedBurnEngineFiles;
@@ -50,29 +50,29 @@
       Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedR2RBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedR2RBinaries" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignR2RBinaries.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedMsiFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedMsiFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignMsiFiles.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignBurnEngineFiles.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignBurnBundleFiles.proj" Targets="Build" />
   </Target>
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
     <ItemGroup>
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(InstallerProject)" Targets="GenerateInstallers" />
+    <MSBuild Projects="@(_InstallerProject)" Targets="GenerateInstallers" />
   </Target>
 
   <Target Name="InitPackage">
@@ -81,6 +81,7 @@
       <OutDirs Include="$(HostFxrPublishRoot)" />
       <OutDirs Include="$(SharedFrameworkPublishRoot)" />
       <OutDirs Include="$(NetHostPublishRoot)" />
+      <OutDirs Include="$(Crossgen2PublishRoot)" />
     </ItemGroup>
 
     <RemoveDir Directories="@(OutDirs)" />
@@ -113,6 +114,15 @@
     </ItemGroup>
     <Copy Sourcefiles="@(SharedFxFiles)"
           DestinationFolder="$(SharedFrameworkPublishRoot)shared/%(SharedFxFiles.RecursiveDir)" />
+    
+    <!-- copy crossgen2 -->
+    <ItemGroup>
+      <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)\*" />
+      <Crossgen2Files Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT" />
+      <Crossgen2Files Include="$(RepoRoot)LICENSE.TXT" />
+    </ItemGroup>
+    <Copy Sourcefiles="@(Crossgen2Files)"
+          DestinationFolder="$(Crossgen2PublishRoot)%(Crossgen2Files.RecursiveDir)" />
 
     <!-- Copy nethost -->
     <PropertyGroup>
@@ -122,22 +132,22 @@
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
       <NetHostFiles Include="$(_NetHostOutputDir)$(LibPrefix)nethost$(LibSuffix)" />
       <NetHostFiles Include="$(_NetHostOutputDir)$(StaticLibPrefix)nethost$(StaticLibSuffix)" />
-      <NetHostFiles Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
+      <NetHostFiles Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
     </ItemGroup>
     <Copy SourceFiles="@(NetHostFiles)"
           DestinationFolder="$(NetHostPublishRoot)" />
 
     <!-- Fix file permits -->
     <!-- Reset everything to user readable/writeable and group and world readable. -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*" -exec chmod 644 {} \;' />
     <!-- Generally, dylibs and sos have 'x' -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*.dylib" -exec chmod 755 {} \;' />
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*.so" -exec chmod 755 {} \;' />
     <!-- Executables (those without dots) are executable -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f ! -name "*.*" -exec chmod 755 {} \;' />
 
 
@@ -180,7 +190,7 @@
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateZip"
-          Condition="'$(OSGroup)'=='Windows_NT'">
+          Condition="'$(TargetOS)'=='Windows_NT'">
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(CombinedPublishRoot)"
@@ -198,6 +208,11 @@
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
+        SourceDirectory="$(Crossgen2PublishRoot)"
+        DestinationArchive="$(AssetOutputPath)$(Crossgen2CompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
         SourceDirectory="$(SharedFrameworkPublishRoot)"
         DestinationArchive="$(AssetOutputPath)$(SharedFrameworkCompressedFile)"
         OverwriteDestination="true" />
@@ -209,7 +224,7 @@
   </Target>
 
   <Target Name="GenerateTarBall"
-          Condition="'$(OSGroup)'!='Windows_NT'">
+          Condition="'$(TargetOS)'!='Windows_NT'">
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->
@@ -222,6 +237,9 @@
     <Exec Command="tar -C $(NetHostPublishRoot) -czf $(AssetOutputPath)$(NetHostCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(Crossgen2PublishRoot) -czf $(AssetOutputPath)$(Crossgen2CompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(AssetOutputPath)$(SharedFrameworkCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
@@ -231,6 +249,7 @@
     <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(CombinedCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(HostFxrCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(NetHostCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(NetHostCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(Crossgen2CompressedFile)')" Message="Unable to create $(AssetOutputPath)$(Crossgen2CompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>

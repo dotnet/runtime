@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation
         private readonly Interop.IpHlpApi.StableUnicastIpAddressTableDelegate _onStabilizedDelegate;
 
         // Used to cancel notification after receiving the first callback, or when the AppDomain is going down.
-        private SafeCancelMibChangeNotify _cancelHandle;
+        private SafeCancelMibChangeNotify? _cancelHandle;
 
         private TeredoHelper(Action<object> callback, object state)
         {
@@ -63,7 +63,7 @@ namespace System.Net.NetworkInformation
             TeredoHelper helper = new TeredoHelper(callback, state);
 
             uint err = Interop.IpHlpApi.ERROR_SUCCESS;
-            SafeFreeMibTable table = null;
+            SafeFreeMibTable table;
 
             lock (s_pendingNotifications)
             {
@@ -105,7 +105,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private void RunCallback(object o)
+        private void RunCallback(object? o)
         {
             if (!_runCallbackCalled)
             {

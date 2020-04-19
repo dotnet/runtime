@@ -38,20 +38,6 @@ namespace System.Net.Sockets
 
         private void CompleteCore() { }
 
-        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
-        {
-            Debug.Assert(socketError != SocketError.IOPending);
-
-            if (socketError == SocketError.Success)
-            {
-                FinishOperationSyncSuccess(bytesTransferred, flags);
-            }
-            else
-            {
-                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
-            }
-        }
-
         private void AcceptCompletionCallback(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
             CompleteAcceptOperation(acceptedFileDescriptor, socketAddress, socketAddressSize, socketError);
@@ -94,6 +80,9 @@ namespace System.Net.Sockets
         {
             CompletionCallback(0, SocketFlags.None, socketError);
         }
+
+        internal unsafe SocketError DoOperationConnectEx(Socket socket, SafeSocketHandle handle)
+            => DoOperationConnect(socket, handle);
 
         internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
         {

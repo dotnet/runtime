@@ -41,7 +41,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset)
         {
-            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader.GetGlobalMetadataReader(), r2rReader, imageOffset);
             string result = decoder.ReadR2RSignature();
             return result;
         }
@@ -351,7 +351,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly MetadataReader _metadataReader;
 
         /// <summary>
-        /// ECMA reader representing the top-level signature context.
+        /// Outer ECMA reader is used as the default context for generic parameters.
+        /// </summary>
+        private readonly MetadataReader _outerReader;
+
+        /// <summary>
+        /// ECMA reader representing the reference module of the signature being decoded.
         /// </summary>
         private readonly ReadyToRunReader _contextReader;
 
@@ -381,9 +386,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="options">Dump options and paths</param>
         /// <param name="r2rReader">R2RReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public SignatureDecoder(IAssemblyResolver options, ReadyToRunReader r2rReader, int offset)
+        public SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset)
         {
-            _metadataReader = r2rReader.GetGlobalMetadataReader();
+            _metadataReader = metadataReader;
+            _outerReader = metadataReader;
             _options = options;
             _image = r2rReader.Image;
             _offset = offset;
@@ -397,13 +403,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="metadataReader">Metadata reader for the R2R image</param>
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Signature offset within the signature byte array</param>
+        /// <param name="outerReader">Metadata reader representing the outer signature context</param>
         /// <param name="contextReader">Top-level signature context reader</param>
-        private SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, byte[] signature, int offset, ReadyToRunReader contextReader)
+        private SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, byte[] signature, int offset, MetadataReader outerReader, ReadyToRunReader contextReader)
         {
-            _metadataReader = metadataReader;
             _options = options;
+            _metadataReader = metadataReader;
             _image = signature;
             _offset = offset;
+            _outerReader = outerReader;
             _contextReader = contextReader;
         }
 
@@ -639,7 +647,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
                 int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
                 MetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, _contextReader);
+                moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, refAsmEcmaReader, _contextReader);
             }
 
             moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
@@ -831,6 +839,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     // TODO
                     break;
 
+                case ReadyToRunFixupKind.Check_InstructionSetSupport:
+                    builder.Append("CHECK_InstructionSetSupport");
+                    uint countOfInstructionSets = ReadUIntAndEmitInlineSignatureBinary(builder);
+                    for (uint i = 0; i < countOfInstructionSets; i++)
+                    {
+                        uint instructionSetEncoded = ReadUIntAndEmitInlineSignatureBinary(builder);
+                        ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+                        bool supported = (instructionSetEncoded & 1) == 1;
+                        builder.Append($" {instructionSet}{(supported ? "+" : "-")}");
+                    }
+                    break;
 
                 case ReadyToRunFixupKind.DelegateCtor:
                     ParseMethod(builder);
@@ -1066,7 +1085,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
                         MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                        SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset, _contextReader);
+                        SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset, _outerReader, _contextReader);
                         refAsmDecoder.ParseType(builder);
                         _offset = refAsmDecoder.Offset;
                     }
@@ -1098,6 +1117,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             ParseType(builder);
             uint typeArgCount = ReadUIntAndEmitInlineSignatureBinary(builder);
+            SignatureDecoder outerDecoder = new SignatureDecoder(_options, _outerReader, _image, _offset, _outerReader, _contextReader);
             builder.Append("<");
             for (uint paramIndex = 0; paramIndex < typeArgCount; paramIndex++)
             {
@@ -1105,9 +1125,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     builder.Append(", ");
                 }
-                ParseType(builder);
+                outerDecoder.ParseType(builder);
             }
             builder.Append(">");
+            _offset = outerDecoder.Offset;
         }
 
         private void ParseTypeToken(StringBuilder builder)
@@ -1141,9 +1162,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _metadataReader, _image, _offset, _contextReader);
-                owningTypeOverride = owningTypeDecoder.ReadTypeSignatureNoEmit();
-                _offset = owningTypeDecoder._offset;
+                owningTypeOverride = ReadTypeSignatureNoEmit();
             }
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
             {
@@ -1364,6 +1383,14 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
+                    break;
+
+                case ReadyToRunHelper.ReversePInvokeEnter:
+                    builder.Append("REVERSE_PINVOKE_ENTER");
+                    break;
+
+                case ReadyToRunHelper.ReversePInvokeExit:
+                    builder.Append("REVERSE_PINVOKE_EXIT");
                     break;
 
                 // Get string handle lazily

@@ -11,6 +11,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
+using FluentAssertions;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -82,95 +83,81 @@ namespace Microsoft.NET.HostModel.Tests
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
         }
 
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
         [Theory]
-        public void TestFilesNotBundled(bool embedPDBs)
+        public void TestFilesAlwaysBundled(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
+            var bundler = BundleHelper.Bundle(fixture, options);
+            var bundledFiles = BundleHelper.GetBundledFiles(fixture);
 
-            var hostName = BundleHelper.GetHostName(fixture);
-            var appName = Path.GetFileNameWithoutExtension(hostName);
+            Array.ForEach(bundledFiles, file => bundler.BundleManifest.Contains(file).Should().BeTrue());
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void TestFilesNeverBundled(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var appBaseName =  BundleHelper.GetAppBaseName(fixture);
             string publishPath = BundleHelper.GetPublishPath(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
             
             // Make up a app.runtimeconfig.dev.json file in the publish directory.
-            File.Copy(Path.Combine(publishPath, $"{appName}.runtimeconfig.json"), 
-                      Path.Combine(publishPath, $"{appName}.runtimeconfig.dev.json"));
+            File.Copy(Path.Combine(publishPath, $"{appBaseName}.runtimeconfig.json"), 
+                      Path.Combine(publishPath, $"{appBaseName}.runtimeconfig.dev.json"));
 
-            var singleFile = new Bundler(hostName, bundleDir.FullName, embedPDBs).GenerateBundle(publishPath);
+            var bundler = BundleHelper.Bundle(fixture, options);
 
-            bundleDir.Should().OnlyHaveFiles(new string[] { hostName });
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-
-            bundleDir.Should().NotHaveFile($"{appName}.runtimeconfig.dev.json");
-            if (!embedPDBs)
-            {
-                bundleDir.Should().NotHaveFile($"{appName}.pdb");
-            }
+            bundler.BundleManifest.Contains($"{appBaseName}.runtimeconfig.dev.json").Should().BeFalse();
         }
 
-        [Fact]
-        public void ExtractingANonBundleFails()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void TestBundlingSymbols(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
+            var appBaseName = BundleHelper.GetAppBaseName(fixture);
+            var bundler = BundleHelper.Bundle(fixture, options);
 
-            var hostName = BundleHelper.GetHostName(fixture);
-            var hostExe = Path.Combine(BundleHelper.GetPublishPath(fixture), hostName);
-
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-            Extractor extractor = new Extractor(hostExe, "extract");
-            Assert.Throws<BundleException>(() => extractor.ExtractFiles());
+            bundler.BundleManifest.Contains($"{appBaseName}.pdb").Should().Be(options.HasFlag(BundleOptions.BundleSymbolFiles));
         }
 
-        [Fact]
-        public void AllBundledFilesAreExtracted()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [Theory]
+        public void TestBundlingNativeBinaries(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
+            var coreclr = Path.GetFileName(fixture.TestProject.CoreClrDll);
+            var bundler = BundleHelper.Bundle(fixture, options);
 
-            var hostName = BundleHelper.GetHostName(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-
-            var bundler = new Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
-
-            var expectedFiles = new List<string>(bundler.BundleManifest.Files.Count);
-            expectedFiles.Add(hostName);
-            bundler.BundleManifest.Files.ForEach(file => expectedFiles.Add(file.RelativePath));
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-            bundleDir.Should().OnlyHaveFiles(expectedFiles);
+            bundler.BundleManifest.Contains($"{coreclr}").Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
         }
 
         [Fact]
         public void TestAssemblyAlignment()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
-            var hostName = BundleHelper.GetHostName(fixture);
-            var appName = Path.GetFileNameWithoutExtension(hostName);
-            string publishPath = BundleHelper.GetPublishPath(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-
-            var bundler = new Bundler(hostName, bundleDir.FullName);
-            bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
+            var bundler = BundleHelper.Bundle(fixture);
 
             bundler.BundleManifest.Files.ForEach(file => 
-                Assert.True((file.Type != FileType.IL && file.Type != FileType.Ready2Run) ||
-                            (file.Offset % Bundler.AssemblyAlignment == 0)));
+                Assert.True((file.Type != FileType.Assembly) || (file.Offset % Bundler.AssemblyAlignment == 0)));
         }
 
         [Fact]
         public void TestWithAdditionalContentAfterBundleMetadata()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
-            var hostName = BundleHelper.GetHostName(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-
-            var bundler = new Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
+            string singleFile = BundleHelper.BundleApp(fixture);
 
             using (var file = File.OpenWrite(singleFile))
             {

@@ -66,7 +66,7 @@ package() {
             tools-local/tasks/installer.tasks/installer.tasks.csproj \
             /t:Restore /t:Build /t:CreateHostMachineInfoFile \
             /p:Configuration=Release \
-            /p:OSGroup=Linux \
+            /p:TargetOS=Linux \
             /p:PortableBuild=false \
             /p:TargetArchitecture=x64 \
             /bl:artifacts/msbuild.$name.traversaldependencies.binlog;
@@ -79,7 +79,7 @@ package() {
             /p:InstallerSourceOSPlatformConfig=linux-x64.Release \
             /p:GenerateProjectInstallers=true \
             /p:Configuration=Release \
-            /p:OSGroup=Linux \
+            /p:TargetOS=Linux \
             /p:PortableBuild=false \
             /p:TargetArchitecture=x64 \
             /bl:artifacts/msbuild.$name.installers.binlog"
@@ -96,7 +96,6 @@ package() {
     ./build.sh \
     -c Release \
     /p:PortableBuild=true \
-    /p:StripSymbols=true \
     /p:TargetArchitecture=x64 \
     /bl:artifacts/msbuild.portable.binlog
 

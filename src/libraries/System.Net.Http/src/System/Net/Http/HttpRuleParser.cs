@@ -246,7 +246,7 @@ namespace System.Net.Http
             return current - startIndex;
         }
 
-        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string host)
+        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string? host)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
@@ -425,8 +425,7 @@ namespace System.Net.Http
         private static bool IsValidHostName(string host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            Uri hostUri;
-            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out hostUri);
+            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out Uri? hostUri);
         }
     }
 }

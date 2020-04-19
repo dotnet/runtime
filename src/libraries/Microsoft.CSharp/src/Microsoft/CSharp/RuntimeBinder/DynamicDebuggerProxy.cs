@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -415,6 +416,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             return value;
         }
 
+#if ENABLECOMBINDER
+        [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+        private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+#endif
+
         private static IList<KeyValuePair<string, object>> QueryDynamicObject(object obj)
         {
             IDynamicMetaObjectProvider ido = obj as IDynamicMetaObjectProvider;
@@ -436,7 +442,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 return result;
             }
-
+#if ENABLECOMBINDER
+            else if (obj != null && ComObjectType.IsAssignableFrom(obj.GetType()))
+            {
+                IList<string> names = ComInterop.ComBinder.GetDynamicDataMemberNames(obj);
+                return ComInterop.ComBinder.GetDynamicDataMembers(obj, names.OrderBy(n => n));
+            }
+#endif
             return Array.Empty<KeyValuePair<string, object>>();
         }
 

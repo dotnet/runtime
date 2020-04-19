@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -38,6 +37,7 @@ namespace System.Text.Json
             jsonPropertyInfo.Options = options;
             jsonPropertyInfo.PropertyInfo = propertyInfo;
             jsonPropertyInfo.DeterminePropertyName();
+            jsonPropertyInfo.IsIgnored = true;
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
@@ -92,12 +92,20 @@ namespace System.Text.Json
             PropertyNameKey = key;
         }
 
-        private void DetermineSerializationCapabilities()
+        private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
         {
             if ((ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
+
+                // Three possible values for ignoreCondition:
+                // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties wins
+                // WhenNull = only ignore when null, global IgnoreReadOnlyProperties loses
+                // Never = never ignore (always include), global IgnoreReadOnlyProperties loses
+                bool serializeReadOnlyProperty = ignoreCondition != null || !Options.IgnoreReadOnlyProperties;
+
                 // We serialize if there is a getter + not ignoring readonly properties.
-                ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
+                ShouldSerialize = HasGetter && (HasSetter || serializeReadOnlyProperty);
 
                 // We deserialize if there is a setter.
                 ShouldDeserialize = HasSetter;
@@ -118,6 +126,25 @@ namespace System.Text.Json
             }
         }
 
+        private void DetermineIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
+        {
+            if (ignoreCondition != null)
+            {
+                Debug.Assert(PropertyInfo != null);
+                Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
+
+                if (ignoreCondition != JsonIgnoreCondition.Never)
+                {
+                    Debug.Assert(ignoreCondition == JsonIgnoreCondition.WhenNull);
+                    IgnoreNullValues = true;
+                }
+            }
+            else
+            {
+                IgnoreNullValues = Options.IgnoreNullValues;
+            }
+        }
+
         // The escaped name passed to the writer.
         // Use a field here (not a property) to avoid value semantics.
         public JsonEncodedText? EscapedName;
@@ -130,11 +157,11 @@ namespace System.Text.Json
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
-        public virtual void GetPolicies()
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition)
         {
-            DetermineSerializationCapabilities();
+            DetermineSerializationCapabilities(ignoreCondition);
             DeterminePropertyName();
-            IgnoreNullValues = Options.IgnoreNullValues;
+            DetermineIgnoreCondition(ignoreCondition);
         }
 
         public abstract object? GetValueAsObject(object obj);
@@ -149,6 +176,7 @@ namespace System.Text.Json
             ClassType runtimeClassType,
             PropertyInfo? propertyInfo,
             JsonConverter converter,
+            JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
         {
             Debug.Assert(converter != null);
@@ -194,8 +222,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)
-                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(typeof(object));
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -212,8 +239,7 @@ namespace System.Text.Json
                 Debug.Assert(propValue is IDictionary<string, JsonElement>);
                 IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
 
-                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
-                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
 
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
                 {
@@ -227,6 +253,30 @@ namespace System.Text.Json
         }
 
         public abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+
+        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+
+        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        {
+            Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
+
+            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            {
+                value = null;
+                return true;
+            }
+
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+            if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
+            {
+                // JsonElement is a struct that must be read in full.
+                value = null;
+                return false;
+            }
+
+            value = jsonElement;
+            return true;
+        }
 
         public Type ParentClassType { get; private set; } = null!;
 
@@ -251,5 +301,6 @@ namespace System.Text.Json
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
+        public bool IsIgnored { get; private set; }
     }
 }

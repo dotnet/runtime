@@ -440,13 +440,14 @@ struct BasicBlock : private LIR::Range
                                            // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
                                            // finally.
 
-#define BBF_CLONED_FINALLY_BEGIN    0x100000000 // First block of a cloned finally region
-#define BBF_CLONED_FINALLY_END      0x200000000 // Last block of a cloned finally region
-#define BBF_HAS_CALL                0x400000000 // BB contains a call
+#define BBF_CLONED_FINALLY_BEGIN           0x100000000 // First block of a cloned finally region
+#define BBF_CLONED_FINALLY_END             0x200000000 // Last block of a cloned finally region
+#define BBF_HAS_CALL                       0x400000000 // BB contains a call
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
+#define BBF_BACKWARD_JUMP_TARGET          0x1000000000 // Block is a target of a backward jump
+#define BBF_PATCHPOINT                    0x2000000000 // Block is a patchpoint
 
 // clang-format on
-
-#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
 
 // Flags that relate blocks to loop structure.
 
@@ -845,11 +846,6 @@ struct BasicBlock : private LIR::Range
     // The following fields are used for loop detection
     typedef unsigned char loopNumber;
     static const unsigned NOT_IN_LOOP = UCHAR_MAX;
-
-    // This is the label a loop gets as part of the second, reachability-based
-    // loop discovery mechanism.  This is apparently only used for debugging.
-    // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
-    INDEBUG(loopNumber bbLoopNum;) // set to 'n' for a loop #n header
 
     loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
                              // or else NOT_IN_LOOP if this block is not in a loop.

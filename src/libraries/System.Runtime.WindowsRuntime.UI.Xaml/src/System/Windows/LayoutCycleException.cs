@@ -26,13 +26,13 @@ namespace Windows.UI.Xaml
             HResult = HResults.E_LAYOUTCYCLE;
         }
 
-        public LayoutCycleException(string message)
+        public LayoutCycleException(string? message)
             : base(message)
         {
             HResult = HResults.E_LAYOUTCYCLE;
         }
 
-        public LayoutCycleException(string message, Exception innerException)
+        public LayoutCycleException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_LAYOUTCYCLE;

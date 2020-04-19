@@ -16,7 +16,7 @@ namespace System.Net.Http
         private bool _disposed;
         /// <summary>Circular singly-linked list of active waiters.</summary>
         /// <remarks>If null, the list is empty.  If non-null, this is the tail.  If the list has one item, its Next is itself.</remarks>
-        private CreditWaiter _waitersTail;
+        private CreditWaiter? _waitersTail;
 
         public CreditManager(IHttpTrace owner, string name, int initialCredit)
         {
@@ -102,7 +102,8 @@ namespace System.Net.Http
                 while (_current > 0 && _waitersTail != null)
                 {
                     // Get the waiter from the head of the queue.
-                    CreditWaiter waiter = _waitersTail.Next;
+                    CreditWaiter? waiter = _waitersTail.Next;
+                    Debug.Assert(waiter != null);
                     int granted = Math.Min(waiter.Amount, _current);
 
                     // Remove the waiter from the list.
@@ -139,12 +140,12 @@ namespace System.Net.Http
 
                 _disposed = true;
 
-                CreditWaiter waiter = _waitersTail;
+                CreditWaiter? waiter = _waitersTail;
                 if (waiter != null)
                 {
                     do
                     {
-                        CreditWaiter next = waiter.Next;
+                        CreditWaiter? next = waiter!.Next;
                         waiter.Next = null;
                         waiter.Dispose();
                         waiter = next;

@@ -5,6 +5,7 @@
 
     <InstallerName>dotnet-hostfxr</InstallerName>
     <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>

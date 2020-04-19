@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <!-- Get artifact locations to sign. -->
-  <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
   <ItemGroup>
     <!--
@@ -71,7 +72,6 @@
 
     <!-- Sign managed libraries in installer subset. -->
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.DotNet.PlatformAbstractions/**/*.dll" />
-    <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.Extensions.DependencyModel/**/*.dll" />
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
   </ItemGroup>
 

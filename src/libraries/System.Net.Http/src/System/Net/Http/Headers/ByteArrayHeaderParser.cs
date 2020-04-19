@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -24,7 +25,7 @@ namespace System.Net.Http.Headers
             return Convert.ToBase64String((byte[])value);
         }
 
-        public override bool TryParseValue(string value, object storeValue, ref int index, out object parsedValue)
+        public override bool TryParseValue(string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 

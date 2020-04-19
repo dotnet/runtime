@@ -3,7 +3,7 @@
 # initNonPortableDistroRid
 #
 # Input:
-#   buildOs: (str)
+#   targetOs: (str)
 #   buildArch: (str)
 #   isPortable: (int)
 #   rootfsDir: (str)
@@ -20,14 +20,6 @@
 # If -portablebuild=false is passed a non-portable rid will be created for any
 # distro.
 #
-# Below is the list of current non-portable platforms.
-#
-# Builds from the following *must* be non-portable:
-#
-#   |    OS     |           Expected RID            |
-#   -------------------------------------------------
-#   |  freeBSD  |        freebsd.(version)-x64      |
-#
 # It is important to note that the function does not return anything, but it
 # exports __DistroRid, if there is a non-portable distro rid to be used.
 #
@@ -36,12 +28,13 @@ initNonPortableDistroRid()
     # Make sure out parameter is cleared.
     __DistroRid=
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
     local rootfsDir="$4"
+    local nonPortableBuildID=""
 
-    if [ "$buildOs" = "Linux" ]; then
+    if [ "$targetOs" = "Linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -68,9 +61,15 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$buildOs" = "FreeBSD" ]; then
-        __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
-        nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+    if [ "$targetOs" = "FreeBSD" ]; then
+        if (( isPortable == 0 )); then
+            # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
+            __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
+            nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        fi
+    elif getprop ro.product.system.model 2>&1 | grep -qi android; then
+        __android_sdk_version=$(getprop ro.build.version.sdk)
+        nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
@@ -112,10 +111,13 @@ initDistroRidGlobal()
     # deprecated. Now only __DistroRid is supported. It will be used for both
     # portable and non-portable rids and will be used in build-packages.sh
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
-    local rootfsDir="$4"
+    local rootfsDir=""
+    if [ "$#" -ge 4 ]; then
+        rootfsDir="$4"
+    fi
 
     if [ -n "${rootfsDir}" ]; then
         # We may have a cross build. Check for the existance of the rootfsDir
@@ -132,7 +134,12 @@ initDistroRidGlobal()
         isPortable=0
     fi
 
-    initNonPortableDistroRid "${buildOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+    initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+
+    if [ "$buildArch" = "wasm" ]; then
+        __DistroRid=WebAssembly-wasm
+        export __DistroRid
+    fi
 
     if [ -z "${__DistroRid}" ]; then
         # The non-portable build rid was not set. Set the portable rid.
@@ -148,12 +155,22 @@ initDistroRidGlobal()
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$buildOs" = "Linux" ]; then
+            if [ "$targetOs" = "Linux" ]; then
                 distroRid="linux-$buildArch"
-            elif [ "$buildOs" = "OSX" ]; then
+            elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$buildOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "tvOS" ]; then
+                distroRid="tvos-$buildArch"
+            elif [ "$targetOs" = "iOS" ]; then
+                distroRid="ios-$buildArch"
+            elif [ "$targetOs" = "Android" ]; then
+                distroRid="android-$buildArch"
+            elif [ "$targetOs" = "WebAssembly" ]; then
+                distroRid="wasm-$buildArch"
+            elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
+            elif [ "$targetOs" = "SunOS" ]; then
+                distroRid="sunos-$buildArch"
             fi
         fi
 

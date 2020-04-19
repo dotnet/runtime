@@ -39,13 +39,6 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-// Flags used to store some runtime information for Event Tracing
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-GUID g_EEComObjectGuid=GUID_NULL;
-
-BOOL g_fEEHostedStartup = FALSE;
-
 #endif // FEATURE_REDHAWK
 
 #include "eventtracepriv.h"
@@ -4939,13 +4932,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             UINT8 startupMode = 0;
             UINT startupFlags = 0;
             PathString dllPath;
-            UINT8 Sku = 0;
-            _ASSERTE(CLRHosted() || g_fEEHostedStartup || // CLR started through one of the Hosting API CLRHosted() returns true if CLR started through the V2 Interface while
-                                                          // g_fEEHostedStartup is true if CLR is hosted through the V1 API.
-                     g_fEEComActivatedStartup ||          //CLR started as a COM object
-                     g_fEEOtherStartup  );                //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
-
-            Sku = ETW::InfoLog::InfoStructs::CoreCLR;
+            UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
             //version info for clr.dll
             USHORT vmMajorVersion = CLR_MAJOR_VERSION;
@@ -4959,28 +4946,9 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
             USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
 
-            LPCGUID comGUID=&g_EEComObjectGuid;
+            LPCGUID comGUID=&IID_NULL;
 
             PCWSTR lpwszCommandLine = W("");
-
-
-
-            // Determine the startupmode
-            if (CLRHosted() || g_fEEHostedStartup)
-            {
-                //Hosted CLR
-                startupMode = ETW::InfoLog::InfoStructs::HostedCLR;
-            }
-            else if(g_fEEComActivatedStartup)
-            {
-                //com activated
-                startupMode = ETW::InfoLog::InfoStructs::COMActivated;
-            }
-            else if(g_fEEOtherStartup)
-            {
-                //startup type is other
-                startupMode = ETW::InfoLog::InfoStructs::Other;
-            }
 
 
             // if WszGetModuleFileName fails, we return an empty string
@@ -7003,9 +6971,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+            nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -7142,7 +7109,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 #ifdef FEATURE_CODE_VERSIONING
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,

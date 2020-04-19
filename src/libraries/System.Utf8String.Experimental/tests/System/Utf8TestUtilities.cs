@@ -36,9 +36,14 @@ namespace System.Tests
         /// <summary>
         /// Parses an expression of the form "a..b" and returns a <see cref="Range"/>.
         /// </summary>
+        public static Range ParseRangeExpr(string expression) => ParseRangeExpr(expression.AsSpan());
+
+        /// <summary>
+        /// Parses an expression of the form "a..b" and returns a <see cref="Range"/>.
+        /// </summary>
         public static Range ParseRangeExpr(ReadOnlySpan<char> expression)
         {
-            int idxOfDots = expression.IndexOf("..", StringComparison.Ordinal);
+            int idxOfDots = expression.IndexOf("..".AsSpan(), StringComparison.Ordinal);
             if (idxOfDots < 0)
             {
                 goto Error;
@@ -57,7 +62,7 @@ namespace System.Tests
                     firstPart = firstPart[1..];
                 }
 
-                if (!int.TryParse(firstPart, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int startIndex))
+                if (!int.TryParse(firstPart.ToString(), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int startIndex))
                 {
                     goto Error;
                 }
@@ -78,7 +83,7 @@ namespace System.Tests
                     secondPart = secondPart[1..];
                 }
 
-                if (!int.TryParse(secondPart, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int endIndex))
+                if (!int.TryParse(secondPart.ToString(), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int endIndex))
                 {
                     goto Error;
                 }
@@ -147,14 +152,14 @@ namespace System.Tests
 
             MemoryStream memStream = new MemoryStream();
 
-            Span<byte> utf8Bytes = stackalloc byte[4]; // 4 UTF-8 code units is the largest any scalar value can be encoded as
+            byte[] utf8Bytes = new byte[4]; // 4 UTF-8 code units is the largest any scalar value can be encoded as
 
             int index = 0;
             while (index < str.Length)
             {
                 if (Rune.TryGetRuneAt(str, index, out Rune value) && value.TryEncodeToUtf8(utf8Bytes, out int bytesWritten))
                 {
-                    memStream.Write(utf8Bytes.Slice(0, bytesWritten));
+                    memStream.Write(utf8Bytes, 0, bytesWritten);
                     index += value.Utf16SequenceLength;
                 }
                 else
@@ -195,5 +200,10 @@ namespace System.Tests
             (_, int actualLength) = range.GetOffsetAndLength(length);
             return (actualLength == 0);
         }
+
+        public static bool IsTryFindSupported(StringComparison comparison) =>
+            !PlatformDetection.IsNetFramework ||
+                comparison == StringComparison.Ordinal ||
+                comparison == StringComparison.OrdinalIgnoreCase;
     }
 }

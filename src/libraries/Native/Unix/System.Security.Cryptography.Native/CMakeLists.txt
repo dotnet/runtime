@@ -52,7 +52,7 @@ set(NATIVECRYPTO_SOURCES
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_DARWIN)
+if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 endif()
 
@@ -75,11 +75,6 @@ add_library(System.Security.Cryptography.Native.OpenSsl-Static
     $<TARGET_OBJECTS:objlib>
 )
 
-# Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native.OpenSsl PROPERTIES PREFIX "")
-
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -111,5 +106,5 @@ endif()
 
 include(configure.cmake)
 
-install_library_and_symbols (System.Security.Cryptography.Native.OpenSsl)
+install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)

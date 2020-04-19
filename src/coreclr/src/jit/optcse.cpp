@@ -2773,7 +2773,9 @@ public:
             GenTree*      cse = nullptr;
             bool          isDef;
             FieldSeqNode* fldSeq               = nullptr;
-            bool          hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(exp, &fldSeq);
+            bool          commaOnly            = true;
+            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
+            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -2983,12 +2985,6 @@ public:
 
                 // Assign the ssa num for the ref use. Note it may be the reserved num.
                 ref->AsLclVarCommon()->SetSsaNum(cseSsaNum);
-
-                // If it has a zero-offset field seq, copy annotation to the ref
-                if (hasZeroMapAnnotation)
-                {
-                    m_pCompiler->fgAddFieldSeqForZeroOffset(ref, fldSeq);
-                }
 
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, ref);

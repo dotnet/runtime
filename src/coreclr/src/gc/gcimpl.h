@@ -102,12 +102,6 @@ public:
 
     HRESULT Initialize ();
 
-    //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags);
-private:
-    Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
-public:
-    Object*  AllocLHeap (size_t size, uint32_t flags);
     Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
     void FixAllocContext (gc_alloc_context* acontext, void* arg, void *heap);
@@ -293,7 +287,7 @@ protected:
 
     virtual void DiagDescrGenerations (gen_walk_fn fn, void *context);
 
-    virtual void DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type);
+    virtual void DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1);
 
     virtual void DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn);
 

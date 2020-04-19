@@ -76,7 +76,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
+static void* map_file(const pal::string_t& path, size_t *length, DWORD mapping_protect, DWORD view_desired_access)
 {
     HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -86,16 +86,19 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
         return nullptr;
     }
 
-    LARGE_INTEGER fileSize;
-    if (GetFileSizeEx(file, &fileSize) == 0)
+    if (length != nullptr)
     {
-        trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
-        CloseHandle(file);
-        return nullptr;
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(file, &fileSize) == 0)
+        {
+            trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
+            CloseHandle(file);
+            return nullptr;
+        }
+        *length = (size_t)fileSize.QuadPart;
     }
-    length = (size_t)fileSize.QuadPart;
 
-    HANDLE map = CreateFileMappingW(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    HANDLE map = CreateFileMappingW(file, NULL, mapping_protect, 0, 0, NULL);
 
     if (map == NULL)
     {
@@ -104,7 +107,7 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
         return nullptr;
     }
 
-    void *address = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    void *address = MapViewOfFile(map, view_desired_access, 0, 0, 0);
 
     if (address == NULL)
     {
@@ -118,6 +121,16 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
     CloseHandle(file);
 
     return address;
+}
+
+const void* pal::mmap_read(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PAGE_READONLY, FILE_MAP_READ);
+}
+
+void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PAGE_WRITECOPY, FILE_MAP_READ | FILE_MAP_COPY);
 }
 
 bool pal::getcwd(pal::string_t* recv)
@@ -226,10 +239,10 @@ void pal::unload_library(dll_t library)
 static
 bool get_wow_mode_program_files(pal::string_t* recv)
 {
-#if defined(_TARGET_AMD64_)
-    pal::char_t* env_key = _X("ProgramFiles(x86)");
+#if defined(TARGET_AMD64)
+    const pal::char_t* env_key = _X("ProgramFiles(x86)");
 #else
-    pal::char_t* env_key = _X("ProgramFiles");
+    const pal::char_t* env_key = _X("ProgramFiles");
 #endif
 
     return get_file_path_from_env(env_key,recv);
@@ -274,7 +287,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    pal::char_t* program_files_dir;
+    const pal::char_t* program_files_dir;
     if (pal::is_running_in_wow64())
     {
         program_files_dir = _X("ProgramFiles(x86)");
@@ -296,7 +309,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 
 namespace
 {
-    void get_dotnet_install_location_registry_path(HKEY * key_hive, pal::string_t * sub_key, pal::char_t ** value)
+    void get_dotnet_install_location_registry_path(HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
     {
         *key_hive = HKEY_LOCAL_MACHINE;
         // The registry search occurs in the 32-bit registry in all cases.
@@ -322,12 +335,12 @@ namespace
 
 bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
 {
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
     return false;
 #else
     HKEY key_hive;
     pal::string_t sub_key;
-    pal::char_t* value;
+    const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
     *recv = (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
@@ -337,7 +350,7 @@ bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
     //  Self-registered SDK installation directory is only supported for x64 and x86 architectures.
     return false;
 #else
@@ -354,7 +367,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 
     HKEY hkeyHive;
     pal::string_t sub_key;
-    pal::char_t* value;
+    const pal::char_t* value;
     get_dotnet_install_location_registry_path(&hkeyHive, &sub_key, &value);
 
     // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.

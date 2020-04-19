@@ -2,19 +2,15 @@
   <PropertyGroup>
     <!-- Microsoft.Net.Test.Sdk brings a lot of satellite assemblies in. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <TrxTestResultsName>testResults.trx</TrxTestResultsName>
+    <HtmlTestResultsName>testResults.html</HtmlTestResultsName>
+    <TestResultsName>$(HtmlTestResultsName)</TestResultsName>
+    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)vstest.xunit.json</TestRunnerConfigPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitVersion)" />
-    <PackageReference Include="XunitXml.TestLogger" Version="$(XUnitXmlTestLoggerVersion)" />
-
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="$(TestRunnerConfigPath)"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
   </ItemGroup>
 </Project>

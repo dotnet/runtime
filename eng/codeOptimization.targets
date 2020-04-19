@@ -4,14 +4,20 @@
      <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
      <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
+      <!-- There's an issue causing IBCMerge failures because of mismatched MVIDs
+           across many of our assemblies on Mac, so disable
+           IBCMerge optimizations on Mac for now to unblock the offical build.
+           See issue https://github.com/dotnet/runtime/issues/33303
+      -->
+      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <Target Name="SetApplyNgenOptimization"
           Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
           BeforeTargets="CoreCompile">
     <PropertyGroup>
-      <IbcOptimizationDataDir Condition="'$(OSGroup)' == 'Unix' or '$(OSGroup)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
-      <IbcOptimizationDataDir Condition="'$(OSGroup)' != 'Unix' and '$(OSGroup)' != 'Linux'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'Unix' or '$(TargetOS)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'Windows_NT'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
     </PropertyGroup>
     <ItemGroup>
       <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />

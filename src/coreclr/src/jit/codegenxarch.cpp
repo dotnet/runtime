@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
+#include "patchpointinfo.h"
 
 /*****************************************************************************
  *
@@ -66,6 +67,12 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 
     if (!compiler->getNeedsGSSecurityCookie())
     {
+        return;
+    }
+
+    if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasSecurityCookie())
+    {
+        // Security cookie is on original frame and was initialized there.
         return;
     }
 
@@ -3000,15 +3007,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
         }
 
+        instruction simdMov = simdUnalignedMovIns();
         for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
@@ -3198,26 +3206,27 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
+        instruction simdMov = simdUnalignedMovIns();
         for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize;
              size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             if (srcLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_R_S(INS_movdqu, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
             }
             else
             {
-                emit->emitIns_R_ARX(INS_movdqu, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
                                     srcAddrIndexScale, srcOffset);
             }
 
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
@@ -7247,7 +7256,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 {
     // i) SSE4.1 is supported by the underlying hardware
-    assert(compiler->compSupports(InstructionSet_SSE41));
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE41));
 
     // ii) treeNode oper is a GT_INTRINSIC
     assert(treeNode->OperGet() == GT_INTRINSIC);

@@ -2,15 +2,18 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <!--
-    Determine CoreCLR/Libraries OSGroup based on Installer OSGroup. For example,
+    Determine CoreCLR/Libraries TargetOS based on Installer TargetOS. For example,
     Installer uses Unix when applicable, but others go straight to Linux.
   -->
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
-    <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
+    <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsiOS)' == 'true'">iOS</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetstvOS)' == 'true'">tvOS</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsAndroid)' == 'true'">Android</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
+    <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 
   <PropertyGroup>

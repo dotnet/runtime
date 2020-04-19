@@ -33,12 +33,12 @@ should be added to `netcoreapp5.0`. [More Information on TargetFrameworks](https
  - If changing the target framework
     - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings][net-standard table]). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
   - If assembly or package version is updated the package index needs to be updated by running
-    `dotnet msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
+    `dotnet build <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
 
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
-  - To run just the new test targetFramework run `dotnet build <Library>.csproj -f <TargetFramework> /t:RebuildAndTest`. TargetFramework should be chosen only from supported TargetFrameworks.
+  - To run just the new test targetFramework run `dotnet build <Library>.csproj -f <TargetFramework> /t:Test`. TargetFramework should be chosen only from supported TargetFrameworks.
 
 ## Documentation
 

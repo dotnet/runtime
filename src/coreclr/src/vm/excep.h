@@ -22,14 +22,8 @@ class Thread;
 #include <excepcpu.h>
 #include "interoputil.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define VSD_STUB_CAN_THROW_AV
-#endif // TARGET_ARM || TARGET_X86
-
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
-#ifdef VSD_STUB_CAN_THROW_AV
 BOOL IsIPinVirtualStub(PCODE f_IP);
-#endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
@@ -186,7 +180,7 @@ void UninstallUnhandledExceptionFilter();
 // within a section, no matter where it was located - and for this case, we need the UEF code
 // at the right location to ensure that we can check the memory protection of its following
 // section so that shouldnt affect UEF's memory protection. For details, read the comment in
-// "CExecutionEngine::ClrVirtualProtect".
+// ClrVirtualProtect.
 //
 // Keeping UEF in its own section helps prevent code movement as BBT does not reorder
 // sections. As per my understanding of the linker, ".text" section always comes first,
@@ -194,7 +188,7 @@ void UninstallUnhandledExceptionFilter();
 // The order of user defined executable sections is typically defined by the linker
 // in terms of which section it sees first. So, if there is another custom executable
 // section that comes after UEF section, it can affect the UEF section and we will
-// assert about it in "CExecutionEngine::ClrVirtualProtect".
+// assert about it in ClrVirtualProtect.
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
 #endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);

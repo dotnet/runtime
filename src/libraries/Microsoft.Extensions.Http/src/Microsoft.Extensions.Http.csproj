@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs">
+      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
+      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs">
+      <Link>Common\src\Extensions\ValueStopwatch\ValueStopwatch.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>

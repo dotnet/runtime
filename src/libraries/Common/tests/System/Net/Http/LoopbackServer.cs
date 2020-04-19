@@ -394,7 +394,7 @@ namespace System.Net.Test.Common
             {
                 UseSsl = false;
                 SslProtocols =
-#if !NETSTANDARD2_0
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |
 #endif
                 SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
@@ -447,10 +447,15 @@ namespace System.Net.Test.Common
                 int readLength = await _stream.ReadAsync(tempBuffer, 0, size).ConfigureAwait(false);
                 if (readLength > 0)
                 {
-                    tempBuffer.AsSpan(readLength).CopyTo(buffer.Span.Slice(offset, size));
+                    tempBuffer.AsSpan(0, readLength).CopyTo(buffer.Span.Slice(offset, size));
                 }
 
                 return readLength;
+#elif NETFRAMEWORK
+                var tmpBuffer = new byte[buffer.Length];
+                int readBytes = await _stream.ReadAsync(tmpBuffer, offset, size).ConfigureAwait(false);
+                tmpBuffer.CopyTo(buffer);
+                return readBytes;
 #else
                 return await _stream.ReadAsync(buffer.Slice(offset, size)).ConfigureAwait(false);
 #endif

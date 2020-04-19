@@ -23,14 +23,12 @@
 #define PRId PRId64
 #define PRIA "016"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 64
 #else
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 32
 #endif
 
 #ifdef HOST_UNIX
@@ -106,7 +104,7 @@ ElfReader::ElfReader() :
 ElfReader::~ElfReader()
 {
     if (m_buckets != nullptr) {
-        delete m_buckets;
+        free(m_buckets);
     }
 }
 
@@ -239,7 +237,7 @@ ElfReader::InitializeGnuHashTable()
         TRACE("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
         return false;
     }
-    m_buckets = new (std::nothrow) int32_t[m_hashTable.BucketCount];
+    m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
     if (m_buckets == nullptr) {
         return false;
     }
@@ -281,7 +279,7 @@ uint32_t
 ElfReader::Hash(const std::string& symbolName)
 {
     uint32_t h = 5381;
-    for (int i = 0; i < symbolName.length(); i++)
+    for (unsigned int i = 0; i < symbolName.length(); i++)
     {
         h = (h << 5) + h + symbolName[i];
     }
@@ -437,15 +435,6 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
         TRACE("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
-    int phnum = ehdr.e_phnum;
-    if (ehdr.e_phoff == 0 || phnum <= 0) {
-        return false;
-    }
-    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
-        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
-#ifdef PN_XNUM
-     _ASSERTE(phnum != PN_XNUM);
-#endif
     _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
 #ifdef TARGET_64BIT
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
@@ -453,6 +442,15 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS32);
 #endif
     _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
+    int phnum = ehdr.e_phnum;
+#ifdef PN_XNUM
+     _ASSERTE(phnum != PN_XNUM);
+#endif
+    if (ehdr.e_phoff == 0 || phnum <= 0) {
+        return false;
+    }
+    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
+        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
 
     Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
     return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, ploadbias, pdynamicAddr);

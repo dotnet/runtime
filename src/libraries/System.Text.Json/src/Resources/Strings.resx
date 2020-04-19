@@ -357,9 +357,6 @@
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
   </data>
-  <data name="SerializationNotSupported" xml:space="preserve">
-    <value>The type '{0}' on '{1}' is not supported.</value>
-  </data>
   <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
     <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>
   </data>
@@ -378,8 +375,8 @@
   <data name="JsonSerializerDoesNotSupportComments" xml:space="preserve">
     <value>Comments cannot be stored when deserializing objects, only the Skip and Disallow comment handling modes are supported.</value>
   </data>
-  <data name="DeserializeMissingParameterlessConstructor" xml:space="preserve">
-    <value>Deserialization of reference types without parameterless constructor is not supported. Type '{0}'</value>
+  <data name="DeserializeMissingDeserializationConstructor" xml:space="preserve">
+    <value>Deserialization of reference types without a parameterless constructor, a singular parameterized constructor, or a parameterized constructor annotated with '{0}' is not supported. Type '{1}'</value>
   </data>
   <data name="DeserializePolymorphicInterface" xml:space="preserve">
     <value>Deserialization of interface types is not supported. Type '{0}'</value>
@@ -421,7 +418,7 @@
     <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt16.</value>
   </data>
   <data name="SerializerCycleDetected" xml:space="preserve">
-    <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHanlding.Preserve on JsonSerializerOptions to support cycles.</value>
+    <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHandling.Preserve on JsonSerializerOptions to support cycles.</value>
   </data>
   <data name="EmptyStringToInitializeNumber" xml:space="preserve">
     <value>Expected a number, but instead got empty string.</value>
@@ -484,5 +481,38 @@
   </data>
   <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
     <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandling to ReferenceHandling.Default.</value>
+  </data>
+  <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
+    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in constructor '{4}' on deserialization.</value>
+  </data>
+  <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
+    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object member on deserialization. Each parameter name must be the camel case equivalent of an object member named with the pascal case naming convention.</value>
+  </data>
+  <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
+    <value>The constructor '{0}' on type '{1}' may not have more than 64 parameters for deserialization.</value>
+  </data>
+  <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
+    <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
+  </data>
+  <data name="SerializerConverterFactoryReturnsNull" xml:space="preserve">
+    <value>The converter '{0}' cannot return a null value.</value>
+  </data>
+  <data name="SerializationNotSupportedParentType" xml:space="preserve">
+    <value>The unsupported member type is located on type '{0}'.</value>
+  </data>
+  <data name="ExtensionDataCannotBindToCtorParam" xml:space="preserve">
+    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in constructor '{2}'.</value>
+  </data>
+  <data name="BufferMaximumSizeExceeded" xml:space="preserve">
+    <value>Cannot allocate a buffer of size {0}.</value>
+  </data>
+  <data name="CannotSerializeOpenGeneric" xml:space="preserve">
+    <value>The type '{0}' has generic parameters that have not been replaced by specific types, which is not valid during serialization or deserialization.</value>
+  </data>
+  <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
+    <value>Serialization and deserialization of 'System.Type' instances are not supported and should be avoided since they can lead to security issues.</value>
+  </data>
+  <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
+    <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
   </data>
 </root>

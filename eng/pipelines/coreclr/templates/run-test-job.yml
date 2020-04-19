@@ -11,6 +11,7 @@ parameters:
   readyToRun: false
   liveLibrariesBuildConfig: ''
   crossgen2: false
+  compositeBuildMode: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
@@ -91,6 +92,62 @@ jobs:
           value: 'crossgen2'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2
+      - ${{ if eq(parameters.compositeBuildMode, true) }}:
+        - name: crossgenArg
+          value: 'composite'
+
+    # Set job timeouts
+    #
+    # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
+    # In case xUnit test wrappers get refactored this number should also be adjusted.
+    #
+    # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
+    # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
+    # xunit test dlls that invokes the actual tests). Note this doesn't apply to CoreFX testing.
+    #
+    # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
+    # time needed to compile the test into native code with the Crossgen compiler.
+
+    - name: timeoutPerTestInMinutes
+      value: 10
+    - name: timeoutPerTestCollectionInMinutes
+      value: 30
+    - ${{ if eq(parameters.corefxTests, true) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 10
+    - ${{ if in(parameters.testGroup, 'outerloop') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
+    - ${{ if eq(parameters.crossgen2, true) }}:
+        - name: timeoutPerTestCollectionInMinutes
+          value: 90
+        - name: timeoutPerTestInMinutes
+          value: 30
+    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 360
+      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+      - name: timeoutPerTestInMinutes
+        value: 240
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 120
+      - name: timeoutPerTestInMinutes
+        value: 30
+    - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 240
+      - name: timeoutPerTestInMinutes
+        value: 60
+    - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 300
+      - name: timeoutPerTestInMinutes
+        value: 90
+
+    - ${{ if eq(parameters.compositeBuildMode, true) }}:
+      - name: crossgenArg
+        value: 'composite'
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
@@ -99,8 +156,8 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 150
-    ${{ if in(parameters.testGroup, 'outerloop') }}:
+      timeoutInMinutes: 200
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
@@ -168,7 +225,7 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 
@@ -176,6 +233,11 @@ jobs:
     - ${{ if eq(parameters.corefxTests, true) }}:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Generate test host
+
+
+    # Generate test wrappers
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      displayName: Generate test wrappers
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
@@ -218,39 +280,12 @@ jobs:
 
         publishTestResults: true
 
-        # Set job timeouts
-        #
-        # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
-        # In case xUnit test wrappers get refactored this number should also be adjusted.
-        #
-        # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
-        # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
-        # xunit test dlls that invokes the actual tests). Note this doesn't apply to CoreFX testing.
-
-        ${{ if and(eq(parameters.corefxTests, true), eq(parameters.testGroup, 'innerloop')) }}:
-          timeoutPerTestCollectionInMinutes: 120
-        ${{ if and(ne(parameters.corefxTests, true), eq(parameters.testGroup, 'innerloop')) }}:
-          timeoutPerTestCollectionInMinutes: 30
-          timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'outerloop') }}:
-          timeoutPerTestCollectionInMinutes: 120
-          timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-          timeoutPerTestCollectionInMinutes: 360
-          # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-          timeoutPerTestInMinutes: 240
-        ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
-          timeoutPerTestCollectionInMinutes: 120
-          timeoutPerTestInMinutes: 30
-        ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-          timeoutPerTestCollectionInMinutes: 240
-          timeoutPerTestInMinutes: 60
-        ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
-          timeoutPerTestCollectionInMinutes: 300
-          timeoutPerTestInMinutes: 90
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
         runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
         runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -378,6 +413,13 @@ jobs:
           scenarios:
           - jitelthookenabled
           - jitelthookenabled_tiered
+        ${{ if in(parameters.testGroup, 'jit-experimental') }}:
+          scenarios:
+          - jitosr
+          - jitosr_stress
+          - jitguardeddevirtualization
+          - jitehwritethru
+          - jitobjectstackallocation
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

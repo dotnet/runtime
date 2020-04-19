@@ -1,10 +1,10 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component")
+        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endfunction()
 
@@ -124,7 +124,7 @@ function(preprocess_compile_asm)
   set(oneValueArgs OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
   cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
-  
+
   get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
   set (ASSEMBLED_OBJECTS "")
@@ -250,49 +250,76 @@ function(target_precompile_header)
   endif(MSVC)
 endfunction()
 
-function(strip_symbols targetName outputFilename skipStrip)
+function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
-    if (STRIP_SYMBOLS)
-      set(strip_source_file $<TARGET_FILE:${targetName}>)
+    set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-      if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        set(strip_destination_file ${strip_source_file}.dwarf)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+      set(strip_destination_file ${strip_source_file}.dwarf)
 
-        if(NOT ${skipStrip})
-            add_custom_command(
-            TARGET ${targetName}
-            POST_BUILD
-            VERBATIM
-            COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-            COMMAND ${STRIP} -S ${strip_source_file}
-            COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-            )
-        endif()
-      else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        set(strip_destination_file ${strip_source_file}.dbg)
+      # Ensure that dsymutil and strip are present
+      find_program(DSYMUTIL dsymutil)
+      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
+        message(FATAL_ERROR "dsymutil not found")
+      endif()
 
-        if(NOT ${skipStrip})
-            add_custom_command(
-            TARGET ${targetName}
-            POST_BUILD
-            VERBATIM
-            COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-            COMMAND ${OBJCOPY} --strip-debug ${strip_source_file}
-            COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-            COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-            )
-        endif()
-      endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      find_program(STRIP strip)
+      if (STRIP STREQUAL "STRIP-NOTFOUND")
+        message(FATAL_ERROR "strip not found")
+      endif()
 
-      set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-    endif (STRIP_SYMBOLS)
+      add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${STRIP} -S ${strip_source_file}
+        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+      set(strip_destination_file ${strip_source_file}.dbg)
+
+      add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+
+    set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
+  else(CLR_CMAKE_HOST_UNIX)
+    set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb PARENT_SCOPE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [DESTINATION destination] [SKIP_STRIP])
+function(install_with_stripped_symbols targetName kind destination)
+    strip_symbols(${targetName} symbol_file)
+    install_symbols(${symbol_file} ${destination})
+    if ("${kind}" STREQUAL "TARGETS")
+      set(install_source ${targetName})
+    elseif("${kind}" STREQUAL "PROGRAMS")
+      set(install_source $<TARGET_FILE:${targetName}>)
+    else()
+      message(FATAL_ERROR "The `kind` argument has to be either TARGETS or PROGRAMS, ${kind} was provided instead")
+    endif()
+    install(${kind} ${install_source} DESTINATION ${destination})
+endfunction()
+
+function(install_symbols symbol_file destination_path)
+  if(CLR_CMAKE_TARGET_WIN32)
+    install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB)
+  else()
+    install(FILES ${symbol_file} DESTINATION ${destination_path})
+  endif()
+endfunction()
+
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATION destination])
 function(install_clr)
-  set(options SKIP_STRIP)
-  set(oneValueArgs DESTINATION)
+  set(oneValueArgs ADDITIONAL_DESTINATION)
   set(multiValueArgs TARGETS)
   cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
@@ -300,33 +327,29 @@ function(install_clr)
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
   endif()
 
-  if ("${INSTALL_CLR_DESTINATION}" STREQUAL "")
-    set(INSTALL_CLR_DESTINATION ".")
+  set(destinations ".")
+
+  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATION}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATION})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
     list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-        if("${INSTALL_CLR_SKIP_STRIP}" STREQUAL "")
-            set(INSTALL_CLR_SKIP_STRIP FALSE)
-        endif()
-        strip_symbols(${targetName} strip_destination_file ${INSTALL_CLR_SKIP_STRIP})
+        strip_symbols(${targetName} symbol_file)
 
-        # We don't need to install the export libraries for our DLLs
-        # since they won't be directly linked against.
-        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${INSTALL_CLR_DESTINATION})
-        if(WIN32)
-            # We can't use the $<TARGET_PDB_FILE> generator expression here since
-            # the generator expression isn't supported on resource DLLs.
-            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${INSTALL_CLR_DESTINATION}/PDB)
-        else()
-            install(FILES ${strip_destination_file} DESTINATION ${INSTALL_CLR_DESTINATION})
-        endif()
-        if(CLR_CMAKE_PGO_INSTRUMENT)
-            if(WIN32)
-                install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${INSTALL_CLR_DESTINATION}/PGD OPTIONAL)
-            endif()
-        endif()
+        foreach(destination ${destinations})
+          # We don't need to install the export libraries for our DLLs
+          # since they won't be directly linked against.
+          install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
+          install_symbols(${symbol_file} ${destination})
+
+          if(CLR_CMAKE_PGO_INSTRUMENT)
+              if(WIN32)
+                  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
+              endif()
+          endif()
+        endforeach()
     endif()
   endforeach()
 endfunction()
@@ -339,6 +362,11 @@ endfunction()
 # - creating executable pages from anonymous memory,
 # - making read-only-after-relocations (RELRO) data pages writable again.
 function(disable_pax_mprotect targetName)
+  # Try to locate the paxctl tool. Failure to find it is not fatal,
+  # but the generated executables won't work on a system where PAX is set
+  # to prevent applications to create executable memory mappings.
+  find_program(PAXCTL paxctl)
+
   if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
     add_custom_command(
       TARGET ${targetName}

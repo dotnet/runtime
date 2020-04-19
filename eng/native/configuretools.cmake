@@ -1,10 +1,12 @@
+include(${CMAKE_CURRENT_LIST_DIR}/configureplatform.cmake)
+
 # Get the version of the compiler that is in the file name for tool location.
 set (CLR_CMAKE_COMPILER_FILE_NAME_VERSION "")
 if (CMAKE_C_COMPILER MATCHES "-?[0-9]+(\.[0-9]+)?$")
   set(CLR_CMAKE_COMPILER_FILE_NAME_VERSION "${CMAKE_MATCH_0}")
 endif()
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(APPLE)
       set(TOOLSET_PREFIX "")
@@ -30,6 +32,7 @@ if(NOT WIN32)
       NAMES
       "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
       "${TOOLSET_PREFIX}${exec}")
+
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
       message(FATAL_ERROR "Unable to find toolchain executable for: ${exec}.")
     endif()
@@ -40,30 +43,22 @@ if(NOT WIN32)
   locate_toolchain_exec(link CMAKE_LINKER)
   locate_toolchain_exec(nm CMAKE_NM)
 
-  if(NOT APPLE)
-    locate_toolchain_exec(objdump CMAKE_OBJDUMP)
-  endif()
-
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
     locate_toolchain_exec(ranlib CMAKE_RANLIB)
   endif()
 
-  if (NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    if (CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-      if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-        find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
-      elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-        find_program(OBJCOPY objcopy)
-      else()
-        clr_unknown_arch()
-      endif()
+  if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
+    locate_toolchain_exec(objdump CMAKE_OBJDUMP)
+
+    if(CLR_CMAKE_TARGET_ANDROID)
+      set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
+    elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm))
+      set(TOOLSET_PREFIX "${TOOLCHAIN}-")
     else()
-      find_program(OBJCOPY objcopy)
+      set(TOOLSET_PREFIX "")
     endif()
 
-    if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
-        message(FATAL_ERROR "objcopy not found")
-    endif()
+    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
   endif()
 endif()

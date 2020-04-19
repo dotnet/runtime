@@ -14,6 +14,7 @@ include_directories(../superpmi-shared)
 set(MCS_SOURCES
     commandline.cpp
     mcs.cpp
+    removedup.cpp
     verbasmdump.cpp
     verbconcat.cpp
     verbdump.cpp
@@ -31,6 +32,7 @@ set(MCS_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -51,7 +53,7 @@ target_precompile_header(TARGET mcs HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

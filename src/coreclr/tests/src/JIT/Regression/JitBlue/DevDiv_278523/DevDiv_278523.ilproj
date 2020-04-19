@@ -8,16 +8,22 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <PointerSize Condition="'$(Platform)'=='x64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='armel'">32</PointerSize>
+    <PointerSize Condition="'$(TargetArchitecture)'=='x64'">64</PointerSize>
+    <PointerSize Condition="'$(TargetArchitecture)'=='arm64'">64</PointerSize>
+    <PointerSize Condition="'$(TargetArchitecture)'=='x86'">32</PointerSize>
+    <PointerSize Condition="'$(TargetArchitecture)'=='arm'">32</PointerSize>
+    <PointerSize Condition="'$(TargetArchitecture)'=='armel'">32</PointerSize>
   </PropertyGroup>
   <ItemGroup Condition=" '$(PointerSize)' == '64' ">
     <Compile Include="DevDiv_278523_64.il" />
   </ItemGroup>
   <ItemGroup Condition=" '$(PointerSize)' == '32' ">
     <Compile Include="DevDiv_278523_32.il" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
   </ItemGroup>
 </Project>

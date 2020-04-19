@@ -67,6 +67,7 @@
 #include "variant.h"
 #include "oavariant.h"
 #include "mngstdinterfaces.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #include "stubhelpers.h"

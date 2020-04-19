@@ -9,7 +9,7 @@ namespace System.Net.Http
         // On OSX we get default proxy configuration from either environment variables or the OSX system proxy.
         public static IWebProxy ConstructSystemProxy()
         {
-            return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : new MacProxy();
+            return HttpEnvironmentProxy.TryCreate(out IWebProxy? proxy) ? proxy : new MacProxy();
         }
     }
 }

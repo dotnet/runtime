@@ -333,14 +333,11 @@ internal static partial class Interop
             int retVal;
             Exception? innerError = null;
 
-            lock (context)
-            {
-                retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length);
+            retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length);
 
-                if (retVal != input.Length)
-                {
-                    errorCode = GetSslError(context, retVal, out innerError);
-                }
+            if (retVal != input.Length)
+            {
+                errorCode = GetSslError(context, retVal, out innerError);
             }
 
             if (retVal != input.Length)
@@ -390,28 +387,25 @@ internal static partial class Interop
             int retVal = BioWrite(context.InputBio!, outBuffer, offset, count);
             Exception? innerError = null;
 
-            lock (context)
+            if (retVal == count)
             {
-                if (retVal == count)
+                unsafe
                 {
-                    unsafe
+                    fixed (byte* fixedBuffer = outBuffer)
                     {
-                        fixed (byte* fixedBuffer = outBuffer)
-                        {
-                            retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
-                        }
+                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
                     }
+                }
 
-                    if (retVal > 0)
-                    {
+                if (retVal > 0)
+                {
                         count = retVal;
-                    }
                 }
+            }
 
-                if (retVal != count)
-                {
-                    errorCode = GetSslError(context, retVal, out innerError);
-                }
+            if (retVal != count)
+            {
+                errorCode = GetSslError(context, retVal, out innerError);
             }
 
             if (retVal != count)

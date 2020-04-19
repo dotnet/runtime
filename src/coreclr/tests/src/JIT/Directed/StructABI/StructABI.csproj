@@ -7,11 +7,17 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="StructABI.cs" />
-    <Compile Include="StructABI.Windows.cs" Condition="'$(OSGroup)' == 'Windows_NT'" />
-    <Compile Include="StructABI.Unix.cs" Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'" />
-    <Compile Include="StructABI.OSX.cs" Condition="'$(OSGroup)' == 'OSX'" />
+    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'Windows_NT'" />
+    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'Linux' Or '$(TargetOS)' == 'FreeBSD'" />
+    <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'OSX'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />

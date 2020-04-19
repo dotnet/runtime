@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
@@ -20,17 +22,6 @@ namespace System.Text.Json.Serialization
 
         internal abstract ClassType ClassType { get; }
 
-        // Whether the converter should handle the null value.
-        internal virtual bool HandleNullValue
-        {
-            get
-            {
-                // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.
-                // In other cases, this will likely cause an JsonException in the converter.
-                return TypeToConvert.IsValueType;
-            }
-        }
-
         /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
@@ -45,7 +36,25 @@ namespace System.Text.Json.Serialization
 
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
 
+        internal abstract JsonParameterInfo CreateJsonParameterInfo();
+
         internal abstract Type? ElementType { get; }
+
+        /// <summary>
+        /// Cached value of ShouldHandleNullValue. It is cached since the converter should never
+        /// change the value depending on state and because it may contain non-trival logic.
+        /// </summary>
+        internal bool HandleNullValue { get; set; }
+
+        /// <summary>
+        /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
+        /// </summary>
+        internal bool IsValueType { get; set; }
+
+        /// <summary>
+        /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
+        /// </summary>
+        internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
 
         // For polymorphic cases, the concrete type to create.
         internal virtual Type RuntimeType => TypeToConvert;
@@ -59,7 +68,16 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
-        internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value);
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        /// <summary>
+        /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
+        /// </summary>
+        internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
+        internal virtual bool ConstructorIsParameterized => false;
+
+        internal ConstructorInfo? ConstructorInfo { get; set; }
     }
 }

@@ -55,7 +55,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     # The following linked options can be inserted into the linker libraries list to
     # ensure proper resolving of circular references between a subset of the libraries.
@@ -102,7 +102,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -112,7 +112,7 @@ if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
-    mscorrc_debug
+    mscorrc
     coreclrpal
     palrt
   )

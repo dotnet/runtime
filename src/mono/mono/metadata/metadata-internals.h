@@ -427,6 +427,8 @@ struct _MonoImage {
 	 * references is initialized only by using the mono_assembly_open
 	 * function, and not by using the lowlevel mono_image_open.
 	 *
+	 * Protected by the image lock.
+	 *
 	 * It is NULL terminated.
 	 */
 	MonoAssembly **references;
@@ -567,11 +569,6 @@ struct _MonoImage {
 	GHashTable *pinvoke_scopes;
 #endif
 
-	/* Indexed by MonoGenericParam pointers */
-	GHashTable **gshared_types;
-	/* The length of the above array */
-	int gshared_types_len;
-
 	/* The loader used to load this image */
 	MonoImageLoader *loader;
 
@@ -612,6 +609,11 @@ typedef struct {
 	MonoWrapperCaches wrapper_caches;
 
 	GHashTable *aggregate_modifiers_cache;
+
+	/* Indexed by MonoGenericParam pointers */
+	GHashTable **gshared_types;
+	/* The length of the above array */
+	int gshared_types_len;
 
 	mono_mutex_t    lock;
 
@@ -896,6 +898,12 @@ mono_image_set_strdup (MonoImageSet *set, const char *s);
 
 MonoImageSet *
 mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *amods);
+
+MonoImageSet *
+mono_metadata_get_image_set_for_type (MonoType *type);
+
+MonoImageSet *
+mono_metadata_merge_image_sets (MonoImageSet *set1, MonoImageSet *set2);
 
 #define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
 

@@ -462,7 +462,7 @@ void ZapInfo::CompileMethod()
         const char* namespaceName;
         getMethodNameFromMetadata(m_currentMethodHandle, nullptr, &namespaceName, nullptr);
         if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
-            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
             || strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
         {
             if (m_zapper->m_pOpt->m_verbose)
@@ -482,6 +482,15 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
+#ifdef TARGET_X86
+    if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // TARGET_X86
+
     if (m_pImage->m_stats)
     {
         m_pImage->m_stats->m_methods++;
@@ -500,7 +509,7 @@ void ZapInfo::CompileMethod()
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
-                                                     &cCode );
+                                                     &cCode);
         if (FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
@@ -1912,6 +1921,11 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
     return pEntryPointOrThunkToEmbed;
 }
 
+void ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
+{
+    m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+}
+
 void ZapInfo::getFunctionEntryPoint(
                                 CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                 CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
@@ -2102,7 +2116,7 @@ void ZapInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
 //
 // This strips the CORINFO_FLG_JIT_INTRINSIC flag from some of the named intrinsic methods.
 //
-DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
+DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
 {
     if (attribs & CORINFO_FLG_JIT_INTRINSIC)
     {
@@ -2120,8 +2134,8 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
-#elif TARGET_ARM64
-        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0;
+#elif defined(TARGET_ARM64)
+        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0;
 #endif
 
         fIsHWIntrinsic = fIsPlatformHWIntrinsic || (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
@@ -2138,24 +2152,34 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
         // answer for the CPU the code is running on.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
         if (fIsPlatformHWIntrinsic)
         {
             // Simplify the comparison logic by grabbing the name of the ISA
             const char* isaName = (enclosingClassName == nullptr) ? className : enclosingClassName;
 
-            if ((strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0))
+            bool fIsPlatformRequiredISA     = false;
+            bool fIsPlatformSubArchitecture = false;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "X64") == 0;
+#elif defined(TARGET_ARM64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "ArmBase") == 0) || (strcmp(isaName, "AdvSimd") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "Arm64") == 0;
+#endif
+
+            if (fIsPlatformRequiredISA)
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it's anything related to Sse/Sse2, we can expand unconditionally since this is
-                    // a baseline requirement of CoreCLR.
+                    // If the ISA is required by CoreCLR for the platform, we can expand unconditionally
                     fTreatAsRegularMethodCall = false;
                 }
             }
-            else if ((strcmp(className, "Avx") == 0) || (strcmp(className, "Fma") == 0) || (strcmp(className, "Avx2") == 0) || (strcmp(className, "Bmi1") == 0) || (strcmp(className, "Bmi2") == 0))
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0) || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0))
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
                     // If it is the get_IsSupported method for an ISA which requires the VEX
                     // encoding we want to expand unconditionally. This will force those code
@@ -2168,7 +2192,20 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                     fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
                 }
             }
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef TARGET_X86
+            else if (fIsPlatformSubArchitecture)
+            {
+                // For ISAs not handled explicitly above, the IsSupported check will always
+                // be treated as a regular method call. If we are evaulating a method in the X64
+                // namespace, we know it will never be supported on x86, so we can allow the code
+                // to be treated as dead. We treat all non-IsSupported methods as regular method
+                // calls so they throw PNSE if used withoug the IsSupported check.
+                fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
+            }
+#endif // TARGET_X86
         }
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         else if (strcmp(namespaceName, "System") == 0)
         {
             if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
@@ -2177,6 +2214,40 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                 // However, we don't know the ISAs the target machine supports so we should
                 // fallback to the method call implementation instead.
                 fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
+            }
+        }
+        else if (strcmp(namespaceName, "System.Numerics") == 0)
+        {
+            if ((strcmp(className, "Vector3") == 0) || (strcmp(className, "Vector4") == 0))
+            {
+                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                if (strcmp(methodName, ".ctor") == 0)
+                {
+                    CORINFO_SIG_INFO sig;
+                    pZapInfo->getMethodSig(ftn, &sig, NULL);
+                    CORINFO_CLASS_HANDLE argClass;
+                    if ((CorInfoType)pZapInfo->getArgType(&sig, sig.args, &argClass) == CORINFO_TYPE_VALUECLASS)
+                    {
+                        fTreatAsRegularMethodCall = TRUE;
+                    }
+                }
+                else if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
+            }
+            else if ((strcmp(className, "Vector2") == 0) || (strcmp(className, "Vector") == 0) || (strcmp(className, "Vector`1") == 0))
+            {
+                if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
             }
         }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -2216,7 +2287,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                               (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_KINDONLY),
                               pResult);
 
-    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
+    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(this, pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
@@ -2234,15 +2305,17 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 m_zapper->Warning(W("ReadyToRun: Runtime method access checks not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
-
-        if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
     }
 #endif
+
+#ifdef TARGET_X86
+    if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // TARGET_X86
 
     if (flags & CORINFO_CALLINFO_KINDONLY)
         return;
@@ -2941,6 +3014,18 @@ void ZapInfo::setVars(CORINFO_METHOD_HANDLE ftn,
     m_iNativeVarInfo = cVars;
 
     return;
+}
+
+void ZapInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
+}
+
+PatchpointInfo* ZapInfo::getOSRInfo(unsigned * ilOffset)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
 }
 
 void * ZapInfo::allocateArray(size_t cBytes)
@@ -3766,7 +3851,7 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 DWORD ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
     DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);
-    return FilterNamedIntrinsicMethodAttribs(result, ftn, m_pEEJitInfo);
+    return FilterNamedIntrinsicMethodAttribs(this, result, ftn, m_pEEJitInfo);
 }
 
 void ZapInfo::setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs)

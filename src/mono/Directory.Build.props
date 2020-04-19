@@ -4,19 +4,13 @@
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
   
-  <!-- Set default Configuration and Platform -->
+  <!-- Set default Platform -->
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
+    <Platform>$(TargetArchitecture)</Platform>
 
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
-    <Platform>$(ArchGroup)</Platform>
-    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
-
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-
-    <PlatformConfigPathPart>$(OSGroup).$(Platform).$(Configuration)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -35,23 +29,42 @@
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-
-    <PreReleaseLabel>preview8</PreReleaseLabel>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(OSGroup)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
+    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
+    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
+    <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
+    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
+    <TargetsWASM Condition="'$(TargetOS)' == 'WebAssembly'">true</TargetsWASM>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsWASM)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
-    <UseSharedCompilation>true</UseSharedCompilation>
+    <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
+    <tvOSVersionMin>9.0</tvOSVersionMin>
+    <watchOSVersionMin>2.0</watchOSVersionMin>
+    <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
+    <macOSVersionMin>10.13</macOSVersionMin>
+
+    <!-- Version of the OS SDK we target -->
+    <iOSVersion></iOSVersion>
+    <tvOSVersion></tvOSVersion>
+    <watchOSVersion></watchOSVersion>
+    <watchOS64_32Version></watchOS64_32Version>
+    <macOSVersion></macOSVersion>
+
+    <!-- Version of the Android SDK we target, keep in sync with src/libraries/Native/build-native.sh -->
+    <AndroidApiVersion>21</AndroidApiVersion>
   </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable -->
@@ -82,5 +95,10 @@
   <PropertyGroup>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
+    <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>  
   </PropertyGroup>
 </Project>

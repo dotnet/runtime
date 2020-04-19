@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -376,5 +377,41 @@
   </data>
   <data name="SK_VARIABLE" xml:space="preserve">
     <value>variable</value>
+  </data>
+  <data name="COMAmbiguousConversion" xml:space="preserve">
+    <value>There are valid conversions from {0} to {1}.</value>
+  </data>
+  <data name="COMCannotPerformCall" xml:space="preserve">
+    <value>Cannot perform call.</value>
+  </data>
+  <data name="COMCannotRetrieveTypeInfo" xml:space="preserve">
+    <value>Cannot retrieve type information.</value>
+  </data>
+  <data name="COMDispatchInvokeError" xml:space="preserve">
+    <value>Error while invoking {0}.</value>
+  </data>
+  <data name="COMDispatchInvokeErrorNoNamedArgs" xml:space="preserve">
+    <value>Error while invoking {0}. Named arguments are not supported.</value>
+  </data>
+  <data name="COMDispatchInvokeErrorParamNotOptional" xml:space="preserve">
+    <value>Error while invoking {0}. A required parameter was omitted.</value>
+  </data>
+  <data name="COMDispatchInvokeErrorTypeMismatch" xml:space="preserve">
+    <value>Could not convert argument {0} for call to {1}.</value>
+  </data>
+  <data name="COMGetDispatchIdFailed" xml:space="preserve">
+    <value>Could not get dispatch ID for {0} (error: {1}).</value>
+  </data>
+  <data name="COMGetIDsOfNamesInvalid" xml:space="preserve">
+    <value>IDispatch::GetIDsOfNames behaved unexpectedly for {0}.</value>
+  </data>
+  <data name="COMSetComObjectDataFailed" xml:space="preserve">
+    <value>Marshal.SetComObjectData failed.</value>
+  </data>
+  <data name="COMUnexpectedVarEnum" xml:space="preserve">
+    <value>Unexpected VarEnum {0}.</value>
+  </data>
+  <data name="COMUnsupportedEventHandlerType" xml:space="preserve">
+    <value>Attempting to pass an event handler of an unsupported type.</value>
   </data>
 </root>

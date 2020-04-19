@@ -3,25 +3,26 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class ProductInfoHeaderValue : ICloneable
     {
-        private ProductHeaderValue _product;
-        private string _comment;
+        private ProductHeaderValue? _product;
+        private string? _comment;
 
-        public ProductHeaderValue Product
+        public ProductHeaderValue? Product
         {
             get { return _product; }
         }
 
-        public string Comment
+        public string? Comment
         {
             get { return _comment; }
         }
 
-        public ProductInfoHeaderValue(string productName, string productVersion)
+        public ProductInfoHeaderValue(string productName, string? productVersion)
             : this(new ProductHeaderValue(productName, productVersion))
         {
         }
@@ -58,14 +59,15 @@ namespace System.Net.Http.Headers
         {
             if (_product == null)
             {
+                Debug.Assert(_comment != null);
                 return _comment;
             }
             return _product.ToString();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            ProductInfoHeaderValue other = obj as ProductInfoHeaderValue;
+            ProductInfoHeaderValue? other = obj as ProductInfoHeaderValue;
 
             if (other == null)
             {
@@ -85,6 +87,7 @@ namespace System.Net.Http.Headers
         {
             if (_product == null)
             {
+                Debug.Assert(_comment != null);
                 return _comment.GetHashCode();
             }
             return _product.GetHashCode();
@@ -104,13 +107,12 @@ namespace System.Net.Http.Headers
             return (ProductInfoHeaderValue)result;
         }
 
-        public static bool TryParse(string input, out ProductInfoHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string input, [NotNullWhen(true)] out ProductInfoHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (ProductInfoHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out output))
+            if (ProductInfoHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out object? output))
             {
                 if (index < input.Length)
                 {
@@ -124,7 +126,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static int GetProductInfoLength(string input, int startIndex, out ProductInfoHeaderValue parsedValue)
+        internal static int GetProductInfoLength(string? input, int startIndex, out ProductInfoHeaderValue? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -138,8 +140,8 @@ namespace System.Net.Http.Headers
             int current = startIndex;
 
             // Caller must remove leading whitespace.
-            string comment = null;
-            ProductHeaderValue product = null;
+            string? comment = null;
+            ProductHeaderValue? product = null;
             if (input[current] == '(')
             {
                 int commentLength = 0;

@@ -32,8 +32,16 @@ namespace ILCompiler
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+
+            string matchingVectorType = "Unknown";
+            if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
+                matchingVectorType = "Vector128`1";
+            else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
+                matchingVectorType = "Vector256`1";
+
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
+
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -102,15 +110,33 @@ namespace ILCompiler
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         private FieldLayoutAlgorithm _fallbackAlgorithm;
+        private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
+        private string _similarVectorName;
+        private DefType _similarVectorOpenType;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
+            _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
+            _similarVectorName = similarVector;
+        }
+
+        private DefType GetSimilarVector(DefType vectorOfTType)
+        {
+            if (_similarVectorOpenType == null)
+            {
+                if (_similarVectorName == "Unknown")
+                    return null;
+
+                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics", _similarVectorName);
+            }
+
+            return ((MetadataType)_similarVectorOpenType).MakeInstantiatedType(vectorOfTType.Instantiation);
         }
 
         public override bool ComputeContainsGCPointers(DefType type)
         {
-            return _fallbackAlgorithm.ComputeContainsGCPointers(type);
+            return false;
         }
 
         public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
@@ -120,23 +146,53 @@ namespace ILCompiler
 
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
-            List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
-            foreach (FieldDesc field in type.GetFields())
+            DefType similarSpecifiedVector = GetSimilarVector(type);
+            if (similarSpecifiedVector == null)
             {
-                if (!field.IsStatic)
+                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
+                foreach (FieldDesc field in type.GetFields())
                 {
-                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                    if (!field.IsStatic)
+                    {
+                        fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
+                    }
                 }
+                ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
+                {
+                    FieldSize = LayoutInt.Indeterminate,
+                    FieldAlignment = LayoutInt.Indeterminate,
+                    ByteCountUnaligned = LayoutInt.Indeterminate,
+                    ByteCountAlignment = LayoutInt.Indeterminate,
+                    Offsets = fieldsAndOffsets.ToArray(),
+                };
+                return instanceLayout;
             }
-            ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
+            else
             {
-                FieldSize = LayoutInt.Indeterminate,
-                FieldAlignment = LayoutInt.Indeterminate,
-                ByteCountUnaligned = LayoutInt.Indeterminate,
-                ByteCountAlignment = LayoutInt.Indeterminate,
-                Offsets = fieldsAndOffsets.ToArray(),
-            };
-            return instanceLayout;
+                ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(type, layoutKind);
+                ComputedInstanceFieldLayout layoutFromSimilarIntrinsicVector = _vectorFallbackAlgorithm.ComputeInstanceLayout(similarSpecifiedVector, layoutKind);
+
+                // TODO, enable this code when we switch Vector<T> to follow the same calling convention as its matching similar intrinsic vector
+#if MATCHING_HARDWARE_VECTOR
+                return new ComputedInstanceFieldLayout
+                {
+                    ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
+                    ByteCountAlignment = layoutFromSimilarIntrinsicVector.ByteCountAlignment,
+                    FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
+                    FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
+                    Offsets = layoutFromMetadata.Offsets,
+                };
+#else
+                return new ComputedInstanceFieldLayout
+                {
+                    ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
+                    ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
+                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
+                    Offsets = layoutFromMetadata.Offsets,
+                };
+#endif
+            }
         }
 
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)

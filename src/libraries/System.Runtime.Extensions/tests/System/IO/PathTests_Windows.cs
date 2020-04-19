@@ -42,7 +42,6 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/25242")]
         [Theory,
             MemberData(nameof(TestData_GetPathRoot_Windows)),
             MemberData(nameof(TestData_GetPathRoot_Unc)),
@@ -78,7 +77,7 @@ namespace System.IO.Tests
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {
-                    GetTempPath_SetEnvVar("TMP", tempPath[0], tempPath[1]);
+                    GetTempPath_SetEnvVar_Helper("TMP", tempPath[0], tempPath[1]);
                 }
             }).Dispose();
         }

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct MacData
     {
-        private static readonly byte[] s_defaultIterationCount = { 0x02, 0x01, 0x01 };
+        private static ReadOnlySpan<byte> DefaultIterationCount => new byte[] { 0x02, 0x01, 0x01 };
 
         internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
         internal ReadOnlyMemory<byte> MacSalt;
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             MacData decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultIterationCount, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.IterationCount))
             {
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                     tmp.WriteInteger(IterationCount);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultIterationCount))
+                    if (!encoded.SequenceEqual(DefaultIterationCount))
                     {
                         writer.WriteEncodedValue(encoded);
                     }
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultIterationCount, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.IterationCount))
                 {

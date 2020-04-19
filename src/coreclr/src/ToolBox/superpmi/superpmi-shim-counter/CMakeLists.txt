@@ -23,6 +23,7 @@ set(SUPERPMI_SHIM_COUNTER_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -50,7 +51,7 @@ target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

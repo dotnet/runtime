@@ -12,12 +12,12 @@ namespace System.Net.Http
         private const HttpStatusCode defaultStatusCode = HttpStatusCode.OK;
 
         private HttpStatusCode _statusCode;
-        private HttpResponseHeaders _headers;
-        private HttpResponseHeaders _trailingHeaders;
-        private string _reasonPhrase;
-        private HttpRequestMessage _requestMessage;
+        private HttpResponseHeaders? _headers;
+        private HttpResponseHeaders? _trailingHeaders;
+        private string? _reasonPhrase;
+        private HttpRequestMessage? _requestMessage;
         private Version _version;
-        private HttpContent _content;
+        private HttpContent? _content;
         private bool _disposed;
 
         public Version Version
@@ -39,7 +39,7 @@ namespace System.Net.Http
 
         internal void SetVersionWithoutValidation(Version value) => _version = value;
 
-        public HttpContent Content
+        public HttpContent? Content
         {
             get { return _content; }
             set
@@ -79,7 +79,7 @@ namespace System.Net.Http
 
         internal void SetStatusCodeWithoutValidation(HttpStatusCode value) => _statusCode = value;
 
-        public string ReasonPhrase
+        public string? ReasonPhrase
         {
             get
             {
@@ -129,7 +129,7 @@ namespace System.Net.Http
             }
         }
 
-        public HttpRequestMessage RequestMessage
+        public HttpRequestMessage? RequestMessage
         {
             get { return _requestMessage; }
             set

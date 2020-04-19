@@ -125,7 +125,7 @@ namespace System.Text.Tests
             }
             else if (searchTerm is string str)
             {
-                if (Rune.DecodeFromUtf16(str, out parsed, out int charsConsumed) == OperationStatus.Done
+                if (Rune.DecodeFromUtf16(str.AsSpan(), out parsed, out int charsConsumed) == OperationStatus.Done
                     && charsConsumed == str.Length)
                 {
                     return true;
@@ -161,7 +161,7 @@ namespace System.Text.Tests
             }
             else if (searchTerm is string str)
             {
-                if (ustring.TryCreateFrom(str, out parsed))
+                if (ustring.TryCreateFrom(str.AsSpan(), out parsed))
                 {
                     return true;
                 }

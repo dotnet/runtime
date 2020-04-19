@@ -14,13 +14,34 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class ReadValueTests
     {
         [Fact]
-        public static void NullTypeThrows()
+        public static void NullReturnTypeThrows()
         {
-            Assert.ThrowsAny<ArgumentNullException>(() =>
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
             {
                 Utf8JsonReader reader = default;
-                JsonSerializer.Deserialize(ref reader, null);
+                JsonSerializer.Deserialize(ref reader, returnType: null);
             });
+
+            Assert.Contains("returnType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize("", returnType: null));
+            Assert.Contains("returnType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new byte[] { 1 }, returnType: null));
+            Assert.Contains("returnType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(new MemoryStream(), returnType: null));
+            Assert.Contains("returnType", ex.ToString());
+        }
+
+        [Fact]
+        public static void NullJsonThrows()
+        {
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(json: null, returnType: typeof(string)));
+            Assert.Contains("json", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: null, returnType: null));
+            Assert.Contains("utf8Json", ex.ToString());
         }
 
         [Fact]
@@ -737,21 +758,6 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(1, ((DeepArray)custom).array.GetArrayLength());
                 }
             }
-        }
-    }
-
-    public class FullNameNullTest
-    {
-        private static void EmptyGenericMethod<T>(List<T> param)
-        {
-        }
-
-        [Fact]
-        public static void TypeFullNameNullTest()
-        {
-            MethodInfo[] methods = typeof(FullNameNullTest).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
-            ParameterInfo[] parameters = methods[0].GetParameters();
-            Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize("{}", parameters[0].ParameterType));
         }
     }
 

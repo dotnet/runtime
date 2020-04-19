@@ -2,6 +2,9 @@
   <PropertyGroup>
     <TestProjectName Condition="'$(TestProjectName)' == ''">$(MSBuildProjectName)</TestProjectName>
     <TestFramework Condition="'$(TestFramework)' == ''">xunit</TestFramework>
+    <!-- Implicit test build support when invoking the Test target on the project directly. -->
+    <TestDependsOn Condition="'$(TestNoBuild)' != 'true' and '$(BuildAllProjects)' != 'true'">Build</TestDependsOn>
+    <TestDependsOn>$(TestDependsOn);GenerateRunScript;RunTests</TestDependsOn>
   </PropertyGroup>
 
   <!-- Set env variable to use the local netfx assemblies instead of the ones in the GAC. -->

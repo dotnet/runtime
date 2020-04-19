@@ -10,11 +10,6 @@
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
     <ResolvedMatchingContract Condition="Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
-    <!-- If the contract doesn't exist in the default contract output path add a project reference to the contract project to resolve -->
-    <ProjectReference Condition="'@(ResolvedMatchingContract)' == ''" Include="$(ContractProject)">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>ResolvedMatchingContract</OutputItemType>
-    </ProjectReference>
   </ItemGroup>
 
   <!-- intentionally empty since we no longer need a target -->

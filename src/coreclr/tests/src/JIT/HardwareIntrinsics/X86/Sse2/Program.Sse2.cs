@@ -217,6 +217,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["ShuffleHigh.UInt16.1"] = ShuffleHighUInt161,
                 ["ShuffleLow.Int16.1"] = ShuffleLowInt161,
                 ["ShuffleLow.UInt16.1"] = ShuffleLowUInt161,
+                ["StoreScalar.Int32"] = StoreScalarInt32,
+                ["StoreScalar.UInt32"] = StoreScalarUInt32,
                 ["Subtract.Double"] = SubtractDouble,
                 ["Subtract.Byte"] = SubtractByte,
                 ["Subtract.Int16"] = SubtractInt16,

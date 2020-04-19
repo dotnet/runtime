@@ -36,16 +36,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define INSERTPS_TARGET_SELECT(i) ((i) << 4)
 #define INSERTPS_ZERO(i) (1 << (i))
 
+// ROUNDPS/PD:
+// - Bit 0 through 1 - Rounding mode
+//   * 0b00 - Round to nearest (even)
+//   * 0b01 - Round toward Neg. Infinity
+//   * 0b10 - Round toward Pos. Infinity
+//   * 0b11 - Round toward zero (Truncate)
+// - Bit 2 - Source of rounding control, 0b0 for immediate.
+// - Bit 3 - Precision exception, 0b1 to ignore. (We don't raise FP exceptions)
+#define ROUNDPS_TO_NEAREST_IMM 0b1000
+#define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001
+#define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
+#define ROUNDPS_TOWARD_ZERO_IMM 0b1011
+
 // getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
 //
 // Arguments:
 //   intrinsicId    -   SIMD intrinsic Id
 //   baseType       -   Base type of the SIMD vector
-//   immed          -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
+//   ival           -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
 //
 //
 // Return Value:
-//   Instruction (op) to be used, and immed is set if instruction requires an immediate operand.
+//   Instruction (op) to be used, and ival is set if instruction requires an immediate operand.
 //
 instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
 {
@@ -60,11 +73,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 // AVX supports broadcast instructions to populate YMM reg with a single float/double value from memory.
                 // AVX2 supports broadcast instructions to populate YMM reg with a single value from memory or mm reg.
-                // If we decide to use AVX2 only, we can remove this assert.
-                if (!compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_AVX2))
-                {
-                    assert(baseType == TYP_FLOAT || baseType == TYP_DOUBLE);
-                }
                 switch (baseType)
                 {
                     case TYP_FLOAT:
@@ -637,6 +645,26 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             result = INS_insertps;
             break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
+            {
+                if (baseType == TYP_FLOAT)
+                {
+                    result = INS_roundps;
+                }
+                else
+                {
+                    assert(baseType == TYP_DOUBLE);
+                    result = INS_roundpd;
+                }
+
+                assert(ival != nullptr);
+                *ival = (intrinsicId == SIMDIntrinsicCeil) ? ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM
+                                                           : ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM;
+            }
+            break;
+
         default:
             assert(!"Unsupported SIMD intrinsic");
             unreached();
@@ -1050,6 +1078,32 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
         inst_RV_RV(ins, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
     }
     genProduceReg(simdNode);
+}
+
+//----------------------------------------------------------------------------------
+// genSIMDIntrinsicUnOpWithImm: Generate code for SIMD Intrinsic unary operations with an imm8, such as Ceil.
+//
+// Arguments:
+//    simdNode - The GT_SIMD node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode)
+{
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
+
+    GenTree*  op1       = simdNode->gtGetOp1();
+    var_types baseType  = simdNode->gtSIMDBaseType;
+    regNumber targetReg = simdNode->GetRegNum();
+    assert(targetReg != REG_NA);
+    var_types targetType = simdNode->TypeGet();
+
+    regNumber   op1Reg = genConsumeReg(op1);
+    unsigned    ival;
+    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
+    assert((ival >= 0) && (ival <= 255));
+    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op1Reg, (int8_t)ival);
 }
 
 //----------------------------------------------------------------------------------
@@ -3229,6 +3283,11 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
         case SIMDIntrinsicUpperRestore:
             genSIMDIntrinsicUpperRestore(simdNode);
+            break;
+
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            genSIMDIntrinsicUnOpWithImm(simdNode);
             break;
 
         default:

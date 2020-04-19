@@ -153,7 +153,7 @@ namespace System.DirectoryServices.Interop
                         strb.Append("B:");
                         strb.Append(binaryPart.Length);
                         strb.Append(':');
-                        strb.Append(binaryPart.ToString());
+                        strb.Append(binaryPart);
                         strb.Append(':');
                         strb.Append(Marshal.PtrToStringUni(dnb.pszDNString));
 

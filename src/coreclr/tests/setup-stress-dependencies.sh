@@ -31,7 +31,7 @@ function exit_with_error {
     if [ ! -z "$2" ]; then
         echo $2
     fi
-    
+
     exit $errorCode
 }
 
@@ -106,38 +106,38 @@ fi
 OSName=$(uname -s)
 case "$OSName" in
     Linux)
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 
     Darwin)
-        __BuildOS=OSX
+        __TargetOS=OSX
         __HostOS=OSX
         ;;
 
     FreeBSD)
-        __BuildOS=FreeBSD
+        __TargetOS=FreeBSD
         __HostOS=FreeBSD
         ;;
 
     OpenBSD)
-        __BuildOS=OpenBSD
+        __TargetOS=OpenBSD
         __HostOS=OpenBSD
         ;;
 
     NetBSD)
-        __BuildOS=NetBSD
+        __TargetOS=NetBSD
         __HostOS=NetBSD
         ;;
 
     SunOS)
-        __BuildOS=SunOS
+        __TargetOS=SunOS
         __HostOS=SunOS
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 esac
@@ -145,7 +145,7 @@ esac
 isPortable=0
 
 source "${scriptDir}"/../../../eng/native/init-distro-rid.sh
-initDistroRidGlobal "$__BuildOS" x64 "$isPortable"
+initDistroRidGlobal "$__TargetOS" x64 "$isPortable"
 
 # Hack, replace the rid to ubuntu.14.04 which has a valid non-portable
 # package.
@@ -153,7 +153,7 @@ initDistroRidGlobal "$__BuildOS" x64 "$isPortable"
 # The CoreDisTools package is currently manually packaged and we only have
 # 14.04 and 16.04 packages. Use the oldest package which will work on newer
 # platforms.
-if [ "$__BuildOS" = "Linux" ]; then
+if [ "$__TargetOS" = "Linux" ]; then
     if [ "$__BuildArch" = "x64" ]; then
         __DistroRid=ubuntu.14.04-x64
     elif [ "$__BuildArch" = "x86" ]; then
@@ -178,9 +178,9 @@ then
     exit_with_error 1 "Failed to restore the package"
 fi
 
-CoreDisToolsPackagePathOutputFile="${scriptDir}/../../../artifacts/obj/coreclr/${__BuildOS}.x64/optdatapath.txt"
+CoreDisToolsPackagePathOutputFile="${scriptDir}/../../../artifacts/obj/coreclr/${__TargetOS}.x64/optdatapath.txt"
 
-bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\" /bl" 
+bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\""
 if [ $? -ne 0 ]
 then
     exit_with_error 1 "Failed to find the path to CoreDisTools."
@@ -189,7 +189,7 @@ fi
 packageDir=$(<"${CoreDisToolsPackagePathOutputFile}")
 
 # Get library path
-libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
+libPath="$(find "$packageDir" -path "*$rid*libcoredistools*" -print | head -n 1)"
 echo "libPath to be used: ${libPath}"
 
 if [ ! -e $libPath ] || [ -z "$libPath" ]; then

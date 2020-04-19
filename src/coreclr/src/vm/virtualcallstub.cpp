@@ -158,6 +158,7 @@ void VirtualCallStubManager::StartupLogging()
 }
 
 #define OUTPUT_FORMAT_INT "\t%-30s %d\r\n"
+#define OUTPUT_FORMAT_SIZE "\t%-30s %zu\r\n"
 #define OUTPUT_FORMAT_PCT "\t%-30s %#5.2f%%\r\n"
 #define OUTPUT_FORMAT_INT_PCT "\t%-30s %5d (%#5.2f%%)\r\n"
 
@@ -366,7 +367,7 @@ void VirtualCallStubManager::LoggingDump()
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_used", used);
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", g_cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
@@ -381,7 +382,7 @@ void VirtualCallStubManager::LoggingDump()
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space_dead", g_bucket_space_dead);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%d used, %d total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
@@ -536,26 +537,13 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // in order to minimize the fragmentation of our rangelists
     //
 
-    if (parentDomain->IsDefaultDomain())
-    {
-        indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      = 2000;
-        cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  800;
+    indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      = 2000;
+    cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  800;
 
-        lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  250;
-        dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  600;
-        resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  300;
-        vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  600;
-    }
-    else
-    {
-        indcell_heap_commit_size     = 8;         indcell_heap_reserve_size      = 8;
-        cache_entry_heap_commit_size = 8;         cache_entry_heap_reserve_size  = 8;
-
-        lookup_heap_commit_size      = 8;         lookup_heap_reserve_size       = 8;
-        dispatch_heap_commit_size    = 8;         dispatch_heap_reserve_size     = 8;
-        resolve_heap_commit_size     = 8;         resolve_heap_reserve_size      = 8;
-        vtable_heap_commit_size      = 8;         vtable_heap_reserve_size       = 8;
-    }
+    lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  250;
+    dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  600;
+    resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  300;
+    vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  600;
 
 #ifdef HOST_64BIT
     // If we're on 64-bit, there's a ton of address space, so reserve more space to
@@ -1042,7 +1030,7 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     BOOL fIsOwner = isStub(stubStartAddress);
 
 #if defined(TARGET_X86) && defined(FEATURE_PREJIT)
-    if (!fIsOwner && parentDomain->IsDefaultDomain())
+    if (!fIsOwner)
     {
         fIsOwner = (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub));
     }
@@ -3093,8 +3081,6 @@ void VirtualCallStubManager::LogStats()
         return;
     }
 
-    BOOL isDefault = parentDomain->IsDefaultDomain();
-
     // Temp space to use for formatting the output.
     static const int FMT_STR_SIZE = 160;
     char szPrintStr[FMT_STR_SIZE];
@@ -3102,9 +3088,6 @@ void VirtualCallStubManager::LogStats()
 
     if (g_hStubLogFile && (stats.site_write != 0))
     {
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nStats for %s Manager\r\n", isDefault ? "the Default" : "an Unshared");
-        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-
         //output counters
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_counter", stats.site_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
@@ -3130,14 +3113,14 @@ void VirtualCallStubManager::LogStats()
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_used", used);
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", stats.cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", stats.cache_entry_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%d used, %d total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
     }

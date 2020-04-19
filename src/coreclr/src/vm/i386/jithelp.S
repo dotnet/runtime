@@ -184,12 +184,12 @@ LOCAL_LABEL(WriteBarrier_ShadowCheckEnd_\rg):
     PREPARE_EXTERNAL_VAR g_card_table, eax
     add     edx, [eax]
     pop     eax
-    cmp     BYTE PTR [edx], 0FFh
+    cmp     BYTE PTR [edx], 0xFF
     jne     LOCAL_LABEL(WriteBarrier_UpdateCardTable_\rg)
     ret
 
 LOCAL_LABEL(WriteBarrier_UpdateCardTable_\rg):
-    mov     BYTE PTR [edx], 0FFh
+    mov     BYTE PTR [edx], 0xFF
     ret
 
 LOCAL_LABEL(WriteBarrier_NotInHeap_\rg):
@@ -351,11 +351,11 @@ LOCAL_LABEL(ByRefWriteBarrier_ShadowCheckEnd):
     PREPARE_EXTERNAL_VAR g_card_table, eax
     add     ecx, [eax]
     pop     eax
-    cmp     BYTE PTR [ecx], 0FFh
+    cmp     BYTE PTR [ecx], 0xFF
     jne     LOCAL_LABEL(ByRefWriteBarrier_UpdateCardTable)
     ret
 LOCAL_LABEL(ByRefWriteBarrier_UpdateCardTable):
-    mov     BYTE PTR [ecx], 0FFh
+    mov     BYTE PTR [ecx], 0xFF
     ret
 
 LOCAL_LABEL(ByRefWriteBarrier_NotInHeap):
@@ -412,16 +412,6 @@ ByRefWriteBarrierHelper
 LEAF_ENTRY JIT_WriteBarrierGroup_End, _TEXT
     ret
 LEAF_END JIT_WriteBarrierGroup_End, _TEXT
-
-// *********************************************************************/
-//  In cases where we support it we have an optimized GC Poll callback.
-//  Normall (when we're not trying to suspend for GC, the CORINFO_HELP_POLL_GC
-//  helper points to this nop routine.  When we're ready to suspend for GC,
-//  we whack the Jit Helper table entry to point to the real helper.  When we're
-//  done with GC we whack it back.
-LEAF_ENTRY JIT_PollGC_Nop, _TEXT
-    ret
-LEAF_END JIT_PollGC_Nop, _TEXT
 
 // *********************************************************************/
 // llshl - long shift left
@@ -551,11 +541,11 @@ LEAF_ENTRY JIT_Dbl2LngP4x87, _TEXT
     // get some local space
     sub 	esp, 8
 
-    #define arg1 [esp + 0Ch]
+    #define arg1 [esp + 0x0C]
     fld     QWORD PTR arg1          // fetch arg
     fnstcw  WORD PTR arg1           // store FPCW
     movzx   eax, WORD PTR arg1      // zero extend - wide
-    or      ah, 0Ch                 // turn on OE and DE flags
+    or      ah, 0x0C                // turn on OE and DE flags
     mov     DWORD PTR [esp], eax    // store new FPCW bits
     fldcw   WORD PTR  [esp]         // reload FPCW with new bits
     fistp   QWORD PTR [esp]         // convert
@@ -589,7 +579,7 @@ LEAF_ENTRY JIT_Dbl2LngSSE3, _TEXT
     // get some local space
     sub     esp, 8
 
-    fld     QWORD PTR [esp + 0Ch]   // fetch arg
+    fld     QWORD PTR [esp + 0x0C]   // fetch arg
     fisttp  QWORD PTR [esp]         // convert
     mov     eax, DWORD PTR [esp]    // reload FP result
     mov     edx, DWORD PTR [esp + 4]
@@ -670,12 +660,12 @@ NESTED_END JIT_StackProbe, _TEXT
 //
 LEAF_ENTRY JIT_WriteBarrierReg_PreGrow, _TEXT
     mov     DWORD PTR [edx], ecx
-    cmp     ecx, 0F0F0F0F0h
+    cmp     ecx, 0xF0F0F0F0
     jb      LOCAL_LABEL(NoWriteBarrierPre)
 
     shr     edx, 10
     nop     // padding for alignment of constant
-    cmp     BYTE PTR [edx + 0F0F0F0F0h], 0FFh
+    cmp     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
     jne     LOCAL_LABEL(WriteBarrierPre)
 
 LOCAL_LABEL(NoWriteBarrierPre):
@@ -684,7 +674,7 @@ LOCAL_LABEL(NoWriteBarrierPre):
     nop     // padding for alignment of constant
 
 LOCAL_LABEL(WriteBarrierPre):
-    mov     BYTE PTR [edx+0F0F0F0F0h], 0FFh
+    mov     BYTE PTR [edx+0xF0F0F0F0], 0xFF
     ret
 LEAF_END JIT_WriteBarrierReg_PreGrow, _TEXT
 
@@ -700,14 +690,14 @@ LEAF_END JIT_WriteBarrierReg_PreGrow, _TEXT
 .align 4
 LEAF_ENTRY JIT_WriteBarrierReg_PostGrow, _TEXT
     mov     DWORD PTR [edx], ecx
-    cmp     ecx, 0F0F0F0F0h
+    cmp     ecx, 0xF0F0F0F0
     jb      LOCAL_LABEL(NoWriteBarrierPost)
-    cmp     ecx, 0F0F0F0F0h
+    cmp     ecx, 0xF0F0F0F0
     jae     LOCAL_LABEL(NoWriteBarrierPost)
 
     shr     edx, 10
     nop     // padding for alignment of constant
-    cmp     BYTE PTR [edx + 0F0F0F0F0h], 0FFh
+    cmp     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
     jne     LOCAL_LABEL(WriteBarrierPost)
 
 LOCAL_LABEL(NoWriteBarrierPost):
@@ -716,7 +706,7 @@ LOCAL_LABEL(NoWriteBarrierPost):
     nop     // padding for alignment of constant
 
 LOCAL_LABEL(WriteBarrierPost):
-    mov     BYTE PTR [edx + 0F0F0F0F0h], 0FFh
+    mov     BYTE PTR [edx + 0xF0F0F0F0], 0xFF
     ret
 LEAF_END JIT_WriteBarrierReg_PostGrow,_TEXT
 
@@ -738,7 +728,7 @@ LEAF_END JIT_PatchedWriteBarrierGroup, _TEXT
 .align 8
 LEAF_ENTRY JIT_WriteBarrier\rg, _TEXT
     // Just allocate space that will be filled in at runtime
-    .space 0CCH, 48
+    .space 0xCC, 48
 LEAF_END JIT_WriteBarrier\rg, _TEXT
 
 .endm

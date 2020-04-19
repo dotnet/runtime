@@ -11,7 +11,7 @@ This file contains the logic for providing Execution Script generation.
 WARNING:   When setting properties based on their current state (for example:
            <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
            target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
-           
+
            Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
 
 ***********************************************************************************************
@@ -35,7 +35,7 @@ WARNING:   When setting properties based on their current state (for example:
     This returns the portion of the execution script that generates the required lines to crossgen the test executable.
   -->
   <Target Name="GetCrossgenBashScript">
-    
+
     <PropertyGroup>
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
@@ -59,33 +59,70 @@ if [ ! -z ${RunCrossGen+x} ]%3B then
             ReleaseLock
             exit 1
           fi
-        fi 
-        ReleaseLock       
-    fi        
-fi        
+        fi
+        ReleaseLock
+    fi
+fi
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
-    if [ ! -f $(MSBuildProjectName).org ]%3B then
-        TakeLock
-        if [ ! -f $(MSBuildProjectName).org ]%3B then
-          mkdir IL
-          cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
-          mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
-          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen2/crossgen2" -r:$CORE_ROOT/System.*.dll -r:$CORE_ROOT/Microsoft.*.dll -r:$CORE_ROOT/mscorlib.dll -r:$PWD/*.dll --targetarch=x64 -O --inputbubble $ExtraCrossGen2Args -o:$(scriptPath)$(MSBuildProjectName).dll $(scriptPath)$(MSBuildProjectName).org
-          echo $__Command
-          $__Command
-          __cg2ExitCode=$?
-          if [ $__cg2ExitCode -ne 0 ]
-          then
-            echo Crossgen2 failed with exitcode: $__cg2ExitCode
-            ReleaseLock
-            exit 1
-          fi
-        fi 
-        ReleaseLock       
-    fi        
-fi        
-        ]]>        
+    TakeLock
+    if [ ! -d IL ]%3B then
+      mkdir IL
+      if [ ! -z ${CompositeBuildMode+x} ]%3B then
+        cp $(MSBuildProjectName).dll IL/
+        cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
+      else
+        cp *.dll IL/
+      fi
+    fi
+
+    __OutputFile="$PWD/"
+    if [ ! -z ${CompositeBuildMode+x} ]%3B then
+        __OutputFile+="composite-r2r.dll"
+    else
+        __OutputFile+="$(MSBuildProjectName).dll"
+    fi
+
+    __ResponseFile="$__OutputFile.rsp"
+    rm $__ResponseFile
+
+    __Command=$_DebuggerFullPath
+    __Command+=" $CORE_ROOT/corerun"
+    __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+    __Command+=" @$__ResponseFile"
+    __Command+=" $ExtraCrossGen2Args"
+
+    if [ ! -z ${CompositeBuildMode+x} ]%3B then
+      echo --composite>>$__ResponseFile
+      echo $PWD/IL/*.dll>>$__ResponseFile
+    else
+      echo --inputbubble>>$__ResponseFile
+      echo $PWD/IL/$(MSBuildProjectName).dll>>$__ResponseFile
+      echo -r:$PWD/IL/*.dll>>$__ResponseFile
+    fi
+
+    echo -o:$__OutputFile>>$__ResponseFile
+    echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
+    echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+    echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+    echo --targetarch=x64>>$__ResponseFile
+    echo -O>>$__ResponseFile
+
+    echo "Response file: $__ResponseFile"
+    cat $__ResponseFile
+    echo "Running CrossGen2: $__Command"
+    $__Command
+    __cg2ExitCode=$?
+    if [ $__cg2ExitCode -ne 0 ]
+    then
+      echo Crossgen2 failed with exitcode: $__cg2ExitCode
+      ReleaseLock
+      exit 1
+    fi
+
+    ReleaseLock
+fi
+        ]]>
       </CrossgenBashScript>
 
       <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(CrossgenBashScript)</BashCLRTestPreCommands>
@@ -93,13 +130,12 @@ fi
   </Target>
 
   <Target Name="GetCrossgenBatchScript">
-    
     <PropertyGroup>
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
 
 REM CrossGen Script
-if defined RunCrossGen ( 
+if defined RunCrossGen (
     if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
     set COMPlus_ZapRequire=$(ZapRequire)
     set COMPlus_ZapRequireList=$(MSBuildProjectName)
@@ -121,29 +157,66 @@ if defined RunCrossGen (
             Exit /b 1
         )
     )
-) 
+)
 REM CrossGen2 Script
-if defined RunCrossGen2 ( 
+if defined RunCrossGen2 (
     if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
-    if not exist "$(MSBuildProjectName).org" (
-        call :TakeLock
-        set CrossGen2Status=0
-        if not exist "$(MSBuildProjectName).org" (
-            mkdir IL
-            copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
-            ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
-            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2" %21scriptPath%21$(MSBuildProjectName).org -o:%21scriptPath%21$(MSBuildProjectName).dll --targetarch:x64 -O --inputbubble %21ExtraCrossGen2Args%21 -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:%25cd%25\*.dll
-            echo "!__Command!"
-            call !__Command!
-            set CrossGen2Status=!ERRORLEVEL!
-        )
-        call :ReleaseLock
-        IF NOT !CrossGen2Status!==0 (
-            ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
-            Exit /b 1
+    call :TakeLock
+    set CrossGen2Status=0
+    if not exist "IL" (
+        mkdir IL
+        if defined CompositeBuildMode (
+          copy *.dll IL\
+        ) else (
+          copy $(MSBuildProjectName).dll IL\
         )
     )
-) 
+
+    if defined CompositeBuildMode (
+        set __OutputFile=!scriptPath!\composite-r2r.dll
+    ) else (
+        set __OutputFile=!scriptPath!\$(MSBuildProjectName).dll
+    )
+
+    set __ResponseFile=!__OutputFile!.rsp
+    del /Q !__ResponseFile!
+
+    set __Command=!_DebuggerFullPath!
+    set __Command=!__Command! "!CORE_ROOT!\CoreRun.exe"
+    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+    set __Command=!__Command! @"!__ResponseFile!"
+    set __Command=!__Command! !ExtraCrossGen2Args!
+
+    if defined CompositeBuildMode (
+        echo --composite>>!__ResponseFile!
+        rem In composite mode, treat all dll's in the test folder as rooting inputs
+        echo !scriptPath!IL\*.dll>>!__ResponseFile!
+    ) else (
+        echo --inputbubble>>!__ResponseFile!
+        echo !scriptPath!IL\$(MSBuildProjectName).dll>>!__ResponseFile!
+        echo -r:!scriptPath!IL\*.dll>>!__ResponseFile!
+    )
+
+    echo -o:!__OutputFile!>>!__ResponseFile!
+    echo --targetarch:x64>>!__ResponseFile!
+    echo -O>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
+
+    echo Response file: !__ResponseFile!
+    type !__ResponseFile!
+
+    echo "!__Command!"
+    call !__Command!
+    set CrossGen2Status=!ERRORLEVEL!
+    call :ReleaseLock
+    IF NOT !CrossGen2Status!==0 (
+        ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
+        Exit /b 1
+    )
+)
         ]]>
       </CrossgenBatchScript>
 
@@ -152,5 +225,5 @@ if defined RunCrossGen2 (
   </Target>
 
 
-  
+
 </Project>

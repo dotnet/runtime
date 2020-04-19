@@ -1,8 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EnableComBinder Condition="'$(TargetsWindows)'=='true'">true</EnableComBinder>
+    <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
+    <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
@@ -158,6 +163,83 @@
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableComBinder)'=='true'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
+        <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
+        <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\BoolArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\BoundDispEvent.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\CollectionExtensions.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComBinder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComBinderHelpers.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComClassMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventsSink.Extended.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSinksContainer.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComFallbackMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComHresults.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInterop.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInvokeAction.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInvokeBinder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComMethodDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComRuntimeHelpers.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeClassDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeEnumDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComTypeLibDesc.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConversionArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConvertArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ConvertibleArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\CurrencyArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DateTimeArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispatchArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispCallable.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\DispCallableMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ErrorArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Errors.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ExcepInfo.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Helpers.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IDispatchComObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IDispatchMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\IPseudoComObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\NullArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\SimpleArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\SplatCallSite.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\StringArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeEnumMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeLibMetaObject.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeUtils.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\UnknownArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VarEnumSelector.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Variant.Extended.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArgBuilder.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />
+
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

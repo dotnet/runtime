@@ -13,7 +13,7 @@ namespace System.Net.NetworkInformation
     {
         private readonly long _dhcpLeaseLifetime;
         private readonly SystemIPAddressInformation _innerInfo;
-        private readonly IPAddress _ipv4Mask;
+        private readonly IPAddress? _ipv4Mask;
         private readonly PrefixOrigin _prefixOrigin;
         private readonly SuffixOrigin _suffixOrigin;
         private readonly DuplicateAddressDetectionState _dadState;
@@ -54,7 +54,7 @@ namespace System.Net.NetworkInformation
                     return IPAddress.Any;
                 }
 
-                return _ipv4Mask;
+                return _ipv4Mask!;
             }
         }
 

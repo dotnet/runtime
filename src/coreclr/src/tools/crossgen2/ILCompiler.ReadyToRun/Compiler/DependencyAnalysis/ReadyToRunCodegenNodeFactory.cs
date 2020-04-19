@@ -99,11 +99,11 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
+        private NodeCache<Utf8String, SettableReadOnlyDataBlob> _readOnlyDataBlobs;
 
-        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
+        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(Utf8String name)
         {
-            return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
+            return _readOnlyDataBlobs.GetOrAdd(name);
         }
 
         private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
@@ -129,27 +129,6 @@ namespace ILCompiler.DependencyAnalysis
                 hashCode = hashCode * 23 + DictionaryOwner.GetHashCode();
                 return hashCode;
             }
-        }
-
-        private struct ReadOnlyDataBlobKey : IEquatable<ReadOnlyDataBlobKey>
-        {
-            public readonly Utf8String Name;
-            public readonly byte[] Data;
-            public readonly int Alignment;
-
-            public ReadOnlyDataBlobKey(Utf8String name, byte[] data, int alignment)
-            {
-                Name = name;
-                Data = data;
-                Alignment = alignment;
-            }
-
-            // The assumption here is that the name of the blob is unique.
-            // We can't emit two blobs with the same name and different contents.
-            // The name is part of the symbolic name and we don't do any mangling on it.
-            public bool Equals(ReadOnlyDataBlobKey other) => Name.Equals(other.Name);
-            public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
-            public override int GetHashCode() => Name.GetHashCode();
         }
 
         private struct ModuleAndIntValueKey : IEquatable<ModuleAndIntValueKey>
@@ -235,9 +214,9 @@ namespace ILCompiler.DependencyAnalysis
                         (TypeDesc)helperKey.Target));
             });
 
-            _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
+            _readOnlyDataBlobs = new NodeCache<Utf8String, SettableReadOnlyDataBlob>(key =>
             {
-                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
+                return new SettableReadOnlyDataBlob(key, ObjectNodeSection.ReadOnlyDataSection);
             });
 
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
@@ -433,24 +412,33 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            return _localMethodCache.GetOrAdd(localMethod);
+            return _localMethodCache.GetOrAdd(targetMethod.Method);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
         {
-            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            return EnumerateCompiledMethods(null, CompiledMethodCategory.All);
+        }
+
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
+        {
+            foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
-                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
+#if DEBUG
+                IMethodNode methodNodeDebug = MethodEntrypoint(method);
+                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                if (methodCodeNodeDebug == null && methodNodeDebug is LocalMethodImport localMethodImport)
                 {
-                    methodCodeNode = localMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport precodeMethodImport)
+                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = precodeMethodImport.MethodCodeNode;
+                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
                 }
+                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
+#endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {
@@ -557,7 +545,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
+            if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);

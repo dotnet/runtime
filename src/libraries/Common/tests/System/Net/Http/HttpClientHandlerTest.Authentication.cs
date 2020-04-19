@@ -602,6 +602,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Negotiate")]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion > HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

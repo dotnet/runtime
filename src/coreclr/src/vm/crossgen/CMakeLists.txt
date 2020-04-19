@@ -61,6 +61,7 @@ set(VM_CROSSGEN_SOURCES
   ../methodtablebuilder.cpp
   ../mlinfo.cpp
   ../mscorlib.cpp
+  ../nativeimage.cpp
   ../olevariant.cpp
   ../pefile.cpp
   ../peimage.cpp

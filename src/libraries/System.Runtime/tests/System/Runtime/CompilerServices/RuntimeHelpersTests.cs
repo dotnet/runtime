@@ -264,6 +264,22 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
+        }
+
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryValidArguments()
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+            Assert.NotEqual(memory, IntPtr.Zero);
+        }
+
         [StructLayoutAttribute(LayoutKind.Sequential)]
         private struct StructWithoutReferences
         {

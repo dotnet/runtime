@@ -2935,8 +2935,6 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
     return argv;
 }
 
-Volatile<PVOID> ForbidCallsIntoHostOnThisThread::s_pvOwningFiber = NULL;
-
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
@@ -3084,18 +3082,10 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-void EnableTerminationOnHeapCorruption()
-{
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
-
 namespace Clr
 {
 namespace Util
 {
-    static BOOL g_fLocalAppDataDirectoryInitted = FALSE;
-    static WCHAR *g_wszLocalAppDataDirectory = NULL;
-
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -72,7 +73,12 @@ namespace System.Net.Test.Common
             }
 
             (int varIntLength, int stringLength) = DecodeInteger(buffer, prefixMask);
-            string value = Encoding.ASCII.GetString(buffer.Slice(varIntLength, stringLength));
+#if !NETFRAMEWORK
+            ReadOnlySpan<byte> bytes = buffer.Slice(varIntLength, stringLength);
+#else
+            byte[] bytes = buffer.Slice(varIntLength, stringLength).ToArray();
+#endif
+            string value = Encoding.ASCII.GetString(bytes);
 
             return (varIntLength + stringLength, value);
         }
@@ -203,6 +209,32 @@ namespace System.Net.Test.Common
             new HttpHeaderData("x-frame-options", "deny"),
             new HttpHeaderData("x-frame-options", "sameorigin"),
         };
-    }
 
+#if NETFRAMEWORK
+        private static class BitOperations
+        {
+            public static int LeadingZeroCount(byte value)
+            {
+                int count = 0;
+                while ((value & 0b1000_0000) != 0)
+                {
+                    count++;
+                    value <<= 1;
+                }
+                return count;
+            }
+
+            public static int TrailingZeroCount(int value)
+            {
+                int count = 0;
+                while ((value & 1) != 0)
+                {
+                    count++;
+                    value >>= 1;
+                }
+                return count;
+            }
+        }
+#endif
+    }
 }

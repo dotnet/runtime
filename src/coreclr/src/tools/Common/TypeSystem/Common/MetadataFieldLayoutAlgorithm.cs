@@ -525,7 +525,8 @@ namespace Internal.TypeSystem
             }
 
             largestAlignmentRequired = type.Context.Target.GetObjectAlignment(largestAlignmentRequired);
-            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, largestAlignmentRequired.AsInt > 4);
+            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
+            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our

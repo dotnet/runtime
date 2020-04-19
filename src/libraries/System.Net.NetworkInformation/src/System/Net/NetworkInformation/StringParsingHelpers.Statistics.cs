@@ -411,7 +411,7 @@ namespace System.Net.NetworkInformation
                 int index = 0;
                 while (!sr.EndOfStream)
                 {
-                    string line = sr.ReadLine();
+                    string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
                         string[] pieces = line.Split(new char[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);

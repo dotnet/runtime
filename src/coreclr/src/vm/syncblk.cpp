@@ -1669,7 +1669,6 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             LONG newValue = oldValue | tid;
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
             {
-                pCurThread->IncLockCount();
                 return AwareLock::EnterHelperResult_Entered;
             }
 
@@ -2279,16 +2278,7 @@ BOOL ObjHeader::Wait(INT32 timeOut, BOOL exitContext)
     if (!pSB->DoesCurrentThreadOwnMonitor())
         COMPlusThrow(kSynchronizationLockException);
 
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    DWORD curLockCount = pThread->m_dwLockCount;
-#endif
-
-    BOOL result = pSB->Wait(timeOut,exitContext);
-
-    _ASSERTE (curLockCount == pThread->m_dwLockCount);
-
-    return result;
+    return pSB->Wait(timeOut,exitContext);
 }
 
 void ObjHeader::Pulse()
@@ -2394,7 +2384,6 @@ void AwareLock::Enter()
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
             m_Recursion = 1;
-            pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
             // The best place to grab this is from the ECall frame
@@ -2457,7 +2446,6 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
             m_Recursion = 1;
-            pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
             // The best place to grab this is from the ECall frame
@@ -2726,7 +2714,6 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     m_HoldingThread = pCurThread;
     m_Recursion = 1;
-    pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame

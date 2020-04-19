@@ -54,11 +54,6 @@ namespace System
         public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text) { throw null; }
         public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text, int start) { throw null; }
         public static System.ReadOnlySpan<byte> AsBytes(this System.Utf8String? text, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, System.Index startIndex) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, int start) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, System.Range range) { throw null; }
         public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text) { throw null; }
         public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, System.Index startIndex) { throw null; }
         public static System.ReadOnlyMemory<byte> AsMemoryBytes(this System.Utf8String? text, int start) { throw null; }
@@ -96,10 +91,14 @@ namespace System
         public bool Contains(System.Text.Rune value, System.StringComparison comparison) { throw null; }
         public bool Contains(System.Utf8String value) { throw null; }
         public bool Contains(System.Utf8String value, System.StringComparison comparison) { throw null; }
+#if !NETSTANDARD2_0
         public static System.Utf8String Create<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
+#endif
         public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<byte> buffer) { throw null; }
         public static System.Utf8String CreateFromRelaxed(System.ReadOnlySpan<char> buffer) { throw null; }
+#if !NETSTANDARD2_0
         public static System.Utf8String CreateRelaxed<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
+#endif
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(char value, System.StringComparison comparison) { throw null; }
         public bool EndsWith(System.Text.Rune value) { throw null; }
@@ -170,7 +169,9 @@ namespace System
         public bool TryFindLast(System.Utf8String value, out System.Range range) { throw null; }
         public bool TryFindLast(System.Utf8String value, System.StringComparison comparisonType, out System.Range range) { throw null; }
         public static System.Utf8String UnsafeCreateWithoutValidation(System.ReadOnlySpan<byte> utf8Contents) { throw null; }
+#if !NETSTANDARD2_0
         public static System.Utf8String UnsafeCreateWithoutValidation<TState>(int length, TState state, System.Buffers.SpanAction<byte, TState> action) { throw null; }
+#endif
         public readonly partial struct ByteEnumerable : System.Collections.Generic.IEnumerable<byte>
         {
             private readonly object _dummy;

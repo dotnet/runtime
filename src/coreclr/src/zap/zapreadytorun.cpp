@@ -38,16 +38,16 @@ void ZapReadyToRunHeader::Save(ZapWriter * pZapWriter)
     readyToRunHeader.MinorVersion = READYTORUN_MINOR_VERSION;
 
     if (pImage->m_ModuleDecoder.IsPlatformNeutral())
-        readyToRunHeader.Flags |= READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE;
 
     // If all types loaded succesfully, set a flag to skip type loading sanity checks at runtime
     if (pImage->GetCompileInfo()->AreAllClassesFullyLoaded(pImage->GetModuleHandle()))
-        readyToRunHeader.Flags |= READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
 
     if (pImage->GetZapperOptions()->m_fPartialNGen)
-        readyToRunHeader.Flags |= READYTORUN_FLAG_PARTIAL;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_PARTIAL;
 
-    readyToRunHeader.NumberOfSections = m_Sections.GetCount();
+    readyToRunHeader.CoreHeader.NumberOfSections = m_Sections.GetCount();
 
     pZapWriter->Write(&readyToRunHeader, sizeof(readyToRunHeader));
 
@@ -841,6 +841,8 @@ static_assert_no_msg((int)READYTORUN_FIXUP_DeclaringTypeHandle       == (int)ENC
 
 static_assert_no_msg((int)READYTORUN_FIXUP_IndirectPInvokeTarget     == (int)ENCODE_INDIRECT_PINVOKE_TARGET);
 static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENCODE_PINVOKE_TARGET);
+
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
 
 //
 // READYTORUN_EXCEPTION

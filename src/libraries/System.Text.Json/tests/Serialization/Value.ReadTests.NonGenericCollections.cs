@@ -458,11 +458,46 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        [Fact]
-        public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws()
+        [Theory]
+        [MemberData(nameof(ReadSimpleTestClass_NonGenericWrappers_NoAddMethod))]
+        public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws(Type type, string json, Type exceptionMessageType)
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(exceptionMessageType.ToString(), ex.Message);
+        }
+
+        public static IEnumerable<object[]> ReadSimpleTestClass_NonGenericWrappers_NoAddMethod
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithIEnumerableWrapper),
+                    SimpleTestClassWithIEnumerableWrapper.s_json,
+                    typeof(WrapperForIEnumerable)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithICollectionWrapper),
+                    SimpleTestClassWithICollectionWrapper.s_json,
+                    typeof(WrapperForICollection)
+                };
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(WrapperForIEnumerablePrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIEnumerableInternalConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForICollectionPrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForICollectionInternalConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIListPrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIListInternalConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIDictionaryPrivateConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(WrapperForIDictionaryInternalConstructor), @"{""Key"":""Value""}")]
+        public static void Read_NonGeneric_NoPublicConstructor_Throws(Type type, string json)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
     }
 }

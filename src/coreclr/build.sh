@@ -148,7 +148,7 @@ build_CoreLib_ni()
     if [[ -e "$__CrossGenCoreLibLog" ]]; then
         rm "$__CrossGenCoreLibLog"
     fi
-    echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
+    echo "Generating native image of System.Private.CoreLib.dll for $__TargetOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
     "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
     local exit_code="$?"
@@ -157,7 +157,7 @@ build_CoreLib_ni()
         exit "$exit_code"
     fi
 
-    if [[ "$__BuildOS" == "Linux" ]]; then
+    if [[ "$__TargetOS" == "Linux" ]]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
         "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
@@ -181,7 +181,7 @@ build_CoreLib()
        return
     fi
 
-    echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
+    echo "Commencing build of managed components for $__TargetOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
     __ExtraBuildArgs=""
@@ -207,7 +207,7 @@ build_CoreLib()
     "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
-                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__TargetOS__$__BuildArch__$__BuildType.log \
                                            -bl:"$__LogsDir/System.Private.CoreLib_$__ConfigTriplet.binlog" \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
@@ -220,7 +220,7 @@ build_CoreLib()
 
     if [[ "$__BuildManagedTools" -eq "1" ]]; then
         echo "Publishing crossgen2 for $__DistroRid"
-        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:BuildArch=$__BuildArch
+        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:TargetArchitecture=$__BuildArch
 
         local exit_code="$?"
         if [[ "$exit_code" != 0 ]]; then
@@ -294,13 +294,13 @@ generate_NugetPackages()
         return
     fi
 
-    echo "Generating nuget packages for $__BuildOS"
+    echo "Generating nuget packages for $__TargetOS"
     echo "DistroRid is $__DistroRid"
     echo "ROOTFS_DIR is $ROOTFS_DIR"
     # Build the packages
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/packages.builds \
-                                       -verbosity minimal -bl:"$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog" \
+    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/coreclr-packages.proj \
+                                       -verbosity minimal -bl:"$__LogsDir/Nuget_$__TargetOS__$__BuildArch__$__BuildType.binlog" \
                                        /p:PortableBuild=true \
                                        /p:"__IntermediatesDir=$__IntermediatesDir" /p:"__RootBinDir=$__RootBinDir" /p:"__DoCrossArchBuild=$__CrossBuild" \
                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -391,6 +391,8 @@ handle_arguments_local() {
 }
 
 echo "Commencing CoreCLR Repo build"
+echo "WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.sh script."
+echo "See https://github.com/dotnet/runtime/issues/32991 for more information."
 
 # Argument types supported by this script:
 #
@@ -459,12 +461,12 @@ fi
 # Set dependent variables
 __LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
-__ConfigTriplet=$__BuildOS__$__BuildArch__$__BuildType
+__ConfigTriplet=$__TargetOS__$__BuildArch__$__BuildType
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
@@ -546,4 +548,6 @@ fi
 
 echo "Repo successfully built."
 echo "Product binaries are available at $__BinDir"
+echo "WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.sh script."
+echo "See https://github.com/dotnet/runtime/issues/32991 for more information."
 exit 0

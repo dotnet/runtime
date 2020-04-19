@@ -93,11 +93,11 @@ namespace System.Net
                 StringBuilder sb = new StringBuilder("HttpListenerRequest Headers:\n");
                 for (int i = 0; i < Headers.Count; i++)
                 {
-                    sb.Append("\t");
+                    sb.Append('\t');
                     sb.Append(Headers.GetKey(i));
                     sb.Append(" : ");
                     sb.Append(Headers.Get(i));
-                    sb.Append("\n");
+                    sb.Append('\n');
                 }
                 NetEventSource.Info(this, sb.ToString());
             }

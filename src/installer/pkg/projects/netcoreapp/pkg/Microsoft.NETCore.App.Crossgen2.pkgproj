@@ -7,6 +7,7 @@
   <PropertyGroup>
     <FrameworkPackType>crossgen2</FrameworkPackType>
     <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <!--
@@ -29,13 +30,63 @@
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-  <ItemGroup>
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)*" />
+  <!--
+    We're publishing crossgen2 as a self-contained application against the live runtime bits,
+    so we need to assemble the self-contained framework here.
+  -->
+  <Target Name="GetCrossgen2Files"
+          DependsOnTargets="ConvertItems"
+          BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" />
+      <File Remove="@(RuntimeFile)" />
+    </ItemGroup>
 
-    <File Include="@(ArchitectureSpecificToolFile)">
-      <TargetPath>tools</TargetPath>
-    </File>
-  </ItemGroup>
+    <ItemGroup>
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
+      <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
+      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native'" />
+      <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
+      <!-- Include the native hosting layer  -->
+      <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+            Targets="Restore"
+            Properties="
+            Configuration=$(RuntimeConfiguration);
+            SelfContained=true;
+            RuntimeIdentifier=$(PackageRID)">
+    <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
+    </MSBuild>
+
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+            Targets="GenerateDepsJsonFile"
+            Properties="
+            Configuration=$(RuntimeConfiguration);
+            GenerateDependencyFile=true;
+            IncludeFileVersionsInDependencyFile=false;
+            SelfContained=true;
+            RemoveLongNameDac=true;
+            RuntimeGraphPath=$(LiveRuntimeIdentifierGraphPath);
+            RuntimeIdentifier=$(PackageRID)">
+    <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
+    </MSBuild>
+
+    <ItemGroup>
+      <File Include="@(Crossgen2File)">
+        <TargetPath>tools</TargetPath>
+      </File>
+    </ItemGroup>
+
+  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 

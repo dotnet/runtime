@@ -258,7 +258,7 @@ void Frame::LogFrame(
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", GetVTablePtr());
+        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", (VOID *)GetVTablePtr());
         pFrameType = buf;
     }
 
@@ -402,9 +402,9 @@ VOID Frame::Push(Thread *pThread)
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in mscorwks.dll
-    _ASSERTE(pThread->IsExecutingOnAltStack() ||
-              ((m_Next == FRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+    _ASSERTE((pThread->IsExecutingOnAltStack() ||
+             (m_Next == FRAME_TOP) ||
+             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -734,6 +734,32 @@ Frame::Interception StubDispatchFrame::GetInterception()
     LIMITED_METHOD_CONTRACT;
 
     return INTERCEPTION_NONE;
+}
+
+#ifndef DACCESS_COMPILE
+CallCountingHelperFrame::CallCountingHelperFrame(TransitionBlock *pTransitionBlock, MethodDesc *pMD)
+    : FramedMethodFrame(pTransitionBlock, pMD)
+{
+    WRAPPER_NO_CONTRACT;
+}
+#endif
+
+void CallCountingHelperFrame::GcScanRoots(promote_func *fn, ScanContext *sc)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FramedMethodFrame::GcScanRoots(fn, sc);
+    PromoteCallerStack(fn, sc);
+}
+
+BOOL CallCountingHelperFrame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // OnCallCountThresholdReached never directly calls managed code. Returning false instructs the debugger to step out of the
+    // call that erected this frame and continuing trying to trace execution from there.
+    LOG((LF_CORDB, LL_INFO1000, "CallCountingHelperFrame::TraceFrame: return FALSE\n"));
+    return FALSE;
 }
 
 #ifndef DACCESS_COMPILE

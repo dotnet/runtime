@@ -322,6 +322,15 @@ namespace System
             return GetGCHandle(new QCallTypeHandle(ref nativeHandle), type);
         }
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FreeGCHandle(QCallTypeHandle typeHandle, IntPtr objHandle);
+
+        internal IntPtr FreeGCHandle(IntPtr objHandle)
+        {
+            RuntimeTypeHandle nativeHandle = GetNativeHandle();
+            return FreeGCHandle(new QCallTypeHandle(ref nativeHandle), objHandle);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 

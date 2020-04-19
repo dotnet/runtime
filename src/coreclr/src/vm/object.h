@@ -149,33 +149,17 @@ class Object
         m_pMethTab = pMT;
     }
 
-    VOID SetMethodTable(MethodTable *pMT
-                        DEBUG_ARG(BOOL bAllowArray = FALSE))
+    VOID SetMethodTable(MethodTable *pMT)
     {
-        LIMITED_METHOD_CONTRACT;
-        m_pMethTab = pMT;
-
-#ifdef _DEBUG
-        if (!bAllowArray)
-        {
-            AssertNotArray();
-        }
-#endif // _DEBUG
+        WRAPPER_NO_CONTRACT;
+        RawSetMethodTable(pMT);
     }
 
-    VOID SetMethodTableForLargeObject(MethodTable *pMT
-                                      DEBUG_ARG(BOOL bAllowArray = FALSE))
+    VOID SetMethodTableForUOHObject(MethodTable *pMT)
     {
-        // This function must be used if the allocation occurs on the large object heap, and the method table might be a collectible type
         WRAPPER_NO_CONTRACT;
+        // This function must be used if the allocation occurs on a UOH heap, and the method table might be a collectible type
         ErectWriteBarrierForMT(&m_pMethTab, pMT);
-
-#ifdef _DEBUG
-        if (!bAllowArray)
-        {
-            AssertNotArray();
-        }
-#endif // _DEBUG
     }
 #endif //!DACCESS_COMPILE
 
@@ -270,11 +254,8 @@ class Object
     // assert.
     BOOL ValidateObjectWithPossibleAV();
 
-    // Validate an object ref out of the Promote routine in the GC
-    void ValidatePromote(ScanContext *sc, DWORD flags);
-
     // Validate an object ref out of the VerifyHeap routine in the GC
-    void ValidateHeap(Object *from, BOOL bDeep=TRUE);
+    void ValidateHeap(BOOL bDeep=TRUE);
 
     PTR_SyncBlock PassiveGetSyncBlock()
     {
@@ -477,16 +458,6 @@ class Object
 
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
-
-#ifdef _DEBUG
-    void AssertNotArray()
-    {
-        if (m_pMethTab->IsArray())
-        {
-            _ASSERTE(!"ArrayBase::SetArrayMethodTable/ArrayBase::SetArrayMethodTableForLargeObject should be used for arrays");
-        }
-    }
-#endif // _DEBUG
 };
 
 /*
@@ -547,8 +518,8 @@ class ArrayBase : public Object
     friend class GCHeap;
     friend class CObjectHeader;
     friend class Object;
-    friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap);
+    friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
     friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
@@ -575,20 +546,15 @@ public:
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;
 
-        // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
+    // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
     inline CorElementType GetArrayElementType() const;
 
     inline unsigned GetRank() const;
 
-        // Total element count for the array
+    // Total element count for the array
     inline DWORD GetNumComponents() const;
 
-#ifndef DACCESS_COMPILE
-    inline void SetArrayMethodTable(MethodTable *pArrayMT);
-    inline void SetArrayMethodTableForLargeObject(MethodTable *pArrayMT);
-#endif // !DACCESS_COMPILE
-
-        // Get pointer to elements, handles any number of dimensions
+    // Get pointer to elements, handles any number of dimensions
     PTR_BYTE GetDataPtr(BOOL inGC = FALSE) const {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -699,7 +665,7 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags, BOOL bAllocateInLargeHeap);
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 

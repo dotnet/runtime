@@ -40,7 +40,7 @@ Each framework reference must specify a version number, which is used as the min
 Version of the first framework reference can be overridden by a command line option `--fx-version` in which case that version is used and its roll-forward is set to `Disable`.
 
 #### Roll-forward
-The roll-forward setting specifies how to find a matching framework available on the machine. Design for this setting is described in [Runtime Binding Behavior](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md).
+The roll-forward setting specifies how to find a matching framework available on the machine. Design for this setting is described in [Runtime Binding Behavior](https://github.com/dotnet/designs/blob/master/accepted/2019/runtime-binding.md).
 
 The value is a string (enum really) which is case insensitive.
 

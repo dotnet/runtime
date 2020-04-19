@@ -264,6 +264,8 @@ namespace System.Resources.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void BinaryFormattedResources()
         {
             var values = TestData.BinaryFormatted;
@@ -300,6 +302,8 @@ namespace System.Resources.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void BinaryFormattedResourcesWithoutTypeName()
         {
             var values = TestData.BinaryFormatted;
@@ -335,6 +339,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void TypeConverterByteArrayResources()
         {
             var values = TestData.ByteArrayConverter;
@@ -397,6 +402,8 @@ namespace System.Resources.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void StreamResources()
         {
             var values = TestData.Activator;

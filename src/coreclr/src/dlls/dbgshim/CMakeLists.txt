@@ -29,16 +29,16 @@ endif(CLR_CMAKE_TARGET_WIN32)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
@@ -75,7 +75,7 @@ if(CLR_CMAKE_HOST_WIN32)
 else()
     list(APPEND DBGSHIM_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -83,5 +83,4 @@ endif(CLR_CMAKE_HOST_WIN32)
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
 # add the install targets
-install_clr(TARGETS dbgshim)
-install_clr(TARGETS dbgshim DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS dbgshim ADDITIONAL_DESTINATION sharedFramework)

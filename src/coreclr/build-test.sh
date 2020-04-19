@@ -5,6 +5,12 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
+        if [[ $__Mono -eq 1 ]]; then
+            export RuntimeFlavor="mono"
+        else
+            export RuntimeFlavor="coreclr"
+        fi
+
         __Exclude="${__ProjectDir}/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -18,15 +24,15 @@ build_test_wrappers()
 
         # Set up directories and file names
         __BuildLogRootName="$subDirectoryName"
-        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.log"
+        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.wrn"
+        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.err"
         __MsbuildLog="/fileloggerparameters:\"Verbosity=normal;LogFile=${__BuildLog}\""
         __MsbuildWrn="/fileloggerparameters1:\"WarningsOnly;LogFile=${__BuildWrn}\""
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -35,7 +41,7 @@ build_test_wrappers()
             exit "$exitCode"
         else
             echo "XUnit Wrappers have been built."
-            echo { "\"build_os\"": "\"${__BuildOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
+            echo { "\"build_os\"": "\"${__TargetOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
 
         fi
     fi
@@ -59,10 +65,10 @@ generate_layout()
     __CMakeBinDir="${__TestBinDir}"
 
     if [[ -z "$__TestIntermediateDir" ]]; then
-        __TestIntermediateDir="tests/obj/${__BuildOS}.${__BuildArch}.${__BuildType}"
+        __TestIntermediateDir="tests/obj/${__TargetOS}.${__BuildArch}.${__BuildType}"
     fi
 
-    echo "__BuildOS: ${__BuildOS}"
+    echo "__TargetOS: ${__TargetOS}"
     echo "__BuildArch: ${__BuildArch}"
     echo "__BuildType: ${__BuildType}"
     echo "__TestIntermediateDir: ${__TestIntermediateDir}"
@@ -84,7 +90,7 @@ generate_layout()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -121,7 +127,7 @@ generate_layout()
     # Make sure to copy over the pulled down packages
     cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
 
-    if [[ "$__BuildOS" != "OSX" ]]; then
+    if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
@@ -135,7 +141,9 @@ generate_layout()
 
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
-        precompile_coreroot_fx
+        if [[ "$__SkipCrossgenFramework" == 0 ]]; then
+            precompile_coreroot_fx
+        fi
     fi
 }
 
@@ -175,12 +183,22 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
+    local compositeCommandLine="$overlayDir/corerun"
+    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" --composite"
+    compositeCommandLine+=" -O"
+    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
     declare -a failedAssemblies
 
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
     for fileToPrecompile in ${filesToPrecompile}; do
         local filename="$fileToPrecompile"
         if is_skip_crossgen_test "$(basename $filename)"; then
+            continue
+        fi
+
+        if [[ "$__CompositeBuildMode" != 0 ]]; then
+            compositeCommandLine+=" $filename"
             continue
         fi
 
@@ -191,7 +209,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="$overlayDir/crossgen2/crossgen2 $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="$overlayDir/corerun $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
         echo Precompiling "$filename"
@@ -215,6 +233,17 @@ precompile_coreroot_fx()
         totalPrecompiled=$((totalPrecompiled+1))
         echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
     done
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        # Compile the entire framework in composite build mode
+        echo "Compiling composite R2R framework: $compositeCommandLine"
+        $compositeCommandLine
+        local exitCode="$?"
+        if [[ "$exitCode" != 0 ]]; then
+            echo Unable to precompile composite framework, exit code is "$exitCode".
+            exit 1
+        fi
+    fi
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
@@ -279,7 +308,7 @@ build_Tests()
         mkdir -p "${__ManagedTestIntermediatesDir}"
     fi
 
-    echo "__BuildOS: ${__BuildOS}"
+    echo "__TargetOS: ${__TargetOS}"
     echo "__BuildArch: ${__BuildArch}"
     echo "__BuildType: ${__BuildType}"
     echo "__TestIntermediatesDir: ${__TestIntermediatesDir}"
@@ -303,7 +332,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -385,9 +414,9 @@ build_MSBuild_projects()
 
     # Set up directories and file names
     __BuildLogRootName="$subDirectoryName"
-    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.log"
+    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.wrn"
+    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.err"
 
     if [[ "$subDirectoryName" == "Tests_Managed" ]]; then
         # Execute msbuild managed test build in stages - workaround for excessive data retention in MSBuild ConfigCache
@@ -479,18 +508,26 @@ build_MSBuild_projects()
 }
 
 usage_list=("-buildtestwrappersonly: only build the test wrappers.")
+usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
+usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
+usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiprestorepackages: skip package restore.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
+usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
+__BuildArch=
 
 handle_arguments_local() {
     case "$1" in
@@ -498,19 +535,32 @@ handle_arguments_local() {
             __BuildTestWrappersOnly=1
             ;;
 
+        skiptestwrappers|-skiptestwrappers)
+            __BuildTestWrappers=0
+            ;;
+
         copynativeonly|-copynativeonly)
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
+            __SkipCrossgenFramework=1
             ;;
 
         crossgen|-crossgen)
             __DoCrossgen=1
+            __TestBuildMode=crossgen
             ;;
 
         crossgen2|-crossgen2)
             __DoCrossgen2=1
+            __TestBuildMode=crossgen2
+            ;;
+
+        composite|-composite)
+            __CompositeBuildMode=1
+            __DoCrossgen2=1
+            __TestBuildMode=crossgen2
             ;;
 
         generatetesthostonly|-generatetesthostonly)
@@ -524,6 +574,14 @@ handle_arguments_local() {
         priority1|-priority1)
             __priority1=1
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
+            ;;
+
+        targetGeneric|-targetGeneric)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
+            ;;
+
+        targetSpecific|-targetSpecific)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
             ;;
 
         rebuild|-rebuild)
@@ -542,13 +600,15 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
+        excludemonofailures|-excludemonofailures)
+            __Mono=1
+            ;;
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
     esac
 }
 
-__BuildArch=
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=INCLUDE_TESTS
@@ -570,6 +630,7 @@ __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
+__CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=
@@ -587,6 +648,7 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
+__SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
 __LocalCoreFXConfig=${__BuildType}
@@ -607,12 +669,12 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__ProjectDir/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 
@@ -620,7 +682,7 @@ __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$BuildArch.$__BuildType.log"
+__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
@@ -671,7 +733,7 @@ else
     echo " -------------------------------------------------- "
     echo " Example runtest.sh command"
     echo ""
-    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin"
+    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
     echo " -------------------------------------------------- "
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"

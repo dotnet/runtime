@@ -470,7 +470,6 @@ namespace SoDBench
                 "coreclr.dll",
                 "mscordaccore.dll",
                 "mscordbi.dll",
-                "mscorrc.debug.dll",
                 "mscorrc.dll",
                 "sos.dll",
                 "SOS.NETCore.dll",

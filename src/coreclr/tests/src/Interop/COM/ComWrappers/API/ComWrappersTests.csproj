@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../Common.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+  </ItemGroup>
+</Project>

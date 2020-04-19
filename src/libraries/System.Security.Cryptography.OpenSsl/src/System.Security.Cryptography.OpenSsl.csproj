@@ -24,6 +24,9 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs">
+      <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

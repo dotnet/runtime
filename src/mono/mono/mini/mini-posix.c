@@ -1027,7 +1027,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_async_safe_printf ("=================================================================\n");
 
 		if (!leave) {
-			mono_summarize_timeline_start ();
+			mono_summarize_timeline_start (signal);
 			mono_summarize_toggle_assertions (TRUE);
 
 			int mono_max_summary_len = 10000000;

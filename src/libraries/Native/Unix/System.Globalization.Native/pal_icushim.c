@@ -3,7 +3,13 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#if defined(TARGET_UNIX)
 #include <dlfcn.h>
+#elif defined(TARGET_WINDOWS)
+#include <windows.h>
+#include <libloaderapi.h>
+#include <errhandlingapi.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +26,22 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 
-#ifdef __APPLE__
+#if defined(TARGET_WINDOWS)
+
+static int FindICULibs()
+{
+    libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    // Windows has a single dll for icu.
+    libicui18n = libicuuc;
+    return TRUE;
+}
+
+#elif defined(TARGET_OSX)
 
 static int FindICULibs()
 {
@@ -42,7 +63,54 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // __APPLE__
+#elif defined(TARGET_ANDROID)
+
+// support ICU versions from 50-255
+#define MinICUVersion 50
+#define MaxICUVersion 255
+#define MaxICUVersionStringLength 4
+
+static int FindSymbolVersion(char* symbolName, char* symbolVersion)
+{
+    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
+    {
+        sprintf(symbolVersion, "_%d", i);
+        sprintf(symbolName, "u_strlen%s", symbolVersion);
+        if (dlsym(libicuuc, symbolName) != NULL)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+
+    if (libicui18n == NULL)
+    {
+        return FALSE;
+    }
+
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    if (!FindSymbolVersion(symbolName, symbolVersion))
+    {
+        fprintf(stderr, "Cannot determine ICU version.");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -53,12 +121,12 @@ static int FindICULibs()
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
 // equal to the version we are built against and less or equal to that version
-// plus 20 to give us enough headspace. The ICU seems to version about twice
+// plus 30 to give us enough headspace. The ICU seems to version about twice
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
 #define MinICUVersion  50
-#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 20)
+#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
 #define MinSubICUVersion 1
@@ -176,14 +244,8 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     // ICU packaging documentation (http://userguide.icu-project.org/packaging)
     // describes applications link against the major (e.g. libicuuc.so.54).
 
-    // Select the version of ICU present at build time.
-    if (OpenICULibraries(MinICUVersion, -1, -1, versionPrefix, symbolName, symbolVersion))
-    {
-        return TRUE;
-    }
-
     // Select the highest supported version of ICU present on the local machine
-    for (int i = MaxICUVersion; i > MinICUVersion; i--)
+    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
     {
         if (OpenICULibraries(i, -1, -1, versionPrefix, symbolName, symbolVersion))
         {
@@ -242,7 +304,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
 }
 
-#endif // __APPLE__
+#endif
 
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
@@ -250,7 +312,18 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // return 0 if failed to load ICU and 1 otherwise
 int32_t GlobalizationNative_LoadICU()
 {
-#ifdef __APPLE__
+#if defined(TARGET_WINDOWS)
+
+    if (!FindICULibs())
+    {
+        return FALSE;
+    }
+
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", #fn, GetLastError()); abort(); }
+
+#elif defined(TARGET_OSX)
 
     if (!FindICULibs())
     {
@@ -262,11 +335,17 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", #fn, dlerror()); abort(); }
 
-#else // __APPLE__
+#else // !TARGET_WINDOWS && !TARGET_OSX
 
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
 
+#if defined(TARGET_ANDROID)
+    if (!FindICULibs(symbolName, symbolVersion))
+    {
+        return FALSE;
+    }
+#else
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
@@ -274,6 +353,7 @@ int32_t GlobalizationNative_LoadICU()
             return FALSE;
         }
     }
+#endif
 
     // Get pointers to all the ICU functions that are needed
 #define PER_FUNCTION_BLOCK(fn, lib) \
@@ -282,7 +362,7 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
-#endif // __APPLE__
+#endif
 
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
@@ -294,7 +374,11 @@ int32_t GlobalizationNative_LoadICU()
 // return the current loaded ICU version
 int32_t GlobalizationNative_GetICUVersion()
 {
-    int32_t version;
-    u_getVersion((uint8_t *) &version);
-    return version;
+    if (u_getVersion_ptr == NULL)
+        return 0;
+    
+    UVersionInfo versionInfo;
+    u_getVersion(versionInfo);
+
+    return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }

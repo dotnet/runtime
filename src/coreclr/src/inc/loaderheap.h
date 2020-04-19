@@ -439,17 +439,17 @@ public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE
+               BOOL fMakeExecutable = FALSE,
+               BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            NULL, 0,
                            pRangeList,
-                           fMakeExecutable)
+                           fMakeExecutable),
+        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_CriticalSection = NULL;
-        m_CriticalSection = CreateLoaderHeapLock();
         m_fExplicitControl = FALSE;
     }
 
@@ -459,18 +459,18 @@ public:
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
                RangeList *pRangeList = NULL,
-               BOOL fMakeExecutable = FALSE
+               BOOL fMakeExecutable = FALSE,
+               BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            dwReservedRegionAddress,
                            dwReservedRegionSize,
                            pRangeList,
-                           fMakeExecutable)
+                           fMakeExecutable),
+        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_CriticalSection = NULL;
-        m_CriticalSection = CreateLoaderHeapLock();
         m_fExplicitControl = FALSE;
     }
 

@@ -242,7 +242,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_Int32()
         {
             int value = 0x12345670;
-            Assert.Equal(0x02244220, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
         }
 
@@ -250,7 +250,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_UInt32()
         {
             uint value = 0x12345670u;
-            Assert.Equal(0x02244220u, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
         }
 
@@ -258,7 +258,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_Int64()
         {
             long value = 0x12345670;
-            Assert.Equal(0x02244220, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
         }
 
@@ -266,7 +266,7 @@ namespace System.Threading.Tests
         public void InterlockedAnd_UInt64()
         {
             ulong value = 0x12345670u;
-            Assert.Equal(0x02244220u, Interlocked.And(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.And(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
         }
 
@@ -274,7 +274,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_Int32()
         {
             int value = 0x12345670;
-            Assert.Equal(0x17755771, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
         }
 
@@ -282,7 +282,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_UInt32()
         {
             uint value = 0x12345670u;
-            Assert.Equal(0x17755771u, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
         }
 
@@ -290,7 +290,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_Int64()
         {
             long value = 0x12345670;
-            Assert.Equal(0x17755771, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
         }
 
@@ -298,7 +298,7 @@ namespace System.Threading.Tests
         public void InterlockedOr_UInt64()
         {
             ulong value = 0x12345670u;
-            Assert.Equal(0x17755771u, Interlocked.Or(ref value, 0x7654321));
+            Assert.Equal(0x12345670u, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
         }
 

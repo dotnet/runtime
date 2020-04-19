@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.RNG.Tests
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetNonZeroBytes(null));
-                GetBytes_InvalidArgs(rng);
+                GetBytes_InvalidArgs_Helper(rng);
             }
         }
 
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography.RNG.Tests
             using (var rng = new RandomNumberGeneratorMininal())
             {
                 Assert.Throws<NotImplementedException>(() => rng.GetNonZeroBytes(null));
-                GetBytes_InvalidArgs(rng);
+                GetBytes_InvalidArgs_Helper(rng);
             }
         }
 
@@ -504,7 +504,7 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        private static void GetBytes_InvalidArgs(RandomNumberGenerator rng)
+        private static void GetBytes_InvalidArgs_Helper(RandomNumberGenerator rng)
         {
             AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetBytes(null, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => rng.GetBytes(Array.Empty<byte>(), -1, 0));

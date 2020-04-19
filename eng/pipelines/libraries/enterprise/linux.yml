@@ -26,7 +26,7 @@ variables:
   - name: enterpriseTestsSetup
     value: $(sourcesRoot)/Common/tests/System/Net/EnterpriseTests/setup
   - name: containerRunTestsCommand
-    value: /repo/.dotnet/dotnet msbuild /t:rebuildandtest
+    value: /repo/dotnet.sh build /t:test
   - name: containerLibrariesRoot
     value: /repo/src/libraries
 
@@ -50,7 +50,7 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash -c '/repo/src/coreclr/build.sh -release -skipnuget -clang9 && /repo/libraries.sh /p:CoreCLRConfiguration=Release'
+    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci'
   displayName: Build product sources
 
 - bash: |

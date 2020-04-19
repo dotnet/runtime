@@ -193,6 +193,7 @@ public:
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
     BOOL IsReferenceAssembly();
+    BOOL IsComponentAssembly();
 #ifdef FEATURE_PREJIT
     BOOL IsNativeILILOnly();
     BOOL IsNativeILDll();

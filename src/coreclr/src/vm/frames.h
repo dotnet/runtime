@@ -84,6 +84,8 @@
 //    |   |
 //    |   +-StubDispatchFrame   - represents a call into the virtual call stub manager
 //    |   |
+//    |   +-CallCountingHelperFrame - represents a call into the call counting helper when the
+//    |   |                           call count threshold is reached
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethdThunk
 //    |   |
@@ -221,6 +223,7 @@ FRAME_TYPE_NAME(PInvokeCalliFrame)
 FRAME_TYPE_NAME(HijackFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(PrestubMethodFrame)
+FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
@@ -2225,6 +2228,31 @@ private:
 
 typedef VPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
 
+class CallCountingHelperFrame : public FramedMethodFrame
+{
+    VPTR_VTABLE_CLASS(CallCountingHelperFrame, FramedMethodFrame);
+
+public:
+    CallCountingHelperFrame(TransitionBlock *pTransitionBlock, MethodDesc *pMD);
+
+    virtual void GcScanRoots(promote_func *fn, ScanContext *sc); // override
+    virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs); // override
+
+    virtual int GetFrameType() // override
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TYPE_CALL;
+    }
+
+    virtual Interception GetInterception() // override
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_NONE;
+    }
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(CallCountingHelperFrame)
+};
 
 //------------------------------------------------------------------------
 // This represents a call from an ExternalMethodThunk or a VirtualImportThunk
@@ -2756,6 +2784,12 @@ protected:
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(UMThkCallFrame)
 };
 #endif // TARGET_X86 && !TARGET_UNIX
+
+// Frame for the Reverse PInvoke (i.e. NativeCallableAttribute).
+struct ReversePInvokeFrame
+{
+    Thread* currentThread;
+};
 
 #if defined(TARGET_X86) && defined(FEATURE_COMINTEROP)
 //-------------------------------------------------------------------------

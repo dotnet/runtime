@@ -95,6 +95,7 @@ DEFINE_DACVAR(ULONG, PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, J
 DEFINE_DACVAR(ULONG, PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(ULONG, PTR_DelegateInvokeStubManager, DelegateInvokeStubManager__g_pManager, DelegateInvokeStubManager::g_pManager)
 DEFINE_DACVAR(ULONG, PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+DEFINE_DACVAR(ULONG, PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
 
 DEFINE_DACVAR(ULONG, PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -201,7 +202,6 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjec
 
 DEFINE_DACVAR(ULONG, bool, dac__g_fProcessDetach, ::g_fProcessDetach)
 DEFINE_DACVAR(ULONG, DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
-DEFINE_DACVAR(ULONG, DWORD, dac__g_fHostConfig, ::g_fHostConfig)
 
 DEFINE_DACVAR(ULONG, ULONG, dac__g_CORDebuggerControlFlags, ::g_CORDebuggerControlFlags)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pDebugger, ::g_pDebugger)

@@ -5,14 +5,10 @@
     <AssemblyName>HostActivation.Tests</AssemblyName>
     <PackageId>HostActivation.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <DefineConstants Condition="'$(OSGroup)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetOS)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>ha</TestsOutputName>
     <UsesTestAssets>true</UsesTestAssets>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
-    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>

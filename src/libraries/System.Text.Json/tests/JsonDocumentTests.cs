@@ -1911,27 +1911,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"ABC=\"")]
-        [InlineData("\"AB+D\"")]
-        [InlineData("\"ABCD\"")]
-        [InlineData("\"ABC/\"")]
-        [InlineData("\"++++\"")]
-        [InlineData(null)]  // Large randomly generated string
+        [MemberData(nameof(JsonBase64TestData.ValidBase64Tests), MemberType = typeof(JsonBase64TestData))]
         public static void ReadBase64String(string jsonString)
         {
-            if (jsonString == null)
-            {
-                var random = new Random(42);
-                var charArray = new char[502];
-                charArray[0] = '"';
-                for (int i = 1; i < charArray.Length; i++)
-                {
-                    charArray[i] = (char)random.Next('A', 'Z'); // ASCII values (between 65 and 90) that constitute valid base 64 string.
-                }
-                charArray[charArray.Length - 1] = '"';
-                jsonString = new string(charArray);
-            }
-
             byte[] expected = Convert.FromBase64String(jsonString.AsSpan(1, jsonString.Length - 2).ToString());
 
             using (JsonDocument doc = JsonDocument.Parse(jsonString))
@@ -1944,28 +1926,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"ABC===\"")]
-        [InlineData("\"ABC\"")]
-        [InlineData("\"ABC!\"")]
-        [InlineData(null)]  // Large randomly generated string
+        [MemberData(nameof(JsonBase64TestData.InvalidBase64Tests), MemberType = typeof(JsonBase64TestData))]
         public static void InvalidBase64(string jsonString)
         {
-            if (jsonString == null)
-            {
-                var random = new Random(42);
-                var charArray = new char[500];
-                charArray[0] = '"';
-                for (int i = 1; i < charArray.Length; i++)
-                {
-                    charArray[i] = (char)random.Next('?', '\\'); // ASCII values (between 63 and 91) that don't need to be escaped.
-                }
-
-                charArray[256] = '\\';
-                charArray[257] = '"';
-                charArray[charArray.Length - 1] = '"';
-                jsonString = new string(charArray);
-            }
-
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
             using (JsonDocument doc = JsonDocument.Parse(dataUtf8))

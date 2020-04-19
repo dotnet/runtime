@@ -11,10 +11,13 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
+    <!-- ensure the desktop compat shims reference the lowest possible version of dependencies
+         since those do not all ship as part of the framework and we don't want to force apps
+         to reference the latest packages.
+         netstandard.dll doesn't need to do this since it has no dangling dependencies -->
+    <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <HasMatchingContract>true</HasMatchingContract>
-    <!-- Shims have no code in them. No point in running IL linker over them -->
-    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

@@ -18,7 +18,6 @@ namespace System
         private readonly ByReference<byte> _value;
         private readonly IntPtr _type;
 
-        [CLSCompliant(false)]
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
             if (target == null)

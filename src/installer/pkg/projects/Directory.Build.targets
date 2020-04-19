@@ -15,6 +15,27 @@
   </PropertyGroup>
 
   <!--
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    opt out.
+  -->
+  <Target Name="MonoSkipBuildProps" 
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup>
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Keep this isolated to desktop mono for now -->
+  <Target Name="MobileGetBuildRidSpecificPackageProps"
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'"
+          AfterTargets="GetBuildRidSpecificPackageProps">
+    <PropertyGroup>
+      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName)$(RuntimeSpecificFrameworkSuffix).Mono.$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
+    </PropertyGroup>
+  </Target>
+
+  <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
     version generation target. For any with a VersionFromProject, query the ProductVersion from that
     project file and use it as the dependency's version.

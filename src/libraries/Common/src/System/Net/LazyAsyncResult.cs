@@ -45,7 +45,7 @@ namespace System.Net
         private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 
-        private readonly object _asyncObject;               // Caller's async object.
+        private readonly object? _asyncObject;              // Caller's async object.
         private readonly object? _asyncState;               // Caller's state object.
         private AsyncCallback? _asyncCallback;     // Caller's callback method.
         private object? _result;                   // Final IO result to be returned byt the End*() method.
@@ -58,7 +58,7 @@ namespace System.Net
 
         private object? _event;                    // Lazy allocated event to be returned in the IAsyncResult for the client to wait on.
 
-        internal LazyAsyncResult(object myObject, object? myState, AsyncCallback? myCallBack)
+        internal LazyAsyncResult(object? myObject, object? myState, AsyncCallback? myCallBack)
         {
             _asyncObject = myObject;
             _asyncState = myState;
@@ -68,7 +68,7 @@ namespace System.Net
         }
 
         // Interface method to return the original async object.
-        internal object AsyncObject
+        internal object? AsyncObject
         {
             get
             {
@@ -506,7 +506,7 @@ namespace System.Net
         {
             if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
             {
-                // Set no result so that just in case there are waiters, they don't hang in the spin lock.
+                // Set no result so that just in case there are waiters, they don't get stuck in the spin lock.
                 _result = null;
                 Cleanup();
             }

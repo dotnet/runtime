@@ -280,7 +280,7 @@ Crst NativeImageCache
 End
 
 Crst GCCover
-    AcquiredBefore LoaderHeap ReJITDomainTable
+    AcquiredBefore LoaderHeap CodeVersioning
 End
 
 Crst GCMemoryPressure
@@ -349,6 +349,10 @@ Crst Jit
 End
 
 Crst JitGenericHandleCache
+End
+
+Crst JitPatchpoint
+    AcquiredBefore LoaderHeap
 End
 
 Crst JitPerf
@@ -478,6 +482,9 @@ End
 Crst RCWCleanupList
 End
 
+Crst ExternalObjectContextCache
+End
+
 Crst ReDacl
 End
 
@@ -486,7 +493,7 @@ Crst Reflection
 End
 
 // Used to synchronize all rejit information stored in a given AppDomain.
-Crst ReJITDomainTable
+Crst CodeVersioning
     AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
 End
@@ -495,7 +502,7 @@ End
 // new functions to rejit tables, or request Reverts on existing functions in the rejit
 // tables.  One of these crsts exist per runtime.
 Crst ReJITGlobalRequest
-    AcquiredBefore ThreadStore ReJITDomainTable SystemDomain JitInlineTrackingMap
+    AcquiredBefore ThreadStore CodeVersioning SystemDomain JitInlineTrackingMap
 End
 
 // ETW infrastructure uses this crst to protect a hash table of TypeHandles which is
@@ -679,7 +686,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore ReJITDomainTable ThreadStore LoaderAllocator
+    AcquiredBefore CodeVersioning ThreadStore LoaderAllocator
 End
 
 Crst EventPipe
@@ -695,6 +702,7 @@ Crst ReadyToRunEntryPointToMethodDescMap
 End
 
 Crst TieredCompilation
+    AcquiredAfter CodeVersioning
     AcquiredBefore ThreadpoolTimerQueue
 End
 
@@ -704,4 +712,7 @@ End
 Crst MethodDescBackpatchInfoTracker
     AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
     AcquiredAfter ReJITGlobalRequest
+End
+
+Crst NativeImageEagerFixups
 End

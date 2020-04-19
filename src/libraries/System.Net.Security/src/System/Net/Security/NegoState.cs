@@ -708,7 +708,7 @@ namespace System.Net.Security
             // Async completion.
             try
             {
-                NegoState authState = (NegoState)lazyResult.AsyncObject;
+                NegoState authState = (NegoState)lazyResult.AsyncObject!;
                 authState._framer!.EndWriteMessage(transportResult);
 
                 // Special case for an error notification.
@@ -749,7 +749,7 @@ namespace System.Net.Security
             // Async completion.
             try
             {
-                NegoState authState = (NegoState)lazyResult.AsyncObject;
+                NegoState authState = (NegoState)lazyResult.AsyncObject!;
                 byte[]? message = authState._framer!.EndReadMessage(transportResult);
                 authState.ProcessReceivedBlob(message, lazyResult);
             }

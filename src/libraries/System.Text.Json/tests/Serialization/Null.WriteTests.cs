@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -225,27 +226,52 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DeserializeDictionaryWithNullValues()
+        public static void WritePocoArray()
         {
+            var input = new MyPoco[] { null, new MyPoco { Foo = "foo" } };
+
+            string json = JsonSerializer.Serialize(input, new JsonSerializerOptions { Converters = { new MyPocoConverter() } });
+            Assert.Equal("[null,{\"Foo\":\"foo\"}]", json);
+        }
+
+        private class MyPoco
+        {
+            public string Foo { get; set; }
+        }
+
+        private class MyPocoConverter : JsonConverter<MyPoco>
+        {
+            public override MyPoco Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                Dictionary<string, string> dict = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""key"":null}");
-                Assert.Null(dict["key"]);
+                throw new NotImplementedException();
             }
 
+            public override void Write(Utf8JsonWriter writer, MyPoco value, JsonSerializerOptions options)
             {
-                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""key"":null}");
-                Assert.Null(dict["key"]);
-            }
+                if (value == null)
+                {
+                    throw new InvalidOperationException("The custom converter should never get called with null value.");
+                }
 
-            {
-                Dictionary<string, Dictionary<string, string>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(@"{""key"":null}");
-                Assert.Null(dict["key"]);
+                writer.WriteStartObject();
+                writer.WriteString(nameof(value.Foo), value.Foo);
+                writer.WriteEndObject();
             }
+        }
 
+        [Fact]
+        public static void InvalidRootOnWrite()
+        {
+            int[,] arr = null;
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize<int[,]>(arr));
+
+            var options = new JsonSerializerOptions
             {
-                Dictionary<string, Dictionary<string, object>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(@"{""key"":null}");
-                Assert.Null(dict["key"]);
-            }
+                IgnoreNullValues = true
+            };
+
+            // We still throw when we have an unsupported root.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize<int[,]>(arr, options));
         }
     }
 }

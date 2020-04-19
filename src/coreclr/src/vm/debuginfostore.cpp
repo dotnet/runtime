@@ -8,6 +8,7 @@
 #include "common.h"
 #include "debuginfostore.h"
 #include "nibblestream.h"
+#include "patchpointinfo.h"
 
 
 #ifdef _DEBUG
@@ -440,6 +441,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     IN ULONG            iOffsetMapping,
     IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
     IN ULONG            iNativeVarInfo,
+    IN PatchpointInfo * patchpointInfo,
     IN OUT SBuffer    * pDebugInfoBuffer,
     IN LoaderHeap     * pLoaderHeap
     )
@@ -450,6 +452,18 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
         PRECONDITION((pDebugInfoBuffer != NULL) ^ (pLoaderHeap != NULL));
     } CONTRACTL_END;
+
+    // Patchpoint info is currently uncompressed.
+    DWORD cbPatchpointInfo = 0;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (patchpointInfo != NULL)
+    {
+        cbPatchpointInfo = patchpointInfo->PatchpointInfoSize();
+    }
+#else
+    _ASSERTE(patchpointInfo == NULL);
+#endif
 
     // Actually do the compression. These will throw on oom.
     NibbleWriter boundsBuffer;
@@ -479,7 +493,12 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    S_UINT32 cbFinalSize = S_UINT32(1) + S_UINT32(cbPatchpointInfo) + S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+#else
     S_UINT32 cbFinalSize = S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+#endif
+
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
@@ -496,6 +515,22 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     _ASSERTE(ptrStart != NULL); // throws on oom.
 
     BYTE *ptr = ptrStart;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+    // First byte is a flag byte:
+    //   0 - no patchpoint info
+    //   1 - patchpoint info
+
+    *ptr++ = (cbPatchpointInfo > 0) ? 1 : 0;
+
+    if (cbPatchpointInfo > 0)
+    {
+        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
+        ptr += cbPatchpointInfo;
+    }
+
+#endif
 
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
@@ -520,11 +555,6 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 #endif // DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------
-// Compression routines
-// DAC only needs to run the uncompression routines.
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
 // Uncompression (restore) routines
 //-----------------------------------------------------------------------------
 
@@ -535,7 +565,8 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     OUT ULONG32                       * pcMap, // number of entries in ppMap
     OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
     OUT ULONG32                         *pcVars,
-    OUT ICorDebugInfo::NativeVarInfo    **ppVars
+    OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+    BOOL hasFlagByte
     )
 {
     CONTRACTL
@@ -551,6 +582,28 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (ppMap != NULL) *ppMap = NULL;
     if (pcVars != NULL) *pcVars = 0;
     if (ppVars != NULL) *ppVars = NULL;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if (flagByte == 1)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+        }
+        else
+        {
+            _ASSERTE(flagByte == 0);
+        }
+    }
+
+#else
+    _ASSERTE(!hasFlagByte);
+#endif
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 
@@ -615,8 +668,41 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     }
 }
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    PTR_PatchpointInfo patchpointInfo = NULL;
+
+    // Check flag byte.
+    BYTE flagByte = *pDebugInfo;
+    pDebugInfo++;
+
+    if (flagByte == 1)
+    {
+        patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+    }
+    else
+    {
+        _ASSERTE(flagByte == 0);
+    }
+
+    return patchpointInfo;
+}
+
+#endif
+
 #ifdef DACCESS_COMPILE
-void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo)
+void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte)
 {
     CONTRACTL
     {
@@ -625,6 +711,27 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if (flagByte == 1)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+        }
+        else
+        {
+            _ASSERTE(flagByte == 0);
+        }
+    }
+#else
+    _ASSERTE(!hasFlagByte);
+#endif
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 

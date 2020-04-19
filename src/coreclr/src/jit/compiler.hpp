@@ -969,9 +969,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             // IND(ADDR(IND(x)) == IND(x)
             if (op1->gtOper == GT_ADDR)
             {
-                if (op1->AsOp()->gtOp1->gtOper == GT_IND && (op1->AsOp()->gtOp1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                GenTreeUnOp* addr  = op1->AsUnOp();
+                GenTree*     indir = addr->gtGetOp1();
+                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
-                    op1 = op1->AsOp()->gtOp1->AsOp()->gtOp1;
+                    op1 = indir->AsIndir()->Addr();
                 }
             }
         }
@@ -981,6 +983,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
             {
                 return op1->AsOp()->gtOp1;
+            }
+            else
+            {
+                // Addr source can't be CSE-ed.
+                op1->SetDoNotCSE();
             }
         }
     }
@@ -4159,7 +4166,13 @@ bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, boo
 // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
 // changes, these conditions need to be updated.
 #ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
+        // We can clear using aligned SIMD so the threshold is lower,
+        // and clears in order which is better for auto-prefetching
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+#else // !defined(TARGET_AMD64)
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+#endif
 #else
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif

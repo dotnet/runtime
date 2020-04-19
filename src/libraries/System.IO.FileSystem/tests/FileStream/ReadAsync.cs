@@ -358,6 +358,7 @@ namespace System.IO.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
@@ -403,6 +404,7 @@ namespace System.IO.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>

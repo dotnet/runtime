@@ -8,7 +8,8 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
   <PropertyGroup>
@@ -19,4 +20,22 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GeneratedAssemblyInfoFile>$([System.IO.Path]::Combine('$(IntermediateOutputPath)','$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)'))</GeneratedAssemblyInfoFile>
+  </PropertyGroup>
+
+  <!-- Language configuration -->
+  <PropertyGroup>
+    <!-- default to allowing all language features -->
+    <LangVersion>preview</LangVersion>
+    <LangVersion Condition="'$(Language)' == 'VB'">latest</LangVersion>
+  </PropertyGroup>
+
+  <!--
+    All source inputs to the compiler should be generated before BeforeCompile target. Sdk is not
+    honoring this for GenerateAssemblyInfo target. https://github.com/dotnet/sdk/issues/10614 
+  -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <EmbeddedFiles Include="$(GeneratedAssemblyInfoFile)"/>
+  </ItemGroup>
 </Project>

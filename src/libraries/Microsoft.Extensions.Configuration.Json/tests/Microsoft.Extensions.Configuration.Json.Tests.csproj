@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+  </ItemGroup>
+
+</Project>

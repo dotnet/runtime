@@ -91,9 +91,6 @@ public:
     // Get the managed AppDomain object for an AppDomain.
     VMPTR_OBJECTHANDLE GetAppDomainObject(VMPTR_AppDomain vmAppDomain);
 
-    // Determine if the specified AppDomain is the default domain
-    BOOL IsDefaultDomain(VMPTR_AppDomain vmAppDomain);
-
     // Get the full AD friendly name for the appdomain.
     void GetAppDomainFullName(
         VMPTR_AppDomain vmAppDomain,

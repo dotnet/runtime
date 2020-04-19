@@ -462,8 +462,7 @@ namespace System.Net.Sockets.Tests
             using (Socket s1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 int value = 1;
-                int rv = setsockopt(s1.Handle.ToInt32(), SOL_SOCKET, option, &value, sizeof(int));
-                Assert.Equal(0, rv);
+                s1.SetRawSocketOption(SOL_SOCKET, option, new Span<byte>(&value, sizeof(int)));
                 s1.Bind(new IPEndPoint(IPAddress.Any, 0));
                 using (Socket s2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
                 {
@@ -516,6 +515,47 @@ namespace System.Net.Sockets.Tests
             using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
                 AssertExtensions.Throws<ArgumentException>("level", () => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
+        }
+
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void GetSetRawSocketOption_Roundtrips(AddressFamily family)
+        {
+            int SOL_SOCKET;
+            int SO_RCVBUF;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                SOL_SOCKET = 0xffff;
+                SO_RCVBUF = 0x1002;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                SOL_SOCKET = 1;
+                SO_RCVBUF = 8;
+            }
+            else
+            {
+                throw new SkipTestException("Unknown platform");
+            }
+
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                const int SetSize = 8192;
+                int ExpectedGetSize =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? SetSize * 2 : // Linux kernel documented to double the size
+                    SetSize;
+
+                socket.SetRawSocketOption(SOL_SOCKET, SO_RCVBUF, BitConverter.GetBytes(SetSize));
+
+                var buffer = new byte[sizeof(int)];
+                Assert.Equal(4, socket.GetRawSocketOption(SOL_SOCKET, SO_RCVBUF, buffer));
+                Assert.Equal(ExpectedGetSize, BitConverter.ToInt32(buffer));
+
+                Assert.Equal(ExpectedGetSize, socket.ReceiveBufferSize);
             }
         }
     }

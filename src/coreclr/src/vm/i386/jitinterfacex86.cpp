@@ -96,104 +96,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 #endif // _DEBUG
 
 #ifndef TARGET_UNIX
-/****************************************************************************/
-/* assigns 'val to 'array[idx], after doing all the proper checks */
-
-/* note that we can do almost as well in portable code, but this
-   squezes the last little bit of perf out */
-
-__declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    enum { CanCast = TypeHandle::CanCast,
-         };
-
-    __asm {
-        mov EAX, [ESP+4]            // EAX = val
-
-        test ECX, ECX
-        je ThrowNullReferenceException
-
-        cmp EDX, [ECX+4];           // test if in bounds
-        jae ThrowIndexOutOfRangeException
-
-        test EAX, EAX
-        jz Assigning0
-
-        push EDX
-        mov EDX, [ECX]
-        mov EDX, [EDX]MethodTable.m_ElementTypeHnd
-
-        cmp EDX, [EAX]               // do we have an exact match
-        jne NotExactMatch
-
-DoWrite2:
-        pop EDX
-        lea EDX, [ECX + 4*EDX + 8]
-        call JIT_WriteBarrierEAX
-        ret     4
-
-Assigning0:
-        // write barrier is not necessary for assignment of NULL references
-        mov     [ECX + 4*EDX + 8], EAX
-        ret     4
-
-DoWrite:
-        mov EAX, [ESP+4]            // EAX = val
-        lea EDX, [ECX + 4*EDX + 8]
-        call JIT_WriteBarrierEAX
-        ret     4
-
-NotExactMatch:
-        cmp EDX, [g_pObjectClass]   // are we assigning to Array of objects
-        je DoWrite2
-
-        // push EDX                 // caller-save ECX and EDX
-        push ECX
-
-        push EDX                    // element type handle
-        push EAX                    // object
-
-        call ObjIsInstanceOfCached
-
-        pop ECX                     // caller-restore ECX and EDX
-        pop EDX
-
-        cmp EAX, CanCast
-        je DoWrite
-
-        // Call the helper that knows how to erect a frame
-        push EDX
-        push ECX
-
-        lea ECX, [ESP+8+4]              // ECX = address of object being stored
-        lea EDX, [ESP]                  // EDX = address of array
-
-        call ArrayStoreCheck
-
-        pop ECX                         // these might have been updated!
-        pop EDX
-
-        cmp EAX, EAX                    // set zero flag
-        jnz Epilog                      // This jump never happens, it keeps the epilog walker happy
-
-        jmp DoWrite
-
-ThrowNullReferenceException:
-        mov ECX, CORINFO_NullReferenceException
-        jmp Throw
-
-ThrowIndexOutOfRangeException:
-        mov ECX, CORINFO_IndexOutOfRangeException
-
-Throw:
-        call    JIT_InternalThrowFromHelper
-Epilog:
-        ret     4
-    }
-}
 
 HCIMPL1_V(INT32, JIT_Dbl2IntOvf, double val)
 {
@@ -815,7 +717,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     // we need to load the method table for string from the global
 
-    // mov ecx, [g_pStringMethodTable]
+    // mov ecx, [g_pStringClass]
     sl.Emit16(0x0d8b);
     sl.Emit32((int)(size_t)&g_pStringClass);
 
@@ -990,18 +892,6 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
     return (void*) pStub->GetEntryPoint();
 }
 
-
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-void    EnableJitGCPoll()
-{
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC);
-}
-void    DisableJitGCPoll()
-{
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC_Nop);
-}
-#endif
-
 #define NUM_WRITE_BARRIERS 6
 
 static const BYTE c_rgWriteBarrierRegs[NUM_WRITE_BARRIERS] = {
@@ -1138,11 +1028,6 @@ void InitJITHelpers1()
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
 
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-    // code:JIT_PollGC_Nop
-    SetJitHelperFunction(CORINFO_HELP_POLL_GC, (void*)JIT_PollGC_Nop);
-#endif //ENABLE_FAST_GCPOLL_HELPER
-
     // All write barrier helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
@@ -1199,7 +1084,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-    // and CTPMethodTable::ActivatePrecodeRemotingThunk
 
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();

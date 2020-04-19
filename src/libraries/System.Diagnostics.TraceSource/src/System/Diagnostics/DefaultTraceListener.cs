@@ -21,7 +21,7 @@ namespace System.Diagnostics
     {
         private bool _assertUIEnabled;
         private bool _settingsInitialized;
-        private string _logFileName;
+        private string? _logFileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with
@@ -46,7 +46,7 @@ namespace System.Diagnostics
             }
         }
 
-        public string LogFileName
+        public string? LogFileName
         {
             get
             {
@@ -67,7 +67,7 @@ namespace System.Diagnostics
         ///       always fails.
         ///    </para>
         /// </devdoc>
-        public override void Fail(string message)
+        public override void Fail(string? message)
         {
             Fail(message, null);
         }
@@ -78,7 +78,7 @@ namespace System.Diagnostics
         ///       always fails.
         ///    </para>
         /// </devdoc>
-        public override void Fail(string message, string detailMessage)
+        public override void Fail(string? message, string? detailMessage)
         {
             string stackTrace;
             try
@@ -104,7 +104,7 @@ namespace System.Diagnostics
             _settingsInitialized = true;
         }
 
-        private void WriteAssert(string stackTrace, string message, string detailMessage)
+        private void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
             WriteLine(SR.DebugAssertBanner + Environment.NewLine
                    + SR.DebugAssertShortMessage + Environment.NewLine
@@ -119,7 +119,7 @@ namespace System.Diagnostics
         ///       Writes the output using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
-        public override void Write(string message)
+        public override void Write(string? message)
         {
             Write(message, useLogFile: true);
         }
@@ -129,12 +129,12 @@ namespace System.Diagnostics
         ///       Writes the output followed by a line terminator using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
-        public override void WriteLine(string message)
+        public override void WriteLine(string? message)
         {
             WriteLine(message, useLogFile: true);
         }
 
-        private void WriteLine(string message, bool useLogFile)
+        private void WriteLine(string? message, bool useLogFile)
         {
             if (NeedIndent)
                 WriteIndent();
@@ -144,7 +144,7 @@ namespace System.Diagnostics
             NeedIndent = true;
         }
 
-        private void Write(string message, bool useLogFile)
+        private void Write(string? message, bool useLogFile)
         {
             if (message == null)
             {
@@ -168,7 +168,7 @@ namespace System.Diagnostics
         {
             try
             {
-                File.AppendAllText(LogFileName, message);
+                File.AppendAllText(LogFileName!, message);
             }
             catch (Exception e)
             {

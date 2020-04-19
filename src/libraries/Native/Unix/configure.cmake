@@ -7,24 +7,35 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-if (CLR_CMAKE_TARGET_LINUX)
+if (CLR_CMAKE_TARGET_ANDROID)
+    set(PAL_UNIX_NAME \"ANDROID\")
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    set(PAL_UNIX_NAME \"WEBASSEMBLY\")
+elseif (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_OSX)
     set(PAL_UNIX_NAME \"OSX\")
 
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_IOS)
+    set(PAL_UNIX_NAME \"IOS\")
+elseif (CLR_CMAKE_TARGET_TVOS)
+    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
-    include_directories(SYSTEM /usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
-elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-    set(PAL_UNIX_NAME \"WEBASSEMBLY\")
+elseif (CLR_CMAKE_TARGET_SUNOS)
+    set(PAL_UNIX_NAME \"SUNOS\")
+    set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
+    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
+    include_directories(SYSTEM /opt/local/include)
 else ()
-    message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
+    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -106,6 +117,11 @@ check_symbol_exists(
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
+    fork
+    unistd.h
+    HAVE_FORK)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
@@ -176,6 +192,11 @@ check_symbol_exists(
     HAVE_SCHED_SETAFFINITY)
 
 check_symbol_exists(
+    pthread_setcancelstate
+    "pthread.h"
+    HAVE_PTHREAD_SETCANCELSTATE)
+
+check_symbol_exists(
     arc4random_buf
     "stdlib.h"
     HAVE_ARC4RANDOM_BUF)
@@ -209,6 +230,16 @@ check_symbol_exists(
     TCSANOW
     "termios.h"
     HAVE_TCSANOW)
+
+check_symbol_exists(
+    cfsetspeed
+    termios.h
+    HAVE_CFSETSPEED)
+
+check_symbol_exists(
+    cfmakeraw
+    termios.h
+    HAVE_CFMAKERAW)
 
 check_struct_has_member(
     "struct utsname"
@@ -281,8 +312,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
 check_symbol_exists(
     "statfs"
     ${STATFS_INCLUDES}
-    HAVE_STATFS
-)
+    HAVE_STATFS)
 
 check_type_size(
     "struct statfs"
@@ -442,37 +472,81 @@ if (CLR_CMAKE_TARGET_LINUX)
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
 endif ()
 
-check_c_source_runs(
-    "
-    #include <stdlib.h>
-    #include <time.h>
-    #include <sys/time.h>
-    int main(void)
-    {
-        int ret;
-        struct timespec ts;
-        ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-        exit(ret);
-        return 0;
-    }
-    "
-    HAVE_CLOCK_MONOTONIC)
+if(CLR_CMAKE_TARGET_IOS)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_TVOS)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
+else()
+    check_c_source_runs(
+        "
+        #include <sys/mman.h>
+        #include <fcntl.h>
+        #include <unistd.h>
 
-check_c_source_runs(
-    "
-    #include <stdlib.h>
-    #include <time.h>
-    #include <sys/time.h>
-    int main(void)
-    {
-        int ret;
-        struct timespec ts;
-        ret = clock_gettime(CLOCK_REALTIME, &ts);
-        exit(ret);
-        return 0;
-    }
-    "
-    HAVE_CLOCK_REALTIME)
+        int main(void)
+        {
+            int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
+            if (fd == -1)
+                return -1;
+
+            shm_unlink(\"/corefx_configure_shm_open\");
+
+            // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
+            //       on at least the current version of Mac OS X
+
+            if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
+                return -1;
+
+            return 0;
+        }
+        "
+        HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+
+    check_c_source_runs(
+        "
+        #include <stdlib.h>
+        #include <time.h>
+        #include <sys/time.h>
+        int main(void)
+        {
+            int ret;
+            struct timespec ts;
+            ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+            exit(ret);
+            return 0;
+        }
+        "
+        HAVE_CLOCK_MONOTONIC)
+
+    check_c_source_runs(
+        "
+        #include <stdlib.h>
+        #include <time.h>
+        #include <sys/time.h>
+        int main(void)
+        {
+            int ret;
+            struct timespec ts;
+            ret = clock_gettime(CLOCK_REALTIME, &ts);
+            exit(ret);
+            return 0;
+        }
+        "
+        HAVE_CLOCK_REALTIME)
+endif()
 
 check_symbol_exists(
     mach_absolute_time
@@ -512,8 +586,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    BIND_ADDRLEN_UNSIGNED
-)
+    BIND_ADDRLEN_UNSIGNED)
 
 check_c_source_compiles(
     "
@@ -528,8 +601,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    IPV6MR_INTERFACE_UNSIGNED
-)
+    IPV6MR_INTERFACE_UNSIGNED)
 
 check_include_files(
     "sys/inotify.h"
@@ -550,31 +622,6 @@ check_c_source_compiles(
 
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
-check_c_source_runs(
-    "
-    #include <sys/mman.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-
-    int main(void)
-    {
-        int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
-        if (fd == -1)
-            return -1;
-
-        shm_unlink(\"/corefx_configure_shm_open\");
-
-        // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
-        //       on at least the current version of Mac OS X
-
-        if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
-            return -1;
-
-        return 0;
-    }
-    "
-    HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-
 check_prototype_definition(
     getpriority
     "int getpriority(int which, int who)"
@@ -588,6 +635,13 @@ check_prototype_definition(
     0
     "sys/types.h;sys/event.h"
     KEVENT_REQUIRES_INT_PARAMS)
+
+check_prototype_definition(
+    statfs
+    "int statfs(const char *path, struct statfs *buf)"
+    0
+    ${STATFS_INCLUDES}
+    HAVE_NON_LEGACY_STATFS)
 
 check_c_source_compiles(
     "
@@ -630,8 +684,46 @@ check_c_source_compiles(
     #include <netinet/tcp_var.h>
     int main(void) { return 0; }
     "
-    HAVE_TCP_VAR_H
-)
+    HAVE_NETINET_TCP_VAR_H)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_var.h>
+    #include <netinet/udp.h>
+    #include <netinet/udp_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_UDP_VAR_H)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_IP_VAR_H)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_icmp.h>
+    #include <netinet/icmp_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_ICMP_VAR_H)
 
 check_include_files(
     sys/cdefs.h
@@ -651,18 +743,27 @@ check_c_source_compiles(
     #include <netinet/tcp.h>
     int main(void) { int x = TCP_ESTABLISHED; return x; }
     "
-    HAVE_TCP_H_TCPSTATE_ENUM
-)
+    HAVE_TCP_H_TCPSTATE_ENUM)
 
 set(CMAKE_REQUIRED_DEFINITIONS)
 
 check_symbol_exists(
     TCPS_ESTABLISHED
     "netinet/tcp_fsm.h"
-    HAVE_TCP_FSM_H
-)
+    HAVE_TCP_FSM_H)
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/socket.h net/route.h)
+check_symbol_exists(
+    getgrouplist
+    "unistd.h;grp.h"
+    HAVE_GETGROUPLIST)
+
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(HAVE_IOS_NET_ROUTE_H 1)
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
+else()
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h net/route.h)
+endif()
+
 check_type_size(
     "struct rt_msghdr"
      HAVE_RT_MSGHDR
@@ -672,6 +773,8 @@ check_type_size(
      HAVE_RT_MSGHDR2
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+
+set(CMAKE_EXTRA_INCLUDE_FILES net/if.h)
 check_type_size(
     "struct if_msghdr2"
      HAVE_IF_MSGHDR2
@@ -681,6 +784,26 @@ set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 check_include_files(
     "sys/types.h;sys/sysctl.h"
     HAVE_SYS_SYSCTL_H)
+
+check_include_files(
+    "sys/ioctl.h"
+    HAVE_SYS_IOCTL_H)
+
+check_include_files(
+    "sys/filio.h"
+    HAVE_SYS_FILIO_H)
+
+check_include_files(
+    "sys/types.h;netpacket/packet.h"
+    HAVE_NETPACKET_PACKET_H)
+
+check_include_files(
+    "net/if_arp.h"
+    HAVE_NET_IF_ARP_H)
+
+check_include_files(
+    "sys/mntent.h"
+    HAVE_SYS_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"
@@ -725,8 +848,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    HAVE_GETDOMAINNAME_SIZET
-)
+    HAVE_GETDOMAINNAME_SIZET)
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
@@ -753,7 +875,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CLR_CMAKE_TARGET_LINUX)
+elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 

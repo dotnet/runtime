@@ -14,6 +14,7 @@ PALEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName,
 
 PALEXPORT void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle);
 
+// If we fail to get the sort version we will fallback to -1 as the sort version.
 PALEXPORT int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle);
 
 PALEXPORT int32_t GlobalizationNative_CompareString(SortHandle* pSortHandle,

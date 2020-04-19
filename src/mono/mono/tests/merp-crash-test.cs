@@ -273,7 +273,7 @@ class C
 	public static void 
 	TestValidate (string configDir, bool silent, Action<object> validator = null)
 	{
-		DumpLogCheck ();
+		DumpLogCheck (expected_level: "MerpInvoke"); // we are expecting merp invoke to fail
 
 		var xmlFilePath = String.Format("{0}CustomLogsMetadata.xml", configDir);
 		var paramsFilePath = String.Format("{0}MERP.uploadparams.txt", configDir);
@@ -358,7 +358,7 @@ class C
 		convert.Invoke(null, new object[] { null });
 	}
 
-	static void DumpLogCheck ()
+	static void DumpLogCheck (string expected_level = "Done")
 	{
 		var monoType = Type.GetType ("Mono.Runtime", false);
 		var convert = monoType.GetMethod("CheckCrashReportLog", BindingFlags.NonPublic | BindingFlags.Static);
@@ -366,11 +366,8 @@ class C
 		// Value of enum
 		string [] levels = new string [] { "None", "Setup", "SuspendHandshake", "UnmanagedStacks", "ManagedStacks", "StateWriter", "StateWriterDone", "MerpWriter", "MerpInvoke", "Cleanup", "Done", "DoubleFault" };
 
-		if ("MerpInvoke" == levels [result]) {
-			Console.WriteLine ("Merp invoke command failed, expected failure?");
-		} else if ("Done" != levels [result]) {
-			throw new Exception (String.Format ("Crash level not done, failed in stage: {0}", levels [result]));
-		}
+		if (expected_level != levels [result])
+			throw new Exception (String.Format ("Crash level {0} does not match expected {1}", levels [result], expected_level));
 	}
 
 
@@ -406,6 +403,40 @@ class C
 		}
 	}
 
+	public static void TestManagedException ()
+	{
+		if (Directory.Exists (configDir)) {
+			Console.WriteLine ("Cleaning up left over configDir {0}", configDir);
+			Cleanup (configDir);
+		}
+		Directory.CreateDirectory (configDir);
+
+		SetupCrash (configDir);
+		var monoType = Type.GetType ("Mono.Runtime", false);
+		var m = monoType.GetMethod ("ExceptionToState", BindingFlags.NonPublic | BindingFlags.Static);
+		var exception = new Exception ("test managed exception");
+		var m_params = new object[] { exception };
+
+		var result = m.Invoke (null, m_params) as Tuple<String, ulong, ulong>;
+		DumpLogCheck (expected_level: "StateWriterDone");
+		Cleanup (configDir);
+	}
+
+	public static Exception RunManagedExceptionTest ()
+	{
+			Console.WriteLine ("Testing ExceptionToState()...");
+			Exception exception_test_failure = null;
+
+			try {
+				TestManagedException();
+			}
+			catch (Exception e)
+			{
+				return e;
+			}
+			return null;
+	}
+
 	public static int Main (string [] args)
 	{
 		if (args.Length == 0) {
@@ -430,9 +461,17 @@ class C
 				}
 			}
 
+			// Also test sending a managed exception
+			Exception exception_test_failure = RunManagedExceptionTest ();
+
 			Console.WriteLine ("\n\n##################");
 			Console.WriteLine ("Merp Test Results:");
 			Console.WriteLine ("##################\n\n");
+
+			if (exception_test_failure != null)
+			{
+				Console.WriteLine ("Sending managed exception to MERP failed: {0}\n{1}\n", exception_test_failure.Message, exception_test_failure.StackTrace);
+			}
 
 			if (failure_count > 0) {
 				for (int i=0; i < CrasherClass.Crashers.Count; i++) {
@@ -443,7 +482,7 @@ class C
 				}
 			}
 
-			if (failure_count > 0)
+			if (failure_count > 0 || exception_test_failure != null)
 				return 1;
 
 			Console.WriteLine ("\n\n##################");

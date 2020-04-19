@@ -5,7 +5,7 @@
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/coreclr/issues/24633 -->
-    <JitOptimizationSensitive Condition="'$(Platform)' == 'arm'">true</JitOptimizationSensitive>
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

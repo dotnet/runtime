@@ -502,5 +502,15 @@ namespace ILCompiler
 
             return constrainedType ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
         }
+
+        /// <summary>
+        /// Return true when the type in question is marked with the NonVersionable attribute.
+        /// </summary>
+        /// <param name="type">Type to check</param>
+        /// <returns>True when the type is marked with the non-versionable custom attribute, false otherwise.</returns>
+        public static bool IsNonVersionable(this MetadataType type)
+        {
+            return type.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+        }
     }
 }

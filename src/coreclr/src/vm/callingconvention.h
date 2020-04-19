@@ -212,7 +212,6 @@ struct TransitionBlock
         return offset >= ofsArgRegs && offset < (int) (ofsArgRegs + ARGUMENTREGISTERS_SIZE);
     }
 
-#ifndef TARGET_X86
     static UINT GetArgumentIndexFromOffset(int offset)
     {
         LIMITED_METHOD_CONTRACT;
@@ -229,8 +228,6 @@ struct TransitionBlock
 
         return (offset - TransitionBlock::GetOffsetOfArgs()) / STACK_ELEM_SIZE;
     }
-
-#endif
 
 #ifdef CALLDESCR_FPARGREGS
     static BOOL IsFloatArgumentRegisterOffset(int offset)

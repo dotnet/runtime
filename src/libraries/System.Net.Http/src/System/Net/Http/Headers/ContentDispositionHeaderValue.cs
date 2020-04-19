@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -22,8 +23,8 @@ namespace System.Net.Http.Headers
         private const string size = "size";
 
         // Use ObjectCollection<T> since we may have multiple parameters with the same name.
-        private ObjectCollection<NameValueHeaderValue> _parameters;
-        private string _dispositionType;
+        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        private string _dispositionType = null!;
 
         #endregion Fields
 
@@ -39,31 +40,21 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
-        public string Name
+        public string? Name
         {
             get { return GetName(name); }
             set { SetName(name, value); }
         }
 
-        public string FileName
+        public string? FileName
         {
             get { return GetName(fileName); }
             set { SetName(fileName, value); }
         }
 
-        public string FileNameStar
+        public string? FileNameStar
         {
             get { return GetName(fileNameStar); }
             set { SetName(fileNameStar, value); }
@@ -91,11 +82,11 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                NameValueHeaderValue sizeParameter = NameValueHeaderValue.Find(_parameters, size);
+                NameValueHeaderValue? sizeParameter = NameValueHeaderValue.Find(_parameters, size);
                 ulong value;
                 if (sizeParameter != null)
                 {
-                    string sizeString = sizeParameter.Value;
+                    string? sizeString = sizeParameter.Value;
                     if (ulong.TryParse(sizeString, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
                     {
                         return (long)value;
@@ -105,13 +96,13 @@ namespace System.Net.Http.Headers
             }
             set
             {
-                NameValueHeaderValue sizeParameter = NameValueHeaderValue.Find(_parameters, size);
+                NameValueHeaderValue? sizeParameter = NameValueHeaderValue.Find(_parameters, size);
                 if (value == null)
                 {
                     // Remove parameter.
                     if (sizeParameter != null)
                     {
-                        _parameters.Remove(sizeParameter);
+                        _parameters!.Remove(sizeParameter);
                     }
                 }
                 else if (value < 0)
@@ -172,9 +163,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            ContentDispositionHeaderValue other = obj as ContentDispositionHeaderValue;
+            ContentDispositionHeaderValue? other = obj as ContentDispositionHeaderValue;
 
             if (other == null)
             {
@@ -201,28 +192,27 @@ namespace System.Net.Http.Headers
 
         #region Parsing
 
-        public static ContentDispositionHeaderValue Parse(string input)
+        public static ContentDispositionHeaderValue Parse(string? input)
         {
             int index = 0;
             return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,
                 null, ref index);
         }
 
-        public static bool TryParse(string input, out ContentDispositionHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ContentDispositionHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.ContentDispositionParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.ContentDispositionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ContentDispositionHeaderValue)output;
+                parsedValue = (ContentDispositionHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetDispositionTypeLength(string input, int startIndex, out object parsedValue)
+        internal static int GetDispositionTypeLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -234,7 +224,7 @@ namespace System.Net.Http.Headers
             }
 
             // Caller must remove leading whitespace. If not, we'll return 0.
-            string dispositionType = null;
+            string? dispositionType;
             int dispositionTypeLength = GetDispositionTypeExpressionLength(input, startIndex, out dispositionType);
 
             if (dispositionTypeLength == 0)
@@ -245,7 +235,7 @@ namespace System.Net.Http.Headers
             int current = startIndex + dispositionTypeLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
             ContentDispositionHeaderValue contentDispositionHeader = new ContentDispositionHeaderValue();
-            contentDispositionHeader._dispositionType = dispositionType;
+            contentDispositionHeader._dispositionType = dispositionType!;
 
             // If we're not done and we have a parameter delimiter, then we have a list of parameters.
             if ((current < input.Length) && (input[current] == ';'))
@@ -268,7 +258,7 @@ namespace System.Net.Http.Headers
             return current - startIndex;
         }
 
-        private static int GetDispositionTypeExpressionLength(string input, int startIndex, out string dispositionType)
+        private static int GetDispositionTypeExpressionLength(string input, int startIndex, out string? dispositionType)
         {
             Debug.Assert((input != null) && (input.Length > 0) && (startIndex < input.Length));
 
@@ -296,9 +286,8 @@ namespace System.Net.Http.Headers
             }
 
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            string tempDispositionType;
-            int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out tempDispositionType);
-            if ((dispositionTypeLength == 0) || (tempDispositionType.Length != dispositionType.Length))
+            int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out string? tempDispositionType);
+            if ((dispositionTypeLength == 0) || (tempDispositionType!.Length != dispositionType.Length))
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, dispositionType));
@@ -313,7 +302,7 @@ namespace System.Net.Http.Headers
         // Returns null if the parameter is not present or the format is incorrect.
         private DateTimeOffset? GetDate(string parameter)
         {
-            NameValueHeaderValue dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
+            NameValueHeaderValue? dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
             DateTimeOffset date;
             if (dateParameter != null)
             {
@@ -323,7 +312,7 @@ namespace System.Net.Http.Headers
                 {
                     dateString = dateString.Slice(1, dateString.Length - 2);
                 }
-                if (HttpDateParser.TryStringToDate(dateString, out date))
+                if (HttpDateParser.TryParse(dateString, out date))
                 {
                     return date;
                 }
@@ -334,13 +323,13 @@ namespace System.Net.Http.Headers
         // Add the given parameter to the list. Remove if date is null.
         private void SetDate(string parameter, DateTimeOffset? date)
         {
-            NameValueHeaderValue dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
+            NameValueHeaderValue? dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
             if (date == null)
             {
                 // Remove parameter.
                 if (dateParameter != null)
                 {
-                    _parameters.Remove(dateParameter);
+                    _parameters!.Remove(dateParameter);
                 }
             }
             else
@@ -360,15 +349,16 @@ namespace System.Net.Http.Headers
 
         // Gets a parameter of the given name and attempts to decode it if necessary.
         // Returns null if the parameter is not present or the raw value if the encoding is incorrect.
-        private string GetName(string parameter)
+        private string? GetName(string parameter)
         {
-            NameValueHeaderValue nameParameter = NameValueHeaderValue.Find(_parameters, parameter);
+            NameValueHeaderValue? nameParameter = NameValueHeaderValue.Find(_parameters, parameter);
             if (nameParameter != null)
             {
-                string result;
+                string? result;
                 // filename*=utf-8'lang'%7FMyString
                 if (parameter.EndsWith('*'))
                 {
+                    Debug.Assert(nameParameter.Value != null);
                     if (TryDecode5987(nameParameter.Value, out result))
                     {
                         return result;
@@ -389,15 +379,15 @@ namespace System.Net.Http.Headers
 
         // Add/update the given parameter in the list, encoding if necessary.
         // Remove if value is null/Empty
-        private void SetName(string parameter, string value)
+        private void SetName(string parameter, string? value)
         {
-            NameValueHeaderValue nameParameter = NameValueHeaderValue.Find(_parameters, parameter);
+            NameValueHeaderValue? nameParameter = NameValueHeaderValue.Find(_parameters, parameter);
             if (string.IsNullOrEmpty(value))
             {
                 // Remove parameter.
                 if (nameParameter != null)
                 {
-                    _parameters.Remove(nameParameter);
+                    _parameters!.Remove(nameParameter);
                 }
             }
             else
@@ -476,12 +466,12 @@ namespace System.Net.Http.Headers
         }
 
         // Attempt to decode MIME encoded strings.
-        private static bool TryDecodeMime(string input, out string output)
+        private static bool TryDecodeMime(string? input, [NotNullWhen(true)] out string? output)
         {
             Debug.Assert(input != null);
 
             output = null;
-            string processedInput = input;
+            string? processedInput = input;
             // Require quotes, min of "=?e?b??="
             if (!IsQuoted(processedInput) || processedInput.Length < 10)
             {
@@ -519,7 +509,7 @@ namespace System.Net.Http.Headers
 
         // Attempt to decode using RFC 5987 encoding.
         // encoding'language'my%20string
-        private static bool TryDecode5987(string input, out string output)
+        private static bool TryDecode5987(string input, out string? output)
         {
             output = null;
 

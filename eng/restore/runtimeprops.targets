@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk">
+
+  <Target Name="GenerateRuntimeOSPropsFileBeforeRestore"
+          DependsOnTargets="GenerateRuntimeOSPropsFile"
+          BeforeTargets="Restore" />
+
+</Project>

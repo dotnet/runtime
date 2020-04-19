@@ -24,7 +24,7 @@ namespace System.Net.Sockets
             var errorCode = (SocketError)ErrorCode;
             if (errorCode == SocketError.Success)
             {
-                var socket = (Socket)AsyncObject;
+                var socket = (Socket)AsyncObject!;
                 socket.SetToConnected();
                 return socket;
             }

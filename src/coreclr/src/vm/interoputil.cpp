@@ -25,6 +25,7 @@
 #include "siginfo.hpp"
 #include "eemessagebox.h"
 #include "finalizerthread.h"
+#include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "cominterfacemarshaler.h"
@@ -1936,6 +1937,12 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     RCW* pRCW = pInteropInfo->GetRawRCW();
     if (pRCW)
         pRCW->MinorCleanup();
+
+#ifdef FEATURE_COMWRAPPERS
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
+#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1976,6 +1983,22 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pInteropInfo->SetCCW(NULL);
         pCCW->Cleanup();
     }
+
+#ifdef FEATURE_COMWRAPPERS
+    void* mocw;
+    if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
+    {
+        (void)pInteropInfo->TrySetManagedObjectComWrapper(NULL, mocw);
+        ComWrappersNative::DestroyManagedObjectComWrapper(mocw);
+    }
+
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+    {
+        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
+        ComWrappersNative::DestroyExternalComObjectContext(eoc);
+    }
+#endif // FEATURE_COMWRAPPERS
 }
 
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)

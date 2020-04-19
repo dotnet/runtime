@@ -70,8 +70,12 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags, ULONG* sizeOfCode = NULL);
+#ifndef CROSSGEN_COMPILE
+PCODE UnsafeJitFunction(PrepareCodeConfig* config,
+                        COR_ILMETHOD_DECODER* header,
+                        CORJIT_FLAGS flags,
+                        ULONG* sizeOfCode = NULL);
+#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
@@ -209,12 +213,6 @@ extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arra
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-#ifndef JIT_Stelem_Ref
-#define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
-#endif
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref, PtrArray* array, unsigned idx, Object* val);
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object* val);
-
 EXTERN_C FCDECL_MONHELPER(JITutil_MonEnterWorker, Object* obj);
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -247,6 +245,16 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
+
+#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
+// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// Copied write barriers must be called at a different location
+extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+#define WriteBarrier_Helper JIT_WriteBarrier_Callable
+#else
+// in other cases the regular JIT helper is callable.
+#define WriteBarrier_Helper JIT_WriteBarrier
+#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
@@ -525,6 +533,9 @@ public:
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd);
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
+
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
 
     // "System.Int32" ==> CORINFO_TYPE_INT..
     CorInfoType getTypeForPrimitiveValueClass(
@@ -919,6 +930,9 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+                                   bool supportEnabled);
+
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
                                CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
@@ -1023,9 +1037,6 @@ public:
     int doAssert(const char* szFile, int iLine, const char* szExpr);
 
     void reportFatalError(CorJitResult result);
-
-    void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts,
-                            CORINFO_METHOD_HANDLE methodHnd);
 
     HRESULT allocMethodBlockCounts (
             UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
@@ -1290,6 +1301,15 @@ public:
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+
+        m_pPatchpointInfoFromJit = NULL;
+        m_pPatchpointInfoFromRuntime = NULL;
+        m_ilOffset = 0;
+#endif
+
 #ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = NULL;
         m_totalUnwindSize = 0;
@@ -1352,6 +1372,17 @@ public:
     }
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // Called by the runtime to supply patchpoint information to the jit.
+    void SetOSRInfo(PatchpointInfo* patchpointInfo, unsigned ilOffset)
+    {
+        _ASSERTE(m_pPatchpointInfoFromRuntime == NULL);
+        _ASSERTE(patchpointInfo != NULL);
+        m_pPatchpointInfoFromRuntime = patchpointInfo;
+        m_ilOffset = ilOffset;
+    }
+#endif
+
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
         : CEEInfo(fd, fVerifyOnly, allowInlining),
@@ -1379,6 +1410,11 @@ public:
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_pPatchpointInfoFromJit(NULL),
+          m_pPatchpointInfoFromRuntime(NULL),
+          m_ilOffset(0),
+#endif
           m_gphCache()
     {
         CONTRACTL
@@ -1405,6 +1441,12 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             delete [] ((BYTE*) m_pNativeVarInfo);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+#endif
+
     }
 
     // ICorDebugInfo stuff.
@@ -1440,6 +1482,9 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
@@ -1474,6 +1519,12 @@ protected :
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo        * m_pPatchpointInfoFromJit;
+    PatchpointInfo        * m_pPatchpointInfoFromRuntime;
+    unsigned                m_ilOffset;
+#endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used
@@ -1550,14 +1601,6 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-//These should only be called from ThreadStore::TrapReturningThreads!
-
-//Called when the VM wants to suspend one or more threads.
-void    EnableJitGCPoll();
-//Called when there are no threads to suspend.
-void    DisableJitGCPoll();
-#endif
 
 // Helper for RtlVirtualUnwind-based tail calls
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
@@ -1590,9 +1633,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-EXTERN_C FCDECL0(VOID, JIT_PollGC_Nop);
-#endif
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);

@@ -1047,7 +1047,7 @@ FCIMPLEND
 **           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, CLR_BOOL zeroingOptional)
+FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, INT32 flags)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -1058,7 +1058,10 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pRet = AllocateSzArray(arrayType, length, zeroingOptional ? GC_ALLOC_ZEROING_OPTIONAL : GC_ALLOC_NO_FLAGS);
+    //Only the following flags are used by GC.cs, so we'll just assert it here.
+    _ASSERTE((flags & ~(GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_PINNED_OBJECT_HEAP)) == 0);
+
+    pRet = AllocateSzArray(arrayType, length, (GC_ALLOC_FLAGS)flags);
 
     HELPER_METHOD_FRAME_END();
 

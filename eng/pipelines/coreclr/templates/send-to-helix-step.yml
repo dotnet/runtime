@@ -16,6 +16,7 @@ parameters:
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
   runCrossGen2: ''
+  compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
   longRunningGcTests: ''
@@ -36,7 +37,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __BuildOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -47,6 +48,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
@@ -75,7 +77,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __BuildOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -86,6 +88,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}

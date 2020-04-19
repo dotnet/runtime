@@ -101,5 +101,24 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Null(c);
         }
+
+        [Fact]
+        public static void VerifyConverterWithTrailingComments()
+        {
+            string json = "{}  //";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            // Disallow comments
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new ConverterReturningNull());
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Customer>(utf8, options));
+
+            // Skip comments
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new ConverterReturningNull());
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
+            Customer c = JsonSerializer.Deserialize<Customer>(utf8, options);
+            Assert.Null(c);
+        }
     }
 }

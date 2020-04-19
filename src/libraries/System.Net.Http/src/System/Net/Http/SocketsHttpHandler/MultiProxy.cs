@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -12,16 +13,16 @@ namespace System.Net.Http
     internal struct MultiProxy
     {
         private static readonly char[] s_proxyDelimiters = { ';', ' ', '\n', '\r', '\t' };
-        private readonly FailedProxyCache _failedProxyCache;
-        private readonly Uri[] _uris;
-        private readonly string _proxyConfig;
+        private readonly FailedProxyCache? _failedProxyCache;
+        private readonly Uri[]? _uris;
+        private readonly string? _proxyConfig;
         private readonly bool _secure;
         private int _currentIndex;
-        private Uri _currentUri;
+        private Uri? _currentUri;
 
         public static MultiProxy Empty => new MultiProxy(null, Array.Empty<Uri>());
 
-        private MultiProxy(FailedProxyCache failedProxyCache, Uri[] uris)
+        private MultiProxy(FailedProxyCache? failedProxyCache, Uri[] uris)
         {
             _failedProxyCache = failedProxyCache;
             _uris = uris;
@@ -46,14 +47,14 @@ namespace System.Net.Http
         /// </summary>
         /// <param name="proxyConfig">The WinHTTP proxy config to parse.</param>
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
-        public static MultiProxy Parse(FailedProxyCache failedProxyCache, string proxyConfig, bool secure)
+        public static MultiProxy Parse(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
         {
             Debug.Assert(failedProxyCache != null);
 
             Uri[] uris = Array.Empty<Uri>();
 
             ReadOnlySpan<char> span = proxyConfig;
-            while (TryParseProxyConfigPart(span, secure, out Uri uri, out int charactersConsumed))
+            while (TryParseProxyConfigPart(span, secure, out Uri? uri, out int charactersConsumed))
             {
                 int idx = uris.Length;
 
@@ -89,11 +90,12 @@ namespace System.Net.Http
         /// <param name="uri">The next proxy to use for the request.</param>
         /// <param name="isFinalProxy">If true, indicates there are no further proxies to read from the config.</param>
         /// <returns>If there is a proxy available, true. Otherwise, false.</returns>
-        public bool ReadNext(out Uri uri, out bool isFinalProxy)
+        public bool ReadNext([NotNullWhen(true)] out Uri? uri, out bool isFinalProxy)
         {
             // Enumerating indicates the previous proxy has failed; mark it as such.
             if (_currentUri != null)
             {
+                Debug.Assert(_failedProxyCache != null);
                 _failedProxyCache.SetProxyFailed(_currentUri);
             }
 
@@ -105,11 +107,12 @@ namespace System.Net.Http
             }
 
             // If this is the first ReadNext() and all proxies are marked as failed, return the proxy that is closest to renewal.
-            Uri oldestFailedProxyUri = null;
+            Uri? oldestFailedProxyUri = null;
             long oldestFailedProxyTicks = long.MaxValue;
 
             do
             {
+                Debug.Assert(_failedProxyCache != null);
                 long renewTicks = _failedProxyCache.GetProxyRenewTicks(uri);
 
                 // Proxy hasn't failed recently, return for use.
@@ -135,6 +138,7 @@ namespace System.Net.Http
 
                 if (oldestFailedProxyUri != null)
                 {
+                    Debug.Assert(uri != null);
                     _failedProxyCache.TryRenewProxy(uri, oldestFailedProxyTicks);
                     return true;
                 }
@@ -146,7 +150,7 @@ namespace System.Net.Http
         /// <summary>
         /// Reads the next proxy URI from the MultiProxy, either via parsing a config string or from an array.
         /// </summary>
-        private bool ReadNextHelper(out Uri uri, out bool isFinalProxy)
+        private bool ReadNextHelper([NotNullWhen(true)] out Uri? uri, out bool isFinalProxy)
         {
             Debug.Assert(_uris != null || _proxyConfig != null, $"{nameof(ReadNext)} must not be called on a default-initialized {nameof(MultiProxy)}.");
 
@@ -164,14 +168,16 @@ namespace System.Net.Http
                 return true;
             }
 
+            Debug.Assert(_proxyConfig != null);
             if (_currentIndex < _proxyConfig.Length)
             {
-                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri, out int charactersConsumed);
+                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri!, out int charactersConsumed);
 
                 _currentIndex += charactersConsumed;
                 Debug.Assert(_currentIndex <= _proxyConfig.Length);
 
                 isFinalProxy = _currentIndex == _proxyConfig.Length;
+
                 return hasProxy;
             }
 
@@ -187,7 +193,7 @@ namespace System.Net.Http
         /// The strings are a semicolon or whitespace separated list, with each entry in the following format:
         /// ([&lt;scheme&gt;=][&lt;scheme&gt;"://"]&lt;server&gt;[":"&lt;port&gt;])
         /// </remarks>
-        private static bool TryParseProxyConfigPart(ReadOnlySpan<char> proxyString, bool secure, out Uri uri, out int charactersConsumed)
+        private static bool TryParseProxyConfigPart(ReadOnlySpan<char> proxyString, bool secure, [NotNullWhen(true)] out Uri? uri, out int charactersConsumed)
         {
             const int SECURE_FLAG = 1;
             const int INSECURE_FLAG = 2;

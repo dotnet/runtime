@@ -5,9 +5,14 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Provides functionality to serialize objects or value types to JSON and
+    /// deserialize JSON into objects or value types.
+    /// </summary>
     public static partial class JsonSerializer
     {
         /// <summary>
@@ -17,12 +22,16 @@ namespace System.Text.Json
         /// <param name="json">JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// Thrown if <paramref name="json"/> is null.
+        /// <paramref name="json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
@@ -30,7 +39,12 @@ namespace System.Text.Json
         [return: MaybeNull]
         public static TValue Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
         {
-            return (TValue)Deserialize(json, typeof(TValue), options)!;
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            return Deserialize<TValue>(json, typeof(TValue), options)!;
         }
 
         /// <summary>
@@ -41,20 +55,22 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// Thrown if <paramref name="json"/> or <paramref name="returnType"/> is null.
+        /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         public static object? Deserialize(string json, Type returnType, JsonSerializerOptions? options = null)
         {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
@@ -65,12 +81,20 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
+            object? value = Deserialize<object?>(json, returnType, options)!;
+
+            return value;
+        }
+
+        private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
+        {
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            object? result;
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
@@ -88,10 +112,13 @@ namespace System.Text.Json
 
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
-                result = ReadCore(returnType, options, ref reader);
+
+                TValue value = ReadCore<TValue>(ref reader, returnType, options);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);
+
+                return value;
             }
             finally
             {
@@ -101,8 +128,6 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(tempArray);
                 }
             }
-
-            return result;
         }
     }
 }

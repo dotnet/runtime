@@ -27,18 +27,11 @@
     <ArtifactsObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'obj'))</ArtifactsObjDir>
   </PropertyGroup>
 
-  <!-- The TFMs to build and test against. -->
-  <PropertyGroup>
-    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
-    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
-  </PropertyGroup>
-
+  <!-- Configuration properties which are needed in both the (isolated) restore and build phases. -->
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
 
   <!--
-    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    Get '<subset>Project' items. Using the items lets projects handle
     $(Subset) automatically when creating project-to-project dependencies.
   -->
   <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
@@ -69,6 +62,7 @@
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
+    <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
     <IsPrerelease>true</IsPrerelease>
 
     <!-- Experimental packages should not be stable -->
@@ -81,9 +75,6 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- default to allowing all language features -->
-    <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <Deterministic>true</Deterministic>
 
     <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->

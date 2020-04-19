@@ -41,6 +41,7 @@ LWM(SetEHcount, DWORD, DWORD)
 LWM(SetEHinfo, DWORD, CompileResult::Agnostic_CORINFO_EH_CLAUSE2)
 LWM(SetMethodAttribs, DWORDLONG, DWORD)
 LWM(SetVars, DWORD, CompileResult::Agnostic_SetVars)
+LWM(SetPatchpointInfo, DWORD, CompileResult::Agnostic_SetPatchpointInfo)
 
 #undef LWM
 #undef DENSELWM

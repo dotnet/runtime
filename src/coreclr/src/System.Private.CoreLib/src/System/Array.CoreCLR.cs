@@ -478,8 +478,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool IsValueOfElementType(object value);
+        private unsafe bool IsValueOfElementType(object value)
+        {
+            MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
+            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+        }
 
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.

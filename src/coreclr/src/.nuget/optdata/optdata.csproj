@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <OptimizationDataSupported Condition="'$(BuildOS)' == 'Windows_NT' And ('$(BuildArch)' == 'x64' Or '$(BuildArch)' == 'x86')">True</OptimizationDataSupported>
-    <OptimizationDataSupported Condition="'$(BuildOS)' == 'Linux' And '$(BuildArch)' == 'x64'">True</OptimizationDataSupported>
+    <OptimizationDataSupported Condition="'$(TargetOS)' == 'Windows_NT' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">True</OptimizationDataSupported>
+    <OptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">True</OptimizationDataSupported>
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
-    <_BuildOSArchLowercase>$(BuildOS.ToLower())-$(BuildArch.ToLower())</_BuildOSArchLowercase>
+    <_TargetOSArchLowercase>$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())</_TargetOSArchLowercase>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,7 +32,7 @@
     <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
 
     <PropertyGroup>
-      <PgoPackagePath>$([MSBuild]::NormalizePath($(Pkgoptimization_PGO_CoreCLR),../../,optimization.$(_BuildOSArchLowercase).pgo.coreclr,$(optimizationPGOCoreCLRVersion)))</PgoPackagePath>
+      <PgoPackagePath>$([MSBuild]::NormalizePath($(Pkgoptimization_PGO_CoreCLR),../../,optimization.$(_TargetOSArchLowercase).pgo.coreclr,$(optimizationPGOCoreCLRVersion)))</PgoPackagePath>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package. Maybe the platform-specific package naming changed?" />

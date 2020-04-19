@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants Condition=" '$(OSGroup)' == 'Windows_NT' ">$(DefineConstants);WIN32</DefineConstants>
+    <DefineConstants Condition=" '$(TargetOS)' == 'Windows_NT' ">$(DefineConstants);WIN32</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -17,6 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="OsSpecific" />
   </ItemGroup>

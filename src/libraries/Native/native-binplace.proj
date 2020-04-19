@@ -1,29 +1,31 @@
-<Project DefaultTargets="Build">
-
-  <Import Project="..\Directory.Build.props" />
-  <Target Name="Build" DependsOnTargets="BinPlace" />
-  <Target Name="Clean" />
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+<Project>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <BinPlaceItem Include="$(NativeBinDir)/*.dll" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.pdb" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.lib" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.a" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.bc" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.so" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dbg" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dylib" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dwarf" />
-      <FileWrites Include="@(BinPlaceItem)" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dll" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.a" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.so" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+
+      <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
+      <FileWrites Include="@(NativeBinPlaceItem)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="Build" DependsOnTargets="BinPlace" />
+  <Target Name="CreateManifestResourceNames" />
 </Project>

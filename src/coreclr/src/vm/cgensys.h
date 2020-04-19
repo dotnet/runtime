@@ -34,24 +34,20 @@ int  CallJitEHFilter (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel);
 #endif // TARGET_X86
 
-//These are in util.cpp
-extern size_t GetLogicalProcessorCacheSizeFromOS();
-extern size_t GetIntelDeterministicCacheEnum();
-extern size_t GetIntelDescriptorValuesCache();
-extern DWORD GetLogicalCpuCountFromOS();
-extern DWORD GetLogicalCpuCountFallback();
-
-
-// Try to determine the largest last-level cache size of the machine - return 0 if unknown or no L2/L3 cache
-size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize = TRUE);
-
-
 #ifdef FEATURE_COMINTEROP
 extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMethodDesc * pMD);
 extern "C" void GenericComPlusCallStub(void);
 
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
+
+// The GC mode for the thread that initially called ThePreStub().
+enum class CallerGCMode
+{
+    Unknown,
+    Coop,
+    Preemptive    // (e.g. NativeCallableAttribute)
+};
 
 // Non-CPU-specific helper functions called by the CPU-dependent code
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD);

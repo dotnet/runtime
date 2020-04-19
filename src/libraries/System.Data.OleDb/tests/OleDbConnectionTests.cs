@@ -357,5 +357,65 @@ namespace System.Data.OleDb.Tests
             Assert.True(connectionStringBuilder.Remove("Provider"));
             Assert.Empty(connectionStringBuilder.Provider);
         }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void TransactionRollBackTest()
+        {
+            using (OleDbConnection connection = new OleDbConnection(ConnectionString))
+            {
+                connection.Open();
+                OleDbTransaction transaction = connection.BeginTransaction();
+                // This call shouldn't throw
+                transaction.Rollback();
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void ServerVersionTest()
+        {
+            using (OleDbConnection connection = new OleDbConnection(ConnectionString))
+            {
+                connection.Open();
+                string version = connection.ServerVersion;
+                Assert.False(string.IsNullOrEmpty(version));
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void ConnectionDatabasePropertyTest()
+        {
+            using (OleDbConnection connection = new OleDbConnection(ConnectionString))
+            {
+                connection.Open();
+
+                // This call shouldn't throw
+                _ = connection.Database;
+            }
+        }
+
+        public static IEnumerable<object[]> ProviderNamesForConnectionString
+        {
+            get
+            {
+                // This provider must exist on the test OS.
+                yield return new object[] { Helpers.ProviderName };
+                // This is a non-existent provider.
+                yield return new object[] { "Unavailable" };
+            }
+        }
+
+        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [MemberData(nameof(ProviderNamesForConnectionString))]
+        public void ConnectionStringTest(string provider)
+        {
+            // This should be a provider that exists in the test environment
+            OleDbConnectionStringBuilder builder = new OleDbConnectionStringBuilder
+            {
+                Provider = provider,
+                DataSource = "myDB.mdb"
+            };
+            string connStr = builder.ConnectionString;
+            Assert.Equal($"Provider={provider};Data Source=myDB.mdb", connStr);
+        }
     }
 }

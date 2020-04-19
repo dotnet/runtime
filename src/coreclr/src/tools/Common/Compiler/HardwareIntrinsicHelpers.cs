@@ -18,28 +18,10 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-
-            if (owningType.IsIntrinsic && owningType is MetadataType mdType)
-            {
-                TargetArchitecture targetArch = owningType.Context.Target.Architecture;
-
-                if (targetArch == TargetArchitecture.X64 || targetArch == TargetArchitecture.X86)
-                {
-                    mdType = (MetadataType)mdType.ContainingType ?? mdType;
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.X86")
-                        return true;
-                }
-                else if (targetArch == TargetArchitecture.ARM64)
-                {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm.Arm64")
-                        return true;
-                }
-            }
-
-            return false;
+            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
         }
 
+#if !READYTORUN
         public static bool IsIsSupportedMethod(MethodDesc method)
         {
             return method.Name == "get_IsSupported";
@@ -188,5 +170,6 @@ namespace ILCompiler
             public const int Popcnt = 0x0040;
             public const int Lzcnt = 0x0080;
         }
+#endif // !READYTORUN
     }
 }

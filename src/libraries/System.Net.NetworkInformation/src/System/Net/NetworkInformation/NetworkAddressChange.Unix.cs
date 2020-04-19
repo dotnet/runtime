@@ -24,10 +24,10 @@ namespace System.Net.NetworkInformation
         // has potentially changed as a result.
         private const int AvailabilityTimerWindowMilliseconds = 150;
         private static readonly TimerCallback s_availabilityTimerFiredCallback = OnAvailabilityTimerFired;
-        private static Timer s_availabilityTimer;
+        private static Timer? s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
-        public static event NetworkAddressChangedEventHandler NetworkAddressChanged
+        public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
             {
@@ -67,7 +67,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
             {
@@ -151,7 +151,7 @@ namespace System.Net.NetworkInformation
             }
 
             s_socket = newSocket;
-            Task.Factory.StartNew(s => LoopReadSocket((int)s), s_socket,
+            Task.Factory.StartNew(s => LoopReadSocket((int)s!), s_socket,
                 CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
@@ -216,23 +216,23 @@ namespace System.Net.NetworkInformation
 
         private static void OnAddressChanged()
         {
-            Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> addressChangedSubscribers = null;
+            Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;
 
             lock (s_gate)
             {
                 if (s_addressChangedSubscribers.Count > 0)
                 {
-                    addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>(s_addressChangedSubscribers);
+                    addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>(s_addressChangedSubscribers);
                 }
             }
 
             if (addressChangedSubscribers != null)
             {
-                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext>
+                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                     subscriber in addressChangedSubscribers)
                 {
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
-                    ExecutionContext ec = subscriber.Value;
+                    ExecutionContext? ec = subscriber.Value;
 
                     if (ec == null) // Flow supressed
                     {
@@ -246,9 +246,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static void OnAvailabilityTimerFired(object state)
+        private static void OnAvailabilityTimerFired(object? state)
         {
-            Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> availabilityChangedSubscribers = null;
+            Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>? availabilityChangedSubscribers = null;
 
             lock (s_gate)
             {
@@ -258,7 +258,7 @@ namespace System.Net.NetworkInformation
                     if (s_availabilityChangedSubscribers.Count > 0)
                     {
                         availabilityChangedSubscribers =
-                            new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext>(
+                            new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>(
                                 s_availabilityChangedSubscribers);
                     }
                 }
@@ -270,11 +270,11 @@ namespace System.Net.NetworkInformation
                 NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
                 ContextCallback callbackContext = isAvailable ? s_runHandlerAvailable : s_runHandlerNotAvailable;
 
-                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext>
+                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext?>
                     subscriber in availabilityChangedSubscribers)
                 {
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
-                    ExecutionContext ec = subscriber.Value;
+                    ExecutionContext? ec = subscriber.Value;
 
                     if (ec == null) // Flow supressed
                     {

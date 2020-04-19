@@ -10,11 +10,11 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPInterfaceProperties : IPInterfaceProperties
     {
-        private UnicastIPAddressInformationCollection _unicastAddresses;
-        private MulticastIPAddressInformationCollection _multicastAddreses;
+        private UnicastIPAddressInformationCollection? _unicastAddresses;
+        private MulticastIPAddressInformationCollection? _multicastAddreses;
         private readonly UnixNetworkInterface _uni;
-        internal string _dnsSuffix;
-        internal IPAddressCollection _dnsAddresses;
+        internal string? _dnsSuffix;
+        internal IPAddressCollection? _dnsAddresses;
 
         public UnixIPInterfaceProperties(UnixNetworkInterface uni, bool globalConfig = false)
         {
@@ -107,7 +107,7 @@ namespace System.Net.NetworkInformation
             return collection;
         }
 
-        private static string GetDnsSuffix()
+        private static string? GetDnsSuffix()
         {
             try
             {
@@ -119,7 +119,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static IPAddressCollection GetDnsAddresses()
+        private static IPAddressCollection? GetDnsAddresses()
         {
             try
             {

@@ -26,7 +26,6 @@
 
 #include "rtlfunctions.h"
 
-#include "jitperf.h"
 #include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
@@ -1297,11 +1296,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
-
-    if (CPU_X86_USE_SSE2(cpuInfo.dwFeatures))
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-    }
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1373,46 +1367,48 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
         {
+            CPUCompileFlags.Set(InstructionSet_SSE);
+            CPUCompileFlags.Set(InstructionSet_SSE2);
             if ((buffer[11] & 0x02) != 0)                                   // AESNI
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
+                CPUCompileFlags.Set(InstructionSet_AES);
             }
 
             if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
+                CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
             }
 
             if ((buffer[8] & 0x01) != 0)                                    // SSE3
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
+                CPUCompileFlags.Set(InstructionSet_SSE3);
 
                 if ((buffer[9] & 0x02) != 0)                                // SSSE3
                 {
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
+                    CPUCompileFlags.Set(InstructionSet_SSSE3);
 
                     if ((buffer[10] & 0x08) != 0)                           // SSE4.1
                     {
-                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
+                        CPUCompileFlags.Set(InstructionSet_SSE41);
 
                         if ((buffer[10] & 0x10) != 0)                       // SSE4.2
                         {
-                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
+                            CPUCompileFlags.Set(InstructionSet_SSE42);
 
                             if ((buffer[10] & 0x80) != 0)                   // POPCNT
                             {
-                                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
+                                CPUCompileFlags.Set(InstructionSet_POPCNT);
                             }
 
                             if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
                             {
                                 if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))
                                 {
-                                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
+                                    CPUCompileFlags.Set(InstructionSet_AVX);
 
                                     if ((buffer[9] & 0x10) != 0)            // FMA
                                     {
-                                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
+                                        CPUCompileFlags.Set(InstructionSet_FMA);
                                     }
 
                                     if (maxCpuId >= 0x07)
@@ -1421,7 +1417,7 @@ void EEJitManager::SetCpuInfo()
 
                                         if ((buffer[4] & 0x20) != 0)        // AVX2
                                         {
-                                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
+                                            CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
                                     }
                                 }
@@ -1440,7 +1436,7 @@ void EEJitManager::SetCpuInfo()
 
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
-                CPUCompileFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
+                CPUCompileFlags.Clear(InstructionSet_AVX2);
             }
         }
 
@@ -1450,12 +1446,12 @@ void EEJitManager::SetCpuInfo()
 
             if ((buffer[4] & 0x08) != 0)            // BMI1
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
+                CPUCompileFlags.Set(InstructionSet_BMI1);
             }
 
             if ((buffer[5] & 0x01) != 0)            // BMI2
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
+                CPUCompileFlags.Set(InstructionSet_BMI2);
             }
         }
     }
@@ -1472,7 +1468,7 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[8] & 0x20) != 0)            // LZCNT
         {
-            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
+            CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1487,22 +1483,25 @@ void EEJitManager::SetCpuInfo()
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 #elif defined(HOST_64BIT)
     // FP and SIMD support are enabled by default
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
+    CPUCompileFlags.Set(InstructionSet_ArmBase);
+    CPUCompileFlags.Set(InstructionSet_AdvSimd);
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
+        CPUCompileFlags.Set(InstructionSet_Aes);
+        CPUCompileFlags.Set(InstructionSet_Sha1);
+        CPUCompileFlags.Set(InstructionSet_Sha256);
     }
     // PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE (31)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
+        CPUCompileFlags.Set(InstructionSet_Crc32);
     }
 #endif // HOST_64BIT
 #endif // TARGET_ARM64
+
+    CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
@@ -2264,8 +2263,8 @@ void CodeHeapRequestInfo::Init()
 
     if (m_pAllocator == NULL)
         m_pAllocator = m_pMD->GetLoaderAllocator();
-    m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
-    m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
+    m_isDynamicDomain = (m_pMD != NULL) && m_pMD->IsLCGMethod();
+    m_isCollectible = m_pAllocator->IsCollectible();
     m_throwOnOutOfMemoryWithinRange = true;
 }
 
@@ -2616,8 +2615,6 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 
-        JIT_PERF_UPDATE_X86_CODE_SIZE(totalSize);
-
         // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
         // map so that we don't have to harden readers against uninitialized data.
         // However because we hold the lock, this initialization should be fast and cheap!
@@ -2842,7 +2839,6 @@ BYTE* EEJitManager::allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t
         pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
     }
     _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
@@ -2870,8 +2866,6 @@ void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, siz
         mem = (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
     _ASSERTE(mem);   // AllocMem throws if there's not enough memory
-
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize; // Store the allocation size so we can backout later.
 
@@ -2945,8 +2939,6 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         pBlock = (JumpStubBlockHeader *)mem;
 
         _ASSERTE(IS_ALIGNED(pBlock, CODE_SIZE_ALIGN));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
     }
 
     pBlock->m_next            = NULL;
@@ -3589,12 +3581,20 @@ BOOL EEJitManager::GetBoundariesAndVars(
     if (pDebugInfo == NULL)
         return FALSE;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        hasFlagByte
+    );
 
     return TRUE;
 }
@@ -3616,9 +3616,15 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     this->pRealCodeHeader.EnumMem();
 #endif // USE_INDIRECT_CODEHEADER
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), hasFlagByte);
     }
 }
 
@@ -5529,8 +5535,9 @@ BOOL NativeImageJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6503,7 +6510,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
+    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
     return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
 }
@@ -6743,8 +6750,9 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6768,7 +6776,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemory
     if (pDebugInfo == NULL)
         return;
 
-    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
+    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo, FALSE);
 }
 #endif
 

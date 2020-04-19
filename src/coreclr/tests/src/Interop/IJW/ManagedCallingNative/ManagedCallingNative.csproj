@@ -7,7 +7,7 @@
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
     <!-- IJW is not supported on ARM64 -->
-    <DisableProjectBuild Condition="'$(Platform)' == 'arm64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' == 'arm64'">true</DisableProjectBuild>
     <!-- Loading IJW assemblies into an unloadable context is not allowed -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

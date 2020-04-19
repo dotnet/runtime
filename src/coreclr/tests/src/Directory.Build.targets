@@ -4,6 +4,7 @@
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+    <CLRTestNeedTarget Condition="'$(CLRTestNeedTarget)' == ''">0</CLRTestNeedTarget>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -72,6 +73,8 @@
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetGeneric' And '$(CLRTestNeedTarget)' == '1'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific' And '$(CLRTestNeedTarget)' != '1'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
 
@@ -102,6 +105,7 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
 
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
+    <SkipImportILTargets Condition="'$(CLRTestNeedTargetToBuild)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestNeedTargetToBuild)'">true</SkipImportILTargets>
   </PropertyGroup>
 
   <Import Project="CLRTest.Execute.targets" />
@@ -139,10 +143,10 @@
         <NativeProjectBinariesExeFilterRemovedCMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*CMakeFiles.*`))" Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
 
         <!-- Filter .dylib files on OSX -->
-        <NativeProjectBinariesDyLibFilter Condition="'$(__BuildOS)' == 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
+        <NativeProjectBinariesDyLibFilter Condition="'$(TargetOS)' == 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
 
         <!-- Filter .so files on Linux -->
-        <NativeProjectBinariesDyLibFilter Condition="'$(__BuildOS)' == 'Linux' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
+        <NativeProjectBinariesDyLibFilter Condition="'$(TargetOS)' == 'Linux' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
 
         <!-- Filter static lib files on Unix -->
         <NativeProjectBinariesStaticLibFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.a`))" Include="@(NativeProjectBinariesMatched)" />
@@ -240,7 +244,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 

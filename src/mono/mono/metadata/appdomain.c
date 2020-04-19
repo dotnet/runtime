@@ -128,7 +128,7 @@ static gboolean
 mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
 
 static void
-add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
+add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht);
 
 #if ENABLE_NETCORE
 
@@ -314,15 +314,16 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_marshal_init ();
 	mono_gc_init_icalls ();
 
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
-	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL);
+	// We have to append here because otherwise this will run before the netcore hook (which is installed first), see https://github.com/dotnet/runtime/issues/34273
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE, FALSE);
+	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);
 
 #ifndef ENABLE_NETCORE // refonly hooks
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE);
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE, FALSE);
 	mono_install_assembly_asmctx_from_path_hook (mono_domain_asmctx_from_path, NULL);
 #endif
 
@@ -1415,6 +1416,7 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	HANDLE_FUNCTION_ENTER ();
 	MonoAssembly *ret = NULL;
 	MonoDomain *domain = mono_alc_domain (alc);
+	char *filename = NULL;
 
 	if (mono_runtime_get_no_exec ())
 		goto leave;
@@ -1454,7 +1456,8 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 
 	if (ret && !refonly && mono_asmctx_get_kind (&ret->context) == MONO_ASMCTX_REFONLY) {
 		/* .NET Framework throws System.IO.FileNotFoundException in this case */
-		mono_error_set_file_not_found (error, NULL, "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only");
+		filename = mono_string_handle_to_utf8 (fname, error);
+		mono_error_set_file_not_found (error, filename, "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only: %s", filename);
 		ret = NULL;
 		goto leave;
 	}
@@ -1489,6 +1492,7 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 #endif
 
 leave:
+	g_free (filename);
 	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
@@ -1520,7 +1524,6 @@ mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 {
-	gint i;
 	GSList *tmp;
 	gboolean destroy_ht = FALSE;
 
@@ -1533,37 +1536,40 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 		ht = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		destroy_ht = TRUE;
 		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			g_hash_table_insert (ht, tmp->data, tmp->data);
+			g_hash_table_add (ht, tmp->data);
 		}
 	}
-
-	/* FIXME: handle lazy loaded assemblies */
 
 	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
-		g_hash_table_insert (ht, ass, ass);
+		g_hash_table_add (ht, ass);
 		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
 	}
 
+#ifndef ENABLE_NETCORE
 	if (ass->image->references) {
-		for (i = 0; i < ass->image->nreferences; i++) {
-			if (ass->image->references[i] && ass->image->references [i] != REFERENCE_MISSING) {
-				if (!g_hash_table_lookup (ht, ass->image->references [i])) {
-					add_assemblies_to_domain (domain, ass->image->references [i], ht);
-				}
+		for (int i = 0; i < ass->image->nreferences; i++) {
+			MonoAssembly *ref = ass->image->references [i];
+			if (ref && ref != REFERENCE_MISSING) {
+				if (!g_hash_table_lookup (ht, ref))
+					add_assemblies_to_domain (domain, ref, ht);
 			}
 		}
 	}
+#endif
+
 	if (destroy_ht)
 		g_hash_table_destroy (ht);
 }
 
+/*
+ * LOCKING: assumes the ALC's assemblies lock is taken
+ */
 #ifdef ENABLE_NETCORE
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 {
-	gint i;
 	GSList *tmp;
 
 	g_assert (ass != NULL);
@@ -1571,11 +1577,8 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 	if (!ass->aname.name)
 		return;
 
-	mono_alc_assemblies_lock (alc);
-
 	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
 		if (tmp->data == ass) {
-			mono_alc_assemblies_unlock (alc);
 			return;
 		}
 	}
@@ -1583,16 +1586,8 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 	mono_assembly_addref (ass);
 	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
 	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
 
-	if (ass->image->references) {
-		for (i = 0; i < ass->image->nreferences; i++) {
-			// TODO: remove all this after we're confident this assert isn't hit
-			g_assertf (!ass->image->references [i], "Did not expect reference %d of %s to be resolved", i, ass->image->name);
-		}
-	}
-
-	mono_alc_assemblies_unlock (alc);
 }
 #endif
 
@@ -1672,11 +1667,15 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
 	mono_domain_assemblies_lock (domain);
+#ifdef ENABLE_NETCORE
+	mono_alc_assemblies_lock (alc);
+#endif
 	add_assemblies_to_domain (domain, assembly, NULL);
-	mono_domain_assemblies_unlock (domain);
 #ifdef ENABLE_NETCORE
 	add_assembly_to_alc (alc, assembly);
+	mono_alc_assemblies_unlock (alc);
 #endif
+	mono_domain_assemblies_unlock (domain);
 
 	mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
@@ -2660,9 +2659,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, name, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, name, "Invalid Image: %s", name);
 		else
-			mono_error_set_file_not_found (error, name, "Invalid Image");
+			mono_error_set_simple_file_not_found (error, name, refOnly);
 		goto leave;
 	}
 
@@ -2701,9 +2700,9 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_file_not_found (error, filename, "Invalid Image");
+			mono_error_set_simple_file_not_found (error, filename, asmctx == MONO_ASMCTX_REFONLY);
 	}
 
 leave:
@@ -3269,7 +3268,9 @@ unload_thread_main (void *arg)
 	 */
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		zero_static_data ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
+#if !HAVE_BOEHM_GC
 	mono_gc_collect (0);
+#endif
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		clear_cached_vtable ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	deregister_reflection_info_roots (domain);
@@ -3287,8 +3288,6 @@ unload_thread_main (void *arg)
 	mono_gchandle_free_domain (domain);
 
 	mono_domain_free (domain, FALSE);
-
-	mono_gc_collect (mono_gc_max_generation ());
 
 	result = 0; // success
 exit:
