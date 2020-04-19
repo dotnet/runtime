@@ -11,7 +11,7 @@ namespace System.Data.Common
         /// <summary>
         /// When overriden in a derived class return true in all cases where a simple retry of the operation without any other change may be successful.
         /// </summary>
-        public bool IsTransient { get; protected set; } = false;
+        public virtual bool IsTransient { get; protected set; } = false;
 
         protected DbException() : base() { }
 
