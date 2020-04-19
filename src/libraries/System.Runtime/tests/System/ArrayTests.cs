@@ -282,7 +282,7 @@ namespace System.Tests
 
             // UIntPtr
 
-            IntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, 5, 5, UIntPtr.MaxValue };
+            UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
 
             yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
             yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };

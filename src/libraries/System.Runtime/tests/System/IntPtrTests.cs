@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace System.Tests
@@ -253,7 +254,7 @@ namespace System.Tests
         [InlineData(-789, 789, false)]
         [InlineData(789, null, false)]
         [InlineData(789, "789", false)]
-        [InlineData(789, (long)789, false)]
+        [InlineData(789, 789, false)]
         public static void EqualsTest(int i0, object obj, bool expected)
         {
             var i1 = (IntPtr)i0;
