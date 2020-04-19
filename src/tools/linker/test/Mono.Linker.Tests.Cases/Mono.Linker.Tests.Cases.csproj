@@ -97,6 +97,7 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
     <Content Include="LinkXml\UsedNonRequiredTypeIsKept.xml" />
+    <Content Include="LinkXml\SecondLevelMethodIsKept.xml" />
     <Content Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" />
