@@ -264,13 +264,17 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            public void Dispatch()
+            public void Dispatch(bool inlineAsync)
             {
                 ManualResetEventSlim? e = Event;
                 if (e != null)
                 {
                     // Sync operation.  Signal waiting thread to continue processing.
                     e.Set();
+                }
+                else if (inlineAsync)
+                {
+                    ((IThreadPoolWorkItem)this).Execute();
                 }
                 else
                 {
@@ -866,7 +870,7 @@ namespace System.Net.Sockets
                 }
 
                 // Dispatch the op so we can try to process it.
-                op.Dispatch();
+                op.Dispatch(inlineAsync: true);
             }
 
             internal void ProcessAsyncOperation(TOperation op)
@@ -1003,7 +1007,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                nextOp?.Dispatch();
+                nextOp?.Dispatch(inlineAsync: false);
 
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
             }
@@ -1082,7 +1086,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                nextOp?.Dispatch();
+                nextOp?.Dispatch(inlineAsync: false);
             }
 
             // Called when the socket is closed.

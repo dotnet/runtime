@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
-    internal sealed unsafe class SocketAsyncEngine
+    internal sealed unsafe class SocketAsyncEngine : IThreadPoolWorkItem
     {
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
@@ -129,6 +129,9 @@ namespace System.Net.Sockets
         // Maps handle values to SocketAsyncContext instances.
         //
         private readonly ConcurrentDictionary<IntPtr, SocketAsyncContext> _handleToContextMap = new ConcurrentDictionary<IntPtr, SocketAsyncContext>();
+
+        private readonly ConcurrentQueue<Event> _eventQueue = new ConcurrentQueue<Event>();
+        private int _eventQueueProcessingRequested;
 
         //
         // True if we've reached the handle value limit for this event port, and thus must allocate a new event port
@@ -308,6 +311,7 @@ namespace System.Net.Sockets
             try
             {
                 bool shutdown = false;
+                ConcurrentQueue<Event> eventQueue = _eventQueue;
                 while (!shutdown)
                 {
                     int numEvents = EventBufferCount;
@@ -320,6 +324,7 @@ namespace System.Net.Sockets
                     // The native shim is responsible for ensuring this condition.
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
+                    bool scheduleProcessing = false;
                     for (int i = 0; i < numEvents; i++)
                     {
                         IntPtr handle = _buffer[i].Data;
@@ -330,13 +335,14 @@ namespace System.Net.Sockets
                         else
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext? context);
-                            if (context != null)
-                            {
-                                context.HandleEvents(_buffer[i].Events);
-                                context = null;
-                            }
+                            eventQueue.Enqueue(new Event(handle, _buffer[i].Events));
+                            scheduleProcessing = true;
                         }
+                    }
+
+                    if (scheduleProcessing && Interlocked.CompareExchange(ref _eventQueueProcessingRequested, 1, 0) == 0)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
                     }
                 }
 
@@ -345,6 +351,30 @@ namespace System.Net.Sockets
             catch (Exception e)
             {
                 Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
+            }
+        }
+
+        void IThreadPoolWorkItem.Execute()
+        {
+            Volatile.Write(ref _eventQueueProcessingRequested, 0);
+
+            ConcurrentDictionary<IntPtr, SocketAsyncContext> handleToContextMap = _handleToContextMap;
+            ConcurrentQueue<Event> eventQueue = _eventQueue;
+            while (eventQueue.TryDequeue(out Event ev))
+            {
+                handleToContextMap.TryGetValue(ev.Handle, out SocketAsyncContext? context);
+                if (context == null)
+                {
+                    continue;
+                }
+
+                if (_eventQueueProcessingRequested == 0 &&
+                    Interlocked.CompareExchange(ref _eventQueueProcessingRequested, 1, 0) == 0)
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+                }
+
+                context.HandleEvents(ev.Events);
             }
         }
 
@@ -386,6 +416,18 @@ namespace System.Net.Sockets
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);
             return error == Interop.Error.SUCCESS;
+        }
+
+        private struct Event
+        {
+            public IntPtr Handle { get; private set; }
+            public Interop.Sys.SocketEvents Events { get; private set; }
+
+            public Event(IntPtr handle, Interop.Sys.SocketEvents events)
+            {
+                Handle = handle;
+                Events = events;
+            }
         }
     }
 }
