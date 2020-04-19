@@ -1,7 +1,7 @@
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+endif()
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -134,6 +134,10 @@ if(CLR_CMAKE_HOST_ARCH_ARM)
     set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
   endif()
 endif(CLR_CMAKE_HOST_ARCH_ARM)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_compile_options(-Wa,--divide)
+endif()
 
 set(SOURCES
   cruntime/file.cpp
@@ -320,6 +324,13 @@ if(CLR_CMAKE_TARGET_NETBSD)
     ${KVM}
   )
 endif(CLR_CMAKE_TARGET_NETBSD)
+
+if(CLR_CMAKE_TARGET_SUNOS)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+  )
+endif(CLR_CMAKE_TARGET_SUNOS)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

@@ -2,6 +2,7 @@ include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckCXXSymbolExists)
 include(CheckFunctionExists)
+include(CheckPrototypeDefinition)
 include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
@@ -45,6 +46,7 @@ check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
+check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 
@@ -143,6 +145,8 @@ check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGS
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
 check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
+check_struct_has_member ("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
+check_struct_has_member ("struct _fpchip_state" cw sys/ucontext.h HAVE_FPREGS_WITH_CW)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
 check_type_size("struct reg" BSD_REGS_T)
@@ -169,6 +173,7 @@ check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
+check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -1389,5 +1394,31 @@ else() # Anything else is Linux
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 endif(CLR_CMAKE_TARGET_OSX)
+
+check_struct_has_member(
+    "struct statfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATFS_FSTYPENAME)
+
+check_struct_has_member(
+    "struct statvfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATVFS_FSTYPENAME)
+
+# statfs: Find whether this struct exists
+if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
+    set (STATFS_INCLUDES sys/mount.h)
+else ()
+    set (STATFS_INCLUDES sys/statfs.h)
+endif ()
+
+check_prototype_definition(
+    statfs
+    "int statfs(const char *path, struct statfs *buf)"
+    0
+    ${STATFS_INCLUDES}
+    HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

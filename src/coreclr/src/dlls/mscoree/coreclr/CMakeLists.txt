@@ -61,6 +61,11 @@ else(CLR_CMAKE_HOST_WIN32)
         set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
     endif()
 
+    if(CLR_CMAKE_HOST_SUNOS)
+        # Add linker exports file option
+        set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+    endif()
+
 endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
@@ -168,7 +173,7 @@ target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
     set(
-        RUNTIME_MODULE_INDEX_FILE 
+        RUNTIME_MODULE_INDEX_FILE
         ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
     )
     add_custom_command(
@@ -178,12 +183,12 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
         COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
     )
     set_source_files_properties(
-        ${RUNTIME_MODULE_INDEX_FILE} 
+        ${RUNTIME_MODULE_INDEX_FILE}
         PROPERTIES GENERATED TRUE
     )
     add_custom_target(
         runtime_module_index_header
-        DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
+        DEPENDS ${RUNTIME_MODULE_INDEX_FILE}
     )
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 

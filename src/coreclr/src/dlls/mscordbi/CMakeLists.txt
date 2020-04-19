@@ -55,6 +55,11 @@ if(CLR_CMAKE_HOST_OSX)
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_OSX)
 
+if(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+endif()
+
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
 target_precompile_header(TARGET mscordbi HEADER stdafx.h)
 
@@ -125,7 +130,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
     set(
-        DBI_MODULE_INDEX_FILE 
+        DBI_MODULE_INDEX_FILE
         ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h
     )
     add_custom_command(
@@ -135,12 +140,12 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
         COMMENT "Generating DBI module index file -> ${DBI_MODULE_INDEX_FILE}"
     )
     set_source_files_properties(
-        ${DBI_MODULE_INDEX_FILE} 
+        ${DBI_MODULE_INDEX_FILE}
         PROPERTIES GENERATED TRUE
     )
     add_custom_target(
         dbi_module_index_header
-        DEPENDS ${DBI_MODULE_INDEX_FILE} 
+        DEPENDS ${DBI_MODULE_INDEX_FILE}
     )
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 

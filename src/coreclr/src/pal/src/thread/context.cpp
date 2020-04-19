@@ -29,7 +29,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/virtual.h"
 
+#if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
@@ -428,7 +430,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
-#if HAVE_GREGSET_T || HAVE_GREGSET_T
+#if (HAVE_GREGSET_T || HAVE_GREGSET_T) && !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -447,7 +449,12 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #ifdef HOST_AMD64
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
         FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+#if HAVE_FPREGS_WITH_CW
+        FPREG_TagWord1(native) = lpContext->FltSave.TagWord >> 8;
+        FPREG_TagWord2(native) = lpContext->FltSave.TagWord & 0xff;
+#else
         FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+#endif
         FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
         FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
         FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
@@ -537,7 +544,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
 
-#if HAVE_GREGSET_T || HAVE___GREGSET_T
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -566,7 +573,11 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #ifdef HOST_AMD64
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
         lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+#if HAVE_FPREGS_WITH_CW
+        lpContext->FltSave.TagWord = ((DWORD)FPREG_TagWord1(native) << 8) | FPREG_TagWord2(native);
+#else
         lpContext->FltSave.TagWord = FPREG_TagWord(native);
+#endif
         lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
         lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
         lpContext->FltSave.DataOffset = FPREG_DataOffset(native);
