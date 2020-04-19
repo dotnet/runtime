@@ -12636,19 +12636,18 @@ DONE_MORPHING_CHILDREN:
             // See if we can fold floating point operations
             if (varTypeIsFloating(tree->TypeGet()) && !optValnumCSE_phase)
             {
-                if (oper == GT_MUL && !op1->IsCnsFltOrDbl() && op2->IsCnsFltOrDbl())
+                if ((oper == GT_MUL) && !op1->IsCnsFltOrDbl() && op2->IsCnsFltOrDbl())
                 {
-                    // Fold "x*2.0" to "x+x"
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
+                        // Fold "x*2.0" to "x+x"
                         tree->AsOp()->gtOp2 = gtCloneExpr(op1->OperIsLeaf() ? op1 : fgMakeMultiUse(&op1));;
                         tree->ChangeOper(GT_ADD);
                         oper = GT_ADD;
                     }
-
-                    // Fold "x*1.0" to "x"
-                    if (op2->AsDblCon()->gtDconVal == 1.0)
+                    else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {
+                        // Fold "x*1.0" to "x"
                         DEBUG_DESTROY_NODE(op2);
                         DEBUG_DESTROY_NODE(tree);
                         return op1;
