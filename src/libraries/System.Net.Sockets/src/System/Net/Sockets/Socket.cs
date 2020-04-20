@@ -190,13 +190,6 @@ namespace System.Net.Sockets
                     case AddressFamily.Unix:
                         socketAddress = new Internals.SocketAddress(_addressFamily, buffer);
                         _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                        {
-                            // GetPeerName() bellow will fail if given buffer is too small.
-                            // Give it at least old Windows max path.
-                            socketAddress = new Internals.SocketAddress(_addressFamily, UnixDomainSocketEndPoint.MaxPathLength);
-                        }
-
                         break;
                 }
 
@@ -207,18 +200,21 @@ namespace System.Net.Sockets
                     try
                     {
                         socketAddress ??= new Internals.SocketAddress(_addressFamily, buffer);
-                        if (SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize) != SocketError.Success)
+
+                        SocketError result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
+                        if ( result != SocketError.Success &&
+                            ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && result == SocketError.Fault) ||
+                             (socketAddress.InternalSize > socketAddress.Buffer.Length)))
                         {
-                            return;
+                            // GetPeerName simply fails on Windows it buffer is too small.
+                            // On UNix, we may get partial result.
+                            socketAddress = new Internals.SocketAddress(_addressFamily, UnixDomainSocketEndPoint.MaxAddressSize);
+                            result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
                         }
 
-                        if (socketAddress.InternalSize > socketAddress.Buffer.Length)
+                        if (result != SocketError.Success)
                         {
-                            socketAddress.Buffer = new byte[socketAddress.InternalSize];
-                            if (SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize) != SocketError.Success)
-                            {
-                                return;
-                            }
+                            return;
                         }
 
                         _remoteEndPoint = _rightEndPoint.Create(socketAddress);

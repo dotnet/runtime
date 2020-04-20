@@ -498,7 +498,7 @@ namespace System.Net.Sockets.Tests
 
                     var bytes = new ReadOnlySpan<byte>(&addr, sizeof(sockaddr_nl));
 
-                    for (int i = 0; i< bytes.Length; i++)
+                    for (int i = 0; i < bytes.Length; i++)
                     {
                         this[i] = bytes[i];
                     }

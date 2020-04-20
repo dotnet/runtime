@@ -50,7 +50,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal static int MaxPathLength => s_nativePathLength;
+        internal static int MaxAddressSize => s_nativeAddressSize;
 
         internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
