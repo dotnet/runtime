@@ -13,6 +13,10 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   add_definitions(-DTARGET_ARM64)
   add_definitions(-DTARGET_ARMARCH)
 endif()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # The ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
+  add_compile_options(-Wno-psabi)
+endif()
 set(SOURCES
   GenericsNative.IUnknown.cpp
   GenericsNative.NullableB.cpp

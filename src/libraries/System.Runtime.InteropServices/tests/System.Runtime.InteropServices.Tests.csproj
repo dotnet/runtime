@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="System\DllNotFoundExceptionTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectsForNativeVariantsTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />

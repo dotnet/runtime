@@ -492,6 +492,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common\public</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-private-unstable.h">
+      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common\public</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common\public</Filter>
     </ClInclude>

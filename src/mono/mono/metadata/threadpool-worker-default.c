@@ -761,13 +761,13 @@ monitor_thread (gpointer unused)
 		});
 
 		if (limit_worker_max_reached) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] monitor thread, limit_worker_max (%d) reached",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, limit_worker_max (%d) reached",
 				    GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())),
 				    worker.limit_worker_max);
 			if (active_max_reached)
 				continue;
 			else
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] monitor thread, num_active (%d) < max_working, allowing active thread increase",
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, num_active (%d) < max_working, allowing active thread increase",
 					    GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())),
 					    counter_num_active (counter));
 		}

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -24,6 +23,13 @@ namespace System.Net.Tests
         public void Register_Null_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Register(null));
+        }
+
+        [Fact]
+        public void Unregister_Null_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Unregister((IAuthenticationModule)null));
+            Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Unregister((string)null));
         }
 
         [Fact]

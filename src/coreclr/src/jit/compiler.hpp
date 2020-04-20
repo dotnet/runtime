@@ -969,9 +969,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             // IND(ADDR(IND(x)) == IND(x)
             if (op1->gtOper == GT_ADDR)
             {
-                if (op1->AsOp()->gtOp1->gtOper == GT_IND && (op1->AsOp()->gtOp1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                GenTreeUnOp* addr  = op1->AsUnOp();
+                GenTree*     indir = addr->gtGetOp1();
+                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
-                    op1 = op1->AsOp()->gtOp1->AsOp()->gtOp1;
+                    op1 = indir->AsIndir()->Addr();
                 }
             }
         }
@@ -981,6 +983,11 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
             {
                 return op1->AsOp()->gtOp1;
+            }
+            else
+            {
+                // Addr source can't be CSE-ed.
+                op1->SetDoNotCSE();
             }
         }
     }

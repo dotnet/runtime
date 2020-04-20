@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 
@@ -37,6 +40,32 @@ namespace BundleTests.Helpers
             return Path.GetFileName(fixture.TestProject.AppDll);
         }
 
+        public static string GetAppBaseName(TestProjectFixture fixture)
+        {
+            return Path.GetFileNameWithoutExtension(GetAppName(fixture));
+        }
+
+        public static string[] GetBundledFiles(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.dll", $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json" };
+        }
+
+        public static string[] GetExtractedFiles(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.dll" };
+        }
+
+        public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.deps.json",
+                                  $"{appBaseName}.runtimeconfig.json",
+                                  Path.GetFileName(fixture.TestProject.HostFxrDll),
+                                  Path.GetFileName(fixture.TestProject.HostPolicyDll) };
+        }
+
         public static string GetPublishPath(TestProjectFixture fixture)
         {
             return Path.Combine(fixture.TestProject.ProjectDirectory, "publish");
@@ -47,23 +76,99 @@ namespace BundleTests.Helpers
             return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "bundle"));
         }
 
-        public static DirectoryInfo GetExtractDir(TestProjectFixture fixture)
+        public static string  GetExtractionRootPath(TestProjectFixture fixture)
         {
-            return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "extract"));
+            return Path.Combine(fixture.TestProject.ProjectDirectory, "extract");
+        }
+
+        public static DirectoryInfo GetExtractionRootDir(TestProjectFixture fixture)
+        {
+            return Directory.CreateDirectory(GetExtractionRootPath(fixture));
+        }
+
+        public static string GetExtractionPath(TestProjectFixture fixture, Bundler bundler)
+        {
+            return Path.Combine(GetExtractionRootPath(fixture), GetAppBaseName(fixture), bundler.BundleManifest.BundleID);
+
+        }
+        public static DirectoryInfo GetExtractionDir(TestProjectFixture fixture, Bundler bundler)
+        {
+            return new DirectoryInfo(GetExtractionPath(fixture, bundler));
+        }
+
+        /// Generate a bundle containind the (embeddable) files in sourceDir
+        public static string GenerateBundle(Bundler bundler, string sourceDir, string outputDir, bool copyExludedFiles=true)
+        {
+            // Convert sourceDir to absolute path
+            sourceDir = Path.GetFullPath(sourceDir);
+
+            // Get all files in the source directory and all sub-directories.
+            string[] sources = Directory.GetFiles(sourceDir, searchPattern: "*", searchOption: SearchOption.AllDirectories);
+
+            // Sort the file names to keep the bundle construction deterministic.
+            Array.Sort(sources, StringComparer.Ordinal);
+
+            List<FileSpec> fileSpecs = new List<FileSpec>(sources.Length);
+            foreach (var file in sources)
+            {
+                fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(sourceDir, file)));
+            }
+
+            var singleFile = bundler.GenerateBundle(fileSpecs);
+
+            if (copyExludedFiles)
+            {
+                foreach (var spec in fileSpecs)
+                {
+                    if (spec.Excluded)
+                    {
+                        var outputFilePath = Path.Combine(outputDir, spec.BundleRelativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
+                        File.Copy(spec.SourcePath, outputFilePath, true);
+                    }
+                }
+            }
+
+            return singleFile;
         }
 
         // Bundle to a single-file
-        // This step should be removed in favor of publishing with /p:PublishSingleFile=true
-        // once core-setup tests use 3.0 SDK 
-        public static string BundleApp(TestProjectFixture fixture)
+        // In several tests, the single-file bundle is created explicitly using Bundle API
+        // instead of the SDK via /p:PublishSingleFile=true.
+        // This is necessary when the test needs the latest changes in the AppHost, 
+        // which may not (yet) be available in the SDK.
+        public static Bundler BundleApp(TestProjectFixture fixture,
+                                        out string singleFile,
+                                        BundleOptions options = BundleOptions.BundleNativeBinaries,
+                                        Version targetFrameworkVersion = null,
+                                        bool copyExcludedFiles = true)
         {
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
 
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
+            singleFile = GenerateBundle(bundler, publishPath, bundleDir.FullName, copyExcludedFiles);
+
+            return bundler;
+        }
+
+        // The defaut option for Bundling apps is BundleOptions.BundleNativeBinaries
+        // Until CoreCLR runtime can learn how to process assemblies from the bundle.
+        // This is because CoreCLR expects System.Private.Corelib.dll to be beside CoreCLR.dll
+        public static string BundleApp(TestProjectFixture fixture,
+                                       BundleOptions options = BundleOptions.BundleNativeBinaries,
+                                       Version targetFrameworkVersion = null)
+        {
+            string singleFile;
+            BundleApp(fixture, out singleFile, options, targetFrameworkVersion);
             return singleFile;
+        }
+
+        public static Bundler Bundle(TestProjectFixture fixture, BundleOptions options = BundleOptions.None)
+        {
+            string singleFile;
+            return BundleApp(fixture, out singleFile, options, copyExcludedFiles:false);
         }
 
         public static void AddLongNameContentToAppWithSubDirs(TestProjectFixture fixture)

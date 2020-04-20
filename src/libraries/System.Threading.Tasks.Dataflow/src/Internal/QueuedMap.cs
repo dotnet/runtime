@@ -15,6 +15,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
@@ -28,7 +29,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <remarks>This type is not thread-safe.</remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(EnumerableDebugView<,>))]
-    internal sealed class QueuedMap<TKey, TValue>
+    internal sealed class QueuedMap<TKey, TValue> where TKey: notnull
     {
         /// <summary>
         /// A queue structure that uses an array-based list to store its items
@@ -108,7 +109,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             /// <summary>Tries to dequeue an item.</summary>
             /// <param name="item">The item that is dequeued.</param>
-            internal bool TryDequeue(out T item)
+            internal bool TryDequeue([MaybeNullWhen(false)] out T item)
             {
                 // If the queue is empty, just initialize the output item and return false
                 if (_headIndex == TERMINATOR_INDEX)
@@ -124,7 +125,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // Move the popped slot to the head of the free list
                 int newHeadIndex = _storage[_headIndex].Key;
-                _storage[_headIndex] = new KeyValuePair<int, T>(_freeIndex, default(T));
+                _storage[_headIndex] = new KeyValuePair<int, T>(_freeIndex, default(T)!);
                 _freeIndex = _headIndex;
                 _headIndex = newHeadIndex;
                 if (_headIndex == TERMINATOR_INDEX) _tailIndex = TERMINATOR_INDEX;

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.Configuration.Binder;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -355,14 +354,14 @@ namespace Microsoft.Extensions.Configuration
 
             if (typeInfo.IsInterface || typeInfo.IsAbstract)
             {
-                throw new InvalidOperationException(Resources.FormatError_CannotActivateAbstractOrInterface(type));
+                throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
 
             if (type.IsArray)
             {
                 if (typeInfo.GetArrayRank() > 1)
                 {
-                    throw new InvalidOperationException(Resources.FormatError_UnsupportedMultidimensionalArray(type));
+                    throw new InvalidOperationException(SR.Format(SR.Error_UnsupportedMultidimensionalArray, type));
                 }
 
                 return Array.CreateInstance(typeInfo.GetElementType(), 0);
@@ -371,7 +370,7 @@ namespace Microsoft.Extensions.Configuration
             var hasDefaultConstructor = typeInfo.DeclaredConstructors.Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
             if (!hasDefaultConstructor)
             {
-                throw new InvalidOperationException(Resources.FormatError_MissingParameterlessConstructor(type));
+                throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
             }
 
             try
@@ -380,7 +379,7 @@ namespace Microsoft.Extensions.Configuration
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException(Resources.FormatError_FailedToActivate(type), ex);
+                throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type), ex);
             }
         }
 
@@ -514,7 +513,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
-                    error = new InvalidOperationException(Resources.FormatError_FailedBinding(path, type), ex);
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
                 }
                 return true;
             }

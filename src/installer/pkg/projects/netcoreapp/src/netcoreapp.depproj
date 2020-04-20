@@ -19,6 +19,36 @@
     <DependenciesToPackage Include="NETStandard.Library" />
   </ItemGroup>
 
+  <!--
+    Platform manifest needs to include all System*Native items from 3.1 release. This itemgroup adds
+    them explicitly, to fill the gap that appeared when the names of these libraries were changed
+    in 5.0 to conform to a specific Android naming convention. The library name change was a fix
+    for https://github.com/dotnet/runtime/issues/33118. For more details of the issue and fix see
+    https://github.com/dotnet/runtime/issues/33450.
+  -->
+  <ItemGroup>
+    <_pastShimFiles Include="System.Globalization.Native.dylib" />
+    <_pastShimFiles Include="System.Globalization.Native.so" />
+    <_pastShimFiles Include="System.IO.Compression.Native.a" />
+    <_pastShimFiles Include="System.IO.Compression.Native.dylib" />
+    <_pastShimFiles Include="System.IO.Compression.Native.so" />
+    <_pastShimFiles Include="System.Native.a" />
+    <_pastShimFiles Include="System.Native.dylib" />
+    <_pastShimFiles Include="System.Native.so" />
+    <_pastShimFiles Include="System.Net.Http.Native.a" />
+    <_pastShimFiles Include="System.Net.Http.Native.dylib" />
+    <_pastShimFiles Include="System.Net.Http.Native.so" />
+    <_pastShimFiles Include="System.Net.Security.Native.a" />
+    <_pastShimFiles Include="System.Net.Security.Native.dylib" />
+    <_pastShimFiles Include="System.Net.Security.Native.so" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.a" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.a" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
+    <SharedFrameworkRuntimeFiles Include="@(_pastShimFiles)" TargetPath="runtimes/" />
+  </ItemGroup>
+
   <!-- get paths from packages that are needed for cross-gen and other includes,
        only relevant for runtime-specific builds -->
   <Target Name="GetPackagePaths"
@@ -27,15 +57,24 @@
 
   <Target Name="GetDependencyVersionFiles" />
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <CoreCLRFiles>
+      <RuntimeFiles>
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
 
-      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+      <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"
+        Include="@(MonoCrossFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
+      </RuntimeFiles>
+      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"
+        Include="@(MonoIncludeFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -49,7 +88,7 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);" />
     </ItemGroup>
   </Target>
 

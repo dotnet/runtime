@@ -34,7 +34,7 @@ Visual Studio 2019 installation process:
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.3.
+The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 2.
 
 ## CMake
 
@@ -65,11 +65,11 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 - Ensure that `powershell.exe` is accessible via the PATH environment variable. Typically this is `%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\` and its automatically set upon Windows installation.
 - Powershell version must be 3.0 or higher. Use `$PSVersionTable.PSVersion` to determine the engine version.
 
-## DotNet Core SDK
+## .NET SDK
 
-While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.
+While not strictly needed to build or test this repository, having the .NET SDK installed lets you use the dotnet.exe command to run .NET applications in the 'normal' way.
 We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
-Visual Studio should have installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .NET Core SDK](https://dotnet.microsoft.com/download) page.
+Visual Studio should have installed the .NET SDK, but in case it did not you can get it from the [Installing the .NET SDK](https://dotnet.microsoft.com/download) page.
 
 ## Adding to the default PATH variable
 

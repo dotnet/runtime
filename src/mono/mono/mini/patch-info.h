@@ -74,3 +74,11 @@ PATCH_INFO(SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, "specific_trampoline_lazy_fetch_
 PATCH_INFO(SPECIFIC_TRAMPOLINES, "specific_trampolines")
 /* Address of got slot block in mscorlib_amodule->got belonging to specific trampolines */
 PATCH_INFO(SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE, "specific_trampolines_got_slots_base")
+
+/*
+ * PATCH_INFO_R4/R8 is handled by mono_arch_emit_exceptions () by emitting the data
+ * into the text segment after the method body. These patches emit the data
+ * elsewhere.
+ */
+PATCH_INFO(R8_GOT, "r8_got")
+PATCH_INFO(R4_GOT, "r4_got")

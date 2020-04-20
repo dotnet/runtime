@@ -13,21 +13,28 @@ namespace Microsoft.NET.HostModel.Bundle
     ///   BundleRelativePath: path where the file is expected at run time, 
     ///                       relative to the app DLL.
     /// </summary>
-    public struct FileSpec
+    public class FileSpec
     {
         public readonly string SourcePath;
         public readonly string BundleRelativePath;
+        public bool Excluded;
 
         public FileSpec(string sourcePath, string bundleRelativePath)
         {
             SourcePath = sourcePath;
             BundleRelativePath = bundleRelativePath;
+            Excluded = false;
         }
 
         public bool IsValid()
         {
             return !string.IsNullOrWhiteSpace(SourcePath) && 
                    !string.IsNullOrWhiteSpace(BundleRelativePath);
+        }
+
+        public override string ToString()
+        {
+            return string.Format($"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}");
         }
     }
 }

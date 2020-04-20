@@ -23,6 +23,10 @@
 
 #ifndef DACCESS_COMPILE
 
+#ifdef HOST_WINDOWS
+EXTERN_C UINT32 _tls_index;
+#endif
+
 #ifdef _MSC_VER
 __declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else
@@ -191,6 +195,19 @@ inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
     m_thread->m_currentPrepareCodeConfig = config->GetNextInSameThread();
     config->SetNextInSameThread(nullptr);
 }
+
+#ifdef HOST_WINDOWS
+inline size_t Thread::GetOffsetOfThreadStatic(void* pThreadStatic)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTEB Teb = NtCurrentTeb();
+    BYTE** tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
+    BYTE* tlsData = (BYTE*)tlsArray[_tls_index];
+
+    return (BYTE*)pThreadStatic - tlsData;
+}
+#endif
 
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 

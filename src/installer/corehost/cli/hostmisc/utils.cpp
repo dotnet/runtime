@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "trace.h"
+#include "bundle/info.h"
 
 bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path)
 {
@@ -187,13 +188,13 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
 
 const pal::char_t* get_arch()
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     return _X("x64");
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     return _X("x86");
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return _X("arm");
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return _X("arm64");
 #else
 #error "Unknown target"
@@ -365,6 +366,7 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
 {
     pal::string_t deps_file;
     auto app_name = get_filename(app);
+
     deps_file.reserve(app_base.length() + 1 + app_name.length() + 5);
     deps_file.append(app_base);
 
@@ -377,19 +379,28 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
     return deps_file;
 }
 
-void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg)
+pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name)
 {
     auto json_path = path;
     auto json_name = name + _X(".runtimeconfig.json");
     append_path(&json_path, json_name.c_str());
-    cfg->assign(json_path);
+    return json_path;
+}
 
+pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name)
+{
     auto dev_json_path = path;
     auto dev_json_name = name + _X(".runtimeconfig.dev.json");
     append_path(&dev_json_path, dev_json_name.c_str());
-    dev_cfg->assign(dev_json_path);
+    return dev_json_path;
+}
 
-    trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
+void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg)
+{
+    cfg->assign(get_runtime_config_path(path, name));
+    dev_cfg->assign(get_runtime_config_dev_path(path, name));
+
+    trace::verbose(_X("Runtime config is cfg=%s dev=%s"), cfg->c_str(), dev_cfg->c_str());
 }
 
 pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)

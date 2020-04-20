@@ -1,11 +1,10 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 if(CLR_CMAKE_HOST_WIN32)
+  include_directories(${CLR_DIR}/src/inc/llvm)
   #use static crt
   add_definitions(-MT)
 endif(CLR_CMAKE_HOST_WIN32)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include_directories(${CLR_DIR}/src/inc/llvm)
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 

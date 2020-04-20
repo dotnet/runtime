@@ -7,7 +7,6 @@ using System.IO;
 using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
 
 namespace Microsoft.NET.HostModel.Tests
@@ -33,16 +32,15 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private void BundleRun(TestProjectFixture fixture, string publishDir, string singleFileDir)
+        private void BundleRun(TestProjectFixture fixture, string publishPath, string singleFileDir)
         {
             var hostName = BundleHelper.GetHostName(fixture);
 
             // Run the App normally
-            RunTheApp(Path.Combine(publishDir, hostName));
+            RunTheApp(Path.Combine(publishPath, hostName));
 
             // Bundle to a single-file
-            Bundler bundler = new Bundler(hostName, singleFileDir);
-            string singleFile = bundler.GenerateBundle(publishDir);
+            string singleFile = BundleHelper.BundleApp(fixture);
 
             // Run the extracted app
             RunTheApp(singleFile);
@@ -90,6 +88,7 @@ namespace Microsoft.NET.HostModel.Tests
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
+            public TestProjectFixture LegacyFixture { get; set; }
             public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
@@ -98,7 +97,6 @@ namespace Microsoft.NET.HostModel.Tests
 
                 TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
-
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid,

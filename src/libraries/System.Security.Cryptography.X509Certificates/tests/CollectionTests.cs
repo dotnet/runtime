@@ -1397,6 +1397,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void SerializedCertDisposeDoesNotRemoveKeyFile()
+        {
+            using (X509Certificate2 fromPfx = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey - before");
+
+                byte[] serializedCert = fromPfx.Export(X509ContentType.SerializedCert);
+
+                X509Certificate2 fromSerialized;
+
+                using (ImportedCollection imported = Cert.Import(serializedCert))
+                {
+                    fromSerialized = imported.Collection[0];
+                    Assert.True(fromSerialized.HasPrivateKey, "fromSerialized.HasPrivateKey");
+                    Assert.NotEqual(IntPtr.Zero, fromSerialized.Handle);
+                }
+
+                // The certificate got disposed by the collection holder.
+                Assert.Equal(IntPtr.Zero, fromSerialized.Handle);
+
+                using (RSA key = fromPfx.GetRSAPrivateKey())
+                {
+                    key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
+            }
+        }
+
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.CreatePfxDataPasswordSecureString(), Cert.EphemeralIfPossible))

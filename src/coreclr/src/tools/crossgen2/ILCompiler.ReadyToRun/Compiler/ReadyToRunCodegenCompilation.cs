@@ -38,6 +38,8 @@ namespace ILCompiler
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
 
+        public InstructionSetSupport InstructionSetSupport { get; }
+
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -45,8 +47,10 @@ namespace ILCompiler
             ILProvider ilProvider,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            Logger logger)
+            Logger logger,
+            InstructionSetSupport instructionSetSupport)
         {
+            InstructionSetSupport = instructionSetSupport;
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
@@ -70,11 +74,34 @@ namespace ILCompiler
 
         public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
+            if (JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_CODE))
+            {
+                // If the callee wants debuggable code, don't allow it to be inlined
+                return false;
+            }
+
+            if (callee.IsNoInlining)
+            {
+                return false;
+            }
+
             // Check to see if the method requires a security object.  This means they call demand and
             // shouldn't be inlined.
             if (callee.RequireSecObject)
             {
                 return false;
+            }
+
+            // If the method is MethodImpl'd by another method within the same type, then we have
+            // an issue that the importer will import the wrong body. In this case, we'll just
+            // disallow inlining because getFunctionEntryPoint will do the right thing.
+            if (callee.IsVirtual)
+            {
+                MethodDesc calleeMethodImpl = callee.OwningType.FindVirtualFunctionTargetMethodOnObjectType(callee);
+                if (calleeMethodImpl != callee)
+                {
+                    return false;
+                }
             }
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -209,6 +236,7 @@ namespace ILCompiler
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<string> inputFiles,
+            InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
             int parallelism)
@@ -219,7 +247,8 @@ namespace ILCompiler
                   ilProvider,
                   devirtualizationManager,
                   modulesBeingInstrumented: nodeFactory.CompilationModuleGroup.CompilationModuleSet,
-                  logger)
+                  logger,
+                  instructionSetSupport)
         {
             _resilient = resilient;
             _parallelism = parallelism;
@@ -227,6 +256,12 @@ namespace ILCompiler
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
+
+            // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
+            // code if the runtime environment doesn't support the specified instruction set
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
+            _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
         }
 
         public override void Compile(string outputFile)
@@ -269,7 +304,8 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component);
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

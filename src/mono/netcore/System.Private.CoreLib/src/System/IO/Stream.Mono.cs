@@ -6,12 +6,12 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-	partial class Stream
-	{
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		extern bool HasOverriddenBeginEndRead ();
+    public partial class Stream
+    {
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool HasOverriddenBeginEndRead();
 
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		extern bool HasOverriddenBeginEndWrite ();
-	}
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool HasOverriddenBeginEndWrite();
+    }
 }

@@ -237,6 +237,19 @@ void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     original_ICorJitInfo->getGSCookie(pCookieVal, ppCookieVal);
 }
 
+
+// Provide patchpoint info for the method currently being jitted.
+void interceptor_ICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* interceptor_ICJI::getOSRInfo(unsigned* ilOffset)
+{
+    return original_ICorJitInfo->getOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1463,4 +1476,9 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
 DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
     return original_ICorJitInfo->getExpectedTargetArchitecture();
+}
+
+void interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }

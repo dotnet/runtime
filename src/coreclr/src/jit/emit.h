@@ -1233,6 +1233,8 @@ protected:
 #define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
 #define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
 #define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_7C 7.0f   // slower - 7 cycles
+#define PERFSCORE_THROUGHPUT_8C 8.0f   // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles

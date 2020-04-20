@@ -1,4 +1,4 @@
-This project has the purpose to automate verification test for .NET Core Runtime and SDK linux packages.
+This project has the purpose to automate verification test for .NET Runtime and SDK linux packages.
 
 To have this test running in your local machine do the following steps:
 1. Download VerificationTestOnDocker.sh, RuntimeInstallation.sh, SdkInstallation.sh, images.txt in the same folder
@@ -8,10 +8,10 @@ To have this test running in your local machine do the following steps:
 The options are:
 
 * \<package> 
-   * runtime - verification test for .NET Core Runtime Linux packages  
-   * sdk - verification test for .NET Core SDK Linux packages
+   * runtime - verification test for .NET Runtime Linux packages  
+   * sdk - verification test for .NET SDK Linux packages
 * \<version> 
-  * latest - install the latest available .NET Core package from our master repository  
+  * latest - install the latest available .NET package from our master repository  
   * \<number> - install the package corresponding to this version number 
 * \<command> 
   * install - verification test for install
@@ -20,15 +20,15 @@ The options are:
 
 The script VerificationTestOnDocker.sh is responsible for read a file (images.txt) containing docker images and run a docker container for each image specified in that file. Inside each container it will be executed the script to install .NET Runtime (RuntimeInstallation.sh) or .NET SDK (SdkInstallation.sh). 
 
-Both scripts RuntimeInstallation.sh and SdkInstallation.sh automatically identify what distro and version is running in the current machine and can install and uninstall the latest version of .NET Core Runtime/Sdk packages corresponding to that distro & version. The installation's stdout for all containers is redirected to a single file (logfile.txt). In the end of this file (logfile.txt) it's also displayed the results of the test, printing for each distro and version the result 'failed' or 'passed'.
+Both scripts RuntimeInstallation.sh and SdkInstallation.sh automatically identify what distro and version is running in the current machine and can install and uninstall the latest version of .NET Runtime/Sdk packages corresponding to that distro & version. The installation's stdout for all containers is redirected to a single file (logfile.txt). In the end of this file (logfile.txt) it's also displayed the results of the test, printing for each distro and version the result 'failed' or 'passed'.
 
-.NET Core packages are downloaded from the blob https://dotnetcli.blob.core.windows.net/dotnet
+.NET packages are downloaded from the blob https://dotnetcli.blob.core.windows.net/dotnet
 
 This project takes in account:  
   -> dotnet-sdk depends on dotnet-runtime and aspnet-runtime  
   -> aspnet-runtime depends on dotnet-runtime (can be different to what dotnet-sdk depends on)  
   -> dotnet-runtime-deps depends on system packages  
-  -> .NET Core runtime carries: dotnet-runtime-deps, dotnet-host, dotnet-hostfxr and dotnet-runtime.  
+  -> .NET runtime carries: dotnet-runtime-deps, dotnet-host, dotnet-hostfxr and dotnet-runtime.  
 
 Changes on how dotnet runtime packages are structured or modification on the packages dependencies may affect the verification test result.
 

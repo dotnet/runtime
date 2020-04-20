@@ -19,16 +19,59 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             EnsureWriteCapacity(value.Length);
             value.CopyTo(_buffer.AsSpan(_offset));
             _offset += value.Length;
+            AdvanceDataItemCounters();
         }
 
         // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteTextString(ReadOnlySpan<char> value)
         {
-            int length = s_utf8Encoding.GetByteCount(value);
+            int length;
+            try
+            {
+                length = s_utf8Encoding.GetByteCount(value);
+            }
+            catch (EncoderFallbackException e)
+            {
+                throw new ArgumentException("Provided text string is not valid UTF8.", e);
+            }
+
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
             s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));
             _offset += length;
+            AdvanceDataItemCounters();
+        }
+
+        public void WriteStartByteStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
+            AdvanceDataItemCounters();
+            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
+        }
+
+        public void WriteEndByteStringIndefiniteLength()
+        {
+            PopDataItem(CborMajorType.ByteString);
+            // append break byte
+            EnsureWriteCapacity(1);
+            _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+        }
+
+        public void WriteStartTextStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
+            AdvanceDataItemCounters();
+            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+        }
+
+        public void WriteEndTextStringIndefiniteLength()
+        {
+            PopDataItem(CborMajorType.TextString);
+            // append break byte
+            EnsureWriteCapacity(1);
+            _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
         }
     }
 }

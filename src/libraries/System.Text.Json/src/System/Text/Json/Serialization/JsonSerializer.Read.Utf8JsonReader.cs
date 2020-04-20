@@ -49,6 +49,10 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="reader"/> is using unsupported options.
         /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
         /// <remarks>
         ///   <para>
         ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
@@ -95,7 +99,7 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the serializer behavior during reading.</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if <paramref name="returnType"/> is null.
+        /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
@@ -104,6 +108,10 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         /// <remarks>
         ///   <para>

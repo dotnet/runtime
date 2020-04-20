@@ -21,7 +21,7 @@ terminology.
 | EE | Execution Engine. |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/garbage-collection.md). |
 | IPC | Inter-Process Communication. |
-| JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
+| JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#15465](https://github.com/dotnet/coreclr/issues/15465)) |

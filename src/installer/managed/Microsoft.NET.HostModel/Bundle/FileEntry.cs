@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -45,7 +44,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public override string ToString()
         {
-            return String.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");
+            return string.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");
         }
     }
 }

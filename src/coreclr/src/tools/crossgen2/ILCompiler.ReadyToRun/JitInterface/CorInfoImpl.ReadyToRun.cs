@@ -136,7 +136,7 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
-        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private MethodWithGCInfo _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
@@ -204,7 +204,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -608,6 +608,14 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+                    id = ReadyToRunHelper.ReversePInvokeEnter;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
+                    id = ReadyToRunHelper.ReversePInvokeExit;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -616,8 +624,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1145,6 +1151,25 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
+                && originalMethod.IsNativeCallable)
+            {
+                if (!originalMethod.Signature.IsStatic) // Must be a static method
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, originalMethod);
+                }
+
+                if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, originalMethod);
+                }
+
+                if (Marshaller.IsMarshallingRequired(originalMethod.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, originalMethod);
+                }
+            }
+
             exactType = type;
 
             constrainedType = null;
@@ -1465,135 +1490,8 @@ namespace Internal.JitInterface
         private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
-            uint attribs = getMethodAttribsInternal(method);
-            attribs = FilterNamedIntrinsicMethodAttribs(attribs, method);
-            return attribs;
-        }
-
-        private uint FilterNamedIntrinsicMethodAttribs(uint attribs, MethodDesc method)
-        {
-            bool _TARGET_X86_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86;
-            bool _TARGET_AMD64_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64;
-            bool _TARGET_ARM64_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64;
-
-            if ((attribs & (uint)CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC) != 0)
-            {
-                // Figure out which intrinsic we are dealing with.
-                string namespaceName;
-                string className;
-                string enclosingClassName;
-                string methodName = this.getMethodNameFromMetadataImpl(method, out className, out namespaceName, out enclosingClassName);
-
-                // Is this the get_IsSupported method that checks whether intrinsic is supported?
-                bool fIsGetIsSupportedMethod = string.Equals(methodName, "get_IsSupported");
-                bool fIsPlatformHWIntrinsic = false;
-                bool fIsHWIntrinsic = false;
-                bool fTreatAsRegularMethodCall = false;
-
-                if (_TARGET_X86_ || _TARGET_AMD64_)
-                {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.X86");
-                }
-                else if (_TARGET_ARM64_)
-                {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm");
-                }
-
-                fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
-
-                // By default, we want to treat the get_IsSupported method for platform specific HWIntrinsic ISAs as
-                // method calls. This will be modified as needed below based on what ISAs are considered baseline.
-                //
-                // We also want to treat the non-platform specific hardware intrinsics as regular method calls. This
-                // is because they often change the code they emit based on what ISAs are supported by the compiler,
-                // but we don't know what the target machine will support.
-                //
-                // Additionally, we make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
-                // (see ShouldSkipCompilation) but get JITted instead. The JITted method will have the correct
-                // answer for the CPU the code is running on.
-                fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
-
-                if (_TARGET_X86_ || _TARGET_AMD64_)
-                {
-                    if (fIsPlatformHWIntrinsic)
-                    {
-                        // Simplify the comparison logic by grabbing the name of the ISA
-                        string isaName = (enclosingClassName == null) ? className : enclosingClassName;
-                        if ((isaName == "Sse") || (isaName == "Sse2"))
-                        {
-                            if ((enclosingClassName == null) || (className == "X64"))
-                            {
-                                // If it's anything related to Sse/Sse2, we can expand unconditionally since this is
-                                // a baseline requirement of CoreCLR.
-                                fTreatAsRegularMethodCall = false;
-                            }
-                        }
-                        else if ((className == "Avx") || (className == "Fma") || (className == "Avx2") || (className == "Bmi1") || (className == "Bmi2"))
-                        {
-                            if ((enclosingClassName == null) || (string.Equals(className, "X64")))
-                            {
-                                // If it is the get_IsSupported method for an ISA which requires the VEX
-                                // encoding we want to expand unconditionally. This will force those code
-                                // paths to be treated as dead code and dropped from the compilation.
-                                //
-                                // For all of the other intrinsics in an ISA which requires the VEX encoding
-                                // we need to treat them as regular method calls. This is done because RyuJIT
-                                // doesn't currently support emitting both VEX and non-VEX encoded instructions
-                                // for a single method.
-                                fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
-                            }
-                        }
-                    }
-                    else if (namespaceName == "System")
-                    {
-                        if ((className == "Math") || (className == "MathF"))
-                        {
-                            // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
-                            // However, we don't know the ISAs the target machine supports so we should
-                            // fallback to the method call implementation instead.
-                            fTreatAsRegularMethodCall = (methodName == "Round");
-                        }
-                    }
-                    else if (namespaceName == "System.Numerics")
-                    {
-                        if ((className == "Vector3") || (className == "Vector4"))
-                        {
-                            if (methodName == ".ctor")
-                            {
-                                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
-                                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
-                                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
-                                if ((method.Signature.Length > 1) && (method.Signature[0].IsValueType && !method.Signature[0].IsPrimitive))
-                                {
-                                    fTreatAsRegularMethodCall = true;
-                                }
-                            }
-                            else if (methodName == "Dot")
-                            {
-                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
-                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
-                                fTreatAsRegularMethodCall = true;
-                            }
-                        }
-                        else if ((className == "Vector2") || (className == "Vector") || (className == "Vector`1"))
-                        {
-                            if (methodName == "Dot")
-                            {
-                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
-                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
-                                fTreatAsRegularMethodCall = true;
-                            }
-                        }
-                    }
-                }
-
-                if (fTreatAsRegularMethodCall)
-                {
-                    // Treat as a regular method call (into a JITted method).
-                    attribs = (attribs & ~(uint)CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC) | (uint)CorInfoFlag.CORINFO_FLG_DONT_INLINE;
-                }
-            }
-            return attribs;
+            return getMethodAttribsInternal(method);
+            // OK, if the EE said we're not doing a stub dispatch then just return the kind to
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
@@ -1605,7 +1503,7 @@ namespace Internal.JitInterface
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            _methodCodeNode.Fixups.Add(node);
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -1633,7 +1531,11 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
-            pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
+            var targetDetails = _compilation.TypeSystemContext.Target;
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
+            {
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
@@ -1980,7 +1882,7 @@ namespace Internal.JitInterface
                             MethodDesc md = HandleToObject(pResolvedToken.hMethod);
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
-                            if (td.IsValueType)
+                            if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
                                 md = _unboxingThunkFactory.GetUnboxingMethod(md);
                             }
@@ -2030,7 +1932,7 @@ namespace Internal.JitInterface
                 }
 
                 // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-                return type is MetadataType metadataType && metadataType.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+                return type is MetadataType metadataType && metadataType.IsNonVersionable();
             }
 
             return true;
@@ -2093,7 +1995,10 @@ namespace Internal.JitInterface
             {
                 if (pMT.IsValueType)
                 {
-                    throw new NotImplementedException("https://github.com/dotnet/runtime/issues/32630: ENCODE_CHECK_FIELD_OFFSET: root field check import");
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    pResult->offset = 0;
+                    pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 else
                 {
@@ -2210,7 +2115,7 @@ namespace Internal.JitInterface
             pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
             if (_profileDataNode == null)
             {
-                _profileDataNode = _compilation.NodeFactory.ProfileData((MethodWithGCInfo)_methodCodeNode);
+                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
             }
             return 0;
         }
@@ -2297,6 +2202,7 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {

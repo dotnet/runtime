@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CheckArchitectureTests.cs" />
     <Compile Include="CheckPlatformTests.cs" />
+    <Compile Include="RuntimeIdentifierTests.cs" />
     <Compile Include="DescriptionNameTests.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs">
       <Link>Common\Interop\Linux\Interop.cgroups.cs</Link>

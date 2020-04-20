@@ -11,7 +11,7 @@
 #define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
-#elif defined(__APPLE__)
+#elif defined(TARGET_OSX)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063366")
 #else
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")
@@ -45,6 +45,8 @@ size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
+pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
+pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
 pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
 
@@ -61,7 +63,7 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv);
 class propagate_error_writer_t
 {
 public:
-    typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
+    typedef trace::error_writer_fn(__cdecl *set_error_writer_fn)(trace::error_writer_fn error_writer);
 
 private:
     set_error_writer_fn m_set_error_writer;

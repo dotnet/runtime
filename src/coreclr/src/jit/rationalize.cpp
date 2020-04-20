@@ -817,7 +817,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     return Compiler::WALK_CONTINUE;
 }
 
-void Rationalizer::DoPhase()
+//------------------------------------------------------------------------
+// DoPhase: Run the rationalize over the method IR.
+//
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
+PhaseStatus Rationalizer::DoPhase()
 {
     class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
     {
@@ -911,4 +917,6 @@ void Rationalizer::DoPhase()
     }
 
     comp->compRationalIRForm = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

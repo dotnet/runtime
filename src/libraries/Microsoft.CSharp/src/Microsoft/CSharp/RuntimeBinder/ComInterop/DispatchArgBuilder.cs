@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 618 // DispatchWrapper is obsolete
-
 using System;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
@@ -45,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Equal(parameter, Expression.Constant(null)),
                 Expression.Constant(IntPtr.Zero),
                 Expression.Call(
-                    ComRuntimeHelpers.GetGetIDispatchForObjectMethod(),
+                    typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.GetIDispatchForObject)),
                     parameter
                 )
             );

@@ -114,11 +114,11 @@ namespace System.Net
             {
                 _closed = true;
 
-                Stream chkStream = _stream;
+                Stream? chkStream = _stream;
                 if (chkStream != null)
                 {
                     chkStream.Close();
-                    _stream = null;
+                    _stream = null!;
                 }
             }
         }

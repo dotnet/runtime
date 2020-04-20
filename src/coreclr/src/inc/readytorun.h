@@ -202,6 +202,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
+
+    READYTORUN_FIXUP_Check_InstructionSetSupport= 0x30, /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
 };
 
 //
@@ -256,6 +258,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_PInvokeBegin              = 0x42,
     READYTORUN_HELPER_PInvokeEnd                = 0x43,
     READYTORUN_HELPER_GCPoll                    = 0x44,
+    READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
+    READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50,
@@ -357,6 +361,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 };
 
+#include "readytoruninstructionset.h"
+
 //
 // Exception info
 //
@@ -382,7 +388,8 @@ struct READYTORUN_EXCEPTION_CLAUSE
 
 enum ReadyToRunRuntimeConstants : DWORD
 {
-    READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11
+    READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
+    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2
 };
 
 #endif // __READYTORUN_H__

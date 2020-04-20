@@ -436,7 +436,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataTable table = new DataTable("test_table");
             DataTable table2 = new DataTable("test_table");

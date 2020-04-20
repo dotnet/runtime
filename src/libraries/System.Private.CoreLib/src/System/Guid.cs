@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -196,7 +197,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParse(string? input, out Guid result)
+        public static bool TryParse([NotNullWhen(true)] string? input, out Guid result)
         {
             if (input == null)
             {
@@ -251,7 +252,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParseExact(string? input, string? format, out Guid result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
         {
             if (input == null)
             {

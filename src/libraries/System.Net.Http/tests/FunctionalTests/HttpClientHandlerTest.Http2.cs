@@ -1862,6 +1862,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31220")]
         public async Task PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent()
         {
             string responseContent = "no no!";
@@ -1936,13 +1937,11 @@ namespace System.Net.Http.Functional.Tests
             public void Complete()
             {
                 _waitForCompletion.SetResult(true);
-                _waitForCompletion = null;
             }
 
             public void Fail(Exception e)
             {
                 _waitForCompletion.SetException(e);
-                _waitForCompletion = null;
             }
         }
 

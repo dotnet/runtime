@@ -89,7 +89,6 @@ extern "C" void __stdcall jitStartup(ICorJitHost* host);
 
 class ICorJitCompiler;
 class ICorJitInfo;
-struct IEEMemoryManager;
 
 extern "C" ICorJitCompiler* __stdcall getJit();
 

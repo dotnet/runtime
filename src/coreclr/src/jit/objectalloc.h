@@ -45,7 +45,7 @@ public:
     void EnableObjectStackAllocation();
 
 protected:
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
 private:
     bool CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd);

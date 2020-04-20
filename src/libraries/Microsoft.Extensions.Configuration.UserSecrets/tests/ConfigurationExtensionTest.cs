@@ -53,6 +53,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -67,6 +68,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -85,12 +87,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets<string>());
-            Assert.Equal(Resources.FormatError_Missing_UserSecretsIdAttribute(typeof(string).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).GetTypeInfo().Assembly.GetName().Name),
                 ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly));
-            Assert.Equal(Resources.FormatError_Missing_UserSecretsIdAttribute(typeof(JObject).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).GetTypeInfo().Assembly.GetName().Name),
                 ex.Message);
         }
 
@@ -107,6 +109,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();

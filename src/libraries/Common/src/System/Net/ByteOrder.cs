@@ -12,7 +12,7 @@ namespace System.Net
             bytes[index + 1] = unchecked((byte)host);
         }
 
-        public static ushort NetworkBytesToHostUInt16(this byte[] bytes, int index)
+        public static ushort NetworkBytesToHostUInt16(this ReadOnlySpan<byte> bytes, int index)
         {
             return (ushort)(((ushort)bytes[index] << 8) | (ushort)bytes[index + 1]);
         }

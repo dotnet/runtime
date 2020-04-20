@@ -211,12 +211,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             return new DispCallable(dispatch, method.Name, method.DispId);
         }
-
-        internal static MethodInfo GetGetIDispatchForObjectMethod()
-        {
-            // GetIDispatchForObject always throws a PNSE in .NET Core, so we work around it by using GetComInterfaceForObject with our IDispatch type.
-            return typeof(Marshal).GetMethods().Single(m => m.Name == nameof(Marshal.GetComInterfaceForObject) && m.GetParameters().Length == 1 && m.ContainsGenericParameters).MakeGenericMethod(typeof(object), typeof(IDispatch));
-        }
     }
 
     /// <summary>
@@ -532,17 +526,21 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             EmitLoadArg(method, flagsIndex);
 
             EmitLoadArg(method, dispParamsIndex);
+            method.Emit(OpCodes.Conv_I);
 
             if (returnResult)
             {
                 EmitLoadArg(method, resultIndex);
+                method.Emit(OpCodes.Conv_I);
             }
             else
             {
                 method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField(nameof(IntPtr.Zero)));
             }
             EmitLoadArg(method, exceptInfoIndex);
+            method.Emit(OpCodes.Conv_I);
             EmitLoadArg(method, argErrIndex);
+            method.Emit(OpCodes.Conv_I);
 
             // functionPtr = *(IntPtr*)(*(dispatchPointer) + VTABLE_OFFSET)
             int idispatchInvokeOffset = ((int)IDispatchMethodIndices.IDispatch_Invoke) * Marshal.SizeOf(typeof(IntPtr));

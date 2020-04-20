@@ -27,10 +27,11 @@ namespace AppHost.Bundle.Tests
         private void Bundle_can_be_renamed_while_running(bool renameFirstRun)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleHelper.GetPublishedSingleFilePath(fixture);
-            string renameFile = Path.Combine(BundleHelper.GetPublishPath(fixture), Path.GetRandomFileName());
-            string waitFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "wait");
-            string resumeFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "resume");
+            string singleFile = BundleHelper.BundleApp(fixture);
+            string outputDir = Path.GetDirectoryName(singleFile);
+            string renameFile = Path.Combine(outputDir, Path.GetRandomFileName());
+            string waitFile = Path.Combine(outputDir, "wait");
+            string resumeFile = Path.Combine(outputDir, "resume");
 
             if (!renameFirstRun)
             {
@@ -50,10 +51,12 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdOut()
                 .Start();
 
-            while (!File.Exists(waitFile))
+            while (!File.Exists(waitFile) && !singleExe.Process.HasExited)
             {
                 Thread.Sleep(100);
             }
+
+            Assert.True(File.Exists(waitFile));
 
             File.Move(singleFile, renameFile);
             File.Create(resumeFile).Close();
@@ -79,7 +82,6 @@ namespace AppHost.Bundle.Tests
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid,
-                                    singleFile: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }
 

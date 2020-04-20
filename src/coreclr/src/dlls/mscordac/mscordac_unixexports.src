@@ -122,7 +122,6 @@ nativeStringResourceTable_mscorrc
 #GetModuleFileNameW
 #GetNumaHighestNodeNumber
 #GetProcAddress
-#GetProcessHeap
 #GetStdHandle
 #GetSystemInfo
 #GetSystemTime
@@ -130,9 +129,6 @@ nativeStringResourceTable_mscorrc
 #GetTempFileNameW
 #GetTempPathA
 #GetTempPathW
-#HeapAlloc
-#HeapFree
-#HeapSetInformation
 #InitializeCriticalSection
 #IsDBCSLeadByte
 #LeaveCriticalSection

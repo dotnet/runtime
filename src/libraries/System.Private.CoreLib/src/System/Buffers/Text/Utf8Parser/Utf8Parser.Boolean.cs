@@ -30,7 +30,7 @@ namespace System.Buffers.Text
         public static bool TryParse(ReadOnlySpan<byte> source, out bool value, out int bytesConsumed, char standardFormat = default)
         {
             if (!(standardFormat == default(char) || standardFormat == 'G' || standardFormat == 'l'))
-                return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                ThrowHelper.ThrowFormatException_BadFormatSpecifier();
 
             if (source.Length >= 4)
             {
@@ -42,7 +42,7 @@ namespace System.Buffers.Text
                     return true;
                 }
 
-                if (source.Length >= 5)
+                if (4 < (uint)source.Length)
                 {
                     if (dw == 0x534c4146 /* 'SLAF' */ && (source[4] & ~0x20) == 'E')
                     {

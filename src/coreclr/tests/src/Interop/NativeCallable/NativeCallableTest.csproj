@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
@@ -11,5 +10,6 @@
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->
     <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

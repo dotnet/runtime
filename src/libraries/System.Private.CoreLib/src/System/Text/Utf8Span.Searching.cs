@@ -53,7 +53,7 @@ namespace System.Text
             }
             else
             {
-                string.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
 
                 // Surrogate chars can't exist in well-formed UTF-8 data - bail immediately.
 
@@ -185,7 +185,7 @@ namespace System.Text
 
         private unsafe bool TryFind(Utf8Span value, StringComparison comparisonType, out Range range, bool fromBeginning)
         {
-            string.CheckStringComparison(comparisonType);
+            CheckStringComparison(comparisonType);
 
             if (value.IsEmpty)
             {
@@ -211,7 +211,7 @@ namespace System.Text
             }
 
             CompareInfo compareInfo = default!; // will be overwritten if it matters
-            CompareOptions compareOptions = string.GetCaseCompareOfComparisonCulture(comparisonType);
+            CompareOptions compareOptions = GetCaseCompareOfComparisonCulture(comparisonType);
 
             if (GlobalizationMode.Invariant)
             {
@@ -221,7 +221,7 @@ namespace System.Text
                 // TODO_UTF8STRING: We should take advantage of the property described above to avoid the UTF-16
                 // transcoding step entirely.
 
-                if (compareOptions != CompareOptions.None)
+                if (compareOptions == CompareOptions.None)
                 {
                     return (fromBeginning)
                         ? TryFind(value, out range)
@@ -239,7 +239,11 @@ namespace System.Text
 
                     case StringComparison.OrdinalIgnoreCase:
                         // TODO_UTF8STRING: Can probably optimize this case.
+#if SYSTEM_PRIVATE_CORELIB
                         compareInfo = CompareInfo.Invariant;
+#else
+                        compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+#endif
                         break;
 
                     case StringComparison.CurrentCulture:
@@ -249,7 +253,11 @@ namespace System.Text
 
                     default:
                         Debug.Assert(comparisonType == StringComparison.InvariantCulture || comparisonType == StringComparison.InvariantCultureIgnoreCase);
+#if SYSTEM_PRIVATE_CORELIB
                         compareInfo = CompareInfo.Invariant;
+#else
+                        compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+#endif
                         break;
                 }
             }
@@ -261,6 +269,7 @@ namespace System.Text
 
             int idx, matchLength;
 
+#if SYSTEM_PRIVATE_CORELIB
             if (GlobalizationMode.Invariant)
             {
                 // If we got here, it meant we're doing an OrdinalIgnoreCase comparison.
@@ -274,6 +283,19 @@ namespace System.Text
             {
                 idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions, &matchLength, fromBeginning);
             }
+#else
+            Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+
+            if (fromBeginning)
+            {
+                idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions);
+            }
+            else
+            {
+                idx = compareInfo.LastIndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, thisTranscodedToUtf16.Length, thisTranscodedToUtf16.Length, compareOptions);
+            }
+            matchLength = otherTranscodedToUtf16.Length;
+#endif
 
             if (idx < 0)
             {
@@ -290,7 +312,11 @@ namespace System.Text
             // follow Unicode full case folding semantics and might also normalize characters like
             // digraphs.
 
+#if SYSTEM_PRIVATE_CORELIB
             fixed (char* pThisTranscodedToUtf16 = &thisTranscodedToUtf16.GetRawStringData())
+#else
+            fixed (char* pThisTranscodedToUtf16 = thisTranscodedToUtf16)
+#endif
             {
                 // First, we need to convert the UTF-16 'idx' to its UTF-8 equivalent.
 
@@ -367,7 +393,7 @@ namespace System.Text
             }
             else
             {
-                string.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
 
                 // Surrogate chars can't exist in well-formed UTF-8 data - bail immediately.
 
@@ -501,5 +527,50 @@ namespace System.Text
         /// The search is performed using the specified <paramref name="comparisonType"/>.
         /// </remarks>
         public bool TryFindLast(Utf8Span value, StringComparison comparisonType, out Range range) => TryFind(value, comparisonType, out range, fromBeginning: false);
+
+        private static void CheckStringComparison(StringComparison comparisonType)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            string.CheckStringComparison(comparisonType);
+#else
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
+            {
+                ThrowHelper.ThrowArgumentException(SR.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+            }
+
+            // There's no API that would allow getting the correct match length
+            // for other StringComparisons.
+            if (comparisonType != StringComparison.Ordinal &&
+                comparisonType != StringComparison.OrdinalIgnoreCase)
+            {
+                ThrowHelper.ThrowNotSupportedException(SR.Utf8Span_TryFindOnlySupportsOrdinal);
+            }
+#endif
+        }
+
+        private static CompareOptions GetCaseCompareOfComparisonCulture(StringComparison comparisonType)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            return string.GetCaseCompareOfComparisonCulture(comparisonType);
+#else
+            Debug.Assert((uint)comparisonType <= (uint)StringComparison.OrdinalIgnoreCase);
+
+            // Culture enums can be & with CompareOptions.IgnoreCase 0x01 to extract if IgnoreCase or CompareOptions.None 0x00
+            //
+            // CompareOptions.None                          0x00
+            // CompareOptions.IgnoreCase                    0x01
+            //
+            // StringComparison.CurrentCulture:             0x00
+            // StringComparison.InvariantCulture:           0x02
+            // StringComparison.Ordinal                     0x04
+            //
+            // StringComparison.CurrentCultureIgnoreCase:   0x01
+            // StringComparison.InvariantCultureIgnoreCase: 0x03
+            // StringComparison.OrdinalIgnoreCase           0x05
+
+            return (CompareOptions)((int)comparisonType & (int)CompareOptions.IgnoreCase);
+#endif
+        }
     }
 }

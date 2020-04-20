@@ -5573,9 +5573,6 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
         result |= USER_WAIT_SLEEP_JOIN;
     }
 
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
-
     if (pThread->IsThreadPoolThread())
     {
         result |= USER_THREADPOOL;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
@@ -11,7 +12,6 @@ using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,7 +26,7 @@ namespace System.Net
 
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
-        private readonly Uri _requestUri;
+        private readonly Uri _requestUri = null!;
         private string _originVerb = HttpMethod.Get.Method;
 
         // We allow getting and setting this (to preserve app-compat). But we don't do anything with it
@@ -34,11 +34,11 @@ namespace System.Net
         private int _continueTimeout = DefaultContinueTimeout;
 
         private bool _allowReadStreamBuffering = false;
-        private CookieContainer _cookieContainer = null;
-        private ICredentials _credentials = null;
-        private IWebProxy _proxy = WebRequest.DefaultWebProxy;
+        private CookieContainer? _cookieContainer;
+        private ICredentials? _credentials;
+        private IWebProxy? _proxy = WebRequest.DefaultWebProxy;
 
-        private Task<HttpResponseMessage> _sendRequestTask;
+        private Task<HttpResponseMessage>? _sendRequestTask;
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
@@ -49,33 +49,33 @@ namespace System.Net
 
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeadersLen = _defaultMaxResponseHeadersLength;
-        private ServicePoint _servicePoint;
+        private ServicePoint? _servicePoint;
         private int _timeout = WebRequest.DefaultTimeoutMilliseconds;
         private int _readWriteTimeout = DefaultReadWriteTimeout;
 
-        private HttpContinueDelegate _continueDelegate;
+        private HttpContinueDelegate? _continueDelegate;
 
         // stores the user provided Host header as Uri. If the user specified a default port explicitly we'll lose
         // that information when converting the host string to a Uri. _HostHasPort will store that information.
         private bool _hostHasPort;
-        private Uri _hostUri;
+        private Uri? _hostUri;
 
-        private RequestStream _requestStream;
-        private TaskCompletionSource<Stream> _requestStreamOperation = null;
-        private TaskCompletionSource<WebResponse> _responseOperation = null;
-        private AsyncCallback _requestStreamCallback = null;
-        private AsyncCallback _responseCallback = null;
+        private RequestStream? _requestStream;
+        private TaskCompletionSource<Stream>? _requestStreamOperation;
+        private TaskCompletionSource<WebResponse>? _responseOperation;
+        private AsyncCallback? _requestStreamCallback;
+        private AsyncCallback? _responseCallback;
         private int _abortCalled = 0;
-        private CancellationTokenSource _sendRequestCts;
-        private X509CertificateCollection _clientCertificates;
+        private CancellationTokenSource? _sendRequestCts;
+        private X509CertificateCollection? _clientCertificates;
         private Booleans _booleans = Booleans.Default;
         private bool _pipelined = true;
         private bool _preAuthenticate;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         private static readonly object s_syncRoot = new object();
-        private static volatile HttpClient s_cachedHttpClient;
-        private static HttpClientParameters s_cachedHttpClientParameters;
+        private static volatile HttpClient? s_cachedHttpClient;
+        private static HttpClientParameters? s_cachedHttpClientParameters;
 
         //these should be safe.
         [Flags]
@@ -106,11 +106,11 @@ namespace System.Net
             public readonly TimeSpan Timeout;
             public readonly SecurityProtocolType SslProtocols;
             public readonly bool CheckCertificateRevocationList;
-            public readonly ICredentials Credentials;
-            public readonly IWebProxy Proxy;
-            public readonly RemoteCertificateValidationCallback ServerCertificateValidationCallback;
-            public readonly X509CertificateCollection ClientCertificates;
-            public readonly CookieContainer CookieContainer;
+            public readonly ICredentials? Credentials;
+            public readonly IWebProxy? Proxy;
+            public readonly RemoteCertificateValidationCallback? ServerCertificateValidationCallback;
+            public readonly X509CertificateCollection? ClientCertificates;
+            public readonly CookieContainer? CookieContainer;
 
             public HttpClientParameters(HttpWebRequest webRequest)
             {
@@ -186,7 +186,7 @@ namespace System.Net
             _requestUri = uri;
         }
 
-        private void SetSpecialHeaders(string HeaderName, string value)
+        private void SetSpecialHeaders(string HeaderName, string? value)
         {
             _webHeaderCollection.Remove(HeaderName);
             if (!string.IsNullOrEmpty(value))
@@ -195,7 +195,7 @@ namespace System.Net
             }
         }
 
-        public string Accept
+        public string? Accept
         {
             get
             {
@@ -252,7 +252,7 @@ namespace System.Net
             }
         }
 
-        public override string ContentType
+        public override string? ContentType
         {
             get
             {
@@ -331,7 +331,7 @@ namespace System.Net
             }
         }
 
-        public string UserAgent
+        public string? UserAgent
         {
             get
             {
@@ -363,7 +363,7 @@ namespace System.Net
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                Uri hostUri;
+                Uri? hostUri;
                 if ((value.Contains('/')) || (!TryGetHostUri(value, out hostUri)))
                 {
                     throw new ArgumentException(SR.net_invalid_host, nameof(value));
@@ -405,7 +405,7 @@ namespace System.Net
         ///       Gets or sets the value of the Referer header.
         ///    </para>
         /// </devdoc>
-        public string Referer
+        public string? Referer
         {
             get
             {
@@ -420,7 +420,7 @@ namespace System.Net
         /// <devdoc>
         ///    <para>Sets the media type header</para>
         /// </devdoc>
-        public string MediaType
+        public string? MediaType
         {
             get;
             set;
@@ -431,7 +431,7 @@ namespace System.Net
         ///       Gets or sets the value of the Transfer-Encoding header. Setting null clears it out.
         ///    </para>
         /// </devdoc>
-        public string TransferEncoding
+        public string? TransferEncoding
         {
             get
             {
@@ -565,7 +565,7 @@ namespace System.Net
             }
         }
 
-        public override string ConnectionGroupName { get; set; }
+        public override string? ConnectionGroupName { get; set; }
 
         public override bool PreAuthenticate
         {
@@ -579,7 +579,7 @@ namespace System.Net
             }
         }
 
-        public string Connection
+        public string? Connection
         {
             get
             {
@@ -636,7 +636,7 @@ namespace System.Net
             Returns: The value of the Expect on get.
         */
 
-        public string Expect
+        public string? Expect
         {
             get
             {
@@ -708,7 +708,7 @@ namespace System.Net
             get; set;
         }
 
-        public static new RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        public static new RequestCachePolicy? DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
 
         public DateTime IfModifiedSince
         {
@@ -762,7 +762,7 @@ namespace System.Net
             }
         }
 
-        public HttpContinueDelegate ContinueDelegate
+        public HttpContinueDelegate? ContinueDelegate
         {
             // Nop since the underlying API do not expose 100 continue.
             get
@@ -775,19 +775,9 @@ namespace System.Net
             }
         }
 
-        public ServicePoint ServicePoint
-        {
-            get
-            {
-                if (_servicePoint == null)
-                {
-                    _servicePoint = ServicePointManager.FindServicePoint(Address, Proxy);
-                }
-                return _servicePoint;
-            }
-        }
+        public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
 
-        public RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
+        public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
         //
         // ClientCertificates - sets our certs for our reqest,
@@ -797,20 +787,8 @@ namespace System.Net
         //
         public X509CertificateCollection ClientCertificates
         {
-            get
-            {
-                if (_clientCertificates == null)
-                    _clientCertificates = new X509CertificateCollection();
-                return _clientCertificates;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                _clientCertificates = value;
-            }
+            get => _clientCertificates ??= new X509CertificateCollection();
+            set => _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         // HTTP Version
@@ -865,7 +843,7 @@ namespace System.Net
             }
         }
 
-        public virtual CookieContainer CookieContainer
+        public virtual CookieContainer? CookieContainer
         {
             get
             {
@@ -877,7 +855,7 @@ namespace System.Net
             }
         }
 
-        public override ICredentials Credentials
+        public override ICredentials? Credentials
         {
             get
             {
@@ -983,7 +961,7 @@ namespace System.Net
             }
         }
 
-        public override IWebProxy Proxy
+        public override IWebProxy? Proxy
         {
             get
             {
@@ -1099,19 +1077,19 @@ namespace System.Net
             return Task.FromResult((Stream)_requestStream);
         }
 
-        public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext context)
+        public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext? context)
         {
             context = null;
             return EndGetRequestStream(asyncResult);
         }
 
-        public Stream GetRequestStream(out TransportContext context)
+        public Stream GetRequestStream(out TransportContext? context)
         {
             context = null;
             return GetRequestStream();
         }
 
-        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
             CheckAbort();
 
@@ -1163,14 +1141,14 @@ namespace System.Net
             var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
 
             bool disposeRequired = false;
-            HttpClient client = null;
+            HttpClient? client = null;
             try
             {
                 client = GetCachedOrCreateHttpClient(out disposeRequired);
                 if (_requestStream != null)
                 {
                     ArraySegment<byte> bytes = _requestStream.GetBuffer();
-                    request.Content = new ByteArrayContent(bytes.Array, bytes.Offset, bytes.Count);
+                    request.Content = new ByteArrayContent(bytes.Array!, bytes.Offset, bytes.Count);
                 }
 
                 if (_hostUri != null)
@@ -1180,12 +1158,12 @@ namespace System.Net
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
                 // HttpRequestMessage.Content.Headers.
-                foreach (string headerName in _webHeaderCollection)
+                foreach (string? headerName in _webHeaderCollection) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
                 {
                     // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
                     // collection and the request content headers collection for all well-known header names.  And custom headers
                     // are only allowed in the request headers collection and not in the request content headers collection.
-                    if (IsWellKnownContentHeader(headerName))
+                    if (IsWellKnownContentHeader(headerName!))
                     {
                         if (request.Content == null)
                         {
@@ -1193,11 +1171,11 @@ namespace System.Net
                             request.Content = new ByteArrayContent(Array.Empty<byte>());
                         }
 
-                        request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                        request.Content.Headers.TryAddWithoutValidation(headerName!, _webHeaderCollection[headerName!]);
                     }
                     else
                     {
-                        request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
+                        request.Headers.TryAddWithoutValidation(headerName!, _webHeaderCollection[headerName!]);
                     }
                 }
 
@@ -1217,12 +1195,13 @@ namespace System.Net
                 _sendRequestTask = client.SendAsync(
                     request,
                     _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead,
-                    _sendRequestCts.Token);
+                    _sendRequestCts!.Token);
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
 
                 HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
 
-                if (!responseMessage.IsSuccessStatusCode)
+                int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
+                if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
                 {
                     throw new WebException(
                         SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
@@ -1242,7 +1221,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {
             CheckAbort();
 
@@ -1387,9 +1366,9 @@ namespace System.Net
             }
         }
 
-        private bool AddRange(string rangeSpecifier, string from, string to)
+        private bool AddRange(string rangeSpecifier, string from, string? to)
         {
-            string curRange = _webHeaderCollection[HttpKnownHeaderNames.Range];
+            string? curRange = _webHeaderCollection[HttpKnownHeaderNames.Range];
 
             if ((curRange == null) || (curRange.Length == 0))
             {
@@ -1460,13 +1439,13 @@ namespace System.Net
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
-                string headerValue = _webHeaderCollection[headerName];
+                string? headerValue = _webHeaderCollection[headerName];
 
                 if (headerValue == null)
                 {
                     return DateTime.MinValue; // MinValue means header is not present
                 }
-                if (HttpDateParser.TryStringToDate(headerValue, out DateTimeOffset dateTimeOffset))
+                if (HttpDateParser.TryParse(headerValue, out DateTimeOffset dateTimeOffset))
                 {
                     return dateTimeOffset.LocalDateTime;
                 }
@@ -1494,7 +1473,7 @@ namespace System.Net
 #endif
         }
 
-        private bool TryGetHostUri(string hostName, out Uri hostUri)
+        private bool TryGetHostUri(string hostName, [NotNullWhen(true)] out Uri? hostUri)
         {
             string s = Address.Scheme + "://" + hostName + Address.PathAndQuery;
             return Uri.TryCreate(s, UriKind.Absolute, out hostUri);
@@ -1519,7 +1498,7 @@ namespace System.Net
                     }
                 }
 
-                if (s_cachedHttpClientParameters.Matches(parameters))
+                if (s_cachedHttpClientParameters!.Matches(parameters))
                 {
                     return s_cachedHttpClient;
                 }
@@ -1529,9 +1508,9 @@ namespace System.Net
             return CreateHttpClient(parameters, this);
         }
 
-        private static HttpClient CreateHttpClient(HttpClientParameters parameters, HttpWebRequest request)
+        private static HttpClient CreateHttpClient(HttpClientParameters parameters, HttpWebRequest? request)
         {
-            HttpClient client = null;
+            HttpClient? client = null;
             try
             {
                 var handler = new HttpClientHandler();
@@ -1591,11 +1570,11 @@ namespace System.Net
                 // Set relevant properties from ServicePointManager
                 handler.SslProtocols = (SslProtocols)parameters.SslProtocols;
                 handler.CheckCertificateRevocationList = parameters.CheckCertificateRevocationList;
-                RemoteCertificateValidationCallback rcvc = parameters.ServerCertificateValidationCallback;
+                RemoteCertificateValidationCallback? rcvc = parameters.ServerCertificateValidationCallback;
                 if (rcvc != null)
                 {
                     RemoteCertificateValidationCallback localRcvc = rcvc;
-                    HttpWebRequest localRequest = request;
+                    HttpWebRequest localRequest = request!;
                     handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => localRcvc(localRequest, cert, chain, errors);
                 }
 

@@ -873,6 +873,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
+            // COMPAT: This block of code isn't entirely correct.
+            // Users passing in typeof(MulticastDelegate) as 't' skip this check
+            // since Delegate is a base type of MulticastDelegate.
             Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {
@@ -912,8 +915,6 @@ namespace System.Runtime.InteropServices
 
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
-
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
 
         public static unsafe void ZeroFreeBSTR(IntPtr s)
         {

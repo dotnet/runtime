@@ -69,7 +69,7 @@ namespace System.Globalization
         {
             // See if we need to build it
             return s_japaneseEraInfo ??
-                (s_japaneseEraInfo = GetJapaneseEras()) ??
+                (s_japaneseEraInfo = GlobalizationMode.UseNls ? NlsGetJapaneseEras() : IcuGetJapaneseEras()) ??
                 // See if we have to use the built-in eras
                 (s_japaneseEraInfo = new EraInfo[]
                 {

@@ -43,6 +43,18 @@ namespace ObjectStackAllocation
         }
     }
 
+    class ClassWithGCFieldAndInt
+    {
+        public object o;
+        public int i;
+
+        public ClassWithGCFieldAndInt(int i, object o)
+        {
+            this.o = o;
+            this.i = i;
+        }
+    }
+
     class ClassWithNestedStruct
     {
         public ClassWithNestedStruct(int f1, int f2)
@@ -137,6 +149,8 @@ namespace ObjectStackAllocation
             // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/coreclr/issues/22086 tracks fixing that.
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, AllocationKind.Undefined);
 
+            CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
@@ -170,8 +184,6 @@ namespace ObjectStackAllocation
 
         static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)
         {
-            // Run the test once to exclude any allocations during jitting, etc.
-            //test();
             long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
             int testResult = test();
             long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
@@ -325,6 +337,13 @@ namespace ObjectStackAllocation
             c4.o = str4;
 
             return c1.o.ToString().Length + c2.o.ToString().Length + c3.o.ToString().Length + c4.o.ToString().Length;
+        }
+
+        static int AllocateClassWithGcFieldAndInt()
+        {
+            ClassWithGCFieldAndInt c = new ClassWithGCFieldAndInt(f1, null);
+            GC.Collect();
+            return c.i;
         }
     }
 }

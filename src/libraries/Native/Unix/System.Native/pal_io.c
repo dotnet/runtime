@@ -94,15 +94,15 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // declared by the dirent.h header on the local system.
 // (AIX doesn't have dirent d_type, so none of this there)
 #if defined(DT_UNKNOWN)
-c_static_assert(PAL_DT_UNKNOWN == DT_UNKNOWN);
-c_static_assert(PAL_DT_FIFO == DT_FIFO);
-c_static_assert(PAL_DT_CHR == DT_CHR);
-c_static_assert(PAL_DT_DIR == DT_DIR);
-c_static_assert(PAL_DT_BLK == DT_BLK);
-c_static_assert(PAL_DT_REG == DT_REG);
-c_static_assert(PAL_DT_LNK == DT_LNK);
-c_static_assert(PAL_DT_SOCK == DT_SOCK);
-c_static_assert(PAL_DT_WHT == DT_WHT);
+c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
+c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
+c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
+c_static_assert((int)PAL_DT_DIR == (int)DT_DIR);
+c_static_assert((int)PAL_DT_BLK == (int)DT_BLK);
+c_static_assert((int)PAL_DT_REG == (int)DT_REG);
+c_static_assert((int)PAL_DT_LNK == (int)DT_LNK);
+c_static_assert((int)PAL_DT_SOCK == (int)DT_SOCK);
+c_static_assert((int)PAL_DT_WHT == (int)DT_WHT);
 #endif
 
 // Validate that our Lock enum value are correct for the platform
@@ -594,6 +594,24 @@ int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
     return fcntl(fileDescriptor, F_SETFL, flags);
 }
 
+int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
+{
+    if (isNonBlocking == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int flags = fcntl(ToFileDescriptor(fd), F_GETFL);
+    if (flags == -1)
+    {
+        *isNonBlocking = 0;
+        return -1;
+    }
+
+    *isNonBlocking = ((flags & O_NONBLOCK) == O_NONBLOCK) ? 1 : 0;
+    return 0;
+}
+
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
@@ -913,18 +931,20 @@ int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t mi
         return Error_EINVAL;
     }
 
-    size_t bufferSize;
-    if (!multiply_s(sizeof(struct pollfd), (size_t)eventCount, &bufferSize))
+    struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
+    int useStackBuffer = eventCount <= ARRAY_SIZE(stackBuffer);
+    struct pollfd* pollfds = NULL;
+    if (useStackBuffer)
     {
-        return SystemNative_ConvertErrorPlatformToPal(EOVERFLOW);
+        pollfds = &stackBuffer[0];
     }
-
-
-    int useStackBuffer = bufferSize <= 2048;
-    struct pollfd* pollfds = (struct pollfd*)(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
-    if (pollfds == NULL)
+    else
     {
-        return Error_ENOMEM;
+        pollfds = calloc(eventCount, sizeof(*pollfds));
+        if (pollfds == NULL)
+        {
+            return Error_ENOMEM;
+        }
     }
 
     for (uint32_t i = 0; i < eventCount; i++)
@@ -1059,7 +1079,7 @@ char* SystemNative_GetLine(FILE* stream)
     char* lineptr = NULL;
     size_t n = 0;
     ssize_t length = getline(&lineptr, &n, stream);
-    
+
     return length >= 0 ? lineptr : NULL;
 }
 
@@ -1228,7 +1248,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
         {
             return -1;
         }
-        
+
         ret = unlink(destPath);
         if (ret != 0)
         {
@@ -1335,9 +1355,9 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
 #elif HAVE_FUTIMES
     struct timeval origTimes[2];
     origTimes[0].tv_sec = sourceStat.st_atime;
-    origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
+    origTimes[0].tv_usec = (int32_t)(ST_ATIME_NSEC(&sourceStat) / 1000);
     origTimes[1].tv_sec = sourceStat.st_mtime;
-    origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
+    origTimes[1].tv_usec = (int32_t)(ST_MTIME_NSEC(&sourceStat) / 1000);
     while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
 
@@ -1428,7 +1448,7 @@ char* SystemNative_RealPath(const char* path)
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
-    if (offset < 0 || length < 0) 
+    if (offset < 0 || length < 0)
     {
         errno = EINVAL;
         return -1;

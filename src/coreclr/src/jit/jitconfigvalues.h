@@ -394,6 +394,11 @@ CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevi
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
 
+// Enable insertion of patchpoints into Tier0 methods with loops.
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+// Initial patchpoint counter value used by jitted code
+CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

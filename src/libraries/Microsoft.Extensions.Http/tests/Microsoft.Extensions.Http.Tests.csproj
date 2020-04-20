@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestSink.cs">
+      <Link>tests\DI.Common\Common\src\TestSink.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\WriteContext.cs">
+      <Link>tests\DI.Common\Common\src\WriteContext.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\BeginScopeContext.cs">
+      <Link>tests\DI.Common\Common\src\BeginScopeContext.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\ITestSink.cs">
+      <Link>tests\DI.Common\Common\src\ITestSink.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLogger.cs">
+      <Link>tests\DI.Common\Common\src\TestLogger.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLoggerFactory.cs">
+      <Link>tests\DI.Common\Common\src\TestLoggerFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs" Link="Shared\SingleThreadedSynchronizationContext.cs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+
+</Project>

@@ -603,6 +603,17 @@ DWORD GetRuntimeId();
 
 EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
+#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+{                                                                       \
+    HRESULT __ctinffhr;                                                 \
+    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
+    if (__thread == NULL)                                               \
+    {                                                                   \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        UNREACHABLE();                                                  \
+    }                                                                   \
+}
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
@@ -939,12 +950,12 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 // of that physical thread.
 
 // FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-// [GcInfo v2 only]        can be returned in multiple registers
+//                         can be returned in multiple registers
 //                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
 //
 //
 // UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-// [GcInfo v1 and v2]       specified by SystemV ABI for AMD64
+//                         specified by SystemV ABI for AMD64
 //
 
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
@@ -1009,8 +1020,9 @@ class Thread
     friend class DacDbiInterfaceImpl;       // DacDbiInterfaceImpl::GetThreadHandle(HANDLE * phThread);
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
-    friend class CExecutionEngine;
-    friend class UnC;
+
+    friend void SetupTLSForThread(Thread* pThread);
+
     friend class CheckAsmOffsets;
 
     friend class ExceptionTracker;
@@ -1048,8 +1060,7 @@ public:
     StackingAllocator* m_stackLocalAllocator = NULL;
 
     // If we are trying to suspend a thread, we set the appropriate pending bit to
-    // indicate why we want to suspend it (TS_GCSuspendPending, TS_UserSuspendPending,
-    // TS_DebugSuspendPending).
+    // indicate why we want to suspend it (TS_GCSuspendPending or TS_DebugSuspendPending).
     //
     // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
     // this with TS_SyncSuspended.  However, we need to know whether the synchronous
@@ -1065,7 +1076,6 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
         TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
-        TS_UserSuspendPending     = 0x00000004,    // user suspension at next opportunity
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -1127,8 +1137,8 @@ public:
         //         enum is changed, we also need to update SOS to reflect this.</TODO>
 
         // We require (and assert) that the following bits are less than 0x100.
-        TS_CatchAtSafePoint = (TS_UserSuspendPending | TS_AbortRequested |
-                               TS_GCSuspendPending | TS_DebugSuspendPending | TS_GCOnTransitions),
+        TS_CatchAtSafePoint = (TS_AbortRequested | TS_GCSuspendPending |
+                               TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
     // Thread flags that aren't really states in themselves but rather things the thread
@@ -1875,14 +1885,6 @@ public:
 
     bool DetectHandleILStubsForDebugger();
 
-#ifdef ENABLE_CONTRACTS
-    ClrDebugState *GetClrDebugState()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pClrDebugState;
-    }
-#endif
-
     //**************************************************************
     // GC interaction
     //**************************************************************
@@ -2019,29 +2021,33 @@ public:
     void BeginNoTriggerGC(const char *szFile, int lineNum)
     {
         WRAPPER_NO_CONTRACT;
-        m_pClrDebugState->IncrementGCNoTriggerCount();
+
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        pClrDebugState->IncrementGCNoTriggerCount();
+
         if (PreemptiveGCDisabled())
         {
-            m_pClrDebugState->IncrementGCForbidCount();
+            pClrDebugState->IncrementGCForbidCount();
         }
     }
 
     void EndNoTriggerGC()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_pClrDebugState->GetGCNoTriggerCount() != 0 || (m_pClrDebugState->ViolationMask() & BadDebugState));
-        m_pClrDebugState->DecrementGCNoTriggerCount();
+        ClrDebugState* pClrDebugState = GetClrDebugState();
 
-        if (m_pClrDebugState->GetGCForbidCount())
+        _ASSERTE(pClrDebugState->GetGCNoTriggerCount() != 0 || (pClrDebugState->ViolationMask() & BadDebugState));
+        pClrDebugState->DecrementGCNoTriggerCount();
+
+        if (pClrDebugState->GetGCForbidCount())
         {
-            m_pClrDebugState->DecrementGCForbidCount();
+            pClrDebugState->DecrementGCForbidCount();
         }
     }
 
     void BeginForbidGC(const char *szFile, int lineNum)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
                  || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
@@ -2056,7 +2062,6 @@ public:
     void EndForbidGC()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled() ||
                  CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
@@ -2071,45 +2076,52 @@ public:
     BOOL GCNoTrigger()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
-        if ( (GCViolation|BadDebugState) & m_pClrDebugState->ViolationMask() )
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if ( (GCViolation|BadDebugState) & pClrDebugState->ViolationMask() )
         {
             return FALSE;
         }
-        return m_pClrDebugState->GetGCNoTriggerCount();
+        return pClrDebugState->GetGCNoTriggerCount();
     }
 
     BOOL GCForbidden()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
-        if ( (GCViolation|BadDebugState) & m_pClrDebugState->ViolationMask())
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if ( (GCViolation|BadDebugState) & pClrDebugState->ViolationMask())
         {
             return FALSE;
         }
-        return m_pClrDebugState->GetGCForbidCount();
+        return pClrDebugState->GetGCForbidCount();
     }
 
     BOOL RawGCNoTrigger()
     {
         LIMITED_METHOD_CONTRACT;
-        if (m_pClrDebugState->ViolationMask() & BadDebugState)
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if (pClrDebugState->ViolationMask() & BadDebugState)
         {
             return 0;
         }
-        return m_pClrDebugState->GetGCNoTriggerCount();
+        return pClrDebugState->GetGCNoTriggerCount();
     }
 
     BOOL RawGCForbidden()
     {
         LIMITED_METHOD_CONTRACT;
-        if (m_pClrDebugState->ViolationMask() & BadDebugState)
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if (pClrDebugState->ViolationMask() & BadDebugState)
         {
             return 0;
         }
-        return m_pClrDebugState->GetGCForbidCount();
+        return pClrDebugState->GetGCForbidCount();
     }
 #endif // ENABLE_CONTRACTS_IMPL
+
+    //---------------------------------------------------------------
+    // Calculate thread static offset
+    //---------------------------------------------------------------
+    static size_t GetOffsetOfThreadStatic(void* pThreadStatic);
 
     //---------------------------------------------------------------
     // Expose key offsets and values for stub generation.
@@ -2138,30 +2150,6 @@ public:
         return (BYTE)ofs;
     }
 
-    static void StaticDisablePreemptiveGC( Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pThread != NULL);
-        pThread->DisablePreemptiveGC();
-    }
-
-    static void StaticEnablePreemptiveGC( Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pThread != NULL);
-        pThread->EnablePreemptiveGC();
-    }
-
-
-    //---------------------------------------------------------------
-    // Expose offset of the app domain word for the interop and delegate callback
-    //---------------------------------------------------------------
-    static SIZE_T GetOffsetOfAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)(offsetof(class Thread, m_pDomain));
-    }
-
     //---------------------------------------------------------------
     // Expose offset of the place for storing the filter context for the debugger.
     //---------------------------------------------------------------
@@ -2169,15 +2157,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (SIZE_T)(offsetof(class Thread, m_debuggerFilterContext));
-    }
-
-    //---------------------------------------------------------------
-    // Expose offset of the debugger cant stop count for the debugger
-    //---------------------------------------------------------------
-    static SIZE_T GetOffsetOfCantStop()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)(offsetof(class Thread, m_debuggerCantStop));
     }
 
     //---------------------------------------------------------------
@@ -3351,10 +3330,6 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
-
-
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Reset();
         }
@@ -3371,20 +3346,13 @@ private:
         //
         ThreadState oldState = m_State;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(oldState & TS_UserSuspendPending));
 
-        while ((oldState & (TS_UserSuspendPending | TS_DebugSuspendPending)) == 0)
+        while ((oldState & TS_DebugSuspendPending) == 0)
         {
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(oldState & TS_UserSuspendPending));
-
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_UserSuspendPending |
-                                                              TS_DebugSuspendPending |
-                                                              TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
             if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -3396,9 +3364,6 @@ private:
             //
             oldState = m_State;
         }
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
 
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Set();
@@ -3447,7 +3412,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(VOID *pvHijackAddr, ExecutionState *esb);
+    void    HijackThread(ReturnKind returnKind, ExecutionState *esb);
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3499,8 +3464,6 @@ public:
 
 private:
 #ifdef ENABLE_CONTRACTS_DATA
-    struct ClrDebugState *m_pClrDebugState; // Pointer to ClrDebugState for quick access
-
     ULONG  m_ulEnablePreemptiveGCCount;
 #endif  // _DEBUG
 
@@ -3714,11 +3677,6 @@ private:
     // return addresses on the stack)
     //---------------------------------------------------------------
     Volatile<LONG> m_hijackLock;
-    //---------------------------------------------------------------
-    // m_debuggerCantStop holds a count of entries into "can't stop"
-    // areas that the Interop Debugging Services must know about.
-    //---------------------------------------------------------------
-    DWORD m_debuggerCantStop;
 
     //---------------------------------------------------------------
     // The current custom notification data object (or NULL if none
@@ -3981,9 +3939,6 @@ public:
 
         ResetThreadState(TS_GCSuspendPending);
     }
-
-    void SetDebugCantStop(bool fCantStop);
-    bool GetDebugCantStop(void);
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
@@ -4590,7 +4545,7 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    // This duplicates the ThreadType_GC bit stored in TLS (TlsIdx_ThreadType). It exists
+    // This duplicates the ThreadType_GC bit stored in TLS (t_ThreadType). It exists
     // so that any thread can query whether any other thread is a "GC Special" thread.
     // (In contrast, ::IsGCSpecialThread() only gives this info about the currently
     // executing thread.) The Profiling API uses this to determine whether it should
@@ -5824,8 +5779,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
         m_fConditional = fConditional;
         if (m_fConditional)
         {
-            Thread *pThread = GetThread();
-            m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+            m_pClrDebugState = ::GetClrDebugState();
             m_oldClrDebugState = *m_pClrDebugState;
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5849,8 +5803,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         m_fConditional = TRUE;
 
-        Thread *pThread = GetThread();
-        m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+        m_pClrDebugState = ::GetClrDebugState();
         m_oldClrDebugState = *m_pClrDebugState;
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5909,7 +5862,7 @@ class GCNoTrigger
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
-            m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+            m_pClrDebugState = ::GetClrDebugState();
             m_oldClrDebugState = *m_pClrDebugState;
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5936,7 +5889,7 @@ class GCNoTrigger
         m_fConditional = TRUE;
 
         Thread * pThread = GetThreadNULLOk();
-        m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+        m_pClrDebugState = ::GetClrDebugState();
         m_oldClrDebugState = *m_pClrDebugState;
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -6131,6 +6084,9 @@ if (g_pConfig->GetGCStressLevel() && g_pConfig->FastGCStressLevel() > 1) {   \
 #endif  // _DEBUG
 
 #ifdef _DEBUG_IMPL
+
+extern thread_local int t_ForbidGCLoaderUseCount;
+
 // Holder for incrementing the ForbidGCLoaderUse counter.
 class GCForbidLoaderUseHolder
 {
@@ -6138,13 +6094,13 @@ class GCForbidLoaderUseHolder
     GCForbidLoaderUseHolder()
     {
         WRAPPER_NO_CONTRACT;
-        ClrFlsIncrementValue(TlsIdx_ForbidGCLoaderUseCount, 1);
+        t_ForbidGCLoaderUseCount++;
     }
 
     ~GCForbidLoaderUseHolder()
     {
         WRAPPER_NO_CONTRACT;
-        ClrFlsIncrementValue(TlsIdx_ForbidGCLoaderUseCount, -1);
+        t_ForbidGCLoaderUseCount--;
     }
 };
 
@@ -6209,12 +6165,8 @@ class GCForbidLoaderUseHolder
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
-#ifndef DACCESS_COMPILE
-#define FORBIDGC_LOADER_USE_ENABLED() (ClrFlsGetValue(TlsIdx_ForbidGCLoaderUseCount))
-#else
-#define FORBIDGC_LOADER_USE_ENABLED() TRUE
-#endif
+#ifdef _DEBUG_IMPL
+#define FORBIDGC_LOADER_USE_ENABLED() (t_ForbidGCLoaderUseCount)
 #else   // _DEBUG_IMPL
 
 // If you got an error about FORBIDGC_LOADER_USE_ENABLED being undefined, it's because you tried
@@ -6440,5 +6392,51 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc);
 #define GetWriteBarrierCodeLocation(barrier) ((BYTE*)(barrier))
 
 #endif // FEATURE_WRITEBARRIER_COPY
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+extern thread_local Thread* t_pStackWalkerWalkingThread;
+#define SET_THREAD_TYPE_STACKWALKER(pThread)    t_pStackWalkerWalkingThread = pThread
+#define CLEAR_THREAD_TYPE_STACKWALKER()         t_pStackWalkerWalkingThread = NULL
+#else
+#define SET_THREAD_TYPE_STACKWALKER(pThread)
+#define CLEAR_THREAD_TYPE_STACKWALKER()
+#endif
+
+inline BOOL IsStackWalkerThread()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    return t_pStackWalkerWalkingThread != NULL;
+#else
+    return FALSE;
+#endif
+}
+
+class StackWalkerWalkingThreadHolder
+{
+public:
+    StackWalkerWalkingThreadHolder(Thread* value)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+        m_PreviousValue = t_pStackWalkerWalkingThread;
+        t_pStackWalkerWalkingThread = value;
+#endif
+    }
+
+    ~StackWalkerWalkingThreadHolder()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+        t_pStackWalkerWalkingThread = m_PreviousValue;
+#endif
+    }
+
+private:
+    Thread* m_PreviousValue;
+};
 
 #endif //__threads_h__

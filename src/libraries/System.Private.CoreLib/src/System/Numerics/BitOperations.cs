@@ -4,9 +4,12 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -18,7 +21,12 @@ namespace System.Numerics
     /// The methods use hardware intrinsics when available on the underlying platform,
     /// otherwise they use optimized software fallbacks.
     /// </summary>
-    public static class BitOperations
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static class BitOperations
     {
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
@@ -54,6 +62,11 @@ namespace System.Numerics
                 return (int)Lzcnt.LeadingZeroCount(value);
             }
 
+            if (ArmBase.IsSupported)
+            {
+                return ArmBase.LeadingZeroCount(value);
+            }
+
             // Unguarded fallback contract is 0->31
             if (value == 0)
             {
@@ -78,6 +91,11 @@ namespace System.Numerics
                 return (int)Lzcnt.X64.LeadingZeroCount(value);
             }
 
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return ArmBase.Arm64.LeadingZeroCount(value);
+            }
+
             uint hi = (uint)(value >> 32);
 
             if (hi == 0)
@@ -97,6 +115,12 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static int Log2(uint value)
         {
+            // Enforce conventional contract 0->0 (Log(0) is undefined)
+            if (value == 0)
+            {
+                return 0;
+            }
+
             // value    lzcnt   actual  expected
             // ..0000   32      0        0 (by convention, guard clause)
             // ..0001   31      31-31    0
@@ -106,14 +130,13 @@ namespace System.Numerics
             // 1000..    0      31-0    31
             if (Lzcnt.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
-
                 // LZCNT contract is 0->32
                 return 31 - (int)Lzcnt.LeadingZeroCount(value);
+            }
+
+            if (ArmBase.IsSupported)
+            {
+                return 31 - ArmBase.LeadingZeroCount(value);
             }
 
             // Fallback contract is 0->0
@@ -129,16 +152,21 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static int Log2(ulong value)
         {
+            // Enforce conventional contract 0->0 (Log(0) is undefined)
+            if (value == 0)
+            {
+                return 0;
+            }
+
             if (Lzcnt.X64.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
-
                 // LZCNT contract is 0->64
                 return 63 - (int)Lzcnt.X64.LeadingZeroCount(value);
+            }
+
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return 63 - ArmBase.Arm64.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -268,6 +296,11 @@ namespace System.Numerics
                 return (int)Bmi1.TrailingZeroCount(value);
             }
 
+            if (ArmBase.IsSupported)
+            {
+                return ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
+            }
+
             // Unguarded fallback contract is 0->0
             if (value == 0)
             {
@@ -306,6 +339,10 @@ namespace System.Numerics
                 return (int)Bmi1.X64.TrailingZeroCount(value);
             }
 
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+            }
             uint lo = (uint)value;
 
             if (lo == 0)

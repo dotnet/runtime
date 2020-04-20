@@ -144,6 +144,149 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, FloatComparisonMode mode) => Compare(left, right, mode);
 
         /// <summary>
+        /// __m256 _mm256_cmpeq_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedEqualNonSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpeq_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedEqualNonSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpgt_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareGreaterThan(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedGreaterThanSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpgt_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareGreaterThan(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedGreaterThanSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpge_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedGreaterThanOrEqualSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpge_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedGreaterThanOrEqualSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmplt_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareLessThan(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedLessThanSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmplt_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareLessThan(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedLessThanSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmple_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareLessThanOrEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedLessThanOrEqualSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmple_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareLessThanOrEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedLessThanOrEqualSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpneq_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareNotEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNotEqualNonSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpneq_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareNotEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNotEqualNonSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpngt_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareNotGreaterThan(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNotGreaterThanSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpngt_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareNotGreaterThan(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNotGreaterThanSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpnge_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareNotGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNotGreaterThanOrEqualSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpnge_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareNotGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNotGreaterThanOrEqualSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpnlt_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareNotLessThan(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNotLessThanSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpnlt_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareNotLessThan(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNotLessThanSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpnle_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareNotLessThanOrEqual(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNotLessThanOrEqualSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpnle_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareNotLessThanOrEqual(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNotLessThanOrEqualSignaling);
+
+        /// <summary>
+        /// __m256 _mm256_cmpord_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareOrdered(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.OrderedNonSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpord_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareOrdered(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.OrderedNonSignaling);
+
+        /// <summary>
         /// __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
         ///   VCMPSS xmm, xmm, xmm/m32, imm8
         /// </summary>
@@ -153,6 +296,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCMPSD xmm, xmm, xmm/m64, imm8
         /// </summary>
         public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) => CompareScalar(left, right, mode);
+
+        /// <summary>
+        /// __m256 _mm256_cmpunord_ps (__m256 a,  __m256 b)
+        ///   CMPPS ymm, ymm/m256, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<float> CompareUnordered(Vector256<float> left, Vector256<float> right) => Compare(left, right, FloatComparisonMode.UnorderedNonSignaling);
+        /// <summary>
+        /// __m256d _mm256_cmpunord_pd (__m256d a,  __m256d b)
+        ///   CMPPD ymm, ymm/m256, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector256<double> CompareUnordered(Vector256<double> left, Vector256<double> right) => Compare(left, right, FloatComparisonMode.UnorderedNonSignaling);
 
         /// <summary>
         /// __m128i _mm256_cvtpd_epi32 (__m256d a)

@@ -23,6 +23,13 @@
     <_withoutCategories Condition="'$(TargetOSCategory)' != ''">$(_withoutCategories);$(TargetOSCategory)</_withoutCategories>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="$(TestRunnerConfigPath)"
+          Link="xunit.runner.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
+  </ItemGroup>
+
   <Target Name="ValidateTargetOSCategory"
           BeforeTargets="GenerateRunScript">
     <Error Condition="'$(TargetOSCategory)' == ''"

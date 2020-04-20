@@ -9,8 +9,6 @@
 
   <Import Project="..\..\Directory.Build.targets" />
 
-  <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
-
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 
@@ -160,6 +158,7 @@
       <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
       <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
       <NetHostCompressedFile>dotnet-nethost-$(AppHostVersion)-$(PackageTargetRid)$(CompressedFileExtension)</NetHostCompressedFile>
+      <Crossgen2CompressedFile>dotnet-crossgen2-$(ProductMoniker)$(CompressedFileExtension)</Crossgen2CompressedFile>
       <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
       <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
 

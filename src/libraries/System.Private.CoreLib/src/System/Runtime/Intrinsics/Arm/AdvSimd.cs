@@ -607,6 +607,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
 
             /// <summary>
+            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(acc, left, right);
+
+            /// <summary>
+            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(acc, left, right);
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -987,6 +999,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
 
             /// <summary>
+            /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MultiplyExtended(Vector64<float> left, Vector64<float> right) => MultiplyExtended(left, right);
+
+            /// <summary>
+            /// float64x2_t vmulxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MultiplyExtended(Vector128<double> left, Vector128<double> right) => MultiplyExtended(left, right);
+
+            /// <summary>
+            /// float32x4_t vmulxq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MultiplyExtended(Vector128<float> left, Vector128<float> right) => MultiplyExtended(left, right);
+
+            /// <summary>
+            /// float64x1_t vmulx_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMULX Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MultiplyExtendedScalar(Vector64<double> left, Vector64<double> right) => MultiplyExtendedScalar(left, right);
+
+            /// <summary>
+            /// float32_t vmulxs_f32 (float32_t a, float32_t b)
+            ///   A64: FMULX Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalar(Vector64<float> left, Vector64<float> right) => MultiplyExtendedScalar(left, right);
+
+            /// <summary>
             /// float64x2_t vnegq_f64 (float64x2_t a)
             ///   A64: FNEG Vd.2D, Vn.2D
             /// </summary>
@@ -1005,6 +1047,90 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<long> NegateScalar(Vector64<long> value) => NegateScalar(value);
 
             /// <summary>
+            /// float64x2_t vrecpeq_f64 (float64x2_t a)
+            ///   A64: FRECPE Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalEstimate(Vector128<double> value) => ReciprocalEstimate(value);
+
+            /// <summary>
+            /// float64x1_t vrecpe_f64 (float64x1_t a)
+            ///   A64: FRECPE Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalEstimateScalar(Vector64<double> value) => ReciprocalEstimateScalar(value);
+
+            /// <summary>
+            /// float32_t vrecpes_f32 (float32_t a)
+            ///   A64: FRECPE Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalEstimateScalar(Vector64<float> value) => ReciprocalEstimateScalar(value);
+
+            /// <summary>
+            /// float64_t vrecpxd_f64 (float64_t a)
+            ///   A64: FRECPX Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalExponentScalar(Vector64<double> value) => ReciprocalExponentScalar(value);
+
+            /// <summary>
+            /// float32_t vrecpxs_f32 (float32_t a)
+            ///   A64: FRECPX Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalExponentScalar(Vector64<float> value) => ReciprocalExponentScalar(value);
+
+            /// <summary>
+            /// float64x2_t vrsqrteq_f64 (float64x2_t a)
+            ///   A64: FRSQRTE Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalSquareRootEstimate(Vector128<double> value) => ReciprocalSquareRootEstimate(value);
+
+            /// <summary>
+            /// float64x1_t vrsqrte_f64 (float64x1_t a)
+            ///   A64: FRSQRTE Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalSquareRootEstimateScalar(Vector64<double> value) => ReciprocalSquareRootEstimateScalar(value);
+
+            /// <summary>
+            /// float32_t vrsqrtes_f32 (float32_t a)
+            ///   A64: FRSQRTE Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalSquareRootEstimateScalar(Vector64<float> value) => ReciprocalSquareRootEstimateScalar(value);
+
+            /// <summary>
+            /// float64x2_t vrsqrtsq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FRSQRTS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalSquareRootStep(Vector128<double> left, Vector128<double> right) => ReciprocalSquareRootStep(left, right);
+
+            /// <summary>
+            /// float64x1_t vrsqrts_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FRSQRTS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> ReciprocalSquareRootStepScalar(Vector64<double> left, Vector64<double> right) => ReciprocalSquareRootStepScalar(left, right);
+
+            /// <summary>
+            /// float32_t vrsqrtss_f32 (float32_t a, float32_t b)
+            ///   A64: FRSQRTS Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> ReciprocalSquareRootStepScalar(Vector64<float> left, Vector64<float> right) => ReciprocalSquareRootStepScalar(left, right);
+
+            /// <summary>
+            /// float64x2_t vrecpsq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FRECPS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalStep(Vector128<double> left, Vector128<double> right) => ReciprocalStep(left, right);
+
+            /// <summary>
+            /// float64x1_t vrecps_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FRECPS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> ReciprocalStepScalar(Vector64<double> left, Vector64<double> right) => ReciprocalStepScalar(left, right);
+
+            /// <summary>
+            /// float32_t vrecpss_f32 (float32_t a, float32_t b)
+            ///   A64: FRECPS Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> ReciprocalStepScalar(Vector64<float> left, Vector64<float> right) => ReciprocalStepScalar(left, right);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -1021,18 +1147,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
-
-            /// <summary>
-            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(acc, left, right);
-
-            /// <summary>
-            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(acc, left, right);
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -1901,6 +2015,90 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UABD Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> AbsoluteDifference(Vector128<uint> left, Vector128<uint> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint8x8_t vaba_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VABA.U8 Dd, Dn, Dm
+        ///   A64: UABA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AbsoluteDifferenceAdd(Vector64<byte> addend, Vector64<byte> left, Vector64<byte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x4_t vaba_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VABA.S16 Dd, Dn, Dm
+        ///   A64: SABA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AbsoluteDifferenceAdd(Vector64<short> addend, Vector64<short> left, Vector64<short> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int32x2_t vaba_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VABA.S32 Dd, Dn, Dm
+        ///   A64: SABA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AbsoluteDifferenceAdd(Vector64<int> addend, Vector64<int> left, Vector64<int> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int8x8_t vaba_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VABA.S8 Dd, Dn, Dm
+        ///   A64: SABA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AbsoluteDifferenceAdd(Vector64<sbyte> addend, Vector64<sbyte> left, Vector64<sbyte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint16x4_t vaba_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VABA.U16 Dd, Dn, Dm
+        ///   A64: UABA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AbsoluteDifferenceAdd(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint32x2_t vaba_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VABA.U32 Dd, Dn, Dm
+        ///   A64: UABA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AbsoluteDifferenceAdd(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint8x16_t vabaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VABA.U8 Qd, Qn, Qm
+        ///   A64: UABA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> AbsoluteDifferenceAdd(Vector128<byte> addend, Vector128<byte> left, Vector128<byte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x8_t vabaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VABA.S16 Qd, Qn, Qm
+        ///   A64: SABA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> AbsoluteDifferenceAdd(Vector128<short> addend, Vector128<short> left, Vector128<short> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int32x4_t vabaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VABA.S32 Qd, Qn, Qm
+        ///   A64: SABA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> AbsoluteDifferenceAdd(Vector128<int> addend, Vector128<int> left, Vector128<int> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int8x16_t vabaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VABA.S8 Qd, Qn, Qm
+        ///   A64: SABA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> AbsoluteDifferenceAdd(Vector128<sbyte> addend, Vector128<sbyte> left, Vector128<sbyte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint16x8_t vabaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VABA.U16 Qd, Qn, Qm
+        ///   A64: UABA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceAdd(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint32x4_t vabaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VABA.U32 Qd, Qn, Qm
+        ///   A64: UABA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => AbsoluteDifferenceAdd(addend, left, right);
 
         /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
@@ -3124,6 +3322,90 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
+
+        /// <summary>
+        ///  int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractAndNarrowLow (Vector128<short> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractAndNarrowLow (Vector128<int> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractAndNarrowLow (Vector128<long> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractAndNarrowLow (Vector128<ushort> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractAndNarrowLow (Vector128<uint> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<sbyte> ExtractAndNarrowHigh (Vector64<sbyte> lower, Vector128<short> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  int16x8_t vmovn_high_s32 (int16x4_t r, int32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<short> ExtractAndNarrowHigh (Vector64<short> lower, Vector128<int> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  int32x4_t vmovn_high_s64 (int32x2_t r, int64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<int> ExtractAndNarrowHigh (Vector64<int> lower, Vector128<long> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  uint8x16_t vmovn_high_u16 (uint8x8_t r, uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd+1, Qm
+        ///   A64: XTN2 Vd.16B, Vn.8H
+        /// </summary>
+        public static Vector128<byte> ExtractAndNarrowHigh (Vector64<byte> lower, Vector128<ushort> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  uint16x8_t vmovn_high_u32 (uint16x4_t r, uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd+1, Qm
+        ///   A64: XTN2 Vd.8H, Vn.4S
+        /// </summary>
+        public static Vector128<ushort> ExtractAndNarrowHigh (Vector64<ushort> lower, Vector128<uint> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  uint32x4_t vmovn_high_u64 (uint32x2_t r, uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd+1, Qm
+        ///   A64: XTN2 Vd.4S, Vn.2D
+        /// </summary>
+        public static Vector128<uint> ExtractAndNarrowHigh (Vector64<uint> lower, Vector128<ulong> value) => ExtractAndNarrowHigh (lower, value);
 
         /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
@@ -4616,6 +4898,34 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
         /// <summary>
+        /// poly8x8_t vmul_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMUL.P8 Dd, Dn, Dm
+        ///   A64: PMUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> PolynomialMultiply(Vector64<byte> left, Vector64<byte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x8_t vmul_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMUL.P8 Dd, Dn, Dm
+        ///   A64: PMUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> PolynomialMultiply(Vector64<sbyte> left, Vector64<sbyte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x16_t vmulq_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMUL.P8 Qd, Qn, Qm
+        ///   A64: PMUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> PolynomialMultiply(Vector128<byte> left, Vector128<byte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x16_t vmulq_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMUL.P8 Qd, Qn, Qm
+        ///   A64: PMUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> PolynomialMultiply(Vector128<sbyte> left, Vector128<sbyte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
         /// uint8x8_t vcnt_u8 (uint8x8_t a)
         ///   A32: VCNT.I8 Dd, Dm
         ///   A64: CNT Vd.8B, Vn.8B
@@ -4644,6 +4954,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
 
         /// <summary>
+        /// float32x2_t vrecpe_f32 (float32x2_t a)
+        ///   A32: VRECPE.F32 Dd, Dm
+        ///   A64: FRECPE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalEstimate(Vector64<float> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// uint32x2_t vrecpe_u32 (uint32x2_t a)
+        ///   A32: VRECPE.U32 Dd, Dm
+        ///   A64: URECPE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ReciprocalEstimate(Vector64<uint> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// float32x4_t vrecpeq_f32 (float32x4_t a)
+        ///   A32: VRECPE.F32 Qd, Qm
+        ///   A64: FRECPE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalEstimate(Vector128<float> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// uint32x4_t vrecpeq_u32 (uint32x4_t a)
+        ///   A32: VRECPE.U32 Qd, Qm
+        ///   A64: URECPE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ReciprocalEstimate(Vector128<uint> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// float32x2_t vrsqrte_f32 (float32x2_t a)
+        ///   A32: VRSQRTE.F32 Dd, Dm
+        ///   A64: FRSQRTE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalSquareRootEstimate(Vector64<float> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// uint32x2_t vrsqrte_u32 (uint32x2_t a)
+        ///   A32: VRSQRTE.U32 Dd, Dm
+        ///   A64: URSQRTE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ReciprocalSquareRootEstimate(Vector64<uint> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// float32x4_t vrsqrteq_f32 (float32x4_t a)
+        ///   A32: VRSQRTE.F32 Qd, Qm
+        ///   A64: FRSQRTE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalSquareRootEstimate(Vector128<float> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// uint32x4_t vrsqrteq_u32 (uint32x4_t a)
+        ///   A32: VRSQRTE.U32 Qd, Qm
+        ///   A64: URSQRTE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ReciprocalSquareRootEstimate(Vector128<uint> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// float32x2_t vrsqrts_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VRSQRTS.F32 Dd, Dn, Dm
+        ///   A64: FRSQRTS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalSquareRootStep(Vector64<float> left, Vector64<float> right) => ReciprocalSquareRootStep(left, right);
+
+        /// <summary>
+        /// float32x4_t vrsqrtsq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VRSQRTS.F32 Qd, Qn, Qm
+        ///   A64: FRSQRTS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalSquareRootStep(Vector128<float> left, Vector128<float> right) => ReciprocalSquareRootStep(left, right);
+
+        /// <summary>
+        /// float32x2_t vrecps_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VRECPS.F32 Dd, Dn, Dm
+        ///   A64: FRECPS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalStep(Vector64<float> left, Vector64<float> right) => ReciprocalStep(left, right);
+
+        /// <summary>
+        /// float32x4_t vrecpsq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VRECPS.F32 Qd, Qn, Qm
+        ///   A64: FRECPS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) => ReciprocalStep(left, right);
+
+        /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
         ///   A32: VSQRT.F64 Dd, Dm
         ///   A64: FSQRT Dd, Dn
@@ -4657,6 +5051,146 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SqrtScalar(Vector64<float> value) => SqrtScalar(value);
+
+        /// <summary>
+        /// void vst1_u8 (uint8_t * ptr, uint8x8_t val)
+        ///   A32: VST1.8 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(byte* address, Vector64<byte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_f64 (float64_t * ptr, float64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(double* address, Vector64<double> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s16 (int16_t * ptr, int16x4_t val)
+        ///   A32: VST1.16 { Dd }, [Rn]
+        ///   A64: ST1 {Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(short* address, Vector64<short> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s32 (int32_t * ptr, int32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(int* address, Vector64<int> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s64 (int64_t * ptr, int64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(long* address, Vector64<long> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s8 (int8_t * ptr, int8x8_t val)
+        ///   A32: VST1.8 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(sbyte* address, Vector64<sbyte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_f32 (float32_t * ptr, float32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(float* address, Vector64<float> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u16 (uint16_t * ptr, uint16x4_t val)
+        ///   A32: VST1.16 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ushort* address, Vector64<ushort> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u32 (uint32_t * ptr, uint32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(uint* address, Vector64<uint> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u64 (uint64_t * ptr, uint64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ulong* address, Vector64<ulong> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u8 (uint8_t * ptr, uint8x16_t val)
+        ///   A32: VST1.8 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(byte* address, Vector128<byte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_f64 (float64_t * ptr, float64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(double* address, Vector128<double> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s16 (int16_t * ptr, int16x8_t val)
+        ///   A32: VST1.16 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(short* address, Vector128<short> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s32 (int32_t * ptr, int32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(int* address, Vector128<int> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s64 (int64_t * ptr, int64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(long* address, Vector128<long> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s8 (int8_t * ptr, int8x16_t val)
+        ///   A32: VST1.8 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(sbyte* address, Vector128<sbyte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_f32 (float32_t * ptr, float32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(float* address, Vector128<float> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u16 (uint16_t * ptr, uint16x8_t val)
+        ///   A32: VST1.16 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ushort* address, Vector128<ushort> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u32 (uint32_t * ptr, uint32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(uint* address, Vector128<uint> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u64 (uint64_t * ptr, uint64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ulong* address, Vector128<ulong> source) => Store(address, source);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)

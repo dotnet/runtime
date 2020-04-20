@@ -1414,9 +1414,9 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
     ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, ThreadLocalStoragePointer));
 
-    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * (g_TlsIndex & 0xFFFF));
+    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * _tls_index);
 
-    ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
+    ThumbEmitLoadRegIndirect(dest, dest, (int)Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo));
 
 #endif // TARGET_UNIX
 }

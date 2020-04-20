@@ -142,6 +142,16 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.MinValue + new TimeSpan(-1)); // Result < TimeSpan.MinValue
         }
 
+        [Fact]
+        public static void FromMinMaxValue_DoesNotThrow()
+        {
+            TimeSpan maxTimeSpan = TimeSpan.FromDays(TimeSpan.MaxValue.TotalDays);
+            TimeSpan minTimeSpan = TimeSpan.FromDays(TimeSpan.MinValue.TotalDays);
+
+            Assert.Equal(TimeSpan.MaxValue, maxTimeSpan);
+            Assert.Equal(TimeSpan.MinValue, minTimeSpan);
+        }
+
         public static IEnumerable<object[]> CompareTo_TestData()
         {
             yield return new object[] { new TimeSpan(10000), new TimeSpan(10000), 0 };
@@ -283,7 +293,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(TimeSpan timeSpan1, object obj, bool expected)
+        public static void EqualsTest(TimeSpan timeSpan1, object obj, bool expected)
         {
             if (obj is TimeSpan)
             {
@@ -1101,7 +1111,7 @@ namespace System.Tests
         }
 
         [Theory, MemberData(nameof(ParseDifferentLengthFractionWithLeadingZerosData))]
-        public static void Multiplication(string input, TimeSpan expected)
+        public static void ParseDifferentLengthFractionWithLeadingZeros(string input, TimeSpan expected)
         {
             Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
             Assert.Equal(expected, TimeSpan.ParseExact(input, "g", CultureInfo.InvariantCulture));

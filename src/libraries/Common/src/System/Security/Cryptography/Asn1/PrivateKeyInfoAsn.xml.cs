@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Asn1
         internal byte Version;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn PrivateKeyAlgorithm;
         internal ReadOnlyMemory<byte> PrivateKey;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] Attributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? Attributes;
 
         internal void Encode(AsnWriter writer)
         {

@@ -156,6 +156,12 @@ file_for_dump_reason_breadcrumb (const char *directory, const char *dump_reason,
 	g_snprintf (buff, sizeof_buff, "%s%scrash_reason_%s", directory, G_DIR_SEPARATOR_S, dump_reason);
 }
 
+static void
+file_for_hash_breadcrumb (const char *directory, MonoStackHash hashes, gchar *buff, size_t sizeof_buff)
+{
+	g_snprintf (buff, sizeof_buff, "%s%scrash_hash_0x%" PRIx64 "", directory, G_DIR_SEPARATOR_S, (uint64_t)hashes.offset_rich_hash);
+}
+
 static void create_breadcrumb (const char *path)
 {
 	int handle = g_open (path, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
@@ -181,6 +187,14 @@ create_dump_reason_breadcrumb (const char *dump_reason)
 {
 	char out_file [200];
 	file_for_dump_reason_breadcrumb (log.directory, dump_reason, out_file, sizeof(out_file));
+	create_breadcrumb (out_file);
+}
+
+void
+mono_create_crash_hash_breadcrumb (MonoThreadSummary *thread)
+{
+	char out_file [200];
+	file_for_hash_breadcrumb (log.directory, thread->hashes, out_file, sizeof(out_file));
 	create_breadcrumb (out_file);
 }
 
@@ -327,7 +341,6 @@ mono_state_free_mem (MonoStateMem *mem)
 	if (!mem->mem)
 		return;
 
-  msync(mem->mem, mem->size, MS_SYNC);
 	munmap (mem->mem, mem->size);
 
 	// Note: We aren't calling msync on this file.

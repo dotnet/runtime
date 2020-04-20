@@ -177,7 +177,7 @@ namespace System.Collections.Concurrent
             if (boundedCapacity < 1)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(boundedCapacity), boundedCapacity,
+                    nameof(boundedCapacity), boundedCapacity,
                     SR.BlockingCollection_ctor_BoundedCapacityRange);
             }
             if (collection == null)
@@ -1707,7 +1707,7 @@ nameof(boundedCapacity), boundedCapacity,
             {
                 //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
                 throw new ArgumentOutOfRangeException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
+                    nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
             }
 
             for (int i = 0; i < collections.Length; ++i)
@@ -1720,7 +1720,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
 
                 if (collections[i]._isDisposed)
                     throw new ObjectDisposedException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
+                        nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
 
                 if (isAddOperation && collections[i].IsAddingCompleted)
                 {

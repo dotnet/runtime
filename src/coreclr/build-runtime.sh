@@ -21,7 +21,6 @@ export PYTHON
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-skiprestoreoptdata: skip restoring optimization data.")
 usage_list+=("-staticanalyzer: skip native image generation.")
 
 setup_dirs_local()
@@ -105,11 +104,6 @@ build_cross_architecture_components()
 handle_arguments_local() {
     case "$1" in
 
-        ignorewarnings|-ignorewarnings)
-            __IgnoreWarnings=1
-            __CMakeArgs="-DCLR_CMAKE_WARNINGS_ARE_ERRORS=OFF $__CMakeArgs"
-            ;;
-
         nopgooptimize|-nopgooptimize)
             __PgoOptimize=0
             __SkipRestoreOptData=1
@@ -149,7 +143,6 @@ __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
 __BuildArch=
 __BuildType=Debug
 __CodeCoverage=0
-__IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __Compiler=clang

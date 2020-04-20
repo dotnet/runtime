@@ -48,6 +48,7 @@ IF_DEF(LARGELDC, IS_NONE, JMP) // large constant pseudo-op (adrp + ldr)
 
 IF_DEF(EN9, IS_NONE, NONE)  // Instruction has 9 possible encoding types
 IF_DEF(EN6A, IS_NONE, NONE) // Instruction has 6 possible encoding types, type A
+IF_DEF(EN6B, IS_NONE, NONE) // Instruction has 6 possible encoding types, type B
 IF_DEF(EN5A, IS_NONE, NONE) // Instruction has 5 possible encoding types, type A
 IF_DEF(EN5B, IS_NONE, NONE) // Instruction has 5 possible encoding types, type B
 IF_DEF(EN5C, IS_NONE, NONE) // Instruction has 5 possible encoding types, type C
@@ -60,7 +61,6 @@ IF_DEF(EN4F, IS_NONE, NONE) // Instruction has 4 possible encoding types, type F
 IF_DEF(EN4G, IS_NONE, NONE) // Instruction has 4 possible encoding types, type G
 IF_DEF(EN4H, IS_NONE, NONE) // Instruction has 4 possible encoding types, type H
 IF_DEF(EN4I, IS_NONE, NONE) // Instruction has 4 possible encoding types, type I
-IF_DEF(EN4J, IS_NONE, NONE) // Instruction has 4 possible encoding types, type J
 IF_DEF(EN3A, IS_NONE, NONE) // Instruction has 3 possible encoding types, type A
 IF_DEF(EN3B, IS_NONE, NONE) // Instruction has 3 possible encoding types, type B
 IF_DEF(EN3C, IS_NONE, NONE) // Instruction has 3 possible encoding types, type C
@@ -70,6 +70,7 @@ IF_DEF(EN3F, IS_NONE, NONE) // Instruction has 3 possible encoding types, type F
 IF_DEF(EN3G, IS_NONE, NONE) // Instruction has 3 possible encoding types, type G
 IF_DEF(EN3H, IS_NONE, NONE) // Instruction has 3 possible encoding types, type H
 IF_DEF(EN3I, IS_NONE, NONE) // Instruction has 3 possible encoding types, type I
+IF_DEF(EN3J, IS_NONE, NONE) // Instruction has 3 possible encoding types, type J
 IF_DEF(EN2A, IS_NONE, NONE) // Instruction has 2 possible encoding types, type A
 IF_DEF(EN2B, IS_NONE, NONE) // Instruction has 2 possible encoding types, type B
 IF_DEF(EN2C, IS_NONE, NONE) // Instruction has 2 possible encoding types, type C
@@ -133,15 +134,20 @@ IF_DEF(LS_1A, IS_NONE, JMP)  // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      R
 IF_DEF(LS_2A, IS_NONE, NONE) // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
 IF_DEF(LS_2B, IS_NONE, NONE) // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
 IF_DEF(LS_2C, IS_NONE, NONE) // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      Rt Rn    imm(-256..+255) pre/post inc
-IF_DEF(LS_2D, IS_NONE, NONE) // LS_2D   .Q.............. xx.xssnnnnnttttt      Rn Vt
-IF_DEF(LS_2E, IS_NONE, NONE) // LS_2E   .Q.............. xx.Sssnnnnnttttt      Rn Vt[]
+IF_DEF(LS_2D, IS_NONE, NONE) // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn    Load/Store multiple structures       base register
+                             //                                                         Load single structure and replicate  base register
+IF_DEF(LS_2E, IS_NONE, NONE) // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn    Load/Store multiple structures       post-indexed by an immediate
+                             //                                                         Load single structure and replicate  post-indexed by an immediate
+IF_DEF(LS_2F, IS_NONE, NONE) // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          base register
+IF_DEF(LS_2G, IS_NONE, NONE) // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          post-indexed by an immediate
 IF_DEF(LS_3A, IS_NONE, NONE) // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
 IF_DEF(LS_3B, IS_NONE, NONE) // LS_3B   X............... .aaaaannnnnddddd      Rd Ra Rn
 IF_DEF(LS_3C, IS_NONE, NONE) // LS_3C   X.........iiiiii iaaaaannnnnddddd      Rd Ra Rn imm(im7,sh)
 IF_DEF(LS_3D, IS_NONE, NONE) // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
 IF_DEF(LS_3E, IS_NONE, NONE) // LS_3E   .X.........mmmmm ......nnnnnttttt      Rm Rt Rn ARMv8.1 LSE Atomics
-IF_DEF(LS_3F, IS_NONE, NONE) // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Rm Rn Vt
-IF_DEF(LS_3G, IS_NONE, NONE) // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Rm Rn Vt[]
+IF_DEF(LS_3F, IS_NONE, NONE) // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm   Load/Store multiple structures       post-indexed by a register
+                             //                                                           Load single structure and replicate  post-indexed by a register
+IF_DEF(LS_3G, IS_NONE, NONE) // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm Load/Store single structure          post-indexed by a register
 
 IF_DEF(DI_1A, IS_NONE, NONE) // DI_1A   X.......shiiiiii iiiiiinnnnn.....         Rn    imm(i12,sh)
 IF_DEF(DI_1B, IS_NONE, NONE) // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
@@ -166,7 +172,6 @@ IF_DEF(DR_2F, IS_NONE, NONE) // DR_2F   X.......sh.mmmmm ssssss.....ddddd      R
 IF_DEF(DR_2G, IS_NONE, NONE) // DR_2G   X............... ......nnnnnddddd      Rd Rn
 IF_DEF(DR_2H, IS_NONE, NONE) // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
 IF_DEF(DR_2I, IS_NONE, NONE) // DR_2I   X..........mmmmm cccc..nnnnn.nzcv      Rn Rm    nzcv cond
-IF_DEF(DR_2J, IS_NONE, NONE) // DR_2J   ................ ......nnnnnddddd      Sd Sn
 
 IF_DEF(DR_3A, IS_NONE, NONE) // DR_3A   X..........mmmmm ......nnnnnddddd      Rd Rn Rm
 IF_DEF(DR_3B, IS_NONE, NONE) // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
@@ -200,6 +205,7 @@ IF_DEF(DV_2Q, IS_NONE, NONE) // DV_2Q   .........X...... ......nnnnnddddd      S
 IF_DEF(DV_2R, IS_NONE, NONE) // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
 IF_DEF(DV_2S, IS_NONE, NONE) // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 IF_DEF(DV_2T, IS_NONE, NONE) // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv)
+IF_DEF(DV_2U, IS_NONE, NONE) // DV_2U   ................ ......nnnnnddddd      Sd Sn      (sha1h)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)

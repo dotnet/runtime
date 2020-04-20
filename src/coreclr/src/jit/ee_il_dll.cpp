@@ -340,7 +340,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
-        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
+        jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
     {
         // Since the ISAs can be disabled individually and since they are hierarchical in nature (that is
         // disabling SSE also disables SSE2 through AVX2), we need to check each ISA in the hierarchy to

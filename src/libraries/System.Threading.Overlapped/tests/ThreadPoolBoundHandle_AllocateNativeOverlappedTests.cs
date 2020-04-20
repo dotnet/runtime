@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/34502", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]

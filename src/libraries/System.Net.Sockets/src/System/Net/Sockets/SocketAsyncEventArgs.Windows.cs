@@ -273,6 +273,14 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
         {
+            // Called for connectionless protocols.
+            SocketError socketError = SocketPal.Connect(handle, _socketAddress!.Buffer, _socketAddress.Size);
+            FinishOperationSync(socketError, 0, SocketFlags.None);
+            return socketError;
+        }
+
+        internal unsafe SocketError DoOperationConnectEx(Socket socket, SafeSocketHandle handle)
+        {
             // ConnectEx uses a sockaddr buffer containing the remote address to which to connect.
             // It can also optionally take a single buffer of data to send after the connection is complete.
             // The sockaddr is pinned with a GCHandle to avoid having to use the object array form of UnsafePack.
@@ -1160,6 +1168,13 @@ namespace System.Net.Sockets
         {
             try
             {
+                if (_currentSocket!.SocketType != SocketType.Stream)
+                {
+                    // With connectionless sockets, regular connect is used instead of ConnectEx,
+                    // attempting to set SO_UPDATE_CONNECT_CONTEXT will result in an error.
+                    return SocketError.Success;
+                }
+
                 // Update the socket context.
                 SocketError socketError = Interop.Winsock.setsockopt(
                     _currentSocket!.SafeHandle,

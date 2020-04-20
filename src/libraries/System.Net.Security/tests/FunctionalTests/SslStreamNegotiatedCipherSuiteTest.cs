@@ -715,13 +715,17 @@ namespace System.Net.Security.Tests
                 {
                     // send some bytes, make sure they can talk
                     byte[] data = new byte[] { 1, 2, 3 };
-                    server.WriteAsync(data, 0, data.Length);
-
+                    byte[] receivedData = new byte[1];
+                    Task serverTask = server.WriteAsync(data, 0, data.Length);
                     for (int i = 0; i < data.Length; i++)
                     {
-                        Assert.Equal(data[i], client.ReadByte());
+                        Assert.True(client.ReadAsync(receivedData, 0, 1).Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
+                                                                        $"Read task failed to finish in {TestConfiguration.PassingTestTimeoutMilliseconds}ms.");
+                        Assert.Equal(data[i], receivedData[0]);
                     }
 
+                    Assert.True(serverTask.Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
+                                $"WriteTask failed to finish in {TestConfiguration.PassingTestTimeoutMilliseconds}ms.");
                     return new NegotiatedParams(server, client);
                 }
                 else

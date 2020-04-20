@@ -67,15 +67,26 @@ namespace System.StubHelpers
                 // + 1 for the null character from the user.  + 1 for the null character we put in.
                 nb = checked((strManaged.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1);
 
+                bool didAlloc = false;
+
                 // Use the pre-allocated buffer (allocated by localloc IL instruction) if not NULL,
                 // otherwise fallback to AllocCoTaskMem
                 if (pbNativeBuffer == null)
                 {
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb);
+                    didAlloc = true;
                 }
 
-                nb = Marshal.StringToAnsiString(strManaged, pbNativeBuffer, nb,
-                    bestFit: 0 != (flags & 0xFF), throwOnUnmappableChar: 0 != (flags >> 8));
+                try
+                {
+                    nb = Marshal.StringToAnsiString(strManaged, pbNativeBuffer, nb,
+                        bestFit: 0 != (flags & 0xFF), throwOnUnmappableChar: 0 != (flags >> 8));
+                }
+                catch (Exception) when (didAlloc)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pbNativeBuffer);
+                    throw;
+                }
             }
             else
             {
@@ -690,7 +701,7 @@ namespace System.StubHelpers
         internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static extern object ConvertToManaged(IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);

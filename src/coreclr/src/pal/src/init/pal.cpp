@@ -359,18 +359,32 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
+        // Initialize the thread local storage  
+        if (FALSE == TLSInitialize())
+        {
+            palError = ERROR_PALINIT_TLS;
+            goto done;
+        }
+
+        // Initialize debug channel settings before anything else.
+        if (FALSE == DBG_init_channels())
+        {
+            palError = ERROR_PALINIT_DBG_CHANNELS;
+            goto CLEANUP0a;
+        }
+
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
         gSharedFilesPath = InternalNew<PathCharString>();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto done;
+            goto CLEANUP0a;
         }
 
         if (INIT_SharedFilesPath() == FALSE)
         {
-            goto done;
+            goto CLEANUP0a;
         }
 
         fFirstTimeInit = true;
@@ -400,25 +414,12 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        // Initialize the TLS lookaside cache
-        if (FALSE == TLSInitialize())
-        {
-            goto done;
-        }
-
         InitializeCGroup();
 
         // Initialize the environment.
         if (FALSE == EnvironInitialize())
         {
-            goto CLEANUP0;
-        }
-
-        // Initialize debug channel settings before anything else.
-        // This depends on the environment, so it must come after
-        // EnvironInitialize.
-        if (FALSE == DBG_init_channels())
-        {
+            palError = ERROR_PALINIT_ENV;
             goto CLEANUP0;
         }
 
@@ -432,6 +433,7 @@ Initialize(
         if (!SharedMemoryManager::StaticInitialize())
         {
             ERROR("Shared memory static initialization failed!\n");
+            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
             goto CLEANUP0;
         }
 
@@ -439,6 +441,7 @@ Initialize(
         if (!SHMInitialize())
         {
             ERROR("Shared memory initialization failed!\n");
+            palError = ERROR_PALINIT_SHM;
             goto CLEANUP0;
         }
 
@@ -459,7 +462,7 @@ Initialize(
         if (!SEHInitializeMachExceptions(flags))
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
-            palError = ERROR_GEN_FAILURE;
+            palError = ERROR_PALINIT_INITIALIZE_MACH_EXCEPTION;
             goto CLEANUP1;
         }
 #endif // HAVE_MACH_EXCEPTIONS
@@ -489,7 +492,7 @@ Initialize(
         if (FALSE == LOADInitializeModules())
         {
             ERROR("Unable to initialize module manager\n");
-            palError = ERROR_INTERNAL_ERROR;
+            palError = ERROR_PALINIT_MODULE_MANAGER;
             goto CLEANUP1b;
         }
 
@@ -542,6 +545,7 @@ Initialize(
         if (NULL == command_line)
         {
             ERROR("Error building command line\n");
+            palError = ERROR_PALINIT_COMMAND_LINE;
             goto CLEANUP1d;
         }
 
@@ -550,13 +554,8 @@ Initialize(
         if (NULL == exe_path)
         {
             ERROR("Unable to find exe path\n");
+            palError = ERROR_PALINIT_CONVERT_EXE_PATH;
             goto CLEANUP1e;
-        }
-
-        if (NULL == command_line || NULL == exe_path)
-        {
-            ERROR("Failed to process command-line parameters!\n");
-            goto CLEANUP2;
         }
 
         palError = InitializeProcessCommandLine(
@@ -577,6 +576,7 @@ Initialize(
         if(FALSE == PERFInitialize(command_line, exe_path))
         {
             ERROR("Performance profiling initial failed\n");
+            palError = ERROR_PALINIT_PERF;
             goto CLEANUP2;
         }
         PERFAllocThreadInfo();
@@ -585,6 +585,7 @@ Initialize(
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
+            palError = ERROR_PALINIT_SET_EXE_NAME;
             goto CLEANUP2;
         }
 
@@ -609,6 +610,7 @@ Initialize(
         if (FALSE == TIMEInitialize())
         {
             ERROR("Unable to initialize TIME support\n");
+            palError = ERROR_PALINIT_TIME;
             goto CLEANUP6;
         }
 
@@ -616,6 +618,7 @@ Initialize(
         if (FALSE == MAPInitialize())
         {
             ERROR("Unable to initialize file mapping support\n");
+            palError = ERROR_PALINIT_MAP;
             goto CLEANUP6;
         }
 
@@ -624,6 +627,7 @@ Initialize(
         if (FALSE == VIRTUALInitialize(initializeExecutableMemoryAllocator))
         {
             ERROR("Unable to initialize virtual memory support\n");
+            palError = ERROR_PALINIT_VIRTUAL;
             goto CLEANUP10;
         }
 
@@ -644,6 +648,7 @@ Initialize(
         if (FALSE == SEHInitialize(pThread, flags))
         {
             ERROR("Unable to initialize SEH support\n");
+            palError = ERROR_PALINIT_SEH;
             goto CLEANUP13;
         }
 
@@ -653,6 +658,7 @@ Initialize(
             if (!FILEInitStdHandles())
             {
                 ERROR("Unable to initialize standard file handles\n");
+                palError = ERROR_PALINIT_STD_HANDLES;
                 goto CLEANUP14;
             }
         }
@@ -660,12 +666,14 @@ Initialize(
         if (FALSE == CRTInitStdStreams())
         {
             ERROR("Unable to initialize CRT standard streams\n");
+            palError = ERROR_PALINIT_STD_STREAMS;
             goto CLEANUP15;
         }
 
         if (FALSE == NUMASupportInitialize())
         {
             ERROR("Unable to initialize NUMA support\n");
+            palError = ERROR_PALINIT_NUMA;
             goto CLEANUP15;
         }
 
@@ -716,6 +724,7 @@ CLEANUP1:
     SHMCleanup();
 CLEANUP0:
     CleanupCGroup();
+CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
@@ -794,12 +803,12 @@ PAL_InitializeCoreCLR(const char *szExePath)
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
-        return ERROR_GEN_FAILURE;
+        return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
 
     if (!InitializeFlushProcessWriteBuffers())
     {
-        return ERROR_GEN_FAILURE;
+        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
     }
 
     return ERROR_SUCCESS;

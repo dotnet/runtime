@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 using Internal.Runtime.CompilerServices;
 
@@ -442,7 +441,7 @@ namespace System
             Debug.Assert(valueLength >= 0);
 
             if (valueLength == 0)
-                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+                return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
             T valueHead = value;
             ref T valueTail = ref Unsafe.Add(ref value, 1);

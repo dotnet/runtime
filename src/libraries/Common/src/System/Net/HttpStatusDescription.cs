@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Net
 {
     internal static class HttpStatusDescription
     {
-        internal static string Get(HttpStatusCode code) =>
+        internal static string? Get(HttpStatusCode code) =>
             Get((int)code);
 
-        internal static string Get(int code) =>
+        internal static string? Get(int code) =>
             code switch
             {
                 100 => "Continue",

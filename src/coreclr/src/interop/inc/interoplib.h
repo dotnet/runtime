@@ -45,6 +45,12 @@ namespace InteropLib
         // Reactivate the supplied wrapper.
         HRESULT ReactivateWrapper(_In_ IUnknown* wrapper, _In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
+        // Get the object for the supplied wrapper
+        HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept;
+
+        HRESULT MarkComActivated(_In_ IUnknown* wrapper) noexcept;
+        HRESULT IsComActivated(_In_ IUnknown* wrapper) noexcept;
+
         struct ExternalWrapperResult
         {
             // The returned context memory is guaranteed to be initialized to zero.

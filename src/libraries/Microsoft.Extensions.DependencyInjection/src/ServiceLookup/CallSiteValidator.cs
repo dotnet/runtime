@@ -29,12 +29,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (serviceType == scopedService)
                 {
                     throw new InvalidOperationException(
-                        Resources.FormatDirectScopedResolvedFromRootException(serviceType,
+                        SR.Format(SR.DirectScopedResolvedFromRootException, serviceType,
                             nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
                 }
 
                 throw new InvalidOperationException(
-                    Resources.FormatScopedResolvedFromRootException(
+                    SR.Format(SR.ScopedResolvedFromRootException,
                         serviceType,
                         scopedService,
                         nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
             if (state.Singleton != null)
             {
-                throw new InvalidOperationException(Resources.FormatScopedInSingletonException(
+                throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
                     scopedCallSite.ServiceType,
                     state.Singleton.ServiceType,
                     nameof(ServiceLifetime.Scoped).ToLowerInvariant(),

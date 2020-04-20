@@ -520,7 +520,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			image->heap_tables.size = read32 (ptr + 4);
 			ptr += 8 + 3;
 			image->uncompressed_metadata = TRUE;
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).", image->name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).", image->name);
 		} else if (strncmp (ptr + 8, "#Pdb", 5) == 0) {
 			image->heap_pdb.data = image->raw_metadata + read32 (ptr);
 			image->heap_pdb.size = read32 (ptr + 4);
@@ -1382,9 +1382,9 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (!image->ref_only && mono_is_problematic_image (image)) {
 		if (image->load_from_context) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
 			if (status)
 				*status = MONO_IMAGE_IMAGE_INVALID;
 			goto invalid_image;
@@ -1411,7 +1411,7 @@ done:
 
 invalid_image:
 	if (!is_ok (error)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Could not load image %s due to %s", image->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Could not load image %s due to %s", image->name, mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 	MONO_PROFILER_RAISE (image_failed, (image));
@@ -2351,7 +2351,7 @@ mono_image_close_except_pools (MonoImage *image)
 
 	MONO_PROFILER_RAISE (image_unloading, (image));
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
 
 	mono_image_invoke_unload_hook (image);
 
@@ -2402,6 +2402,8 @@ mono_image_close_except_pools (MonoImage *image)
 		char *old_name = image->name;
 		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
 		g_free (old_name);
+		g_free (image->filename);
+		image->filename = NULL;
 	} else {
 		g_free (image->name);
 		g_free (image->filename);
@@ -2449,10 +2451,6 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->weak_field_indexes);
 
 	mono_wrapper_caches_free (&image->wrapper_caches);
-
-	for (i = 0; i < image->gshared_types_len; ++i)
-		free_hash (image->gshared_types [i]);
-	g_free (image->gshared_types);
 
 	/* The ownership of signatures is not well defined */
 	g_hash_table_destroy (image->memberref_signatures);

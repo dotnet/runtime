@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\Common\tests\CoreFx.Private.TestUtilities.Unicode\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\tests\TestUtilities.Unicode\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,7 +36,7 @@
       <Link>UnicodeData\DerivedName.txt</Link>
       <LogicalName>DerivedName.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\emoji\$(UnicodeUcdVersion)\emoji-data.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\emoji\emoji-data.txt">
       <Link>UnicodeData\emoji-data.txt</Link>
       <LogicalName>emoji-data.txt</LogicalName>
     </EmbeddedResource>

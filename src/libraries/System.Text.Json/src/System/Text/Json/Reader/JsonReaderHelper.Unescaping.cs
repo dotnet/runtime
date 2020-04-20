@@ -25,14 +25,13 @@ namespace System.Text.Json
             utf8Unescaped = utf8Unescaped.Slice(0, written);
             Debug.Assert(!utf8Unescaped.IsEmpty);
 
-            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes);
+            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
             if (unescapedArray != null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
             }
-
             return result;
         }
 

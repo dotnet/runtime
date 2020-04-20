@@ -86,14 +86,13 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            bool ret = VerifyData(data);
-
-            if (ret)
+            if (VerifyData(data))
             {
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForHash(
@@ -111,14 +110,13 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            bool ret = VerifyHash(hash, PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
-
-            if (ret)
+            if (VerifyHash(hash, PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm)))
             {
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForHash(
@@ -141,18 +139,17 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            bool ret = VerifyHash(hash, hashAlgorithmId.Value);
-
-            if (ret)
+            if (VerifyHash(hash, hashAlgorithmId.Value))
             {
                 // REVIEW: Should this return the cert, or new X509Certificate2(cert.RawData)?
                 // SignedCms.SignerInfos builds new objects each call, which makes
                 // ReferenceEquals(cms.SignerInfos[0].Certificate, cms.SignerInfos[0].Certificate) be false.
                 // So maybe it's weird to give back a cert we've copied from that?
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForSignerInfo(

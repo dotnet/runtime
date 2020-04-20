@@ -4,10 +4,15 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if SYSTEM_PRIVATE_CORELIB
 #if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
@@ -15,18 +20,22 @@ using nuint = System.UInt64;
 using nint = System.Int32;
 using nuint = System.UInt32;
 #endif // TARGET_64BIT
+#else
+using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
+using nuint = System.UInt64;
+#endif
 
 namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
-#if DEBUG
+#if DEBUG && SYSTEM_PRIVATE_CORELIB
         private static void _ValidateAdditionalNIntDefinitions()
         {
             Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
             Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
         }
-#endif // DEBUG
+#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
 
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
@@ -411,7 +420,7 @@ namespace System.Text.Unicode
                     // in to the text. If this happens strip it off now before seeing if the next character
                     // consists of three code units.
 
-                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte hanging off the end
+                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte from the end.
 
                     nint asciiAdjustment;
                     if (BitConverter.IsLittleEndian)

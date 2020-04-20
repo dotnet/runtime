@@ -60,19 +60,19 @@ namespace Windows.Foundation
             return ConvertToString(null /* format string */, null /* format provider */);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
             // Delegate to the internal method which implements all ToString calls.
             return ConvertToString(null /* format string */, provider);
         }
 
-        string IFormattable.ToString(string format, IFormatProvider provider)
+        string IFormattable.ToString(string? format, IFormatProvider? provider)
         {
             // Delegate to the internal method which implements all ToString calls.
             return ConvertToString(format, provider);
         }
 
-        private string ConvertToString(string format, IFormatProvider provider)
+        private string ConvertToString(string? format, IFormatProvider? provider)
         {
             // Helper to get the numeric list separator for a given culture.
             char separator = TokenizerHelper.GetNumericListSeparator(provider);
@@ -94,7 +94,7 @@ namespace Windows.Foundation
             return !(point1 == point2);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return o is Point && this == (Point)o;
         }

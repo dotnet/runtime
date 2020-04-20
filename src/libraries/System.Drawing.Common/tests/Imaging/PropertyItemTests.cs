@@ -40,6 +40,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34592", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Properties_TestData))]
         public void Properties_SetValues_ReturnsExpected(int id, int len, short type, byte[] value)

@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal System.Security.Cryptography.Pkcs.Asn1.OriginatorInfoAsn? OriginatorInfo;
         internal System.Security.Cryptography.Pkcs.Asn1.RecipientInfoAsn[] RecipientInfos;
         internal System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn EncryptedContentInfo;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] UnprotectedAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? UnprotectedAttributes;
 
         internal void Encode(AsnWriter writer)
         {

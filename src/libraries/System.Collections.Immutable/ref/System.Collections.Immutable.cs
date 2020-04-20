@@ -485,6 +485,7 @@ namespace System.Collections.Immutable
             public bool Remove(T item) { throw null; }
             public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+            public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
             void System.Collections.Generic.ICollection<T>.Add(T item) { }
             void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
@@ -1021,6 +1022,7 @@ namespace System.Collections.Immutable
             public System.Collections.Generic.IEnumerable<T> Reverse() { throw null; }
             public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+            public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
             void System.Collections.Generic.ICollection<T>.Add(T item) { }
             void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }

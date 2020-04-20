@@ -33,5 +33,17 @@ namespace ILCompiler
 
             return method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute");
         }
+
+        /// <summary>
+        /// Return true when the method is marked as non-versionable. Non-versionable methods
+        /// may be freely inlined into ReadyToRun images even when they don't reside in the
+        /// same version bubble as the module being compiled.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
+        public static bool IsNonVersionable(this MethodDesc method)
+        {
+            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+        }
     }
 }

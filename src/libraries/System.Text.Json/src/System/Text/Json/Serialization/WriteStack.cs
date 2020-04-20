@@ -74,7 +74,7 @@ namespace System.Text.Json
 
             if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
-                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty;
+                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             }
 
             if (options.ReferenceHandling.ShouldWritePreservedReferences())
@@ -102,7 +102,7 @@ namespace System.Text.Json
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty;
+                    Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
                 }
             }
             else if (_continuationCount == 1)

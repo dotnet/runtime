@@ -17,12 +17,12 @@ namespace System.Net.Mail
             _reader = reader;
         }
 
-        internal IAsyncResult BeginReadLines(AsyncCallback callback, object state)
+        internal IAsyncResult BeginReadLines(AsyncCallback? callback, object? state)
         {
             return _reader.BeginReadLines(this, callback, state);
         }
 
-        internal IAsyncResult BeginReadLine(AsyncCallback callback, object state)
+        internal IAsyncResult BeginReadLine(AsyncCallback? callback, object? state)
         {
             return _reader.BeginReadLine(this, callback, state);
         }

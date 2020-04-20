@@ -387,7 +387,7 @@ namespace System.Net.Security
 
             try
             {
-                NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject;
+                NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject!;
                 TaskToApm.End(transportResult);
                 if (asyncRequest.Count == 0)
                 {
@@ -414,7 +414,7 @@ namespace System.Net.Security
             // Async ONLY completion.
             try
             {
-                NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject;
+                NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject!;
                 BufferAsyncResult bufferResult = (BufferAsyncResult)asyncRequest.UserAsyncResult;
 
                 // This is an optimization to avoid an additional callback.

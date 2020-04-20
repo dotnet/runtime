@@ -4,9 +4,7 @@
     <RootNamespace>System.Private.DataContractSerialization</RootNamespace>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- Too much private reflection. Do not bother with trimming -->

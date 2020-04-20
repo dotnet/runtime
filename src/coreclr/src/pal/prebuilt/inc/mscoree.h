@@ -70,9 +70,6 @@ extern "C"{
 /* interface __MIDL_itf_mscoree_0000_0000 */
 /* [local] */ 
 
-#define DECLARE_DEPRECATED 
-#define DEPRECATED_CLR_STDAPI STDAPI
-
 struct IActivationFactory;
 
 struct IHostControl;
@@ -872,10 +869,6 @@ EXTERN_C const IID IID_ICLRRuntimeHost4;
 
 /* interface __MIDL_itf_mscoree_0000_0003 */
 /* [local] */ 
-
-#undef DEPRECATED_CLR_STDAPI
-#undef DECLARE_DEPRECATED
-#undef DEPRECATED_CLR_API_MESG
 
 
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0003_v0_0_c_ifspec;

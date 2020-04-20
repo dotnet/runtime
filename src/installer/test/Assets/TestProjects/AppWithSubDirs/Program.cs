@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Reflection;
 
 namespace AppWithSubDirs
 {
@@ -12,10 +11,7 @@ namespace AppWithSubDirs
     {
         public static void Main(string[] args)
         {
-            string baseDir =
-                Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                    "Sentence");
+            string baseDir = Path.Combine(AppContext.BaseDirectory, "Sentence");
 
             string Part(string dir="", string subdir="", string subsubdir="")
             {

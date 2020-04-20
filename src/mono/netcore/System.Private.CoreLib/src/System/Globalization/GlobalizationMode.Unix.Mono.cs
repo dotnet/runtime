@@ -6,28 +6,31 @@ using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-	partial class GlobalizationMode
-	{
-		static bool GetGlobalizationInvariantMode ()
-		{
-			bool invariantEnabled = GetInvariantSwitchValue ();
-			if (invariantEnabled)
-				return true;
+    internal partial class GlobalizationMode
+    {
+        internal static bool UseNls => false;
 
-			LoadICU ();
-			return false;
-		}
+        private static bool GetGlobalizationInvariantMode()
+        {
+            bool invariantEnabled = GetInvariantSwitchValue();
+            if (invariantEnabled)
+                return true;
 
-		// Keep this in a separate method to avoid loading the native lib in invariant mode
-		[MethodImplAttribute (MethodImplOptions.NoInlining)]
-		static void LoadICU ()
-		{
-			int res = Interop.Globalization.LoadICU ();
-			if (res == 0) {
-				string message = "Couldn't find a valid ICU package installed on the system. " +
-					"Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
-				Environment.FailFast (message);
-			}
-		}
-	}
+            LoadICU();
+            return false;
+        }
+
+        // Keep this in a separate method to avoid loading the native lib in invariant mode
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void LoadICU()
+        {
+            int res = Interop.Globalization.LoadICU();
+            if (res == 0)
+            {
+                string message = "Couldn't find a valid ICU package installed on the system. " +
+                    "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
+                Environment.FailFast(message);
+            }
+        }
+    }
 }

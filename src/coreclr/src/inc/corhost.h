@@ -34,55 +34,13 @@
 #include "activation.h" // WinRT activation.
 #endif
 
-class DangerousNonHostedSpinLock;
-
 class AppDomain;
 class Assembly;
 
-
-class CorRuntimeHostBase
-{
-protected:
-    CorRuntimeHostBase()
-    :m_Started(FALSE),
-     m_cRef(0)
-    {LIMITED_METHOD_CONTRACT;}
-
-    STDMETHODIMP_(ULONG) AddRef(void);
-
-    // Starts the runtime. This is equivalent to CoInitializeCor()
-    STDMETHODIMP Start();
-
-protected:
-    BOOL        m_Started;              // Has START been called?
-
-    LONG        m_cRef;                 // Ref count.
-
-    static ULONG       m_Version;              // Version of ICorRuntimeHost.
-                                        // Some functions are only available in ICLRRuntimeHost.
-                                        // Some functions are no-op in ICLRRuntimeHost.
-
-    STDMETHODIMP UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone);
-
-    STDMETHODIMP UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode);
-public:
-    static ULONG GetHostVersion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_Version != 0);
-        return m_Version;
-    }
-
-};
-
-class CrstStatic;
-
-class CorHost2 :
-    public CorRuntimeHostBase
+class CorHost2 : ICLRRuntimeHost4
 #ifndef TARGET_UNIX
     , public IPrivateManagedExceptionReporting /* This interface is for internal Watson testing only*/
 #endif // TARGET_UNIX
-    , public ICLRRuntimeHost4
 {
     friend struct _DacGlobals;
 
@@ -92,11 +50,7 @@ public:
 
     // *** IUnknown methods ***
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
-    STDMETHODIMP_(ULONG) AddRef(void)
-    {
-        WRAPPER_NO_CONTRACT;
-        return CorRuntimeHostBase::AddRef();
-    }
+    STDMETHODIMP_(ULONG) AddRef(void);
     STDMETHODIMP_(ULONG) Release(void);
 
 
@@ -185,30 +139,14 @@ public:
     }
 
 private:
+    LONG        m_cRef;                 // COM ref count.
+
     // This flag indicates if this instance was the first to load and start CoreCLR
     BOOL m_fFirstToLoadCLR;
 
     // This flag will be used to ensure that a CoreCLR host can invoke Start/Stop in pairs only.
     BOOL m_fStarted;
     BOOL m_fAppDomainCreated; // this flag is used when an appdomain can only create a single appdomain
-
-    // Helpers for both ICLRRuntimeHost2
-    HRESULT _CreateAppDomain(
-        LPCWSTR wszFriendlyName,
-        DWORD  dwFlags,
-        LPCWSTR wszAppDomainManagerAssemblyName,
-        LPCWSTR wszAppDomainManagerTypeName,
-        int nProperties,
-        LPCWSTR* pPropertyNames,
-        LPCWSTR* pPropertyValues,
-        DWORD* pAppDomainID);
-
-    HRESULT _CreateDelegate(
-        DWORD appDomainID,
-        LPCWSTR wszAssemblyName,
-        LPCWSTR wszClassName,
-        LPCWSTR wszMethodName,
-        INT_PTR* fnPtr);
 
     // entrypoint helper to be wrapped in a filter to process unhandled exceptions
     VOID ExecuteMainInner(Assembly* pRootAssembly);

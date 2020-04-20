@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* b2e40020-6125-41e4-a0fc-821127ec192a */
-    0xb2e40020,
-    0x6125,
-    0x41e4,
-    {0xa0, 0xfc, 0x82, 0x11, 0x27, 0xec, 0x19, 0x2a}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 6ae798bf-44bd-4e8a-b8fc-dbe1d1f4029e */
+    0x6ae798bf,
+    0x44bd,
+    0x4e8a,
+    {0xb8, 0xfc, 0xdb, 0xe1, 0xd1, 0xf4, 0x02, 0x9e}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +337,8 @@ private:
         }
     }
 };
+
+#include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
@@ -630,6 +632,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
 
     CORINFO_HELP_COUNT,
 };
@@ -1082,6 +1086,11 @@ enum CorInfoHelperTailCallSpecialHandling
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
+
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
 
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
@@ -2145,6 +2154,16 @@ public:
             GSCookie ** ppCookieVal                    // OUT
             ) = 0;
 
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
+            ) = 0;
+
     /**********************************************************************************/
     //
     // ICorModuleInfo
@@ -3107,6 +3126,11 @@ public:
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert
                     ) = 0;
+
+    virtual void notifyInstructionSetUsage(
+                CORINFO_InstructionSet instructionSet,
+                bool supportEnabled
+            ) = 0;
 };
 
 /**********************************************************************************/

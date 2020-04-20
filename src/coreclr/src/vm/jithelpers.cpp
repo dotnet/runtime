@@ -54,6 +54,7 @@
 
 #include "runtimehandles.h"
 #include "castcache.h"
+#include "onstackreplacement.h"
 
 //========================================================================
 //
@@ -2608,7 +2609,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
 
         _ASSERTE(allocPtr != nullptr);
         ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetArrayMethodTable(pArrayMT);
+        array->SetMethodTable(pArrayMT);
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
 
@@ -2667,7 +2668,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 
         _ASSERTE(allocPtr != nullptr);
         ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetArrayMethodTable(pArrayMT);
+        array->SetMethodTable(pArrayMT);
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
 
@@ -3230,7 +3231,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
-            _ASSERT(ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature)) == pModule);
+            _ASSERT(ReadyToRunInfo::IsNativeImageSharedBy(pModule, ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature))));
 #endif
             dictionaryIndex = (dictionaryIndexAndSlot >> 16);
         }
@@ -4780,34 +4781,47 @@ HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDL
 HCIMPLEND
 
 /*************************************************************/
-HCIMPL0(VOID, JIT_PollGC)
+// Slow helper to tailcall from the fast one
+NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
 {
     BEGIN_PRESERVE_LAST_ERROR;
 
     FCALL_CONTRACT;
-
     FC_GC_POLL_NOT_NEEDED();
 
-    Thread  *thread = GetThread();
-    if (thread->CatchAtSafePointOpportunistic())    // Does someone want this thread stopped?
-    {
-        HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
+    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
 #ifdef _DEBUG
-        BOOL GCOnTransition = FALSE;
-        if (g_pConfig->FastGCStressLevel()) {
-            GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-        }
-#endif // _DEBUG
-        CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GC_ON_TRANSITIONS (GCOnTransition);
-        }
-#endif // _DEBUG
-        HELPER_METHOD_FRAME_END();
+    BOOL GCOnTransition = FALSE;
+    if (g_pConfig->FastGCStressLevel()) {
+        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
     }
-
+#endif // _DEBUG
+    CommonTripThread();         // Indicate we are at a GC safe point
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GC_ON_TRANSITIONS (GCOnTransition);
+    }
+#endif // _DEBUG
+    HELPER_METHOD_FRAME_END();
     END_PRESERVE_LAST_ERROR;
+}
+HCIMPLEND
+
+HCIMPL0(VOID, JIT_PollGC)
+{
+    FCALL_CONTRACT;
+
+    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
+    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+        return;
+
+    // Does someone want this thread stopped?
+    if (!GetThread()->CatchAtSafePointOpportunistic())
+        return;
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    HCCALL0(JIT_PollGC_Framed);
 }
 HCIMPLEND
 
@@ -5004,6 +5018,331 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
 }
 HCIMPLEND
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+// Helper method to jit the OSR version of a method.
+//
+// Returns the address of the jitted code.
+// Returns NULL if osr method can't be created.
+static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
+{
+    PCODE osrVariant = NULL;
+
+    GCX_PREEMP();
+
+    // Fetch the patchpoint info for the current method
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    PatchpointInfo* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+
+    if (patchpointInfo == NULL)
+    {
+        // Unexpected, but not fatal
+        STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to restore patchpoint info for Method=0x%pM\n", pMD);
+        return NULL;
+    }
+
+    // Set up a new native code version for the OSR variant of this method.
+    NativeCodeVersion osrNativeCodeVersion;
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        NativeCodeVersion currentNativeCodeVersion = codeInfo.GetNativeCodeVersion();
+        ILCodeVersion ilCodeVersion = currentNativeCodeVersion.GetILCodeVersion();
+        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1OSR, &osrNativeCodeVersion, patchpointInfo, ilOffset);
+        if (FAILED(hr))
+        {
+            // Unexpected, but not fatal
+            STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to add native code version for Method=0x%pM\n", pMD);
+            return NULL;
+        }
+    }
+
+    // Invoke the jit to compile the OSR version
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JitPatchpointWorker: creating OSR version of Method=0x%pM (%s::%s) at offset %d\n",
+        pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+
+    PrepareCodeConfigBuffer configBuffer(osrNativeCodeVersion);
+    PrepareCodeConfig *config = configBuffer.GetConfig();
+    osrVariant = pMD->PrepareCode(config);
+
+    return osrVariant;
+}
+
+// Helper method wrapper to set up a frame so we can invoke methods that might GC
+HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
+{
+    PCODE result = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    result = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+    HELPER_METHOD_FRAME_END();
+
+    return result;
+}
+HCIMPLEND
+
+// Jit helper invoked at a patchpoint.
+//
+// Checks to see if this is a known patchpoint, if not,
+// an entry is added to the patchpoint table.
+//
+// When the patchpoint has been hit often enough to trigger
+// a transition, create an OSR method.
+//
+// Currently, counter is a pointer into the Tier0 method stack
+// frame so we have exclusive access.
+
+void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // This method may not return normally
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // Patchpoint identity is the helper return address
+    PCODE ip = (PCODE)_ReturnAddress();
+
+    // Fetch or setup patchpoint info for this patchpoint.
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+
+    // In the current prototype, counter is shared by all patchpoints
+    // in a method, so no matter what happens below, we don't want to
+    // impair those other patchpoints.
+    //
+    // One might be tempted, for instance, to set the counter for
+    // invalid or ignored patchpoints to some high value to reduce
+    // the amount of back and forth with the runtime, but this would
+    // lock out other patchpoints in the method.
+    //
+    // So we always reset the counter to the bump value.
+    //
+    // In the prototype, counter is a location in a stack frame,
+    // so we can update it without worrying about other threads.
+    const int counterBump = g_pConfig->OSR_CounterBump();
+    *counter = counterBump;
+
+#if _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    // Is this a patchpoint that was previously marked as invalid? If so, just return to the Tier0 method.
+    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+        return;
+    }
+    
+    // See if we have an OSR method for this patchpoint.
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    bool isNewMethod = false;
+    
+    if (osrMethodCode == NULL)
+    {
+        // No OSR method yet, let's see if we should create one.
+        //
+        // First, optionally ignore some patchpoints to increase
+        // coverage (stress mode).
+        // 
+        // Because there are multiple patchpoints in a method, and
+        // each OSR method covers the remainder of the method from
+        // that point until the method returns, if we trigger on an
+        // early patchpoint in a method, we may never see triggers on
+        // a later one.
+
+#ifdef _DEBUG
+        const int lowId = g_pConfig->OSR_LowId();
+        const int highId = g_pConfig->OSR_HighId();
+        
+        if ((ppId < lowId) || (ppId > highId))
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+            return;
+        }
+#endif
+
+        // Second, only request the OSR method if this patchpoint has
+        // been hit often enough.
+        //
+        // Note the initial invocation of the helper depends on the
+        // initial counter value baked into jitted code (call this J);
+        // subsequent invocations depend on the counter bump (call
+        // this B).
+        //
+        // J and B may differ, so the total number of loop iterations
+        // before an OSR method is created is:
+        //
+        // J, if hitLimit <= 1;
+        // J + (hitLimit-1)* B, if hitLimit > 1;
+        //
+        // Current thinking is:
+        //
+        // J should be in the range of tens to hundreds, so that newly
+        // called Tier0 methods that already have OSR methods
+        // available can transition to OSR methods quickly, but
+        // methods called only a few times do not invoke this
+        // helper and so create PerPatchpoint runtime state.
+        //
+        // B should be in the range of hundreds to thousands, so that
+        // we're not too eager to create OSR methods (since there is
+        // some jit cost), but are eager enough to transition before
+        // we run too much Tier0 code.
+        //
+        const int hitLimit = g_pConfig->OSR_HitLimit();
+        const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
+        const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
+
+        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
+            ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
+        
+        // Defer, if we haven't yet reached the limit 
+        if (hitCount < hitLimit)
+        {
+            return;
+        }
+        
+        // Third, make sure no other thread is trying to create the OSR method.
+        LONG oldFlags = ppInfo->m_flags;
+        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            return;
+        }
+        
+        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+        
+        if (!triggerTransition)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            return;
+        }
+        
+        // Time to create the OSR method.
+        //
+        // We currently do this synchronously. We could instead queue
+        // up a request on some worker thread, like we do for
+        // rejitting, and return control to the Tier0 method. It may
+        // eventually return here, if the patchpoint is hit often
+        // enough.
+        //
+        // There is a chance the async version will create methods
+        // that are never used (just like there is a chance that Tier1
+        // methods are ever called).
+        //
+        // In this prototype we want to expose bugs in the jitted code
+        // for OSR methods, so we stick with synchronous creation.
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
+        
+        // Invoke the helper to build the OSR method
+        osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
+        
+        // If that failed, mark the patchpoint as invalid.
+        if (osrMethodCode == NULL)
+        {
+            // Unexpected, but not fatal
+            STRESS_LOG4(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, hitCount, pMD, ilOffset);
+            
+            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            return;
+        }
+        
+        // We've successfully created the osr method; make it available.
+        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        ppInfo->m_osrMethodCode = osrMethodCode;
+        isNewMethod = true;
+    }
+
+    // If we get here, we have code to transition to...
+    _ASSERTE(osrMethodCode != NULL);
+
+    Thread *pThread = GetThread();
+    
+#ifdef FEATURE_HIJACK
+    // We can't crawl the stack of a thread that currently has a hijack pending
+    // (since the hijack routine won't be recognized by any code manager). So we
+    // Undo any hijack, the EE will re-attempt it later.
+    pThread->UnhijackThread();
+#endif
+    
+    // Find context for the original method
+    CONTEXT frameContext;
+    frameContext.ContextFlags = CONTEXT_FULL;
+    RtlCaptureContext(&frameContext);
+    
+    // Walk back to the original method frame
+    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    
+    // Remember original method FP and SP because new method will inherit them.
+    UINT_PTR currentSP = GetSP(&frameContext);
+    UINT_PTR currentFP = GetFP(&frameContext);
+    
+    // We expect to be back at the right IP
+    if ((UINT_PTR)ip != GetIP(&frameContext))
+    {
+        // Should be fatal
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+    }
+    
+    // Now unwind back to the original method caller frame.
+    EECodeInfo callerCodeInfo(GetIP(&frameContext));
+    frameContext.ContextFlags = CONTEXT_FULL;
+    ULONG_PTR establisherFrame = 0;
+    PVOID handlerData = NULL;
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(), 
+        &frameContext, &handlerData, &establisherFrame, NULL);
+    
+    // Now, set FP and SP back to the values they had just before this helper was called,
+    // since the new method must have access to the original method frame.
+    //
+    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+    // use that to adjust the stack, likely saving some stack space.
+    
+#if defined(TARGET_AMD64)
+    // If calls push the return address, we need to simulate that here, so the OSR
+    // method sees the "expected" SP misalgnment on entry.
+    _ASSERTE(currentSP % 16 == 0);
+    currentSP -= 8;
+#endif
+    
+    SetSP(&frameContext, currentSP);
+    frameContext.Rbp = currentFP;
+    
+    // Note we can get here w/o triggering, if there is an existing OSR method and
+    // we hit the patchpoint.
+    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
+    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+
+    // Install new entry point as IP
+    SetIP(&frameContext, osrMethodCode);
+    
+    // Transition!
+    RtlRestoreContext(&frameContext, NULL);
+}
+
+#else
+
+void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // Stub version if OSR feature is disabled
+    //
+    // Should not be called.
+
+    UNREACHABLE();
+}
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
 //========================================================================
 //
 //      INTEROP HELPERS
@@ -5040,6 +5379,69 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
+
+// Forward declaration
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
+// This is a slower version of the reverse PInvoke enter function.
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+
+    Thread* thread = GetThreadNULLOk();
+    if (thread == NULL)
+        CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+    // Verify the current thread isn't in COOP mode.
+    if (thread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
+
+    frame->currentThread = thread;
+
+    thread->DisablePreemptiveGC();
+}
+
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
+{
+    frame->currentThread->RareDisablePreemptiveGC();
+}
+
+EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    Thread* thread = GetThreadNULLOk();
+
+    // If a thread instance exists and is in the
+    // correct GC mode attempt a quick transition.
+    if (thread != NULL
+        && !thread->PreemptiveGCDisabled())
+    {
+        frame->currentThread = thread;
+
+        // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+        if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+        {
+            return;
+        }
+
+        JIT_ReversePInvokeEnterRare2(frame);
+        return;
+    }
+
+    JIT_ReversePInvokeEnterRare(frame);
+}
+
+EXTERN_C void JIT_ReversePInvokeExit(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    _ASSERTE(frame->currentThread == GetThread());
+
+    // Manually inline the fast path in Thread::EnablePreemptiveGC().
+    // This is a trade off with GC suspend performance. We are opting
+    // to make this exit faster.
+    frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
+}
 
 //========================================================================
 //
@@ -5124,7 +5526,7 @@ void InitJITHelpers2()
 
     g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
 
-    // Allocate and initialize the table
+    // Allocate and initialize the generic handle cache
     NewHolder <JitGenericHandleCache> tempGenericHandleCache (new JitGenericHandleCache());
     LockOwner sLock = {&g_pJitGenericHandleCacheCrst, IsOwnerOfCrst};
     if (!tempGenericHandleCache->Init(59, &sLock))
@@ -5505,10 +5907,10 @@ void InitJitHelperLogging()
     {
 
 #ifdef TARGET_X86
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)g_pMSCorEE;
+        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)g_hThisInst;
         _ASSERTE(pDOS->e_magic == VAL16(IMAGE_DOS_SIGNATURE) && pDOS->e_lfanew != 0);
 
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)g_pMSCorEE + VAL32(pDOS->e_lfanew));
+        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)g_hThisInst + VAL32(pDOS->e_lfanew));
 #ifdef HOST_64BIT
         _ASSERTE(pNT->Signature == VAL32(IMAGE_NT_SIGNATURE)
             && pNT->FileHeader.SizeOfOptionalHeader == VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))
@@ -5612,7 +6014,7 @@ void InitJitHelperLogging()
 #else // TARGET_X86
                     // Is the address in mscoree.dll at all? (All helpers are in
                     // mscoree.dll)
-                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)g_pMSCorEE && dynamicHlpFunc->pfnHelper < (LPBYTE*)g_pMSCorEE + VAL32(pNT->OptionalHeader.SizeOfImage))
+                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)g_hThisInst && dynamicHlpFunc->pfnHelper < (LPBYTE*)g_hThisInst + VAL32(pNT->OptionalHeader.SizeOfImage))
                     {
                         // See note above. How do I get the size on x86 for a static method?
                         hlpFuncCount->helperSize = 0;

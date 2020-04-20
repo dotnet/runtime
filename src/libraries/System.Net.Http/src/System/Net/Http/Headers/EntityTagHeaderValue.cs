@@ -3,14 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class EntityTagHeaderValue : ICloneable
     {
-        private static EntityTagHeaderValue s_any;
+        private static EntityTagHeaderValue? s_any;
 
-        private string _tag;
+        private string _tag = null!;
         private bool _isWeak;
 
         public string Tag
@@ -82,9 +83,9 @@ namespace System.Net.Http.Headers
             return _tag;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            EntityTagHeaderValue other = obj as EntityTagHeaderValue;
+            EntityTagHeaderValue? other = obj as EntityTagHeaderValue;
 
             if (other == null)
             {
@@ -101,28 +102,27 @@ namespace System.Net.Http.Headers
             return _tag.GetHashCode() ^ _isWeak.GetHashCode();
         }
 
-        public static EntityTagHeaderValue Parse(string input)
+        public static EntityTagHeaderValue Parse(string? input)
         {
             int index = 0;
             return (EntityTagHeaderValue)GenericHeaderParser.SingleValueEntityTagParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out EntityTagHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out EntityTagHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueEntityTagParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueEntityTagParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (EntityTagHeaderValue)output;
+                parsedValue = (EntityTagHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetEntityTagLength(string input, int startIndex, out EntityTagHeaderValue parsedValue)
+        internal static int GetEntityTagLength(string? input, int startIndex, out EntityTagHeaderValue? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 

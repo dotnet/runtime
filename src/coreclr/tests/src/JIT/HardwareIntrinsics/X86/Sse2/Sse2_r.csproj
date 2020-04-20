@@ -215,6 +215,8 @@
     <Compile Include="ShuffleHigh.UInt16.1.cs" />
     <Compile Include="ShuffleLow.Int16.1.cs" />
     <Compile Include="ShuffleLow.UInt16.1.cs" />
+    <Compile Include="StoreScalar.Int32.cs" />
+    <Compile Include="StoreScalar.UInt32.cs" />
     <Compile Include="Subtract.Double.cs" />
     <Compile Include="Subtract.Byte.cs" />
     <Compile Include="Subtract.Int16.cs" />

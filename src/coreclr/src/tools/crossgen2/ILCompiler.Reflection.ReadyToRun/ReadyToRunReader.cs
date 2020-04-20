@@ -368,6 +368,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 PEReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
             }
+            else
+            {
+                ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
+                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+            }
 
             if (metadata == null && PEReader.HasMetadata)
             {
@@ -381,7 +386,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
 
-                Debug.Assert(!Composite);
                 _assemblyCache.Add(metadata);
 
                 DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
@@ -392,9 +396,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
             }
-
-            ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
-            Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
         }
 
         private void EnsureMethods()
@@ -702,8 +703,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
             {
-                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, this, (int)curParser.Offset);
                 MetadataReader mdReader = _composite ? null : _assemblyCache[0];
+                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, mdReader, this, (int)curParser.Offset);
 
                 string owningType = null;
 

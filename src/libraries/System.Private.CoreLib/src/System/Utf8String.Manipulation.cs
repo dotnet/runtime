@@ -10,7 +10,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System
 {
@@ -62,7 +65,12 @@ namespace System
             }
 
             Utf8String newString = FastAllocateSkipZeroInit(length);
+#if SYSTEM_PRIVATE_CORELIB
             Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref this.DangerousGetMutableReference(startIndex), (uint)length);
+#else
+            this.GetSpan().Slice(startIndex, length).CopyTo(newString.DangerousGetMutableSpan());
+#endif
+
             return newString;
         }
 
@@ -90,7 +98,11 @@ namespace System
             else
             {
                 Utf8String newString = FastAllocateSkipZeroInit(length);
+#if SYSTEM_PRIVATE_CORELIB
                 Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref this.DangerousGetMutableReference(startIndex), (uint)length);
+#else
+                this.GetSpan().Slice(startIndex, length).CopyTo(newString.DangerousGetMutableSpan());
+#endif
                 return newString;
             }
         }
@@ -644,7 +656,11 @@ namespace System
                         int searchRune = SearchRune; // local copy so as to avoid struct tearing
                         if (searchRune >= 0)
                         {
+#if NETCOREAPP3_0
+                            wasMatchFound = searchSpan.TryFind(new Rune((uint)searchRune), out matchRange);
+#else
                             wasMatchFound = searchSpan.TryFind(Rune.UnsafeCreate((uint)searchRune), out matchRange);
+#endif
                         }
                         else
                         {
@@ -739,3 +755,14 @@ namespace System
         }
     }
 }
+
+#if !SYSTEM_PRIVATE_CORELIB
+namespace System.Diagnostics
+{
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Struct, Inherited = false)]
+    internal sealed class StackTraceHiddenAttribute : Attribute
+    {
+        public StackTraceHiddenAttribute() { }
+    }
+}
+#endif

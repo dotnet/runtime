@@ -27,6 +27,7 @@
 #include "sdk_info.h"
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -262,6 +263,7 @@ namespace
         pal::string_t& runtime_config,
         const runtime_config_t::settings_t& override_settings)
     {
+        // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::realpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
@@ -293,6 +295,11 @@ namespace
 
     host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
     {
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            return host_mode_t::apphost;
+        }
+
         if (coreclr_exists_in_dir(host_info.dotnet_root))
         {
             // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
@@ -357,6 +364,7 @@ namespace
     {
         pal::string_t runtime_config = command_line::get_option_value(opts, known_options::runtime_config, _X(""));
 
+        // This check is for --depsfile option, which must be an actual file.
         pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
         if (!deps_file.empty() && !pal::realpath(&deps_file))
         {
@@ -1009,11 +1017,11 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET Core SDK is not installed."));
+        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
         trace::error(_X("Possible reasons for this include:"));
-        trace::error(_X("  * You intended to execute a .NET Core program:"));
+        trace::error(_X("  * You intended to execute a .NET program:"));
         trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET Core SDK command:"));
+        trace::error(_X("  * You intended to execute a .NET SDK command:"));
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
@@ -1023,7 +1031,7 @@ int fx_muxer_t::handle_cli(
 
     if (!pal::file_exists(sdk_dotnet))
     {
-        trace::error(_X("Found .NET Core SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        trace::error(_X("Found .NET SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
 
@@ -1035,7 +1043,7 @@ int fx_muxer_t::handle_cli(
     new_argv.push_back(sdk_dotnet.c_str());
     new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
-    trace::verbose(_X("Using .NET Core SDK dll=[%s]"), sdk_dotnet.c_str());
+    trace::verbose(_X("Using .NET SDK dll=[%s]"), sdk_dotnet.c_str());
 
     int new_argoff;
     pal::string_t sdk_app_candidate;

@@ -29,14 +29,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("1", val);
         }
 
-        [Fact]
-        public static void Read_ConcurrentCollection_Throws()
+        [Theory]
+        [InlineData(typeof(BlockingCollection<string>), @"[""1""]")] // Not supported. Not IList, and we don't detect the add method for this collection.
+        [InlineData(typeof(ConcurrentBag<string>), @"[""1""]")] // Not supported. Not IList, and we don't detect the add method for this collection.
+        public static void Read_ConcurrentCollection_Throws(Type type, string json)
         {
-            // Not supported. Not IList, and we don't detect the add method for this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<BlockingCollection<string>>(@"[""1""]"));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
+        }
 
-            // Not supported. Not IList, and we don't detect the add method for this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcurrentBag<string>>(@"[""1""]"));
+        [Theory]
+        [InlineData(typeof(GenericConcurrentQueuePrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericConcurrentQueueInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericConcurrentStackPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericConcurrentStackInternalConstructor<string>), @"[""1""]")]
+        public static void Read_ConcurrentCollection_NoPublicConstructor_Throws(Type type, string json)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
     }
 }

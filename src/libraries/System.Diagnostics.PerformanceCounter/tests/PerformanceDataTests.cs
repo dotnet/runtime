@@ -18,13 +18,16 @@ namespace System.Diagnostics.Tests
             _fixture = fixture;
         }
 
+        // We run the test only if the stress mode is enabled and the process is elvated.
+        private static bool IsRunnableEnvironnement => Helpers.IsElevatedAndCanWriteToPerfCounters && TestEnvironment.IsStressModeEnabled;
+
         /// <summary>
         /// This test was taken from System.Diagnostics.PerformanceData documentation https://msdn.microsoft.com/en-us/library/system.diagnostics.performancedata(v=vs.110).aspx
         /// To create provider.res file we've used some tools:
         /// ctrpp.exe -legacy provider.man
         /// rc.exe /r /i "c:\Program Files\Microsoft SDKs\Windows\v6.0\Include" provider.rc
         /// </summary>
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(nameof(PerformanceDataTests.IsRunnableEnvironnement))]
         public void PerformanceCounter_PerformanceData()
         {
             // We run test in isolated process to avoid interferences on internal performance counter shared state with other tests.

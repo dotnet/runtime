@@ -1,10 +1,12 @@
-if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+  include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -14,7 +16,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep)
 
   add_subdirectory(libunwind)
-elseif(NOT CLR_CMAKE_TARGET_DARWIN)
+elseif(NOT CLR_CMAKE_TARGET_OSX)
     if(CLR_CMAKE_HOST_ARCH_ARM)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
@@ -64,7 +66,7 @@ include_directories(include)
 
 # Compile options
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
@@ -74,7 +76,7 @@ if(CLR_CMAKE_TARGET_DARWIN)
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CLR_CMAKE_TARGET_DARWIN)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -109,6 +111,10 @@ endif(CLR_CMAKE_HOST_ALPINE_LINUX)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_compile_options(-Wno-unused-result)
+endif()
+
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
   arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
@@ -116,12 +122,12 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
-if(NOT CLR_CMAKE_TARGET_DARWIN)
+if(NOT CLR_CMAKE_TARGET_OSX)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_DARWIN)
+endif(NOT CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -166,7 +172,6 @@ set(SOURCES
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/heap.cpp
   memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
@@ -257,7 +262,7 @@ if(CLR_CMAKE_TARGET_LINUX)
   )
 endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
@@ -268,7 +273,7 @@ if(CLR_CMAKE_TARGET_DARWIN)
     ${SECURITY}
     ${SYSTEM}
   )
-endif(CLR_CMAKE_TARGET_DARWIN)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
@@ -286,34 +291,11 @@ if(CLR_CMAKE_TARGET_LINUX)
       pthread
       rt
     )
-  endif()
-
-  if(CLR_CMAKE_TARGET_ANDROID)
-    find_library(LZMA NAMES lzma)
-
-    if(LZMA STREQUAL LZMA-NOTFOUND)
-      message(FATAL_ERROR "Cannot find liblzma.")
-    endif(LZMA STREQUAL LZMA-NOTFOUND)
-
+  else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
-      gnustl_shared
-      android-support
-      android-glob
+      ${ANDROID_GLOB}
       ${LZMA})
-  endif()
-
-  if(CLR_MAKE_TARGET_ANDROID)
-    find_library(ANDROID_SUPPORT NAMES android-support)
-    find_library(ANDROID_GLOB NAMES android-glob)
-
-    if(ANDROID_SUPPORT STREQUAL ANDROID_SUPPORT-NOTFOUND)
-      message(FATAL_ERROR "Cannot find android-support.")
-    endif()
-
-    if(ANDROID_GLOB STREQUAL ANDROID_GLOB-NOTFOUND)
-      message(FATAL_ERROR "Cannot find android-glob.")
-    endif()
-  endif()
+  endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal
     dl

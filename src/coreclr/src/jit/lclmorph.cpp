@@ -1097,10 +1097,67 @@ private:
         {
             return;
         }
+
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for V%02d\n", varDsc->lvRefCnt(RCS_EARLY),
-                varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
+        JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for implict by-ref V%02d\n",
+                varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
         varDsc->incLvRefCnt(1, RCS_EARLY);
+
+        // See if this struct is an argument to a call. This information is recorded
+        // via the weighted early ref count for the local, and feeds the undo promotion
+        // heuristic.
+        //
+        // It can be approximate, so the pattern match below need not be exhaustive.
+        // But the pattern should at least subset the implicit byref cases that are
+        // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
+        //
+        // CALL(OBJ(ADDR(LCL_VAR...)))
+        bool isArgToCall   = false;
+        bool keepSearching = true;
+        for (int i = 0; i < m_ancestors.Height() && keepSearching; i++)
+        {
+            GenTree* node = m_ancestors.Top(i);
+            switch (i)
+            {
+                case 0:
+                {
+                    keepSearching = node->OperIs(GT_LCL_VAR);
+                }
+                break;
+
+                case 1:
+                {
+                    keepSearching = node->OperIs(GT_ADDR);
+                }
+                break;
+
+                case 2:
+                {
+                    keepSearching = node->OperIs(GT_OBJ);
+                }
+                break;
+
+                case 3:
+                {
+                    keepSearching = false;
+                    isArgToCall   = node->IsCall();
+                }
+                break;
+                default:
+                {
+                    keepSearching = false;
+                }
+                break;
+            }
+        }
+
+        if (isArgToCall)
+        {
+            JITDUMP("LocalAddressVisitor incrementing weighted ref count from %d to %d"
+                    " for implict by-ref V%02d arg passed to call\n",
+                    varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
+            varDsc->incLvRefCntWtd(1, RCS_EARLY);
+        }
     }
 };
 

@@ -2458,4 +2458,16 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 // @dbgtodo : Separating asserts and target consistency checks is tracked by DevDiv Bugs 31674
 #define TARGET_CONSISTENCY_CHECK(expr,msg) _ASSERTE_MSG(expr,msg)
 
+// For cross compilation, controlling type layout is important
+// We add a simple macro here which defines DAC_ALIGNAS to the C++11 alignas operator
+// This helps force the alignment of the next member
+// For most cross compilation cases the layout of types simply works
+// There are a few cases (where this macro is helpful) which are not consistent accross platforms:
+// - Base class whose size is padded to its align size.  On Linux the gcc/clang
+//   layouts will reuse this padding in the derived class for the first member
+// - Class with an vtable pointer and an alignment greater than the pointer size.
+//   The Windows compilers will align the first member to the alignment size of the
+//   class.  Linux will align the first member to its natural alignment
+#define DAC_ALIGNAS(a) alignas(a)
+
 #endif // #ifndef __daccess_h__

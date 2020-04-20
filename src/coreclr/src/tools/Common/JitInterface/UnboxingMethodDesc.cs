@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem;
@@ -79,17 +80,22 @@ namespace Internal.JitInterface
 #endif
     }
 
-    internal class UnboxingMethodDescFactory : Dictionary<MethodDesc, UnboxingMethodDesc>
+    internal class UnboxingMethodDescFactory : ConcurrentDictionary<MethodDesc, UnboxingMethodDesc>
     {
+        private Func<MethodDesc, UnboxingMethodDesc> _factoryDelegate;
+        private UnboxingMethodDesc CreateUnboxingMethod(MethodDesc method)
+        {
+            return new UnboxingMethodDesc(method, this);
+        }
+
+        public UnboxingMethodDescFactory()
+        {
+            _factoryDelegate = CreateUnboxingMethod;
+        }
+
         public UnboxingMethodDesc GetUnboxingMethod(MethodDesc method)
         {
-            if (!TryGetValue(method, out UnboxingMethodDesc result))
-            {
-                result = new UnboxingMethodDesc(method, this);
-                Add(method, result);
-            }
-
-            return result;
+            return GetOrAdd(method, _factoryDelegate);
         }
     }
 

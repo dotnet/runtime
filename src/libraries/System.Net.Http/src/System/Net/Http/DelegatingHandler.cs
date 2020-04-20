@@ -7,16 +7,18 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
     public abstract class DelegatingHandler : HttpMessageHandler
     {
-        private HttpMessageHandler _innerHandler;
+        private HttpMessageHandler? _innerHandler;
         private volatile bool _operationStarted = false;
         private volatile bool _disposed = false;
 
-        public HttpMessageHandler InnerHandler
+        [DisallowNull]
+        public HttpMessageHandler? InnerHandler
         {
             get
             {
@@ -51,7 +53,7 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
             SetOperationStarted();
-            return _innerHandler.SendAsync(request, cancellationToken);
+            return _innerHandler!.SendAsync(request, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

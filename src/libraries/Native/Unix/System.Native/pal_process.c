@@ -42,26 +42,6 @@ c_static_assert(PAL_LOG_WARNING == LOG_WARNING);
 c_static_assert(PAL_LOG_NOTICE == LOG_NOTICE);
 c_static_assert(PAL_LOG_INFO == LOG_INFO);
 c_static_assert(PAL_LOG_DEBUG == LOG_DEBUG);
-c_static_assert(PAL_LOG_KERN == LOG_KERN);
-c_static_assert(PAL_LOG_USER == LOG_USER);
-c_static_assert(PAL_LOG_MAIL == LOG_MAIL);
-c_static_assert(PAL_LOG_DAEMON == LOG_DAEMON);
-c_static_assert(PAL_LOG_AUTH == LOG_AUTH);
-c_static_assert(PAL_LOG_SYSLOG == LOG_SYSLOG);
-c_static_assert(PAL_LOG_LPR == LOG_LPR);
-c_static_assert(PAL_LOG_NEWS == LOG_NEWS);
-c_static_assert(PAL_LOG_UUCP == LOG_UUCP);
-c_static_assert(PAL_LOG_CRON == LOG_CRON);
-c_static_assert(PAL_LOG_AUTHPRIV == LOG_AUTHPRIV);
-c_static_assert(PAL_LOG_FTP == LOG_FTP);
-c_static_assert(PAL_LOG_LOCAL0 == LOG_LOCAL0);
-c_static_assert(PAL_LOG_LOCAL1 == LOG_LOCAL1);
-c_static_assert(PAL_LOG_LOCAL2 == LOG_LOCAL2);
-c_static_assert(PAL_LOG_LOCAL3 == LOG_LOCAL3);
-c_static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4);
-c_static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5);
-c_static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6);
-c_static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7);
 
 // Validate that out PriorityWhich values are correct for the platform
 c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
@@ -220,6 +200,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stdoutFd,
                                       int32_t* stderrFd)
 {
+#if HAVE_FORK
 #if !HAVE_PIPE2
     bool haveProcessCreateLock = false;
 #endif
@@ -227,12 +208,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
     uint32_t* getGroupsBuffer = NULL;
-    int thread_cancel_state;
     sigset_t signal_set;
     sigset_t old_signal_set;
 
+#if HAVE_PTHREAD_SETCANCELSTATE
+    int thread_cancel_state;
+
     // None of this code can be canceled without leaking handles, so just don't allow it
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
+#endif
 
     // Validate arguments
     if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
@@ -379,7 +363,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
             if (!sigaction(sig, NULL, &sa_old))
             {
-                void (*oldhandler)(int) = (sa_old.sa_flags & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                void (*oldhandler)(int) = (((unsigned int)sa_old.sa_flags) & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
                 if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
                 {
                     // It has a custom handler, put the default handler back.
@@ -498,12 +482,17 @@ done:;
         errno = priorErrno;
     }
 
+#if HAVE_PTHREAD_SETCANCELSTATE
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
-  
+#endif
+
     free(getGroupsBuffer);
 
     return success ? 0 : -1;
+#else
+    return -1;
+#endif
 }
 
 FILE* SystemNative_POpen(const char* command, const char* type)
@@ -537,12 +526,21 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
             return RLIMIT_CORE;
         case PAL_RLIMIT_AS:
             return RLIMIT_AS;
+#ifdef RLIMIT_RSS
         case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;
+#endif
+#ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_MEMLOCK;
+#elif defined(RLIMIT_VMEM)
+        case PAL_RLIMIT_MEMLOCK:
+            return RLIMIT_VMEM;
+#endif
+#ifdef RLIMIT_NPROC
         case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
+#endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
     }
@@ -593,7 +591,7 @@ static void ConvertFromPalRLimitToManaged(const struct rlimit* native, RLimit* p
     pal->MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native->rlim_max);
 }
 
-#if defined __USE_GNU && !defined __cplusplus
+#if defined(__USE_GNU) && !defined(__cplusplus) && !defined(TARGET_ANDROID)
 typedef __rlimit_resource_t rlimitResource;
 typedef __priority_which_t priorityWhich;
 #else
@@ -647,7 +645,7 @@ int32_t SystemNative_GetSid(int32_t pid)
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    syslog((int)priority, message, arg1);
+    syslog((int)(LOG_USER | priority), message, arg1);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
@@ -788,7 +786,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
     cpu_set_t set;
     CPU_ZERO(&set);
 
-    intptr_t bits = *mask; 
+    intptr_t bits = *mask;
     for (int cpu = 0; cpu < maxCpu; cpu++)
     {
         if ((bits & (((intptr_t)1u) << cpu)) != 0)
@@ -796,7 +794,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
             CPU_SET(cpu, &set);
         }
     }
- 
+
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
 #endif

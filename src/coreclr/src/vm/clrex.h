@@ -195,7 +195,7 @@ public:
 };
 
 // prototype for helper function to get exception object from thread's LastThrownObject.
-void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException);
+void GetLastThrownObjectExceptionFromThread(Exception **ppException);
 
 
 // ---------------------------------------------------------------------------

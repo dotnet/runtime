@@ -23,16 +23,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //          morph each GT_ALLOCOBJ node either into an allocation helper
 //          call or stack allocation.
 //
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
 // Notes:
 //    Runs only if Compiler::optMethodFlags has flag OMF_HAS_NEWOBJ set.
-
-void ObjectAllocator::DoPhase()
+//
+PhaseStatus ObjectAllocator::DoPhase()
 {
-    JITDUMP("\n*** ObjectAllocationPhase: ");
     if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
     {
         JITDUMP("no newobjs in this method; punting\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (IsObjectStackAllocationEnabled())
@@ -51,6 +53,11 @@ void ObjectAllocator::DoPhase()
     {
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+    else
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 }
 

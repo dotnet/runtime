@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel" />
     <InternalsVisibleTo Include="Microsoft.DotNet.Tools.Tests.Utilities" />
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
     <InternalsVisibleTo Include="Microsoft.DotNet.Configurer" />
     <InternalsVisibleTo Include="Microsoft.DotNet.Configurer.UnitTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />

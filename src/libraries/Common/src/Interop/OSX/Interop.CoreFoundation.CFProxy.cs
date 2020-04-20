@@ -50,12 +50,12 @@ internal static partial class Interop
         {
             private SafeCFDictionaryHandle _dictionary;
 
-            internal static readonly string kCFProxyTypeAutoConfigurationURL;
-            internal static readonly string kCFProxyTypeAutoConfigurationJavaScript;
-            internal static readonly string kCFProxyTypeFTP;
-            internal static readonly string kCFProxyTypeHTTP;
-            internal static readonly string kCFProxyTypeHTTPS;
-            internal static readonly string kCFProxyTypeSOCKS;
+            internal static readonly string? kCFProxyTypeAutoConfigurationURL;
+            internal static readonly string? kCFProxyTypeAutoConfigurationJavaScript;
+            internal static readonly string? kCFProxyTypeFTP;
+            internal static readonly string? kCFProxyTypeHTTP;
+            internal static readonly string? kCFProxyTypeHTTPS;
+            internal static readonly string? kCFProxyTypeSOCKS;
 
             private static readonly IntPtr kCFProxyAutoConfigurationJavaScriptKey;
             private static readonly IntPtr kCFProxyAutoConfigurationURLKey;
@@ -109,7 +109,7 @@ internal static partial class Interop
                 }
             }
 
-            private string GetString(IntPtr key)
+            private string? GetString(IntPtr key)
             {
                 IntPtr dictValue = CFDictionaryGetValue(_dictionary, key);
                 if (dictValue != IntPtr.Zero)
@@ -122,10 +122,10 @@ internal static partial class Interop
                 return null;
             }
 
-            public string ProxyType => GetString(kCFProxyTypeKey);
-            public string HostName => GetString(kCFProxyHostNameKey);
-            public string Username => GetString(kCFProxyUsernameKey);
-            public string Password => GetString(kCFProxyPasswordKey);
+            public string? ProxyType => GetString(kCFProxyTypeKey);
+            public string? HostName => GetString(kCFProxyHostNameKey);
+            public string? Username => GetString(kCFProxyUsernameKey);
+            public string? Password => GetString(kCFProxyPasswordKey);
 
             public int PortNumber
             {

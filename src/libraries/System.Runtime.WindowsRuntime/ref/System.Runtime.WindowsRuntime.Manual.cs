@@ -18,17 +18,17 @@ namespace Windows.Foundation
 {
     public partial struct Point : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
     public partial struct Rect : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
 }
 namespace Windows.UI
 {
     public partial struct Color : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
 }

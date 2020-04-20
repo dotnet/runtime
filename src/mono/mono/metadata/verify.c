@@ -4925,6 +4925,10 @@ mono_method_verify (MonoMethod *method, int level)
 		return NULL;
 	}
 
+	// Disable for now
+	if (TRUE)
+		return NULL;
+
 	memset (&ctx, 0, sizeof (VerifyContext));
 
 	//FIXME use mono_method_get_signature_full

@@ -399,13 +399,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.NotNull(exception.InnerException);
             Assert.NotNull(getException.InnerException);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
                 exception.Message);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
                 getException.Message);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
                 getValueException.Message);
         }
 
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
 
-            Assert.Equal(Resources.FormatError_FailedBinding(ConfigKey, typeof(int)),
+            Assert.Equal(SR.Format(SR.Error_FailedBinding, ConfigKey, typeof(int)),
                 exception.Message);
         }
 
@@ -728,7 +728,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                Resources.FormatError_CannotActivateAbstractOrInterface(typeof(ISomeInterface)),
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ISomeInterface)),
                 exception.Message);
         }
 
@@ -747,7 +747,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                Resources.FormatError_MissingParameterlessConstructor(typeof(ClassWithoutPublicConstructor)),
+                SR.Format(SR.Error_MissingParameterlessConstructor, typeof(ClassWithoutPublicConstructor)),
                 exception.Message);
         }
 
@@ -767,7 +767,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 () => config.Bind(new TestOptions()));
             Assert.NotNull(exception.InnerException);
             Assert.Equal(
-                Resources.FormatError_FailedToActivate(typeof(ThrowsWhenActivated)),
+                SR.Format(SR.Error_FailedToActivate, typeof(ThrowsWhenActivated)),
                 exception.Message);
         }
 
@@ -786,7 +786,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                Resources.FormatError_CannotActivateAbstractOrInterface(typeof(ISomeInterface)),
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ISomeInterface)),
                 exception.Message);
         }
 

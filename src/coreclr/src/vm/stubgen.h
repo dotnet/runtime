@@ -13,6 +13,10 @@
 
 #include "stublink.h"
 
+struct ILStubEHClause;
+class ILStubLinker;
+
+#ifndef DACCESS_COMPILE
 struct StructMarshalStubs
 {
     static const DWORD MANAGED_STRUCT_ARGIDX = 0;
@@ -265,6 +269,8 @@ protected:
     CQuickBytes          m_qbReturnSig;
 };  // class FunctionSigBuilder
 
+#endif // DACCESS_COMPILE
+
 #ifdef _DEBUG
 // exercise the resize code
 #define TOKEN_LOOKUP_MAP_SIZE  (8*sizeof(void*))
@@ -374,6 +380,7 @@ protected:
     CQuickBytesSpecifySize<TOKEN_LOOKUP_MAP_SIZE>   m_qbEntries;
 };
 
+#ifndef DACCESS_COMPILE
 struct ILStubEHClause
 {
     enum Kind { kNone, kTypedCatch, kFinally };
@@ -791,6 +798,7 @@ protected:
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;
 #endif // HOST_64BIT
 };
+#endif // DACCESS_COMPILE
 
 #define TOKEN_ILSTUB_TARGET_SIG (TokenFromRid(0xFFFFFF, mdtSignature))
 

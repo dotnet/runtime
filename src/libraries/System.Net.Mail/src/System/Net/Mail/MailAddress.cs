@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mime;
 using System.Text;
@@ -24,7 +25,7 @@ namespace System.Net.Mail
 
         // For internal use only by MailAddressParser.
         // The components were already validated before this is called.
-        internal MailAddress(string displayName, string userName, string domain, Encoding displayNameEncoding)
+        internal MailAddress(string displayName, string userName, string domain, Encoding? displayNameEncoding)
         {
             _host = domain;
             _userName = userName;
@@ -41,11 +42,11 @@ namespace System.Net.Mail
                 "displayName was null in internal constructor");
         }
 
-        public MailAddress(string address) : this(address, null, (Encoding)null)
+        public MailAddress(string address) : this(address, null, (Encoding?)null)
         {
         }
 
-        public MailAddress(string address, string displayName) : this(address, displayName, (Encoding)null)
+        public MailAddress(string address, string? displayName) : this(address, displayName, (Encoding?)null)
         {
         }
 
@@ -62,7 +63,7 @@ namespace System.Net.Mail
         // field.  The display name does not need to be pre-encoded if a 'displayNameEncoding' is provided.
         //
         // A FormatException will be thrown if any of the components in 'address' are invalid.
-        public MailAddress(string address, string displayName, Encoding displayNameEncoding)
+        public MailAddress(string address, string? displayName, Encoding? displayNameEncoding)
         {
             bool parseSuccess = TryParse(address, displayName, displayNameEncoding,
                                         out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData,
@@ -82,7 +83,7 @@ namespace System.Net.Mail
         /// <param name="address">A <see cref="string"/> that contains an email address.</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, out MailAddress result) => TryCreate(address, displayName: null, out result);
+        public static bool TryCreate(string address, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName: null, out result);
 
         /// <summary>
         /// Create a new <see cref="MailAddress"/>. Does not throw an exception if the MailAddress cannot be created.
@@ -91,7 +92,7 @@ namespace System.Net.Mail
         /// <param name="displayName">A <see cref="string"/> that contains the display name associated with address. This parameter can be null.</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, string displayName, out MailAddress result) => TryCreate(address, displayName, displayNameEncoding: null, out result);
+        public static bool TryCreate(string address, string? displayName, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName, displayNameEncoding: null, out result);
 
         /// <summary>
         /// Create a new <see cref="MailAddress"/>. Does not throw an exception if the MailAddress cannot be created.
@@ -101,7 +102,7 @@ namespace System.Net.Mail
         /// <param name="displayNameEncoding">The <see cref="Encoding"/> that defines the character set used for displayName</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, string displayName, Encoding displayNameEncoding, out MailAddress result)
+        public static bool TryCreate(string address, string? displayName, Encoding? displayNameEncoding, [NotNullWhen(true)] out MailAddress? result)
         {
             if (TryParse(address, displayName, displayNameEncoding,
                         out (string displayName, string user, string host, Encoding displayNameEncoding) parsed,
@@ -117,7 +118,7 @@ namespace System.Net.Mail
             }
         }
 
-        private static bool TryParse(string address, string displayName, Encoding displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, bool throwExceptionIfFail)
+        private static bool TryParse(string address, string? displayName, Encoding? displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, bool throwExceptionIfFail)
         {
             if (address == null)
             {
@@ -261,7 +262,7 @@ namespace System.Net.Mail
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value == null)
             {

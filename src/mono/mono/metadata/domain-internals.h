@@ -700,7 +700,7 @@ mono_domain_default_alc (MonoDomain *domain);
 
 #ifdef ENABLE_NETCORE
 MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error);
+mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
 #endif
 
 static inline

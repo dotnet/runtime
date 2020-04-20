@@ -28,7 +28,7 @@
 #endif
 
 //********** Globals. *********************************************************
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 HINSTANCE       g_hInst;                // Instance handle to this piece of code.
 #endif
 
@@ -246,7 +246,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_THREAD_DETACH:
         {
 #ifdef STRESS_LOG
-            StressLog::ThreadDetach((ThreadStressLog*) ClrFlsGetValue(TlsIdx_StressLog));
+            StressLog::ThreadDetach();
 #endif
 
 #ifdef RSCONTRACTS

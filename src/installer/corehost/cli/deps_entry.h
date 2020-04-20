@@ -52,17 +52,19 @@ struct deps_entry_t
     bool is_serviceable;
     bool is_rid_specific;
 
-    // Given a "base" dir, yield the filepath within this directory or relative to this directory based on "look_in_base"
-    bool to_path(const pal::string_t& base, bool look_in_base, pal::string_t* str) const;
-
-    // Given a "base" dir, yield the file path within this directory.
-    bool to_dir_path(const pal::string_t& base, pal::string_t* str) const;
+    // Given a "base" dir, yield the file path within this directory or single-file bundle.
+    bool to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const;
 
     // Given a "base" dir, yield the relative path in the package layout.
-    bool to_rel_path(const pal::string_t& base, pal::string_t* str) const;
+    bool to_rel_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const;
 
     // Given a "base" dir, yield the relative path with package name, version in the package layout.
     bool to_full_path(const pal::string_t& root, pal::string_t* str) const;
+
+private:
+    // Given a "base" dir, yield the filepath within this directory or relative to this directory based on "look_in_base"
+    // Returns a path within the single-file bundle, or a file on disk,
+    bool to_path(const pal::string_t& base, const pal::string_t& ietf_code, bool look_in_base, bool look_in_bundle, pal::string_t* str) const;
 };
 
 #endif // __DEPS_ENTRY_H_

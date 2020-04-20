@@ -3144,7 +3144,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	if (!disable_stack_guard) {
 		tls->stack_ovf_guard_base = staddr + mono_pagesize ();
-		tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
+		tls->stack_ovf_guard_size = ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE, mono_pagesize ());
 
 		g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
 
@@ -3201,6 +3201,21 @@ mono_free_altstack (MonoJitTlsData *tls)
 		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	else
 		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
+}
+
+#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+void
+mono_setup_altstack (MonoJitTlsData *tls)
+{
+	// Alt stack is not supported on Windows, but we can use this point to at least
+	// reserve a stack guarantee of available stack memory when handling stack overflow.
+	ULONG new_stack_guarantee = (ULONG)ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE, ((gssize)mono_pagesize ()));
+	SetThreadStackGuarantee (&new_stack_guarantee);
+}
+
+void
+mono_free_altstack (MonoJitTlsData *tls)
+{
 }
 
 #else /* !MONO_ARCH_SIGSEGV_ON_ALTSTACK */

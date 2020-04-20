@@ -196,7 +196,7 @@ template <typename ELEMENT, COUNT_T SIZE, BOOL BITWISE_COPY = TRUE>
 class EMPTY_BASES_DECL InlineSArray : public SArray<ELEMENT, BITWISE_COPY>
 {
  private:
-#ifdef _MSC_VER
+#ifdef TARGET_WINDOWS
 #pragma warning(push)
 #pragma warning(disable:4200) // zero sized array
 #pragma warning(disable:4324) // don't complain if DECLSPEC_ALIGN actually pads

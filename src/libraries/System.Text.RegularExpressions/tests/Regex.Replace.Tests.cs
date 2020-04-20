@@ -12,6 +12,8 @@ namespace System.Text.RegularExpressions.Tests
     {
         public static IEnumerable<object[]> Replace_String_TestData()
         {
+            yield return new object[] { @"a", "bbbb", "c", RegexOptions.None, 4, 3, "bbbb" };
+            yield return new object[] { @"", "   ", "123", RegexOptions.None, 4, 0, "123 123 123 123" };
             yield return new object[] { @"[^ ]+\s(?<time>)", "08/10/99 16:00", "${time}", RegexOptions.None, 14, 0, "16:00" };
             yield return new object[] { "icrosoft", "MiCrOsOfT", "icrosoft", RegexOptions.IgnoreCase, 9, 0, "Microsoft" };
             yield return new object[] { "dog", "my dog has fleas", "CAT", RegexOptions.IgnoreCase, 16, 0, "my CAT has fleas" };
@@ -78,6 +80,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?<cat>cat)\s*(?<dog>dog)", "slkfjsdcat dogkljeah", "START${catTWO}dogcat${dogTWO}END", RegexOptions.None, 20, 0, "slkfjsdSTART${catTWO}dogcat${dogTWO}ENDkljeah" };
 
             // RightToLeft
+            yield return new object[] { @"a", "bbbb", "c", RegexOptions.RightToLeft, 4, 3, "bbbb" };
+            yield return new object[] { @"", "   ", "123", RegexOptions.RightToLeft, 4, 3, "123 123 123 123" };
             yield return new object[] { @"foo\s+", "0123456789foo4567890foo         ", "bar", RegexOptions.RightToLeft, 32, 32, "0123456789foo4567890bar" };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", "#", RegexOptions.RightToLeft, 17, 32, "##########foo#######foo         " };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", "#", RegexOptions.RightToLeft, 7, 32, "0123456789foo#######foo         " };
@@ -139,6 +143,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Replace_MatchEvaluator_TestData()
         {
+            yield return new object[] { "a", "bbbb", new MatchEvaluator(match => "uhoh"), RegexOptions.None, 4, 0, "bbbb" };
             yield return new object[] { "(Big|Small)", "Big mountain", new MatchEvaluator(MatchEvaluator1), RegexOptions.None, 12, 0, "Huge mountain" };
             yield return new object[] { "(Big|Small)", "Small village", new MatchEvaluator(MatchEvaluator1), RegexOptions.None, 13, 0, "Tiny village" };
 
@@ -162,6 +167,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\u0915\u0930.*?\b", boldInput, new MatchEvaluator(MatchEvaluatorBold), RegexOptions.CultureInvariant | RegexOptions.Singleline, boldInput.Length, 0, boldExpected };
 
             // RighToLeft
+            yield return new object[] { "a", "bbbb", new MatchEvaluator(match => "uhoh"), RegexOptions.RightToLeft, 4, 3, "bbbb" };
             yield return new object[] { @"foo\s+", "0123456789foo4567890foo         ", new MatchEvaluator(MatchEvaluatorBar), RegexOptions.RightToLeft, 32, 32, "0123456789foo4567890bar" };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", new MatchEvaluator(MatchEvaluatorPoundSign), RegexOptions.RightToLeft, 17, 32, "##########foo#######foo         " };
             yield return new object[] { @"\d", "0123456789foo4567890foo         ", new MatchEvaluator(MatchEvaluatorPoundSign), RegexOptions.RightToLeft, 7, 32, "0123456789foo#######foo         " };
@@ -172,7 +178,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [MemberData(nameof(Replace_MatchEvaluator_TestData))]
         [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Replace_MatchEvaluator_TestData), 3, MemberType = typeof(RegexCompilationHelper))]
-        public void Replace(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
+        public void Replace_MatchEvaluator_Test(string pattern, string input, MatchEvaluator evaluator, RegexOptions options, int count, int start, string expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);
