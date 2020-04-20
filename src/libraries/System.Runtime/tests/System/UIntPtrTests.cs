@@ -202,12 +202,12 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(234, 234, 0)]
-        [InlineData(234, uint.MinValue, 1)]
-        [InlineData(234, 123, 1)]
-        [InlineData(234, 456, -1)]
-        [InlineData(234, uint.MaxValue, -1)]
-        [InlineData(234, null, 1)]
+        [InlineData(234u, 234u, 0)]
+        [InlineData(234u, uint.MinValue, 1)]
+        [InlineData(234u, 123u, 1)]
+        [InlineData(234u, 456u, -1)]
+        [InlineData(234u, uint.MaxValue, -1)]
+        [InlineData(234u, null, 1)]
         public static void CompareTo_Other_ReturnsExpected(uint i0, object value, int expected)
         {
             var i = (UIntPtr)i0;
