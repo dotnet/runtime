@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
-			"A return value of method 'System.RuntimeTypeHandle System.Type::get_TypeHandle()' is passed into the implicit 'this' parameter of method " +
+			"A value from unknown source is passed into the implicit 'this' parameter of method " +
 			"'System.Void Mono.Linker.Tests.Cases.Reflection.RunClassConstructorUsedViaReflection::TestDataFlowType()'. It's not possible to guarantee " +
 			"that these requirements are met by the application.")]
 		static void TestDataFlowType ()
@@ -69,11 +69,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[RecognizedReflectionAccessPattern]
+		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
+			"A value from unknown source is passed into the implicit 'this' parameter of method " +
+			"'System.Void Mono.Linker.Tests.Cases.Reflection.RunClassConstructorUsedViaReflection::TestIfElseUsingRuntimeTypeHandle(System.Int32)'. " +
+			"It's not possible to guarantee that these requirements are met by the application.")]
 		static void TestIfElseUsingRuntimeTypeHandle (int i)
 		{
 			RuntimeTypeHandle myType;
 			if (i == 1) {
 				myType = typeof (IfClass).TypeHandle;
+			} else if (i == 2) {
+				myType = FindType ().TypeHandle;
 			} else {
 				myType = typeof (ElseClass).TypeHandle;
 			}

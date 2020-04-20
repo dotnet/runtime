@@ -434,6 +434,8 @@ namespace Mono.Linker.Dataflow
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new RuntimeTypeHandleValue (typeValue.TypeRepresented));
 								else if (value == NullValue.Instance)
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, value);
+								else 
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, UnknownValue.Instance);
 							}
 						}
 						break;
