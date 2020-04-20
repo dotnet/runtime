@@ -38,6 +38,7 @@ Below table shows the combined area owners on this repository:
 | area-Codegen-JIT-mono | @SamMonoRT | |
 | area-Codegen-AOT-mono | @SamMonoRT | |
 | area-Codegen-Interpreter-mono | @BrzVlad | |
+| area-CodeGen-LLVM-mono | @imhameed | |
 | area-CoreLib-mono | @steveisok | |
 | area-GC-mono | @BrzVlad | |
 | area-Build-mono | @akoeplinger | |
