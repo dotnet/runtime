@@ -17,33 +17,24 @@ bool IpcStreamFactory::ClientConnectionState::GetIpcPollHandle(IpcStream::Diagno
     {
         // cache is empty, reconnect, e.g., there was a disconnect
         IpcStream *pConnection = _pIpc->Connect(callback);
-
-        if (pConnection != nullptr)
-        {
-            if (!DiagnosticsIpc::SendIpcAdvertise_V1(pConnection))
-            {
-                if (callback != nullptr)
-                    callback("Failed to send advertise message", -1);
-                delete pConnection;
-                return false;
-            }
-
-            _pStream = pConnection;
-            *pIpcPollHandle = { nullptr, _pStream, 0, this };
-            return true;
-        }
-        else
+        if (pConnection == nullptr)
         {
             if (callback != nullptr)
                 callback("Failed to connect to client connection", -1);
             return false;
         }
+        if (!DiagnosticsIpc::SendIpcAdvertise_V1(pConnection))
+        {
+            if (callback != nullptr)
+                callback("Failed to send advertise message", -1);
+            delete pConnection;
+            return false;
+        }
+
+        _pStream = pConnection;
     }
-    else
-    {
-        *pIpcPollHandle = { nullptr, _pStream, 0, this };
-        return true;
-    }
+    *pIpcPollHandle = { nullptr, _pStream, 0, this };
+    return true;
 }
 
 IpcStream *IpcStreamFactory::ClientConnectionState::GetConnectedStream(ErrorCallback callback)
