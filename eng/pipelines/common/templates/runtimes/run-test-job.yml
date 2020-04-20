@@ -78,9 +78,12 @@ jobs:
       - name: testhostArg
         value: 'buildtesthostonly'
 
+    - name: runtimeFlavorArgs
+    - value: ''
+
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
       - name: runtimeFlavorArgs
-      - value: '-excludemonofailures'
+      - value: 'mono'
 
     - name: crossgenArg
       value: ''
