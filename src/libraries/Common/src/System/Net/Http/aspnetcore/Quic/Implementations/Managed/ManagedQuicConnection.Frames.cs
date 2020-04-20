@@ -245,7 +245,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             int read = 0;
 
-            long prevSmallestAcked = ranges[^1].End;
+            long prevSmallestAcked = ranges[^1].Start;
 
             // read the ranges in reverse order, so the `ranges` are in ascending order
             for (int i = (int)frame.AckRangeCount; i > 0; i--)
@@ -506,12 +506,12 @@ namespace System.Net.Quic.Implementations.Managed
                 count = Math.Min(count,  writer.BytesAvailable - overhead);
 
                 // TODO-RZ: respect stream MaxData limits
+
+                bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
                 if (count < 0)
                 {
                     break; // no more data can fit into the packet
                 }
-
-                bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
 
                 if (count > 0 || fin)
                 {
@@ -525,8 +525,13 @@ namespace System.Net.Quic.Implementations.Managed
                     context.SentPacket.SentStreamData.Add(new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
                 }
 
-                if (!buffer.IsFlushable)
+                if (fin)
+                {
                     _streams.MarkFlushable(stream!, false);
+                }
+
+                // if (!buffer.IsFlushable)
+                //     _streams.MarkFlushable(stream!, false);
             }
         }
 

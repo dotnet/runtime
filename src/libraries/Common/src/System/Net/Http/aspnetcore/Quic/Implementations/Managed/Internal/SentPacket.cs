@@ -54,6 +54,11 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         /// <summary>
+        ///     Packet number this packet was sent with.
+        /// </summary>
+        internal long PacketNumber { get; set; }
+
+        /// <summary>
         ///     Timestamp when the packet was sent.
         /// </summary>
         internal long TimeSent { get; set; }

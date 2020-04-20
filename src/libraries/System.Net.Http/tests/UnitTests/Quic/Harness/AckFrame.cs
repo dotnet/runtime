@@ -16,6 +16,8 @@ namespace System.Net.Quic.Tests.Harness
         {
             internal long Gap;
             internal long Acked;
+
+            public override string ToString() => $"(Gap={Gap}, Acked={Acked})";
         }
 
         /// <summary>

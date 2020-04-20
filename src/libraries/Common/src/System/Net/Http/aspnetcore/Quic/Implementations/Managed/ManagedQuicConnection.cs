@@ -517,6 +517,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // remember what we sent in this packet
+            context.SentPacket.PacketNumber = pnSpace.NextPacketNumber;
             Recovery.OnPacketSent(pnSpace.NextPacketNumber, GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
 
