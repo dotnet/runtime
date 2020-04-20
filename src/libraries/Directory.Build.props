@@ -304,7 +304,7 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsMobile)' != 'true'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
     <BinPlaceTestRuntimePack Condition="'$(TargetsMobile)' == 'true'">true</BinPlaceTestRuntimePack>
