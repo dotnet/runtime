@@ -184,7 +184,23 @@ namespace System
             get => (IntPtr)nint.MinValue;
         }
 
-        public unsafe int CompareTo(object? value) => ((nint)_value).CompareTo(value);
+        // Don't just delegate to nint.CompareTo as it needs to throw when not IntPtr
+        public unsafe int CompareTo(object? value)
+        {
+            if (value is null)
+            {
+                return 1;
+            }
+            if (value is IntPtr o)
+            {
+                nint i = (nint)o;
+                if ((nint)_value < i) return -1;
+                if ((nint)_value > i) return 1;
+                return 0;
+            }
+
+            throw new ArgumentException(SR.Arg_MustBeIntPtr);
+        }
 
         public unsafe int CompareTo(IntPtr value) => ((nint)_value).CompareTo((nint)value);
 

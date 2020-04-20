@@ -222,7 +222,7 @@ namespace System.Tests
         [Theory]
         [InlineData("a")]
         [InlineData(234)]
-        public static void CompareTo_ObjectNotUint_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotUIntPtr_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((UIntPtr)123).CompareTo(value));
         }
@@ -235,7 +235,7 @@ namespace System.Tests
                 {
                     yield return new object[] { (UIntPtr)0, defaultSpecifier, defaultFormat, "0" };
                     yield return new object[] { (UIntPtr)4567, defaultSpecifier, defaultFormat, "4567" };
-                    yield return new object[] { UIntPtr.MaxValue, defaultSpecifier, defaultFormat, "4294967295" };
+                    yield return new object[] { UIntPtr.MaxValue, defaultSpecifier, defaultFormat, Is64Bit ? "18446744073709551615" : "4294967295" };
                 }
 
                 yield return new object[] { (UIntPtr)4567, "D", defaultFormat, "4567" };
@@ -341,12 +341,12 @@ namespace System.Tests
                 }
             }
 
-            // And test boundary conditions for 32 bit IntPtr
-            yield return new object[] { "4294967295", NumberStyles.Integer, null, (UIntPtr)uint.MaxValue };
-            yield return new object[] { "+4294967295", NumberStyles.Integer, null, (UIntPtr)uint.MaxValue };
-            yield return new object[] { "  +4294967295  ", NumberStyles.Integer, null, (UIntPtr)uint.MaxValue };
-            yield return new object[] { "FFFFFFFF", NumberStyles.HexNumber, null, (UIntPtr)uint.MaxValue };
-            yield return new object[] { "  FFFFFFFF  ", NumberStyles.HexNumber, null, (UIntPtr)uint.MaxValue };
+            // And test boundary conditions for IntPtr
+            yield return new object[] { Is64Bit ? "9223372036854775807" : "4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "+9223372036854775807" : "+4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "  +9223372036854775807  " : "  +4294967295  ", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
         }
 
         [Theory]

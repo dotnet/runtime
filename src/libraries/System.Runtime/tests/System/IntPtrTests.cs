@@ -251,11 +251,11 @@ namespace System.Tests
             {
                 foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
                 {
-                    yield return new object[] { IntPtr.MinValue, defaultSpecifier, defaultFormat, "-2147483648" };
+                    yield return new object[] { IntPtr.MinValue, defaultSpecifier, defaultFormat, Is64Bit ? "-9223372036854775808" : "-2147483648" };
                     yield return new object[] { (IntPtr)(-4567), defaultSpecifier, defaultFormat, "-4567" };
                     yield return new object[] { (IntPtr)0, defaultSpecifier, defaultFormat, "0" };
                     yield return new object[] { (IntPtr)4567, defaultSpecifier, defaultFormat, "4567" };
-                    yield return new object[] { IntPtr.MaxValue, defaultSpecifier, defaultFormat, "2147483647" };
+                    yield return new object[] { IntPtr.MaxValue, defaultSpecifier, defaultFormat, Is64Bit ? "9223372036854775807" : "2147483647" };
                 }
 
                 yield return new object[] { (IntPtr)4567, "D", defaultFormat, "4567" };
@@ -264,7 +264,7 @@ namespace System.Tests
                 yield return new object[] { (IntPtr)(-4567), "D99\09", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
                 yield return new object[] { (IntPtr)0x2468, "x", defaultFormat, "2468" };
-                yield return new object[] { (IntPtr)(-0x2468), "x", defaultFormat, "ffffdb98" };
+                yield return new object[] { (IntPtr)(-0x2468), "x", defaultFormat, Is64Bit ? "ffffffffffffdb98" : "ffffdb98" };
                 yield return new object[] { (IntPtr)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -403,7 +403,7 @@ namespace System.Tests
             };
             yield return new object[] { "$1|000", NumberStyles.Currency, currencyFormat, (IntPtr)1000 };
             yield return new object[] { "$1000", NumberStyles.Currency, currencyFormat, (IntPtr)1000 };
-            yield return new object[] { "$   (IntPtr)1000", NumberStyles.Currency, currencyFormat, (IntPtr)1000 };
+            yield return new object[] { "$   1000", NumberStyles.Currency, currencyFormat, (IntPtr)1000 };
             yield return new object[] { "1000", NumberStyles.Currency, currencyFormat, (IntPtr)1000 };
             yield return new object[] { "$(1000)", NumberStyles.Currency, currencyFormat, (IntPtr)(-1000) };
             yield return new object[] { "($1000)", NumberStyles.Currency, currencyFormat, (IntPtr)(-1000) };
@@ -451,19 +451,19 @@ namespace System.Tests
             yield return new object[] { "100", NumberStyles.AllowTrailingSign, emptyNegativeFormat, (IntPtr)100 };
 
             // AllowLeadingWhite and AllowTrailingWhite
-            yield return new object[] { "  (IntPtr)123", NumberStyles.AllowLeadingWhite, null, (IntPtr)123 };
-            yield return new object[] { "  (IntPtr)123  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)123 };
+            yield return new object[] { "  123", NumberStyles.AllowLeadingWhite, null, (IntPtr)123 };
+            yield return new object[] { "  123  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)123 };
             yield return new object[] { "123  ", NumberStyles.AllowTrailingWhite, null, (IntPtr)123 };
             yield return new object[] { "123  \0\0", NumberStyles.AllowTrailingWhite, null, (IntPtr)123 };
-            yield return new object[] { "   (IntPtr)2147483647   ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)2147483647 };
+            yield return new object[] { "   2147483647   ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)2147483647 };
             yield return new object[] { "   -2147483648   ", NumberStyles.Integer, null, (IntPtr)(-2147483648) };
             foreach (char c in new[] { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD })
             {
                 string cs = c.ToString();
                 yield return new object[] { cs + cs + "123" + cs + cs, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)123 };
             }
-            yield return new object[] { "  (IntPtr)0  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)0 };
-            yield return new object[] { "  (IntPtr)000000000  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)0 };
+            yield return new object[] { "  0  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)0 };
+            yield return new object[] { "  000000000  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, (IntPtr)0 };
 
             // AllowThousands
             NumberFormatInfo thousandsFormat = new NumberFormatInfo() { NumberGroupSeparator = "|" };
@@ -487,7 +487,7 @@ namespace System.Tests
 
             // AllowParentheses
             yield return new object[] { "123", NumberStyles.AllowParentheses, null, (IntPtr)123 };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, -123 };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, (IntPtr)(-123) };
 
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "|" };
@@ -692,16 +692,16 @@ namespace System.Tests
             foreach (string s in new[]
             {
 
-                "9223372036854775808", // long.MaxValue + (IntPtr)1
-                "9223372036854775810", // (IntPtr)10s digit incremented above long.MaxValue
+                "9223372036854775808", // long.MaxValue + 1
+                "9223372036854775810", // 10s digit incremented above long.MaxValue
                 "10000000000000000000", // extra digit after long.MaxValue
 
-                "18446744073709551616", // ulong.MaxValue + (IntPtr)1
-                "18446744073709551620", // (IntPtr)10s digit incremented above ulong.MaxValue
+                "18446744073709551616", // ulong.MaxValue + 1
+                "18446744073709551620", // 10s digit incremented above ulong.MaxValue
                 "100000000000000000000", // extra digit after ulong.MaxValue
 
-                "-9223372036854775809", // long.MinValue - (IntPtr)1
-                "-9223372036854775810", // (IntPtr)10s digit decremented below long.MinValue
+                "-9223372036854775809", // long.MinValue - 1
+                "-9223372036854775810", // 10s digit decremented below long.MinValue
                 "-10000000000000000000", // extra digit after long.MinValue
 
                 "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000", // really big
@@ -739,7 +739,7 @@ namespace System.Tests
             }
 
             yield return new object[] { "9223372036854775809-", NumberStyles.AllowTrailingSign, null, typeof(OverflowException) };
-            yield return new object[] { "(9223372036854775808)", NumberStyles.AllowParentheses, null, typeof(OverflowException) };
+            yield return new object[] { "(9223372036854775809)", NumberStyles.AllowParentheses, null, typeof(OverflowException) };
             yield return new object[] { "2E19", NumberStyles.AllowExponent, null, typeof(OverflowException) };
         }
 

@@ -3539,8 +3539,6 @@ namespace System.Tests
         public static IEnumerable<object[]> Sort_NotComparable_TestData()
         {
             yield return new object[] { new object[] { "1", 2, new object() } };
-            yield return new object[] { new IntPtr[2] };
-            yield return new object[] { new UIntPtr[2] };
         }
 
         [Theory]

@@ -177,7 +177,22 @@ namespace System
             get => (UIntPtr)nuint.MinValue;
         }
 
-        public unsafe int CompareTo(object? value) => ((nuint)_value).CompareTo(value);
+        public unsafe int CompareTo(object? value)
+        {
+            if (value is null)
+            {
+                return 1;
+            }
+            if (value is UIntPtr o)
+            {
+                nuint i = (nuint)o;
+                if ((nuint)_value < i) return -1;
+                if ((nuint)_value > i) return 1;
+                return 0;
+            }
+
+            throw new ArgumentException(SR.Arg_MustBeUIntPtr);
+        }
 
         public unsafe int CompareTo(UIntPtr value) => ((nuint)_value).CompareTo((nuint)value);
 
