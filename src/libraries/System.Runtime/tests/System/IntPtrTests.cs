@@ -391,12 +391,12 @@ namespace System.Tests
             if (Is64Bit)
             {
                 yield return new object[] { "8000000000000000", NumberStyles.HexNumber, null, IntPtr.MinValue };
-                yield return new object[] { "FFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, IntPtr.MaxValue };
+                yield return new object[] { "7FFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, IntPtr.MaxValue };
             }
             else
             {
                 yield return new object[] { "80000000", NumberStyles.HexNumber, null, IntPtr.MinValue };
-                yield return new object[] { "FFFFFFFF", NumberStyles.HexNumber, null, IntPtr.MaxValue };
+                yield return new object[] { "7FFFFFFF", NumberStyles.HexNumber, null, IntPtr.MaxValue };
             }
 
             // Currency
