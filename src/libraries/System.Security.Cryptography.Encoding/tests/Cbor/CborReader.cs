@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Array => CborReaderState.StartArray,
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
-                CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
+                CborMajorType.Simple => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
                 _ => throw new Exception("CborReader internal error. Invalid major type."),
             };
 
@@ -169,10 +169,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 switch (value)
                 {
-                    case CborAdditionalInfo.SpecialValueNull:
+                    case CborAdditionalInfo.SimpleValueNull:
                         return CborReaderState.Null;
-                    case CborAdditionalInfo.SpecialValueFalse:
-                    case CborAdditionalInfo.SpecialValueTrue:
+                    case CborAdditionalInfo.SimpleValueFalse:
+                    case CborAdditionalInfo.SimpleValueTrue:
                         return CborReaderState.Boolean;
                     case CborAdditionalInfo.Additional16BitData:
                         return CborReaderState.HalfPrecisionFloat;

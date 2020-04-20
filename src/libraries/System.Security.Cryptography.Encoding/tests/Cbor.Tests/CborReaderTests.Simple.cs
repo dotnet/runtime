@@ -132,18 +132,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData((CborSpecialValue)0, "e0")]
-        [InlineData(CborSpecialValue.False, "f4")]
-        [InlineData(CborSpecialValue.True, "f5")]
-        [InlineData(CborSpecialValue.Null, "f6")]
-        [InlineData(CborSpecialValue.Undefined, "f7")]
-        [InlineData((CborSpecialValue)32, "f820")]
-        [InlineData((CborSpecialValue)255, "f8ff")]
-        internal static void ReadSpecialValue_SingleValue_HappyPath(CborSpecialValue expectedResult, string hexEncoding)
+        [InlineData((CborSimpleValue)0, "e0")]
+        [InlineData(CborSimpleValue.False, "f4")]
+        [InlineData(CborSimpleValue.True, "f5")]
+        [InlineData(CborSimpleValue.Null, "f6")]
+        [InlineData(CborSimpleValue.Undefined, "f7")]
+        [InlineData((CborSimpleValue)32, "f820")]
+        [InlineData((CborSimpleValue)255, "f8ff")]
+        internal static void ReadSimpleValue_SingleValue_HappyPath(CborSimpleValue expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborSpecialValue actualResult = reader.ReadSpecialValue();
+            CborSimpleValue actualResult = reader.ReadSimpleValue();
             Assert.Equal(expectedResult, actualResult);
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
@@ -155,12 +155,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("80")] // []
         [InlineData("a0")] // {}
         [InlineData("c202")] // tagged value
-        public static void ReadSpecialValue_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadSimpleValue_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<InvalidOperationException>(() => reader.ReadSpecialValue());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadSimpleValue());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 

@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests
     }
 
     // https://tools.ietf.org/html/rfc7049#section-2.3
-    internal enum CborSpecialValue : byte
+    internal enum CborSimpleValue : byte
     {
         False = 20,
         True = 21,

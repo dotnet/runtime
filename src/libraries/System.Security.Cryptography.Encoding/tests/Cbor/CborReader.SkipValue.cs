@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
                 case CborReaderState.SpecialValue:
-                    ReadSpecialValue();
+                    ReadSimpleValue();
                     break;
 
                 case CborReaderState.EndOfData:
