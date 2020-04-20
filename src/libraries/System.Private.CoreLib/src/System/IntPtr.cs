@@ -77,9 +77,6 @@ namespace System
             obj is IntPtr other &&
             _value == other._value;
 
-        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other) =>
-            _value == other._value;
-
         public override unsafe int GetHashCode()
         {
 #if TARGET_64BIT
@@ -204,6 +201,7 @@ namespace System
 
         public unsafe int CompareTo(IntPtr value) => ((nint)_value).CompareTo((nint)value);
 
+        [NonVersionable]
         public unsafe bool Equals(IntPtr other) => (nint)_value == (nint)other;
 
         public unsafe override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
