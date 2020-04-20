@@ -147,7 +147,7 @@ namespace DiagnosticsIpc
         buffer[3] = VAL64(pid);
 
         // zero out unused field
-        *((uint16_t*)advertiseBuffer[32]) = VAL16(0);
+        ((uint16_t*)advertiseBuffer)[16] = VAL16(0);
 
         uint32_t nBytesWritten = 0;
         if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten, 100 /* ms */))
