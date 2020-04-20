@@ -230,7 +230,7 @@ namespace System.Tests
             var i = (IntPtr)l;
             if (value is int intValue)
             {
-                var intPtr = (IntPtr)intValue;
+                var intPtrValue = (IntPtr)intValue;
                 Assert.Equal(expected, Math.Sign(i.CompareTo(intPtrValue)));
                 Assert.Equal(-expected, Math.Sign(intPtrValue.CompareTo(i)));
 
