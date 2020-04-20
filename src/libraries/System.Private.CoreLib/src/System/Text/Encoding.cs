@@ -1041,7 +1041,6 @@ namespace System.Text
         public override int GetHashCode() =>
             _codePage + this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode();
 
-
         /// <summary>
         /// Creates a <see cref="Stream"/> which serves to transcode data between an inner <see cref="Encoding"/>
         /// and an outer <see cref="Encoding"/>, similar to <see cref="Convert"/>.

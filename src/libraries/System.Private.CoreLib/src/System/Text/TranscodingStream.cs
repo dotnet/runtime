@@ -28,7 +28,7 @@ namespace System.Text
 
         private readonly Encoding _innerEncoding;
         private readonly Encoding _thisEncoding;
-        private Stream? _innerStream; // null if the wrapper has been disposed
+        private Stream _innerStream; // null if the wrapper has been disposed
         private readonly bool _leaveOpen;
 
         /*
@@ -47,7 +47,9 @@ namespace System.Text
         private Encoder? _thisEncoder;
         private Decoder? _innerDecoder;
         private int _readCharBufferMaxSize; // the maximum number of characters _innerDecoder.ReadChars can return
-        private ArraySegment<byte> _pendingReadData; // contains the data that Read() should return
+        private byte[]? _readBuffer; // contains the data that Read() should return
+        private int _readBufferOffset;
+        private int _readBufferCount;
 
         internal TranscodingStream(Stream innerStream, Encoding innerEncoding, Encoding thisEncoding, bool leaveOpen)
         {
@@ -107,7 +109,7 @@ namespace System.Text
             // Mark our object as disposed
 
             Stream innerStream = _innerStream;
-            _innerStream = null;
+            _innerStream = null!;
 
             // And dispose the inner stream if needed
 
@@ -134,7 +136,7 @@ namespace System.Text
                 // No need to write anything to the stream first.
 
                 Stream innerStream = _innerStream;
-                _innerStream = null;
+                _innerStream = null!;
 
                 return (_leaveOpen)
                     ? default /* no work to do */
@@ -151,7 +153,7 @@ namespace System.Text
                 Stream innerStream = _innerStream;
 
                 await innerStream.WriteAsync(pendingData.AsMemory()).ConfigureAwait(false);
-                _innerStream = null;
+                _innerStream = null!;
 
                 if (!_leaveOpen)
                 {
@@ -171,7 +173,7 @@ namespace System.Text
 
         // Sets up the data structures that are necessary before any read operation takes place,
         // throwing if the object is in a state where reads are not possible.
-        [MemberNotNull(nameof(_innerStream), nameof(_innerDecoder), nameof(_thisEncoder))]
+        [MemberNotNull(nameof(_innerDecoder), nameof(_thisEncoder), nameof(_readBuffer))]
         private void EnsurePreReadConditions()
         {
             ThrowIfDisposed();
@@ -197,13 +199,13 @@ namespace System.Text
                 // data which we haven't yet read; however, we own the entire backing array and can
                 // re-create the segment as needed once the array is repopulated.
 
-                _pendingReadData = new ArraySegment<byte>(GC.AllocateUninitializedArray<byte>(_thisEncoding.GetMaxByteCount(_readCharBufferMaxSize)), 0, 0);
+                _readBuffer = GC.AllocateUninitializedArray<byte>(_thisEncoding.GetMaxByteCount(_readCharBufferMaxSize));
             }
         }
 
         // Sets up the data structures that are necessary before any write operation takes place,
         // throwing if the object is in a state where writes are not possible.
-        [MemberNotNull(nameof(_innerStream), nameof(_thisDecoder), nameof(_innerEncoder))]
+        [MemberNotNull(nameof(_thisDecoder), nameof(_innerEncoder))]
         private void EnsurePreWriteConditions()
         {
             ThrowIfDisposed();
@@ -237,12 +239,12 @@ namespace System.Text
                 return default;
             }
 
+            // convert bytes [this] -> chars
             // Having leftover data in our buffers should be very rare since it should only
             // occur if the end of the stream contains an incomplete multi-byte sequence.
             // Let's not bother complicating this logic with array pool rentals or allocation-
             // avoiding loops.
 
-            // convert bytes [this] -> chars
 
             char[] chars = Array.Empty<char>();
             int charCount = _thisDecoder.GetCharCount(Array.Empty<byte>(), 0, 0, flush: true);
@@ -253,6 +255,8 @@ namespace System.Text
             }
 
             // convert chars -> bytes [inner]
+            // It's possible that _innerEncoder might need to perform some end-of-text fixup
+            // (due to flush: true), even if _thisDecoder didn't need to do so.
 
             byte[] bytes = Array.Empty<byte>();
             int byteCount = _innerEncoder.GetByteCount(chars, 0, charCount, flush: true);
@@ -305,7 +309,7 @@ namespace System.Text
             // and to ensure an exception is thrown if the Encoding reported an incorrect
             // worst-case expansion.
 
-            if (_pendingReadData.Count == 0)
+            if (_readBufferCount == 0)
             {
                 byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(DefaultReadByteBufferSize);
                 char[] rentedChars = ArrayPool<char>.Shared.Rent(_readCharBufferMaxSize);
@@ -323,9 +327,10 @@ namespace System.Text
                     // convert bytes [inner] -> chars, then convert chars -> bytes [this]
 
                     int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                    int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _pendingReadData.Array!, 0, flush: isEofReached);
+                    int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
 
-                    _pendingReadData = new ArraySegment<byte>(_pendingReadData.Array!, 0, pendingReadDataPopulatedJustNow);
+                    _readBufferOffset = 0;
+                    _readBufferCount = pendingReadDataPopulatedJustNow;
                 }
                 finally
                 {
@@ -339,9 +344,10 @@ namespace System.Text
             // empty because the inner stream has reached EOF and all pending read data
             // has already been flushed, and we should return 0.
 
-            int bytesToReturn = Math.Min(_pendingReadData.Count, buffer.Length);
-            _pendingReadData.AsSpan(0, bytesToReturn).CopyTo(buffer);
-            _pendingReadData = _pendingReadData[bytesToReturn..];
+            int bytesToReturn = Math.Min(_readBufferCount, buffer.Length);
+            _readBuffer.AsSpan(_readBufferOffset, bytesToReturn).CopyTo(buffer);
+            _readBufferOffset += bytesToReturn;
+            _readBufferCount -= bytesToReturn;
             return bytesToReturn;
         }
 
@@ -375,7 +381,7 @@ namespace System.Text
                 // and to ensure an exception is thrown if the Encoding reported an incorrect
                 // worst-case expansion.
 
-                if (_pendingReadData.Count == 0)
+                if (_readBufferCount == 0)
                 {
                     byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(DefaultReadByteBufferSize);
                     char[] rentedChars = ArrayPool<char>.Shared.Rent(_readCharBufferMaxSize);
@@ -393,9 +399,10 @@ namespace System.Text
                         // convert bytes [inner] -> chars, then convert chars -> bytes [this]
 
                         int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                        int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _pendingReadData.Array!, 0, flush: isEofReached);
+                        int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
 
-                        _pendingReadData = new ArraySegment<byte>(_pendingReadData.Array!, 0, pendingReadDataPopulatedJustNow);
+                        _readBufferOffset = 0;
+                        _readBufferCount = pendingReadDataPopulatedJustNow;
                     }
                     finally
                     {
@@ -409,9 +416,10 @@ namespace System.Text
                 // empty because the inner stream has reached EOF and all pending read data
                 // has already been flushed, and we should return 0.
 
-                int bytesToReturn = Math.Min(_pendingReadData.Count, buffer.Length);
-                _pendingReadData.AsSpan(0, bytesToReturn).CopyTo(buffer.Span);
-                _pendingReadData = _pendingReadData[bytesToReturn..];
+                int bytesToReturn = Math.Min(_readBufferCount, buffer.Length);
+                _readBuffer.AsSpan(_readBufferOffset, bytesToReturn).CopyTo(buffer.Span);
+                _readBufferOffset += bytesToReturn;
+                _readBufferCount -= bytesToReturn;
                 return bytesToReturn;
             }
         }
@@ -430,9 +438,6 @@ namespace System.Text
             => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         [StackTraceHidden]
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [MemberNotNull(new[] { nameof(_innerStream) })]
-#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
         private void ThrowIfDisposed()
         {
             if (_innerStream is null)
