@@ -45,7 +45,7 @@ UITextView* logLabel;
 
     summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];
     summaryLabel.textColor = [UIColor whiteColor];
-    summaryLabel.font = [UIFont boldSystemFontOfSize: 14];
+    summaryLabel.font = [UIFont boldSystemFontOfSize: 12];
     summaryLabel.numberOfLines = 2;
     summaryLabel.textAlignment = NSTextAlignmentLeft;
 #ifdef TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
