@@ -58,10 +58,10 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         }
         Console.WriteLine(".");
 
-        AppleConsole.mono_ios_set_summary($"Running\n{Path.GetFileName(testLibs[0])} tests...");
+        mono_ios_set_summary($"Running\n{Path.GetFileName(testLibs[0])} tests...");
         var simpleTestRunner = new SimpleTestRunner(verbose);
         await simpleTestRunner.RunAsync();
-        AppleConsole.mono_ios_set_summary("Done.");
+        mono_ios_set_summary("Done.");
         Console.WriteLine("----- Done -----");
         return 0;
     }
