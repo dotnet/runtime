@@ -32,6 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         public void WriteInt32(int value) => WriteInt64(value);
+        public void WriteUInt32(uint value) => WriteUInt64(value);
 
         // Writes a CBOR negative integer encoding according to
         // https://tools.ietf.org/html/rfc7049#section-2.1
