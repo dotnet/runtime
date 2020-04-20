@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
@@ -20,6 +20,8 @@
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
+    <Compile Include="System\Xunit\AliasAttribute.cs" />
+    <Compile Include="System\Xunit\TupleMemberDataAttribute.cs" />
     <!-- We don't compile per but and instead use runtime platform checks. -->
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
@@ -29,6 +31,10 @@
       variant from the Common folder and adding the missing members manually.
     -->
     <Compile Include="Interop\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- .NET 5+ only -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System\AssertExtensions.Range.cs" />
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>

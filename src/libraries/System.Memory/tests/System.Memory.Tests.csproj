@@ -260,6 +260,15 @@
     <Compile Include="Base64\Base64TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Ascii\AsciiTests.Casing.cs" />
+    <Compile Include="Ascii\AsciiTests.Common.cs" />
+    <Compile Include="Ascii\AsciiTests.Equality.cs" />
+    <Compile Include="Ascii\AsciiTests.IndexOf.cs" />
+    <Compile Include="Ascii\AsciiTests.IsAscii.cs" />
+    <Compile Include="Ascii\AsciiTests.Transcode.cs" />
+    <Compile Include="Ascii\AsciiTests.Trim.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
       <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>

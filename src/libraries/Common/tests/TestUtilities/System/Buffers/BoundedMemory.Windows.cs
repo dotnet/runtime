@@ -160,6 +160,8 @@ namespace System.Buffers
                 }
             }
 
+            public override int Length => _elementCount;
+
             public override void Dispose()
             {
                 _handle.Dispose();
@@ -191,10 +193,7 @@ namespace System.Buffers
                     // no-op; the handle will be disposed separately
                 }
 
-                public override Span<T> GetSpan()
-                {
-                    throw new NotImplementedException();
-                }
+                public override Span<T> GetSpan() => _impl.Span;
 
                 public override MemoryHandle Pin(int elementIndex)
                 {

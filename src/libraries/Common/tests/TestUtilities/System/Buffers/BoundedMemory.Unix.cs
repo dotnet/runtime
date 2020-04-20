@@ -27,6 +27,8 @@ namespace System.Buffers
 
             public override Span<T> Span => _buffer;
 
+            public override int Length => _buffer.Length;
+
             public override void Dispose()
             {
                 // no-op

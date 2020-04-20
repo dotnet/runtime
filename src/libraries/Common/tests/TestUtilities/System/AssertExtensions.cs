@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace System
 {
-    public static class AssertExtensions
+    public static partial class AssertExtensions
     {
         private static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
 

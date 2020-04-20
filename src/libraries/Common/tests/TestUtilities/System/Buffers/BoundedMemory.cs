@@ -28,6 +28,11 @@ namespace System.Buffers
         public abstract Span<T> Span { get; }
 
         /// <summary>
+        /// Gets the length (in elements) of this <see cref="BoundedMemory{T}"/> instance.
+        /// </summary>
+        public abstract int Length { get; }
+
+        /// <summary>
         /// Disposes this <see cref="BoundedMemory{T}"/> instance.
         /// </summary>
         public abstract void Dispose();
