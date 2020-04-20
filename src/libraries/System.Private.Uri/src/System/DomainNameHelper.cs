@@ -262,42 +262,35 @@ namespace System
             // d) if label is unicode then clean it by running it through idnmapping
             do
             {
+                if (curPos != 0)
+                {
+                    dest.Append('.');
+                }
+
                 bool asciiLabel = true;
-                bool foundAce = false;
-                bool checkedAce = false;
-                bool foundDot = false;
 
                 //find the dot or hit the end
-                int newPos = curPos;
-                while ((uint)newPos < (uint)hostname.Length)
+                int newPos;
+                for (newPos = curPos; (uint)newPos < (uint)hostname.Length; newPos++)
                 {
                     char c = hostname[newPos];
-                    if (!checkedAce)
+
+                    if (c == '.')
                     {
-                        checkedAce = true;
-                        if (c == 'x'
-                            && (uint)(newPos + 3) < (uint)hostname.Length
-                            && hostname[newPos + 1] == 'n'
-                            && hostname[newPos + 2] == '-'
-                            && hostname[newPos + 3] == '-')
-                        {
-                            foundAce = true;
-                        }
+                        break;
                     }
 
                     if (c > '\x7F')
                     {
                         asciiLabel = false;
-                    }
 
-                    if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP
-                        (c == '\uFF0E') ||                  //FULLWIDTH FULL STOP
-                        (c == '\uFF61'))                    //HALFWIDTH IDEOGRAPHIC FULL STOP
-                    {
-                        foundDot = true;
-                        break;
+                        if ((c == '\u3002') || // IDEOGRAPHIC FULL STOP
+                            (c == '\uFF0E') || // FULLWIDTH FULL STOP
+                            (c == '\uFF61'))   // HALFWIDTH IDEOGRAPHIC FULL STOP
+                        {
+                            break;
+                        }
                     }
-                    ++newPos;
                 }
 
                 if (!asciiLabel)
@@ -307,8 +300,6 @@ namespace System
                         string asciiForm = s_idnMapping.GetAscii(hostname, curPos, newPos - curPos);
 
                         dest.AppendString(s_idnMapping.GetUnicode(asciiForm));
-                        if (foundDot)
-                            dest.Append('.');
                     }
                     catch (ArgumentException)
                     {
@@ -318,14 +309,17 @@ namespace System
                 else
                 {
                     bool aceValid = false;
-                    if (foundAce)
+
+                    if ((uint)(curPos + 3) < (uint)hostname.Length
+                        && hostname[curPos] == 'x'
+                        && hostname[curPos + 1] == 'n'
+                        && hostname[curPos + 2] == '-'
+                        && hostname[curPos + 3] == '-')
                     {
                         // check ace validity
                         try
                         {
                             dest.AppendString(s_idnMapping.GetUnicode(hostname, curPos, newPos - curPos));
-                            if (foundDot)
-                                dest.Append('.');
                             aceValid = true;
                         }
                         catch (ArgumentException)
@@ -340,13 +334,10 @@ namespace System
                         ReadOnlySpan<char> slice = hostname.AsSpan(curPos, newPos - curPos);
                         int charsWritten = slice.ToLowerInvariant(dest.AppendSpan(slice.Length));
                         Debug.Assert(charsWritten == slice.Length);
-
-                        if (foundDot)
-                            dest.Append('.');
                     }
                 }
 
-                curPos = newPos + (foundDot ? 1 : 0);
+                curPos = newPos + 1;
             } while (curPos < hostname.Length);
 
             return true;
