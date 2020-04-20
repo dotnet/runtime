@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(TARGET_FREEBSD)
+#define _WITH_GETLINE
+#endif
+
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"

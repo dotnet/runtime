@@ -82,9 +82,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.7.0-preview-20200408-06">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.7.0-preview-20200416-02">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>732a3a37e8d3e1a2522546fca644c7d69be457cf</Sha>
+      <Sha>5fd8bb7eabc542fbda5ed8e436f68ca975de0655</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20206.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -166,9 +166,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
     </Dependency>
+    <Dependency Name="System.Text.Json" Version="5.0.0-preview.4.20202.18">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
+    </Dependency>
     <Dependency Name="ILLink.Tasks" Version="5.0.0-preview.3.20210.1">
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>8caef57d1f3bc7a188e5dd26d43a2d34151223f9</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.XHarness.Tests.Runners" Version="1.0.0-prerelease.20214.2">
+      <Uri>https://github.com/dotnet/xharness</Uri>
+      <Sha>b5bfc4fcd431ab1fd560bdea7642c7998e30f24d</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

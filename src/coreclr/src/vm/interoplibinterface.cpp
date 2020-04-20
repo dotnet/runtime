@@ -1409,6 +1409,15 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     if (!g_IsGlobalComWrappersRegistered)
         return false;
 
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    {
+        GCX_PREEMP();
+
+        HRESULT hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+        _ASSERTE(hr == S_OK);
+    }
+
     // Switch to Cooperative mode since object references
     // are being manipulated.
     {
@@ -1425,7 +1434,7 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateObjectForComInstanceInternal(
             NULL /*comWrappersImpl*/,
-            externalComObject,
+            identity,
             (CreateObjectFlags)flags,
             unwrapIfManagedObjectWrapper,
             NULL /*wrapperMaybe*/,

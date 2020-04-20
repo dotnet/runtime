@@ -182,7 +182,7 @@ test_mono_callspec_main (void)
 	MonoMethod *meth;
 	MonoImageOpenStatus status;
 
-	//FIXME This is a fugly hack due to embedding simply not working from the tree
+	//FIXME This is a hack due to embedding simply not working from the tree
 	mono_set_assemblies_path ("../../mcs/class/lib/net_4_x");
 
 	test_methods = g_array_new (FALSE, TRUE, sizeof (MonoMethod *));

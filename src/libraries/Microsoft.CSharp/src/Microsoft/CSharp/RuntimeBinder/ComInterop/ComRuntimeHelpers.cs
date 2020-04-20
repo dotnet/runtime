@@ -526,17 +526,21 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             EmitLoadArg(method, flagsIndex);
 
             EmitLoadArg(method, dispParamsIndex);
+            method.Emit(OpCodes.Conv_I);
 
             if (returnResult)
             {
                 EmitLoadArg(method, resultIndex);
+                method.Emit(OpCodes.Conv_I);
             }
             else
             {
                 method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField(nameof(IntPtr.Zero)));
             }
             EmitLoadArg(method, exceptInfoIndex);
+            method.Emit(OpCodes.Conv_I);
             EmitLoadArg(method, argErrIndex);
+            method.Emit(OpCodes.Conv_I);
 
             // functionPtr = *(IntPtr*)(*(dispatchPointer) + VTABLE_OFFSET)
             int idispatchInvokeOffset = ((int)IDispatchMethodIndices.IDispatch_Invoke) * Marshal.SizeOf(typeof(IntPtr));

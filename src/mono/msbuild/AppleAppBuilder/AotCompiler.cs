@@ -50,10 +50,11 @@ internal class AotCompiler
             .Append("static,")
             .Append("asmonly,")
             .Append("direct-icalls,")
-            .Append("no-direct-calls,")
+            .Append("nodebug,")
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
-            //  TODO: enable aotdata
+            .Append("msym-dir=").Append(Path.Combine(binDir, "Msym,"))
+            // TODO: enable aotdata
             //.Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
             //  TODO: enable direct-pinvokes (to get rid of -force_loads)
             //.Append("direct-pinvoke,")

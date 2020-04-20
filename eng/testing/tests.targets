@@ -101,6 +101,7 @@
     <!-- Invoke the run script with the test host as the runtime path. -->
     <Exec Command="$(RunTestsCommand)"
           ContinueOnError="true"
+          IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true">
       <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
     </Exec>
