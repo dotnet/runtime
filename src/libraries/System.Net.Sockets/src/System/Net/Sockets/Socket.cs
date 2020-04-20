@@ -202,13 +202,12 @@ namespace System.Net.Sockets
                         socketAddress ??= new Internals.SocketAddress(_addressFamily, buffer);
 
                         SocketError result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
-                        if ( result != SocketError.Success &&
-                            ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && result == SocketError.Fault) ||
-                             (socketAddress.InternalSize > socketAddress.Buffer.Length)))
+                        if ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && result == SocketError.Fault) ||
+                            (socketAddress.InternalSize > socketAddress.Buffer.Length))
                         {
                             // GetPeerName simply fails on Windows it buffer is too small.
-                            // On UNix, we may get partial result.
-                            socketAddress = new Internals.SocketAddress(_addressFamily, UnixDomainSocketEndPoint.MaxAddressSize);
+                            // On Unix, we may get partial result.
+                            socketAddress.Buffer = new byte[RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? UnixDomainSocketEndPoint.MaxAddressSize : socketAddress.InternalSize];
                             result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
                         }
 
