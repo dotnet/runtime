@@ -144,8 +144,8 @@ using asm_sigcontext::_xstate;
 #define FPREG_StatusWord(uc) (FPREG_Fpstate(uc)->sw)
 #define FPREG_MxCsr_Mask(uc) (FPREG_Fpstate(uc)->mxcsr_mask)
 
-// on Solaris, fctw and __fx_rsvd are uint8_t, whereas on linux ftw is uint16_t,
-// so we use split and join these two uint8_t members at callsites.
+// on SunOS, fctw and __fx_rsvd are uint8_t, whereas on linux ftw is uint16_t,
+// so we use split and join technique for these two uint8_t members at call sites.
 #define FPREG_TagWord1(uc) (FPREG_Fpstate(uc)->fctw)
 #define FPREG_TagWord2(uc) (FPREG_Fpstate(uc)->__fx_rsvd)
 #else

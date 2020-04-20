@@ -56,7 +56,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CL
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif()
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 _add_executable(ildasm
     ${ILDASM_SOURCES}

@@ -33,7 +33,7 @@ else(CLR_CMAKE_HOST_WIN32)
 
     if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif()
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     if(CLR_CMAKE_HOST_LINUX)
 
@@ -89,17 +89,17 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif()
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
 if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif()
+endif(CLR_CMAKE_HOST_OSX)
 
 if(CLR_CMAKE_HOST_SUNOS)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-endif()
+endif(CLR_CMAKE_HOST_SUNOS)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.

@@ -322,7 +322,7 @@ else()
   elseif(CLR_CMAKE_HOST_SUNOS)
     # Add linker exports file option
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
-  endif()
+  endif(CLR_CMAKE_HOST_SUNOS)
 
   set(SHARED_LIB_SOURCES ${SOURCES})
 endif()

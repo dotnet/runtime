@@ -430,19 +430,21 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
-#if (HAVE_GREGSET_T || HAVE_GREGSET_T) && !HAVE_FPREGS_WITH_CW
+#if !HAVE_FPREGS_WITH_CW
+#if HAVE_GREGSET_T || HAVE_GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // If the pointer to the floating point state in the native context
         // is not valid, we can't copy floating point registers regardless of
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE_GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
@@ -544,12 +546,13 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
 
-#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HAVE_FPREGS_WITH_CW
+#if !HAVE_FPREGS_WITH_CW
+#if HAVE_GREGSET_T || HAVE___GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
         // clear that the floating point and extended state data in the CONTEXT is not
@@ -566,7 +569,8 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE___GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {

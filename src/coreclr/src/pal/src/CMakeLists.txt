@@ -1,7 +1,7 @@
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif()
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -113,7 +113,7 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   add_compile_options(-Wno-unused-result)
-endif()
+endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S

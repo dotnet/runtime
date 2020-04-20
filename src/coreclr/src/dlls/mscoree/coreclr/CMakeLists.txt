@@ -59,12 +59,12 @@ else(CLR_CMAKE_HOST_WIN32)
 
     if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
         set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
-    endif()
+    endif(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
 
     if(CLR_CMAKE_HOST_SUNOS)
         # Add linker exports file option
         set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
-    endif()
+    endif(CLR_CMAKE_HOST_SUNOS)
 
 endif (CLR_CMAKE_HOST_WIN32)
 
