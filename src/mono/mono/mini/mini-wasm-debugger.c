@@ -845,7 +845,10 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			int obj_id = get_object_id (obj);
 
 			if (type-> type == MONO_TYPE_ARRAY || type->type == MONO_TYPE_SZARRAY) {
-				mono_wasm_add_typed_value ("array", class_name, obj_id);
+				MonoArray *array = (MonoArray *)obj;
+				EM_ASM ({
+					MONO.mono_wasm_add_typed_value ('array', $0, { objectId: $1, length: $2 });
+				}, class_name, obj_id, mono_array_length_internal (array));
 			} else if (m_class_is_delegate (klass) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (type->data.generic_class->container_class))) {
 				MonoMethod *method;
 
