@@ -218,7 +218,8 @@ jobs:
       - script: $(_msbuildCommand)
                 $(Build.SourcesDirectory)/src/mono/mono.proj
                 /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfig);TargetArchitecture=$(archType)
+                /p:Configuration=$(buildConfig)
+                /p:TargetArchitecture=$(archType)
         displayName: "Patch dotnet with mono"
 
 
