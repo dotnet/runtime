@@ -69,6 +69,8 @@ Below table shows the combined area owners on this repository:
 | area-System.Configuration | @maryamariyan @safern | |
 | area-System.Console | @carlossanlop @eiriktsarpalis | |
 | area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
+| area-System.Data.Odbc | @ajcvickers | |
+| area-System.Data.OleDB | @ajcvickers | |
 | area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
 | area-System.Diagnostics | @tommcdon @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
 | area-System.Diagnostics.Process | @adamsitnik @eiriktsarpalis | |
