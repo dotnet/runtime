@@ -264,37 +264,38 @@ namespace System.Tests
 
             yield return new object[] { new ulong[0], 0, 0, (ulong)0, null, -1 };
 
-            // IntPtr
+            // // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
+            // // IntPtr
 
-            IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
+            // IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
 
-            yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
-            yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
-            yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
-            yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
 
-            yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
-            yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
-            yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
-            yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
+            // yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
+            // yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
 
-            yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
+            // yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
 
-            // UIntPtr
+            // // UIntPtr
 
-            UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
+            // UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
 
-            yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
-            yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
-            yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
-            yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
 
-            yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
-            yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
-            yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
-            yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
+            // yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
+            // yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
 
-            yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
+            // yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
 
             // Char
             char[] charArray = new char[] { char.MinValue, (char)5, (char)5, char.MaxValue };
