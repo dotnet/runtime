@@ -299,7 +299,7 @@ namespace System
                     {
                         string asciiForm = s_idnMapping.GetAscii(hostname, curPos, newPos - curPos);
 
-                        dest.AppendString(s_idnMapping.GetUnicode(asciiForm));
+                        dest.Append(s_idnMapping.GetUnicode(asciiForm));
                     }
                     catch (ArgumentException)
                     {
@@ -319,7 +319,7 @@ namespace System
                         // check ace validity
                         try
                         {
-                            dest.AppendString(s_idnMapping.GetUnicode(hostname, curPos, newPos - curPos));
+                            dest.Append(s_idnMapping.GetUnicode(hostname, curPos, newPos - curPos));
                             aceValid = true;
                         }
                         catch (ArgumentException)

@@ -2719,7 +2719,7 @@ namespace System
             //Scheme and slashes
             if ((parts & UriComponents.Scheme) != 0)
             {
-                dest.AppendString(_syntax.SchemeName);
+                dest.Append(_syntax.SchemeName);
                 if (parts != UriComponents.Scheme)
                 {
                     dest.Append(':');
@@ -2833,7 +2833,7 @@ namespace System
                     if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType && _info.ScopeId != null)
                     {
                         dest.Length--;
-                        dest.AppendString(_info.ScopeId);
+                        dest.Append(_info.ScopeId);
                         dest.Append(']');
                     }
                 }
@@ -2844,7 +2844,11 @@ namespace System
                 (InFact(Flags.NotDefaultPort) || ((parts & UriComponents.StrongPort) != 0 && _syntax.DefaultPort != UriParser.NoDefaultPort)))
             {
                 dest.Append(':');
-                dest.AppendNumber(_info.Offset.PortValue);
+
+                const int MaxUshortLength = 5;
+                bool success = _info.Offset.PortValue.TryFormat(dest.AppendSpan(MaxUshortLength), out int charsWritten);
+                Debug.Assert(success);
+                dest.Length -= MaxUshortLength - charsWritten;
             }
 
             //Path
@@ -4507,7 +4511,7 @@ namespace System
             {
                 if (InFact(Flags.ShouldBeCompressed))
                 {
-                    dest.Append(_string, _info.Offset.Path, _info.Offset.Query - _info.Offset.Path);
+                    dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
 
                     // If the path was found as needed compression and contains escaped characters, unescape only
                     // interesting characters (safe)
@@ -4544,7 +4548,7 @@ namespace System
                     }
                     else
                     {
-                        dest.Append(_string, _info.Offset.Path, _info.Offset.Query - _info.Offset.Path);
+                        dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
                     }
                 }
 
@@ -4565,7 +4569,7 @@ namespace System
             }
             else
             {
-                dest.Append(_string, _info.Offset.Path, _info.Offset.Query - _info.Offset.Path);
+                dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
 
                 if (InFact(Flags.ShouldBeCompressed))
                 {
