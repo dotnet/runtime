@@ -469,9 +469,10 @@ namespace System.Net.Sockets
             // WSARecvMsg uses a WSAMsg descriptor.
             // The WSAMsg buffer is a pinned array to avoid complicating the use of Overlapped.
             // WSAMsg contains a pointer to a sockaddr.
-            // The sockaddr is a pinned array to avoid complicating the use of Overlapped.
+            // The sockaddr is pinned with a GCHandle to avoid complicating the use of Overlapped.
             // WSAMsg contains a pointer to a WSABuffer array describing data buffers.
             // WSAMsg also contains a single WSABuffer describing a control buffer.
+            PinSocketAddressBuffer();
 
             // Create a WSAMessageBuffer if none exists yet.
             if (_wsaMessageBufferPinned == null)
