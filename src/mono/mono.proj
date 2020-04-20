@@ -965,6 +965,19 @@
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <!-- xharness expects 'xunit-excludes.txt' with xunit categories to ignore in the bundle -->
+    <ItemGroup>
+      <XunitIgnoreCategories Include="-notrait category=OuterLoop"/>
+      <XunitIgnoreCategories Include="-notrait category=failing"/>
+      <XunitIgnoreCategories Include="-notrait category=nonnetcoreapptests"/>
+      <XunitIgnoreCategories Include="-notrait category=nonosxtests"/>
+    </ItemGroup>
+    <WriteLinesToFile
+        File="$(BundleDir)\xunit-excludes.txt"
+        Lines="@(XunitIgnoreCategories)"
+        Overwrite="true"
+        Encoding="Unicode"/>
+
    <AppleAppBuilderTask 
         Arch="$(TargetArchitecture)"
         ProjectName="$(TestName)"
@@ -992,7 +1005,7 @@
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl boot &quot;iPhone 11&quot;" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64' and '$(ShowIosSimulator)' != 'false'" Command="open -a Simulator" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl install &quot;iPhone 11&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch --console booted net.dot.$(TestName) testlib:$(TestName).dll" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch booted net.dot.$(TestName) testlib:$(TestName).dll" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->

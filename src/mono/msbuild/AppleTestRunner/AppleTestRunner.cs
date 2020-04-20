@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XHarness.Tests.Runners;
 using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
-public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
+public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
     private static List<string> testLibs = new List<string>();
 
@@ -32,6 +32,7 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         {
             testLibs.Add(arg.Remove(0, "testlib:".Length));
         }
+        bool verbose = args.Contains("--verbose");
 
         if (testLibs.Count < 1)
         {
@@ -53,11 +54,25 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         Console.WriteLine(".");
 
         AppleConsole.mono_ios_set_summary($"Running\n{Path.GetFileName(testLibs[0])} tests...");
-        var simpleTestRunner = new SimpleTestRunner();
+        var simpleTestRunner = new SimpleTestRunner(verbose);
         await simpleTestRunner.RunAsync();
         AppleConsole.mono_ios_set_summary("Done.");
         Console.WriteLine("----- Done -----");
         return 0;
+    }
+
+    public SimpleTestRunner(bool verbose)
+    {
+        if (verbose)
+        {
+            MinimumLogLevel = MinimumLogLevel.Verbose;
+            _maxParallelThreads = 1;
+        }
+        else
+        {
+            MinimumLogLevel = MinimumLogLevel.Info;
+            _maxParallelThreads = Environment.ProcessorCount;
+        }
     }
 
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
@@ -73,13 +88,15 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         Console.WriteLine("[TerminateWithSuccess]");
     }
 
-    protected override int? MaxParallelThreads => Environment.ProcessorCount;
+    private int? _maxParallelThreads;
+
+    protected override int? MaxParallelThreads => _maxParallelThreads;
 
     protected override IDevice Device => this;
 
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
-    protected override string? IgnoreFilesDirectory { get; }
+    protected override string? IgnoreFilesDirectory => Environment.CurrentDirectory;
 
     public string BundleIdentifier => "net.dot.test-runner";
 
