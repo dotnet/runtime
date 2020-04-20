@@ -118,14 +118,9 @@
     <!-- copy crossgen2 -->
     <ItemGroup>
       <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)*" />
-      <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
       <Crossgen2Files Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT" />
       <Crossgen2Files Include="$(RepoRoot)LICENSE.TXT" />
     </ItemGroup>
-    <Message Importance="High" Text="CoreCLRCrossgen2Dir = $(CoreCLRCrossgen2Dir)" />
-    <Message Importance="High" Text="CoreCLRArtifactsPath = $(CoreCLRArtifactsPath)" />
-    <Message Importance="High" Text="RuntimeArtifactsPath = $(RuntimeArtifactsPath)" />
-    <Message Importance="High" Text="Crossgen2Files = @(Crossgen2Files)" />
 
     <Copy Sourcefiles="@(Crossgen2Files)"
           DestinationFolder="$(Crossgen2PublishRoot)%(Crossgen2Files.RecursiveDir)" />
