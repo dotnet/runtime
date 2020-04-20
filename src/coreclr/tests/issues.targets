@@ -1424,12 +1424,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34380</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgarray2/**">
             <Issue>https://github.com/dotnet/runtime/issues/34378</Issue>
         </ExcludeList>
