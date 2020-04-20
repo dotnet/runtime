@@ -496,7 +496,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall_id (mb, conv_to_icall_str_inverse (conv));
-		mono_mb_emit_byte (mb, CEE_STIND_REF);		
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		break;
 	}
 
@@ -620,11 +620,7 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 		return MONO_JIT_ICALL_ves_icall_mono_string_from_utf16;
 	case MONO_MARSHAL_CONV_LPTSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-#ifdef TARGET_WIN32
-		return MONO_JIT_ICALL_ves_icall_mono_string_from_utf16;
-#else
 		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
-#endif
 	case MONO_MARSHAL_CONV_UTF8STR_STR:
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
