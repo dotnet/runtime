@@ -116,7 +116,7 @@ namespace System.Text.Json
                                 {
                                     if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
                                     {
-                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
+                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
                                     }
 
                                     // Non-public properties should not be included for (de)serialization.
@@ -127,7 +127,7 @@ namespace System.Text.Json
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, currentType, options);
+                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, currentType, options);
                                     Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                     // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
