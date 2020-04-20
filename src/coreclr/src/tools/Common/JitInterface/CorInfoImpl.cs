@@ -1400,7 +1400,7 @@ namespace Internal.JitInterface
             if (NeedsTypeLayoutCheck(type))
             {
                 ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             return (uint)classSize.AsInt;
