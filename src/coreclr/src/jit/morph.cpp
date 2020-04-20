@@ -12641,10 +12641,10 @@ DONE_MORPHING_CHILDREN:
                     if (op2->AsDblCon()->gtDconVal == 2.0)
                     {
                         // Fold "x*2.0" to "x+x"
-                        op2 = gtCloneExpr(op1->OperIsLeaf() ? op1 : fgMakeMultiUse(&op1));
-                        tree->AsOp()->gtOp2 = op2;
-                        tree->ChangeOper(GT_ADD);
+                        op2  = gtCloneExpr(op1->OperIsLeaf() ? op1 : fgMakeMultiUse(&op1));
                         oper = GT_ADD;
+                        tree = gtNewOperNode(oper, tree->TypeGet(), op1, op2);
+                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     }
                     else if (op2->AsDblCon()->gtDconVal == 1.0)
                     {
