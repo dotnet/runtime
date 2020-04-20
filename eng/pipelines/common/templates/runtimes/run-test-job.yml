@@ -78,6 +78,10 @@ jobs:
       - name: testhostArg
         value: 'buildtesthostonly'
 
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - name: runtimeFlavorArgs
+      - value: '-excludemonofailures'
+
     - name: crossgenArg
       value: ''
     - name: LogNamePrefix
@@ -248,7 +252,7 @@ jobs:
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(runtimeFlavorArgs) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Generate test host
 
 
