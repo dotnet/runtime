@@ -228,10 +228,11 @@ namespace System.Tests
         public static void CompareTo_Other_ReturnsExpected(int l, object value, int expected)
         {
             var i = (IntPtr)l;
-            if (value is IntPtr IntPtrValue)
+            if (value is int intValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo(IntPtrValue)));
-                Assert.Equal(-expected, Math.Sign(IntPtrValue.CompareTo(i)));
+                var intPtr = (IntPtr)intValue;
+                Assert.Equal(expected, Math.Sign(i.CompareTo(intPtrValue)));
+                Assert.Equal(-expected, Math.Sign(intPtrValue.CompareTo(i)));
             }
 
             Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
