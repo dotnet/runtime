@@ -47,6 +47,17 @@ Below table shows the combined area owners on this repository:
 | area-Threading-mono | @lambdageek | |
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
+| ** Extensions namespaces ** | | |
+| area-Extensions-Caching | @maryamariyan | |
+| area-Extensions-Configuration | @maryamariyan | |
+| area-Extensions-DependencyInjection | @maryamariyan | |
+| area-Extensions-FileSystem | @maryamariyan | |
+| area-Extensions-Hosting | @maryamariyan | |
+| area-Extensions-HttpClientFactory | @maryamariyan | |
+| area-Extensions-Logging | @maryamariyan | |
+| area-Extensions-Options | @maryamariyan | |
+| area-Extensions-Primitives | @maryamariyan | |
+| area-Microsoft.Extensions | @maryamariyan | |
 | **System namespaces** | | |
 | area-System.Buffers | @tannergooding @GrabYourPitchforks @pgovind | |
 | area-System.CodeDom | @buyaa-n @krwq | |
