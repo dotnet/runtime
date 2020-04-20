@@ -65,11 +65,7 @@ VOID ParseNativeType(Module*                     pModule,
         sig,
         pTypeContext,
         pFD->GetMemberDef(),
-#if FEATURE_COMINTEROP
-        fIsWinRT ? MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD : MarshalInfo::MARSHAL_SCENARIO_FIELD,
-#else
         MarshalInfo::MARSHAL_SCENARIO_FIELD,
-#endif
         fAnsi ? nltAnsi : nltUnicode,
         nlfNone,
         FALSE,
@@ -158,12 +154,6 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
 #ifdef FEATURE_COMINTEROP
-        case MarshalInfo::MARSHAL_TYPE_HSTRING:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(HSTRING), sizeof(HSTRING));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_DATETIME:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
-            break;
         case MarshalInfo::MARSHAL_TYPE_INTERFACE:
             *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
             break;
@@ -210,17 +200,6 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
-#ifdef FEATURE_COMINTEROP
-        case MarshalInfo::MARSHAL_TYPE_SYSTEMTYPE:
-            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__TYPENAMENATIVE));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_EXCEPTION:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(int), sizeof(int));
-            break;
-        case MarshalInfo::MARSHAL_TYPE_NULLABLE:
-            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
-            break;
-#endif
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
             *pNFD = NativeFieldDescriptor(pFD);

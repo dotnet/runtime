@@ -232,11 +232,6 @@ public:
     virtual void MarshalLCID(int argIdx) = 0;
     virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
 
-#ifdef FEATURE_COMINTEROP
-    virtual void MarshalHiddenLengthArgument(MarshalInfo *pInfo, BOOL isForReturnArray) = 0;
-    virtual void MarshalFactoryReturn() = 0;
-#endif // FEATURE_COMINTEROP
-
     virtual void EmitInvokeTarget(MethodDesc *pStubMD) = 0;
 
     virtual void FinishEmit(MethodDesc* pMD) = 0;
@@ -336,170 +331,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    // Marshal the hidden length parameter for the managed parameter in pInfo
-    virtual void MarshalHiddenLengthArgument(MarshalInfo *pInfo, BOOL isForReturnArray)
-    {
-        STANDARD_VM_CONTRACT;
-
-        pInfo->MarshalHiddenLengthArgument(&m_slIL, SF_IsForwardStub(m_dwStubFlags), isForReturnArray);
-    }
-
-    void MarshalFactoryReturn()
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(SF_IsCOMStub(m_dwStubFlags));
-            PRECONDITION(SF_IsWinRTCtorStub(m_dwStubFlags));
-        }
-        CONTRACTL_END;
-
-        ILCodeStream *pcsSetup     = m_slIL.GetSetupCodeStream();
-        ILCodeStream *pcsDispatch  = m_slIL.GetDispatchCodeStream();
-        ILCodeStream *pcsUnmarshal = m_slIL.GetReturnUnmarshalCodeStream();
-        ILCodeStream *pcsCleanup   = m_slIL.GetCleanupCodeStream();
-
-        /*
-        *    SETUP
-        */
-
-        // create a local to hold the returned pUnk and initialize to 0 in case the factory fails
-        // and we try to release it during cleanup
-        LocalDesc locDescFactoryRetVal(ELEMENT_TYPE_I);
-        DWORD dwFactoryRetValLocalNum = pcsSetup->NewLocal(locDescFactoryRetVal);
-        pcsSetup->EmitLoadNullPtr();
-        pcsSetup->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        DWORD dwInnerIInspectableLocalNum = -1;
-        DWORD dwOuterIInspectableLocalNum = -1;
-        if (SF_IsWinRTCompositionStub(m_dwStubFlags))
-        {
-            // Create locals to store the outer and inner IInspectable values and initialize to null
-            // Note that we do this in the setup stream so that we're guaranteed to have a null-initialized
-            // value in the cleanup stream
-            LocalDesc locDescOuterIInspectable(ELEMENT_TYPE_I);
-            dwOuterIInspectableLocalNum = pcsSetup->NewLocal(locDescOuterIInspectable);
-            pcsSetup->EmitLoadNullPtr();
-            pcsSetup->EmitSTLOC(dwOuterIInspectableLocalNum);
-            LocalDesc locDescInnerIInspectable(ELEMENT_TYPE_I);
-            dwInnerIInspectableLocalNum = pcsSetup->NewLocal(locDescInnerIInspectable);
-            pcsSetup->EmitLoadNullPtr();
-            pcsSetup->EmitSTLOC(dwInnerIInspectableLocalNum);
-        }
-
-        /*
-        *   DISPATCH
-        */
-
-        // For composition factories, add the two extra params
-        if (SF_IsWinRTCompositionStub(m_dwStubFlags))
-        {
-            // Get outer IInspectable. The helper will return NULL if this is the "top-level" constructor,
-            // and the appropriate outer pointer otherwise.
-            pcsDispatch->EmitLoadThis();
-            m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_OUTER_INSPECTABLE, 2, 1);
-            pcsDispatch->EmitSTLOC(dwOuterIInspectableLocalNum);
-
-            // load the outer IInspectable (3rd last argument)
-            pcsDispatch->SetStubTargetArgType(ELEMENT_TYPE_I, false);
-            pcsDispatch->EmitLDLOC(dwOuterIInspectableLocalNum);
-
-            // pass pointer to where inner non-delegating IInspectable should be stored (2nd last argument)
-            LocalDesc locDescInnerPtr(ELEMENT_TYPE_I);
-            locDescInnerPtr.MakeByRef();
-            pcsDispatch->SetStubTargetArgType(&locDescInnerPtr, false);
-            pcsDispatch->EmitLDLOCA(dwInnerIInspectableLocalNum);
-            pcsDispatch->EmitCONV_I();
-        }
-
-        // pass pointer to the local to the factory method (last argument)
-        locDescFactoryRetVal.MakeByRef();
-        pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
-        pcsDispatch->EmitLDLOCA(dwFactoryRetValLocalNum);
-        pcsDispatch->EmitCONV_I();
-
-        /*
-        *   UNMARSHAL
-        */
-
-        // Mark that the factory method has succesfully returned and so cleanup will be necessary after
-        // this point.
-        m_slIL.EmitSetArgMarshalIndex(pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
-
-        // associate the 'this' RCW with one of the returned interface pointers
-        pcsUnmarshal->EmitLoadThis();
-
-        // now we need to find the right interface pointer to load
-        if (dwInnerIInspectableLocalNum != -1)
-        {
-            // We may have a composition scenario
-            ILCodeLabel* pNonCompositionLabel = pcsUnmarshal->NewCodeLabel();
-            ILCodeLabel* pLoadedLabel = pcsUnmarshal->NewCodeLabel();
-
-            // Did we pass an outer IInspectable?
-            pcsUnmarshal->EmitLDLOC(dwOuterIInspectableLocalNum);
-            pcsUnmarshal->EmitBRFALSE(pNonCompositionLabel);
-
-            // yes, this is a composition scenario
-            {
-                // ignore the delegating interface pointer (will be released in cleanup below) - we can
-                // re-create it by QI'ing the non-delegating one.
-                // Note that using this could be useful in the future (avoids an extra QueryInterface call)
-                // Just load the non-delegating interface pointer
-                pcsUnmarshal->EmitLDLOCA(dwInnerIInspectableLocalNum);
-                pcsUnmarshal->EmitBR(pLoadedLabel);
-            }
-            // else, no this is a non-composition scenario
-            {
-                pcsUnmarshal->EmitLabel(pNonCompositionLabel);
-
-                // ignore the non-delegating interface pointer (which should be null, but will regardless get
-                // cleaned up below in the event the factory doesn't follow the pattern properly).
-                // Just load the regular delegating interface pointer
-                pcsUnmarshal->EmitLDLOCA(dwFactoryRetValLocalNum);
-            }
-
-            pcsUnmarshal->EmitLabel(pLoadedLabel);
-        }
-        else
-        {
-            // Definitely can't be a composition scenario - use the only pointer we have
-            pcsUnmarshal->EmitLDLOCA(dwFactoryRetValLocalNum);
-        }
-
-        pcsUnmarshal->EmitCALL(METHOD__WINDOWSRUNTIMEMARSHAL__INITIALIZE_WRAPPER, 2, 0);
-
-        /*
-        *   CLEANUP
-        */
-
-        // release the returned interface pointer in the finally block
-        m_slIL.SetCleanupNeeded();
-
-        ILCodeLabel *pSkipCleanupLabel = pcsCleanup->NewCodeLabel();
-
-        m_slIL.EmitCheckForArgCleanup(pcsCleanup,
-                                      NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
-                                      NDirectStubLinker::BranchIfNotMarshaled,
-                                      pSkipCleanupLabel);
-
-        EmitInterfaceClearNative(pcsCleanup, dwFactoryRetValLocalNum);
-
-        // Note that it's a no-op to pass NULL to Clear_Native, so we call it even though we don't
-        // know if we assigned to the inner/outer IInspectable
-        if (dwInnerIInspectableLocalNum != -1)
-        {
-            EmitInterfaceClearNative(pcsCleanup, dwInnerIInspectableLocalNum);
-        }
-        if (dwOuterIInspectableLocalNum != -1)
-        {
-            EmitInterfaceClearNative(pcsCleanup, dwOuterIInspectableLocalNum);
-        }
-
-        pcsCleanup->EmitLabel(pSkipCleanupLabel);
-    }
-
     static void EmitInterfaceClearNative(ILCodeStream* pcsEmit, DWORD dwLocalNum)
     {
         STANDARD_VM_CONTRACT;
@@ -511,7 +342,6 @@ public:
         pcsEmit->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
         pcsEmit->EmitLabel(pSkipClearNativeLabel);
     }
-
 #endif // FEATURE_COMINTEROP
 
     void MarshalLCID(int argIdx)
@@ -3617,10 +3447,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
-        if (SF_IsWinRTStub(dwStubFlags))
-            ms = MarshalInfo::MARSHAL_SCENARIO_WINRT;
-        else
-            ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+        ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -3628,21 +3455,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
         ms = MarshalInfo::MARSHAL_SCENARIO_NDIRECT;
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTCtorStub(dwStubFlags))
-    {
-        _ASSERTE(msig.GetReturnType() == ELEMENT_TYPE_VOID);
-        _ASSERTE(SF_IsHRESULTSwapping(dwStubFlags));
-
-        pss->MarshalFactoryReturn();
-        nativeStackOffset += sizeof(LPVOID);
-        if (SF_IsWinRTCompositionStub(dwStubFlags))
-        {
-            nativeStackOffset += 2 * sizeof(LPVOID);
-        }
-    }
-    else
-#endif // FEATURE_COMINTEROP
     if (msig.GetReturnType() != ELEMENT_TYPE_VOID)
     {
         MarshalInfo returnInfo(msig.GetModule(),
@@ -3671,27 +3483,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
         fStubNeedsCOM |= returnInfo.MarshalerRequiresCOM();
 
 #ifdef FEATURE_COMINTEROP
-        if (marshalType == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-        {
-            // Hidden length arrays are only valid with HRESULT swapping
-            if (!SF_IsHRESULTSwapping(dwStubFlags))
-            {
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_COM_UNSUPPORTED_SIG);
-            }
-
-            // We should be safe to cast here - giant signatures will fail to marashal later with IDS_EE_SIGTOOCOMPLEX
-            returnInfo.SetHiddenLengthParamIndex(static_cast<UINT16>(nativeArgIndex));
-
-            // Inject the hidden argument so that it winds up at the end of the method signature
-            pss->MarshalHiddenLengthArgument(&returnInfo, TRUE);
-            nativeStackOffset += returnInfo.GetHiddenLengthParamStackSize();
-
-            if (SF_IsReverseStub(dwStubFlags))
-            {
-                ++argOffset;
-            }
-        }
-
         if (SF_IsCOMStub(dwStubFlags))
         {
             // We don't support native methods that return VARIANTs, non-blittable structs, GUIDs, or DECIMALs directly.
@@ -3715,9 +3506,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                     || marshalType == MarshalInfo::MARSHAL_TYPE_VALUECLASS
                     || marshalType == MarshalInfo::MARSHAL_TYPE_GUID
                     || marshalType == MarshalInfo::MARSHAL_TYPE_DECIMAL
-#ifdef FEATURE_COMINTEROP
-                    || marshalType == MarshalInfo::MARSHAL_TYPE_DATETIME
-#endif // FEATURE_COMINTEROP
                 )
             {
                 if (SF_IsHRESULTSwapping(dwStubFlags))
@@ -3772,91 +3560,6 @@ static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
 #endif // TARGET_X86
     return stackSize;
 }
-
-#ifdef FEATURE_COMINTEROP
-
-struct HiddenParameterInfo
-{
-    MarshalInfo *pManagedParam;     // Managed parameter which required the hidden parameter
-    int          nativeIndex;       // 0 based index into the native method signature where the hidden parameter should be injected
-};
-
-// Get the indexes of any hidden length parameters to be marshaled for the method
-//
-// At return, each value in the ppParamIndexes array is a 0 based index into the native method signature where
-// the length parameter for a hidden length array should be passed.  The MarshalInfo objects will also be
-// updated such that they all have explicit marshaling information.
-//
-// The caller is responsible for freeing the memory pointed to by ppParamIndexes
-void CheckForHiddenParameters(DWORD cParamMarshalInfo,
-                              __in_ecount(cParamMarshalInfo) MarshalInfo *pParamMarshalInfo,
-                              __out DWORD *pcHiddenNativeParameters,
-                              __out HiddenParameterInfo **ppHiddenNativeParameters)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pParamMarshalInfo));
-        PRECONDITION(CheckPointer(pcHiddenNativeParameters));
-        PRECONDITION(CheckPointer(ppHiddenNativeParameters));
-    }
-    CONTRACTL_END;
-
-    NewArrayHolder<HiddenParameterInfo> hiddenParamInfo(new HiddenParameterInfo[cParamMarshalInfo]);
-    DWORD foundInfoCount = 0;
-
-    for (DWORD iParam = 0; iParam < cParamMarshalInfo; ++iParam)
-    {
-        // Look for hidden length arrays, which all require additional parameters to be added
-        if (pParamMarshalInfo[iParam].GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-        {
-            DWORD currentNativeIndex = iParam + foundInfoCount;
-
-            // The location of the length parameter is implicitly just before the array pointer.
-            // We'll give it our current index, and bumping the found count will push us back a slot.
-
-            // We should be safe to cast here - giant signatures will fail to marashal later with IDS_EE_SIGTOOCOMPLEX
-            pParamMarshalInfo[iParam].SetHiddenLengthParamIndex(static_cast<UINT16>(currentNativeIndex));
-
-            hiddenParamInfo[foundInfoCount].nativeIndex = pParamMarshalInfo[iParam].HiddenLengthParamIndex();
-            hiddenParamInfo[foundInfoCount].pManagedParam = &(pParamMarshalInfo[iParam]);
-            ++foundInfoCount;
-        }
-    }
-
-    *pcHiddenNativeParameters = foundInfoCount;
-    *ppHiddenNativeParameters = hiddenParamInfo.Extract();
-}
-
-bool IsHiddenParameter(int nativeArgIndex,
-                       DWORD cHiddenParameters,
-                       __in_ecount(cHiddenParameters) HiddenParameterInfo *pHiddenParameters,
-                       __out HiddenParameterInfo **ppHiddenParameterInfo)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(cHiddenParameters == 0 || CheckPointer(pHiddenParameters));
-        PRECONDITION(CheckPointer(ppHiddenParameterInfo));
-    }
-    CONTRACTL_END;
-
-    *ppHiddenParameterInfo = NULL;
-
-    for (DWORD i = 0; i < cHiddenParameters; ++i)
-    {
-        _ASSERTE(pHiddenParameters[i].nativeIndex != -1);
-        if (pHiddenParameters[i].nativeIndex == nativeArgIndex)
-        {
-            *ppHiddenParameterInfo = &(pHiddenParameters[i]);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------
 // Creates a new stub for a N/Direct call. Return refcount is 1.
@@ -4010,10 +3713,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
-        if (SF_IsWinRTStub(dwStubFlags))
-            ms = MarshalInfo::MARSHAL_SCENARIO_WINRT;
-        else
-            ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+        ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -4055,16 +3755,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                                  DEBUG_ARG(pSigDesc->m_pDebugClassName)
                                                  DEBUG_ARG(i + 1));
     }
-
-#ifdef FEATURE_COMINTEROP
-    // Check to see if we need to inject any additional hidden parameters
-    DWORD cHiddenNativeParameters;
-    NewArrayHolder<HiddenParameterInfo> pHiddenNativeParameters;
-    CheckForHiddenParameters(numArgs, pParamMarshalInfo, &cHiddenNativeParameters, &pHiddenNativeParameters);
-
-    // Hidden parameters and LCID do not mix
-    _ASSERTE(!(cHiddenNativeParameters > 0 && iLCIDArg != -1));
-#endif // FEATURE_COMINTEROP
 
     // Marshal the parameters
     int argidx = 1;
@@ -4142,57 +3832,35 @@ static void CreateNDirectStubWorker(StubState*         pss,
 
     while (argidx <= numArgs)
     {
-#ifdef FEATURE_COMINTEROP
-        HiddenParameterInfo *pHiddenParameter;
-        // Check to see if we need to inject a hidden parameter
-        if (IsHiddenParameter(nativeArgIndex, cHiddenNativeParameters, pHiddenNativeParameters, &pHiddenParameter))
+        //
+        // Check to see if this is the parameter after which we need to insert the LCID.
+        //
+        if (argidx == iLCIDArg)
         {
-            pss->MarshalHiddenLengthArgument(pHiddenParameter->pManagedParam, FALSE);
-            nativeStackSize += pHiddenParameter->pManagedParam->GetHiddenLengthParamStackSize();
+            pss->MarshalLCID(argidx);
+            nativeStackSize += sizeof(LPVOID);
 
             if (SF_IsReverseStub(dwStubFlags))
-            {
-                ++argOffset;
-            }
+                argOffset++;
         }
-        else
-#endif // FEATURE_COMINTEROP
+
+        msig.NextArg();
+
+        MarshalInfo &info = pParamMarshalInfo[argidx - 1];
+
+        pss->MarshalArgument(&info, argOffset, GetStackOffsetFromStackSize(nativeStackSize, fThisCall));
+        nativeStackSize += info.GetNativeArgSize();
+
+        fStubNeedsCOM |= info.MarshalerRequiresCOM();
+
+        if (fThisCall && argidx == 1)
         {
-            //
-            // Check to see if this is the parameter after which we need to insert the LCID.
-            //
-            if (argidx == iLCIDArg)
-            {
-                pss->MarshalLCID(argidx);
-                nativeStackSize += sizeof(LPVOID);
-
-                if (SF_IsReverseStub(dwStubFlags))
-                    argOffset++;
-            }
-
-            msig.NextArg();
-
-            MarshalInfo &info = pParamMarshalInfo[argidx - 1];
-
-#ifdef FEATURE_COMINTEROP
-            // For the hidden-length array, length parameters must occur before the parameter containing the array pointer
-            _ASSERTE(info.GetMarshalType() != MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY || nativeArgIndex > info.HiddenLengthParamIndex());
-#endif // FEATURE_COMINTEROP
-
-            pss->MarshalArgument(&info, argOffset, GetStackOffsetFromStackSize(nativeStackSize, fThisCall));
-            nativeStackSize += info.GetNativeArgSize();
-
-            fStubNeedsCOM |= info.MarshalerRequiresCOM();
-
-            if (fThisCall && argidx == 1)
-            {
-                // make sure that the first parameter is enregisterable
-                if (info.GetNativeArgSize() > sizeof(SLOT))
-                    COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
-            }
-
-            argidx++;
+            // make sure that the first parameter is enregisterable
+            if (info.GetNativeArgSize() > sizeof(SLOT))
+                COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
         }
+
+        argidx++;
 
         ++nativeArgIndex;
     }
@@ -4326,12 +3994,6 @@ static void CreateStructStub(ILStubState* pss,
 
     // Marshal the fields
     MarshalInfo::MarshalScenario ms = MarshalInfo::MARSHAL_SCENARIO_FIELD;
-#ifdef FEATURE_COMINTEROP
-    if (pMT->IsProjectedFromWinRT())
-    {
-        ms = MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
-    }
-#endif // FEATURE_COMINTEROP
 
     EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
 
@@ -4382,9 +4044,6 @@ static void CreateStructStub(ILStubState* pss,
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
-#ifdef FEATURE_COMINTEROP
-        pDMD->SetStubNeedsCOMStarted(ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD);
-#endif
         pDMD->SetNativeStackArgSize(4 * sizeof(SLOT)); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
 

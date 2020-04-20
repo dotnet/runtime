@@ -2190,7 +2190,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 IfFailGoto(E_FAIL, lFail);
                             }
 
-                            m_type = MARSHAL_TYPE_HSTRING;
+                            IfFailGoto(E_FAIL, lFail);
                             break;
                         }
 #endif // FEATURE_COMINTEROP
@@ -2222,7 +2222,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                     IfFailGoto(E_FAIL, lFail);
                                 }
 
-                                m_type = MARSHAL_TYPE_HSTRING;
+                                IfFailGoto(E_FAIL, lFail);
                             }
                             else if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
                             {
@@ -2330,27 +2330,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         m_fInspItf = TRUE;
                     }
                 }
-                // Check for Windows.Foundation.HResult <-> Exception
-                else if (IsWinRTScenario() && MscorlibBinder::IsClass(m_pMT, CLASS__EXCEPTION))
-                {
-                    m_args.m_pMT = m_pMT;
-                    m_type = MARSHAL_TYPE_EXCEPTION;
-                }
 #endif // FEATURE_COMINTEROP
                 else if (COMDelegate::IsDelegate(m_pMT))
                 {
                     m_args.m_pMT = m_pMT;
-#ifdef FEATURE_COMINTEROP
-                    if (IsWinRTScenario())
-                    {
-                        // Delegates must be imported from WinRT and marshaled as Interface
-                        if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
-                        {
-                            m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
-                            IfFailGoto(E_FAIL, lFail);
-                        }
-                    }
-#endif // FEATURE_COMINTEROP
 
                     switch (nativeType)
                     {
@@ -2409,20 +2392,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_LAYOUTCLASS : MARSHAL_TYPE_LAYOUTCLASSPTR;
                     m_args.m_pMT = m_pMT;
                 }
-#ifdef FEATURE_COMINTEROP
-                else if (IsWinRTScenario() && !IsFieldScenario() && sig.IsClassThrowing(pModule, g_SystemUriClassName, pTypeContext))
-                {
-                    m_type = MARSHAL_TYPE_URI;
-                }
-                else if (IsWinRTScenario() && !IsFieldScenario() && sig.IsClassThrowing(pModule, g_NotifyCollectionChangedEventArgsName, pTypeContext))
-                {
-                    m_type = MARSHAL_TYPE_NCCEVENTARGS;
-                }
-                else if (IsWinRTScenario() && !IsFieldScenario() && sig.IsClassThrowing(pModule, g_PropertyChangedEventArgsName, pTypeContext))
-                {
-                    m_type = MARSHAL_TYPE_PCEVENTARGS;
-                }
-#endif // FEATURE_COMINTEROP
                 else if (m_pMT->IsObjectClass())
                 {
                     switch(nativeType)
@@ -2535,10 +2504,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     _ASSERTE(!"This invalid signature should never be hit!");
                     IfFailGoto(E_FAIL, lFail);
                 }
-                else if ((IsWinRTScenario()) && sig.IsClassThrowing(pModule, g_TypeClassName, pTypeContext))
-                {
-                    m_type = MARSHAL_TYPE_SYSTEMTYPE;
-                }
 #endif // FEATURE_COMINTEROP
                 else if (!m_pMT->IsValueType())
                 {
@@ -2627,18 +2592,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         IfFailGoto(E_FAIL, lFail);
                 }
             }
-#ifdef FEATURE_COMINTEROP
-            else if (sig.IsClassThrowing(pModule, g_DateTimeOffsetClassName, pTypeContext))
-            {
-                if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_DATETIMEOFFSET;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-                m_type = MARSHAL_TYPE_DATETIME;
-                m_pMT = MscorlibBinder::GetClass(CLASS__DATE_TIME_OFFSET);
-            }
-#endif  // FEATURE_COMINTEROP
             else if (sig.IsClassThrowing(pModule, g_DateClassName, pTypeContext))
             {
                 if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
@@ -2733,37 +2686,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_pMT =  sig.GetTypeHandleThrowing(pModule, pTypeContext).GetMethodTable();
                 if (m_pMT == NULL)
                     break;
-
-#ifdef FEATURE_COMINTEROP
-                // Handle Nullable<T> and KeyValuePair<K, V> for WinRT
-                if (IsWinRTScenario())
-                {
-                    if (m_pMT->HasSameTypeDefAs(g_pNullableClass))
-                    {
-                        m_type = MARSHAL_TYPE_NULLABLE;
-                        m_args.m_pMT = m_pMT;
-                        break;
-                    }
-
-                    if (m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-                    {
-                        if (IsFieldScenario())
-                        {
-                            m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                            IfFailGoto(E_FAIL, lFail);
-                        }
-                        m_type = MARSHAL_TYPE_KEYVALUEPAIR;
-                        m_args.m_pMT = m_pMT;
-                        break;
-                    }
-
-                    if (!m_pMT->IsLegalNonArrayWinRTType())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-                }
-#endif // FEATURE_COMINTEROP
 
                 // Blittable generics are allowed to be marshalled with the following exceptions:
                 // * ByReference<T>: This represents an interior pointer and is not actually blittable
@@ -2899,15 +2821,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
             TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
 
-#ifdef FEATURE_COMINTEROP
-            if (m_ms != MARSHAL_SCENARIO_WINRT)
-#endif // FEATURE_COMINTEROP
+            if (thElement.HasInstantiation() && !thElement.IsBlittable())
             {
-                if (thElement.HasInstantiation() && !thElement.IsBlittable())
-                {
-                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                    IfFailGoto(E_FAIL, lFail);
-                }
+                m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                IfFailGoto(E_FAIL, lFail);
             }
 
             m_args.na.m_pArrayMT = arrayTypeHnd.AsMethodTable();
@@ -2961,14 +2878,6 @@ lExit:
         if (set_error)
             COMPlusThrow(kPlatformNotSupportedException, m_resID);
 
-    }
-
-    if (IsWinRTScenario() && !IsSupportedForWinRT(m_type))
-    {
-        // the marshaler we came up with is not supported in WinRT scenarios
-        m_type = MARSHAL_TYPE_UNKNOWN;
-        m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-        goto lReallyExit;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -3155,11 +3064,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     //
 
 #ifdef FEATURE_COMINTEROP
-    if (IsWinRTScenario())
-    {
-        m_type = MARSHAL_TYPE_HIDDENLENGTHARRAY;
-    }
-    else if (pParamInfo->m_NativeType == NATIVE_TYPE_SAFEARRAY)
+    if (pParamInfo->m_NativeType == NATIVE_TYPE_SAFEARRAY)
     {
         m_type = MARSHAL_TYPE_SAFEARRAY;
     }
@@ -3206,10 +3111,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     if (m_type == MARSHAL_TYPE_SAFEARRAY)
     {
         arrayMarshalInfo.InitForSafeArray(m_ms, thElement, pParamInfo->m_SafeArrayElementVT, m_fAnsi);
-    }
-    else if (m_type == MARSHAL_TYPE_HIDDENLENGTHARRAY)
-    {
-        arrayMarshalInfo.InitForHiddenLengthArray(thElement);
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -3259,14 +3160,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
             }
         }
     }
-#ifdef FEATURE_COMINTEROP
-    else if (m_type == MARSHAL_TYPE_HIDDENLENGTHARRAY)
-    {
-        m_args.na.m_vt  = m_arrayElementType;
-        m_args.na.m_cbElementSize = arrayMarshalInfo.GetElementSize();
-        m_args.na.m_redirectedTypeIndex = arrayMarshalInfo.GetRedirectedTypeIndex();
-    }
-#endif // FEATURE_COMINTEROP
 
     return S_OK;
 }
@@ -3284,7 +3177,7 @@ ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, NDirectStubLinker
     switch (mtype)
     {
 
-#define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) \
+#define DEFINE_MARSHALER_TYPE(mt, mclass) \
         case MarshalInfo::mt: \
             pMarshaler = new IL##mclass(); \
             break;
@@ -3604,7 +3497,7 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
 
     static const BYTE nativeSizes[]=
     {
-        #define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) IL##mclass::c_nativeSize,
+        #define DEFINE_MARSHALER_TYPE(mt, mclass) IL##mclass::c_nativeSize,
         #include "mtypes.h"
     };
 
@@ -3640,34 +3533,13 @@ bool MarshalInfo::IsInOnly(MarshalType mtype)
 
     static const bool ILMarshalerIsInOnly[] =
     {
-        #define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) \
+        #define DEFINE_MARSHALER_TYPE(mt, mclass) \
             (IL##mclass::c_fInOnly ? true : false),
 
         #include "mtypes.h"
     };
 
     return ILMarshalerIsInOnly[mtype];
-}
-
-bool MarshalInfo::IsSupportedForWinRT(MarshalType mtype)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static const bool MarshalerSupportsWinRT[] =
-    {
-        #define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) \
-            fWinRTSupported,
-
-        #include "mtypes.h"
-    };
-
-    return MarshalerSupportsWinRT[mtype];
 }
 
 OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)
@@ -3682,7 +3554,7 @@ OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)
 
     static const OVERRIDEPROC ILArgumentOverrideProcs[] =
     {
-        #define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) IL##mclass::ArgumentOverride,
+        #define DEFINE_MARSHALER_TYPE(mt, mclass) IL##mclass::ArgumentOverride,
         #include "mtypes.h"
     };
 
@@ -3702,7 +3574,7 @@ RETURNOVERRIDEPROC MarshalInfo::GetReturnOverrideProc(MarshalType mtype)
 
     static const RETURNOVERRIDEPROC ILReturnOverrideProcs[] =
     {
-        #define DEFINE_MARSHALER_TYPE(mt, mclass, fWinRTSupported) IL##mclass::ReturnOverride,
+        #define DEFINE_MARSHALER_TYPE(mt, mclass) IL##mclass::ReturnOverride,
         #include "mtypes.h"
     };
 
@@ -3876,53 +3748,6 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
     // store the pre-redirection interface type as thNativeItf
     pInfo->thNativeItf = pInfo->thItf;
 
-    if (ms == MarshalInfo::MARSHAL_SCENARIO_WINRT || ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD)
-    {
-        // Use the "class is hint" flag so GetObjectRefFromComIP doesn't verify that the
-        // WinRT object really supports IInspectable - note that we'll do the verification
-        // in UnmarshalObjectFromInterface for this exact pInfo->thItf.
-        pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_CLASS_IS_HINT;
-
-        pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_WINRT_SCENARIO;
-
-        // Perform interface redirection statically here. When the resulting ItfMarshalInfo
-        // is used for CLR->WinRT marshaling, this is necessary so we know which COM vtable
-        // to pass out (for instance IList could be marshaled out as IList or IBindableVector
-        // depending on the marshal scenario). In the WinRT->CLR direction, it's just an
-        // optimization which saves us from performing redirection at run-time.
-
-        if (!pInfo->thItf.IsNull())
-        {
-            MethodTable *pNewItfMT1;
-            MethodTable *pNewItfMT2;
-            switch (RCW::GetInterfacesForQI(pInfo->thItf.GetMethodTable(), &pNewItfMT1, &pNewItfMT2))
-            {
-                case RCW::InterfaceRedirection_None:
-                case RCW::InterfaceRedirection_UnresolvedIEnumerable:
-                    break;
-
-                case RCW::InterfaceRedirection_IEnumerable_RetryOnFailure:
-                case RCW::InterfaceRedirection_IEnumerable:
-                case RCW::InterfaceRedirection_Other:
-                    pInfo->thNativeItf = pNewItfMT1;
-                    break;
-
-                case RCW::InterfaceRedirection_Other_RetryOnFailure:
-                    pInfo->thNativeItf = pNewItfMT2;
-                    break;
-            }
-        }
-
-        if (!pInfo->thNativeItf.IsNull())
-        {
-            // The native interface is redirected WinRT interface - need to change the flags
-            _ASSERTE(pInfo->thNativeItf.AsMethodTable()->IsProjectedFromWinRT());
-
-            pInfo->dwFlags &= ~ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
-            pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
-        }
-    }
-
 #else // FEATURE_COMINTEROP
     if (!th.IsInterface())
         pInfo->thClass = th;
@@ -4066,7 +3891,6 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 #ifdef FEATURE_COMINTEROP
                     XXXXX(NATIVE_TYPE_TBSTR)
                     XXXXX(NATIVE_TYPE_ANSIBSTR)
-                    XXXXX(NATIVE_TYPE_HSTRING)
                     XXXXX(NATIVE_TYPE_BYVALSTR)
 
                     XXXXX(NATIVE_TYPE_VARIANTBOOL)
@@ -4168,7 +3992,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         }
         switch (m_type)
         {
-            #define DEFINE_MARSHALER_TYPE(mt, mc, fWinRTSupported) case mt: logbuf.AppendASCII( #mt " (IL" #mc ")"); break;
+            #define DEFINE_MARSHALER_TYPE(mt, mc) case mt: logbuf.AppendASCII( #mt " (IL" #mc ")"); break;
             #include "mtypes.h"
 
             case MARSHAL_TYPE_UNKNOWN:
@@ -4738,16 +4562,6 @@ bool MarshalInfo::MarshalerRequiresCOM()
         case MARSHAL_TYPE_OLECOLOR:
         case MARSHAL_TYPE_SAFEARRAY:
         case MARSHAL_TYPE_INTERFACE:
-
-        case MARSHAL_TYPE_URI:
-        case MARSHAL_TYPE_KEYVALUEPAIR:
-        case MARSHAL_TYPE_NULLABLE:
-        case MARSHAL_TYPE_SYSTEMTYPE:
-        case MARSHAL_TYPE_EXCEPTION:
-        case MARSHAL_TYPE_HIDDENLENGTHARRAY:
-        case MARSHAL_TYPE_HSTRING:
-        case MARSHAL_TYPE_NCCEVENTARGS:
-        case MARSHAL_TYPE_PCEVENTARGS:
         {
             // some of these types do not strictly require COM for the actual marshaling
             // but they tend to be used in COM context so we keep the logic we had in
@@ -4773,89 +4587,6 @@ bool MarshalInfo::MarshalerRequiresCOM()
 
     return false;
 }
-
-#ifdef FEATURE_COMINTEROP
-MarshalInfo::MarshalType MarshalInfo::GetHiddenLengthParamMarshalType()
-{
-    LIMITED_METHOD_CONTRACT;
-    return MARSHAL_TYPE_GENERIC_U4;
-}
-
-CorElementType MarshalInfo::GetHiddenLengthParamElementType()
-{
-    LIMITED_METHOD_CONTRACT;
-    return ELEMENT_TYPE_U4;
-}
-
-UINT16 MarshalInfo::GetHiddenLengthParamStackSize()
-{
-    LIMITED_METHOD_CONTRACT;
-    return StackElemSize(GetNativeSize(GetHiddenLengthParamMarshalType()));
-}
-
-void MarshalInfo::MarshalHiddenLengthArgument(NDirectStubLinker *psl, BOOL managedToNative, BOOL isForReturnArray)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(psl));
-        PRECONDITION(m_type == MARSHAL_TYPE_HIDDENLENGTHARRAY);
-        PRECONDITION(m_dwHiddenLengthManagedHomeLocal == 0xFFFFFFFF);
-        PRECONDITION(m_dwHiddenLengthNativeHomeLocal == 0xFFFFFFFF);
-    }
-    CONTRACTL_END;
-
-    NewHolder<ILMarshaler> pHiddenLengthMarshaler = CreateILMarshaler(GetHiddenLengthParamMarshalType(), psl);
-
-
-    ILCodeStream *pcsMarshal = psl->GetMarshalCodeStream();
-    ILCodeStream *pcsUnmarshal = psl->GetUnmarshalCodeStream();
-
-    pcsMarshal->EmitNOP("// hidden length argument { ");
-    pcsUnmarshal->EmitNOP("// hidden length argument { ");
-
-    DWORD dwMarshalFlags = MARSHAL_FLAG_HIDDENLENPARAM;
-    if (isForReturnArray)
-    {
-        // This is a hidden length argument for an [out, retval] argument, so setup flags to match that
-        dwMarshalFlags |= CalculateArgumentMarshalFlags(TRUE, FALSE, TRUE, managedToNative);
-    }
-    else
-    {
-        // The length parameter needs to be an [in] parameter if the array itself is an [in] parameter.
-        // Additionally, in order to support the FillArray pattern:
-        //   FillArray([in] UInt32 length, [out, size_is(length)] ElementType* value)
-        //
-        // We need to make sure that the length parameter is [in] if the array pointer is not byref, since
-        // this means that the caller is allocating the array.  This includes array buffers which are [out]
-        // but not byref, since the [out] marshaling applies to the array contents but not the array pointer
-        // value itself.
-        BOOL marshalHiddenLengthIn = m_in || !m_byref;
-        dwMarshalFlags |= CalculateArgumentMarshalFlags(m_byref, marshalHiddenLengthIn, m_out, managedToNative);
-    }
-    pHiddenLengthMarshaler->EmitMarshalHiddenLengthArgument(pcsMarshal,
-                                                            pcsUnmarshal,
-                                                            this,
-                                                            m_paramidx,
-                                                            dwMarshalFlags,
-                                                            HiddenLengthParamIndex(),
-                                                            &m_args,
-                                                            &m_dwHiddenLengthManagedHomeLocal,
-                                                            &m_dwHiddenLengthNativeHomeLocal);
-
-    pcsMarshal->EmitNOP("// } hidden length argument");
-    pcsUnmarshal->EmitNOP("// } hidden length argument");
-
-    // Only emit into the dispatch stream for CLR -> Native cases - in the reverse, there is no argument
-    // to pass to the managed method.  Instead, the length is encoded in the marshaled array.
-    if (managedToNative)
-    {
-        ILCodeStream* pcsDispatch = psl->GetDispatchCodeStream();
-        pHiddenLengthMarshaler->EmitSetupArgumentForDispatch(pcsDispatch);
-    }
-}
-
-#endif // FEATURE_COMINTEROP
 
 #define ReportInvalidArrayMarshalInfo(resId)    \
     do                                          \
@@ -4900,112 +4631,6 @@ void ArrayMarshalInfo::InitForSafeArray(MarshalInfo::MarshalScenario ms, TypeHan
             m_vtElement = vtElement;
         }
     }
-}
-
-void ArrayMarshalInfo::InitForHiddenLengthArray(TypeHandle thElement)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable *pMT = NULL;
-
-    // WinRT supports arrays of any WinRT-legal types
-    if (thElement.IsArray())
-    {
-        ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_NESTEDARRAY);
-    }
-    else if (thElement.IsTypeDesc() || !thElement.GetMethodTable()->IsLegalNonArrayWinRTType())
-    {
-        ReportInvalidArrayMarshalInfo(IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE);
-    }
-
-    m_thElement = thElement;
-
-    pMT = thElement.GetMethodTable();
-    if (pMT->IsString())
-    {
-        m_vtElement = VTHACK_HSTRING;
-        m_cbElementSize = sizeof(HSTRING);
-    }
-    else if (WinRTTypeNameConverter::ResolveRedirectedType(pMT, &m_redirectedTypeIndex))
-    {
-        m_vtElement = VTHACK_REDIRECTEDTYPE;
-
-        switch (m_redirectedTypeIndex)
-        {
-            case WinMDAdapter::RedirectedTypeIndex_System_DateTimeOffset:
-                m_cbElementSize = ILDateTimeMarshaler::c_nativeSize;
-                break;
-
-            case WinMDAdapter::RedirectedTypeIndex_System_Type:
-                m_cbElementSize = ILSystemTypeMarshaler::c_nativeSize;
-                break;
-
-            case WinMDAdapter::RedirectedTypeIndex_System_Exception:
-                m_cbElementSize = ILHResultExceptionMarshaler::c_nativeSize;
-                break;
-
-                // WinRT delegates are IUnknown pointers
-            case WinMDAdapter::RedirectedTypeIndex_System_EventHandlerGeneric:
-                m_vtElement = VTHACK_INSPECTABLE;
-                m_cbElementSize = sizeof(IUnknown*);
-                break;
-
-            case WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_KeyValuePair:
-            case WinMDAdapter::RedirectedTypeIndex_System_Nullable:
-            case WinMDAdapter::RedirectedTypeIndex_System_Uri:
-            case WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs:
-            case WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventArgs:
-            {
-                m_cbElementSize = sizeof(IInspectable *);
-                break;
-            }
-
-            default:
-            {
-                if (pMT->IsValueType())
-                {
-                    // other redirected structs are blittable and don't need special marshaling
-                    m_vtElement = VTHACK_BLITTABLERECORD;
-                    m_cbElementSize = pMT->GetNativeSize();
-                }
-                else
-                {
-                    // redirected interfaces should be treated as interface pointers
-                    _ASSERTE(pMT->IsInterface());
-                    m_vtElement = VTHACK_INSPECTABLE;
-                    m_cbElementSize = sizeof(IInspectable *);
-                }
-                break;
-            }
-        }
-    }
-    else if (pMT->IsBlittable() || pMT->IsTruePrimitive() || pMT->IsEnum())
-    {
-        m_vtElement = VTHACK_BLITTABLERECORD;
-
-        CorElementType elemType = pMT->GetInternalCorElementType();
-        if (CorTypeInfo::IsPrimitiveType(elemType))
-        {
-            // .NET and WinRT primitives have the same size
-            m_cbElementSize = CorTypeInfo::Size(elemType);
-        }
-        else
-        {
-            m_cbElementSize = pMT->GetNativeSize();
-        }
-    }
-    else if (pMT->IsValueType())
-    {
-        m_vtElement = VTHACK_NONBLITTABLERECORD;
-        m_cbElementSize = pMT->GetNativeSize();
-    }
-    else
-    {
-        m_vtElement = VTHACK_INSPECTABLE;
-        m_cbElementSize = sizeof(IInspectable *);
-    }
-
-LExit:;
 }
 #endif // FEATURE_COMINTEROP
 

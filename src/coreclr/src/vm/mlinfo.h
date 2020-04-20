@@ -11,10 +11,6 @@
 #include "stubgen.h"
 #include "custommarshalerinfo.h"
 
-#ifdef FEATURE_COMINTEROP
-#include <windows.ui.xaml.h>
-#endif
-
 #ifndef _MLINFO_H_
 #define _MLINFO_H_
 
@@ -55,7 +51,7 @@ enum MarshalFlags
     MARSHAL_FLAG_BYREF              = 0x008,
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
-    MARSHAL_FLAG_HIDDENLENPARAM     = 0x040,
+    // unused                       = 0x040,
     MARSHAL_FLAG_FIELD              = 0x080,
     MARSHAL_FLAG_IN_MEMBER_FUNCTION = 0x100
 };
@@ -429,7 +425,7 @@ class MarshalInfo
 public:
     enum MarshalType
     {
-#define DEFINE_MARSHALER_TYPE(mtype, mclass, fWinRTSupported) mtype,
+#define DEFINE_MARSHALER_TYPE(mtype, mclass) mtype,
 #include "mtypes.h"
         MARSHAL_TYPE_UNKNOWN
     };
@@ -439,8 +435,6 @@ public:
         MARSHAL_SCENARIO_NDIRECT,
 #ifdef FEATURE_COMINTEROP
         MARSHAL_SCENARIO_COMINTEROP,
-        MARSHAL_SCENARIO_WINRT,
-        MARSHAL_SCENARIO_WINRT_FIELD,
 #endif // FEATURE_COMINTEROP
         MARSHAL_SCENARIO_FIELD
     };
@@ -676,25 +670,20 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
+        return false;
     }
 #endif // FEATURE_COMINTEROP
 
     BOOL IsFieldScenario()
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_COMINTEROP
-        return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
-#else
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
-#endif
     }
 
 private:
 
     UINT16                      GetNativeSize(MarshalType mtype);
     static bool                 IsInOnly(MarshalType mtype);
-    static bool                 IsSupportedForWinRT(MarshalType mtype);
 
     static OVERRIDEPROC         GetArgumentOverrideProc(MarshalType mtype);
     static RETURNOVERRIDEPROC   GetReturnOverrideProc(MarshalType mtype);

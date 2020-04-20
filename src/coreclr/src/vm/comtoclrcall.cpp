@@ -1111,7 +1111,7 @@ void ComCallMethodDesc::InitNativeInfo()
             ReadBestFitCustomAttribute(fsig.GetModule(), pFD->GetEnclosingMethodTable()->GetCl(), &BestFit, &ThrowOnUnmappableChar);
 
             MarshalInfo info(fsig.GetModule(), fsig.GetArgProps(), fsig.GetSigTypeContext(), pFD->GetMemberDef(), MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
-                             (CorNativeLinkType)0, (CorNativeLinkFlags)0, 
+                             (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                              FALSE, 0, fsig.NumFixedArgs(), BestFit, ThrowOnUnmappableChar, FALSE, TRUE, NULL, FALSE
 #ifdef _DEBUG
                              , szDebugName, szDebugClassName, 0
@@ -1216,7 +1216,7 @@ void ComCallMethodDesc::InitNativeInfo()
                     nativeArgSize += StackElemSize(sizeof(LCID));
 
                 MarshalInfo info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iArg],
-                                 WinRTType ? MarshalInfo::MARSHAL_SCENARIO_WINRT : MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
+                                 MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                                  (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                                  TRUE, iArg, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, FALSE
 #ifdef _DEBUG
@@ -1278,7 +1278,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             {
                 MarshalInfo info(msig.GetModule(), msig.GetReturnProps(), msig.GetSigTypeContext(), params[0],
-                                    WinRTType ? MarshalInfo::MARSHAL_SCENARIO_WINRT : MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
+                                    MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                                     (CorNativeLinkType)0, (CorNativeLinkFlags)0,
                                     FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, FALSE
 #ifdef _DEBUG
@@ -1297,12 +1297,6 @@ void ComCallMethodDesc::InitNativeInfo()
 
                     // count the output by-ref argument
                     nativeArgSize += sizeof(void *);
-
-                    if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_HIDDENLENGTHARRAY)
-                    {
-                        // count the output hidden length
-                        nativeArgSize += info.GetHiddenLengthParamStackSize();
-                    }
 
                     goto Done;
                 }

@@ -960,15 +960,6 @@ FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("ClearNative", MngdSafeArrayMarshaler::ClearNative)
 FCFuncEnd()
 
-FCFuncStart(gMngdHiddenLengthArrayMarshalerFuncs)
-    FCFuncElement("CreateMarshaler", MngdHiddenLengthArrayMarshaler::CreateMarshaler)
-    FCFuncElement("ConvertSpaceToNative", MngdHiddenLengthArrayMarshaler::ConvertSpaceToNative)
-    FCFuncElement("ConvertContentsToNative", MngdHiddenLengthArrayMarshaler::ConvertContentsToNative)
-    FCFuncElement("ConvertSpaceToManaged", MngdHiddenLengthArrayMarshaler::ConvertSpaceToManaged)
-    FCFuncElement("ConvertContentsToManaged", MngdHiddenLengthArrayMarshaler::ConvertContentsToManaged)
-    FCFuncElement("ClearNativeContents", MngdHiddenLengthArrayMarshaler::ClearNativeContents)
-FCFuncEnd()
-
 FCFuncStart(gWinRTTypeNameConverterFuncs)
     FCFuncElement("ConvertToWinRTTypeName", StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName)
     FCFuncElement("GetTypeFromWinRTTypeName", StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName)
@@ -1244,9 +1235,6 @@ FCClassElement("MdUtf8String", "System", gMdUtf8String)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("MngdHiddenLengthArrayMarshaler", "System.StubHelpers", gMngdHiddenLengthArrayMarshalerFuncs)
-#endif // FEATURE_COMINTEROP
 FCClassElement("MngdNativeArrayMarshaler", "System.StubHelpers", gMngdNativeArrayMarshalerFuncs)
 FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)
 #ifdef FEATURE_COMINTEROP

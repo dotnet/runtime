@@ -13,110 +13,95 @@
 
 // ------------------------------------------------------------------------------------------------------------------
 //                    Marshaler ID                  Marshaler class name                 Supported in WinRT scenarios
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_1,       CopyMarshaler1,                      true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U1,      CopyMarshalerU1,                     true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_2,       CopyMarshaler2,                      true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U2,      CopyMarshalerU2,                     true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_4,       CopyMarshaler4,                      true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U4,      CopyMarshalerU4,                     true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_8,       CopyMarshaler8,                      true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_1,       CopyMarshaler1)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U1,      CopyMarshalerU1)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_2,       CopyMarshaler2)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U2,      CopyMarshalerU2)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_4,       CopyMarshaler4)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_U4,      CopyMarshalerU4)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GENERIC_8,       CopyMarshaler8)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_WINBOOL,         WinBoolMarshaler,                    false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CBOOL,           CBoolMarshaler,                      true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_WINBOOL,         WinBoolMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CBOOL,           CBoolMarshaler)
 #ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VTBOOL,          VtBoolMarshaler,                     false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VTBOOL,          VtBoolMarshaler)
 #endif // FEATURE_COMINTEROP
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ANSICHAR,        AnsiCharMarshaler,                   false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ANSICHAR,        AnsiCharMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FLOAT,           FloatMarshaler,                      true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DOUBLE,          DoubleMarshaler,                     true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FLOAT,           FloatMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DOUBLE,          DoubleMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CURRENCY,        CurrencyMarshaler,                   false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DECIMAL,         DecimalMarshaler,                    false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DECIMAL_PTR,     DecimalPtrMarshaler,                 false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID,            GuidMarshaler,                       true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID_PTR,        GuidPtrMarshaler,                    false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DATE,            DateMarshaler,                       false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CURRENCY,        CurrencyMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DECIMAL,         DecimalMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DECIMAL_PTR,     DecimalPtrMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID,            GuidMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_GUID_PTR,        GuidPtrMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DATE,            DateMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPWSTR,          WSTRMarshaler,                       false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPSTR,           CSTRMarshaler,                       false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPUTF8STR,       CUTF8Marshaler,                      false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BSTR,            BSTRMarshaler,                       false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ANSIBSTR,        AnsiBSTRMarshaler,                   false)
-#ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_HSTRING,         HSTRINGMarshaler,                    true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DATETIME,        DateTimeMarshaler,                   true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_URI,             UriMarshaler,                        true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_NCCEVENTARGS,    NCCEventArgsMarshaler,               true) // NotifyCollectionChangedEventArgs
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_PCEVENTARGS,     PCEventArgsMarshaler,                true)  // PropertyChangedEventArgs
-#endif // FEATURE_COMINTEROP
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPWSTR,          WSTRMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPSTR,           CSTRMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPUTF8STR,       CUTF8Marshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BSTR,            BSTRMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ANSIBSTR,        AnsiBSTRMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPWSTR_BUFFER,   WSTRBufferMarshaler,                 false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPSTR_BUFFER,    CSTRBufferMarshaler,                 false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_UTF8_BUFFER,     UTF8BufferMarshaler,                 false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPWSTR_BUFFER,   WSTRBufferMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LPSTR_BUFFER,    CSTRBufferMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_UTF8_BUFFER,     UTF8BufferMarshaler)
 
 #if defined(FEATURE_COMINTEROP)
 // CoreCLR doesn't have any support for marshalling interface pointers.
 // Not even support for fake CCWs.
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_INTERFACE,       InterfaceMarshaler,                  true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_INTERFACE,       InterfaceMarshaler)
 #endif // defined(FEATURE_COMINTEROP)
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEARRAY,       SafeArrayMarshaler,                  false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_HIDDENLENGTHARRAY, HiddenLengthArrayMarshaler,        true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEARRAY,       SafeArrayMarshaler)
 #endif // FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_NATIVEARRAY,     NativeArrayMarshaler,                false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_NATIVEARRAY,     NativeArrayMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ASANYA,          AsAnyAMarshaler,                     false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ASANYW,          AsAnyWMarshaler,                     false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ASANYA,          AsAnyAMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ASANYW,          AsAnyWMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DELEGATE,        DelegateMarshaler,                   false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_DELEGATE,        DelegateMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEPTR,    BlittablePtrMarshaler,               false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEPTR,    BlittablePtrMarshaler)
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VBBYVALSTR,      VBByValStrMarshaler,                 false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VBBYVALSTRW,     VBByValStrWMarshaler,                false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VBBYVALSTR,      VBByValStrMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VBBYVALSTRW,     VBByValStrWMarshaler)
 #endif // FEATURE_COMINTEROP
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LAYOUTCLASSPTR,  LayoutClassPtrMarshaler,             false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ARRAYWITHOFFSET, ArrayWithOffsetMarshaler,            false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LAYOUTCLASSPTR,  LayoutClassPtrMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ARRAYWITHOFFSET, ArrayWithOffsetMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEVALUECLASS,             BlittableValueClassMarshaler,  true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VALUECLASS,                      ValueClassMarshaler,           true)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEVALUECLASS,             BlittableValueClassMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_VALUECLASS,                      ValueClassMarshaler)
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_REFERENCECUSTOMMARSHALER,        ReferenceCustomMarshaler,      false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ARGITERATOR,                     ArgIteratorMarshaler,          false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR, BlittableValueClassWithCopyCtorMarshaler, false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_REFERENCECUSTOMMARSHALER,        ReferenceCustomMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_ARGITERATOR,                     ArgIteratorMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR, BlittableValueClassWithCopyCtorMarshaler)
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_OBJECT,                          ObjectMarshaler,               false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_OBJECT,                          ObjectMarshaler)
 #endif // FEATURE_COMINTEROP
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_HANDLEREF,                       HandleRefMarshaler,            false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEHANDLE,                      SafeHandleMarshaler,           false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CRITICALHANDLE,                  CriticalHandleMarshaler,       false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_HANDLEREF,                       HandleRefMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEHANDLE,                      SafeHandleMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_CRITICALHANDLE,                  CriticalHandleMarshaler)
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_OLECOLOR,                        OleColorMarshaler,             false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_OLECOLOR,                        OleColorMarshaler)
 #endif // FEATURE_COMINTEROP
 
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMETYPEHANDLE,               RuntimeTypeHandleMarshaler,    false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEMETHODHANDLE,             RuntimeMethodHandleMarshaler,  false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEFIELDHANDLE,              RuntimeFieldHandleMarshaler,   false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMETYPEHANDLE,               RuntimeTypeHandleMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEMETHODHANDLE,             RuntimeMethodHandleMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEFIELDHANDLE,              RuntimeFieldHandleMarshaler)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_NULLABLE,                        NullableMarshaler,             true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SYSTEMTYPE,                      SystemTypeMarshaler,           true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_KEYVALUEPAIR,                    KeyValuePairMarshaler,         true)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_EXCEPTION,                       HResultExceptionMarshaler,     true)  // For WinRT, marshal exceptions as Windows.Foundation.HResult
-#endif // FEATURE_COMINTEROP
-
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_ARRAY,                     FixedArrayMarshaler,           false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_WSTR,                      FixedWSTRMarshaler,            false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_CSTR,                      FixedCSTRMarshaler,            false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS,           BlittableLayoutClassMarshaler, false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LAYOUTCLASS,                     LayoutClassMarshaler,          false)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_ARRAY,                     FixedArrayMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_WSTR,                      FixedWSTRMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_FIXED_CSTR,                      FixedCSTRMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS,           BlittableLayoutClassMarshaler)
+DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_LAYOUTCLASS,                     LayoutClassMarshaler)
 
 #undef DEFINE_MARSHALER_TYPE
