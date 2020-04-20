@@ -1114,19 +1114,9 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
-            bool success;
-            try
-            {
-                ss.Compile();
-                success = true;
-            }
-            catch (Exception ex)
-            {
-                success = false;
-                Assert.IsNotType<InvalidCastException>(ex);
-            }
+            ss.Compile();
 
-            Assert.True(success);
+            Assert.True(true);
         }
     }
 }
