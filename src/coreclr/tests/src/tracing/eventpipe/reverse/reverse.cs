@@ -53,6 +53,7 @@ namespace Tracing.Tests.ReverseValidation
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
                 bool fSuccess = process.Start();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
+                Logger.logger.Log($"subprocess PID: {process.Id}");
 
                 while (!EventPipeClient.ListAvailablePorts().Contains(process.Id))
                     await Task.Delay(100);
