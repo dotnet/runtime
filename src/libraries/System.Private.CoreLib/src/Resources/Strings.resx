@@ -566,7 +566,7 @@
     <value>Object must be of type UInt64.</value>
   </data>
   <data name="Arg_MustBeUIntPtr" xml:space="preserve">
-    <value>Object must be of type IntPtr.</value>
+    <value>Object must be of type UIntPtr.</value>
   </data>
   <data name="Arg_MustBeVersion" xml:space="preserve">
     <value>Object must be of type Version.</value>
