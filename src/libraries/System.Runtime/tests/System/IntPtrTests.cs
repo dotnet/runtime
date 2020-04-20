@@ -109,7 +109,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(IntPtr ptr1, object obj, bool expected)
+        public static void EqualsTest(IntPtr ptr1, object obj, bool expected)
         {
             if (obj is IntPtr)
             {
@@ -180,8 +180,8 @@ namespace System.Tests
         }
 
 
-        public static IntPtr RealMax => Is64Bit ? long.MaxValue : int.MaxValue;
-        public static IntPtr RealMin => Is64Bit ? long.MinValue : int.MinValue;
+        public static IntPtr RealMax => Is64Bit ? (IntPtr)long.MaxValue : (IntPtr)int.MaxValue;
+        public static IntPtr RealMin => Is64Bit ? (IntPtr)long.MinValue : (IntPtr)int.MinValue;
 
         [Fact]
         public static void Ctor_Empty()
@@ -244,29 +244,6 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((IntPtr)123).CompareTo(value));
         }
-
-        [Theory]
-        [InlineData(789, 789, true)]
-        [InlineData(789, -789, false)]
-        [InlineData(789, 0, false)]
-        [InlineData(0, 0, true)]
-        [InlineData(-789, -789, true)]
-        [InlineData(-789, 789, false)]
-        [InlineData(789, null, false)]
-        [InlineData(789, "789", false)]
-        [InlineData(789, 789, false)]
-        public static void EqualsTest(int i0, object obj, bool expected)
-        {
-            var i1 = (IntPtr)i0;
-            if (obj is int)
-            {
-                IntPtr i2 = (IntPtr)(int)obj;
-                Assert.Equal(expected, i1.Equals(i2));
-                Assert.Equal(expected, i1.GetHashCode().Equals(i2.GetHashCode()));
-            }
-            Assert.Equal(expected, i1.Equals(obj));
-        }
-
 
         public static IEnumerable<object[]> ToString_TestData()
         {

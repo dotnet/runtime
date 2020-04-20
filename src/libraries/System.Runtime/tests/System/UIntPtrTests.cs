@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -106,7 +107,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(UIntPtr ptr1, object obj, bool expected)
+        public static void EqualsTest(UIntPtr ptr1, object obj, bool expected)
         {
             if (obj is UIntPtr)
             {
@@ -191,7 +192,7 @@ namespace System.Tests
         [Fact]
         public static void MaxValue()
         {
-            Assert.Equal((UIntPtr)(UIntPtr.Size == 4 ? uint.MaxValue : ulong.MaxValue), UIntPtr.MaxValue);
+            Assert.Equal(UIntPtr.Size == 4 ? (UIntPtr)uint.MaxValue : (UIntPtr)ulong.MaxValue, UIntPtr.MaxValue);
         }
 
         [Fact]
@@ -224,25 +225,6 @@ namespace System.Tests
         public static void CompareTo_ObjectNotUint_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((UIntPtr)123).CompareTo(value));
-        }
-
-        [Theory]
-        [InlineData(789, 789, true)]
-        [InlineData(788, 0, false)]
-        [InlineData(0, 0, true)]
-        [InlineData(789, null, false)]
-        [InlineData(789, "789", false)]
-        [InlineData(789, 789, false)]
-        public static void EqualsTest(uint i0, object obj, bool expected)
-        {
-            var i1 = (UIntPtr)i0;
-            if (obj is uint)
-            {
-                UIntPtr i2 = (UIntPtr)(uint)obj;
-                Assert.Equal(expected, i1.Equals(i2));
-                Assert.Equal(expected, i1.GetHashCode().Equals(i2.GetHashCode()));
-            }
-            Assert.Equal(expected, i1.Equals(obj));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
