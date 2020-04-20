@@ -88,7 +88,16 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
         return false;
     }
 
-    _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
+    HANDLE hOverlapEvent = CreateEvent(NULL, true, false, NULL);
+    if (hOverlapEvent == NULL)
+    {
+        if (callback != nullptr)
+            callback("Failed to create overlap event", ::GetLastError());
+        ::CloseHandle(_hPipe);
+        _hPipe = INVALID_HANDLE_VALUE;
+        return false;
+    }
+    _oOverlap.hEvent = hOverlapEvent;
 
     BOOL fSuccess = ::ConnectNamedPipe(_hPipe, &_oOverlap) != 0;
     if (!fSuccess)
@@ -108,7 +117,9 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
                 if (callback != nullptr)
                     callback("A client process failed to connect.", errorCode);
                 ::CloseHandle(_hPipe);
+                _hPipe = INVALID_HANDLE_VALUE;
                 ::CloseHandle(_oOverlap.hEvent);
+                _oOverlap.hEvent = INVALID_HANDLE_VALUE;
                 return false;
         }
     }

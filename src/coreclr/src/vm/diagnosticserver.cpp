@@ -147,7 +147,7 @@ bool DiagnosticServer::Initialize()
                 assert(nCharactersWritten != 0);
             }
 
-            // Create the clint mode connection
+            // Create the client mode connection
             fSuccess &= IpcStreamFactory::CreateClient(address, ErrorCallback);
         }
 

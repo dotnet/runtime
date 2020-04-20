@@ -19,9 +19,9 @@ namespace Tracing.Tests.ReverseValidation
 {
     public class ReverseValidation
     {
-        // The runtime will do an exponential falloff by a factor of 2 starting at 250ms
-        // We can time tests out after waiting AT MOST 61,750 ms which should contain 7 attempts to connect
-        private static int _maxPollTimeMS = /* 250 + 500 + 1000 + 2000 + 4000 + 8000 + 16000 + 30000 = */ 61_750;
+        // The runtime will do an exponential falloff by a factor of 1.25 starting at 10ms with a max of 500ms
+        // We can time tests out after waiting 30s which should have sufficient attempts
+        private static int _maxPollTimeMS = 30_000;
 
         private static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {

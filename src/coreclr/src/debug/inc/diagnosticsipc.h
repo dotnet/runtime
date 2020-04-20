@@ -54,20 +54,21 @@ public:
             // Any values here are ignored by Poll
             uint8_t revents;
 
-            // a callback cookie assignable by upstream users for additional bookkeeping
+            // a cookie assignable by upstream users for additional bookkeeping
             void *pUserData;
         };
 
         // Poll
         // Paramters:
-        // - IpcPollHandle *const * rgpIpcPollHandles: Array of pointers to IpcPollHandles to poll
-        // - uint32_t nHandles: The number of streams to poll
+        // - IpcPollHandle * rgpIpcPollHandles: Array of IpcPollHandles to poll
+        // - uint32_t nHandles: The number of handles to poll
         // - int32_t timeoutMs: The timeout in milliseconds for the poll (-1 == infinite)
         // Returns:
         // int32_t: -1 on error, 0 on timeout, >0 on successful poll
         // Remarks:
         // Check the events returned in revents for each IpcPollHandle to find the signaled handle.
-        // Signaled handles will have usable IpcStreams in the pStream field.
+        // Signaled DiagnosticsIpcs can call Accept() without blocking.
+        // Signaled IpcStreams can call Read(...) without blocking.
         // The caller is responsible for cleaning up "hung up" connections.
         static int32_t Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback = nullptr);
 
@@ -75,20 +76,20 @@ public:
 
         ~DiagnosticsIpc();
 
-        //! Creates an IPC object
+        // Creates an IPC object
         static DiagnosticsIpc *Create(const char *const pIpcName, ConnectionMode mode, ErrorCallback callback = nullptr);
 
-        //! puts the DiagnosticsIpc into Listening Mode
-        //! Re-entrant safe
+        // puts the DiagnosticsIpc into Listening Mode
+        // Re-entrant safe
         bool Listen(ErrorCallback callback = nullptr);
 
-        //! produces a client stream from a server-mode DiagnosticsIpc.  Blocks until a connection is available.
+        // produces a connected stream from a server-mode DiagnosticsIpc.  Blocks until a connection is available.
         IpcStream *Accept(ErrorCallback callback = nullptr);
 
-        //! Connect to client connection (returns a usable stream)
+        // Connect to a server and returns a connected stream
         IpcStream *Connect(ErrorCallback callback = nullptr);
 
-        //! Closes an open IPC.
+        //!Closes an open IPC.
         void Close(ErrorCallback callback = nullptr);
 
     private:
@@ -100,8 +101,8 @@ public:
 
         DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode = ConnectionMode::SERVER);
 
-        //! Used to unlink the socket so it can be removed from the filesystem
-        //! when the last reference to it is closed.
+        // Used to unlink the socket so it can be removed from the filesystem
+        // when the last reference to it is closed.
         void Unlink(ErrorCallback callback = nullptr);
 #else
         static const uint32_t MaxNamedPipeNameLength = 256;
