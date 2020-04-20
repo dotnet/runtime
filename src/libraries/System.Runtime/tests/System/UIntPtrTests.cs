@@ -342,9 +342,9 @@ namespace System.Tests
             }
 
             // And test boundary conditions for IntPtr
-            yield return new object[] { Is64Bit ? "9223372036854775807" : "4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "+9223372036854775807" : "+4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "  +9223372036854775807  " : "  +4294967295  ", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "18446744073709551615" : "4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "+18446744073709551615" : "+4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
+            yield return new object[] { Is64Bit ? "  +18446744073709551615  " : "  +4294967295  ", NumberStyles.Integer, null, UIntPtr.MaxValue };
             yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
             yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
         }
