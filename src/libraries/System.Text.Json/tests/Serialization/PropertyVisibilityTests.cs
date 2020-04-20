@@ -169,14 +169,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void Ignore_PublicProperty_ConflictWithPrivateDueAttributes()
         {
             // Serialize
-            var obj = new ClassWithIgnoredPropertyNamingConflict();
+            var obj = new ClassWithIgnoredPropertyNamingConflictPrivate();
             string json = JsonSerializer.Serialize(obj);
 
             Assert.Equal(@"{}", json);
 
             // Deserialize
             json = @"{""MyString"":""NewValue""}";
-            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflict>(json);
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflictPrivate>(json);
 
             Assert.Equal("DefaultValue", obj.MyString);
             Assert.Equal("ConflictingValue", obj.ConflictingString);
@@ -188,14 +188,50 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
             // Serialize
-            var obj = new ClassWithIgnoredPropertyPolicyConflict();
+            var obj = new ClassWithIgnoredPropertyPolicyConflictPrivate();
             string json = JsonSerializer.Serialize(obj, options);
 
             Assert.Equal(@"{}", json);
 
             // Deserialize
             json = @"{""myString"":""NewValue""}";
-            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflict>(json, options);
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflictPrivate>(json, options);
+
+            Assert.Equal("DefaultValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.myString);
+        }
+
+        [Fact]
+        public static void Ignore_PublicProperty_ConflictWithPublicDueAttributes()
+        {
+            // Serialize
+            var obj = new ClassWithIgnoredPropertyNamingConflictPublic();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialize
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflictPublic>(json);
+
+            Assert.Equal("DefaultValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.ConflictingString);
+        }
+
+        [Fact]
+        public static void Ignore_PublicProperty_ConflictWithPublicDuePolicy()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassWithIgnoredPropertyPolicyConflictPublic();
+            string json = JsonSerializer.Serialize(obj, options);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialize
+            json = @"{""myString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflictPublic>(json, options);
 
             Assert.Equal("DefaultValue", obj.MyString);
             Assert.Equal("ConflictingValue", obj.myString);
@@ -206,8 +242,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Serialize
             var obj = new ClassWithPropertyNamingConflictWhichThrows();
-            Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Serialize(obj));
+            var ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj));
+            Assert.Contains($"{typeof(ClassWithPublicProperty)}.{nameof(ClassWithPublicProperty.MyString)}", ex.Message);
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
@@ -388,7 +424,7 @@ namespace System.Text.Json.Serialization.Tests
             internal new string MyString { get; set; } = "NewDefaultValue";
         }
 
-        public class ClassWithIgnoredPropertyNamingConflict
+        public class ClassWithIgnoredPropertyNamingConflictPrivate
         {
             [JsonIgnore]
             public string MyString { get; set; } = "DefaultValue";
@@ -397,12 +433,29 @@ namespace System.Text.Json.Serialization.Tests
             internal string ConflictingString { get; set; } = "ConflictingValue";
         }
 
-        public class ClassWithIgnoredPropertyPolicyConflict
+        public class ClassWithIgnoredPropertyPolicyConflictPrivate
         {
             [JsonIgnore]
             public string MyString { get; set; } = "DefaultValue";
 
             internal string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithIgnoredPropertyNamingConflictPublic
+        {
+            [JsonIgnore]
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithIgnoredPropertyPolicyConflictPublic
+        {
+            [JsonIgnore]
+            public string MyString { get; set; } = "DefaultValue";
+
+            public string myString { get; set; } = "ConflictingValue";
         }
 
         public class ClassWithHiddenByNewSlotIntProperty
