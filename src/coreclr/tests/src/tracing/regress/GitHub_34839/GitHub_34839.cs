@@ -212,8 +212,8 @@ namespace EventPipe.Issue34839
                 Enable(configs[i]);
             }
 
-            // Sleep for 5 second to let some events to be written 
-            Thread.Sleep(1000);
+            // Sleep for 5 seconds to let some events to be written
+            Thread.Sleep(5000);
 
             // Disable
             for (int i = 0; i < configurationCnt; i++)
