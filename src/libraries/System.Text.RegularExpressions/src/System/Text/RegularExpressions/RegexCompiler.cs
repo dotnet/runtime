@@ -535,7 +535,7 @@ namespace System.Text.RegularExpressions
         /// and also not to jump into the middle of a block involving a rented local from outside of that block.
         /// </remarks>
         private RentedLocalBuilder RentReadOnlySpanCharLocal() => new RentedLocalBuilder(
-            _readOnlySpanCharLocalsPool ??= new Stack<LocalBuilder>(1),
+            _readOnlySpanCharLocalsPool ??= new Stack<LocalBuilder>(1), // capacity == 1 as we currently don't expect overlapping instances
             _readOnlySpanCharLocalsPool.TryPop(out LocalBuilder? iterationLocal) ? iterationLocal : DeclareReadOnlySpanChar());
 
         /// <summary>Returned a rented local to the pool.</summary>
