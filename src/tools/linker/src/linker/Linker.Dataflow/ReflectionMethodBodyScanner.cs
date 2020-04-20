@@ -384,15 +384,12 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "String")
 					=> IntrinsicId.Assembly_CreateInstance,
 
-				//
 				// System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor (RuntimeTypeHandle type)
-				//
-				"RunClassConstructor" when calledMethod.DeclaringType.Name == "RuntimeHelpers"
-					&& calledMethod.Parameters.Count == 1
-					&& calledMethod.DeclaringType.Namespace == "System.Runtime.CompilerServices"
+				"RunClassConstructor" when calledMethod.IsDeclaredOnType ("System.Runtime.CompilerServices", "RuntimeHelpers")
+					&& calledMethod.HasParameterOfType (0, "System", "RuntimeTypeHandle")
 					=> IntrinsicId.RuntimeHelpers_RunClassConstructor,
 
-			_ => IntrinsicId.None,
+				_ => IntrinsicId.None,
 			};
 		}
 
@@ -432,8 +429,12 @@ namespace Mono.Linker.Dataflow
 						break;
 
 					case IntrinsicId.Type_get_TypeHandle: {
-							if (methodParams [0] is SystemTypeValue typeHandle)
-								methodReturnValue = new RuntimeTypeHandleValue (((SystemTypeValue)methodParams [0]).TypeRepresented);
+							foreach (var value in methodParams [0].UniqueValues()) {
+								if (value is SystemTypeValue typeValue)
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new RuntimeTypeHandleValue (typeValue.TypeRepresented));
+								else if (value == NullValue.Instance)
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, value);
+							}
 						}
 						break;
 
@@ -952,13 +953,16 @@ namespace Mono.Linker.Dataflow
 					//
 					case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
 							reflectionContext.AnalyzingPattern ();
-							var parameters = calledMethod.Parameters;
 							foreach (var TypeHandleValue in methodParams [0].UniqueValues ()) {
 								if (TypeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 									_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.MethodCalling));
 									reflectionContext.RecordHandledPattern ();
-								} else {
-									RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, TypeHandleValue, calledMethod.Parameters [0]);
+								} else if (TypeHandleValue == NullValue.Instance)
+									reflectionContext.RecordHandledPattern ();
+								else {
+									reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (TypeHandleValue)} " +
+										$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (reflectionContext.MethodCalling)}. " +
+										$"It's not possible to guarantee that these requirements are met by the application.");
 								}
 							}
 						}

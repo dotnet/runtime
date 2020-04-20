@@ -13,12 +13,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			TestRunClassConstructor ();
 			TestNonKeptStaticConstructor ();
-			TestNull ();
+			TestNullWithType ();
+			TestNullWithRuntimeTypeHandle ();
 			TestDataFlowType ();
-			TestIfElse (1);
+			TestIfElseUsingRuntimeTypeHandle (1);
+			TestIfElseUsingType (1);
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern]
 		static void TestRunClassConstructor ()
 		{
 			RuntimeHelpers.RunClassConstructor (typeof (OnlyUsedViaReflection).TypeHandle);
@@ -31,10 +34,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		static void TestNull ()
+		[RecognizedReflectionAccessPattern]
+		static void TestNullWithType ()
 		{
 			Type type = null;
 			RuntimeHelpers.RunClassConstructor (type.TypeHandle);
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		static void TestNullWithRuntimeTypeHandle ()
+		{
+			Type T = null;
+			RuntimeTypeHandle type = T.TypeHandle;
+			RuntimeHelpers.RunClassConstructor (type);
 		}
 
 		[Kept]
@@ -44,6 +57,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
+			"A return value of method 'System.RuntimeTypeHandle System.Type::get_TypeHandle()' is passed into the implicit 'this' parameter of method " +
+			"'System.Void Mono.Linker.Tests.Cases.Reflection.RunClassConstructorUsedViaReflection::TestDataFlowType()'. It's not possible to guarantee " +
+			"that these requirements are met by the application.")]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -51,13 +68,30 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		static void TestIfElse (int i)
+		[RecognizedReflectionAccessPattern]
+		static void TestIfElseUsingRuntimeTypeHandle (int i)
+		{
+			RuntimeTypeHandle myType;
+			if (i == 1) {
+				myType = typeof (IfClass).TypeHandle;
+			} else {
+				myType = typeof (ElseClass).TypeHandle;
+			}
+			RuntimeHelpers.RunClassConstructor (myType);
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		static void TestIfElseUsingType (int i)
 		{
 			Type myType;
 			if (i == 1) {
-				myType = typeof (IfClass);
-			} else {
-				myType = typeof (ElseClass);
+				myType = typeof (IfClass2);
+			}else if (i==2) {
+				myType = null;
+			} 
+			else {
+				myType = typeof (ElseClass2);
 			}
 			RuntimeHelpers.RunClassConstructor (myType.TypeHandle);
 		}
@@ -95,6 +129,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static ElseClass ()
 			{ }
 			public ElseClass (int foo)
+			{ }
+		}
+		[Kept]
+		[KeptMember (".cctor()")]
+		class IfClass2
+		{
+			public IfClass2 ()
+			{ }
+			private IfClass2 (int foo)
+			{ }
+		}
+
+		[Kept]
+		[KeptMember (".cctor()")]
+		class ElseClass2
+		{
+			[Kept]
+			static ElseClass2 ()
+			{ }
+			public ElseClass2 (int foo)
 			{ }
 		}
 	}
