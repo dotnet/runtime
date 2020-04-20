@@ -156,6 +156,9 @@ csharp_space_between_square_brackets = false
 # Analyzers
 dotnet_code_quality.ca1802.api_surface = private, internal
 
+# License header
+file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.\nSee the LICENSE file in the project root for more information.
+
 # C++ Files
 [*.{cpp,h,in}]
 curly_bracket_next_line = true
