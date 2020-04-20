@@ -204,8 +204,8 @@ namespace System
         [NonVersionable]
         public unsafe bool Equals(IntPtr other) => (nint)_value == (nint)other;
 
-        public unsafe override string ToString() => ((nint)_value).ToString(CultureInfo.InvariantCulture);
-        public unsafe string ToString(string? format) => ((nint)_value).ToString(format, CultureInfo.InvariantCulture);
+        public unsafe override string ToString() => ((nint)_value).ToString();
+        public unsafe string ToString(string? format) => ((nint)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nint)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint)_value).ToString(format, provider);
 
