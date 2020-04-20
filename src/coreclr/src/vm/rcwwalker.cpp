@@ -343,31 +343,7 @@ STDMETHODIMP CLRServicesImpl::GetTrackerTarget(IUnknown *pTarget, ICCW **ppNewRe
             if (thArgs[1].IsNull())
                 thArgs[1] = TypeHandle(g_pObjectClass);
 
-            //
-            // Instantiate ICustomPropertyProviderProxy<T1, T2>.CreateInstance
-            //
-            TypeHandle thCustomPropertyProviderProxy = TypeHandle(MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTYPROVIDERPROXY));
-
-            MethodTable *pthCustomPropertyProviderProxyExactMT = thCustomPropertyProviderProxy.Instantiate(Instantiation(thArgs, 2)).GetMethodTable();
-
-            MethodDesc *pCreateInstanceMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                MscorlibBinder::GetMethod(METHOD__ICUSTOMPROPERTYPROVIDERPROXY__CREATE_INSTANCE),
-                pthCustomPropertyProviderProxyExactMT,
-                FALSE,
-                Instantiation(),
-                FALSE);
-
-            //
-            // Call ICustomPropertyProviderProxy.CreateInstance
-            //
-            PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pCreateInstanceMD);
-            DECLARE_ARGHOLDER_ARRAY(args, 1);
-            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
-
-            CALL_MANAGED_METHOD_RETREF(gc.RetVal, OBJECTREF, args);
-
-            CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(&gc.RetVal);
-            *ppNewReference = (ICCW *)ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_ICCW, /* pIntfMT = */ NULL);
+            _ASSERTE(false);
             GCPROTECT_END();
         }
     }

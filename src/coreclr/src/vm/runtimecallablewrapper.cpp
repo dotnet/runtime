@@ -968,20 +968,9 @@ void WinRTClassFactory::Init()
     }
 
     {
-
-		// Special case (not pretty): WinMD types requires you to put DefaultAttribute on interfaceImpl to
-		// mark the interface as default interface. But C# doesn't allow you to do that so we have
-		// to do it manually here.
-		MethodTable* pAsyncTracingEventArgsMT = MscorlibBinder::GetClass(CLASS__ASYNC_TRACING_EVENT_ARGS);
-		if(pAsyncTracingEventArgsMT == m_pClassMT)
-		{
-			m_pDefaultItfMT = MscorlibBinder::GetClass(CLASS__IASYNC_TRACING_EVENT_ARGS);
-		}
-		else
-		{
-			// parse the DefaultAttribute to figure out the default interface of the class
-			HENUMInternalHolder hEnumInterfaceImpl(pImport);
-			hEnumInterfaceImpl.EnumInit(mdtInterfaceImpl, m_pClassMT->GetCl());
+        // parse the DefaultAttribute to figure out the default interface of the class
+        HENUMInternalHolder hEnumInterfaceImpl(pImport);
+        hEnumInterfaceImpl.EnumInit(mdtInterfaceImpl, m_pClassMT->GetCl());
 
         DWORD cInterfaces = pImport->EnumGetCount(&hEnumInterfaceImpl);
         if (cInterfaces != 0)
@@ -1011,7 +1000,6 @@ void WinRTClassFactory::Init()
                 }
             }
         }
-    }
     }
 
     // initialize m_hClassName
@@ -3178,28 +3166,6 @@ MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
         RETURN pMT;
     }
 
-    // IIterable and IVectorView are not marked as covariant. Check them explicitly and
-    // return the corresponding IEnumerable / IReadOnlyList instantiation.
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IITERABLE))
-    {
-        RETURN TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IVECTORVIEW))
-    {
-        RETURN TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-
-    // IIterator is not marked as covariant either. Return the covariant IEnumerator.
-    DefineFullyQualifiedNameForClassW();
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IITERATOR) ||
-        wcscmp(GetFullyQualifiedNameForClassW_WinRT(pMT), g_WinRTIIteratorClassNameW) == 0)
-    {
-        RETURN TypeHandle(MscorlibBinder::GetClass(CLASS__IENUMERATORGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-
     RETURN NULL;
 }
 
@@ -3236,20 +3202,6 @@ RCW::InterfaceRedirectionKind RCW::GetInterfaceForQI(MethodTable *pItfMT, Method
             pItfMT != *pNewItfMT && *pNewItfMT != NULL &&
             pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
         {
-            // Yes - we are at 3rd attempt;
-            // QI for IEnumerable/IDispatch+DISPID_NEWENUM and for IBindableIterable failed
-            // and we are about to see if we know of an IIterable<T> to use.
-
-            MethodDesc *pMD = GetGetEnumeratorMethod();
-            if (pMD != NULL)
-            {
-                // we have already determined what casting to IEnumerable means for this RCW
-                TypeHandle th = TypeHandle(MscorlibBinder::GetClass(CLASS__IITERABLE));
-                *pNewItfMT = th.Instantiate(pMD->GetClassInstantiation()).GetMethodTable();
-                return InterfaceRedirection_IEnumerable;
-            }
-
-            // The last attempt failed, this is an error.
             return InterfaceRedirection_UnresolvedIEnumerable;
         }
 
@@ -3338,86 +3290,73 @@ RCW::InterfaceRedirectionKind RCW::ComputeInterfacesForQI(MethodTable *pItfMT, M
     }
     CONTRACTL_END;
 
-    if (pItfMT->IsProjectedFromWinRT())
+    WinMDAdapter::RedirectedTypeIndex redirectedInterfaceIndex;
+    RCW::InterfaceRedirectionKind redirectionKind = InterfaceRedirection_None;
+
+    BOOL fChosenIDictionary;
+    MethodTable *pResolvedItfMT = ResolveICollectionInterface(pItfMT, TRUE, &fChosenIDictionary);
+    if (pResolvedItfMT == NULL)
     {
-        // If we're casting to IIterable<T> directly, then while we do want to QI IIterable<T>, also
-        // make a note that it is redirected from IEnumerable<T>
-        if (pItfMT->HasInstantiation() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)))
-        {
-            *ppNewItfMT1 = pItfMT;
-            return InterfaceRedirection_IEnumerable;
-        }
+        pResolvedItfMT = pItfMT;
+        // Let ResolveRedirectedType convert IDictionary/IList to the corresponding WinRT type as usual
     }
-    else
+
+    if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex))
     {
-        WinMDAdapter::RedirectedTypeIndex redirectedInterfaceIndex;
-        RCW::InterfaceRedirectionKind redirectionKind = InterfaceRedirection_None;
+        TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
 
-        BOOL fChosenIDictionary;
-        MethodTable *pResolvedItfMT = ResolveICollectionInterface(pItfMT, TRUE, &fChosenIDictionary);
-        if (pResolvedItfMT == NULL)
+        if (th.HasInstantiation())
         {
-            pResolvedItfMT = pItfMT;
-            // Let ResolveRedirectedType convert IDictionary/IList to the corresponding WinRT type as usual
-        }
-
-        if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex))
-        {
-            TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-
-            if (th.HasInstantiation())
+            *ppNewItfMT1 = th.Instantiate(pResolvedItfMT->GetInstantiation()).GetMethodTable();
+            if (pItfMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
             {
-                *ppNewItfMT1 = th.Instantiate(pResolvedItfMT->GetInstantiation()).GetMethodTable();
-                if (pItfMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
-                {
-                    redirectionKind = InterfaceRedirection_IEnumerable;
-                }
-                else
-                {
-                    _ASSERTE(!fChosenIDictionary);
-                    redirectionKind = InterfaceRedirection_Other;
-                }
+                redirectionKind = InterfaceRedirection_IEnumerable;
             }
             else
             {
-                // pItfMT is a non-generic redirected interface - for compat reasons do QI for the interface first,
-                // and if it fails, use redirection
-                *ppNewItfMT1 = pItfMT;
-                *ppNewItfMT2 = th.GetMethodTable();
-                redirectionKind = InterfaceRedirection_Other_RetryOnFailure;
+                _ASSERTE(!fChosenIDictionary);
+                redirectionKind = InterfaceRedirection_Other;
             }
         }
-
-        if (fChosenIDictionary)
+        else
         {
-            // pItfMT is the ambiguous ICollection<KeyValuePair<K, V>> and *ppNewItfMT1 at this point is the
-            // corresponding IMap<K, V>, now we are going to assign IVector<IKeyValuePair<K, V>> to *ppNewItfMT2
-            pResolvedItfMT = ResolveICollectionInterface(pItfMT, FALSE, NULL);
+            // pItfMT is a non-generic redirected interface - for compat reasons do QI for the interface first,
+            // and if it fails, use redirection
+            *ppNewItfMT1 = pItfMT;
+            *ppNewItfMT2 = th.GetMethodTable();
+            redirectionKind = InterfaceRedirection_Other_RetryOnFailure;
+        }
+    }
 
-            VERIFY(WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex));
-            TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
+    if (fChosenIDictionary)
+    {
+        // pItfMT is the ambiguous ICollection<KeyValuePair<K, V>> and *ppNewItfMT1 at this point is the
+        // corresponding IMap<K, V>, now we are going to assign IVector<IKeyValuePair<K, V>> to *ppNewItfMT2
+        pResolvedItfMT = ResolveICollectionInterface(pItfMT, FALSE, NULL);
 
-            *ppNewItfMT2 = th.Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
-            redirectionKind = InterfaceRedirection_IEnumerable_RetryOnFailure;
+        VERIFY(WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex));
+        TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
+
+        *ppNewItfMT2 = th.Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
+        redirectionKind = InterfaceRedirection_IEnumerable_RetryOnFailure;
+    }
+
+    if (redirectionKind != InterfaceRedirection_None)
+    {
+        return redirectionKind;
+    }
+
+    if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pItfMT, &redirectedInterfaceIndex))
+    {
+        TypeHandle th = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(redirectedInterfaceIndex));
+
+        if (pItfMT->HasInstantiation())
+        {
+            th = th.Instantiate(pItfMT->GetInstantiation());
         }
 
-        if (redirectionKind != InterfaceRedirection_None)
-        {
-            return redirectionKind;
-        }
-
-        if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pItfMT, &redirectedInterfaceIndex))
-        {
-            TypeHandle th = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(redirectedInterfaceIndex));
-
-            if (pItfMT->HasInstantiation())
-            {
-                th = th.Instantiate(pItfMT->GetInstantiation());
-            }
-
-            *ppNewItfMT1 = th.GetMethodTable();
-            return InterfaceRedirection_Other;
-        }
+        *ppNewItfMT1 = th.GetMethodTable();
+        return InterfaceRedirection_Other;
     }
 
     *ppNewItfMT1 = pItfMT;
@@ -3546,21 +3485,6 @@ MethodDesc *RCW::ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    if (!pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)))
-    {
-        // If we have an IIterable<T>, we want to get the enumerator for the equivalent
-        // instantiation of IEnumerable<T>
-        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)))
-        {
-            TypeHandle thEnumerable = TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC));
-            pMT = thEnumerable.Instantiate(pMT->GetInstantiation()).GetMethodTable();
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
     MethodDesc *pMD = pMT->GetMethodDescForSlot(0);
     _ASSERTE(strcmp(pMD->GetName(), "GetEnumerator") == 0);
 
@@ -3594,137 +3518,7 @@ void RCW::SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst)
     }
     CONTRACTL_END;
 
-    BOOL fIsEnumerable = (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)) ||
-                          pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)));
-
-    if (fIsEnumerable || pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)) ||
-                         pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IVECTORVIEW)))
-    {
-        WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType;
-        if (!originalInst.IsEmpty())
-        {
-            // use the original instantiation if available
-            baseType = WinRTInterfaceRedirector::GetStructureBaseType(originalInst);
-        }
-        else
-        {
-            baseType = WinRTInterfaceRedirector::GetStructureBaseType(pItfMT->GetInstantiation());
-        }
-
-        switch (baseType)
-        {
-            case WinRTInterfaceRedirector::BaseType_Object:
-            {
-                OBJECTHANDLE *pohHandleField = fIsEnumerable ?
-                    &GetOrCreateAuxiliaryData()->m_ohObjectVariantCallTarget_IEnumerable :
-                    &GetOrCreateAuxiliaryData()->m_ohObjectVariantCallTarget_IReadOnlyList;
-
-                if (*pohHandleField != NULL)
-                {
-                    // we've already established the behavior so we can skip the code below
-                    break;
-                }
-
-                if (!originalInst.IsEmpty())
-                {
-                    MethodTable *pInstArgMT = pItfMT->GetInstantiation()[0].GetMethodTable();
-
-                    if (pInstArgMT == g_pStringClass)
-                    {
-                        // We are casting the RCW to IEnumerable<string> or IReadOnlyList<string> - we special-case this common case
-                        // so we don't have to create the delegate.
-                        FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, VARIANCE_STUB_TARGET_USE_STRING, NULL);
-                    }
-                    else if (pInstArgMT == g_pExceptionClass ||
-                             pInstArgMT == MscorlibBinder::GetClass(CLASS__TYPE) ||
-                             pInstArgMT->IsArray() ||
-                             pInstArgMT->IsDelegate())
-                    {
-                        // We are casting the RCW to IEnumerable<T> or IReadOnlyList<T> where T is Type/Exception/an array/a delegate
-                        // i.e. an unbounded set of types. We'll create a delegate pointing to the right stub and cache it on the RCW
-                        // so we can handle the calls via GetEnumerator/Indexer_Get as fast as possible.
-
-                        MethodDesc *pTargetMD = MscorlibBinder::GetMethod(fIsEnumerable ?
-                            METHOD__ITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB :
-                            METHOD__IVECTORVIEW_TO_IREADONLYLIST_ADAPTER__INDEXER_GET);
-
-                        pTargetMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                            pTargetMD,
-                            pTargetMD->GetMethodTable(),
-                            FALSE,                      // forceBoxedEntryPoint
-                            pItfMT->GetInstantiation(), // methodInst
-                            FALSE,                      // allowInstParam
-                            TRUE);                      // forceRemotableMethod
-
-                        MethodTable *pMT = MscorlibBinder::GetClass(fIsEnumerable ?
-                            CLASS__GET_ENUMERATOR_DELEGATE :
-                            CLASS__INDEXER_GET_DELEGATE);
-
-                        pMT = TypeHandle(pMT).Instantiate(pItfMT->GetInstantiation()).AsMethodTable();
-
-                        GCX_COOP();
-
-                        DELEGATEREF pDelObj = NULL;
-                        GCPROTECT_BEGIN(pDelObj);
-
-                        pDelObj = (DELEGATEREF)AllocateObject(pMT);
-                        pDelObj->SetTarget(GetExposedObject());
-                        pDelObj->SetMethodPtr(pTargetMD->GetMultiCallableAddrOfCode());
-
-                        OBJECTHANDLEHolder oh = GetAppDomain()->CreateHandle(pDelObj);
-                        if (FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, oh, NULL) == NULL)
-                        {
-                            oh.SuppressRelease();
-                        }
-
-                        GCPROTECT_END();
-                    }
-                }
-
-                // the default is "use T", i.e. handle the call as normal
-                if (*pohHandleField == NULL)
-                {
-                    FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, VARIANCE_STUB_TARGET_USE_T, NULL);
-                }
-                break;
-            }
-
-            case WinRTInterfaceRedirector::BaseType_IEnumerable:
-            case WinRTInterfaceRedirector::BaseType_IEnumerableOfChar:
-            {
-                // The only WinRT-legal type that implements IEnumerable<IEnumerable> or IEnumerable<IEnumerable<char>> or
-                // IReadOnlyList<IEnumerable> or IReadOnlyList<IEnumerable<char>> AND is not an IInspectable on the WinRT
-                // side is string. We'll use a couple of flags here since the number of options is small.
-
-                InterfaceVarianceBehavior varianceBehavior = (fIsEnumerable ? IEnumerableSupported : IReadOnlyListSupported);
-
-                if (!originalInst.IsEmpty())
-                {
-                    MethodTable *pInstArgMT = pItfMT->GetInstantiation()[0].GetMethodTable();
-                    if (pInstArgMT == g_pStringClass)
-                    {
-                        varianceBehavior = (InterfaceVarianceBehavior)
-                            (varianceBehavior | (fIsEnumerable ? IEnumerableSupportedViaStringInstantiation : IReadOnlyListSupportedViaStringInstantiation));
-                    }
-
-                    RCWAuxiliaryData::RCWAuxFlags newAuxFlags = { 0 };
-
-                    if (baseType == WinRTInterfaceRedirector::BaseType_IEnumerable)
-                    {
-                        newAuxFlags.m_InterfaceVarianceBehavior_OfIEnumerable = varianceBehavior;
-                    }
-                    else
-                    {
-                        _ASSERTE(baseType == WinRTInterfaceRedirector::BaseType_IEnumerableOfChar);
-                        newAuxFlags.m_InterfaceVarianceBehavior_OfIEnumerableOfChar = varianceBehavior;
-                    }
-
-                    RCWAuxiliaryData *pAuxData = GetOrCreateAuxiliaryData();
-                    FastInterlockOr(&pAuxData->m_AuxFlags.m_dwFlags, newAuxFlags.m_dwFlags);
-                }
-            }
-        }
-    }
+    _ASSERTE(false);
 }
 
 // Performs QI for the given interface, optionally instantiating it with the given generic args.

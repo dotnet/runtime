@@ -7405,85 +7405,6 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
     RETURN pMethod;
 } // Module::LoadIBCMethodHelper
 
-#ifdef FEATURE_COMINTEROP
-//---------------------------------------------------------------------------------------
-//
-// This function is a workaround for missing IBC data in WinRT assemblies and
-// not-yet-implemented sharing of IL_STUB(__Canon arg) IL stubs for all interfaces.
-//
-static void ExpandWindowsRuntimeType(TypeHandle t, DataImage *image)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(!t.IsNull());
-    }
-    CONTRACTL_END
-
-    if (t.IsTypeDesc())
-        return;
-
-    // This array contains our poor man's IBC data - instantiations that are known to
-    // be used by other assemblies.
-    static const struct
-    {
-        LPCUTF8         m_szTypeName;
-        BinderClassID   m_GenericBinderClassID;
-    }
-    rgForcedInstantiations[] = {
-        { "Windows.UI.Xaml.Data.IGroupInfo", CLASS__IENUMERABLEGENERIC },
-        { "Windows.UI.Xaml.UIElement",       CLASS__ILISTGENERIC       },
-        { "Windows.UI.Xaml.Visibility",      CLASS__CLRIREFERENCEIMPL  },
-        { "Windows.UI.Xaml.VerticalAlignment", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.HorizontalAlignment", CLASS__CLRIREFERENCEIMPL },
-        // The following instantiations are used by Microsoft.PlayerFramework - http://playerframework.codeplex.com/
-        { "Windows.UI.Xaml.Media.AudioCategory", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.AudioDeviceType", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.MediaElementState", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.Stereo3DVideoRenderMode", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.Stereo3DVideoPackingMode", CLASS__CLRIREFERENCEIMPL },
-    };
-
-    DefineFullyQualifiedNameForClass();
-    LPCUTF8 szTypeName = GetFullyQualifiedNameForClass(t.AsMethodTable());
-
-    for (SIZE_T i = 0; i < COUNTOF(rgForcedInstantiations); i++)
-    {
-        if (strcmp(szTypeName, rgForcedInstantiations[i].m_szTypeName) == 0)
-        {
-            EX_TRY
-            {
-                TypeHandle thGenericType = TypeHandle(MscorlibBinder::GetClass(rgForcedInstantiations[i].m_GenericBinderClassID));
-
-                Instantiation inst(&t, 1);
-                thGenericType.Instantiate(inst);
-            }
-            EX_CATCH
-            {
-                image->GetPreloader()->Error(t.GetCl(), GET_EXCEPTION());
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-        }
-    }
-
-    if (strcmp(szTypeName, "Windows.Foundation.Collections.IObservableVector`1") == 0)
-    {
-        EX_TRY
-        {
-            TypeHandle thArg = TypeHandle(g_pObjectClass);
-
-            Instantiation inst(&thArg, 1);
-            t.Instantiate(inst);
-        }
-        EX_CATCH
-        {
-            image->GetPreloader()->Error(t.GetCl(), GET_EXCEPTION());
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 //---------------------------------------------------------------------------------------
 //
 void Module::ExpandAll(DataImage *image)
@@ -7616,13 +7537,6 @@ void Module::ExpandAll(DataImage *image)
                     m_GenericTypeDefToCanonMethodTableMap.AddElement(this, RidFromToken(pCanonMT->GetCl()), pCanonMT);
                 }
             }
-
-#ifdef FEATURE_COMINTEROP
-            if (IsAfContentType_WindowsRuntime(assemblyFlags))
-            {
-                ExpandWindowsRuntimeType(t, image);
-            }
-#endif // FEATURE_COMINTEROP
         }
     }
 

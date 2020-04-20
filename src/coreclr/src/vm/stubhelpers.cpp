@@ -1420,18 +1420,6 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
         IRestrictedErrorInfo *pResErrorInfo = NULL;
         BOOL bHasNonCLRLanguageErrorObject = FALSE;
 
-        if (fForWinRT)
-        {
-            SafeGetRestrictedErrorInfo(&pResErrorInfo);
-            if (pResErrorInfo != NULL)
-            {
-                // If we have a restricted error Info lets try and find the corresponding errorInfo,
-                // bHasNonCLRLanguageErrorObject can be TRUE|FALSE depending on whether we have an associtated LanguageExceptionObject
-                // and whether it is CLR exceptionObject => bHasNonCLRLanguageErrorObject = FALSE;
-                // or whether it is a non-CLRExceptionObject => bHasNonCLRLanguageErrorObject = TRUE;
-                pErrInfo = GetCorrepondingErrorInfo_WinRT(hr, pResErrorInfo, &bHasNonCLRLanguageErrorObject);
-            }
-        }
         if (pErrInfo == NULL && pMD != NULL)
         {
             // Retrieve the interface method table.

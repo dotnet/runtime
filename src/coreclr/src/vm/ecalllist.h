@@ -812,16 +812,6 @@ FCFuncStart(gInteropMarshalFuncs)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gWindowsRuntimeMarshalFuncs)
-    FCFuncElement("GetNativeActivationFactory", MarshalNative::GetNativeActivationFactory)
-    FCFuncElement("GetHRForException", MarshalNative::GetHRForException_WinRT)
-    FCFuncElement("GetUniqueObjectForIUnknownWithoutUnboxing", MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing)
-    FCFuncElement("InitializeManagedWinRTFactoryObject", MarshalNative::InitializeManagedWinRTFactoryObject)
-    FCFuncElement("InitializeWrapper", MarshalNative::InitializeWrapperForWinRT)
-FCFuncEnd()
-#endif
-
 FCFuncStart(gInteropNativeLibraryFuncs)
     QCFuncElement("LoadFromPath", NativeLibraryNative::LoadFromPath)
     QCFuncElement("LoadByName", NativeLibraryNative::LoadByName)
@@ -1300,12 +1290,6 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
-
-#ifdef FEATURE_COMINTEROP
-FCClassElement("WinRTTypeNameConverter", "System.StubHelpers", gWinRTTypeNameConverterFuncs)
-FCClassElement("WindowsRuntimeMarshal", "System.Runtime.InteropServices.WindowsRuntime", gWindowsRuntimeMarshalFuncs)
-#endif // FEATURE_COMINTEROP
-
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)

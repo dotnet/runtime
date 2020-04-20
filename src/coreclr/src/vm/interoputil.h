@@ -84,9 +84,7 @@ struct ExceptionData;
 //
 #ifdef FEATURE_COMINTEROP
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD);
-HRESULT SafeGetRestrictedErrorInfo(IRestrictedErrorInfo **ppIErrInfo);
 BOOL IsManagedObject(IUnknown *pErrInfo);
-IErrorInfo *GetCorrepondingErrorInfo_WinRT(HRESULT hr, IRestrictedErrorInfo *pResErrInfo, BOOL* bHasLangRestrictedErrInfo);
 HRESULT GetRestrictedErrorDetails(IRestrictedErrorInfo *pRestrictedErrorInfo, BSTR *perrorDescription, BSTR *pErrorRestrictedDescription, HRESULT *hr, BSTR *pErrorCapabilitySid);
 
 #endif // FEATURE_COMINTEROP
@@ -132,8 +130,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type);
 //-------------------------------------------------------------------
 void FillExceptionData(
     _Inout_ ExceptionData* pedata,
-    _In_ IErrorInfo* pErrInfo,
-    _In_opt_ IRestrictedErrorInfo* pRestrictedErrorInfo);
+    _In_ IErrorInfo* pErrInfo);
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,

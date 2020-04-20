@@ -1128,7 +1128,7 @@ void SetupTLSForThread(Thread* pThread)
 void FreeClrDebugState(LPVOID pTlsData);
 #endif
 
-// Called here from a thread detach or from destruction of a Thread object. 
+// Called here from a thread detach or from destruction of a Thread object.
 void ThreadDetaching()
 {
     // Can not cause memory allocation during thread detach, so no real contracts.
@@ -1194,60 +1194,7 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
                                                       LPCWSTR wszCodeBase,
                                                       IActivationFactory ** factory)
 {
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
-    _ASSERTE(pDomain);
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-    {
-        GCX_COOP();
-
-        bool bIsPrimitive;
-        TypeHandle typeHandle = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(wszTypeName, /* pLoadBinder */ nullptr, &bIsPrimitive);
-        if (!bIsPrimitive && !typeHandle.IsNull() && !typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsExportedToWinRT())
-        {
-            struct _gc {
-                OBJECTREF type;
-            } gc;
-            memset(&gc, 0, sizeof(gc));
-
-
-            IActivationFactory* activationFactory;
-            GCPROTECT_BEGIN(gc);
-
-            gc.type = typeHandle.GetManagedClassObject();
-
-            MethodDescCallSite mdcs(METHOD__WINDOWSRUNTIMEMARSHAL__GET_ACTIVATION_FACTORY_FOR_TYPE);
-            ARG_SLOT args[1] = {
-                ObjToArgSlot(gc.type)
-            };
-            activationFactory = (IActivationFactory*)mdcs.Call_RetLPVOID(args);
-
-            *factory = activationFactory;
-
-            GCPROTECT_END();
-        }
-        else
-        {
-            hr = COR_E_TYPELOAD;
-        }
-    }
-    END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
+    return E_NOTIMPL;
 }
 
 #endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION

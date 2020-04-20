@@ -172,40 +172,6 @@ CLRPrivTypeCacheWinRT::RaiseDesignerNamespaceResolveEvent(
     LPCWSTR                                wszNamespace,
     CLRPrivBinderUtil::WStringListHolder * pFileNameList)
 {
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pFileNameList != nullptr);
-
-    GCX_COOP();
-
-    struct _gc {
-        STRINGREF str;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-    MethodDescCallSite onNamespaceResolve(METHOD__WINDOWSRUNTIMEMETATADA__ON_DESIGNER_NAMESPACE_RESOLVE);
-    gc.str = StringObject::NewString(wszNamespace);
-    ARG_SLOT args[1] =
-    {
-        ObjToArgSlot(gc.str)
-    };
-    PTRARRAYREF ResultingFileNameArrayRef = (PTRARRAYREF) onNamespaceResolve.Call_RetOBJECTREF(args);
-    if (ResultingFileNameArrayRef != NULL)
-    {
-        for (DWORD i = 0; i < ResultingFileNameArrayRef->GetNumComponents(); i++)
-        {
-            STRINGREF ResultingFileNameRef = (STRINGREF) ResultingFileNameArrayRef->GetAt(i);
-            _ASSERTE(ResultingFileNameRef != NULL); // Verified in the managed code OnDesignerNamespaceResolveEvent
-
-            SString sFileName;
-            ResultingFileNameRef->GetSString(sFileName);
-            _ASSERTE(!sFileName.IsEmpty()); // Verified in the managed code OnDesignerNamespaceResolveEvent
-
-            pFileNameList->InsertTail(sFileName.GetUnicode());
-        }
-    }
-    GCPROTECT_END();
 } // CLRPrivTypeCacheWinRT::RaiseDesignerNamespaceResolveEvent
 
 //=====================================================================================================================

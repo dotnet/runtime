@@ -2098,15 +2098,7 @@ EECOMException::EECOMException(
     m_ED.dwHelpContext = NULL;
     m_ED.guid = GUID_NULL;
 
-#ifdef FEATURE_COMINTEROP
-    m_ED.bstrReference = NULL;
-    m_ED.bstrRestrictedError = NULL;
-    m_ED.bstrCapabilitySid = NULL;
-    m_ED.pRestrictedErrorInfo = NULL;
-    m_ED.bHasLanguageRestrictedErrorInfo = bHasLanguageRestrictedErrInfo;
-#endif
-
-    FillExceptionData(&m_ED, pErrInfo, pRestrictedErrInfo);
+    FillExceptionData(&m_ED, pErrInfo);
 }
 
 BOOL EECOMException::GetThrowableMessage(SString &result)

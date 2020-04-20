@@ -4972,38 +4972,6 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
         }
     }
 
-    // handle single dimensional arrays
-    if (WinRTSupported() && thClass.IsArray() && !pMT->IsMultiDimArray())
-    {
-        // We treat arrays as if they implemented IIterable<T>, IVector<T>, and IVectorView<T> (WinRT only)
-        TypeHandle thGenArg = thClass.GetArrayElementTypeHandle();
-        Instantiation inst(&thGenArg, 1);
-
-        BinderClassID id = (fIterateRedirectedInterfaces ? CLASS__IITERABLE : CLASS__IENUMERABLEGENERIC);
-        MethodTable *pWinRTItfMT = TypeHandle(MscorlibBinder::GetClass(id)).Instantiate(inst).AsMethodTable();
-
-        // if this IIterable<T>/IEnumerable<T> is an invalid WinRT type, skip it, so that the ComCallWrapperTemplate is still usable
-        if (pWinRTItfMT->IsLegalNonArrayWinRTType())
-        {
-            // append IIterable<T>/IEnumerable<T>
-            AppendInterface(pWinRTItfMT, fIterateRedirectedInterfaces).m_RedirectedIndex = WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IEnumerable;
-
-            // append IVector<T>/IList<T>
-            id = (fIterateRedirectedInterfaces ? CLASS__IVECTOR : CLASS__ILISTGENERIC);
-            pWinRTItfMT = TypeHandle(MscorlibBinder::GetClass(id)).Instantiate(inst).AsMethodTable();
-            _ASSERTE(pWinRTItfMT->IsLegalNonArrayWinRTType());
-
-            AppendInterface(pWinRTItfMT, fIterateRedirectedInterfaces).m_RedirectedIndex = WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IList;
-
-            // append IVectorView<T>/IReadOnlyList<T>
-            id = (fIterateRedirectedInterfaces ? CLASS__IVECTORVIEW : CLASS__IREADONLYLISTGENERIC);
-            pWinRTItfMT = TypeHandle(MscorlibBinder::GetClass(id)).Instantiate(inst).AsMethodTable();
-            _ASSERTE(pWinRTItfMT->IsLegalNonArrayWinRTType());
-
-            AppendInterface(pWinRTItfMT, fIterateRedirectedInterfaces).m_RedirectedIndex = WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyList;
-        }
-    }
-
     // add factory and static interfaces
     if (pClsFact != NULL)
     {

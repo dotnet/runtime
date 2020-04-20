@@ -193,11 +193,6 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
     MethodTable *pMT = thManagedType.GetMethodTable();
     BOOL fIsIReference = FALSE, fIsIReferenceArray = FALSE;
-    if (pMT->GetNumGenericArgs() == 1)
-    {
-        fIsIReference = pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEIMPL));
-        fIsIReferenceArray = pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEARRAYIMPL));
-    }
 
     WinMDAdapter::RedirectedTypeIndex index;
     if (ResolveRedirectedType(pMT, &index))
@@ -384,26 +379,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
 
         if (pTopIfaceMT != NULL)
         {
-            if (pTopIfaceMT->IsProjectedFromWinRT())
-            {
-                // Mscorlib contains copies of WinRT interfaces - don't return their names,
-                // instead return names of the corresponding interfaces in Windows.Foundation.winmd.
-
-                if (pTopIfaceMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IKEYVALUEPAIR)))
-                    strWinRTTypeName.Append(W("Windows.Foundation.Collections.IKeyValuePair`2"));
-                else if (pTopIfaceMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERATOR)))
-                    strWinRTTypeName.Append(W("Windows.Foundation.Collections.IIterator`1"));
-                else if (pTopIfaceMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IPROPERTYVALUE)))
-                    strWinRTTypeName.Append(W("Windows.Foundation.IPropertyValue"));
-                else
-                {
-                    SString strTypeName;
-                    pTopIfaceMT->_GetFullyQualifiedNameForClassNestedAware(strTypeName);
-                    strWinRTTypeName.Append(strTypeName);
-                }
-            }
-            else
-                strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(idxTopIface));
+            strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(idxTopIface));
 
             // Since we are returning the typeName for the pTopIfaceMT we should use the same interfaceType
             // to check for instantiation and creating the closed generic.

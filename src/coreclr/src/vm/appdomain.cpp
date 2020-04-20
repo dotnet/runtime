@@ -2049,7 +2049,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
 #ifdef FEATURE_COMINTEROP
     g_pBaseCOMObject = MscorlibBinder::GetClass(CLASS__COM_OBJECT);
-    g_pBaseRuntimeClass = MscorlibBinder::GetClass(CLASS__RUNTIME_CLASS);
 
     MscorlibBinder::GetClass(CLASS__IDICTIONARYGENERIC);
     MscorlibBinder::GetClass(CLASS__IREADONLYDICTIONARYGENERIC);

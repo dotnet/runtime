@@ -2736,78 +2736,7 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
 
 HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvider, HSTRING hstrName, IUnknown **ppProperty)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pPropertyProvider));
-        PRECONDITION(IsSimpleTearOff(pPropertyProvider));
-        PRECONDITION(CheckPointer(ppProperty, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (ppProperty == NULL)
-        return E_POINTER;
-
-    // Initialize [out] parameters
-    *ppProperty = NULL;
-
-    HRESULT hr;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        _ASSERTE(IsSimpleTearOff(pPropertyProvider));
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
-
-        GCX_COOP();
-
-        struct _gc {
-                OBJECTREF  TargetObj;
-                STRINGREF  StringRef;
-                OBJECTREF  RetVal;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.TargetObj = pSimpleWrap->GetObjectRef();
-
-        //
-        // Marshal HSTRING to String object
-        // NULL HSTRINGS are equivilent to empty strings
-        //
-        UINT32 cchString = 0;
-        LPCWSTR pwszString = W("");
-        if (hstrName != NULL)
-        {
-            pwszString = WindowsGetStringRawBuffer(hstrName, &cchString);
-        }
-
-        gc.StringRef = StringObject::NewString(pwszString, cchString);
-
-        //
-        // Call ICustomPropertyProviderImpl.CreateProperty
-        //
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICUSTOMPROPERTYPROVIDERIMPL__CREATE_PROPERTY);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.StringRef);
-
-        CALL_MANAGED_METHOD_RETREF(gc.RetVal, OBJECTREF, args);
-
-        if (gc.RetVal != NULL)
-        {
-            // The object is a CustomPropertyImpl. Get the ICustomProperty implementation from CCW and return that
-            *ppProperty = GetComIPFromObjectRef(&gc.RetVal, MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTY));
-        }
-
-        GCPROTECT_END();
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    // Don't fail if property can't be found - just return S_OK and NULL property
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pPropertyProvider,
@@ -2815,193 +2744,19 @@ HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pProperty
                                                              TypeNameNative indexedParamType,
                                                              /* [out, retval] */ IUnknown **ppProperty)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pPropertyProvider));
-        PRECONDITION(IsSimpleTearOff(pPropertyProvider));
-        PRECONDITION(CheckPointer(ppProperty, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (ppProperty == NULL)
-        return E_POINTER;
-
-    // Initialize [out] parameters
-    *ppProperty = NULL;
-
-    HRESULT hr;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        _ASSERTE(IsSimpleTearOff(pPropertyProvider));
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
-
-        GCX_COOP();
-
-        struct _gc {
-                OBJECTREF  TargetObj;
-                STRINGREF  StringRef;
-                OBJECTREF  RetVal;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.TargetObj = pSimpleWrap->GetObjectRef();
-
-        //
-        // Marshal HSTRING to String object
-        // NULL HSTRINGS are equivilent to empty strings
-        //
-        UINT32 cchString = 0;
-        LPCWSTR pwszString = W("");
-        if (hstrName != NULL)
-        {
-            pwszString = WindowsGetStringRawBuffer(hstrName, &cchString);
-        }
-
-        gc.StringRef = StringObject::NewString(pwszString, cchString);
-
-        //
-        // Call ICustomPropertyProviderImpl.CreateIndexedProperty
-        //
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICUSTOMPROPERTYPROVIDERIMPL__CREATE_INDEXED_PROPERTY);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.StringRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(&indexedParamType);
-
-        CALL_MANAGED_METHOD_RETREF(gc.RetVal, OBJECTREF, args);
-
-        if (gc.RetVal != NULL)
-        {
-            // The object is a CustomPropertyImpl. Get the ICustomProperty implementation from CCW and return that
-            *ppProperty = GetComIPFromObjectRef(&gc.RetVal, MscorlibBinder::GetClass(CLASS__ICUSTOMPROPERTY));
-        }
-
-        GCPROTECT_END();
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    // Don't fail if property can't be found - just return S_OK and NULL property
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPropertyProvider,
                                                                   /* [out, retval] */ HSTRING *phstrStringRepresentation)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pPropertyProvider));
-        PRECONDITION(IsSimpleTearOff(pPropertyProvider));
-        PRECONDITION(CheckPointer(phstrStringRepresentation, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (phstrStringRepresentation == NULL)
-        return E_POINTER;
-
-    // Initialize [out] parameters
-    *phstrStringRepresentation = NULL;
-
-    HRESULT hr;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        _ASSERTE(IsSimpleTearOff(pPropertyProvider));
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
-
-        GCX_COOP();
-
-        struct _gc {
-                OBJECTREF  TargetObj;
-                STRINGREF  RetVal;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.TargetObj = pSimpleWrap->GetObjectRef();
-
-        //
-        // Call IStringableHelper.ToString() to get string representation either from IStringable.ToString() or ToString()
-        //
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ISTRINGABLEHELPER__TO_STRING);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(gc.TargetObj);
-        CALL_MANAGED_METHOD_RETREF(gc.RetVal, STRINGREF, args);
-
-        //
-        // Convert managed string to HSTRING
-        //
-        if (gc.RetVal == NULL)
-            *phstrStringRepresentation = NULL;
-        else
-            hr = ::WindowsCreateString(gc.RetVal->GetBuffer(), gc.RetVal->GetStringLength(), phstrStringRepresentation);
-
-        GCPROTECT_END();
-
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
                                                   /* [out, retval] */ TypeNameNative *pTypeIdentifier)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pPropertyProvider));
-        PRECONDITION(IsSimpleTearOff(pPropertyProvider));
-        PRECONDITION(CheckPointer(pTypeIdentifier));
-    }
-    CONTRACTL_END;
-
-    if (pTypeIdentifier == NULL)
-        return E_POINTER;
-
-    // Initialize [out] parameters
-    ::ZeroMemory(pTypeIdentifier, sizeof(TypeNameNative));
-
-    HRESULT hr;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        _ASSERTE(IsSimpleTearOff(pPropertyProvider));
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pPropertyProvider);
-
-        GCX_COOP();
-
-        OBJECTREF  refTargetObj = NULL;
-        GCPROTECT_BEGIN(refTargetObj);
-
-        refTargetObj = pSimpleWrap->GetObjectRef();
-
-        //
-        // Call ICustomPropertyProviderImpl.GetType()
-        //
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICUSTOMPROPERTYPROVIDERIMPL__GET_TYPE);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refTargetObj);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pTypeIdentifier);
-
-        CALL_MANAGED_METHOD_NORET(args);
-
-        GCPROTECT_END();
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,

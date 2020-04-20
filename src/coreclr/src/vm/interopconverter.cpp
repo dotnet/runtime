@@ -234,60 +234,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             if (pMT->IsLegalWinRTType(poref) ||
                 MscorlibBinder::IsClass(pMT, CLASS__CLASS))
             {
-                // The managed signature contains Object, and native signature is IInspectable.
-                // "Box" value types by allocating an IReference<T> and storing them inside it.
-                // Similarly, String must be an IReference<HSTRING>.  Delegates get wrapped too.
-                // Arrays must be stored in an IReferenceArray<T>.
-                // System.Type is in fact internal type System.RuntimeType (CLASS__CLASS) that inherits from it.
-                //   Note: We do not allow System.ReflectionOnlyType that inherits from System.RuntimeType.
-                // KeyValuePair`2 must be exposed as CLRIKeyValuePair.
-                if (pMT->HasInstantiation() && pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-                {
-                    TypeHandle th = TypeHandle(MscorlibBinder::GetClass(CLASS__CLRIKEYVALUEPAIRIMPL)).Instantiate(pMT->GetInstantiation());
-
-                    MethodDesc *method = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                         MscorlibBinder::GetMethod(METHOD__CLRIKEYVALUEPAIRIMPL__BOXHELPER),
-                         th.GetMethodTable(),
-                         FALSE,
-                         Instantiation(),
-                         FALSE);
-                    _ASSERTE(method != NULL);
-
-                    MethodDescCallSite boxHelper(method);
-
-                    ARG_SLOT Args[] =
-                    {
-                        ObjToArgSlot(*poref),
-                    };
-                    OBJECTREF orCLRKeyValuePair = boxHelper.Call_RetOBJECTREF(Args);
-
-                    GCPROTECT_BEGIN(orCLRKeyValuePair);
-                    CCWHolder pCCWHoldBoxed = ComCallWrapper::InlineGetWrapper(&orCLRKeyValuePair);
-                    pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHoldBoxed, IID_IInspectable, NULL);
-                    GCPROTECT_END();
-                }
-                else if ((pMT->IsValueType() ||
-                     pMT->IsStringOrArray() ||
-                     pMT->IsDelegate() ||
-                     MscorlibBinder::IsClass(pMT, CLASS__CLASS)))
-                {
-                    OBJECTREF orBoxedIReference = NULL;
-                    MethodDescCallSite createIReference(METHOD__FACTORYFORIREFERENCE__CREATE_IREFERENCE);
-
-                    ARG_SLOT Args[] =
-                    {
-                        ObjToArgSlot(*poref),
-                    };
-
-                    // Call FactoryForIReference::CreateIReference(Object) for an IReference<T> or IReferenceArray<T>.
-                    orBoxedIReference = createIReference.Call_RetOBJECTREF(Args);
-
-                    GCPROTECT_BEGIN(orBoxedIReference);
-                    CCWHolder pCCWHoldBoxed = ComCallWrapper::InlineGetWrapper(&orBoxedIReference);
-                    pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHoldBoxed, IID_IInspectable, NULL);
-                    GCPROTECT_END();
-                }
-                else if (WinRTTypeNameConverter::ResolveRedirectedType(pMT, &redirectedTypeIndex))
+                if (WinRTTypeNameConverter::ResolveRedirectedType(pMT, &redirectedTypeIndex))
                 {
                     // This is a redirected type - see if we need to manually marshal it
                     if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Uri)
@@ -575,31 +522,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         {
             if (!(dwFlags & ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING))
             {
-                // Unbox objects from a CLRIReferenceImpl<T> or CLRIReferenceArrayImpl<T>.
-                MethodTable *pMT = (*pObjOut)->GetMethodTable();
-                if (pMT->HasInstantiation())
-                {
-                    DWORD nGenericArgs = pMT->GetNumGenericArgs();
-                    if (nGenericArgs == 1)
-                    {
-                        // See if this type C<SomeType> is a G<T>.
-                        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEIMPL)))
-                        {
-                            TypeHandle thType = pMT->GetInstantiation()[0];
-                            COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker(*pObjOut, thType, FALSE, pObjOut);
-                        }
-                        else if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEARRAYIMPL)))
-                        {
-                            TypeHandle thArrayElementType = pMT->GetInstantiation()[0];
-                            COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker(*pObjOut, thArrayElementType, TRUE, pObjOut);
-                        }
-                    }
-                    else if ((nGenericArgs == 2) && pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIKEYVALUEPAIRIMPL)))
-                    {
-                        // Unbox IKeyValuePair from CLRIKeyValuePairImpl
-                        COMInterfaceMarshaler::IKeyValuePairUnboxWorker(*pObjOut, pObjOut);
-                    }
-                }
+                _ASSERTE(false);
             }
         }
         else

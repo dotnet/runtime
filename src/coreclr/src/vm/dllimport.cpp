@@ -511,14 +511,7 @@ public:
 
         DWORD retvalLocalNum = m_slIL.GetReturnValueLocalNum();
         BinderMethodID getHRForException;
-        if (SF_IsWinRTStub(m_dwStubFlags))
-        {
-            getHRForException = METHOD__WINDOWSRUNTIMEMARSHAL__GET_HR_FOR_EXCEPTION;
-        }
-        else
-        {
-            getHRForException = METHOD__MARSHAL__GET_HR_FOR_EXCEPTION;
-        }
+        getHRForException = METHOD__MARSHAL__GET_HR_FOR_EXCEPTION;
 
         pcsExceptionHandler->EmitCALL(getHRForException,
             0,  // WARNING: This method takes 1 input arg, the exception object.  But the ILStubLinker

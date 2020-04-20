@@ -120,14 +120,8 @@ private:
 
     enum
     {
-        s_NumRedirectedInterfaces = 11
+        s_NumRedirectedInterfaces = 0
     };
-
-    // Describes stubs used for marshaling of redirected interfaces.
-    const static RedirectedInterfaceStubInfo s_rInterfaceStubInfos[2 * s_NumRedirectedInterfaces];
-    const static NonMscorlibRedirectedInterfaceInfo s_rNonMscorlibInterfaceInfos[3];
-
-    const static int NON_MSCORLIB_MARKER = 0x80000000;
 };
 
 

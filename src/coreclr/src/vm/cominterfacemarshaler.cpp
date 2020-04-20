@@ -519,26 +519,7 @@ void COMInterfaceMarshaler::IReferenceUnbox(IUnknown **ppIncomingIP, OBJECTREF *
     }
     CONTRACTL_END;
 
-    OBJECTREF unboxed = NULL;
-    _ASSERTE(m_typeHandle.AsMethodTable()->IsLegalNonArrayWinRTType());
-
-    // Create a temporary RCW.  Call into managed.  Let managed query for a closed generic instantiation
-    // like IReference<Int32> (including the GUID calculation & QI) then call the Value property.  That
-    // will use the existing interop code to safely marshal the value.
-    // Also, make sure we create a duplicate RCW in this case so that next time we won't end up getting
-    // this RCW from cache
-    COMInterfaceMarshaler marshaler;
-
-    DWORD flags = RCW::CF_DontResolveClass | RCW::CF_NeedUniqueObject;
-
-    marshaler.Init(m_pUnknown, g_pBaseCOMObject, m_pThread, flags);
-
-    if (m_pCallback)
-        marshaler.SetCallback(m_pCallback);
-
-    OBJECTREF oref = marshaler.FindOrCreateObjectRefInternal(ppIncomingIP, /* pIncomingItfMT = */ NULL, bIncomingIPAddRefed);
-
-    IReferenceOrIReferenceArrayUnboxWorker(oref, m_typeHandle, FALSE, poref);
+    _ASSERTE(false);
 }
 
 // void COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker()
@@ -555,42 +536,7 @@ void COMInterfaceMarshaler::IReferenceOrIReferenceArrayUnboxWorker(OBJECTREF ore
     }
     CONTRACTL_END;
 
-    GCPROTECT_BEGIN(oref);
-
-    // Get IReference<SomeType> or IReferenceArray<SomeType>
-    Instantiation inst(&thT, 1);
-    TypeHandle openType;
-    MethodDesc* pMD = NULL;
-    if (fIsIReferenceArray)
-    {
-        openType = TypeHandle(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEARRAYIMPL));
-        pMD = MscorlibBinder::GetMethod(METHOD__CLRIREFERENCEARRAYIMPL__UNBOXHELPER);
-    }
-    else
-    {
-        openType = TypeHandle(MscorlibBinder::GetClass(CLASS__CLRIREFERENCEIMPL));
-        pMD = MscorlibBinder::GetMethod(METHOD__CLRIREFERENCEIMPL__UNBOXHELPER);
-    }
-    TypeHandle closedType = openType.Instantiate(inst);
-
-    // Call managed helper to get the real unboxed object now
-    MethodDesc* method = MethodDesc::FindOrCreateAssociatedMethodDesc(
-         pMD,
-         closedType.AsMethodTable(),
-         FALSE,
-         Instantiation(),
-         FALSE);
-    _ASSERTE(method != NULL);
-
-    MethodDescCallSite unboxHelper(method);
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(oref),
-    };
-
-    // Call CLRIReferenceImpl::UnboxHelper(Object) or CLRIReferenceArrayImpl::UnboxHelper(Object)
-    *porefResult = unboxHelper.Call_RetOBJECTREF(args);
-    GCPROTECT_END();
+    _ASSERTE(false);
 }
 
 // void COMInterfaceMarshaler::IKeyValuePairUnboxWorker()
@@ -607,27 +553,7 @@ void COMInterfaceMarshaler::IKeyValuePairUnboxWorker(OBJECTREF oref, OBJECTREF *
     }
     CONTRACTL_END;
 
-    GCPROTECT_BEGIN(oref);
-
-    _ASSERTE(oref->GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__CLRIKEYVALUEPAIRIMPL)));
-
-    MethodDesc *method = MethodDesc::FindOrCreateAssociatedMethodDesc(
-         MscorlibBinder::GetMethod(METHOD__CLRIKEYVALUEPAIRIMPL__UNBOXHELPER),
-         oref->GetMethodTable(),
-         FALSE,
-         Instantiation(),
-         FALSE);
-    _ASSERTE(method != NULL);
-
-    MethodDescCallSite unboxHelper(method);
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(oref),
-    };
-
-    // Call CLRIKeyValuePair::UnboxHelper(Object)
-    *porefResult = unboxHelper.Call_RetOBJECTREF(args);
-    GCPROTECT_END();
+    _ASSERTE(false);
 }
 
 // OBJECTREF COMInterfaceMarshaler::IReferenceArrayUnbox()
@@ -645,27 +571,8 @@ void COMInterfaceMarshaler::IReferenceArrayUnbox(IUnknown **ppIncomingIP, OBJECT
     }
     CONTRACTL_END;
 
-    OBJECTREF unboxed = NULL;
-    TypeHandle elementType = m_typeHandle.GetArrayElementTypeHandle();
-    _ASSERTE(elementType.AsMethodTable()->IsLegalNonArrayWinRTType());
 
-    // Create a temporary RCW.  Call into managed.  Let managed query for a closed generic instantiation
-    // like IReferenceArray<Int32> (including the GUID calculation & QI) then call the Value property.  That
-    // will use the existing interop code to safely marshal the value.
-    // Also, make sure we create a duplicate RCW in this case so that next time we won't end up getting
-    // this RCW from cache
-    COMInterfaceMarshaler marshaler;
-
-    DWORD flags = RCW::CF_DontResolveClass | RCW::CF_NeedUniqueObject;
-
-    marshaler.Init(m_pUnknown, g_pBaseCOMObject, m_pThread, flags);
-
-    if (m_pCallback)
-        marshaler.SetCallback(m_pCallback);
-
-    OBJECTREF oref = marshaler.FindOrCreateObjectRefInternal(ppIncomingIP, /* pIncomingItfMT = */ NULL, bIncomingIPAddRefed);
-
-    IReferenceOrIReferenceArrayUnboxWorker(oref, elementType, TRUE, poref);
+    _ASSERTE(false);
 }
 
 void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
@@ -679,112 +586,7 @@ void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
     }
     CONTRACTL_END;
 
-    _ASSERTE(IsRedirectedToNonRCWType(m_typeHandle.GetMethodTable()));
-
-    struct
-    {
-        OBJECTREF refMarshaled;
-        STRINGREF refRawURI;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    WinMDAdapter::RedirectedTypeIndex index = static_cast<WinMDAdapter::RedirectedTypeIndex>(-1);
-    WinRTTypeNameConverter::ResolveRedirectedType(m_typeHandle.GetMethodTable(), &index);
-    _ASSERTE(index != -1);
-
-    GCPROTECT_BEGIN(gc)
-
-    switch (index)
-    {
-        case WinMDAdapter::RedirectedTypeIndex_System_Uri:
-        {
-            WinRtString hsRawUri;
-            {
-                GCX_PREEMP();
-
-                SafeComHolderPreemp<ABI::Windows::Foundation::IUriRuntimeClass> pUriRuntimeClass;
-                HRESULT hr = SafeQueryInterfacePreemp(m_pUnknown, ABI::Windows::Foundation::IID_IUriRuntimeClass, (IUnknown **) &pUriRuntimeClass);
-                LogInteropQI(m_pUnknown, ABI::Windows::Foundation::IID_IUriRuntimeClass, hr, "IUriRuntimeClass");
-                IfFailThrow(hr);
-
-                IfFailThrow(pUriRuntimeClass->get_RawUri(hsRawUri.Address()));
-            }
-
-            UINT32 cchRawUri;
-            LPCWSTR pwszRawUri = hsRawUri.GetRawBuffer(&cchRawUri);
-            gc.refRawURI = StringObject::NewString(pwszRawUri, cchRawUri);
-
-            UriMarshalingInfo *pUriMarshalingInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
-            MethodDesc* pSystemUriCtorMD = pUriMarshalingInfo->GetSystemUriCtorMD();
-
-            MethodTable *pMTSystemUri = pUriMarshalingInfo->GetSystemUriType().AsMethodTable();
-            pMTSystemUri->EnsureInstanceActive();
-            gc.refMarshaled = AllocateObject(pMTSystemUri, false);
-
-            MethodDescCallSite uriCtor(pSystemUriCtorMD);
-            ARG_SLOT ctorArgs[] =
-            {
-                ObjToArgSlot(gc.refMarshaled),
-                ObjToArgSlot(gc.refRawURI)
-            };
-            uriCtor.Call(ctorArgs);
-        }
-        break;
-
-        case WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_KeyValuePair:
-        {
-            MethodDesc *pMD = MscorlibBinder::GetMethod(METHOD__KEYVALUEPAIRMARSHALER__CONVERT_TO_MANAGED_BOX);
-
-            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                pMD,
-                pMD->GetMethodTable(),
-                FALSE,                           // forceBoxedEntryPoint
-                m_typeHandle.GetInstantiation(), // methodInst
-                FALSE,                           // allowInstParam
-                TRUE);                           // forceRemotableMethod
-
-            MethodDescCallSite marshalMethod(pMD);
-            ARG_SLOT methodArgs[] =
-            {
-                PtrToArgSlot(m_pUnknown)
-            };
-            gc.refMarshaled = marshalMethod.Call_RetOBJECTREF(methodArgs);
-        }
-        break;
-
-        case WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs:
-        case WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventArgs:
-        {
-            MethodDesc *pMD;
-            EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetEventArgsMarshalingInfo();
-
-            if (index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs)
-                pMD = pInfo->GetWinRTNCCEventArgsToSystemNCCEventArgsMD();
-            else
-                pMD = pInfo->GetWinRTPCEventArgsToSystemPCEventArgsMD();
-
-            MethodDescCallSite marshalMethod(pMD);
-            ARG_SLOT methodArgs[] =
-            {
-                PtrToArgSlot(m_pUnknown)
-            };
-            gc.refMarshaled = marshalMethod.Call_RetOBJECTREF(methodArgs);
-        }
-        break;
-
-        default:
-        {
-            // If we get here then there is a new redirected type being introduced to the system.  You must
-            // add code to marshal that type above.  Additionally, code may need to be added to GetComIPFromObjectRef,
-            // in order to handle the reverse case.
-            UNREACHABLE();
-        }
-    }
-
-    *poref = gc.refMarshaled;
-
-    GCPROTECT_END();
+    _ASSERTE(false);
 }
 
 //--------------------------------------------------------------------------------
