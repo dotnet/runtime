@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     /// <summary>
     /// Compiles assemblies using the Cross-Platform AOT compiler
@@ -26,7 +26,7 @@ namespace ReadyToRun.SuperIlc
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths)
         {
-            // Set SuperIlc parallelism to a low enough value that ensures that each Crossgen2 invocation gets to use its parallelism
+            // Set R2RTest parallelism to a low enough value that ensures that each Crossgen2 invocation gets to use its parallelism
             if (options.DegreeOfParallelism == 0)
                 options.DegreeOfParallelism = 2;
         }

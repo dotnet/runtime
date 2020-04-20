@@ -54,7 +54,7 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if eq(parameters.osGroup, 'Linux') }}:
+        - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
           - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
@@ -63,20 +63,8 @@ jobs:
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
-        # force a value for OS when cross-building WebAssembly
-        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - _runtimeOSArg: -os ${{ parameters.osGroup }}
-
-        # force a value for OS when cross-building tvOS on OSX
-        - ${{ if eq(parameters.osGroup, 'tvOS') }}:
-          - _runtimeOSArg: -os ${{ parameters.osGroup }}
-
-        # force a value for OS when cross-building iOS on OSX
-        - ${{ if eq(parameters.osGroup, 'iOS') }}:
-          - _runtimeOSArg: -os ${{ parameters.osGroup }}
-
-        # force a value for OS when cross-building Android on Linux
-        - ${{ if eq(parameters.osGroup, 'Android') }}:
+        # force a value for OS when cross-building
+        - ${{ if in(parameters.osGroup, 'WebAssembly', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:

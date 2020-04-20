@@ -354,10 +354,7 @@ namespace System
         }
 
         // Converts a character to upper-case for invariant culture.
-        public static char ToUpperInvariant(char c)
-        {
-            return TextInfo.Invariant.ToUpper(c);
-        }
+        public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
         /*===================================ToLower====================================
         **
@@ -383,10 +380,7 @@ namespace System
         }
 
         // Converts a character to lower-case for invariant culture.
-        public static char ToLowerInvariant(char c)
-        {
-            return TextInfo.Invariant.ToLower(c);
-        }
+        public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
 
         //
         // IConvertible implementation

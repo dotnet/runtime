@@ -80,10 +80,10 @@ jobs:
       value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: buildCommandSourcesDirectory
-    ${{ if ne(parameters.osGroup, 'Linux') }}:
+    ${{ if not(in(parameters.osGroup, 'Linux', 'FreeBSD')) }}:
       value: '$(Build.SourcesDirectory)/'
     # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
       value: '/root/runtime/'
 
   ###
@@ -148,7 +148,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
     # The 'NuGetAuthenticate' build step may have set these.
@@ -167,10 +167,6 @@ jobs:
           -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
           ${{ parameters.container }}
 
-    - ${{ if eq(parameters.name, 'FreeBSD_x64') }}:
-      - name: RunArguments
-        value: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
-
     - name: BuildScript
       value: ./build.sh
     - name: MSBuildScript
@@ -185,6 +181,7 @@ jobs:
     - name: CommonMSBuildArgs
       value: >-
         /p:Configuration=$(_BuildConfig)
+        /p:TargetOS=${{ parameters.osGroup }}
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)

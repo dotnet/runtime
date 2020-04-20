@@ -11,6 +11,7 @@
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
+OBJECTHANDLE CastCache::s_sentinelTable = NULL;
 DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
@@ -24,7 +25,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
     CONTRACTL_END;
 
     // size must be positive
-    _ASSERTE(size > 0);
+    _ASSERTE(size > 1);
     // size must be a power of two
     _ASSERTE((size & (size - 1)) == 0);
 
@@ -62,16 +63,17 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
         }
     }
 
-    TableMask(table) = size - 1;
+    DWORD* tableData = TableData(table);
+    TableMask(tableData) = size - 1;
 
     // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
     DWORD bitCnt;
 #if HOST_64BIT
     BitScanReverse64(&bitCnt, size - 1);
-    HashShift(table) = (BYTE)(63 - bitCnt);
+    HashShift(tableData) = (BYTE)(63 - bitCnt);
 #else
     BitScanReverse(&bitCnt, size - 1);
-    HashShift(table) = (BYTE)(31 - bitCnt);
+    HashShift(tableData) = (BYTE)(31 - bitCnt);
 #endif
 
     return table;
@@ -107,10 +109,10 @@ void CastCache::FlushCurrentCache()
     }
     CONTRACTL_END;
 
-    BASEARRAYREF currentTableRef = *s_pTableRef;
-    s_lastFlushSize = !currentTableRef ? INITIAL_CACHE_SIZE : CacheElementCount(currentTableRef);
+    DWORD* tableData = TableData(*s_pTableRef);
+    s_lastFlushSize = max(INITIAL_CACHE_SIZE, CacheElementCount(tableData));
 
-    *s_pTableRef = NULL;
+    SetObjectReference((OBJECTREF *)s_pTableRef, ObjectFromHandle(s_sentinelTable));
 }
 
 void CastCache::Initialize()
@@ -127,6 +129,18 @@ void CastCache::Initialize()
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
+
+    BASEARRAYREF sentinelTable = CreateCastCache(2);
+    if (!sentinelTable)
+    {
+        // no memory for 2 element cache while initializing?
+        ThrowOutOfMemory();
+    }
+
+    s_sentinelTable = CreateGlobalHandle(sentinelTable);
+
+    // initialize to the sentinel value, this should not be null.
+    SetObjectReference((OBJECTREF *)s_pTableRef, sentinelTable);
 }
 
 TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
@@ -139,58 +153,53 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     }
     CONTRACTL_END;
 
-    BASEARRAYREF table = *s_pTableRef;
+    DWORD* tableData = TableData(*s_pTableRef);
 
-    // we use NULL as a sentinel for a rare case when a table could not be allocated
-    // because we avoid OOMs.
-    // we could use 0-element table instead, but then we would have to check the size here.
-    if (table != NULL)
+    DWORD index = KeyToBucket(tableData, source, target);
+    for (DWORD i = 0; i < BUCKET_SIZE;)
     {
-        DWORD index = KeyToBucket(table, source, target);
-        for (DWORD i = 0; i < BUCKET_SIZE;)
+        CastCacheEntry* pEntry = &Elements(tableData)[index];
+
+        // must read in this order: version -> entry parts -> version
+        // if version is odd or changes, the entry is inconsistent and thus ignored
+        DWORD version1 = VolatileLoad(&pEntry->version);
+        TADDR entrySource = pEntry->source;
+
+        // mask the lower version bit to make it even.
+        // This way we can check if version is odd or changing in just one compare.
+        version1 &= ~1;
+
+        if (entrySource == source)
         {
-            CastCacheEntry* pEntry = &Elements(table)[index];
-
-            // must read in this order: version -> entry parts -> version
-            // if version is odd or changes, the entry is inconsistent and thus ignored
-            DWORD version1 = VolatileLoad(&pEntry->version);
-            TADDR entrySource = pEntry->source;
-
-            // mask the lower version bit to make it even.
-            // This way we can check if version is odd or changing in just one compare.
-            version1 &= ~1;
-
-            if (entrySource == source)
+            TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+            // target never has its lower bit set.
+            // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
+            entryTargetAndResult ^= target;
+            if (entryTargetAndResult <= 1)
             {
-                TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
-                // target never has its lower bit set.
-                // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
-                entryTargetAndResult ^= target;
-                if (entryTargetAndResult <= 1)
+                if (version1 != pEntry->version)
                 {
-                    if (version1 != pEntry->version)
-                    {
-                        // oh, so close, the entry is in inconsistent state.
-                        // it is either changing or has changed while we were reading.
-                        // treat it as a miss.
-                        break;
-                    }
-
-                    return TypeHandle::CastResult(entryTargetAndResult);
+                    // oh, so close, the entry is in inconsistent state.
+                    // it is either changing or has changed while we were reading.
+                    // treat it as a miss.
+                    break;
                 }
-            }
 
-            if (version1 == 0)
-            {
-                // the rest of the bucket is unclaimed, no point to search further
-                break;
+                return TypeHandle::CastResult(entryTargetAndResult);
             }
-
-            // quadratic reprobe
-            i++;
-            index = (index + i) & TableMask(table);
         }
+
+        if (version1 == 0)
+        {
+            // the rest of the bucket is unclaimed, no point to search further
+            break;
+        }
+
+        // quadratic reprobe
+        i++;
+        index = (index + i) & TableMask(tableData);
     }
+
     return TypeHandle::MaybeCast;
 }
 
@@ -205,21 +214,23 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     CONTRACTL_END;
 
     DWORD bucket;
-    BASEARRAYREF table;
+    DWORD* tableData;
 
     do
     {
-        table = *s_pTableRef;
-        if (!table)
+        tableData = TableData(*s_pTableRef);
+        if (TableMask(tableData) == 1)
         {
-            // we did not allocate a table or flushed it, try replacing, but do not continue looping.
+            // 2-element table is used as a sentinel.
+            // we did not allocate a real table yet or have flushed it.
+            // try replacing the table, but do not insert anything.
             MaybeReplaceCacheWithLarger(s_lastFlushSize);
             return;
         }
 
-        bucket = KeyToBucket(table, source, target);
+        bucket = KeyToBucket(tableData, source, target);
         DWORD index = bucket;
-        CastCacheEntry* pEntry = &Elements(table)[index];
+        CastCacheEntry* pEntry = &Elements(tableData)[index];
 
         for (DWORD i = 0; i < BUCKET_SIZE;)
         {
@@ -259,28 +270,28 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
             // quadratic reprobe
             i++;
             index += i;
-            pEntry = &Elements(table)[index & TableMask(table)];
+            pEntry = &Elements(tableData)[index & TableMask(tableData)];
         }
 
         // bucket is full.
-    } while (TryGrow(table));
+    } while (TryGrow(tableData));
 
-    // reread table after TryGrow.
-    table = *s_pTableRef;
-    if (!table)
+    // reread tableData after TryGrow.
+    tableData = TableData(*s_pTableRef);
+    if (TableMask(tableData) == 1)
     {
-        // we did not allocate a table.
+        // do not insert into a sentinel.
         return;
     }
 
     // pick a victim somewhat randomly within a bucket
     // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-    DWORD victimDistance = VictimCounter(table)++ & (BUCKET_SIZE - 1);
+    DWORD victimDistance = VictimCounter(tableData)++ & (BUCKET_SIZE - 1);
     // position the victim in a quadratic reprobe bucket
     DWORD victim = (victimDistance * victimDistance + victimDistance) / 2;
 
     {
-        CastCacheEntry* pEntry = &Elements(table)[(bucket + victim) & TableMask(table)];
+        CastCacheEntry* pEntry = &Elements(tableData)[(bucket + victim) & TableMask(tableData)];
 
         DWORD version = pEntry->version;
         if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))

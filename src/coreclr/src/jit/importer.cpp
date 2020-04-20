@@ -6741,9 +6741,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
