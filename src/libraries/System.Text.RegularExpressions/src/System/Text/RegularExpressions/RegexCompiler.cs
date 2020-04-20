@@ -49,9 +49,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
         private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
+        private static readonly MethodInfo s_cultureInfoGetTextInfoMethod = typeof(CultureInfo).GetMethod("get_TextInfo")!;
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
 #endif
@@ -68,6 +68,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
+        private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
 
         /// <summary>
         /// The max recursion depth used for computations that can recover for not walking the entire node tree.
@@ -88,7 +89,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _runtrackLocal;
         private LocalBuilder? _runstackposLocal;
         private LocalBuilder? _runstackLocal;
-        private LocalBuilder? _cultureLocal;  // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
+        private LocalBuilder? _textInfoLocal;  // cached to avoid extraneous TLS hits from CurrentCulture and virtual calls to TextInfo
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
 
         protected RegexOptions _options;                                           // options
@@ -509,7 +510,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
 
         /// <summary>Declares a local CultureInfo.</summary>
-        private LocalBuilder? DeclareCultureInfo() => _ilg!.DeclareLocal(typeof(CultureInfo)); // cache local variable to avoid unnecessary TLS
+        private LocalBuilder? DeclareTextInfo() => _ilg!.DeclareLocal(typeof(TextInfo));
 
         /// <summary>Declares a local int[].</summary>
         private LocalBuilder DeclareInt32Array() => _ilg!.DeclareLocal(typeof(int[]));
@@ -812,15 +813,16 @@ namespace System.Text.RegularExpressions
         /// <summary>Sets the culture local to CultureInfo.CurrentCulture.</summary>
         private void InitLocalCultureInfo()
         {
-            Debug.Assert(_cultureLocal != null);
+            Debug.Assert(_textInfoLocal != null);
             Call(s_cultureInfoGetCurrentCultureMethod);
-            Stloc(_cultureLocal);
+            Callvirt(s_cultureInfoGetTextInfoMethod);
+            Stloc(_textInfoLocal);
         }
 
-        /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_cultureLocal"/>.</summary>
-        private bool UseToLowerInvariant => _cultureLocal == null || (_options & RegexOptions.CultureInvariant) != 0;
+        /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_textInfoLocal"/>.</summary>
+        private bool UseToLowerInvariant => _textInfoLocal == null || (_options & RegexOptions.CultureInvariant) != 0;
 
-        /// <summary>Invokes either char.ToLower(..., _culture) or char.ToLowerInvariant(...).</summary>
+        /// <summary>Invokes either char.ToLowerInvariant(c) or _textInfo.ToLower(c).</summary>
         private void CallToLower()
         {
             if (UseToLowerInvariant)
@@ -829,8 +831,11 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                Ldloc(_cultureLocal!);
-                Call(s_charToLowerMethod);
+                using RentedLocalBuilder currentCharLocal = RentInt32Local();
+                Stloc(currentCharLocal);
+                Ldloc(_textInfoLocal!);
+                Ldloc(currentCharLocal);
+                Callvirt(s_textInfoToLowerMethod);
             }
         }
 
@@ -981,7 +986,7 @@ namespace System.Text.RegularExpressions
                 _runtextbegLocal = DeclareInt32();
             }
             _runtextLocal = DeclareString();
-            _cultureLocal = null;
+            _textInfoLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
             {
                 bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _boyerMoorePrefix?.CaseInsensitive == true;
@@ -999,7 +1004,7 @@ namespace System.Text.RegularExpressions
 
                 if (needsCulture)
                 {
-                    _cultureLocal = DeclareCultureInfo();
+                    _textInfoLocal = DeclareTextInfo();
                     InitLocalCultureInfo();
                 }
             }
@@ -3246,7 +3251,7 @@ namespace System.Text.RegularExpressions
 
         private void InitializeCultureForGoIfNecessary()
         {
-            _cultureLocal = null;
+            _textInfoLocal = null;
             if ((_options & RegexOptions.CultureInvariant) == 0)
             {
                 bool needsCulture = (_options & RegexOptions.IgnoreCase) != 0;
@@ -3265,7 +3270,7 @@ namespace System.Text.RegularExpressions
                 if (needsCulture)
                 {
                     // cache CultureInfo in local variable which saves excessive thread local storage accesses
-                    _cultureLocal = DeclareCultureInfo();
+                    _textInfoLocal = DeclareTextInfo();
                     InitLocalCultureInfo();
                 }
             }
