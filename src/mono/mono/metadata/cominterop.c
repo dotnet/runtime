@@ -2998,8 +2998,11 @@ mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-		/* allocate len + 1 utf16 characters plus pointer-size integer for length*/
-		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + SIZEOF_VOID_P);
+		/* allocate len + 1 utf16 characters plus pointer-size integer for length, aligned to 16 bytes*/
+		size_t alloc_size = (slen + 1) * sizeof (gunichar2) + SIZEOF_VOID_P;
+		alloc_size += (16 - 1);
+		alloc_size &= ~(16 - 1);
+		guint32 * const ret = (guint32 *)g_malloc (alloc_size);
 		if (ret == NULL)
 			return NULL;
 		mono_bstr const s = (mono_bstr)(ret + (SIZEOF_VOID_P / 4));
