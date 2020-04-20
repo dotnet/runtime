@@ -207,7 +207,12 @@ namespace System.Net.Sockets
                         {
                             // GetPeerName simply fails on Windows it buffer is too small.
                             // On Unix, we may get partial result.
-                            socketAddress.Buffer = new byte[RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? UnixDomainSocketEndPoint.MaxAddressSize : socketAddress.InternalSize];
+                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                            {
+                                socketAddress.InternalSize = UnixDomainSocketEndPoint.MaxAddressSize;
+                            }
+
+                            socketAddress.Buffer = new byte[socketAddress.InternalSize];
                             result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
                         }
 
