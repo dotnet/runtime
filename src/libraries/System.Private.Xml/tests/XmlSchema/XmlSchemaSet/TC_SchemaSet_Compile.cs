@@ -159,7 +159,7 @@ namespace System.Xml.Tests
            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
     <xs:simpleType name='foo'>
         <xs:restriction base='xs:decimal'>
-            <xs:fractionDigits value='8' fixed='true'/>
+            <xs:fractionDigits value='8'/>
         </xs:restriction>
     </xs:simpleType>
     <xs:simpleType name='bar'>
