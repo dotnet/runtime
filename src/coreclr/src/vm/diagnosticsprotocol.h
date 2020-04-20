@@ -115,11 +115,12 @@ namespace DiagnosticsIpc
      * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
      * 16 bytes - random 128 bit number cookie (little-endian)
      * 8 bytes  - PID (little-endian)
+     * 2 bytes  - unused 2 byte field for futureproofing
      */
 
     const uint8_t AdvertiseMagic_V1[8] = "ADVR_V1";
 
-    const uint32_t AdvertiseSize = 32;
+    const uint32_t AdvertiseSize = 34;
 
     static GUID AdvertiseCookie_V1 = GUID_NULL;
 
@@ -144,6 +145,9 @@ namespace DiagnosticsIpc
         buffer[1] = (((uint64_t)VAL32(cookie.Data1) << 32) | ((uint64_t)VAL16(cookie.Data2) << 16) | VAL16((uint64_t)cookie.Data3));
         buffer[2] = *(uint64_t*)cookie.Data4;
         buffer[3] = VAL64(pid);
+
+        // zero out unused field
+        *((uint16_t*)advertiseBuffer[32]) = VAL16(0);
 
         uint32_t nBytesWritten = 0;
         if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten, 100 /* ms */))

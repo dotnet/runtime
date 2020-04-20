@@ -21,17 +21,19 @@ namespace Tracing.Tests.Common
      * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
      * 16 bytes - CLR Instance Cookie (little-endian)
      * 8 bytes  - PID (little-endian)
+     * 2 bytes  - unused for futureproofing
      */
 
     public class IpcAdvertise
     {
-        public static int Size_V1 => 32;
+        public static int Size_V1 => 34;
         public static byte[] Magic_V1 => System.Text.Encoding.ASCII.GetBytes("ADVR_V1" + '\0');
         public static int MagicSize_V1 => 8;
 
         public byte[] Magic = Magic_V1;
         public UInt64 ProcessId;
         public Guid RuntimeInstanceCookie;
+        public UInt16 Unused;
 
         /// <summary>
         ///
@@ -44,7 +46,8 @@ namespace Tracing.Tests.Common
             {
                 Magic = binaryReader.ReadBytes(Magic_V1.Length),
                 RuntimeInstanceCookie = new Guid(binaryReader.ReadBytes(16)),
-                ProcessId = binaryReader.ReadUInt64()
+                ProcessId = binaryReader.ReadUInt64(),
+                Unused = binaryReader.ReadUInt16()
             };
 
             for (int i = 0; i < Magic_V1.Length; i++)
@@ -57,7 +60,7 @@ namespace Tracing.Tests.Common
 
         override public string ToString()
         {
-            return $"{{ Magic={Magic}; ClrInstanceId={RuntimeInstanceCookie}; ProcessId={ProcessId}; }}";
+            return $"{{ Magic={Magic}; ClrInstanceId={RuntimeInstanceCookie}; ProcessId={ProcessId}; Unused={Unused}; }}";
         }
     }
     public class ReverseServer
