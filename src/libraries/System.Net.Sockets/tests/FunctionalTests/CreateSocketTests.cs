@@ -491,19 +491,16 @@ namespace System.Net.Sockets.Tests
                 // We need to create base from something known.
                 public unsafe NlSocketAddress(int pid) : base(AddressFamily.Packet)
                 {
-                    Span<sockaddr_nl> addr = stackalloc sockaddr_nl[1];
+                    sockaddr_nl addr = default;
 
-                    addr[0].sin_family = PF_NETLINK;
-                    addr[0].pid = pid;
+                    addr.sin_family = PF_NETLINK;
+                    addr.pid = pid;
 
-                    fixed (void * ptr = addr)
+                    var bytes = new ReadOnlySpan<byte>(&addr, sizeof(sockaddr_nl));
+
+                    for (int i = 0; i< bytes.Length; i++)
                     {
-                        var bytes = new ReadOnlySpan<byte>(ptr, sizeof(sockaddr_nl));
-
-                        for (int i = 0; i< bytes.Length; i++)
-                        {
-                            this[i] = bytes[i];
-                        }
+                        this[i] = bytes[i];
                     }
                 }
             }

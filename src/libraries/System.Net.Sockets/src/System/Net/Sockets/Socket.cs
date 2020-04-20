@@ -194,7 +194,7 @@ namespace System.Net.Sockets
                         {
                             // GetPeerName() bellow will fail if given buffer is too small.
                             // Give it at least old Windows max path.
-                            socketAddress = new Internals.SocketAddress(_addressFamily, new byte[260]);
+                            socketAddress = new Internals.SocketAddress(_addressFamily, UnixDomainSocketEndPoint.MaxPathLength);
                         }
 
                         break;
