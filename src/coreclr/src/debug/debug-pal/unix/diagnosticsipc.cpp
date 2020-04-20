@@ -341,15 +341,26 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
         // else fallthrough
     }
 
-    const ssize_t ssize = ::recv(_clientSocket, lpBuffer, nBytesToRead, 0);
-    const bool fSuccess = ssize != -1;
+    uint8_t *lpBufferCursor = (uint8_t*)lpBuffer;
+    ssize_t currentBytesRead = 0;
+    ssize_t totalBytesRead = 0;
+    bool fSuccess = true;
+    while (fSuccess && nBytesToRead - totalBytesRead > 0)
+    {
+        currentBytesRead = ::recv(_clientSocket, lpBufferCursor, nBytesToRead - totalBytesRead, 0);
+        fSuccess = currentBytesRead != 0;
+        if (!fSuccess)
+            break;
+        totalBytesRead += currentBytesRead;
+        lpBufferCursor += currentBytesRead;
+    }
 
     if (!fSuccess)
     {
         // TODO: Add error handling.
     }
 
-    nBytesRead = static_cast<uint32_t>(ssize);
+    nBytesRead = static_cast<uint32_t>(totalBytesRead);
     return fSuccess;
 }
 
@@ -371,15 +382,26 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
         // else fallthrough
     }
 
-    const ssize_t ssize = ::send(_clientSocket, lpBuffer, nBytesToWrite, 0);
-    const bool fSuccess = ssize != -1;
+    uint8_t *lpBufferCursor = (uint8_t*)lpBuffer;
+    ssize_t currentBytesWritten = 0;
+    ssize_t totalBytesWritten = 0;
+    bool fSuccess = true;
+    while (fSuccess && nBytesToWrite - totalBytesWritten > 0)
+    {
+        currentBytesWritten = ::send(_clientSocket, lpBufferCursor, nBytesToWrite - totalBytesWritten, 0);
+        fSuccess = currentBytesWritten != -1;
+        if (!fSuccess)
+            break;
+        lpBufferCursor += currentBytesWritten;
+        totalBytesWritten += currentBytesWritten;
+    }
 
     if (!fSuccess)
     {
         // TODO: Add error handling.
     }
 
-    nBytesWritten = static_cast<uint32_t>(ssize);
+    nBytesWritten = static_cast<uint32_t>(totalBytesWritten);
     return fSuccess;
 }
 
