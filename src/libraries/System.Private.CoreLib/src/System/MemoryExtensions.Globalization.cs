@@ -324,13 +324,11 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EndsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
-        {
-            return value.Length <= span.Length
-                && CompareInfo.EqualsOrdinalIgnoreCase(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), span.Length - value.Length),
-                    ref MemoryMarshal.GetReference(value),
-                    value.Length);
-        }
+            => value.Length <= span.Length
+            && CompareInfo.EqualsOrdinalIgnoreCase(
+                ref Unsafe.Add(ref MemoryMarshal.GetReference(span), span.Length - value.Length),
+                ref MemoryMarshal.GetReference(value),
+                value.Length);
 
         /// <summary>
         /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
@@ -363,10 +361,8 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
-        {
-            return value.Length <= span.Length
-                && CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
-        }
+            => value.Length <= span.Length
+            && CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
 
         /// <summary>
         /// Returns an enumeration of <see cref="Rune"/> from the provided span.
