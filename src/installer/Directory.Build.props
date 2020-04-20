@@ -99,6 +99,10 @@
     <OutputRid Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
   </PropertyGroup>

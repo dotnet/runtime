@@ -118,6 +118,7 @@
     <!-- copy crossgen2 -->
     <ItemGroup>
       <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)*" />
+      <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
       <Crossgen2Files Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT" />
       <Crossgen2Files Include="$(RepoRoot)LICENSE.TXT" />
     </ItemGroup>
