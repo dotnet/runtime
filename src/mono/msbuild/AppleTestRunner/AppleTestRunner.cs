@@ -13,12 +13,17 @@ using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
 public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
+    // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
+    [DllImport("__Internal")]
+    public extern static void mono_ios_append_output (string value);
+
+    [DllImport("__Internal")]
+    public extern static void mono_ios_set_summary (string value);
+
     private static List<string> testLibs = new List<string>();
 
     public static async Task<int> Main(string[] args)
     {
-        // Redirect all Console.WriteLines to iOS UI
-        Console.SetOut(new AppleConsole());
         Console.WriteLine($"ProcessorCount = {Environment.ProcessorCount}");
 
         Console.Write("Args: ");
@@ -111,23 +116,4 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
     public string? SystemVersion { get; }
 
     public string? Locale { get; }
-}
-
-internal class AppleConsole : TextWriter
-{
-    public override Encoding Encoding => Encoding.Default;
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_append_output (string value);
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_set_summary (string value);
-
-    public override void Write(string? value)
-    {
-        if (value != null)
-        {
-            mono_ios_append_output(value);
-        }
-    }
 }

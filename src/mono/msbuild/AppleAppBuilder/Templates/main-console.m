@@ -67,7 +67,7 @@ UITextView* logLabel;
 void
 mono_ios_set_summary (const char* value)
 {
-    NSString* nsstr = [NSString stringWithUTF8String:strdup(value)];
+    NSString* nsstr = [NSString stringWithUTF8String:value];
     dispatch_async(dispatch_get_main_queue(), ^{
         summaryLabel.text = nsstr;
     });
@@ -77,7 +77,7 @@ mono_ios_set_summary (const char* value)
 void
 mono_ios_append_output (const char* value)
 {
-    NSString* nsstr = [NSString stringWithUTF8String:strdup(value)];
+    NSString* nsstr = [NSString stringWithUTF8String:value];
     dispatch_async(dispatch_get_main_queue(), ^{
         logLabel.text = [logLabel.text stringByAppendingString:nsstr];
         CGRect caretRect = [logLabel caretRectForPosition:logLabel.endOfDocument];
