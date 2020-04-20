@@ -213,10 +213,15 @@ namespace System.Tests
             var i = (UIntPtr)i0;
             if (value is uint uintValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo((UIntPtr)uintValue)));
-            }
+                var uintPtrValue = (UIntPtr)uintValue;
+                Assert.Equal(expected, Math.Sign(i.CompareTo(uintPtrValue)));
 
-            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo((object)uintPtrValue)));
+            }
+            else
+            {
+                Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
+            }
         }
 
         [Theory]

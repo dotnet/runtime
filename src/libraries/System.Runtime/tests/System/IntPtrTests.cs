@@ -233,9 +233,13 @@ namespace System.Tests
                 var intPtr = (IntPtr)intValue;
                 Assert.Equal(expected, Math.Sign(i.CompareTo(intPtrValue)));
                 Assert.Equal(-expected, Math.Sign(intPtrValue.CompareTo(i)));
-            }
 
-            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo((object)intPtrValue)));
+            }
+            else
+            {
+                Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
+            }
         }
 
         [Theory]
