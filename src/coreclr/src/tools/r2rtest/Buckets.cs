@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     public class Buckets
     {

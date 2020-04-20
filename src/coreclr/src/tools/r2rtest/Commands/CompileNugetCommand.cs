@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     /// <summary>
     /// Adds a list of Nuget packages to an empty console app, publishes the app, and runs Crossgen / CPAOT

@@ -8,7 +8,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.IO;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     internal static class CommandLineOptions
     {

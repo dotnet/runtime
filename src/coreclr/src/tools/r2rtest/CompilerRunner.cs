@@ -9,7 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     public enum CompilerIndex
     {

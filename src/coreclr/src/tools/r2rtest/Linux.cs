@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     internal static class Linux
     {

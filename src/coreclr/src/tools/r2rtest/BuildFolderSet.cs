@@ -12,7 +12,7 @@ using System.Text;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     public class BuildFolderSet
     {

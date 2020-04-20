@@ -11,7 +11,7 @@ using System.Xml.Linq;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     /// <summary>
     /// This class represents a single test exclusion read from the issues.targets file.

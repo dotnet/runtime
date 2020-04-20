@@ -15,14 +15,23 @@
   </PropertyGroup>
 
   <!--
-    For mobile targets, we do not need the host, so allow depproj's to opt 
-    out and skip building. 
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    opt out.
   -->
-  <Target Name="MobileSkipBuildProps" 
-          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android')"
+  <Target Name="MonoSkipBuildProps" 
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
       <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Keep this isolated to desktop mono for now -->
+  <Target Name="MobileGetBuildRidSpecificPackageProps"
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'"
+          AfterTargets="GetBuildRidSpecificPackageProps">
+    <PropertyGroup>
+      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName)$(RuntimeSpecificFrameworkSuffix).Mono.$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
     </PropertyGroup>
   </Target>
 

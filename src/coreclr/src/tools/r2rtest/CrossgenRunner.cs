@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     /// <summary>
     /// Compiles assemblies using the Cross-Platform AOT compiler

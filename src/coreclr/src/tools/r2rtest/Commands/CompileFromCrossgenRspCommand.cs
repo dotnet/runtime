@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     class CompileFromCrossgenRspCommand
     {

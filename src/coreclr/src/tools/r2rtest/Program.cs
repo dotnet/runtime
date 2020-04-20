@@ -7,7 +7,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.Threading.Tasks;
 
-namespace ReadyToRun.SuperIlc
+namespace R2RTest
 {
     class Program
     {
