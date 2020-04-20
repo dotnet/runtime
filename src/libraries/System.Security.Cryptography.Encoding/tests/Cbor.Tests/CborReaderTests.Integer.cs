@@ -220,6 +220,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("20")]
+        [InlineData("1b0000000100000000")] // uint.MaxValue + 1
+        public static void ReadUInt32_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<OverflowException>(() => reader.ReadUInt32());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Theory]
         [InlineData("20")] // -1
         [InlineData("3863")] // -100
         [InlineData("3b7fffffffffffffff")] // long.MinValue
@@ -264,6 +276,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
+            Assert.Equal("Data item major type mismatch.", exn.Message);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void ReadUInt32_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
             Assert.Equal("Data item major type mismatch.", exn.Message);
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
