@@ -330,16 +330,16 @@ namespace System.Xml.Schema
                 CheckDupFlag(facet, RestrictionFlags.FractionDigits, SR.Sch_DupFractionDigitsFacet);
                 _derivedRestriction.FractionDigits = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, SR.Sch_FractionDigitsFacetInvalid, null, null));
 
+                if ((_derivedRestriction.FractionDigits != 0) && (_datatype.TypeCode != XmlTypeCode.Decimal))
+                {
+                    throw new XmlSchemaException(SR.Sch_FractionDigitsFacetInvalid, SR.Sch_FractionDigitsNotOnDecimal, facet);
+                }
                 if ((_baseFixedFlags & RestrictionFlags.FractionDigits) != 0)
                 {
                     if (_datatype.Restriction.FractionDigits != _derivedRestriction.FractionDigits)
                     {
                         throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
-                }
-                if ((_derivedRestriction.FractionDigits != 0) && (_datatype.TypeCode != XmlTypeCode.Decimal))
-                {
-                    throw new XmlSchemaException(SR.Sch_FractionDigitsFacetInvalid, SR.Sch_FractionDigitsNotOnDecimal, facet);
                 }
                 if ((_baseFlags & RestrictionFlags.FractionDigits) != 0)
                 {
