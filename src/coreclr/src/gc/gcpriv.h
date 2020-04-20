@@ -1651,7 +1651,9 @@ protected:
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
     PER_HEAP
-    size_t decommit_ephemeral_pages_step();
+    size_t decommit_ephemeral_segment_pages_step ();
+    PER_HEAP_ISOLATED
+    bool decommit_step ();
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
@@ -4708,6 +4710,8 @@ public:
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
     uint8_t*        decommit_target;
+    uint8_t*        saved_committed;
+    size_t          saved_desired_allocation;
 #endif //MULTIPLE_HEAPS
     uint8_t*        plan_allocated;
     uint8_t*        saved_bg_allocated;

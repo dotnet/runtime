@@ -5399,17 +5399,11 @@ void gc_heap::gc_thread_function ()
 
         if (heap_number == 0)
         {
-            uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? 100 : INFINITE, FALSE);
+            const int DECOMMIT_TIME_STEP = 100; // milliseconds
+            uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
-                size_t decommit_size = 0;
-                for (int i = 0; i < n_heaps; i++)
-                {
-                    gc_heap* hp = gc_heap::g_heaps[i];
-                    decommit_size += hp->decommit_ephemeral_pages_step ();
-                }
-                if (decommit_size == 0)
-                    gradual_decommit_in_progress_p = false;
+                gradual_decommit_in_progress_p = decommit_step ();
                 continue;
             }
 
@@ -5492,6 +5486,12 @@ void gc_heap::gc_thread_function ()
                     gc_heap* hp = gc_heap::g_heaps[i];
                     hp->set_gc_done();
                 }
+            }
+
+            // check if we should do some decommitting
+            if (gradual_decommit_in_progress_p)
+            {
+                gradual_decommit_in_progress_p = decommit_step ();
             }
         }
         else
@@ -16304,9 +16304,9 @@ void gc_heap::gc1()
             int limit = settings.condemned_generation;
             if (limit == max_generation)
             {
-                limit = total_generation_count;
+                limit = total_generation_count-1;
             }
-            for (int gen = 0; gen < limit; gen++)
+            for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
 
@@ -31822,9 +31822,16 @@ void gc_heap::decommit_ephemeral_segment_pages()
 
         slack_space = min (slack_space, new_slack_space);
 #ifdef MULTIPLE_HEAPS
-        heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
-        if (heap_segment_decommit_target (ephemeral_heap_segment) < heap_segment_committed (ephemeral_heap_segment))
-            gradual_decommit_in_progress_p = !use_large_pages_p;
+        uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
+        if ((decommit_target < heap_segment_committed (ephemeral_heap_segment)) && !use_large_pages_p)
+        {
+            gradual_decommit_in_progress_p = TRUE;
+            heap_segment_decommit_target (ephemeral_heap_segment) = decommit_target;
+        }
+        else
+        {
+            heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_reserved (ephemeral_heap_segment);
+        }
 #endif //MULTIPLE_HEAPS
     }
 #ifdef MULTIPLE_HEAPS
@@ -31835,6 +31842,8 @@ void gc_heap::decommit_ephemeral_segment_pages()
         if (heap_segment_decommit_target (ephemeral_heap_segment) < heap_segment_allocated (ephemeral_heap_segment) + slack_space)
             heap_segment_decommit_target (ephemeral_heap_segment) = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
     }
+    ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
+    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd);
 #endif //MULTIPLE_HEAPS
 
 #ifndef MULTIPLE_HEAPS
@@ -31846,14 +31855,36 @@ void gc_heap::decommit_ephemeral_segment_pages()
 }
 
 #ifdef MULTIPLE_HEAPS
-size_t gc_heap::decommit_ephemeral_pages_step ()
+bool gc_heap::decommit_step ()
 {
+    size_t decommit_size = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+        decommit_size += hp->decommit_ephemeral_segment_pages_step ();
+    }
+    return (decommit_size != 0);
+}
+
+size_t gc_heap::decommit_ephemeral_segment_pages_step ()
+{
+    // we rely on desired allocation not being changed outside of GC
+    if (ephemeral_heap_segment->saved_desired_allocation != dd_desired_allocation(dynamic_data_of(0)))
+    {
+        GCToOSInterface::DebugBreak();
+    }
     uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
-    const size_t EXTRA_SPACE = 32 * OS_PAGE_SIZE;
+    size_t EXTRA_SPACE = loh_size_threshold + 4 * OS_PAGE_SIZE;
     decommit_target += EXTRA_SPACE;
-    uint8_t* committed = heap_segment_committed(ephemeral_heap_segment);
+    uint8_t* committed = heap_segment_committed (ephemeral_heap_segment);
     if (decommit_target < committed)
     {
+        // we rely on other threads not messing with committed if we are about to trim it down
+        if (ephemeral_heap_segment->saved_committed != heap_segment_committed (ephemeral_heap_segment))
+        {
+            GCToOSInterface::DebugBreak();
+        }
+
         const size_t DECOMMIT_STEP_SIZE = min (4096 / n_heaps, 100) * OS_PAGE_SIZE;
         uint8_t* page_start = align_on_page ( max (decommit_target, committed - DECOMMIT_STEP_SIZE) );
         size_t size = committed - page_start;
@@ -31863,6 +31894,7 @@ size_t gc_heap::decommit_ephemeral_pages_step ()
             (size_t)(page_start + size),
             size));
         heap_segment_committed (ephemeral_heap_segment) = page_start;
+        ephemeral_heap_segment->saved_committed = page_start;
         if (heap_segment_used (ephemeral_heap_segment) > heap_segment_committed (ephemeral_heap_segment))
         {
             heap_segment_used (ephemeral_heap_segment) = heap_segment_committed (ephemeral_heap_segment);
