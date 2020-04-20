@@ -252,12 +252,12 @@ jobs:
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(runtimeFlavorArgs) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Generate test host
 
 
-    # Generate test wrappers
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
