@@ -353,7 +353,7 @@ namespace System.Text.Json
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
-            ValidateType(type, parentClassType, propertyInfo);
+            ValidateType(type, parentClassType, propertyInfo, options);
 
             JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
@@ -400,9 +400,9 @@ namespace System.Text.Json
             return converter;
         }
 
-        public static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo)
+        public static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo, JsonSerializerOptions options)
         {
-            if (IsInvalidForSerialization(type))
+            if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
             {
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, propertyInfo);
             }
@@ -413,28 +413,23 @@ namespace System.Text.Json
             return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
         }
 
+#if BUILDING_INBOX_LIBRARY
         public static bool IsByRefLike(Type type)
         {
-#if BUILDING_INBOX_LIBRARY
             return type.IsByRefLike;
+        }
 #else
+        private static readonly PropertyInfo s_isByRefLikePropertyInfo = typeof(Type).GetProperty("IsByRefLike")!;
+
+        public static bool IsByRefLike(Type type)
+        {
             if (!type.IsValueType)
             {
                 return false;
             }
 
-            object[] attributes = type.GetCustomAttributes(inherit: false);
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-#endif
+            return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
         }
+#endif
     }
 }

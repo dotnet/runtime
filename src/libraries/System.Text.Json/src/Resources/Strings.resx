@@ -507,7 +507,7 @@
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
   <data name="CannotSerializeInvalidType" xml:space="preserve">
-    <value>The type '{0}' contains generic parameters that have not been replaced by specific types, is a pointer type, or is a ref struct. This is invalid during serialization or deserialization.</value>
+    <value>The type '{0}' is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
   </data>
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of 'System.Type' instances are not supported and should be avoided since they can lead to security issues.</value>
@@ -516,6 +516,6 @@
     <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
   </data>
   <data name="CannotSerializeInvalidMember" xml:space="preserve">
-    <value>The type '{0}' of property '{1}' on type '{2}' contains generic parameters that have not been replaced by specific types, is a pointer type, or is a ref struct. This is invalid during serialization or deserialization.</value>
+    <value>The type '{0}' of property '{1}' on type '{2}'  is invalid for serialization or deserialization because it is a pointer type, is a ref struct, or contains generic parameters that have not been replaced by specific types.</value>
   </data>
 </root>
