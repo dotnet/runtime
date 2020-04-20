@@ -58,9 +58,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
-			"A value from unknown source is passed into the implicit 'this' parameter of method " +
-			"'System.Void Mono.Linker.Tests.Cases.Reflection.RunClassConstructorUsedViaReflection::TestDataFlowType()'. It's not possible to guarantee " +
-			"that these requirements are met by the application.")]
+			"A value from unknown source is passed into the parameter 'type' of method "+
+			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. "+
+			"It's not possible to guarantee availability of the target static constructor.")]
+
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -70,9 +71,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[RecognizedReflectionAccessPattern]
 		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
-			"A value from unknown source is passed into the implicit 'this' parameter of method " +
-			"'System.Void Mono.Linker.Tests.Cases.Reflection.RunClassConstructorUsedViaReflection::TestIfElseUsingRuntimeTypeHandle(System.Int32)'. " +
-			"It's not possible to guarantee that these requirements are met by the application.")]
+			"A value from unknown source is passed into the parameter 'type' of method "+
+			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. "+
+			"It's not possible to guarantee availability of the target static constructor.")]
+
 		static void TestIfElseUsingRuntimeTypeHandle (int i)
 		{
 			RuntimeTypeHandle myType;

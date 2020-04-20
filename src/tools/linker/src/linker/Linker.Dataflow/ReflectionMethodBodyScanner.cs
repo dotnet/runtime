@@ -955,16 +955,16 @@ namespace Mono.Linker.Dataflow
 					//
 					case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
 							reflectionContext.AnalyzingPattern ();
-							foreach (var TypeHandleValue in methodParams [0].UniqueValues ()) {
-								if (TypeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
+							foreach (var typeHandleValue in methodParams [0].UniqueValues ()) {
+								if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 									_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.MethodCalling));
 									reflectionContext.RecordHandledPattern ();
-								} else if (TypeHandleValue == NullValue.Instance)
+								} else if (typeHandleValue == NullValue.Instance)
 									reflectionContext.RecordHandledPattern ();
 								else {
-									reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (TypeHandleValue)} " +
-										$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (reflectionContext.MethodCalling)}. " +
-										$"It's not possible to guarantee that these requirements are met by the application.");
+									reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (typeHandleValue)} " +
+										$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (reflectionContext.MethodCalled.Parameters[0])}. " +
+										$"It's not possible to guarantee availability of the target static constructor.");
 								}
 							}
 						}
