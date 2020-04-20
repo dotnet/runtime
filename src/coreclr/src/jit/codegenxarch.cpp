@@ -4344,16 +4344,26 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
-        // First, move the operand to the destination register and
-        // later on perform the shift in-place.
-        // (LSRA will try to avoid this situation through preferencing.)
-        if (tree->GetRegNum() != operandReg)
+        // Optimize "X<<1" to "lea [X+X]"
+        if ((tree->GetRegNum() != operandReg) && // shift is smaller if it's the same reg
+            tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
+            emitAttr size = emitTypeSize(tree);
+            GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
         }
+        else
+        {
+            // First, move the operand to the destination register and
+            // later on perform the shift in-place.
+            // (LSRA will try to avoid this situation through preferencing.)
+            if (tree->GetRegNum() != operandReg)
+            {
+                inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
+            }
 
-        int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-        inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+        }
     }
     else
     {
