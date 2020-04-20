@@ -1,19 +1,7 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ApiCompatTarget>$(TargetFramework)</ApiCompatTarget>
-    <ApiCompatTarget Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</ApiCompatTarget>
-    <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
-    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
-    <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
-    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
-    <ApiCompatImplementationDirs>$(BuildTargetFrameworkRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <_RunApiCompat>true</_RunApiCompat>
@@ -26,13 +14,27 @@
     <NetFxReference Include="System.DirectoryServices.Protocols" />
   </ItemGroup>
 
+  <Target Name="SetApiCompatFiles">
+    <PropertyGroup>
+      <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
+      <ApiCompatTarget>$(TargetFrameworkIdentifier.Substring(1).ToLower())</ApiCompatTarget>
+      <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
+      <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
+      <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
+      <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
+    </PropertyGroup>
+  </Target>
+
   <!-- Run ApiCompat -->
   <Target Name="RunApiCompat"
           Condition="'$(_RunApiCompat)' == 'true'"
+          DependsOnTargets="SetApiCompatFiles"
+          AfterTargets="Build"
           Inputs="$(ApiCompatResponseFile)"
           Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)">
 
     <PropertyGroup>
+      <ApiCompatImplementationDirs>$(BuildTargetFrameworkRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
       <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
       <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)"</ApiCompatArgs>
       <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">--baseline "$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
@@ -46,8 +48,7 @@
           Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
@@ -81,8 +82,7 @@
     <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; $(_netStandard21BaselineModifer) &quot;$(ApiCompatNSOnlyBaselineFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
@@ -92,8 +92,7 @@
     <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandard20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
@@ -112,8 +111,7 @@
     <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
+          IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
@@ -124,8 +122,4 @@
     <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="RunApiCompat" />
 </Project>
