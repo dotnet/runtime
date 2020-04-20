@@ -3006,7 +3006,7 @@ mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 		if (ret == NULL)
 			return NULL;
 		mono_bstr const s = (mono_bstr)(ret + (SIZEOF_VOID_P / 4));
-		*(ret + 1) = slen * sizeof (gunichar2);
+		*((guint32 *)s - 1) = slen * sizeof (gunichar2);
 		if (ptr)
 			memcpy (s, ptr, slen * sizeof (gunichar2));
 		s [slen] = 0;
