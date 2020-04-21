@@ -3329,13 +3329,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static byte Extract(Vector64<byte> vector, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64_t vget_lane_f64 (float64x1_t v, const int lane)
-        ///   A32: VMOV.F64 Dd, Dm
-        ///   A64: DUP Dd, Vn.D[lane]
-        /// </summary>
-        public static double Extract(Vector64<double> vector, byte index) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16_t vget_lane_s16 (int16x4_t v, const int lane)
         ///   A32: VMOV.S16 Rt, Dn[lane]
         ///   A64: SMOV Wd, Vn.H[lane]
@@ -3348,13 +3341,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SMOV Wd, Vn.S[lane]
         /// </summary>
         public static int Extract(Vector64<int> vector, byte index) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int64_t vget_lane_s64 (int64x1_t v, const int lane)
-        ///   A32: VMOV Rt, Rt2, Dm
-        ///   A64: UMOV Xd, Vn.D[lane]
-        /// </summary>
-        public static long Extract(Vector64<long> vector, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8_t vget_lane_s8 (int8x8_t v, const int lane)
@@ -3383,13 +3369,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMOV Wd, Vn.S[lane]
         /// </summary>
         public static uint Extract(Vector64<uint> vector, byte index) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint64_t vget_lane_u64 (uint64x1_t v, const int lane)
-        ///   A32: VMOV Rt, Rt2, Dm
-        ///   A64: UMOV Xd, Vn.D[lane]
-        /// </summary>
-        public static ulong Extract(Vector64<ulong> vector, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8_t vgetq_lane_u8 (uint8x16_t v, const int lane)
