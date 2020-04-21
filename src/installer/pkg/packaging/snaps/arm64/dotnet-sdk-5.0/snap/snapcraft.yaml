@@ -11,13 +11,17 @@ apps:
   dotnet:
     command: dotnet
 
+architectures:
+  - build-on: [amd64]
+    run-on: [arm64]
+
 base: core18
 
 parts:
   dotnet-sdk:
       plugin: dump
-      source: https://download.visualstudio.microsoft.com/download/pr/727a5825-d29a-4f45-beaa-053399f8b5ee/5f15827ceb4851ef87a008f5de0acf6c/dotnet-sdk-5.0.100-preview.2.20176.6-linux-x64.tar.gz
-      source-checksum: sha512/fface8ff5facdec10d11f8249b426a71cd5bc17aa4e4b1fbe85f4a462e55bdb648a456973a3257f0a700be1aeb0f9bb41639ceca12c2e67d1571e4544ae62bd7
+      source: https://download.visualstudio.microsoft.com/download/pr/f87574ee-c128-4e91-b436-68c99d801daf/b296bea9d987a4edaa71df47cd2e7aca/dotnet-sdk-5.0.100-preview.2.20176.6-linux-arm64.tar.gz
+      source-checksum: sha512/53cbf213e2e97b909b256d931f061178f26e5647424f144266d4af2e12d6443ef7398207a8f4e6f220c61db9ce49de3dc09d88417288a6a61d9b05e1def6b279
       stage-packages:
         - libicu60
         - libssl1.0.0
