@@ -11,10 +11,36 @@
 
 #include "codegen.h"
 
+// HWIntrinsicImmOpHelper: constructs the helper class instance.
+//       This also determines what type of "switch" table is being used (if an immediate operand is not constant) and do
+//       some preparation work:
+//
+//       a) If an immediate operand can be either 0 or 1, this creates <nonZeroLabel>.
+//
+//       b) If an immediate operand can take any value in [0, upperBound), this extract a internal register from an
+//       intrinsic node. The register will be later used to store computed branch target address.
+//
+// Arguments:
+//    codeGen -- an instance of CodeGen class.
+//    immOp   -- an immediate operand of the intrinsic.
+//    intrin  -- a hardware intrinsic tree node.
+//
+// Note: This class is designed to be used in the following way
+//       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
+//
+//       for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+//       {
+//         -- emit an instruction for a given value of helper.ImmValue()
+//       }
+//
+//       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
+//       of a for-loop.
+//
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
+    assert(HWIntrinsicInfo::isImmOp(intrin->gtHWIntrinsicId, immOp));
 
     if (immOp->isContainedIntOrIImmed())
     {
@@ -51,6 +77,22 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
 }
 
+//------------------------------------------------------------------------
+// EmitBegin: emits the beginning of a "switch" table, no-op if an immediate operand is constant.
+//
+// Note: The function is called at the beginning of code generation and emits
+//    a) If an immediate operand can be either 0 or 1
+//
+//       cbnz <nonZeroLabel>, nonConstImmReg
+//
+//    b) If an immediate operand can take any value in [0, upperBound) range
+//
+//       adr branchTargetReg, <beginLabel>
+//       add branchTargetReg, branchTargetReg, nonConstImmReg, lsl #3
+//       br  branchTargetReg
+//
+//       When an immediate operand is non constant this also defines <beginLabel> right after the emitted code.
+//
 void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
 {
     if (NonConstImmOp())
@@ -75,6 +117,19 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
     }
 }
 
+//------------------------------------------------------------------------
+// EmitCaseEnd: emits the end of a "case", no-op if an immediate operand is constant.
+//
+// Note: The function is called at the end of each "case" (i.e. after an instruction has been emitted for a given
+// immediate value ImmValue())
+//       and emits
+//
+//       b <endLabel>
+//
+//       After the last "case" this defines <endLabel>.
+//
+//       If an immediate operand is either 0 or 1 it also defines <nonZeroLabel> after the first "case".
+//
 void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 {
     assert(!Done());

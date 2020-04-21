@@ -1057,22 +1057,27 @@ protected:
         void EmitBegin();
         void EmitCaseEnd();
 
+        // Returns true after the last call to EmitCaseEnd() (i.e. this signals that code generation is done).
         bool Done() const
         {
             return immValue == immUpperBound;
         }
 
+        // Returns a value of the immediate operand that should be used for a case.
         int ImmValue() const
         {
             return immValue;
         }
 
     private:
+        // Returns true if immOp is non contained immediate (i.e. the value of the immediate operand is enregistered in
+        // nonConstImmReg).
         bool NonConstImmOp() const
         {
             return nonConstImmReg != REG_NA;
         }
 
+        // Returns true if a non constant immediate operand can be either 0 or 1.
         bool TestImmOpZeroOrOne() const
         {
             assert(NonConstImmOp());
@@ -1084,13 +1089,13 @@ protected:
             return codeGen->GetEmitter();
         }
 
-        CodeGen*    codeGen;
-        BasicBlock* endLabel;
-        BasicBlock* nonZeroLabel;
-        int         immValue;
-        int         immUpperBound;
-        regNumber   nonConstImmReg;
-        regNumber   branchTargetReg;
+        CodeGen* const codeGen;
+        BasicBlock*    endLabel;
+        BasicBlock*    nonZeroLabel;
+        int            immValue;
+        int            immUpperBound;
+        regNumber      nonConstImmReg;
+        regNumber      branchTargetReg;
     };
 #endif // TARGET_ARM64
 
