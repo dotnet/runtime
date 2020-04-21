@@ -837,7 +837,7 @@ namespace System.Net
             {
                 result += SeparatorLiteral + CookieFields.VersionAttributeName + EqualsLiteral + m_version.ToString(NumberFormatInfo.InvariantInfo);
             }
-            return result == EqualsLiteral.ToString() ? null : result;
+            return result == "=" ? null : result;
         }
     }
 }

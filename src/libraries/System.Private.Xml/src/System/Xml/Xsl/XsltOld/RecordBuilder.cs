@@ -655,7 +655,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (minus)
             {
-                _mainNode.ValueAppend(s_Space.ToString(), false);
+                _mainNode.ValueAppend(" ", false);
             }
         }
 
