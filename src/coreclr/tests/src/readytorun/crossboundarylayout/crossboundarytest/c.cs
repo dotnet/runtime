@@ -223,7 +223,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A).GetField("_cVal").GetValue(c))
                 {
                     failure++;
-                    Console.WriteLine("B c._cVal");
+                    Console.WriteLine("C c._cVal");
                 }
             }
 
@@ -233,7 +233,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_byte).GetField("_cVal").GetValue(c2))
                 {
                     failure++;
-                    Console.WriteLine("B c2._cVal");
+                    Console.WriteLine("C c2._cVal");
                 }
             }
 
@@ -243,7 +243,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_D).GetField("_cVal").GetValue(c3))
                 {
                     failure++;
-                    Console.WriteLine("B c3._cVal");
+                    Console.WriteLine("C c3._cVal");
                 }
             }
 
@@ -253,7 +253,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_Generic_byte).GetField("_cVal").GetValue(c4))
                 {
                     failure++;
-                    Console.WriteLine("B c4._cVal");
+                    Console.WriteLine("C c4._cVal");
                 }
             }
 
@@ -263,7 +263,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_byte_Generic_byte).GetField("_cVal").GetValue(c5))
                 {
                     failure++;
-                    Console.WriteLine("B c5._cVal");
+                    Console.WriteLine("C c5._cVal");
                 }
             }
 
@@ -273,7 +273,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_D_Generic_byte).GetField("_cVal").GetValue(c6))
                 {
                     failure++;
-                    Console.WriteLine("B c6._cVal");
+                    Console.WriteLine("C c6._cVal");
                 }
             }
 
@@ -283,7 +283,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_Generic_D).GetField("_cVal").GetValue(c7))
                 {
                     failure++;
-                    Console.WriteLine("B c7._cVal");
+                    Console.WriteLine("C c7._cVal");
                 }
             }
 
@@ -293,7 +293,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_byte_Generic_D).GetField("_cVal").GetValue(c8))
                 {
                     failure++;
-                    Console.WriteLine("B c8._cVal");
+                    Console.WriteLine("C c8._cVal");
                 }
             }
 
@@ -303,7 +303,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(C_B_A_D_Generic_D).GetField("_cVal").GetValue(c9))
                 {
                     failure++;
-                    Console.WriteLine("B c9._cVal");
+                    Console.WriteLine("C c9._cVal");
                 }
             }
 

@@ -13,6 +13,7 @@ namespace CrossBoundaryLayout
             int failure = ATest.Test();
             failure += BTest.Test();
             failure += CTest.Test();
+            failure += C1Test.Test();
 
             return 100 + failure;
         }
