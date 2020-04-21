@@ -16293,11 +16293,11 @@ void gc_heap::gc1()
             {
                 limit = total_generation_count-1;
             }
-            for (int gen = 0; gen < limit; gen++)
+            for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
 
-                for (int i = 0; i <= gc_heap::n_heaps; i++)
+                for (int i = 0; i < gc_heap::n_heaps; i++)
                 {
                     gc_heap* hp = gc_heap::g_heaps[i];
                     dynamic_data* dd = hp->dynamic_data_of (gen);
