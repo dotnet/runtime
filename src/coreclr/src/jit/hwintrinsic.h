@@ -55,70 +55,72 @@ enum HWIntrinsicFlag : unsigned int
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
-    HW_Flag_NoCodeGen = 0x8,
+    HW_Flag_NoCodeGen = 0x4,
 
     // Unfixed SIMD-size
     // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
-    HW_Flag_UnfixedSIMDSize = 0x10,
+    HW_Flag_UnfixedSIMDSize = 0x8,
 
     // Multi-instruction
     // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x20,
-
-    // Copy Upper bits
-    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = 0x80,
+    HW_Flag_MultiIns = 0x10,
 
     // Select base type using the first argument type
-    HW_Flag_BaseTypeFromFirstArg = 0x100,
+    HW_Flag_BaseTypeFromFirstArg = 0x20,
+
+    // Select base type using the second argument type
+    HW_Flag_BaseTypeFromSecondArg = 0x40,
 
     // Indicates compFloatingPointUsed does not need to be set.
-    HW_Flag_NoFloatingPointUsed = 0x200,
+    HW_Flag_NoFloatingPointUsed = 0x80,
 
     // Maybe IMM
     // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = 0x400,
+    HW_Flag_MaybeIMM = 0x100,
 
     // NoJmpTable IMM
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
-    HW_Flag_NoJmpTableIMM = 0x800,
-
-    // Select base type using the second argument type
-    HW_Flag_BaseTypeFromSecondArg = 0x1000,
+    HW_Flag_NoJmpTableIMM = 0x200,
 
     // Special codegen
     // the intrinsics need special rules in CodeGen,
     // but may be table-driven in the front-end
-    HW_Flag_SpecialCodeGen = 0x2000,
-
-#if defined(TARGET_XARCH)
-    // No Read/Modify/Write Semantics
-    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = 0x4000,
-
-    // NoContainment
-    // the intrinsic cannot be handled by comtainment,
-    // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x40,
-
-#elif defined(TARGET_ARM64)
-    // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x4000,
-
-    HW_Flag_SupportsContainment = 0x40,
-#else
-#error Unsupported platform
-#endif
+    HW_Flag_SpecialCodeGen = 0x400,
 
     // Special import
     // the intrinsics need special rules in importer,
     // but may be table-driven in the back-end
-    HW_Flag_SpecialImport = 0x8000,
+    HW_Flag_SpecialImport = 0x800,
+
+// The below is for defining platform-specific flags
+#if defined(TARGET_XARCH)
+    // Copy Upper bits
+    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
+    HW_Flag_CopyUpperBits = 0x1000,
 
     // Maybe Memory Load/Store
     // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = 0x10000,
-    HW_Flag_MaybeMemoryStore = 0x20000,
+    HW_Flag_MaybeMemoryLoad  = 0x2000,
+    HW_Flag_MaybeMemoryStore = 0x4000,
+
+    // No Read/Modify/Write Semantics
+    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
+    HW_Flag_NoRMWSemantics = 0x8000,
+
+    // NoContainment
+    // the intrinsic cannot be handled by comtainment,
+    // all the intrinsic that have explicit memory load/store semantics should have this flag
+    HW_Flag_NoContainment = 0x10000,
+
+#elif defined(TARGET_ARM64)
+    // The intrinsic has read/modify/write semantics in multiple-operands form.
+    HW_Flag_HasRMWSemantics = 0x1000,
+
+    // The intrinsic supports some sort of containment analysis.
+    HW_Flag_SupportsContainment = 0x2000,
+#else
+#error Unsupported platform
+#endif
 };
 
 struct HWIntrinsicInfo
@@ -262,12 +264,6 @@ struct HWIntrinsicInfo
 #endif
     }
 
-    static bool CopiesUpperBits(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_CopyUpperBits) != 0;
-    }
-
     static bool BaseTypeFromFirstArg(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -286,6 +282,13 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_MaybeIMM) != 0;
     }
 
+#ifdef TARGET_XARCH
+    static bool CopiesUpperBits(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CopyUpperBits) != 0;
+    }
+
     static bool MaybeMemoryLoad(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -297,6 +300,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
+#endif
 
     static bool NoJmpTableImm(NamedIntrinsic id)
     {
