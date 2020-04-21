@@ -826,7 +826,7 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
 
             if (matchEnd == textLength)
             {
-                return TRUE;
+                result = TRUE;
             }
             else
             {
