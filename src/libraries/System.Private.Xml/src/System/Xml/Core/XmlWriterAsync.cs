@@ -602,18 +602,16 @@ namespace System.Xml
 
         public ValueTask DisposeAsync()
         {
-            if (WriteState != WriteState.Closed)
-            {
-                return DisposeAsyncCore();
-            }
-
-            return default;
+            GC.SuppressFinalize(this);
+            return DisposeAsyncCore();
         }
 
         protected virtual ValueTask DisposeAsyncCore()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (WriteState != WriteState.Closed)
+            {
+                Dispose(true);
+            }
             return default;
         }
     }

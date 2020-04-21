@@ -222,8 +222,8 @@ namespace CoreXml.Test.XLinq
             {
                 if (isAsync)
                 {
-                    await document.SaveAsync(stream, saveOptions, CancellationToken.None).ConfigureAwait(false);
-                    await element.SaveAsync(stream, saveOptions, CancellationToken.None).ConfigureAwait(false);
+                    await document.SaveAsync(stream, saveOptions, CancellationToken.None);
+                    await element.SaveAsync(stream, saveOptions, CancellationToken.None);
                 }
                 else
                 {
