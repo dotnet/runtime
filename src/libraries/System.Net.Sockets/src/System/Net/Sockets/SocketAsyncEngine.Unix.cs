@@ -356,7 +356,7 @@ namespace System.Net.Sockets
 
         void IThreadPoolWorkItem.Execute()
         {
-            Volatile.Write(ref _eventQueueProcessingRequested, 0);
+            Interlocked.Exchange(ref _eventQueueProcessingRequested, 0);
 
             ConcurrentDictionary<IntPtr, SocketAsyncContext> handleToContextMap = _handleToContextMap;
             ConcurrentQueue<Event> eventQueue = _eventQueue;
