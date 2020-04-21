@@ -18,6 +18,6 @@
     <Compile Include="Windows\UI\ColorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Windows" />
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

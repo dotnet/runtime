@@ -1288,9 +1288,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             src->gtType  = genActualType(returnType);
             call->gtType = src->gtType;
 
-            // !!! The destination could be on stack. !!!
-            // This flag will let us choose the correct write barrier.
-            destFlags = GTF_IND_TGTANYWHERE;
+            if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
+            {
+                // !!! The destination could be on stack. !!!
+                // This flag will let us choose the correct write barrier.
+                destFlags = GTF_IND_TGTANYWHERE;
+            }
         }
     }
     else if (src->OperIsBlk())
@@ -1532,7 +1535,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // Notes:
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
-//    for full enregistration, e.g. TYP_SIMD16.
+//    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
 {
@@ -1550,7 +1554,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-            if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
+            if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
                 var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
@@ -4132,7 +4136,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compSupports(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -6737,9 +6741,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -19807,7 +19818,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;

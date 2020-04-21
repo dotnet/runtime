@@ -26,4 +26,7 @@
     <CrossArchSdkMsiInstallerArch Include="x64;x86" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+  </PropertyGroup>
 </Project>

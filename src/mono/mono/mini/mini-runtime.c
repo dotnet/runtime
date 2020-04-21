@@ -1946,6 +1946,10 @@ enum {
 	ELF_MACHINE = EM_ARM,
 #elif HOST_ARM64
 	ELF_MACHINE = EM_AARCH64,
+#elif HOST_POWERPC64
+	ELF_MACHINE = EM_PPC64,
+#elif HOST_S390X
+	ELF_MACHINE = EM_S390,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -4707,10 +4711,8 @@ register_icalls (void)
 #endif
 	register_opcode_emulation (OP_FCONV_TO_OVF_I8, __emul_fconv_to_ovf_i8, mono_icall_sig_long_double, mono_fconv_ovf_i8, FALSE);
 	register_opcode_emulation (OP_FCONV_TO_OVF_U8, __emul_fconv_to_ovf_u8, mono_icall_sig_ulong_double, mono_fconv_ovf_u8, FALSE);
-	register_opcode_emulation (OP_FCONV_TO_OVF_U8_UN, __emul_fconv_to_ovf_u8_un, mono_icall_sig_ulong_double, mono_fconv_ovf_u8_un, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_OVF_I8, __emul_rconv_to_ovf_i8, mono_icall_sig_long_float, mono_rconv_ovf_i8, FALSE);
 	register_opcode_emulation (OP_RCONV_TO_OVF_U8, __emul_rconv_to_ovf_u8, mono_icall_sig_ulong_float, mono_rconv_ovf_u8, FALSE);
-	register_opcode_emulation (OP_RCONV_TO_OVF_U8_UN, __emul_rconv_to_ovf_u8_un, mono_icall_sig_ulong_float, mono_rconv_ovf_u8_un, FALSE);
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
 	register_opcode_emulation (OP_FCONV_TO_I8, __emul_fconv_to_i8, mono_icall_sig_long_double, mono_fconv_i8, FALSE);
@@ -4840,7 +4842,7 @@ register_icalls (void)
 
 	register_dyn_icall (mini_get_dbg_callbacks ()->user_break, mono_debugger_agent_user_break, mono_icall_sig_void, FALSE);
 
-	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
+	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);

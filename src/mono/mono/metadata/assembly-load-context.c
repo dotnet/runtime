@@ -53,7 +53,7 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
 		g_slist_remove (domain->domain_assemblies, assembly);
 		mono_atomic_dec_i32 (&assembly->ref_count);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from domain_assemblies, ref_count=%d\n", assembly->aname.name, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from domain_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
 	}
 	mono_domain_assemblies_unlock (domain);
 
@@ -170,6 +170,14 @@ gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc)
 {
 	return alc == mono_alc_domain (alc)->default_alc;
+}
+
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
+{
+	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
+	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
+	return alc;
 }
 
 static MonoAssembly*

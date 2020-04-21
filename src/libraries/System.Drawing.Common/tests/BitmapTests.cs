@@ -33,6 +33,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class BitmapTests : FileCleanupTestBase
     {
         public static IEnumerable<object[]> Ctor_FilePath_TestData()

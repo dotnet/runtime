@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -8,6 +8,7 @@
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
@@ -24,6 +25,8 @@
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSetHelper.cs" Link="Common\ReadyToRunInstructionSetHelper.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormat.cs" Link="Common\NativeFormat.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.cs" Link="Common\NativeFormatWriter.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.Primitives.cs" Link="Common\NativeFormatWriter.Primitives.cs" />
@@ -81,6 +84,7 @@
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
+    <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
@@ -129,7 +133,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\IReadyToRunMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\OwnerCompositeExecutableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\LocalMethodImport.cs" />
@@ -147,6 +150,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />

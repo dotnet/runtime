@@ -240,16 +240,24 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendricalCalculationsHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ChineseLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormat.cs" />
@@ -267,14 +275,22 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IcuLocaleData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InternalGlobalizationHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ISOWeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JulianCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\KoreanCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\KoreanLunisolarCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberStyles.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\PersianCalendar.cs" />
@@ -287,6 +303,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
@@ -478,6 +496,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\SignatureToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StringToken.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
@@ -975,6 +994,58 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
+    <Compile Include="$(CommonPath)Interop\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
+      <Link>Common\Interop\Interop.Calendar.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
+      <Link>Common\Interop\Interop.Casing.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
+      <Link>Common\Interop\Interop.Collation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
+      <Link>Common\Interop\Interop.ICU.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Idna.cs">
+      <Link>Common\Interop\Interop.Idna.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
+      <Link>Common\Interop\Interop.Locale.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
+      <Link>Common\Interop\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
+      <Link>Common\Interop\Interop.ResultCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs">
+      <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
+      <Link>Common\Interop\Interop.Utils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Globalization.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Globalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Idna.cs">
+      <Link>Common\Interop\Windows\Normaliz\Interop.Idna.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Normalization.cs">
+      <Link>Common\Interop\Windows\Normaliz\Interop.Normalization.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
@@ -1012,6 +1083,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">
+      <Link>Common\Interop\Interop.HostPolicy.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\DiagnosticCounter.cs" />
@@ -1176,9 +1250,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs">
       <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
     </Compile>
@@ -1293,9 +1364,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Globalization.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Globalization.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
     </Compile>
@@ -1343,9 +1411,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
@@ -1407,12 +1472,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Idna.cs">
-      <Link>Common\Interop\Windows\Normaliz\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Normalization.cs">
-      <Link>Common\Interop\Windows\Normaliz\Interop.Normalization.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs</Link>
     </Compile>
@@ -1467,15 +1526,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
@@ -1515,7 +1566,6 @@
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs</Link>
     </Compile>
@@ -1580,36 +1630,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Calendar.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Casing.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Casing.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.ICU.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.ICU.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Locale.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Locale.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Globalization.Native\Interop.Utils.cs">
-      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Utils.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
@@ -1723,21 +1743,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.NoRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.GetFolderPathCore.cs" Condition="'$(TargetsiOS)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.GetFolderPathCore.cs" Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\LocaleData.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Linux.cs" Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Linux.cs" Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />

@@ -594,8 +594,8 @@ class LoaderHeapSniffer
 
                 }
                 printf(" ptr = 0x%-8p", pEvent->m_pMem);
-                printf(" rqsize = 0x%-8x", pEvent->m_dwRequestedSize);
-                printf(" actsize = 0x%-8x", pEvent->m_dwSize);
+                printf(" rqsize = 0x%-8x", (DWORD)pEvent->m_dwRequestedSize);
+                printf(" actsize = 0x%-8x", (DWORD)pEvent->m_dwSize);
                 printf(" (at %s@%d)", pEvent->m_szFile, pEvent->m_lineNum);
                 if (pEvent->m_allocationType == kFreedMem)
                 {

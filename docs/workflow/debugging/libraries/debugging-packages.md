@@ -25,7 +25,7 @@ Assuming the current directory is `\src\contractname\`:
 
 Check the logs for output such as:
 ```
-Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:3) on node 1
+Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:3) on node 1
 (Build target(s)).
 
 [...]
@@ -37,7 +37,7 @@ CopyFilesToOutputDirectory:
 
 [...]
 
-Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:4) on node 1
+Project "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" (2:4) on node 1
 (Build target(s)).
 
 [...]
@@ -86,7 +86,7 @@ Ensure that the right `BuildTargetFramework` (what we're testing) is set.
 To identify which of the combinations failed, search for the following pattern in the output:
 
 ```
-Project "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj"
+Project "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj" (1) is building "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj"
 (2:5) on node 1 (Build target(s)).
 ResolvePkgProjReferences:
   Resolved compile assets from .NETStandard,Version=v2.0: S:\c1\bin\ref\System.Net.ServicePoint\4.0.0.0\System.Net.ServicePoint.dll

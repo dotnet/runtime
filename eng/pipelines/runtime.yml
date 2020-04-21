@@ -197,6 +197,7 @@ jobs:
     - Windows_NT_x86
     - Windows_NT_arm
     - Windows_NT_arm64
+    - FreeBSD_x64
     jobParameters:
       testGroup: innerloop
 
@@ -231,6 +232,12 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -239,6 +246,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -261,6 +269,12 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -269,6 +283,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -366,6 +381,7 @@ jobs:
     - Linux_x64
     - OSX_x64
     - Windows_NT_x64
+    - FreeBSD_x64
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -378,8 +394,10 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - iOS_arm
-    - iOS_arm64
+    - Android_x64
+    - Android_arm
+    - tvOS_arm64
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -387,12 +405,14 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Debug
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-    - iOS_arm
+    - Android_x86
+    - Android_arm64
+    - tvOS_x64
     - iOS_arm64
-    - iOS_x64
+    - WebAssembly_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
 
@@ -404,7 +424,6 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - WebAssembly_wasm
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
@@ -477,6 +496,35 @@ jobs:
       - Linux_arm64
       - Linux_musl_x64
       - Windows_NT_x64
+      - FreeBSD_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    - Android_arm
+    - tvOS_arm64
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Android_x86
+    - Android_arm64
+    - tvOS_x64
+    - iOS_arm64
+    - OSX_x64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -617,7 +665,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
+    - Windows_NT_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64

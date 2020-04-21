@@ -2006,10 +2006,10 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
     {
         unsigned  simdSize;
         var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
-        if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
+        // We will only promote fields of SIMD types that fit into a SIMD register.
+        if (simdBaseType != TYP_UNKNOWN)
         {
-            // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseType != TYP_UNKNOWN)
+            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
             {
                 fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
                 fieldInfo.fldSize = simdSize;
@@ -3794,7 +3794,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                      allowStructs || genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
                      (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL) ||
                      (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF) || (tree->gtFlags & GTF_VAR_CAST) ||
-                     varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
+                     (varTypeIsFloating(varDsc) && varTypeIsFloating(tree)) ||
+                     (varTypeIsStruct(varDsc) == varTypeIsStruct(tree)));
 
         /* Remember the type of the reference */
 

@@ -179,11 +179,15 @@ endif(CLR_CMAKE_HOST_UNIX)
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-endif(CLR_CMAKE_HOST_LINUX)
-if(CLR_CMAKE_HOST_FREEBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
-endif(CLR_CMAKE_HOST_FREEBSD)
+  add_link_options(LINKER:--build-id=sha1)
+elseif(CLR_CMAKE_HOST_SUNOS)
+  set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
+  set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+endif()
 
 #------------------------------------
 # Definitions (for platform)
@@ -435,11 +439,7 @@ if (MSVC)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  # 4302: Truncation from '%$S' to '%$S'.
-  # 4311: Pointer truncation from '%$S' to '%$S'.
-  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
-  # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
-  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+  add_compile_options(/wd4291)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.

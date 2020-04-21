@@ -72,6 +72,7 @@
     <Compile Include="Serialization\ExceptionTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
+    <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
     <Compile Include="Serialization\NullableTests.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
     <Compile Include="Serialization\ReadValueTests.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />

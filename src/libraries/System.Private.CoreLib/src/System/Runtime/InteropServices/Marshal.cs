@@ -873,6 +873,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
+            // COMPAT: This block of code isn't entirely correct.
+            // Users passing in typeof(MulticastDelegate) as 't' skip this check
+            // since Delegate is a base type of MulticastDelegate.
             Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {

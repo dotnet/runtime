@@ -359,18 +359,32 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
+        // Initialize the thread local storage  
+        if (FALSE == TLSInitialize())
+        {
+            palError = ERROR_PALINIT_TLS;
+            goto done;
+        }
+
+        // Initialize debug channel settings before anything else.
+        if (FALSE == DBG_init_channels())
+        {
+            palError = ERROR_PALINIT_DBG_CHANNELS;
+            goto CLEANUP0a;
+        }
+
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
         gSharedFilesPath = InternalNew<PathCharString>();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto done;
+            goto CLEANUP0a;
         }
 
         if (INIT_SharedFilesPath() == FALSE)
         {
-            goto done;
+            goto CLEANUP0a;
         }
 
         fFirstTimeInit = true;
@@ -400,28 +414,12 @@ Initialize(
         }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-        // Initialize the TLS lookaside cache
-        if (FALSE == TLSInitialize())
-        {
-            palError = ERROR_PALINIT_TLS;
-            goto done;
-        }
-
         InitializeCGroup();
 
         // Initialize the environment.
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
-        }
-
-        // Initialize debug channel settings before anything else.
-        // This depends on the environment, so it must come after
-        // EnvironInitialize.
-        if (FALSE == DBG_init_channels())
-        {
-            palError = ERROR_PALINIT_DBG_CHANNELS;
             goto CLEANUP0;
         }
 
@@ -726,6 +724,7 @@ CLEANUP1:
     SHMCleanup();
 CLEANUP0:
     CleanupCGroup();
+CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);

@@ -111,6 +111,15 @@ namespace System.Runtime.Loader
             return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 
+        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
+        // after trying assembly resolution via Load override and TPA load context without success.
+        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        {
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            // Invoke the AssemblyResolve event callbacks if wired up
+            return context.ResolveUsingEvent(assemblyName);
+        }
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LoadTypeForWinRTTypeNameInContextInternal(IntPtr ptrNativeAssemblyLoadContext, string typeName, ObjectHandleOnStack loadedType);
 

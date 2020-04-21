@@ -123,7 +123,7 @@
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
     </ItemGroup>
- 
+
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
@@ -289,6 +289,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>Unix arm32 does not support tailcall helper</Issue>
         </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
+         </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -395,6 +398,9 @@
 
     <!-- Windows arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/explicit/coverage/expl_float_1_*/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34170</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/*">
             <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
         </ExcludeList>
@@ -439,7 +445,7 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeCallingManaged/NativeCallingManaged/*">
             <Issue>https://github.com/dotnet/runtime/issues/12299</Issue>
-        </ExcludeList>        
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
@@ -590,7 +596,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
-        
+
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->
@@ -990,6 +996,18 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/ConvertToVector128_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34734</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/ConvertToVector128_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34734</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
+            <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34905</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1004,7 +1022,7 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
-	<ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddMemoryPressureTest/**">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddMemoryPressureTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddThresholdTest/**">
@@ -1056,19 +1074,19 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34372</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34374</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
             <Issue>needs triage</Issue>
@@ -1134,16 +1152,16 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/PassingByOut/PassingByOutTest/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/PassingByRef/PassingByRefTest/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/BSTR/BSTRTest/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34375</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/LPSTR/LPSTRTest/**">
             <Issue>needs triage</Issue>
@@ -1152,7 +1170,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/ReversePInvoke/ReversePInvokeTest/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructPacking/StructPacking/**">
             <Issue>needs triage</Issue>
@@ -1226,22 +1244,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Regression/GitHub_17957/GitHub_17957_ro/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i4/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/conv_ovf_r8_i8/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_conv_ovf_r8_i8/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_il/**">
@@ -1254,7 +1260,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34376</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_large/**">
             <Issue>needs triage</Issue>
@@ -1317,7 +1323,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbgaddress/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_dbginitializearray/**">
             <Issue>needs triage</Issue>
@@ -1326,73 +1332,73 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_reladdress/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relgcarr/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relinitializearray/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/_il_relldelem_get/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgfloat64_range1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgfloat64_range2/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_0_5a/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_0_5b/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_m1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_neg_range/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_range1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_dbgint32_range2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relfloat64_range1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relfloat64_range2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_0_5a/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_0_5b/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_1/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_m1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_neg_range/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_range1/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/range/_il_relint32_range2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/morph/sin3double/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_d/**">
             <Issue>needs triage</Issue>
@@ -1416,40 +1422,28 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_r/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgarray2/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34378</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgarray3/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34377</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_relarray3/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34381</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_rellcs/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_dbgdeep_array_nz/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reldeep_array_nz/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_dbgjumps4/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34379</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_reljumps4/**">
             <Issue>needs triage</Issue>
@@ -1467,10 +1461,10 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16895/b16895/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34386</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b27883/b27883/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34387</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31283/b31283/**">
             <Issue>needs triage</Issue>
@@ -1479,7 +1473,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b441487/b441487/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34383</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/**">
             <Issue>needs triage</Issue>
@@ -1490,17 +1484,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_487699/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_544983/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578214/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578217/**">
             <Issue>needs triage</Issue>
@@ -1509,13 +1494,13 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18295/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23411/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23791/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34385</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27169/**">
             <Issue>needs triage</Issue>
@@ -1566,7 +1551,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case2/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34388</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case3/**">
             <Issue>needs triage</Issue>
@@ -1635,7 +1620,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke/**">
             <Issue>needs triage</Issue>
@@ -1650,7 +1635,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/GetInterfaceMapConsumer/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34389</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/DefaultInterfaceMethods/InvokeConsumer/**">
             <Issue>needs triage</Issue>
@@ -1665,7 +1650,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/15647/interfacestatics/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/34390</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16123/ambiguousconstraint/**">
             <Issue>needs triage</Issue>

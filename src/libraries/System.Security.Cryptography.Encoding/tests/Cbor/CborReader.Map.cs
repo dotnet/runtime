@@ -15,9 +15,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                AdvanceBuffer(1);
-                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Map, null);
+                AdvanceBuffer(1);
                 return null;
             }
             else
@@ -29,9 +28,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new OverflowException("Read CBOR map field count exceeds supported size.");
                 }
 
-                AdvanceBuffer(1 + additionalBytes);
-                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Map, 2 * mapSize);
+                AdvanceBuffer(1 + additionalBytes);
                 return mapSize;
             }
         }
@@ -53,11 +51,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 PopDataItem(expectedType: CborMajorType.Map);
+                AdvanceDataItemCounters();
                 AdvanceBuffer(1);
             }
             else
             {
                 PopDataItem(expectedType: CborMajorType.Map);
+                AdvanceDataItemCounters();
             }
         }
     }

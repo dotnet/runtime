@@ -204,7 +204,7 @@ namespace System.IO.Tests
             { @"C:\\foo2", @"C:\" },
         };
 
-        protected static void GetTempPath_SetEnvVar(string envVar, string expected, string newTempPath)
+        protected static void GetTempPath_SetEnvVar_Helper(string envVar, string expected, string newTempPath)
         {
             string original = Path.GetTempPath();
             Assert.NotNull(original);

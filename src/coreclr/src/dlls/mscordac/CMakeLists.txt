@@ -76,7 +76,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 
     # The following linked options can be inserted into the linker libraries list to
     # ensure proper resolving of circular references between a subset of the libraries.
@@ -186,6 +186,12 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
+
+# Create the DAC module index header file containing the DAC build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    generate_module_index(mscordaccore ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h)
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
 install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATION sharedFramework)

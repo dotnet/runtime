@@ -1870,7 +1870,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            name,
                            pszName,
                            IsMdFinal(dwAttrs) ? " (final)" : "",
-                           pMD->GetMethodEntryPoint(),
+                           (VOID *)pMD->GetMethodEntryPoint(),
                            pMD->GetSlot()
                           );
                 WszOutputDebugString(buff);
@@ -1884,7 +1884,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                      pMD->GetClass()->GetDebugClassName(),
                      pszName,
                      IsMdFinal(dwAttrs) ? " (final)" : "",
-                     pMD->GetMethodEntryPoint(),
+                     (VOID *)pMD->GetMethodEntryPoint(),
                      pMD->GetSlot()
                     ));
             }

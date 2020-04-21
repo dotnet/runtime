@@ -17,6 +17,9 @@ internal static partial class Interop
             [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetIsNonBlocking", SetLastError=true)]
             internal static extern int SetIsNonBlocking(SafeHandle fd, int isNonBlocking);
 
+            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetIsNonBlocking", SetLastError = true)]
+            internal static extern int GetIsNonBlocking(SafeHandle fd, out bool isNonBlocking);
+
             [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetFD", SetLastError=true)]
             internal static extern int SetFD(SafeHandle fd, int flags);
 

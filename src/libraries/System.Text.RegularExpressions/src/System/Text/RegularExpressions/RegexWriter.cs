@@ -170,7 +170,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Compute any anchors starting the expression.
-            int anchors = RegexPrefixAnalyzer.FindLeadingAnchors(tree);
+            int leadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree);
 
             // Convert the string table into an ordered string array.
             var strings = new string[_stringTable.Count];
@@ -180,7 +180,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Return all that in a RegexCode object.
-            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, anchors, rtl);
+            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, leadingAnchor, rtl);
         }
 
         /// <summary>

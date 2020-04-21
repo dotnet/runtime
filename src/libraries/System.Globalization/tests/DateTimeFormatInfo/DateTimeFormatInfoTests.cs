@@ -71,12 +71,12 @@ namespace System.Globalization.Tests
             }
             catch
             {
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsNlsGlobalization)
                 {
                     // Persian calendar is recently supported as one of the optional calendars for fa-IR
                     Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
                 }
-                else // !PlatformDetection.IsWindows
+                else // !PlatformDetection.IsNlsGlobalization
                 {
                     Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar ||
                                 calendar is HebrewCalendar || calendar is KoreanCalendar, "failed to set the calendar on DTFI");

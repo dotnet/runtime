@@ -103,14 +103,14 @@ namespace System.Text.RegularExpressions
         public readonly (string CharClass, bool CaseInsensitive)[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
         public int[]? LeadingCharClassAsciiLookup;                                      // the ASCII lookup table optimization for LeadingCharClasses[0], if it exists; only used by the interpreter
         public readonly RegexBoyerMoore? BoyerMoorePrefix;                              // the fixed prefix string as a Boyer-Moore machine, if available
-        public readonly int Anchors;                                                    // the set of zero-length start anchors (RegexPrefixAnalyzer.Bol, etc)
+        public readonly int LeadingAnchor;                                              // the leading anchor, if one exists (RegexPrefixAnalyzer.Bol, etc)
         public readonly bool RightToLeft;                                               // true if right to left
 
         public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
                          Hashtable? caps, int capsize,
                          RegexBoyerMoore? boyerMoorePrefix,
                          (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
-                         int anchors, bool rightToLeft)
+                         int leadingAnchor, bool rightToLeft)
         {
             Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
 
@@ -123,7 +123,7 @@ namespace System.Text.RegularExpressions
             CapSize = capsize;
             BoyerMoorePrefix = boyerMoorePrefix;
             LeadingCharClasses = leadingCharClasses;
-            Anchors = anchors;
+            LeadingAnchor = leadingAnchor;
             RightToLeft = rightToLeft;
         }
 
@@ -402,7 +402,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
 
             sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            sb.AppendLine("Anchors:    " + RegexPrefixAnalyzer.AnchorDescription(Anchors));
+            sb.AppendLine("Anchor:     " + RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor));
             sb.AppendLine("");
 
             if (BoyerMoorePrefix != null)

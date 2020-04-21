@@ -65,9 +65,22 @@ jobs:
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
+    - ${{ if eq(parameters.osGroup, 'tvOS') }}:
+      - name: osOverride
+        value: -os tvOS
     - ${{ if eq(parameters.osGroup, 'iOS') }}:
       - name: osOverride
         value: -os iOS
+    - ${{ if eq(parameters.osGroup, 'Android') }}:
+      - name: osOverride
+        value: -os Android
+    - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+      - name: EMSDK_PATH
+        value: /usr/local/emscripten
+      - name: archType
+        value: wasm
+      - name: osOverride
+        value: '-os WebAssembly'
     - ${{ parameters.variables }}
 
     steps:
@@ -76,7 +89,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -86,10 +99,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
@@ -105,17 +118,11 @@ jobs:
 
     # Build packages
     - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
-
-    # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
-        parameters:
-          name: ${{ parameters.platform }}
 
     # Publish official build
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:

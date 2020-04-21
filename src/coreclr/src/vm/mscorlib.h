@@ -465,6 +465,7 @@ DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
 DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables,         SM_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid)
 DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_ComWrappers_IntPtr_CreateFlags_RetObj)
 DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects,         SM_ComWrappers_IEnumerable_RetVoid)
+DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
 #endif //FEATURE_COMINTEROP
 
 DEFINE_CLASS(SERIALIZATION_INFO,        Serialization,      SerializationInfo)
@@ -497,8 +498,10 @@ DEFINE_CLASS(MARSHAL,               Interop,                Marshal)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION,              GetHRForException,             SM_Exception_RetInt)
 #endif // FEATURE_COMINTEROP
-DEFINE_METHOD(MARSHAL,              GET_FUNCTION_POINTER_FOR_DELEGATE, GetFunctionPointerForDelegate, SM_Delegate_RetIntPtr)
-DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER, GetDelegateForFunctionPointer, SM_IntPtr_Type_RetDelegate)
+DEFINE_METHOD(MARSHAL,              GET_FUNCTION_POINTER_FOR_DELEGATE,          GetFunctionPointerForDelegate,          SM_Delegate_RetIntPtr)
+DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER,          GetDelegateForFunctionPointer,          SM_IntPtr_Type_RetDelegate)
+DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER_INTERNAL, GetDelegateForFunctionPointerInternal,  SM_IntPtr_Type_RetDelegate)
+
 DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTaskMem,                SM_Int_RetIntPtr)
 DEFINE_METHOD(MARSHAL,              FREE_CO_TASK_MEM,                  FreeCoTaskMem,                 SM_IntPtr_RetVoid)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)

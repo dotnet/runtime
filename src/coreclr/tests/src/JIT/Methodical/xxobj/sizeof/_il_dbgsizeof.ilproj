@@ -11,4 +11,10 @@
     <Compile Condition="'$(TargetArchitecture)' == 'x86'" Include="sizeof.il" />
     <Compile Condition="'$(TargetArchitecture)' != 'x86'" Include="64sizeof.il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
+  </ItemGroup>
 </Project>

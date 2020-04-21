@@ -428,4 +428,65 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
 #endif
 }
 
+inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
+{
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4065) // disable warning for switch statement with only default label.
+#endif
+
+    switch (r2rSet)
+    {
+#ifdef TARGET_ARM64
+        case READYTORUN_INSTRUCTION_ArmBase: return InstructionSet_ArmBase;
+        case READYTORUN_INSTRUCTION_AdvSimd: return InstructionSet_AdvSimd;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_Aes;
+        case READYTORUN_INSTRUCTION_Crc32: return InstructionSet_Crc32;
+        case READYTORUN_INSTRUCTION_Sha1: return InstructionSet_Sha1;
+        case READYTORUN_INSTRUCTION_Sha256: return InstructionSet_Sha256;
+        case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
+#endif // TARGET_ARM64
+#ifdef TARGET_AMD64
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_SSE;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_SSE2;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
+        case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
+        case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
+        case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
+        case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+#endif // TARGET_AMD64
+#ifdef TARGET_X86
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_SSE;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_SSE2;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
+        case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
+        case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
+        case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
+        case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+#endif // TARGET_X86
+
+        default:
+            return InstructionSet_ILLEGAL;
+    }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+}
+
 #endif // CORINFOINSTRUCTIONSET_H

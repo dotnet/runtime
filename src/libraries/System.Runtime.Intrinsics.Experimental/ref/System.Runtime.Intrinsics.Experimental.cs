@@ -229,6 +229,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<uint> CompareTest(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> DivideScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> DivideScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ExtractAndNarrowLow (System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<sbyte> lower, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<ushort> lower, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ExtractAndNarrowHigh (System.Runtime.Intrinsics.Vector64<uint> lower, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> FusedMultiplyAdd(System.Runtime.Intrinsics.Vector128<float> acc, System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> FusedMultiplyAdd(System.Runtime.Intrinsics.Vector64<float> acc, System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> FusedMultiplyAddNegatedScalar(System.Runtime.Intrinsics.Vector64<double> acc, System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
@@ -867,10 +879,10 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal Sha1() { }
         public static new bool IsSupported { get { throw null; } }
-        public static uint FixedRotate(uint hash_e) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateChoose(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateMajority(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateParity(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, uint hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> FixedRotate(System.Runtime.Intrinsics.Vector64<uint> hash_e) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateChoose(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateMajority(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> HashUpdateParity(System.Runtime.Intrinsics.Vector128<uint> hash_abcd, System.Runtime.Intrinsics.Vector64<uint> hash_e, System.Runtime.Intrinsics.Vector128<uint> wk) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate0(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w4_7, System.Runtime.Intrinsics.Vector128<uint> w8_11) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate1(System.Runtime.Intrinsics.Vector128<uint> tw0_3, System.Runtime.Intrinsics.Vector128<uint> w12_15) { throw null; }
     }

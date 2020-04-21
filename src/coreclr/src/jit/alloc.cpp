@@ -156,7 +156,9 @@ void* ArenaAllocator::allocateHostMemory(size_t size, size_t* pActualSize)
         *pActualSize = size;
         void* p      = malloc(size);
         if (p == nullptr)
+        {
             NOMEM();
+        }
         return p;
     }
 #endif // !defined(DEBUG)

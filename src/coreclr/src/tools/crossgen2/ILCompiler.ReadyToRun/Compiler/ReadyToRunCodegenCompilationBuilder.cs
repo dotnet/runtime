@@ -25,6 +25,7 @@ namespace ILCompiler
         private bool _resilient;
         private bool _generateMapFile;
         private int _parallelism;
+        private InstructionSetSupport _instructionSetSupport;
 
         private string _jitPath;
 
@@ -108,6 +109,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseInstructionSetSupport(InstructionSetSupport instructionSetSupport)
+        {
+            _instructionSetSupport = instructionSetSupport;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -177,7 +184,6 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
@@ -188,6 +194,7 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 _inputFiles,
+                _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
                 _parallelism);

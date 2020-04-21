@@ -155,7 +155,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void ToString()
+        public void ToStringTest()
         {
             var ds = new DataSet();
             DataTable dtChild = DataProvider.CreateChildDataTable();
@@ -441,7 +441,7 @@ namespace System.Data.Tests
             PropertyCollection pc;
             pc = dRel.ExtendedProperties;
 
-            // Checking ExtendedProperties default 
+            // Checking ExtendedProperties default
             Assert.NotNull(pc);
 
             // Checking ExtendedProperties count

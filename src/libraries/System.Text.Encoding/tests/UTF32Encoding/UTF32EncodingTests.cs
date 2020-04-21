@@ -145,7 +145,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(UTF32Encoding encoding, object value, bool expected)
+        public void EqualsTest(UTF32Encoding encoding, object value, bool expected)
         {
             Assert.Equal(expected, encoding.Equals(value));
             Assert.Equal(expected, encoding.GetHashCode().Equals(value?.GetHashCode()));

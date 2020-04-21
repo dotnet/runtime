@@ -5,6 +5,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -70,7 +71,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
             ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
-            string result = s_utf8Encoding.GetString(encodedString);
+
+            string result;
+            try
+            {
+                result = s_utf8Encoding.GetString(encodedString);
+            }
+            catch (DecoderFallbackException e)
+            {
+                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
+            }
+
             AdvanceBuffer(1 + additionalBytes + length);
             AdvanceDataItemCounters();
             return result;
@@ -89,7 +100,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             EnsureBuffer(1 + additionalBytes + byteLength);
 
             ReadOnlySpan<byte> encodedSlice = _buffer.Span.Slice(1 + additionalBytes, byteLength);
-            int charLength = s_utf8Encoding.GetCharCount(encodedSlice);
+
+            int charLength = ValidateUtf8AndGetCharCount(encodedSlice);
+
             if (charLength > destination.Length)
             {
                 charsWritten = 0;
@@ -112,16 +125,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
-
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+            AdvanceBuffer(1);
         }
 
         public void ReadEndTextStringIndefiniteLength()
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.TextString);
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
@@ -134,16 +146,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
-
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
+            AdvanceBuffer(1);
         }
 
         public void ReadEndByteStringIndefiniteLength()
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.ByteString);
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
@@ -180,7 +191,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int concatenatedStringSize = 0;
             foreach ((int o, int l) in ranges)
             {
-                concatenatedStringSize += s_utf8Encoding.GetCharCount(buffer.Slice(o, l));
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
             }
 
             if (concatenatedStringSize > destination.Length)
@@ -231,7 +242,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             foreach ((int o, int l) in ranges)
             {
-                concatenatedStringSize += s_utf8Encoding.GetCharCount(buffer.Slice(o, l));
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
             }
 
             string output = string.Create(concatenatedStringSize, (ranges, _buffer), BuildString);
@@ -293,6 +304,39 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 return cib;
+            }
+        }
+
+        // SkipValue() helper: reads a cbor string without allocating or copying to a buffer
+        // NB this only handles definite-length chunks
+        private void SkipString(CborMajorType type)
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: type);
+
+            ReadOnlySpan<byte> buffer = _buffer.Span;
+            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + byteLength);
+
+            // force any utf8 decoding errors if text string
+            if (type == CborMajorType.TextString)
+            {
+                ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
+                ValidateUtf8AndGetCharCount(encodedSlice);
+            }
+
+            AdvanceBuffer(1 + additionalBytes + byteLength);
+            AdvanceDataItemCounters();
+        }
+
+        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer)
+        {
+            try
+            {
+                return s_utf8Encoding.GetCharCount(buffer);
+            }
+            catch (DecoderFallbackException e)
+            {
+                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
             }
         }
     }

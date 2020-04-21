@@ -5731,9 +5731,12 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************
 *
-*  Returns the size of a given function.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind)
 {
     CONTRACTL{
         NOTHROW;
@@ -5746,12 +5749,20 @@ ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
-    return info.returnKind;
+    *returnKind = info.returnKind;
+    return true;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_RETURN_KIND);
-    return gcInfoDecoder.GetReturnKind();
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_RETURN_KIND | DECODE_REVERSE_PINVOKE_VAR));
 
+    if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+    {
+        // Hijacking of NativeCallable method is not allowed
+        return false;
+    }
+
+    *returnKind = gcInfoDecoder.GetReturnKind();
+    return true;
 #endif // USE_GC_INFO_DECODER
 }
 

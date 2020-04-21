@@ -43,8 +43,8 @@ jobs:
 
   - script: >-
       build.cmd -ci
+      -subset installer.publish
       -configuration Release
-      -projects $(Build.SourcesDirectory)\src\installer\publish\prepare-artifacts.proj
       /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
       /p:OfficialBuildId=$(Build.BuildNumber)
       /p:SignType=$(SignType)

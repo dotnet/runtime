@@ -9,6 +9,9 @@
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="OsSpecific" />
   </ItemGroup>

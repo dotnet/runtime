@@ -8,16 +8,16 @@ namespace System.Reflection
 {
     public partial class MethodBase
     {
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle)
+        public static MethodBase? GetMethodFromHandle(RuntimeMethodHandle handle)
         {
             if (handle.IsNullHandle())
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
-            MethodBase m = RuntimeMethodInfo.GetMethodFromHandleInternalType(handle.Value, IntPtr.Zero);
+            MethodBase? m = RuntimeMethodInfo.GetMethodFromHandleInternalType(handle.Value, IntPtr.Zero);
             if (m == null)
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
-            Type declaringType = m.DeclaringType;
+            Type? declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
                 throw new ArgumentException(string.Format(SR.Argument_MethodDeclaringTypeGeneric,
                                                             m, declaringType.GetGenericTypeDefinition()));
@@ -25,7 +25,7 @@ namespace System.Reflection
             return m;
         }
 
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
+        public static MethodBase? GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())
                 throw new ArgumentException(SR.Argument_InvalidHandle);
@@ -36,7 +36,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern MethodBase GetCurrentMethod();
+        public static extern MethodBase? GetCurrentMethod();
 
         internal virtual ParameterInfo[] GetParametersNoCopy()
         {

@@ -21,8 +21,6 @@ namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
-        private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
-
 #if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
@@ -532,8 +530,6 @@ namespace Internal.Cryptography
             }
         }
 
-        private static readonly byte[] s_invalidEmptyOid = { 0x06, 0x00 };
-
         public static byte[] EncodeUtcTime(DateTime utcTime)
         {
             const int maxLegalYear = 2049;
@@ -573,16 +569,16 @@ namespace Internal.Cryptography
             return value.UtcDateTime;
         }
 
-        public static string DecodeOid(byte[] encodedOid)
+        public static string DecodeOid(ReadOnlySpan<byte> encodedOid)
         {
-            // Windows compat.
-            if (s_invalidEmptyOid.AsSpan().SequenceEqual(encodedOid))
+            // Windows compat for a zero length OID.
+            if (encodedOid.Length == 2 && encodedOid[0] == 0x06 && encodedOid[1] == 0x00)
             {
                 return string.Empty;
             }
 
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedOid, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(encodedOid, AsnEncodingRules.BER);
             string value = reader.ReadObjectIdentifierAsString();
             reader.ThrowIfNotEmpty();
             return value;
@@ -623,8 +619,10 @@ namespace Internal.Cryptography
                     return false;
                 }
 
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+
                 if (oaepParameters.PSourceFunc.Parameters != null &&
-                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(s_pSpecifiedDefaultParameters))
+                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     return false;

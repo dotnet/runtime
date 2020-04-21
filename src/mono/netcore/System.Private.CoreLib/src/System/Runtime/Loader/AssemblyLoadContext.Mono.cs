@@ -10,6 +10,7 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyLoadContext
     {
         internal IntPtr NativeALC
@@ -29,16 +30,16 @@ namespace System.Runtime.Loader
         private static extern void PrepareForAssemblyLoadContextRelease (IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong);
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        private Assembly InternalLoadFromPath(string assemblyPath, string nativeImagePath)
+        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
-            assemblyPath = assemblyPath.Replace('\\', Path.DirectorySeparatorChar);
+            assemblyPath = assemblyPath?.Replace('\\', Path.DirectorySeparatorChar);
             // TODO: Handle nativeImagePath
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
 
-        internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)
+        internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
         {
             unsafe
             {
@@ -84,12 +85,12 @@ namespace System.Runtime.Loader
         {
         }
 
-        public void StartProfileOptimization(string profile)
+        public void StartProfileOptimization(string? profile)
         {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Assembly InternalLoadFile(IntPtr nativeAssemblyLoadContext, string assemblyFile, ref StackCrawlMark stackMark);
+        private static extern Assembly InternalLoadFile(IntPtr nativeAssemblyLoadContext, string? assemblyFile, ref StackCrawlMark stackMark);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalInitializeNativeALC(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible);
@@ -100,9 +101,9 @@ namespace System.Runtime.Loader
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Assembly[] InternalGetLoadedAssemblies();
 
-        internal static Assembly DoAssemblyResolve(string name)
+        internal static Assembly? DoAssemblyResolve(string name)
         {
-            return AssemblyResolve(null, new ResolveEventArgs(name));
+            return AssemblyResolve?.Invoke(null, new ResolveEventArgs(name));
         }
 
         // Invoked by Mono to resolve using the load method.
@@ -116,7 +117,13 @@ namespace System.Runtime.Loader
         // success.
         private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
-            return ResolveUsingResolvingEvent(gchALC, new AssemblyName(assemblyName));
+            AssemblyLoadContext context;
+            // This check exists because the function can be called early in startup, before the default ALC is initialized
+            if (gchALC == IntPtr.Zero)
+                context = Default;
+            else
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.

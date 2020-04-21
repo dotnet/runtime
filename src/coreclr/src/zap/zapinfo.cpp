@@ -482,14 +482,14 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifdef TARGET_X86
     if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
     {
         if (m_zapper->m_pOpt->m_verbose)
             m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
-#endif // (TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // TARGET_X86
 
     if (m_pImage->m_stats)
     {
@@ -2134,7 +2134,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0;
 #endif
 
@@ -2152,24 +2152,34 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
         // answer for the CPU the code is running on.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
         if (fIsPlatformHWIntrinsic)
         {
             // Simplify the comparison logic by grabbing the name of the ISA
             const char* isaName = (enclosingClassName == nullptr) ? className : enclosingClassName;
 
-            if ((strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0))
+            bool fIsPlatformRequiredISA     = false;
+            bool fIsPlatformSubArchitecture = false;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "Sse") == 0) || (strcmp(isaName, "Sse2") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "X64") == 0;
+#elif defined(TARGET_ARM64)
+            fIsPlatformRequiredISA     = (strcmp(isaName, "ArmBase") == 0) || (strcmp(isaName, "AdvSimd") == 0);
+            fIsPlatformSubArchitecture = strcmp(className, "Arm64") == 0;
+#endif
+
+            if (fIsPlatformRequiredISA)
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it's anything related to Sse/Sse2, we can expand unconditionally since this is
-                    // a baseline requirement of CoreCLR.
+                    // If the ISA is required by CoreCLR for the platform, we can expand unconditionally
                     fTreatAsRegularMethodCall = false;
                 }
             }
-            else if ((strcmp(className, "Avx") == 0) || (strcmp(className, "Fma") == 0) || (strcmp(className, "Avx2") == 0) || (strcmp(className, "Bmi1") == 0) || (strcmp(className, "Bmi2") == 0))
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0) || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0))
             {
-                if ((enclosingClassName == nullptr) || (strcmp(className, "X64") == 0))
+                if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
                     // If it is the get_IsSupported method for an ISA which requires the VEX
                     // encoding we want to expand unconditionally. This will force those code
@@ -2182,7 +2192,20 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
                     fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
                 }
             }
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef TARGET_X86
+            else if (fIsPlatformSubArchitecture)
+            {
+                // For ISAs not handled explicitly above, the IsSupported check will always
+                // be treated as a regular method call. If we are evaulating a method in the X64
+                // namespace, we know it will never be supported on x86, so we can allow the code
+                // to be treated as dead. We treat all non-IsSupported methods as regular method
+                // calls so they throw PNSE if used withoug the IsSupported check.
+                fTreatAsRegularMethodCall = !fIsGetIsSupportedMethod;
+            }
+#endif // TARGET_X86
         }
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         else if (strcmp(namespaceName, "System") == 0)
         {
             if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
@@ -2285,14 +2308,14 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     }
 #endif
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifdef TARGET_X86
     if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
     {
         if (m_zapper->m_pOpt->m_verbose)
             m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
-#endif // (TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // TARGET_X86
 
     if (flags & CORINFO_CALLINFO_KINDONLY)
         return;

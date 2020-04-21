@@ -274,12 +274,8 @@ CONFIG_STRING_INFO(INTERNAL_SkipGCCoverage, W("SkipGcCoverage"), "Specify a list
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_gcForceCompact, W("gcForceCompact"), "When set to true, always do compacting GC")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCgen0size, W("GCgen0size"), "Specifies the smallest gen0 size")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCGen0MaxBudget, W("GCGen0MaxBudget"), "Specifies the largest gen0 allocation budget")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressMix, W("GCStressMix"), 0, "Specifies whether the GC mix mode is enabled or not")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressStep, W("GCStressStep"), 1, "Specifies how often StressHeap will actually do a GC in GCStressMix mode")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressMaxFGCsPerBGC, W("GCStressMaxFGCsPerBGC"), ~0U, "Specifies how many FGCs will occur during one BGC in GCStressMix mode")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StatsUpdatePeriod, W("StatsUpdatePeriod"), 60, "Specifies the interval, in seconds, at which to update the statistics")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_SuspendTimeLog, W("SuspendTimeLog"), "Specifies the name of the log file for suspension statistics")
-RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_GCMixLog, W("GCMixLog"), "Specifies the name of the log file for GC mix statistics")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_GCLatencyMode, W("GCLatencyMode"), "Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way)")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCLatencyLevel, W("GCLatencyLevel"), 1, "Specifies the GC latency level that you want to optimize for")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCConfigLogEnabled, W("GCConfigLogEnabled"), 0, "Specifies if you want to turn on config logging in GC")
@@ -296,8 +292,6 @@ RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCLOHCompact, W("GCLOHCompact
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_gcAllowVeryLargeObjects, W("gcAllowVeryLargeObjects"), 1, "Allow allocation of 2GB+ objects on GC heap")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_GCStress, W("GCStress"), 0, "Trigger GCs at regular intervals", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_GcStressOnDirectCalls, W("GcStressOnDirectCalls"), 0, "Whether to trigger a GC on direct calls", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCStressStart, W("GCStressStart"), 0, "Start GCStress after N stress GCs have been attempted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressStartAtJit, W("GCStressStartAtJit"), 0, "Start GCStress after N items are jitted")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_gcTrimCommitOnLowMemory, W("gcTrimCommitOnLowMemory"), "When set we trim the committed space more aggressively for the ephemeral seg. This is used for running many instances of server processes where they want to keep as little memory committed as possible")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BGCSpinCount, W("BGCSpinCount"), 140, "Specifies the bgc spin count")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BGCSpin, W("BGCSpin"), 2, "Specifies the bgc spin time")
@@ -315,7 +309,7 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_GCHeapHardLimit, W("GCHeapHardLimit"), "Specifies the maximum commit size for the GC heap")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_GCHeapHardLimitPercent, W("GCHeapHardLimitPercent"), "Specifies the GC heap usage as a percentage of the total memory")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCHeapAffinitizeRanges, W("GCHeapAffinitizeRanges"), "Specifies list of processors for Server GC threads. The format is a comma separated list of processor numbers or ranges of processor numbers. Example: 1,3,5,7-9,12")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_GCLargePages, W("GCLargePages"), "Specifies whether large pages should be used when a heap hard limit is set")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCLargePages, W("GCLargePages"), 0, "Specifies whether large pages should be used when a heap hard limit is set")
 
 ///
 /// IBC
@@ -732,7 +726,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 //
 // Diagnostics Server
 //
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsServerAddress, W("DOTNET_DiagnosticsServerAddress"), "The full path including filename for the OS transport (NamedPipe on Windows; Unix Domain Socket on Linux) to be used by the Diagnostics Server", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorAddress, W("DOTNET_DiagnosticsMonitorAddress"), "NamedPipe path without '\\\\.\\pipe\\' on Windows; Full path of Unix Domain Socket on Linux/Unix.  Used for Diagnostics Monitoring Agents.", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng
@@ -773,7 +767,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_CPUFeatures, W("CPUFeatures"), "")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_DisableStackwalkCache, W("DisableStackwalkCache"), "")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), "Controls double[] placement")
-CONFIG_DWORD_INFO(INTERNAL_DumpConfiguration, W("DumpConfiguration"), 0, "Dumps runtime properties of xml configuration files to the log.")
 CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps information about loaded class to log.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), "")
 CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_ForcedRuntime, W("ForcedRuntime"), "Verify version of CLR loaded")

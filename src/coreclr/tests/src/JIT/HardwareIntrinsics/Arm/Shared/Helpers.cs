@@ -2278,7 +2278,6 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
-
         private static ulong PolynomialMult(byte op1, byte op2)
         {
             ulong result = 0;
@@ -2296,6 +2295,59 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
-
+        public static bool ExtractAndNarrowHigh(int i, sbyte[] left,
+                                                short[] right,
+                                                sbyte[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (sbyte)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, short[] left,
+                                                int[] right,
+                                                short[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (short)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, int[] left,
+                                                long[] right,
+                                                int[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (int)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, byte[] left,
+                                                ushort[] right,
+                                                byte[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (byte)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, ushort[] left,
+                                                uint[] right,
+                                                ushort[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (ushort)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, uint[] left,
+                                                ulong[] right,
+                                                uint[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (uint)right[i - left.Length] != result[i];
+        }
     }
 }

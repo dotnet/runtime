@@ -246,6 +246,95 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
+// lookupFloatComparisonModeForSwappedArgs: Get the floating-point comparison
+//      mode to use when the operands are swapped.
+//
+// Arguments:
+//    comparison -- The comparison mode used for (op1, op2)
+//
+// Return Value:
+//     The comparison mode to use for (op2, op1)
+//
+FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison)
+{
+    switch (comparison)
+    {
+        // These comparison modes are the same even if the operands are swapped
+
+        case FloatComparisonMode::OrderedEqualNonSignaling:
+            return FloatComparisonMode::OrderedEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNonSignaling:
+            return FloatComparisonMode::UnorderedNonSignaling;
+        case FloatComparisonMode::UnorderedNotEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotEqualNonSignaling;
+        case FloatComparisonMode::OrderedNonSignaling:
+            return FloatComparisonMode::OrderedNonSignaling;
+        case FloatComparisonMode::UnorderedEqualNonSignaling:
+            return FloatComparisonMode::UnorderedEqualNonSignaling;
+        case FloatComparisonMode::OrderedFalseNonSignaling:
+            return FloatComparisonMode::OrderedFalseNonSignaling;
+        case FloatComparisonMode::OrderedNotEqualNonSignaling:
+            return FloatComparisonMode::OrderedNotEqualNonSignaling;
+        case FloatComparisonMode::UnorderedTrueNonSignaling:
+            return FloatComparisonMode::UnorderedTrueNonSignaling;
+        case FloatComparisonMode::OrderedEqualSignaling:
+            return FloatComparisonMode::OrderedEqualSignaling;
+        case FloatComparisonMode::UnorderedSignaling:
+            return FloatComparisonMode::UnorderedSignaling;
+        case FloatComparisonMode::UnorderedNotEqualSignaling:
+            return FloatComparisonMode::UnorderedNotEqualSignaling;
+        case FloatComparisonMode::OrderedSignaling:
+            return FloatComparisonMode::OrderedSignaling;
+        case FloatComparisonMode::UnorderedEqualSignaling:
+            return FloatComparisonMode::UnorderedEqualSignaling;
+        case FloatComparisonMode::OrderedFalseSignaling:
+            return FloatComparisonMode::OrderedFalseSignaling;
+        case FloatComparisonMode::OrderedNotEqualSignaling:
+            return FloatComparisonMode::OrderedNotEqualSignaling;
+        case FloatComparisonMode::UnorderedTrueSignaling:
+            return FloatComparisonMode::UnorderedTrueSignaling;
+
+        // These comparison modes need a different mode if the operands are swapped
+
+        case FloatComparisonMode::OrderedLessThanSignaling:
+            return FloatComparisonMode::OrderedGreaterThanSignaling;
+        case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
+            return FloatComparisonMode::OrderedGreaterThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanSignaling;
+        case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
+            return FloatComparisonMode::OrderedLessThanOrEqualSignaling;
+        case FloatComparisonMode::OrderedGreaterThanSignaling:
+            return FloatComparisonMode::OrderedLessThanSignaling;
+        case FloatComparisonMode::OrderedLessThanNonSignaling:
+            return FloatComparisonMode::OrderedGreaterThanNonSignaling;
+        case FloatComparisonMode::OrderedLessThanOrEqualNonSignaling:
+            return FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanNonSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanNonSignaling;
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualNonSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanOrEqualNonSignaling;
+        case FloatComparisonMode::UnorderedNotGreaterThanNonSignaling:
+            return FloatComparisonMode::UnorderedNotLessThanNonSignaling;
+        case FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling:
+            return FloatComparisonMode::OrderedLessThanOrEqualNonSignaling;
+        case FloatComparisonMode::OrderedGreaterThanNonSignaling:
+            return FloatComparisonMode::OrderedLessThanNonSignaling;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -476,7 +565,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_AsUInt32:
         case NI_Vector256_AsUInt64:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // We don't want to deal with TYP_SIMD32 if the compiler doesn't otherwise support the type.
                 break;
@@ -616,7 +705,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 // We support Vector256 but Vector<T> is only 16-bytes, so we should
                 // treat this method as a call to Vector256.GetLower or Vector128.ToVector256
@@ -660,7 +749,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
+            if (compExactlyDependsOn(InstructionSet_SSE2) ||
+                (compExactlyDependsOn(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -672,7 +762,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_SSE) && varTypeIsFloating(baseType))
+            if (compExactlyDependsOn(InstructionSet_SSE) && varTypeIsFloating(baseType))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 16);
@@ -686,7 +776,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -698,7 +788,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
 
-            if (compSupports(InstructionSet_SSE))
+            if (compExactlyDependsOn(InstructionSet_SSE))
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             }
@@ -719,7 +809,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
@@ -731,7 +821,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (compSupports(InstructionSet_AVX) && varTypeIsFloating(baseType))
+            if (compExactlyDependsOn(InstructionSet_AVX) && varTypeIsFloating(baseType))
             {
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 32);
@@ -743,7 +833,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
 
-            if (compSupports(InstructionSet_AVX))
+            if (compExactlyDependsOn(InstructionSet_AVX))
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             }
@@ -752,7 +842,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector256_WithElement:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
@@ -764,7 +854,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
-            if (!compSupports(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
+            if (!compExactlyDependsOn(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
             {
                 // Using software fallback if
                 // 1. JIT/hardware don't support SSE2 instructions
@@ -780,7 +870,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
@@ -788,7 +878,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compSupports(InstructionSet_SSE41_X64))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
@@ -824,7 +914,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (simdSize == 32)
             {
                 // Extract the half vector that will be modified
-                assert(compSupports(InstructionSet_AVX));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
                 // copy `vectorOp` to accept the modified half vector
                 vectorOp = impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
@@ -855,7 +945,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         // Emulate Vector128<float>.WithElement by SSE instructions
                         if (imm8 == 0)
@@ -976,7 +1066,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector256_GetElement:
         {
-            if (!compSupports(InstructionSet_AVX))
+            if (!compExactlyDependsOn(InstructionSet_AVX))
             {
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
@@ -988,7 +1078,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
             GenTree* indexOp = impStackTop().val;
-            if (!compSupports(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
+            if (!compExactlyDependsOn(InstructionSet_SSE2) || !varTypeIsArithmetic(baseType) || !indexOp->OperIsConst())
             {
                 // Using software fallback if
                 // 1. JIT/hardware don't support SSE2 instructions
@@ -1004,7 +1094,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41))
                     {
                         return nullptr;
                     }
@@ -1012,7 +1102,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compSupports(InstructionSet_SSE41_X64))
+                    if (!compExactlyDependsOn(InstructionSet_SSE41_X64))
                     {
                         return nullptr;
                     }
@@ -1044,7 +1134,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (simdSize == 32)
             {
-                assert(compSupports(InstructionSet_AVX));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
                 if (imm8 >= count / 2)
                 {
@@ -1102,7 +1192,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         assert(imm8 >= 1);
                         assert(imm8 <= 3);
@@ -1172,12 +1262,11 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
 GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
-    GenTree* retNode  = nullptr;
-    GenTree* op1      = nullptr;
-    GenTree* op2      = nullptr;
-    GenTree* op3      = nullptr;
-    GenTree* op4      = nullptr;
-    int      simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    GenTree*  retNode  = nullptr;
+    GenTree*  op1      = nullptr;
+    GenTree*  op2      = nullptr;
+    int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    var_types baseType = TYP_UNKNOWN;
 
     // The Prefetch and StoreFence intrinsics don't take any SIMD operands
     // and have a simdSize of 0
@@ -1185,6 +1274,70 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
     switch (intrinsic)
     {
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareScalarGreaterThan:
+        case NI_SSE_CompareScalarGreaterThanOrEqual:
+        case NI_SSE_CompareScalarNotGreaterThan:
+        case NI_SSE_CompareScalarNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_SSE_Prefetch0:
         case NI_SSE_Prefetch1:
         case NI_SSE_Prefetch2:
@@ -1217,7 +1370,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     GenTree*  op2      = nullptr;
     int       ival     = -1;
     int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-    var_types baseType = TYP_UNKNOWN;
+    var_types baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
     var_types retType  = TYP_UNKNOWN;
 
     // The  fencing intrinsics don't take any operands and simdSize is 0
@@ -1228,12 +1381,56 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
     switch (intrinsic)
     {
+        case NI_SSE2_CompareGreaterThan:
+        {
+            if (baseType != TYP_DOUBLE)
+            {
+                assert(sig->numArgs == 2);
+                op2 = impSIMDPopStack(TYP_SIMD16);
+                op1 = impSIMDPopStack(TYP_SIMD16);
+
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+
+                break;
+            }
+
+            __fallthrough;
+        }
+
+        case NI_SSE2_CompareGreaterThanOrEqual:
+        case NI_SSE2_CompareNotGreaterThan:
+        case NI_SSE2_CompareNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_SSE2_CompareLessThan:
         {
             assert(sig->numArgs == 2);
-            op2      = impSIMDPopStack(TYP_SIMD16);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
+
             if (baseType == TYP_DOUBLE)
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
@@ -1242,6 +1439,40 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             {
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareScalarGreaterThan:
+        case NI_SSE2_CompareScalarGreaterThanOrEqual:
+        case NI_SSE2_CompareScalarNotGreaterThan:
+        case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2 = impSIMDPopStack(TYP_SIMD16);
+            op1 = impSIMDPopStack(TYP_SIMD16);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // These intrinsics are "special import" because the non-AVX path isn't directly
+                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
+
+                FloatComparisonMode comparison =
+                    static_cast<FloatComparisonMode>(HWIntrinsicInfo::lookupIval(intrinsic));
+                comparison = HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(comparison);
+                retNode    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(static_cast<int>(comparison)),
+                                                   NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1334,7 +1565,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
 
             GenTree* opList = new (this, GT_LIST) GenTreeArgList(op1, gtNewArgList(op2, op3, op4, op5));
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, opList, intrinsic, baseType, simdSize);
-            retNode->AsHWIntrinsic()->gtIndexBaseType = indexbaseType;
+            retNode->AsHWIntrinsic()->SetOtherBaseType(indexbaseType);
             break;
         }
 

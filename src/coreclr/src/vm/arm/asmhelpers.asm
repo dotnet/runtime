@@ -16,8 +16,6 @@
     IMPORT JIT_InternalThrow
     IMPORT JIT_WriteBarrier
     IMPORT TheUMEntryPrestubWorker
-    IMPORT CreateThreadBlockThrow
-    IMPORT UMThunkStubRareDisableWorker
     IMPORT PreStubWorker
     IMPORT PreStubGetMethodDescForCompactEntryPoint
     IMPORT NDirectImportWorker
@@ -40,7 +38,6 @@
 #endif
     IMPORT CallDescrWorkerUnwindFrameChainHandler
     IMPORT UMEntryPrestubUnwindFrameChainHandler
-    IMPORT UMThunkStubUnwindFrameChainHandler
 #ifdef FEATURE_COMINTEROP
     IMPORT ReverseComUnwindFrameChainHandler
 #endif
@@ -366,96 +363,6 @@ LNullThis
         EPILOG_BRANCH_REG   r12
 
         NESTED_END
-
-;
-; r12 = UMEntryThunk*
-;
-        NESTED_ENTRY UMThunkStub,,UMThunkStubUnwindFrameChainHandler
-        PROLOG_PUSH         {r4,r5,r7,r11,lr}
-        PROLOG_PUSH         {r0-r3,r12}
-        PROLOG_STACK_SAVE   r7
-
-        GBLA UMThunkStub_HiddenArg ; offset of saved UMEntryThunk *
-        GBLA UMThunkStub_StackArgs ; offset of original stack args (total size of UMThunkStub frame)
-UMThunkStub_HiddenArg SETA 4*4
-UMThunkStub_StackArgs SETA 10*4
-
-        CHECK_STACK_ALIGNMENT
-
-        ; r0 = GetThread(). Trashes r5
-        INLINE_GETTHREAD    r0, r5
-        cbz                 r0, UMThunkStub_DoThreadSetup
-
-UMThunkStub_HaveThread
-        mov                 r5, r0                  ; r5 = Thread *
-
-        ldr                 r2, =g_TrapReturningThreads
-
-        mov                 r4, 1
-        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
-
-        ldr                 r3, [r2]
-        cbnz                r3, UMThunkStub_DoTrapReturningThreads
-
-UMThunkStub_InCooperativeMode
-        ldr                 r12, [r7, #UMThunkStub_HiddenArg]
-
-        ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
-        ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
-        cbz                 r2, UMThunkStub_ArgumentsSetup
-
-        add                 r0, r7, #UMThunkStub_StackArgs ; Source pointer
-        add                 r0, r0, r2
-        lsr                 r1, r2, #2      ; Count of stack slots to copy
-
-        and                 r2, r2, #4      ; Align the stack
-        sub                 sp, sp, r2
-
-UMThunkStub_StackLoop
-        ldr                 r2, [r0,#-4]!
-        str                 r2, [sp,#-4]!
-        subs                r1, r1, #1
-        bne                 UMThunkStub_StackLoop
-
-UMThunkStub_ArgumentsSetup
-        ldr                 r4, [r3, #UMThunkMarshInfo__m_pILStub]
-
-        ; reload argument registers
-        ldm                 r7, {r0-r3}
-
-        CHECK_STACK_ALIGNMENT
-
-        blx                 r4
-
-UMThunkStub_PostCall
-        mov                 r4, 0
-        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
-
-        EPILOG_STACK_RESTORE r7
-        EPILOG_STACK_FREE   4 * 5
-        EPILOG_POP          {r4,r5,r7,r11,pc}
-
-UMThunkStub_DoThreadSetup
-        sub                 sp, #SIZEOF__FloatArgumentRegisters
-        vstm                sp, {d0-d7}
-        bl                  CreateThreadBlockThrow
-        vldm                sp, {d0-d7}
-        add                 sp, #SIZEOF__FloatArgumentRegisters
-        b                   UMThunkStub_HaveThread
-
-UMThunkStub_DoTrapReturningThreads
-        sub                 sp, #SIZEOF__FloatArgumentRegisters
-        vstm                sp, {d0-d7}
-        mov                 r0, r5              ; Thread* pThread
-        ldr                 r1, [r7, #UMThunkStub_HiddenArg]  ; UMEntryThunk* pUMEntry
-        bl                  UMThunkStubRareDisableWorker
-        vldm                sp, {d0-d7}
-        add                 sp, #SIZEOF__FloatArgumentRegisters
-        b                   UMThunkStub_InCooperativeMode
-
-        NESTED_END
-
-        INLINE_GETTHREAD_CONSTANT_POOL
 
 ; ------------------------------------------------------------------
 

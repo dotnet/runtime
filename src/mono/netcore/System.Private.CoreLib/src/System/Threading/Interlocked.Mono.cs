@@ -16,10 +16,11 @@ namespace System.Threading
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void CompareExchange(ref object location1, ref object value, ref object comparand, ref object result);
+        private static extern void CompareExchange(ref object? location1, ref object? value, ref object? comparand, [NotNullIfNotNull("location1")] ref object? result);
 
         [Intrinsic]
-        public static object CompareExchange(ref object location1, object value, object comparand)
+        [return: NotNullIfNotNull("location1")]
+        public static object? CompareExchange(ref object? location1, object? value, object? comparand)
         {
             // This avoids coop handles, esp. on the output which would be particularly inefficient.
             // Passing everything by ref is equivalent to coop handles -- ref to locals at least.
@@ -33,7 +34,7 @@ namespace System.Threading
             //
             // This is usually intrinsified. Ideally it is always intrinisified.
             //
-            object result = null;
+            object? result = null;
             CompareExchange(ref location1, ref value, ref comparand, ref result);
             return result;
         }
@@ -62,12 +63,13 @@ namespace System.Threading
         public static extern int Exchange(ref int location1, int value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void Exchange(ref object location1, ref object value, ref object result);
+        private static extern void Exchange([NotNullIfNotNull("value")] ref object? location1, ref object? value, [NotNullIfNotNull("location1")] ref object? result);
 
-        public static object Exchange(ref object location1, object value)
+        [return: NotNullIfNotNull("location1")]
+        public static object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value)
         {
             // See CompareExchange(object) for comments.
-            object result = null;
+            object? result = null;
             Exchange(ref location1, ref value, ref result);
             return result;
         }
@@ -107,7 +109,7 @@ namespace System.Threading
             T result = null;
 #pragma warning restore 8654
             // T : class so call the object overload.
-            CompareExchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref comparand), ref Unsafe.As<T, object?>(ref result));
+            CompareExchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref comparand), ref Unsafe.As<T, object?>(ref result!));
             return result;
         }
 
@@ -125,7 +127,7 @@ namespace System.Threading
 
         [return: NotNullIfNotNull("location1")]
         [Intrinsic]
-        public static T Exchange<T>(ref T location1, T value) where T : class?
+        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class?
         {
             unsafe
             {
@@ -140,7 +142,7 @@ namespace System.Threading
             T result = null;
 #pragma warning restore 8654
             // T : class so call the object overload.
-            Exchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref result));
+            Exchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref result!));
             return result;
         }
 

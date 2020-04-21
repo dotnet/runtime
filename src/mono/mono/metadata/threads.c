@@ -1717,6 +1717,11 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 	MonoThread *this_obj = MONO_HANDLE_RAW (thread_handle);
 	MonoObject *start = MONO_HANDLE_RAW (start_handle);
 
+#ifdef DISABLE_THREADS
+	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
+	return FALSE;
+#endif
+
 	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this_obj, start));
 
 	internal = thread_handle_to_internal_ptr (thread_handle);
@@ -6746,12 +6751,12 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
-
 #ifdef DISABLE_THREADS
-	mono_error_set_not_supported (error, NULL);
+	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif
+
+	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p)", __func__, internal));
 
 	LOCK_THREAD (internal);
 

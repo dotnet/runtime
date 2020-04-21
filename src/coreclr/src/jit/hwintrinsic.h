@@ -96,9 +96,16 @@ enum HWIntrinsicFlag : unsigned int
     // but may be table-driven in the front-end
     HW_Flag_SpecialCodeGen = 0x2000,
 
+#if defined(TARGET_XARCH)
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
     HW_Flag_NoRMWSemantics = 0x4000,
+#elif defined(TARGET_ARM64)
+    // The intrinsic has read/modify/write semantics in multiple-operands form.
+    HW_Flag_HasRMWSemantics = 0x4000,
+#else
+#error Unsupported platform
+#endif
 
     // Special import
     // the intrinsics need special rules in importer,
@@ -110,6 +117,108 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_MaybeMemoryLoad  = 0x10000,
     HW_Flag_MaybeMemoryStore = 0x20000,
 };
+
+#if defined(TARGET_XARCH)
+// This mirrors the System.Runtime.Intrinsics.X86.FloatComparisonMode enumeration
+enum class FloatComparisonMode : unsigned char
+{
+    // _CMP_EQ_OQ
+    OrderedEqualNonSignaling = 0,
+
+    // _CMP_LT_OS
+    OrderedLessThanSignaling = 1,
+
+    // _CMP_LE_OS
+    OrderedLessThanOrEqualSignaling = 2,
+
+    // _CMP_UNORD_Q
+    UnorderedNonSignaling = 3,
+
+    // _CMP_NEQ_UQ
+    UnorderedNotEqualNonSignaling = 4,
+
+    // _CMP_NLT_US
+    UnorderedNotLessThanSignaling = 5,
+
+    // _CMP_NLE_US
+    UnorderedNotLessThanOrEqualSignaling = 6,
+
+    // _CMP_ORD_Q
+    OrderedNonSignaling = 7,
+
+    // _CMP_EQ_UQ
+    UnorderedEqualNonSignaling = 8,
+
+    // _CMP_NGE_US
+    UnorderedNotGreaterThanOrEqualSignaling = 9,
+
+    // _CMP_NGT_US
+    UnorderedNotGreaterThanSignaling = 10,
+
+    // _CMP_FALSE_OQ
+    OrderedFalseNonSignaling = 11,
+
+    // _CMP_NEQ_OQ
+    OrderedNotEqualNonSignaling = 12,
+
+    // _CMP_GE_OS
+    OrderedGreaterThanOrEqualSignaling = 13,
+
+    // _CMP_GT_OS
+    OrderedGreaterThanSignaling = 14,
+
+    // _CMP_TRUE_UQ
+    UnorderedTrueNonSignaling = 15,
+
+    // _CMP_EQ_OS
+    OrderedEqualSignaling = 16,
+
+    // _CMP_LT_OQ
+    OrderedLessThanNonSignaling = 17,
+
+    // _CMP_LE_OQ
+    OrderedLessThanOrEqualNonSignaling = 18,
+
+    // _CMP_UNORD_S
+    UnorderedSignaling = 19,
+
+    // _CMP_NEQ_US
+    UnorderedNotEqualSignaling = 20,
+
+    // _CMP_NLT_UQ
+    UnorderedNotLessThanNonSignaling = 21,
+
+    // _CMP_NLE_UQ
+    UnorderedNotLessThanOrEqualNonSignaling = 22,
+
+    // _CMP_ORD_S
+    OrderedSignaling = 23,
+
+    // _CMP_EQ_US
+    UnorderedEqualSignaling = 24,
+
+    // _CMP_NGE_UQ
+    UnorderedNotGreaterThanOrEqualNonSignaling = 25,
+
+    // _CMP_NGT_UQ
+    UnorderedNotGreaterThanNonSignaling = 26,
+
+    // _CMP_FALSE_OS
+    OrderedFalseSignaling = 27,
+
+    // _CMP_NEQ_OS
+    OrderedNotEqualSignaling = 28,
+
+    // _CMP_GE_OQ
+    OrderedGreaterThanOrEqualNonSignaling = 29,
+
+    // _CMP_GT_OQ
+    OrderedGreaterThanNonSignaling = 30,
+
+    // _CMP_TRUE_US
+    UnorderedTrueSignaling = 31,
+};
+#endif // TARGET_XARCH
 
 struct HWIntrinsicInfo
 {
@@ -143,6 +252,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
     static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
 #endif
 
     // Member lookup
@@ -292,7 +402,13 @@ struct HWIntrinsicInfo
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoRMWSemantics) == 0;
+#elif defined(TARGET_ARM64)
+        return (flags & HW_Flag_HasRMWSemantics) != 0;
+#else
+#error Unsupported platform
+#endif
     }
 
     static bool HasSpecialImport(NamedIntrinsic id)
