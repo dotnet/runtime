@@ -143,7 +143,7 @@ namespace System.Net.Sockets
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening);
 
                 // Try to get the address of the socket.
-                Span<byte> buffer = stackalloc byte[512]; // arbitrary high limit that should suffice for almost all scenarios
+                Span<byte> buffer = stackalloc byte[SocketPal.MaximumAddressSize];
                 int bufferLength = buffer.Length;
                 fixed (byte* bufferPtr = buffer)
                 {
@@ -153,20 +153,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if (bufferLength > buffer.Length)
-                {
-                    buffer = new byte[buffer.Length];
-                    fixed (byte* bufferPtr = buffer)
-                    {
-                        if (SocketPal.GetSockName(handle, bufferPtr, &bufferLength) != SocketError.Success ||
-                            bufferLength > buffer.Length)
-                        {
-                            return;
-                        }
-                    }
-                }
-
-                buffer = buffer.Slice(0, bufferLength);
+                Debug.Assert(bufferLength <= buffer.Length);
 
                 // Try to get the local end point.  That will in turn enable the remote
                 // end point to be retrieved on-demand when the property is accessed.
@@ -188,7 +175,7 @@ namespace System.Net.Sockets
                         break;
 
                     case AddressFamily.Unix:
-                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer);
+                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
                         _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
                         break;
                 }
@@ -199,29 +186,38 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        socketAddress ??= new Internals.SocketAddress(_addressFamily, buffer);
-
-                        SocketError result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
-                        if ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && result == SocketError.Fault) ||
-                            (socketAddress.InternalSize > socketAddress.Buffer.Length))
+                        // Local and Remote EP may be different sizes for something like UDS.
+                        bufferLength = buffer.Length;
+                        fixed (byte* bufferPtr = buffer)
                         {
-                            // GetPeerName simply fails on Windows it buffer is too small.
-                            // On Unix, we may get partial result.
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                            if (SocketPal.GetPeerName(handle, bufferPtr, &bufferLength) != SocketError.Success)
                             {
-                                socketAddress.InternalSize = UnixDomainSocketEndPoint.MaxAddressSize;
+                                return;
                             }
-
-                            socketAddress.Buffer = new byte[socketAddress.InternalSize];
-                            result = SocketPal.GetPeerName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
                         }
 
-                        if (result != SocketError.Success)
+                        switch (_addressFamily)
                         {
-                            return;
+                            case AddressFamily.InterNetwork:
+                            _remoteEndPoint = new IPEndPoint(
+                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer) & 0x0FFFFFFFF),
+                                SocketAddressPal.GetPort(buffer));
+                            break;
+
+                            case AddressFamily.InterNetworkV6:
+                                Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                                SocketAddressPal.GetIPv6Address(buffer, address, out uint scope);
+                                _remoteEndPoint = new IPEndPoint(
+                                    new IPAddress(address, scope),
+                                    SocketAddressPal.GetPort(buffer));
+                                break;
+
+                            case AddressFamily.Unix:
+                                socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                                _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                                break;
                         }
 
-                        _remoteEndPoint = _rightEndPoint.Create(socketAddress);
                         _isConnected = true;
                     }
                     catch { }
@@ -364,7 +360,10 @@ namespace System.Net.Sockets
                         return null;
                     }
 
-                    Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+                    Internals.SocketAddress socketAddress =
+                        _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
+                            IPEndPointExtensions.Serialize(_rightEndPoint) :
+                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size thaan _rightEndPoint.
 
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
@@ -1128,7 +1127,10 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint}");
 
-            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
+            Internals.SocketAddress socketAddress =
+                _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
+                    IPEndPointExtensions.Serialize(_rightEndPoint) :
+                    new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size.
 
             // This may throw ObjectDisposedException.
             SafeSocketHandle acceptedSocketHandle;

@@ -17,6 +17,7 @@ namespace System.Net.Sockets
     internal static class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = true;
+        public const int MaximumAddressSize = 110; //sockaddr_un
 
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
@@ -158,6 +159,12 @@ namespace System.Net.Sockets
         public static SocketError GetPeerName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
         {
             SocketError errorCode = Interop.Winsock.getpeername(handle, buffer, ref nameLen);
+            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+        }
+
+        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte* buffer, int* nameLen)
+        {
+            SocketError errorCode = Interop.Winsock.getpeername(handle, buffer, nameLen);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 

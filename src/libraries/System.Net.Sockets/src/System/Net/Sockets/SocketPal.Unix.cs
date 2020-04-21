@@ -16,6 +16,7 @@ namespace System.Net.Sockets
     internal static partial class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = false;
+        public const int MaximumAddressSize = 150; // currently 128 for AF storage on Linux. Adding little bit more for any new protocols
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
@@ -871,6 +872,12 @@ namespace System.Net.Sockets
             }
 
             nameLen = addrLen;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+        }
+
+        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte* buffer, int* nameLen)
+        {
+            Interop.Error err = Interop.Sys.GetPeerName(handle, buffer, nameLen);
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 

@@ -17,12 +17,12 @@ namespace System.Net.Sockets.Tests
     public class UnixDomainSocketTest
     {
         private readonly ITestOutputHelper _log;
+        private static Random _random = new Random();
 
         public UnixDomainSocketTest(ITestOutputHelper output)
         {
             _log = output;
         }
-
 
         [Fact]
         public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
@@ -497,7 +497,8 @@ namespace System.Net.Sockets.Tests
             string result;
             do
             {
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                // get random name and append random number of characters to get variable name length.
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
             }
             while (File.Exists(result));
 
