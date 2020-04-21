@@ -654,7 +654,6 @@ jobs:
 #
 # Mono Test builds with CoreCLR runtime tests using live libraries debug build
 # Only when Mono is changed
-# TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
@@ -662,8 +661,6 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    # - Linux_x64
-    # - Linux_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -677,7 +674,6 @@ jobs:
 #
 # Mono CoreCLR runtime Test executions using live libraries
 # Only when Mono is changed
-# TODO: Add Windows_NT_x64 to platform ones the script for windows is written
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -685,8 +681,6 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    # - Linux_x64
-    # - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
