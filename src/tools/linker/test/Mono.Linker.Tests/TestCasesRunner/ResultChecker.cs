@@ -258,6 +258,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 									Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
 
 								break;
+
+							case nameof (RemovedAssemblyReferenceAttribute):
+								Assert.False (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName),
+									$"AssemblyRef '{expectedTypeName}' should have been removed");
+								break;
+
 							case nameof (KeptResourceInAssemblyAttribute):
 								VerifyKeptResourceInAssembly (checkAttrInAssembly);
 								break;
