@@ -201,6 +201,7 @@ namespace CoreXml.Test.XLinq
                             yield return new object[] { doc, loadOptions, saveOptions };
             }
         }
+
         public static IEnumerable<object[]> IsAsync_SaveOptions_Data
         {
             get

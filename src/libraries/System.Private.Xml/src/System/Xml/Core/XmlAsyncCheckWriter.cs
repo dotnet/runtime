@@ -569,7 +569,7 @@ namespace System.Xml
         protected override ValueTask DisposeAsyncCore()
         {
             CheckAsync();
-            return _coreWriter.DisposeAsync(); // _coreWriter.DisposeAsyncCoreAsync();
+            return _coreWriter.DisposeAsync();
         }
 
         #endregion

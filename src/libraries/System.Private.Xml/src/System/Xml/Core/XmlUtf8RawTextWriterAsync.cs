@@ -550,8 +550,11 @@ namespace System.Xml
                 // Output all characters (except for previous characters stored at beginning of buffer)
                 if (!writeToNull)
                 {
-                    Debug.Assert(stream != null);
-                    await stream.WriteAsync(bufBytes, 1, bufPos - 1).ConfigureAwait(false);
+                    if (bufPos - 1 > 0)
+                    {
+                        Debug.Assert(stream != null);
+                        await stream.WriteAsync(bufBytes, 1, bufPos - 1).ConfigureAwait(false);
+                    }
                 }
             }
             catch
