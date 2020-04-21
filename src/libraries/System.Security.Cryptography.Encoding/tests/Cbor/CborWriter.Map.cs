@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 CborConformanceLevel.Rfc7049Canonical => true,
                 CborConformanceLevel.Ctap2Canonical => true,
-                CborConformanceLevel.NoConformance => false,
+                CborConformanceLevel.NonStrict => false,
                 _ => false,
             };
         }
