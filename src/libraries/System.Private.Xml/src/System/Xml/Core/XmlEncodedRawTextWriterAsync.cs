@@ -127,7 +127,6 @@ namespace System.Xml
                     }
                 }
             }
-            GC.SuppressFinalize(this);
         }
 
         // Serialize the document type declaration.
