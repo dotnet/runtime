@@ -108,8 +108,8 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
     REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
     if(result>0)
         return TRUE;
-    LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    if(result != NULL && result[0] != 0)
+    LPWSTR result2 = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
+    if(result2 != NULL && result2[0] != 0)
     {
         return TRUE;
     }
