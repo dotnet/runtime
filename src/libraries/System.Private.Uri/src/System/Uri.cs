@@ -4630,7 +4630,7 @@ namespace System
             {
                 Span<char> chars = dest.RawChars.Slice(start, dest.Length - start);
                 for (int i = 0; i < chars.Length; i++)
-                    if (dest[i] == '\\') dest[i] = '/';
+                    if (chars[i] == '\\') chars[i] = '/';
             }
 
             if (formatAs != UriFormat.UriEscaped && InFact(Flags.PathNotCanonical))
