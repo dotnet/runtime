@@ -11248,7 +11248,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) || (ins == INS_tzcnt))
+    else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
+             (ins == INS_tzcnt))
     {
         code = insEncodeRMreg(ins, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
@@ -14826,6 +14827,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
+        case INS_bsf:
+        case INS_bsr:
         case INS_pextrb:
         case INS_pextrd:
         case INS_pextrw:
