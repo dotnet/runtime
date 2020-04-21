@@ -65,18 +65,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData((CborSpecialValue)0, "e0")]
-        [InlineData(CborSpecialValue.False, "f4")]
-        [InlineData(CborSpecialValue.True, "f5")]
-        [InlineData(CborSpecialValue.Null, "f6")]
-        [InlineData(CborSpecialValue.Undefined, "f7")]
-        [InlineData((CborSpecialValue)32, "f820")]
-        [InlineData((CborSpecialValue)255, "f8ff")]
-        internal static void WriteSpecialValue_SingleValue_HappyPath(CborSpecialValue input, string hexExpectedEncoding)
+        [InlineData((CborSimpleValue)0, "e0")]
+        [InlineData(CborSimpleValue.False, "f4")]
+        [InlineData(CborSimpleValue.True, "f5")]
+        [InlineData(CborSimpleValue.Null, "f6")]
+        [InlineData(CborSimpleValue.Undefined, "f7")]
+        [InlineData((CborSimpleValue)32, "f820")]
+        [InlineData((CborSimpleValue)255, "f8ff")]
+        internal static void WriteSimpleValue_SingleValue_HappyPath(CborSimpleValue input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.WriteSpecialValue(input);
+            writer.WriteSimpleValue(input);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
     }

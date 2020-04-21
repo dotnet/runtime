@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteSingle(float value)
         {
             EnsureWriteCapacity(5);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional32BitData));
+            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
             BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 4;
             AdvanceDataItemCounters();
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteDouble(double value)
         {
             EnsureWriteCapacity(9);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional64BitData));
+            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
             BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 8;
             AdvanceDataItemCounters();
@@ -30,25 +30,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteBoolean(bool value)
         {
-            WriteSpecialValue(value ? CborSpecialValue.True : CborSpecialValue.False);
+            WriteSimpleValue(value ? CborSimpleValue.True : CborSimpleValue.False);
         }
 
         public void WriteNull()
         {
-            WriteSpecialValue(CborSpecialValue.Null);
+            WriteSimpleValue(CborSimpleValue.Null);
         }
 
-        public void WriteSpecialValue(CborSpecialValue value)
+        public void WriteSimpleValue(CborSimpleValue value)
         {
             if ((byte)value < 24)
             {
                 EnsureWriteCapacity(1);
-                WriteInitialByte(new CborInitialByte(CborMajorType.Special, (CborAdditionalInfo)value));
+                WriteInitialByte(new CborInitialByte(CborMajorType.Simple, (CborAdditionalInfo)value));
             }
             else
             {
                 EnsureWriteCapacity(2);
-                WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional8BitData));
+                WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional8BitData));
                 _buffer[_offset++] = (byte)value;
             }
 

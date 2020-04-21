@@ -55,7 +55,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.buildtools+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.runtime+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib</DefaultMonoSubsets>
@@ -85,7 +85,6 @@
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
-    <SubsetName Include="Clr.BuildTools" Description="Tools needed for the native CoreCLR build." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
 
     <!-- Mono -->
@@ -146,10 +145,6 @@
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
-  <ItemGroup Condition="$(_subset.Contains('+clr.buildtools+'))">
-    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\GetModuleIndex\GetModuleIndex.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
     <CoreClrProject Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>

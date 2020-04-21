@@ -103,6 +103,9 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
+
 #endif /* ENABLE_NETCORE */
 
 static inline MonoDomain *
