@@ -51,7 +51,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
 }
 
-void CodeGen::HWIntrinsicImmOpHelper::EmitAtFirst()
+void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
 {
     if (NonConstImmOp())
     {
@@ -75,7 +75,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitAtFirst()
     }
 }
 
-void CodeGen::HWIntrinsicImmOpHelper::EmitAfterCase()
+void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
 {
     assert(!Done());
 
@@ -322,7 +322,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
-                for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
                     const int elementIndex = helper.ImmValue();
 
@@ -339,7 +339,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
-                for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
                     const int elementIndex = helper.ImmValue();
                     const int byteIndex    = genTypeSize(intrin.baseType) * elementIndex;
@@ -373,7 +373,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (varTypeIsFloating(intrin.baseType))
                     {
-                        for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
                             const int elementIndex = helper.ImmValue();
 
@@ -383,7 +383,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        for (helper.EmitAtFirst(); !helper.Done(); helper.EmitAfterCase())
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
                             const int elementIndex = helper.ImmValue();
 

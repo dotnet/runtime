@@ -1054,8 +1054,8 @@ protected:
     public:
         HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
 
-        void EmitAtFirst();
-        void EmitAfterCase();
+        void EmitBegin();
+        void EmitCaseEnd();
 
         bool Done() const
         {
