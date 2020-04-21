@@ -20,11 +20,13 @@ internal class AotCompiler
         string binDir,
         string[] libsToPrecompile,
         IDictionary<string, string> envVariables,
-        bool optimize)
+        bool optimize,
+        bool useLlvm,
+        string? llvmPath)
     {
         Parallel.ForEach(libsToPrecompile,
             new ParallelOptions { MaxDegreeOfParallelism = parallel ? Environment.ProcessorCount : 1 },
-            lib => PrecompileLibrary(crossCompiler, arch, binDir, lib, envVariables, optimize));
+            lib => PrecompileLibrary(crossCompiler, arch, binDir, lib, envVariables, optimize, useLlvm, llvmPath));
     }
 
     private static void PrecompileLibrary(
@@ -33,14 +35,17 @@ internal class AotCompiler
         string binDir,
         string libToPrecompile,
         IDictionary<string, string> envVariables,
-        bool optimize)
+        bool optimize,
+        bool useLlvm,
+        string? llvmPath)
     {
         Utils.LogInfo($"[AOT] {libToPrecompile}");
 
         var crossArgs = new StringBuilder();
         crossArgs
-            .Append(" -O=gsharedvt,float32")
-            .Append(" --nollvm")
+            .Append(" -O=gsharedvt")
+            .Append(" -O=-float32")
+            .Append(useLlvm ? " --llvm" : " --nollvm")
             .Append(" --debug");
 
         string libName = Path.GetFileNameWithoutExtension(libToPrecompile);
@@ -54,16 +59,23 @@ internal class AotCompiler
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
             .Append("msym-dir=").Append(Path.Combine(binDir, "Msym,"))
-            // TODO: enable aotdata
-            //.Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
+            .Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
             //  TODO: enable direct-pinvokes (to get rid of -force_loads)
             //.Append("direct-pinvoke,")
-            .Append("full,");
+            .Append("full,")
+            .Append("mattr=+crc,")   // enable System.Runtime.Intrinsics.Arm
+            .Append("mattr=+base,"); // (Crc32 and ArmBase for now)
+
+        if (useLlvm)
+        {
+            aotArgs
+                .Append("llvm-path=").Append(llvmPath).Append(',')
+                .Append("llvm-outfile=").Append(Path.Combine(binDir, libName + ".dll-llvm.o,"));
+            // it has -llvm.o suffix because we need both LLVM and non-LLVM bits for every assembly
+            // most of the stuff from non-llvm .o will be linked out.
+        }
 
         // TODO: enable Interpreter
-        // TODO: enable LLVM
-        // TODO: enable System.Runtime.Intrinsics.Arm (LLVM-only for now)
-        // e.g. .Append("mattr=+crc,")
 
         crossArgs
             .Append(" --aot=").Append(aotArgs).Append(" ")

@@ -144,6 +144,17 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        public void TestFileSizes()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+            var bundler = BundleHelper.Bundle(fixture);
+            var publishPath = BundleHelper.GetPublishPath(fixture);
+
+            bundler.BundleManifest.Files.ForEach(file =>
+                Assert.True(file.Size == new FileInfo(Path.Combine(publishPath, file.RelativePath)).Length));
+        }
+
+        [Fact]
         public void TestAssemblyAlignment()
         {
             var fixture = sharedTestState.TestFixture.Copy();

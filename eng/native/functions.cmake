@@ -415,3 +415,28 @@ endfunction()
 function(add_executable_clr)
     _add_executable(${ARGV})
 endfunction()
+
+function(generate_module_index Target ModuleIndexFile)
+    if(CLR_CMAKE_HOST_WIN32)
+        set(scriptExt ".cmd")
+    else()
+        set(scriptExt ".sh")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${ModuleIndexFile}
+        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        DEPENDS ${Target}
+        COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
+    )
+
+    set_source_files_properties(
+        ${ModuleIndexFile}
+        PROPERTIES GENERATED TRUE
+    )
+
+    add_custom_target(
+        ${Target}_module_index_header
+        DEPENDS ${ModuleIndexFile}
+    )
+endfunction(generate_module_index)
