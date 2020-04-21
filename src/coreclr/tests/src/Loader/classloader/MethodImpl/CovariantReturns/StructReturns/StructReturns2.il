@@ -76,7 +76,7 @@
 {
   .method public hidebysig newslot virtual instance valuetype A GenToNonGenOverride()
   {
-    .override method instance class GenToNonGen3<!V,object> class BaseType<!U,!V>::GenToNonGen()
+    .override method instance class GenToNonGen3<!1,object> class BaseType<!U,!V>::GenToNonGen()
     ldnull
     ret
   }
@@ -96,7 +96,7 @@
 {
   .method public hidebysig newslot virtual instance valuetype GenStruct<!U, class Dictionary<string,!V>> NewGenFunc1()
   {
-    .override method instance class GenDerive3<!U,!V> class BaseType<!U,!V>::MyGenFunc()
+    .override method instance class GenDerive3<!0,!1> class BaseType<!U,!V>::MyGenFunc()
     ldnull
     ret
   }

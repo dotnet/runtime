@@ -138,7 +138,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<string,!V>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldarg.1
     ldstr "GenDerive3<!U,!V> TestType.NewGenFunc2()"
     stind.ref
@@ -211,7 +211,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<string,!V>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldarg.1
     ldstr "GenDerive3<!U,!V> DerivedTestType.NewGenFunc2()"
     stind.ref

@@ -142,7 +142,7 @@
 
   .method public hidebysig newslot virtual instance class NonGenericDerived1<int32,!!Y> NewGenFunc1_Middle<Y>(string& res)
   {
-    .override method instance class GenRetType<int32,!!Y> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
     ldstr "NonGenericDerived1<int32,!!Y> GenMiddleType.NewGenFunc1()"
     stind.ref
@@ -152,7 +152,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive2<!U,!V,!!Y> NewGenFunc2_Middle<Y>(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<!!Y,!V>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
     ldstr "GenDerive2<!U,!V,!!Y> GenMiddleType.NewGenFunc2()"
     stind.ref
@@ -189,7 +189,7 @@
 
   .method public hidebysig newslot virtual instance class NonGenericDerived5<!!Y> NewGenFunc1<Y>(string& res)
   {
-    .override method instance class GenRetType<int32,!!Y> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
     ldstr "NonGenericDerived5<!!Y> TestType.NewGenFunc1()"
     stind.ref
@@ -199,7 +199,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive2<!U,!V,!!Y> NewGenFunc2<Y>(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<!!Y,!V>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
     ldstr "GenDerive2<!U,!V,!!Y> TestType.NewGenFunc2()"
     stind.ref
@@ -269,7 +269,7 @@
   // Invalid when comparing !!Y and 'object' in instantiation of GenRetType
   .method public hidebysig newslot virtual instance class NonGenericDerived4 NewGenFunc1<Y>(string& res)
   {
-    .override method instance class GenRetType<int32,!!Y> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldnull
     ret
   }
@@ -281,7 +281,7 @@
   // Invalid when comparing !!Y and 'string' in instantiation of Dictionary
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2<Y>(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<!!Y,!V>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldnull
     ret
   }

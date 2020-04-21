@@ -977,48 +977,6 @@ class MetaSig
         //------------------------------------------------------------------
         static BOOL CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass);
 
-        //------------------------------------------------------------------
-        // Check if a type signature is eligible to be used with derived type signature comparison
-        // and if so. Returns TRUE if the type is eligible.
-        //    Inputs:
-        //      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
-        //      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
-        //                                 as that of a base type or a derived type.
-        //    Outputs:
-        //      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
-        //      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
-        //                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
-        //------------------------------------------------------------------
-        static BOOL IsEligibleForDerivedTypeSignatureComparison(
-            PCCOR_SIGNATURE     pSig,
-            PCCOR_SIGNATURE     pEndSig,
-            Module*             pModule,
-            BOOL                isBaseTypeSig,
-            mdToken*            pTypeDefToken = NULL,
-            Module**            ppTypeDefModule = NULL,
-            mdToken*            pParentTypeDefOrRefOrSpecToken = NULL);
-
-        //------------------------------------------------------------------
-        // Compute the base type token (it will either be a typedef or typeref token), and returns the
-        // module where that base type token is declared.
-        //------------------------------------------------------------------
-        static BOOL GetBaseTypeTokenAndModule(
-            mdToken     tk,
-            Module*     pModule,
-            mdToken*    pBaseTypeDefOrRefToken,
-            Module**    ppBaseTypeTokenModule);
-
-        //------------------------------------------------------------------
-        // Extract the base type's signature and stubstitution from the input type signature
-        //------------------------------------------------------------------
-        static BOOL GetBaseTypeSignatureAndSubstitution(
-            PCCOR_SIGNATURE     pSig,
-            PCCOR_SIGNATURE     pEndSig,
-            Module*             pModule,
-            const Substitution* pSubst,
-            Module**            ppParentTypeModule,
-            SigBuilder&         parentTypeSig,
-            Substitution&       parentTypeSubst);
 
         //------------------------------------------------------------------
         // Compare types in two signatures, first applying
@@ -1109,6 +1067,52 @@ class MetaSig
                                              mdMethodDef tok2); //declared method
 
 private:
+        //------------------------------------------------------------------
+        // Check if a type signature is eligible to be used with derived type signature comparison
+        // and if so. Returns TRUE if the type is eligible.
+        //    Inputs:
+        //      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
+        //      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
+        //                                 as that of a base type or a derived type.
+        //    Outputs:
+        //      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
+        //      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
+        //                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
+        //------------------------------------------------------------------
+        static BOOL IsEligibleForDerivedTypeSignatureComparison(
+            PCCOR_SIGNATURE     pSig,
+            PCCOR_SIGNATURE     pEndSig,
+            Module*             pModule,
+            BOOL                isBaseTypeSig,
+            mdToken*            pTypeDefToken = NULL,
+            Module**            ppTypeDefModule = NULL,
+            mdToken*            pParentTypeDefOrRefOrSpecToken = NULL);
+
+        //------------------------------------------------------------------
+        // Compute the base type token (it will either be a typedef or typeref token), and returns the
+        // module where that base type token is declared.
+        //------------------------------------------------------------------
+        static BOOL GetBaseTypeTokenAndModule(
+            mdToken     tk,
+            Module*     pModule,
+            mdToken*    pBaseTypeDefOrRefToken,
+            Module**    ppBaseTypeTokenModule);
+
+        //------------------------------------------------------------------
+        // Extract the base type's signature and stubstitution from the second type signature
+        // and recompare it with the first type's signature.
+        //------------------------------------------------------------------
+        static BOOL ComputeBaseTypeAndCompareElementType(
+            PCCOR_SIGNATURE &    pSig1,
+            PCCOR_SIGNATURE &    pSig2,
+            PCCOR_SIGNATURE      pEndSig1,
+            PCCOR_SIGNATURE      pEndSig2,
+            Module *             pModule1,
+            Module *             pModule2,
+            const Substitution * pSubst1,
+            const Substitution * pSubst2,
+            TokenPairList*       pVisited = NULL);
+
         static BOOL CompareVariableConstraints(const Substitution *pSubst1,
                                                Module *pModule1, mdGenericParam tok1, //overriding
                                                const Substitution *pSubst2,

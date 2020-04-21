@@ -105,7 +105,7 @@
 
 // ========================================================================================
 
-.class public auto ansi beforefieldinit GenMiddleType<U,V> extends class GenBaseType<!U,!V>
+.class public auto ansi beforefieldinit GenMiddleType<U,V> extends class GenBaseType<!V,!U>
 {
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
 
@@ -113,13 +113,13 @@
   {
     .maxstack  8
     ldarg.0
-    call       instance void class GenBaseType<!U,!V>::.ctor()
+    call       instance void class GenBaseType<!V,!U>::.ctor()
     ret
   } 
 
   .method public hidebysig newslot virtual instance class NonGenThroughGen2<object,int32,string> NonGenThroughGenOverride_Middle(string& res)
   {
-    .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc(string& res)
+    .override method instance class B class GenBaseType<!V,!U>::NonGenThroughGenFunc(string& res)
     ldarg.1
     ldstr "NonGenThroughGen2<object,int32,string> GenMiddleType.NonGenThroughGenFunc()"
     stind.ref
@@ -129,7 +129,7 @@
 
   .method public hidebysig newslot virtual instance class GenToNonGen1<!V, class Dictionary<string,object>> GenToNonGenOverride_Middle(string& res)
   {
-    .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
+    .override method instance class B class GenBaseType<!V,!U>::GenToNonGen(string& res)
     ldarg.1
     ldstr "GenToNonGen1<!V, class Dictionary<string,object>> GenMiddleType.GenToNonGenOverride()"
     stind.ref
@@ -139,7 +139,7 @@
 
   .method public hidebysig newslot virtual instance class NonGenericDerived1<int32,object> NewGenFunc1_Middle(string& res)
   {
-    .override method instance class GenRetType<int32,object> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    .override method instance class GenRetType<int32,object> class GenBaseType<!V,!U>::MyGenFunc(string& res)
     ldarg.1
     ldstr "NonGenericDerived1<int32,object> GenMiddleType.NewGenFunc1()"
     stind.ref
@@ -147,21 +147,21 @@
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenDerive1<!U, class Dictionary<string,!V>> NewGenFunc2_Middle(string& res)
+  .method public hidebysig newslot virtual instance class GenDerive1<!V, class Dictionary<string,!U>> NewGenFunc2_Middle(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<string,!V>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!V,!U>::MyGenFunc(string& res)
     ldarg.1
     ldstr "GenDerive1<!U, class Dictionary<string,!V>> GenMiddleType.NewGenFunc2()"
     stind.ref
     ldnull
     ret
   }
-  
 }
 
 
 // ========================================================================================
-.class public auto ansi beforefieldinit GenTestType<U,V> extends class GenMiddleType<!U,!V>
+
+.class public auto ansi beforefieldinit GenTestType<UNUSED1,UNUSED2,U,V> extends class GenMiddleType<!V,!U>
 {
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
 
@@ -175,11 +175,11 @@
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenToNonGen3<!V,object> GenToNonGenOverride(string& res)
+  .method public hidebysig newslot virtual instance class GenToNonGen3<!U,object> GenToNonGenOverride(string& res)
   {
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
     ldarg.1
-    ldstr "GenToNonGen3<!V,object> TestType.GenToNonGenOverride()"
+    ldstr "GenToNonGen3<!U,object> TestType.GenToNonGenOverride()"
     stind.ref
     ldnull
     ret
@@ -197,7 +197,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2(string& res)
   {
-    .override method instance class GenRetType<!U, class Dictionary<string,!V>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldarg.1
     ldstr "GenDerive3<!U,!V> TestType.NewGenFunc2()"
     stind.ref
@@ -234,6 +234,8 @@
   }
 }
 
+// ========================================================================================
+
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
   // ============== Test using GenTestType<U,V> ============== //
@@ -246,7 +248,7 @@
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance object class GenBaseType<int32,object>::MyFunc(string&)
     pop
@@ -269,7 +271,7 @@
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::MyFunc(string&)
     pop
@@ -292,7 +294,7 @@
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
     pop
@@ -315,7 +317,7 @@
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
     pop
@@ -333,12 +335,12 @@
   {
     .locals init (string res, bool flag)
     
-    ldstr "EXPECTED: GenToNonGen3<!V,object> TestType.GenToNonGenOverride()"
+    ldstr "EXPECTED: GenToNonGen3<!U,object> TestType.GenToNonGenOverride()"
     call       void [System.Console]System.Console::WriteLine(object)
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen(string&)
     pop
@@ -347,7 +349,7 @@
     call       void [System.Console]System.Console::WriteLine(object)
     
 	ldloc.0
-	ldstr "GenToNonGen3<!V,object> TestType.GenToNonGenOverride()"
+	ldstr "GenToNonGen3<!U,object> TestType.GenToNonGenOverride()"
 	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
@@ -361,7 +363,7 @@
     ldstr "ACTUAL  : "
     call       void [System.Console]System.Console::Write(object)
     
-    newobj     instance void class GenTestType<int32,object>::.ctor()
+    newobj     instance void class GenTestType<int32,object,int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc(string& res)
     pop

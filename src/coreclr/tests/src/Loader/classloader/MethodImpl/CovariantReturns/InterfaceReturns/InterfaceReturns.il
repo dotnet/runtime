@@ -99,7 +99,7 @@
 {
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2()
   {
-    .override method instance class IGenRetType<!U, class Dictionary<string,!V>> class BaseTest<!U,!V>::GenFunc()
+    .override method instance class IGenRetType<!0, class Dictionary<string,!1>> class BaseTest<!U,!V>::GenFunc()
     ldnull
     ret
   }

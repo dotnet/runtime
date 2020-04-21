@@ -3629,6 +3629,14 @@ BOOL MetaSig::IsEligibleForDerivedTypeSignatureComparison(
     Module**            ppTypeDefModule,                /* = NULL */
     mdToken*            pParentTypeDefOrRefOrSpecToken) /* = NULL */
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     CorElementType elementType = ELEMENT_TYPE_MAX;
 
     IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
@@ -3700,7 +3708,6 @@ BOOL MetaSig::GetBaseTypeTokenAndModule(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(tk) == mdtTypeRef || TypeFromToken(tk) == mdtTypeDef);
         MODE_ANY;
@@ -3757,38 +3764,76 @@ BOOL MetaSig::GetBaseTypeTokenAndModule(
     return FALSE;
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Extract the parent type's signature and stubstitution from the input type signature
-//
+//------------------------------------------------------------------
+// Extract the base type's signature and stubstitution from the second type signature
+// and recompare it with the first type's signature.
+//------------------------------------------------------------------
 // static
-BOOL MetaSig::GetBaseTypeSignatureAndSubstitution(
-    PCCOR_SIGNATURE     pSig,
-    PCCOR_SIGNATURE     pEndSig,
-    Module*             pModule,
-    const Substitution* pSubst,
-    Module**            ppParentTypeModule,
-    SigBuilder&         parentTypeSig,
-    Substitution&       parentTypeSubst)
+BOOL MetaSig::ComputeBaseTypeAndCompareElementType(
+    PCCOR_SIGNATURE &    pSig1,
+    PCCOR_SIGNATURE &    pSig2,
+    PCCOR_SIGNATURE      pEndSig1,
+    PCCOR_SIGNATURE      pEndSig2,
+    Module *             pModule1,
+    Module *             pModule2,
+    const Substitution * pSubst1,
+    const Substitution * pSubst2,
+    TokenPairList*       pVisited) // = NULL
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pModule));
-        PRECONDITION(CheckPointer(ppParentTypeModule));
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    mdToken typeDefToken;
-    mdToken parentTypeDefOrRefOrSpecToken;
-    Module* pTypeDefModule;
-    if (!IsEligibleForDerivedTypeSignatureComparison(pSig, pEndSig, pModule, FALSE, &typeDefToken, &pTypeDefModule, &parentTypeDefOrRefOrSpecToken))
+    // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
+    if (!IsEligibleForDerivedTypeSignatureComparison(pSig1, pEndSig1, pModule1, TRUE))
     {
         return FALSE;
     }
+
+    // Now a quick check of Type2 for eligibility, and if eligible, compute the TypeDef module of the current type in pSig2, as well
+    // as the base type token (which can be a TypeRef/TypeDef/TypeSpec)
+    Module* pTypeDefModule;
+    mdToken parentTypeDefOrRefOrSpecToken;
+    if (!IsEligibleForDerivedTypeSignatureComparison(pSig2, pEndSig2, pModule2, FALSE, NULL, &pTypeDefModule, &parentTypeDefOrRefOrSpecToken))
+    {
+        return FALSE;
+    }
+
+    // We need to check if the this is the signature of a generic type
+    // and if so, insert its generic instantiation arguments to the substitution chain.
+    // Doing so will enable type signature comparison to traverse the generic stubstitution
+    // chain correctly while traversing the base type hierarchy of the return type on the
+    // second method's signature.
+    // The instantiation arguments have to be added only once at the very end of the chain,
+    // which is why we perform the NULL check on the substitution
+
+    const Substitution* pCurrentSubstChain = pSubst2;
+
+    Substitution leafSubstFromGenericArgs;
+    if (pSubst2 == NULL || pSubst2->GetInst().IsNull())
+    {
+        CorElementType et;
+        SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
+        IfFailThrow(parser.GetElemType(&et));
+        if (et == ELEMENT_TYPE_GENERICINST)
+        {
+            IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
+            IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
+
+            leafSubstFromGenericArgs = Substitution(pModule2, SigPointer(parser.GetPtr()), NULL);
+
+            // Set the current substitution chain to the leaf node we just created.
+            pCurrentSubstChain = &leafSubstFromGenericArgs;
+        }
+    }
+
+    Substitution parentTypeSubst;
+    SigBuilder parentTypeSigBuilder;
 
     // If the parent type token is a TypeSpec token, we need to load the substitution from the signature and
     // chain it to the existing substitution (if one exists). This is necessary to ensure proper comparisons
@@ -3800,9 +3845,8 @@ BOOL MetaSig::GetBaseTypeSignatureAndSubstitution(
         PCCOR_SIGNATURE pParentTypeSig;
         IfFailThrow(pTypeDefModule->GetMDImport()->GetSigFromToken(parentTypeDefOrRefOrSpecToken, &cbParentTypeSig, &pParentTypeSig));
 
-        parentTypeSig.AppendSignature(pParentTypeSig, pParentTypeSig + cbParentTypeSig);
-        parentTypeSubst = Substitution(parentTypeDefOrRefOrSpecToken, pTypeDefModule, pSubst);
-        *ppParentTypeModule = pTypeDefModule;
+        parentTypeSigBuilder.AppendSignature(pParentTypeSig, pParentTypeSig + cbParentTypeSig);
+        parentTypeSubst = Substitution(parentTypeDefOrRefOrSpecToken, pTypeDefModule, pCurrentSubstChain);
     }
     else if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeDef || TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeRef)
     {
@@ -3818,23 +3862,45 @@ BOOL MetaSig::GetBaseTypeSignatureAndSubstitution(
 
         if (resolvedToken && pParentModule == g_pObjectClass->GetModule() && parentTypeDefToken == g_pObjectClass->GetCl())
         {
-            parentTypeSig.AppendElementType(ELEMENT_TYPE_OBJECT);
+            parentTypeSigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
         }
         else
         {
-            parentTypeSig.AppendElementType(ELEMENT_TYPE_CLASS);
-            parentTypeSig.AppendToken(parentTypeDefOrRefOrSpecToken);
+            parentTypeSigBuilder.AppendElementType(ELEMENT_TYPE_CLASS);
+            parentTypeSigBuilder.AppendToken(parentTypeDefOrRefOrSpecToken);
         }
 
-        parentTypeSubst = pSubst == NULL ? Substitution() : Substitution(*pSubst);
-        *ppParentTypeModule = pTypeDefModule;
+        parentTypeSubst = (pCurrentSubstChain == NULL ? Substitution() : Substitution(*pCurrentSubstChain));
     }
     else
     {
         return FALSE;
     }
 
-    return TRUE;
+    DWORD cbParentTypeSig;
+    PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
+    PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
+
+    //
+    // Given that we're going to restart the current type comparaison between Type1 and the base type of Type2, and
+    // given that the signature pointers for both types are passed by reference to get updated during each call to
+    // CompareElementType(), we need to skip one element from the original signature of Type2.
+    //
+    SigParser parser = SigParser(pSig2);
+    IfFailThrow(parser.SkipExactlyOne());
+    pSig2 = parser.GetPtr();
+
+    return CompareElementType(
+        pSig1,
+        pParentTypeSig,
+        pEndSig1,
+        pParentTypeSigEnd,
+        pModule1,
+        pTypeDefModule,
+        pSubst1,
+        parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
+        TRUE,
+        pVisited);
 }
 
 //---------------------------------------------------------------------------------------
@@ -4052,52 +4118,26 @@ MetaSig::CompareElementType(
         {
             if (allowDerivedClass)
             {
-                // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
-                if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE))
-                {
-                    return FALSE;
-                }
-
                 // Obvious case: string derives from object.
                 if (Type1 == ELEMENT_TYPE_OBJECT && Type2 == ELEMENT_TYPE_STRING)
                 {
                     return TRUE;
                 }
 
-                Module* pParentTypeModule;
-                Substitution parentTypeSubst;
-                SigBuilder parentTypeSigBuilder;
-                if (GetBaseTypeSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
-                {
-                    DWORD cbParentTypeSig;
-                    PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
-                    PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
-
-                    //
-                    // Given that we're going to restart the current type comparaison between Type1 and the base type of Type2, and
-                    // given that the signature pointers for both types are passed by reference to get updated during each call to
-                    // CompareElementType(), we need to make some adjustments to the two signature pointers:
-                    //    1) We need to reset pSig1 to the begining of the current signature of Type1 to compare it with the newly
-                    //       computed basetype signature.
-                    //    2) Given that we will be using the base type signature as Type2, we also need to skip one element from the
-                    //       original signature for Type2.
-                    //
-                    SigParser parser = SigParser(pSig2Start);
-                    IfFailThrow(parser.SkipExactlyOne());
-                    pSig1 = pSig1Start;
-                    pSig2 = parser.GetPtr();
-
-                    return CompareElementType(
-                        pSig1,
-                        pParentTypeSig,
-                        pEndSig1,
-                        pParentTypeSigEnd,
-                        pModule1,
-                        pParentTypeModule,
-                        pSubst1,
-                        parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
-                        allowDerivedClass);
-                }
+                // Reset pSig1 and pSig2 to their initial position (Note that their values get updated during the
+                // recursive calls).
+                pSig1 = pSig1Start;
+                pSig2 = pSig2Start;
+                return ComputeBaseTypeAndCompareElementType(
+                    pSig1,
+                    pSig2,
+                    pEndSig1,
+                    pEndSig2,
+                    pModule1,
+                    pModule2,
+                    pSubst1,
+                    pSubst2,
+                    pVisited);
             }
 
             return FALSE;
@@ -4346,52 +4386,25 @@ MetaSig::CompareElementType(
                     allowDerivedClass,
                     &newVisitedAlwaysForbidden))
             {
-                if (allowDerivedClass)
+                if (!allowDerivedClass)
                 {
-                    // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
-                    if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE))
-                    {
-                        return FALSE;
-                    }
-
-                    Module* pParentTypeModule;
-                    Substitution parentTypeSubst;
-                    SigBuilder parentTypeSigBuilder;
-                    if (GetBaseTypeSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
-                    {
-                        DWORD cbParentTypeSig;
-                        PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
-                        PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
-
-                        //
-                        // Given that we're going to restart the current type comparaison between Type1 and the base type of Type2, and
-                        // given that the signature pointers for both types are passed by reference to get updated during each call to
-                        // CompareElementType(), we need to make some adjustments to the two signature pointers:
-                        //    1) We need to reset pSig1 to the begining of the current signature of Type1 to compare it with the newly
-                        //       computed basetype signature.
-                        //    2) Given that we will be using the base type signature as Type2, we also need to skip one element from the
-                        //       original signature for Type2.
-                        //
-                        SigParser parser = SigParser(pSig2Start);
-                        IfFailThrow(parser.SkipExactlyOne());
-                        pSig1 = pSig1Start;
-                        pSig2 = parser.GetPtr();
-
-                        return CompareElementType(
-                            pSig1,
-                            pParentTypeSig,
-                            pEndSig1,
-                            pParentTypeSigEnd,
-                            pModule1,
-                            pParentTypeModule,
-                            pSubst1,
-                            parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
-                            allowDerivedClass,
-                            &newVisitedAlwaysForbidden);
-                    }
+                    return FALSE;
                 }
 
-                return FALSE;
+                // Reset pSig1 and pSig2 to their initial position (Note that their values get updated during the
+                // recursive calls).
+                pSig1 = pSig1Start;
+                pSig2 = pSig2Start;
+                return ComputeBaseTypeAndCompareElementType(
+                    pSig1,
+                    pSig2,
+                    pEndSig1,
+                    pEndSig2,
+                    pModule1,
+                    pModule2,
+                    pSubst1,
+                    pSubst2,
+                    &newVisitedAlwaysForbidden);
             }
 
             DWORD argCnt1;
@@ -4768,33 +4781,6 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    //
-    // If we are comparing the return type signatures and allow for covariant returns,
-    // we need to check if the return type on the second signature is a generic type,
-    // and if so, insert its generic instantiation arguments to the substitution chain.
-    // Doing so will enable type signature comparison to traverse the generic stubstitution
-    // chain correctly while traversing the base type hierarchy of the return type on the
-    // second method's signature.
-    //
-    SigPointer instArgSignature;
-    Substitution instArgsSubstitution;
-    if (allowCovariantReturn)
-    {
-        MetaSig metaSig2(pSig2, (DWORD)(pEndSig2 - pSig2), pModule2, NULL);
-        SigParser parser(metaSig2.GetReturnProps());
-
-        CorElementType returnElementType;
-        IfFailThrow(parser.GetElemType(&returnElementType));
-
-        if (returnElementType == ELEMENT_TYPE_GENERICINST)
-        {
-            IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
-            IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
-            instArgSignature = SigPointer(parser.GetPtr());
-            instArgsSubstitution = Substitution(pModule2, instArgSignature, pSubst2);
-        }
-    }
-
     __int8 callConv = *pSig1;
 
     pSig1++;
@@ -4862,7 +4848,7 @@ MetaSig::CompareMethodSigs(
                     pModule1,
                     pModule2,
                     pSubst1,
-                    (i == 0 && allowCovariantReturn) ? &instArgsSubstitution : pSubst2,
+                    pSubst2,
                     i == 0 && allowCovariantReturn,
                     pVisited))
             {
@@ -4888,7 +4874,7 @@ MetaSig::CompareMethodSigs(
                 pModule1,
                 pModule2,
                 pSubst1,
-                (i == 0 && allowCovariantReturn) ? &instArgsSubstitution : pSubst2,
+                pSubst2,
                 i == 0 && allowCovariantReturn,
                 pVisited))
         {
