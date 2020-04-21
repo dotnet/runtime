@@ -18,6 +18,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LastIndexOf_TestData()
         {
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+
             // Empty strings
             yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 3 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
@@ -78,9 +80,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1 };
 
             // Weightless characters
+            // NLS matches weightless characters at the end of the string
+            // ICU matches weightless characters at 1 index prior to the end of the string
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0 };
-            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5 };
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, useNls ? 5 : 4 };
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5 };
