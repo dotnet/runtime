@@ -20,7 +20,7 @@ public:
 
     static void CreateTailCallHelperStubs(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
-        MetaSig& callSiteSig, bool virt,
+        MetaSig& callSiteSig, bool virt, bool thisArgByRef,
         MethodDesc** storeArgsStub, bool* storeArgsNeedsTarget,
         MethodDesc** callTargetStub);
 
@@ -30,7 +30,7 @@ private:
 
     static void LayOutArgBuffer(
         MetaSig& callSiteSig, MethodDesc* calleeMD,
-        bool storeTarget, ArgBufferLayout* layout);
+        bool storeTarget, bool thisArgByRef, ArgBufferLayout* layout);
     static TypeHandle NormalizeSigType(TypeHandle tyHnd);
     static bool GenerateGCDescriptor(MethodDesc* pTargetMD, const ArgBufferLayout& values, GCRefMapBuilder* builder);
 

@@ -13793,6 +13793,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
     MetaSig msig(sig->pSig, sig->cbSig, GetModule(sig->scope), &typeCtx);
 
     bool isCallvirt = (flags & CORINFO_TAILCALL_IS_CALLVIRT) != 0;
+    bool isThisArgByRef = (flags & CORINFO_TAILCALL_THIS_ARG_IS_BYREF) != 0;
 
     MethodDesc* pStoreArgsMD;
     MethodDesc* pCallTargetMD;
@@ -13800,7 +13801,7 @@ bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
 
     TailCallHelp::CreateTailCallHelperStubs(
         m_pMethodBeingCompiled, pTargetMD,
-        msig, isCallvirt,
+        msig, isCallvirt, isThisArgByRef,
         &pStoreArgsMD, &needsTarget,
         &pCallTargetMD);
 

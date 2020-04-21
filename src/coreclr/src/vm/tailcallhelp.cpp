@@ -316,7 +316,7 @@ MethodDesc* TailCallHelp::GetOrCreateTailCallDispatcherMD()
 
 void TailCallHelp::CreateTailCallHelperStubs(
     MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
-    MetaSig& callSiteSig, bool virt,
+    MetaSig& callSiteSig, bool virt, bool thisArgByRef,
     MethodDesc** storeArgsStub, bool* storeArgsNeedsTarget,
     MethodDesc** callTargetStub)
 {
@@ -337,7 +337,7 @@ void TailCallHelp::CreateTailCallHelperStubs(
     TypeHandle retTyHnd = NormalizeSigType(callSiteSig.GetRetTypeHandleThrowing());
     TailCallInfo info(pCallerMD, pCalleeMD, pLoaderAllocator, &callSiteSig, virt, retTyHnd);
 
-    LayOutArgBuffer(callSiteSig, pCalleeMD, *storeArgsNeedsTarget, &info.ArgBufLayout);
+    LayOutArgBuffer(callSiteSig, pCalleeMD, *storeArgsNeedsTarget, thisArgByRef, &info.ArgBufLayout);
     info.HasGCDescriptor = GenerateGCDescriptor(pCalleeMD, info.ArgBufLayout, &info.GCRefMapBuilder);
 
     *storeArgsStub = CreateStoreArgsStub(info);
@@ -346,7 +346,7 @@ void TailCallHelp::CreateTailCallHelperStubs(
 
 void TailCallHelp::LayOutArgBuffer(
     MetaSig& callSiteSig, MethodDesc* calleeMD,
-    bool storeTarget, ArgBufferLayout* layout)
+    bool storeTarget, bool thisArgByRef, ArgBufferLayout* layout)
 {
     unsigned int offs = 0;
 
@@ -362,7 +362,9 @@ void TailCallHelp::LayOutArgBuffer(
     if (callSiteSig.HasThis())
     {
         TypeHandle thisHnd;
-        if (calleeMD != NULL && calleeMD->GetMethodTable()->IsValueType())
+
+        bool thisParamByRef = (calleeMD != NULL) ? calleeMD->GetMethodTable()->IsValueType() : thisArgByRef;
+        if (thisParamByRef)
         {
             thisHnd = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
                       .MakeByRef();

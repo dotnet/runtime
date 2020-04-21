@@ -7295,6 +7295,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 }
             }
 
+            if (call->gtCallThisArg != nullptr)
+            {
+                var_types thisArgType = call->gtCallThisArg->GetNode()->TypeGet();
+                if (thisArgType != TYP_REF)
+                {
+                    flags |= CORINFO_TAILCALL_THIS_ARG_IS_BYREF;
+                }
+            }
+
             if (!info.compCompHnd->getTailCallHelpers(token, sig, (CORINFO_GET_TAILCALL_HELPERS_FLAGS)flags,
                                                       &tailCallHelpers))
             {

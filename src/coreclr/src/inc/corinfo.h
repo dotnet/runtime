@@ -1801,7 +1801,8 @@ struct CORINFO_EE_INFO
 enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
 {
     // The callsite is a callvirt instruction.
-    CORINFO_TAILCALL_IS_CALLVIRT = 0x00000001,
+    CORINFO_TAILCALL_IS_CALLVIRT       = 0x00000001,
+    CORINFO_TAILCALL_THIS_ARG_IS_BYREF = 0x00000002,
 };
 
 // Flags passed from runtime to JIT.
