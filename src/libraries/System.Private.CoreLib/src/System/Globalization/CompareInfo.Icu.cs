@@ -632,10 +632,29 @@ namespace System.Globalization
                         continue;
                     }
 
+                    // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+                    if (a > ap && *(a - 1) >= 0x80)
+                        goto InteropCall;
+                    if (b > bp && *(b - 1) >= 0x80)
+                        goto InteropCall;
                     return false;
                 }
 
-                return (source.Length >= suffix.Length);
+                // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+
+                if (source.Length < suffix.Length)
+                {
+                    if (*b >= 0x80)
+                        goto InteropCall;
+                    return false;
+                }
+
+                if (source.Length > suffix.Length)
+                {
+                    if (*a >= 0x80)
+                        goto InteropCall;
+                }
+                return true;
 
             InteropCall:
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
@@ -672,10 +691,29 @@ namespace System.Globalization
                         continue;
                     }
 
+                    // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+                    if (a > ap && *(a - 1) >= 0x80)
+                        goto InteropCall;
+                    if (b > bp && *(b - 1) >= 0x80)
+                        goto InteropCall;
                     return false;
                 }
 
-                return (source.Length >= suffix.Length);
+                // The match may be affected by special character. Verify that the preceding character is regular ASCII.
+
+                if (source.Length < suffix.Length)
+                {
+                    if (*b >= 0x80)
+                        goto InteropCall;
+                    return false;
+                }
+
+                if (source.Length > suffix.Length)
+                {
+                    if (*a >= 0x80)
+                        goto InteropCall;
+                }
+                return true;
 
             InteropCall:
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options);
