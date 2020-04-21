@@ -46,6 +46,8 @@ namespace Internal.ReadyToRunConstants
                     {
                         switch (instructionSet)
                         {
+                            case InstructionSet.X64_X86Base: return ReadyToRunInstructionSet.X86Base;
+                            case InstructionSet.X64_X86Base_X64: return ReadyToRunInstructionSet.X86Base;
                             case InstructionSet.X64_SSE: return ReadyToRunInstructionSet.Sse;
                             case InstructionSet.X64_SSE_X64: return ReadyToRunInstructionSet.Sse;
                             case InstructionSet.X64_SSE2: return ReadyToRunInstructionSet.Sse2;
@@ -80,6 +82,7 @@ namespace Internal.ReadyToRunConstants
                     {
                         switch (instructionSet)
                         {
+                            case InstructionSet.X86_X86Base: return ReadyToRunInstructionSet.X86Base;
                             case InstructionSet.X86_SSE: return ReadyToRunInstructionSet.Sse;
                             case InstructionSet.X86_SSE2: return ReadyToRunInstructionSet.Sse2;
                             case InstructionSet.X86_SSE3: return ReadyToRunInstructionSet.Sse3;
