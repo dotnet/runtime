@@ -145,7 +145,7 @@ namespace System.Text.Json.Serialization
 
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo)
         {
-            MethodInfo getMethodInfo = propertyInfo.GetGetMethod()!;
+            MethodInfo getMethodInfo = propertyInfo.GetMethod!;
 
             return delegate (object obj)
             {
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization
 
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo)
         {
-            MethodInfo setMethodInfo = propertyInfo.GetSetMethod()!;
+            MethodInfo setMethodInfo = propertyInfo.SetMethod!;
 
             return delegate (object obj, TProperty value)
             {

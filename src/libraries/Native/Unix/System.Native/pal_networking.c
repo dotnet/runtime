@@ -56,6 +56,10 @@
 #if HAVE_LINUX_CAN_H
 #include <linux/can.h>
 #endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
 static void* GetKeventUdata(uintptr_t udata)
@@ -2310,7 +2314,7 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
                     return true;
 
                 default:
-                    *palProtocolType = (int)palProtocolType;
+                    *palProtocolType = (int32_t)(intptr_t)palProtocolType;
                     return false;
             }
 

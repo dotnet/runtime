@@ -38,6 +38,7 @@ Below table shows the combined area owners on this repository:
 | area-Codegen-JIT-mono | @SamMonoRT | |
 | area-Codegen-AOT-mono | @SamMonoRT | |
 | area-Codegen-Interpreter-mono | @BrzVlad | |
+| area-CodeGen-LLVM-mono | @imhameed | |
 | area-CoreLib-mono | @steveisok | |
 | area-GC-mono | @BrzVlad | |
 | area-Build-mono | @akoeplinger | |
@@ -47,8 +48,19 @@ Below table shows the combined area owners on this repository:
 | area-Threading-mono | @lambdageek | |
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
+| ** Extensions namespaces ** | | |
+| area-Extensions-Caching | @maryamariyan | |
+| area-Extensions-Configuration | @maryamariyan | |
+| area-Extensions-DependencyInjection | @maryamariyan | |
+| area-Extensions-FileSystem | @maryamariyan | |
+| area-Extensions-Hosting | @maryamariyan | |
+| area-Extensions-HttpClientFactory | @maryamariyan | |
+| area-Extensions-Logging | @maryamariyan | |
+| area-Extensions-Options | @maryamariyan | |
+| area-Extensions-Primitives | @maryamariyan | |
+| area-Microsoft.Extensions | @maryamariyan | |
 | **System namespaces** | | |
-| area-System.Buffers | @tannergooding | |
+| area-System.Buffers | @tannergooding @GrabYourPitchforks @pgovind | |
 | area-System.CodeDom | @buyaa-n @krwq | |
 | area-System.Collections | @eiriktsarpalis @layomia | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
 | area-System.ComponentModel | @safern | |
@@ -58,12 +70,14 @@ Below table shows the combined area owners on this repository:
 | area-System.Configuration | @maryamariyan @safern | |
 | area-System.Console | @carlossanlop @eiriktsarpalis | |
 | area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
+| area-System.Data.Odbc | @ajcvickers | |
+| area-System.Data.OleDB | @ajcvickers | |
 | area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
 | area-System.Diagnostics | @tommcdon @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
 | area-System.Diagnostics.Process | @adamsitnik @eiriktsarpalis | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @tarekgh @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
-| area-System.Drawing | @safern | |
+| area-System.Drawing | @safern @tannergooding | |
 | area-System.Dynamic.Runtime | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Globalization | @safern @tarekgh @krwq | |
 | area-System.IO | @carlossanlop @jozkee | |

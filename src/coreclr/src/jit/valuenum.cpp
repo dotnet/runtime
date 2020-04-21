@@ -3612,15 +3612,7 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
         size_t elemTypSize = (elemTyp == TYP_STRUCT) ? elemStructSize : genTypeSize(elemTyp);
         size_t indTypeSize = genTypeSize(indType);
 
-        if ((indType == TYP_REF) && (varTypeIsStruct(elemTyp)))
-        {
-            // indType is TYP_REF and elemTyp is TYP_STRUCT
-            //
-            // We have a pointer to a static that is a Boxed Struct
-            //
-            return elem;
-        }
-        else if (indTypeSize > elemTypSize)
+        if (indTypeSize > elemTypSize)
         {
             // Reading beyong the end of 'elem'
 

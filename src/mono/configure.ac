@@ -6765,6 +6765,18 @@ if test x"$GCC" = xyes; then
 	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 	# jay has a lot of implicit declarations
 	JAY_CFLAGS="-Wno-implicit-function-declaration"
+
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Wsometimes-uninitialized -Werror"
+	AC_MSG_CHECKING(for -Wsometimes-uninitialized option to gcc)
+	AC_TRY_COMPILE([],[
+	], [
+		AC_MSG_RESULT(yes)
+		CFLAGS="$ORIG_CFLAGS -Werror=sometimes-uninitialized"
+	], [
+		AC_MSG_RESULT(no)
+		CFLAGS=$ORIG_CFLAGS
+	])
 fi
 
 # zlib/configure checks if this program compiles and if so

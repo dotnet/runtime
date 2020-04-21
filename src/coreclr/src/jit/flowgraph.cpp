@@ -21225,6 +21225,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     return;
                 }
                 break;
+            case GT_ADDR:
+                assert(!op1->CanCSE());
 
             default:
                 break;
@@ -21896,7 +21898,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-
+        assert(inlineContext->GetCode() != nullptr);
         depth++;
 
         if (inlineContext->GetCode() == candidateCode)

@@ -391,6 +391,16 @@
     "base": {
       "#import": []
     },
+    "browser": {
+      "#import": [
+        "any"
+      ]
+    },
+    "browser-wasm": {
+      "#import": [
+        "browser"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"

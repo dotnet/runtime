@@ -77,7 +77,7 @@ namespace System.Text.Json
             }
         }
 
-        public static JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        public static JsonPropertyInfo AddProperty(PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo)?.Condition;
 
@@ -85,6 +85,8 @@ namespace System.Text.Json
             {
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
+
+            Type propertyType = propertyInfo.PropertyType;
 
             JsonConverter converter = GetConverter(
                 propertyType,

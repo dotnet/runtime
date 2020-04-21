@@ -40,6 +40,9 @@ namespace System.Globalization
         private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
 
         [NonSerialized]
+        private IntPtr _sortHandle;
+
+        [NonSerialized]
         private string _sortName = null!; // The name that defines our behavior
 
         [OptionalField(VersionAdded = 3)]
@@ -131,7 +134,7 @@ namespace System.Globalization
             }
 
             char* pChar = &ch;
-            return IsSortable(pChar, 1);
+            return IsSortableCore(pChar, 1);
         }
 
         public static unsafe bool IsSortable(string text)
@@ -153,7 +156,26 @@ namespace System.Globalization
 
             fixed (char* pChar = text)
             {
-                return IsSortable(pChar, text.Length);
+                return IsSortableCore(pChar, text.Length);
+            }
+        }
+
+        private static unsafe bool IsSortableCore(char* pChar, int length) =>
+            GlobalizationMode.UseNls ?
+                NlsIsSortable(pChar, length) :
+                IcuIsSortable(pChar, length);
+
+        private void InitSort(CultureInfo culture)
+        {
+            _sortName = culture.SortName;
+
+            if (GlobalizationMode.UseNls)
+            {
+                NlsInitSortHandle();
+            }
+            else
+            {
+                IcuInitSortHandle();
             }
         }
 
@@ -281,7 +303,7 @@ namespace System.Globalization
                 return string.CompareOrdinal(string1, string2);
             }
 
-            return CompareString(string1.AsSpan(), string2.AsSpan(), options);
+            return CompareStringCore(string1.AsSpan(), string2.AsSpan(), options);
         }
 
         // TODO https://github.com/dotnet/runtime/issues/8890:
@@ -323,7 +345,7 @@ namespace System.Globalization
                     string.CompareOrdinal(string1, string2.AsSpan());
             }
 
-            return CompareString(string1, string2, options);
+            return CompareStringCore(string1, string2, options);
         }
 
         internal int CompareOptionNone(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
@@ -336,7 +358,7 @@ namespace System.Globalization
 
             return GlobalizationMode.Invariant ?
                 string.CompareOrdinal(string1, string2) :
-                CompareString(string1, string2, CompareOptions.None);
+                CompareStringCore(string1, string2, CompareOptions.None);
         }
 
         internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
@@ -349,7 +371,7 @@ namespace System.Globalization
 
             return GlobalizationMode.Invariant ?
                 CompareOrdinalIgnoreCase(string1, string2) :
-                CompareString(string1, string2, CompareOptions.IgnoreCase);
+                CompareStringCore(string1, string2, CompareOptions.IgnoreCase);
         }
 
         /// <summary>
@@ -448,8 +470,21 @@ namespace System.Globalization
                 return string.CompareOrdinal(span1, span2);
             }
 
-            return CompareString(span1, span2, options);
+            return CompareStringCore(span1, span2, options);
         }
+
+        // TODO https://github.com/dotnet/runtime/issues/8890:
+        // This method shouldn't be necessary, as we should be able to just use the overload
+        // that takes two spans.  But due to this issue, that's adding significant overhead.
+        private unsafe int CompareStringCore(ReadOnlySpan<char> string1, string string2, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsCompareString(string1, string2, options) :
+                IcuCompareString(string1, string2, options);
+
+        private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsCompareString(string1, string2, options) :
+                IcuCompareString(string1, string2, options);
 
         /// <summary>
         /// CompareOrdinalIgnoreCase compare two string ordinally with ignoring the case.
@@ -528,7 +563,7 @@ namespace System.Globalization
 
             range -= length;
 
-            return CompareStringOrdinalIgnoreCase(ref charA, lengthA - range, ref charB, lengthB - range);
+            return CompareStringOrdinalIgnoreCaseCore(ref charA, lengthA - range, ref charB, lengthB - range);
         }
 
         internal static bool EqualsOrdinalIgnoreCase(ref char charA, ref char charB, int length)
@@ -638,7 +673,7 @@ namespace System.Globalization
         {
             if (!GlobalizationMode.Invariant)
             {
-                return CompareStringOrdinalIgnoreCase(ref charA, length, ref charB, length) == 0;
+                return CompareStringOrdinalIgnoreCaseCore(ref charA, length, ref charB, length) == 0;
             }
             else
             {
@@ -669,6 +704,11 @@ namespace System.Globalization
                 return true;
             }
         }
+
+        private static unsafe int CompareStringOrdinalIgnoreCaseCore(ref char string1, int count1, ref char string2, int count2) =>
+            GlobalizationMode.UseNls ?
+                NlsCompareStringOrdinalIgnoreCase(ref string1, count1, ref string2, count2) :
+                IcuCompareStringOrdinalIgnoreCase(ref string1, count1, ref string2, count2);
 
         /// <summary>
         /// Determines whether prefix is a prefix of string.  If prefix equals
@@ -714,7 +754,7 @@ namespace System.Globalization
                 return source.StartsWith(prefix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
 
-            return StartsWith(source, prefix, options);
+            return StartsWithCore(source, prefix, options);
         }
 
         internal bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
@@ -725,8 +765,13 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return StartsWith(source, prefix, options);
+            return StartsWithCore(source, prefix, options);
         }
+
+        private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsStartsWith(source, prefix, options) :
+                IcuStartsWith(source, prefix, options);
 
         public bool IsPrefix(string source, string prefix)
         {
@@ -777,7 +822,7 @@ namespace System.Globalization
                 return source.EndsWith(suffix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
 
-            return EndsWith(source, suffix, options);
+            return EndsWithCore(source, suffix, options);
         }
 
         internal bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
@@ -788,13 +833,18 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return EndsWith(source, suffix, options);
+            return EndsWithCore(source, suffix, options);
         }
 
         public bool IsSuffix(string source, string suffix)
         {
             return IsSuffix(source, suffix, 0);
         }
+
+        private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsEndsWith(source, suffix, options) :
+                IcuEndsWith(source, suffix, options);
 
         /// <summary>
         /// Returns the first index where value is found in string.  The
@@ -983,6 +1033,11 @@ namespace System.Globalization
             return IndexOfOrdinalCore(source, value, ignoreCase, fromBeginning: false);
         }
 
+        private static int IndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning) =>
+            GlobalizationMode.UseNls ?
+                NlsIndexOfOrdinalCore(source, value, ignoreCase, fromBeginning) :
+                IcuIndexOfOrdinalCore(source, value, ignoreCase, fromBeginning);
+
         internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -1109,6 +1164,16 @@ namespace System.Globalization
                 }
             }
         }
+
+        private unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr) =>
+            GlobalizationMode.UseNls ?
+                NlsIndexOfCore(source, target, startIndex, count, options, matchLengthPtr) :
+                IcuIndexOfCore(source, target, startIndex, count, options, matchLengthPtr);
+
+        private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
+            GlobalizationMode.UseNls ?
+                NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+                IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
@@ -1360,7 +1425,12 @@ namespace System.Globalization
             return LastIndexOfCore(source, value, startIndex, count, options);
         }
 
-        private static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        private int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsLastIndexOfCore(source, target, startIndex, count, options) :
+                IcuLastIndexOfCore(source, target, startIndex, count, options);
+
+        internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
@@ -1385,7 +1455,9 @@ namespace System.Globalization
                 return -1;
             }
 
-            return LastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);
+            return GlobalizationMode.UseNls ?
+                NlsLastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase) :
+                IcuLastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);
         }
 
         /// <summary>
@@ -1398,7 +1470,7 @@ namespace System.Globalization
                 return InvariantCreateSortKey(source, options);
             }
 
-            return CreateSortKey(source, options);
+            return CreateSortKeyCore(source, options);
         }
 
         public SortKey GetSortKey(string source)
@@ -1408,8 +1480,13 @@ namespace System.Globalization
                 return InvariantCreateSortKey(source, CompareOptions.None);
             }
 
-            return CreateSortKey(source, CompareOptions.None);
+            return CreateSortKeyCore(source, CompareOptions.None);
         }
+
+        private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsCreateSortKey(source, options) :
+                IcuCreateSortKey(source, options);
 
         public override bool Equals(object? value)
         {
@@ -1490,6 +1567,11 @@ namespace System.Globalization
             }
         }
 
+        private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
+            GlobalizationMode.UseNls ?
+                NlsGetHashCodeOfString(source, options) :
+                IcuGetHashCodeOfString(source, options);
+
         public override string ToString() => "CompareInfo - " + Name;
 
         public SortVersion Version
@@ -1508,7 +1590,7 @@ namespace System.Globalization
                     }
                     else
                     {
-                        m_SortVersion = GetSortVersion();
+                        m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }
 

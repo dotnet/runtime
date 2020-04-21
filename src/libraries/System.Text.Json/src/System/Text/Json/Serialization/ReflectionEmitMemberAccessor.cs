@@ -232,7 +232,7 @@ namespace System.Text.Json.Serialization
 
         private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
-            MethodInfo? realMethod = propertyInfo.GetGetMethod();
+            MethodInfo? realMethod = propertyInfo.GetMethod;
             Type objectType = typeof(object);
 
             Debug.Assert(realMethod != null);
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization
 
         private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
-            MethodInfo? realMethod = propertyInfo.GetSetMethod();
+            MethodInfo? realMethod = propertyInfo.SetMethod;
             Type objectType = typeof(object);
 
             Debug.Assert(realMethod != null);

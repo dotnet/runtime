@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/runincontext/runincontext.csproj" />
     <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/r2rdump/R2RDump.csproj" />
-    <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/ReadyToRun.SuperIlc/ReadyToRun.SuperIlc.csproj" />
+    <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/r2rtest/R2RTest.csproj" />
     <ProjectReference Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 

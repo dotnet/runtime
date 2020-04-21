@@ -106,7 +106,7 @@ namespace System.Net.NetworkInformation
 
         ///
         /// Gets the active TCP connections. Uses the native GetTcpTable API.
-        private List<SystemTcpConnectionInformation> GetAllTcpConnections()
+        private unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {
             uint size = 0;
             uint result = 0;
@@ -128,21 +128,20 @@ namespace System.Net.NetworkInformation
 
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
+                            var span = new ReadOnlySpan<byte>((byte*)buffer, (int)size);
+
                             // The table info just gives us the number of rows.
-                            Interop.IpHlpApi.MibTcpTable tcpTableInfo = Marshal.PtrToStructure<Interop.IpHlpApi.MibTcpTable>(buffer);
+                            ref readonly Interop.IpHlpApi.MibTcpTable tcpTableInfo = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibTcpTable>(span);
 
                             if (tcpTableInfo.numberOfEntries > 0)
                             {
                                 // Skip over the tableinfo to get the inline rows.
-                                IntPtr newPtr = (IntPtr)((long)buffer + Marshal.SizeOf(tcpTableInfo.numberOfEntries));
+                                span = span.Slice(sizeof(Interop.IpHlpApi.MibTcpTable));
 
                                 for (int i = 0; i < tcpTableInfo.numberOfEntries; i++)
                                 {
-                                    Interop.IpHlpApi.MibTcpRow tcpRow = Marshal.PtrToStructure<Interop.IpHlpApi.MibTcpRow>(newPtr);
-                                    tcpConnections.Add(new SystemTcpConnectionInformation(tcpRow));
-
-                                    // Increment the pointer to the next row.
-                                    newPtr = (IntPtr)((long)newPtr + Marshal.SizeOf(tcpRow));
+                                    tcpConnections.Add(new SystemTcpConnectionInformation(in MemoryMarshal.AsRef<Interop.IpHlpApi.MibTcpRow>(span)));
+                                    span = span.Slice(sizeof(Interop.IpHlpApi.MibTcpRow));
                                 }
                             }
                         }
@@ -179,21 +178,22 @@ namespace System.Net.NetworkInformation
                                                                                 Interop.IpHlpApi.TcpTableClass.TcpTableOwnerPidAll, 0);
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
+                            var span = new ReadOnlySpan<byte>((byte*)buffer, (int)size);
+
                             // The table info just gives us the number of rows.
-                            Interop.IpHlpApi.MibTcp6TableOwnerPid tcpTable6OwnerPid = Marshal.PtrToStructure<Interop.IpHlpApi.MibTcp6TableOwnerPid>(buffer);
+                            ref readonly Interop.IpHlpApi.MibTcp6TableOwnerPid tcpTable6OwnerPid = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibTcp6TableOwnerPid>(span);
 
                             if (tcpTable6OwnerPid.numberOfEntries > 0)
                             {
                                 // Skip over the tableinfo to get the inline rows.
-                                IntPtr newPtr = (IntPtr)((long)buffer + Marshal.SizeOf(tcpTable6OwnerPid.numberOfEntries));
+                                span = span.Slice(sizeof(Interop.IpHlpApi.MibTcp6TableOwnerPid));
 
                                 for (int i = 0; i < tcpTable6OwnerPid.numberOfEntries; i++)
                                 {
-                                    Interop.IpHlpApi.MibTcp6RowOwnerPid tcp6RowOwnerPid = Marshal.PtrToStructure<Interop.IpHlpApi.MibTcp6RowOwnerPid>(newPtr);
-                                    tcpConnections.Add(new SystemTcpConnectionInformation(tcp6RowOwnerPid));
+                                    tcpConnections.Add(new SystemTcpConnectionInformation(in MemoryMarshal.AsRef<Interop.IpHlpApi.MibTcp6RowOwnerPid>(span)));
 
                                     // We increment the pointer to the next row.
-                                    newPtr = (IntPtr)((long)newPtr + Marshal.SizeOf(tcp6RowOwnerPid));
+                                    span = span.Slice(sizeof(Interop.IpHlpApi.MibTcp6RowOwnerPid));
                                 }
                             }
                         }
@@ -215,7 +215,7 @@ namespace System.Net.NetworkInformation
         }
 
         /// Gets the active UDP listeners. Uses the native GetUdpTable API.
-        public override IPEndPoint[] GetActiveUdpListeners()
+        public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
             uint result = 0;
@@ -229,29 +229,33 @@ namespace System.Net.NetworkInformation
                 while (result == Interop.IpHlpApi.ERROR_INSUFFICIENT_BUFFER)
                 {
                     // Allocate the buffer and get the UDP table.
-                    IntPtr buffer = IntPtr.Zero;
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+
                     try
                     {
                         result = Interop.IpHlpApi.GetUdpTable(buffer, ref size, true);
 
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
+                            var span = new ReadOnlySpan<byte>((byte*)buffer, (int)size);
+
                             // The table info just gives us the number of rows.
-                            Interop.IpHlpApi.MibUdpTable udpTableInfo = Marshal.PtrToStructure<Interop.IpHlpApi.MibUdpTable>(buffer);
+                            ref readonly Interop.IpHlpApi.MibUdpTable udpTableInfo = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibUdpTable>(span);
 
                             if (udpTableInfo.numberOfEntries > 0)
                             {
                                 // Skip over the tableinfo to get the inline rows.
-                                IntPtr newPtr = (IntPtr)((long)buffer + Marshal.SizeOf(udpTableInfo.numberOfEntries));
+                                span = span.Slice(sizeof(Interop.IpHlpApi.MibUdpTable));
+
                                 for (int i = 0; i < udpTableInfo.numberOfEntries; i++)
                                 {
-                                    Interop.IpHlpApi.MibUdpRow udpRow = Marshal.PtrToStructure<Interop.IpHlpApi.MibUdpRow>(newPtr);
+                                    ref readonly Interop.IpHlpApi.MibUdpRow udpRow = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibUdpRow>(span);
                                     int localPort = udpRow.localPort1 << 8 | udpRow.localPort2;
 
                                     udpListeners.Add(new IPEndPoint(udpRow.localAddr, (int)localPort));
 
                                     // We increment the pointer to the next row.
-                                    newPtr = (IntPtr)((long)newPtr + Marshal.SizeOf(udpRow));
+                                    span = span.Slice(sizeof(Interop.IpHlpApi.MibUdpRow));
                                 }
                             }
                         }
@@ -288,23 +292,26 @@ namespace System.Net.NetworkInformation
 
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
+                            var span = new ReadOnlySpan<byte>((byte*)buffer, (int)size);
+
                             // The table info just gives us the number of rows.
-                            Interop.IpHlpApi.MibUdp6TableOwnerPid udp6TableOwnerPid = Marshal.PtrToStructure<Interop.IpHlpApi.MibUdp6TableOwnerPid>(buffer);
+                            ref readonly Interop.IpHlpApi.MibUdp6TableOwnerPid udp6TableOwnerPid = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibUdp6TableOwnerPid>(span);
 
                             if (udp6TableOwnerPid.numberOfEntries > 0)
                             {
                                 // Skip over the tableinfo to get the inline rows.
-                                IntPtr newPtr = (IntPtr)((long)buffer + Marshal.SizeOf(udp6TableOwnerPid.numberOfEntries));
+                                span = span.Slice(sizeof(Interop.IpHlpApi.MibUdp6TableOwnerPid));
+
                                 for (int i = 0; i < udp6TableOwnerPid.numberOfEntries; i++)
                                 {
-                                    Interop.IpHlpApi.MibUdp6RowOwnerPid udp6RowOwnerPid = Marshal.PtrToStructure<Interop.IpHlpApi.MibUdp6RowOwnerPid>(newPtr);
+                                    ref readonly Interop.IpHlpApi.MibUdp6RowOwnerPid udp6RowOwnerPid = ref MemoryMarshal.AsRef<Interop.IpHlpApi.MibUdp6RowOwnerPid>(span);
                                     int localPort = udp6RowOwnerPid.localPort1 << 8 | udp6RowOwnerPid.localPort2;
 
-                                    udpListeners.Add(new IPEndPoint(new IPAddress(udp6RowOwnerPid.localAddr,
+                                    udpListeners.Add(new IPEndPoint(new IPAddress(udp6RowOwnerPid.localAddrAsSpan,
                                         udp6RowOwnerPid.localScopeId), localPort));
 
                                     // We increment the pointer to the next row.
-                                    newPtr = (IntPtr)((long)newPtr + Marshal.SizeOf(udp6RowOwnerPid));
+                                    span = span.Slice(sizeof(Interop.IpHlpApi.MibUdp6RowOwnerPid));
                                 }
                             }
                         }
