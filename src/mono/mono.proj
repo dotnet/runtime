@@ -971,6 +971,7 @@
       <XunitIgnoreCategories Include="-notrait category=failing"/>
       <XunitIgnoreCategories Include="-notrait category=nonnetcoreapptests"/>
       <XunitIgnoreCategories Include="-notrait category=nonosxtests"/>
+      <XunitIgnoreCategories Include="-notrait category=nonmonotests"/>
     </ItemGroup>
     <WriteLinesToFile
         File="$(BundleDir)\xunit-excludes.txt"
@@ -1005,7 +1006,7 @@
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl boot &quot;iPhone 11&quot;" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64' and '$(ShowIosSimulator)' != 'false'" Command="open -a Simulator" />
     <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl install &quot;iPhone 11&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch booted net.dot.$(TestName) testlib:$(TestName).dll" />
+    <Exec Condition="'$(TargetArchitecture)' == 'x64'" Command="xcrun simctl launch --console booted net.dot.$(TestName) testlib:$(TestName).dll --auto-exit" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->
