@@ -14,5 +14,11 @@ internal static partial class Interop
             [In] SafeSocketHandle socketHandle,
             [Out] byte[] socketAddress,
             [In, Out] ref int socketAddressSize);
+
+        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static extern unsafe SocketError getpeername(
+            [In] SafeSocketHandle socketHandle,
+            [Out] byte* socketAddress,
+            [In, Out] int* socketAddressSize);
     }
 }
