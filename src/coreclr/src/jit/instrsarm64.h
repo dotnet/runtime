@@ -1525,9 +1525,25 @@ INST1(frecpx,  "frecpx", 0, 0, IF_DV_2G,  0x5EA1F800)
                                    // C7.2.139 FRECPX
                                    //  frecpx  Vd,Vn                DV_2G  010111101X100001 111110nnnnnddddd   5EA1 F800   Vd,Vn    (scalar)
 
+INST1(sabal,   "sabal",  0, 0, IF_DV_3H,  0x0E205000)
+                                   // C7.2.218 SABAL, SABAL2
+                                   //  sabal   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 010100nnnnnddddd   0E20 5000   Vd,Vn,Vm (vector)
+
+INST1(sabal2,  "sabal2", 0, 0, IF_DV_3H,  0x4E205000)
+                                   // C7.2.218 SABAL, SABAL2
+                                   //  sabal2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 010100nnnnnddddd   4E20 5000   Vd,Vn,Vm (vector)
+
 INST1(sadalp,  "sadalp", 0, 0, IF_DV_2T,  0x0E206800)
                                    // C7.2.221 SADALP
                                    //  sadalp  Vd,Vn                DV_2T  0Q001110XX100000 011010nnnnnddddd   0E20 6800   Vd,Vn    (vector)
+
+INST1(uabal,   "uabal",  0, 0, IF_DV_3H,  0x2E205000)
+                                   // C7.2.335 UABAL, UABAL2
+                                   //  uabal   Vd,Vn,Vm             DV_3H  00101110XX1mmmmm 010100nnnnnddddd   2E20 5000   Vd,Vn,Vm (vector)
+
+INST1(uabal2,  "uabal2", 0, 0, IF_DV_3H,  0x6E205000)
+                                   // C7.2.335 UABAL, UABAL2
+                                   //  uabal2  Vd,Vn,Vm             DV_3H  01101110XX1mmmmm 010100nnnnnddddd   6E20 5000   Vd,Vn,Vm (vector)
 
 INST1(uadalp,  "uadalp", 0, 0, IF_DV_2T, 0x2E206800)
                                    // C7.2.338 UADALP
