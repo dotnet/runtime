@@ -139,11 +139,6 @@ namespace ILCompiler
             return false;
         }
 
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-        }
-
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             DefType similarSpecifiedVector = GetSimilarVector(type);
