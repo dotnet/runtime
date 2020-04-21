@@ -843,6 +843,9 @@ namespace Internal.TypeSystem
 
             MetadataType metadataType = (MetadataType)type;
 
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.ARM64)
+                return ValueTypeShapeCharacteristics.None;
+
             // No HFAs with explicit layout. There may be cases where explicit layout may be still
             // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
             // unconditionally disable HFAs for explicit layout.
