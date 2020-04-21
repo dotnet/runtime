@@ -84,7 +84,7 @@ public:
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
 
 #ifdef FEATURE_COMINTEROP
-    static FCDECL4(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis, CLR_BOOL fForWinRT);
+    static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
     static FCDECL3(void*,           CreateCustomMarshalerHelper, MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);

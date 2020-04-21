@@ -1404,7 +1404,7 @@ FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis, CLR_BOOL fForWinRT)
+FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis)
 {
     FCALL_CONTRACT;
 
@@ -1416,9 +1416,6 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
     HELPER_METHOD_FRAME_BEGIN_RET_2(oref, oThrowable);
     {
         IErrorInfo *pErrInfo = NULL;
-
-        IRestrictedErrorInfo *pResErrorInfo = NULL;
-        BOOL bHasNonCLRLanguageErrorObject = FALSE;
 
         if (pErrInfo == NULL && pMD != NULL)
         {
@@ -1432,14 +1429,14 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
                 // Check to see if the component supports error information for this interface.
                 IID ItfIID;
                 pItfMT->GetGuid(&ItfIID, TRUE);
-                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID, !fForWinRT);
+                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID, FALSE);
 
                 DWORD cbRef = SafeRelease(pUnk);
                 LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
             }
         }
 
-        GetExceptionForHR(hr, pErrInfo, !fForWinRT, &oThrowable, pResErrorInfo, bHasNonCLRLanguageErrorObject);
+        GetExceptionForHR(hr, pErrInfo, &oThrowable);
     }
     HELPER_METHOD_FRAME_END();
 

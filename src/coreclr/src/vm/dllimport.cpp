@@ -755,14 +755,7 @@ public:
                     m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
                     m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-                    if (SF_IsWinRTStub(m_dwStubFlags))
-                    {
-                        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT_WINRT, 3, 1);
-                    }
-                    else
-                    {
-                        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
-                    }
+                    pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
                 }
                 else
 #endif // FEATURE_COMINTEROP

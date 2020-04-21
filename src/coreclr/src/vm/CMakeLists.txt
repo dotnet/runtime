@@ -350,7 +350,6 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
-    frameworkexceptionloader.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
@@ -470,7 +469,6 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
-    frameworkexceptionloader.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h

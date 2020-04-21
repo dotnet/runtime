@@ -3159,7 +3159,7 @@ void FreeExceptionData(ExceptionData *pedata)
 #endif // FEATURE_COMINTEROP
 }
 
-void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, OBJECTREF* pProtectedThrowable, IRestrictedErrorInfo *pResErrorInfo, BOOL bHasLangRestrictedErrInfo)
+void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
     CONTRACTL
     {
@@ -3203,7 +3203,7 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, 
         // the native IErrorInfo.
         if ((*pProtectedThrowable) == NULL)
         {
-            EECOMException ex(hr, pErrInfo, fUseCOMException, pResErrorInfo, bHasLangRestrictedErrInfo COMMA_INDEBUG(FALSE));
+            EECOMException ex(hr, pErrInfo COMMA_INDEBUG(FALSE));
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
@@ -3213,16 +3213,9 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, 
     // so we'll create an exception based solely on the hresult.
     if ((*pProtectedThrowable) == NULL)
     {
-        EEMessageException ex(hr, fUseCOMException);
+        EEMessageException ex(hr);
         (*pProtectedThrowable) = ex.GetThrowable();
     }
-}
-
-void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GetExceptionForHR(hr, pErrInfo, true, pProtectedThrowable);
 }
 
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
@@ -3242,7 +3235,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
         pErrInfo = NULL;
 #endif
 
-    GetExceptionForHR(hr, pErrInfo, true, pProtectedThrowable);
+    GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
 
 
@@ -6798,7 +6791,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End)) 
+    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End))
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -12616,11 +12609,11 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     {
         if (pInnerException == NULL)
         {
-            EX_THROW(EECOMException, (hr, pErrInfo, true, NULL, FALSE));
+            EX_THROW(EECOMException, (hr, pErrInfo));
         }
         else
         {
-            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo, true, NULL, FALSE), pInnerException);
+            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo), pInnerException);
         }
     }
     else

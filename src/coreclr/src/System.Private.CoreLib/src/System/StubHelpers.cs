@@ -1248,20 +1248,13 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
         internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis)
         {
-            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis, false);
-            ex.InternalPreserveStackTrace();
-            return ex;
-        }
-
-        internal static Exception GetCOMHRExceptionObject_WinRT(int hr, IntPtr pCPCMD, object pThis)
-        {
-            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis, true);
+            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis);
             ex.InternalPreserveStackTrace();
             return ex;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis, bool fForWinRT);
+        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis);
 
 #endif // FEATURE_COMINTEROP
 

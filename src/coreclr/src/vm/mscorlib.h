@@ -952,7 +952,6 @@ DEFINE_METHOD(STUBHELPERS,          GET_NDIRECT_TARGET,     GetNDirectTarget,   
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RefIntPtr_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_Obj_RetException)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT_WINRT,        GetCOMHRExceptionObject_WinRT,      SM_Int_IntPtr_Obj_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT,                GetCOMIPFromRCW_WinRT,              SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT_SHARED_GENERIC, GetCOMIPFromRCW_WinRTSharedGeneric, SM_Obj_IntPtr_RefIntPtr_RetIntPtr)

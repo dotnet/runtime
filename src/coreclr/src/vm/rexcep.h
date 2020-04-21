@@ -212,14 +212,6 @@ DEFINE_EXCEPTION(g_InteropNS,          InvalidOleVariantTypeException, false,  C
 
 DEFINE_EXCEPTION(g_SystemNS,           InvalidOperationException,      false,  COR_E_INVALIDOPERATION)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_EXCEPTION_HR_WINRT_ONLY(g_SystemNS, InvalidOperationException,  COR_E_INVALIDOPERATION,
-                                                                       E_ILLEGAL_STATE_CHANGE,
-                                                                       E_ILLEGAL_METHOD_CALL,
-                                                                       E_ILLEGAL_DELEGATE_ASSIGNMENT,
-                                                                       HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE))
-#endif  // FEATURE_COMINTEROP
-
 DEFINE_EXCEPTION(g_SystemNS,           InvalidProgramException,        false,  COR_E_INVALIDPROGRAM)
 
 DEFINE_EXCEPTION(g_IONS,               IOException,                    false,  COR_E_IO, CTL_E_DEVICEIOERROR, STD_CTL_SCODE(31036), STD_CTL_SCODE(31037))
@@ -317,17 +309,8 @@ DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E
 // All exceptions defined in other .NET Framework assemblies have to be at the end
 //
 
-#ifdef FEATURE_COMINTEROP
-// Jupiter needs some HRESULTs mapped to exceptions in .NET Framework assemblies other than mscorlib.
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_MarkupNS, XamlParseException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_XAMLPARSEFAILED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotAvailableException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_ELEMENTNOTAVAILABLE)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotEnabledException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_ELEMENTNOTENABLED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_DirectUINS, LayoutCycleException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_LAYOUTCYCLE)
-#endif // FEATURE_COMINTEROP
 
 
 // Please see comments on at the top of this list
 
 #undef DEFINE_EXCEPTION
-#undef DEFINE_EXCEPTION_HR_WINRT_ONLY
-#undef DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY

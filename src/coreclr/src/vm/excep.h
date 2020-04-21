@@ -370,7 +370,6 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
-void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, OBJECTREF* pProtectedThrowable, IRestrictedErrorInfo *pResErrorInfo = NULL, BOOL bHasLanguageRestrictedErrorInfo = FALSE);
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
