@@ -298,7 +298,8 @@ namespace ILLink.Tasks.Tests
 			};
 			using (var driver = task.CreateDriver ()) {
 				var expectedAssemblies = assemblyNames.Split (',');
-				var actualAssemblies = driver.Context.GetParameter ("ClearInitLocalsAssemblies").Split (',');
+				Assert.True (driver.Context.TryGetCustomData ("ClearInitLocalsAssemblies", out var value));
+				var actualAssemblies = value.Split (',');
 				Assert.Equal (expectedAssemblies.OrderBy (a => a), actualAssemblies.OrderBy (a => a));
 			}
 		}

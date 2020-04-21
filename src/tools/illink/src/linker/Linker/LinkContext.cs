@@ -188,7 +188,7 @@ namespace Mono.Linker {
 			_resolver = resolver;
 			_resolver.Context = this;
 			_actions = new Dictionary<string, AssemblyAction> ();
-			_parameters = new Dictionary<string, string> ();
+			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_readerParameters = readerParameters;
 			
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
@@ -418,20 +418,19 @@ namespace Mono.Linker {
 			return null;
 		}
 
-		public void SetParameter (string key, string value)
+		public void SetCustomData (string key, string value)
 		{
 			_parameters [key] = value;
 		}
 
-		public bool HasParameter (string key)
+		public bool HasCustomData (string key)
 		{
 			return _parameters.ContainsKey (key);
 		}
 
-		public string GetParameter (string key)
+		public bool TryGetCustomData (string key, out string value)
 		{
-			_parameters.TryGetValue (key, out string val);
-			return val;
+			return _parameters.TryGetValue (key, out value);
 		}
 
 		public void Dispose ()

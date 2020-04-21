@@ -324,9 +324,8 @@ namespace ILLink.Tasks
 
 			if (clearInitLocals) {
 				args.AppendLine ("--enable-opt clearinitlocals");
-				if ((ClearInitLocalsAssemblies != null) && (ClearInitLocalsAssemblies.Length > 0)) {
-					args.Append ("-m ClearInitLocalsAssemblies ");
-					args.AppendLine (ClearInitLocalsAssemblies);
+				if (ClearInitLocalsAssemblies?.Length > 0) {
+					args.AppendFormat ($"--custom-data ClearInitLocalsAssemblies={ClearInitLocalsAssemblies}");
 				}
 			}
 
