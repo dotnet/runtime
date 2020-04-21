@@ -3741,13 +3741,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<byte> Insert(Vector64<byte> vector, byte index, byte data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x1_t vset_lane_f64 (float64_t a, float64x1_t v, const int lane)
-        ///   A32: VMOV.F64 Dd, Dm
-        ///   A64: INS Vd.D[lane], Vn.D[0]
-        /// </summary>
-        public static Vector64<double> Insert(Vector64<double> vector, byte index, double data) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16x4_t vset_lane_s16 (int16_t a, int16x4_t v, const int lane)
         ///   A32: VMOV.16 Dd[lane], Rt
         ///   A64: INS Vd.H[lane], Wn
@@ -3760,13 +3753,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
         public static Vector64<int> Insert(Vector64<int> vector, byte index, int data) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int64x1_t vset_lane_s64 (int64_t a, int64x1_t v, const int lane)
-        ///   A32: VMOV.64 Dd, Rt, Rt2
-        ///   A64: INS Vd.D[lane], Xn
-        /// </summary>
-        public static Vector64<long> Insert(Vector64<long> vector, byte index, long data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vset_lane_s8 (int8_t a, int8x8_t v, const int lane)
@@ -3795,13 +3781,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: INS Vd.S[lane], Wn
         /// </summary>
         public static Vector64<uint> Insert(Vector64<uint> vector, byte index, uint data) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint64x1_t vset_lane_u64 (uint64_t a, uint64x1_t v, const int lane)
-        ///   A32: VMOV.64 Dd[lane], Rt
-        ///   A64: INS Vd.D[lane], Xn
-        /// </summary>
-        public static Vector64<ulong> Insert(Vector64<ulong> vector, byte index, ulong data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vsetq_lane_u8 (uint8_t a, uint8x16_t v, const int lane)
