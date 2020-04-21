@@ -54,11 +54,11 @@ jobs:
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: '${{ parameters.runtimeFlavor }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: '${{ parameters.runtimeFlavor }}Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }}Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
