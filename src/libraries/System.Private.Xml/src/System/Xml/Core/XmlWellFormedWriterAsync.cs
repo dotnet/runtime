@@ -1473,7 +1473,7 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        public override async ValueTask CloseAsync()
+        protected override async ValueTask DisposeAsyncCore()
         {
             if (_currentState != State.Closed)
             {
@@ -1516,11 +1516,11 @@ namespace System.Xml
                     {
                         if (_rawWriter != null)
                         {
-                            await _rawWriter.CloseAsync(WriteState).ConfigureAwait(false);
+                            await _rawWriter.DisposeAsyncCore(WriteState).ConfigureAwait(false);
                         }
                         else
                         {
-                            await _writer.CloseAsync().ConfigureAwait(false);
+                            await _writer.DisposeAsync().ConfigureAwait(false);
                         }
                     }
                     finally

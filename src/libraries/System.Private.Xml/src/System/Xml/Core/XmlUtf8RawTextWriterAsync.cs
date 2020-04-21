@@ -72,7 +72,7 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        public override async ValueTask CloseAsync()
+        protected override async ValueTask DisposeAsyncCore()
         {
             try
             {
@@ -105,6 +105,7 @@ namespace System.Xml
                     }
                 }
             }
+            GC.SuppressFinalize(this);
         }
 
         // Serialize the document type declaration.

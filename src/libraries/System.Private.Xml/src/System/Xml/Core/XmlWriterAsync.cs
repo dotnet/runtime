@@ -604,15 +604,16 @@ namespace System.Xml
         {
             if (WriteState != WriteState.Closed)
             {
-                return CloseAsync();
+                return DisposeAsyncCore();
             }
 
             return default;
         }
 
-        public virtual ValueTask CloseAsync()
+        protected virtual ValueTask DisposeAsyncCore()
         {
-            Close();
+            Dispose(true);
+            GC.SuppressFinalize(this);
             return default;
         }
     }

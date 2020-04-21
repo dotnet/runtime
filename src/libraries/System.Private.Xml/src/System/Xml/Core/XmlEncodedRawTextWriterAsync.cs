@@ -73,7 +73,7 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        public override async ValueTask CloseAsync()
+        protected override async ValueTask DisposeAsyncCore()
         {
             try
             {
@@ -127,6 +127,7 @@ namespace System.Xml
                     }
                 }
             }
+            GC.SuppressFinalize(this);
         }
 
         // Serialize the document type declaration.
@@ -818,7 +819,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            else  if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -1022,7 +1023,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            else  if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, true);
                                 pSrc++;
@@ -1206,7 +1207,7 @@ namespace System.Xml
                         pSrc += 2;
                     }
                     /* Invalid XML character */
-                    else if (ch <= 0x7F || ch >= 0xFFFE)
+                    else  if (ch <= 0x7F || ch >= 0xFFFE)
                     {
                         pDst = InvalidXmlChar(ch, pDst, false);
                         pSrc++;
@@ -1425,7 +1426,7 @@ namespace System.Xml
                                 pSrc += 2;
                             }
                             /* Invalid XML character */
-                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            else  if (ch <= 0x7F || ch >= 0xFFFE)
                             {
                                 pDst = InvalidXmlChar(ch, pDst, false);
                                 pSrc++;
@@ -1656,7 +1657,7 @@ namespace System.Xml
                                     pSrc += 2;
                                 }
                                 /* Invalid XML character */
-                                else if (ch <= 0x7F || ch >= 0xFFFE)
+                                else  if (ch <= 0x7F || ch >= 0xFFFE)
                                 {
                                     pDst = InvalidXmlChar(ch, pDst, false);
                                     pSrc++;
@@ -1840,7 +1841,7 @@ namespace System.Xml
                                     pSrc += 2;
                                 }
                                 /* Invalid XML character */
-                                else if (ch <= 0x7F || ch >= 0xFFFE)
+                                else  if (ch <= 0x7F || ch >= 0xFFFE)
                                 {
                                     pDst = InvalidXmlChar(ch, pDst, false);
                                     pSrc++;

@@ -227,9 +227,9 @@ namespace System.Xml
             return base64Encoder.FlushAsync();
         }
 
-        internal virtual ValueTask CloseAsync(WriteState currentState)
+        internal virtual ValueTask DisposeAsyncCore(WriteState currentState)
         {
-            return CloseAsync();
+            return DisposeAsyncCore();
         }
     }
 }

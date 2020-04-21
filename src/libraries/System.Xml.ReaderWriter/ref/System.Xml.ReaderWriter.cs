@@ -1307,6 +1307,7 @@ namespace System.Xml
         public abstract void WriteWhitespace(string ws);
         public virtual System.Threading.Tasks.Task WriteWhitespaceAsync(string ws) { throw null; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null;  }
     }
     public sealed partial class XmlWriterSettings
     {

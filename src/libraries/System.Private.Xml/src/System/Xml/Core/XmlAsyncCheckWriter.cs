@@ -330,17 +330,6 @@ namespace System.Xml
             _coreWriter.WriteNode(navigator, defattr);
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                CheckAsync();
-                //since it is protected method, we can't call coreWriter.Dispose(disposing).
-                //Internal, it is always called to Dispose(true). So call coreWriter.Dispose() is OK.
-                _coreWriter.Dispose();
-            }
-        }
-
         #endregion
 
         #region Async Methods
@@ -577,11 +566,12 @@ namespace System.Xml
             return task;
         }
 
-        public override ValueTask CloseAsync()
+        protected override ValueTask DisposeAsyncCore()
         {
-             CheckAsync();
-             return _coreWriter.CloseAsync();
+            CheckAsync();
+            return _coreWriter.DisposeAsync(); // _coreWriter.DisposeAsyncCoreAsync();
         }
+
         #endregion
     }
 }
