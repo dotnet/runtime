@@ -119,13 +119,10 @@ generate_layout()
 
     mkdir -p "$CORE_ROOT"
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
-
     chmod +x "$__BinDir"/corerun
     chmod +x "$__CrossgenExe"
 
-    # Make sure to copy over the pulled down packages
-    cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
