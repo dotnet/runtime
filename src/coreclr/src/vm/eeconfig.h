@@ -669,7 +669,6 @@ private: //----------------------------------------------------------------
     int  iGCStress;
 #endif
 
-#define DEFAULT_GC_PRN_LVL 3    
     int  iGCconcurrent;
 #ifdef _DEBUG
     int  iGCLatencyMode;
