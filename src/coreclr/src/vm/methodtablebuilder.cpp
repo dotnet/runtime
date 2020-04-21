@@ -11244,7 +11244,26 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     // not take into account NonVersionable attribute. Otherwise, adding NonVersionable attribute to existing
     // type would be ReadyToRun incompatible change.
     //
-    if (pDependencyMT->GetModule() == GetModule())
+    bool treatAsIfInSameModule = pDependencyMT->GetModule() == GetModule();
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (!treatAsIfInSameModule && IsReadyToRunCompilation())
+    {
+        if (pDependencyMT->GetModule()->IsInCurrentVersionBubble())
+        {
+            treatAsIfInSameModule = true;
+        }
+    }
+#else // FEATURE_READYTORUN_COMPILER
+    if (!treatAsIfInSameModule && GetModule()->GetFile()->IsILImageReadyToRun())
+    {
+        if (GetModule()->IsInSameVersionBubble(pDependencyMT->GetModule()))
+        {
+            treatAsIfInSameModule = true;
+        }
+    }
+#endif
+
+    if (treatAsIfInSameModule)
     {
         if (!pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules())
             return;
@@ -11282,30 +11301,29 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
             return FALSE;
     }
 
-    if (pParentMT->GetModule() == GetModule())
+    bool treatAsIfInSameModule = pParentMT->GetModule() == GetModule();
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (!treatAsIfInSameModule && IsReadyToRunCompilation())
+    {
+        if (pParentMT->GetModule()->IsInCurrentVersionBubble())
+        {
+            treatAsIfInSameModule = true;
+        }
+    }
+#else // FEATURE_READYTORUN_COMPILER
+    if (!treatAsIfInSameModule && GetModule()->GetFile()->IsILImageReadyToRun())
+    {
+        if (GetModule()->IsInSameVersionBubble(pParentMT->GetModule()))
+        {
+            treatAsIfInSameModule = true;
+        }
+    }
+#endif
+
+    if (treatAsIfInSameModule)
     {
         if (!pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
             return FALSE;
-    }
-    else
-    {
-#ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
-        {
-            if (pParentMT->GetModule()->IsInCurrentVersionBubble())
-            {
-                return FALSE;
-            }
-        }
-#else // FEATURE_READYTORUN_COMPILER
-        if (GetModule()->GetFile()->IsILImageReadyToRun())
-        {
-            if (GetModule()->IsInSameVersionBubble(pParentMT->GetModule()))
-            {
-                return FALSE;
-            }
-        }
-#endif // FEATURE_READYTORUN_COMPILER
     }
 
     return TRUE;

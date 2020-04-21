@@ -822,17 +822,9 @@ namespace ILCompiler
                 return;
             }
 
-            if (_compilationGroup.ContainsType(baseType))
+            if (_compilationGroup.ContainsTypeLayout(baseType))
             {
-                if (_compilationGroup.ContainsTypeLayout(baseType))
-                {
-                    // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
-                    return;
-                }
-            }
-            else if (_compilationGroup.VersionsWithType(baseType))
-            {
-                // The baseType is in the current version bubble, but in a module different from the one that's currently being compiled
+                // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
                 return;
             }
 

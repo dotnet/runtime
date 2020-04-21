@@ -89,7 +89,7 @@ namespace ILCompiler
                 return true;
             }
             var defType = (MetadataType)type;
-            if (!ContainsType(defType))
+            if (!VersionsWithModule(defType.Module))
             {
                 return false;
             }
