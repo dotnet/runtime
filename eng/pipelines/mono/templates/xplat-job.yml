@@ -96,10 +96,6 @@ jobs:
     - name: coreClrRepoRootDir
       value: '$(coreClrRepoRoot)$(dir)'
 
-    - name: priorityArg
-      value: ''
-
-
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
         value: official/dotnet/runtime/$(Build.SourceBranch)
