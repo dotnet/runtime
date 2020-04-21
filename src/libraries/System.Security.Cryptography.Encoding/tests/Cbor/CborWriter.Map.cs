@@ -58,12 +58,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map encoding conformance
         //
 
+        private bool ConformanceRequiresUniqueKeys()
+        {
+            return ConformanceLevel switch
+            {
+                CborConformanceLevel.Rfc7049Canonical => true,
+                CborConformanceLevel.Ctap2Canonical => true,
+                CborConformanceLevel.Strict => true,
+                CborConformanceLevel.NonStrict => false,
+                _ => false,
+            };
+        }
+
         private bool ConformanceRequiresSortedKeys()
         {
             return ConformanceLevel switch
             {
                 CborConformanceLevel.Rfc7049Canonical => true,
                 CborConformanceLevel.Ctap2Canonical => true,
+                CborConformanceLevel.Strict => false,
                 CborConformanceLevel.NonStrict => false,
                 _ => false,
             };
@@ -88,9 +101,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             _currentValueOffset = _offset;
 
-            if (ConformanceRequiresSortedKeys())
+            if (ConformanceRequiresUniqueKeys())
             {
-                // check for key uniqueness
                 SortedSet<(int offset, int keyLength, int keyValueLength)> ranges = GetKeyValueEncodingRanges();
 
                 (int offset, int keyLength, int valueLength) currentKeyRange =
@@ -110,16 +122,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (ConformanceRequiresSortedKeys())
+            if (ConformanceRequiresUniqueKeys() || ConformanceRequiresSortedKeys())
             {
-                Debug.Assert(_keyValueEncodingRanges != null);
+                SortedSet<(int offset, int keyLength, int keyValueLength)> ranges = GetKeyValueEncodingRanges();
 
                 (int offset, int keyLength, int keyValueLength) currentKeyRange =
                     (_currentKeyOffset.Value,
                      _currentValueOffset.Value - _currentKeyOffset.Value,
                      _offset - _currentKeyOffset.Value);
 
-                _keyValueEncodingRanges.Add(currentKeyRange);
+                ranges.Add(currentKeyRange);
             }
 
             // reset state
@@ -170,6 +182,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (level)
             {
+                // Strict mode only concerns itself with uniqueness, not sorting
+                // so any total order for buffers should do.
+                case CborConformanceLevel.Strict:
                 case CborConformanceLevel.Rfc7049Canonical:
                     // Implements key sorting according to
                     // https://tools.ietf.org/html/rfc7049#section-3.9
