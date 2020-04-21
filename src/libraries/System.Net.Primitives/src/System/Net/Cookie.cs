@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-#pragma warning disable CA1834 // Prefer StringBuilder.Append(char) over Append(string) where applicable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -39,7 +38,7 @@ namespace System.Net
         internal const string MaxSupportedVersionString = "1";
 
         internal const string SeparatorLiteral = "; ";
-        internal const string EqualsLiteral = "=";
+        internal const char EqualsLiteral = '=';
         internal const string QuotesLiteral = "\"";
         internal const string SpecialAttributeLiteral = "$";
 
@@ -838,7 +837,7 @@ namespace System.Net
             {
                 result += SeparatorLiteral + CookieFields.VersionAttributeName + EqualsLiteral + m_version.ToString(NumberFormatInfo.InvariantInfo);
             }
-            return result == EqualsLiteral ? null : result;
+            return result == EqualsLiteral.ToString() ? null : result;
         }
     }
 }

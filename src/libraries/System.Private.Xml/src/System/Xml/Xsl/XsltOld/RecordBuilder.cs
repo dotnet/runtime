@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable CA1834 // Prefer StringBuilder.Append(char) over Append(string) where applicable
 using System.Diagnostics;
 using System.Text;
 using System.Xml.XPath;
@@ -44,7 +43,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int HaveRecord = 2;      // Record was fully generated
 
         private const char s_Minus = '-';
-        private const string s_Space = " ";
+        private const char s_Space = ' ';
         private const string s_SpaceMinus = " -";
         private const char s_Question = '?';
         private const char s_Greater = '>';
@@ -656,7 +655,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (minus)
             {
-                _mainNode.ValueAppend(s_Space, false);
+                _mainNode.ValueAppend(s_Space.ToString(), false);
             }
         }
 
