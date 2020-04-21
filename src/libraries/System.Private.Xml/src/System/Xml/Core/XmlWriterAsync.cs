@@ -600,10 +600,11 @@ namespace System.Xml
             }
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            await DisposeAsyncCore().ConfigureAwait(false);
+            Dispose(false);
             GC.SuppressFinalize(this);
-            return DisposeAsyncCore();
         }
 
         protected virtual ValueTask DisposeAsyncCore()
