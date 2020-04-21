@@ -1525,6 +1525,14 @@ INST1(frecpx,  "frecpx", 0, 0, IF_DV_2G,  0x5EA1F800)
                                    // C7.2.139 FRECPX
                                    //  frecpx  Vd,Vn                DV_2G  010111101X100001 111110nnnnnddddd   5EA1 F800   Vd,Vn    (scalar)
 
+INST1(sadalp,  "sadalp", 0, 0, IF_DV_2T,  0x0E206800)
+                                   // C7.2.221 SADALP
+                                   //  sadalp  Vd,Vn                DV_2T  0Q001110XX100000 011010nnnnnddddd   0E20 6800   Vd,Vn    (vector)
+
+INST1(uadalp,  "uadalp", 0, 0, IF_DV_2T, 0x2E206800)
+                                   // C7.2.338 UADALP
+                                   //  uadalp  Vd,Vn                DV_2T  0Q101110XX100000 011010nnnnnddddd   2E20 6800   Vd,Vn    (vector)
+
 INST1(shll,    "shll",   0, 0, IF_DV_2M,  0x2F00A400)
                                    //  shll    Vd,Vn,imm            DV_2M  0Q101110XX100001 001110nnnnnddddd   2E21 3800   Vd,Vn, {8/16/32}
 
