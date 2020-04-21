@@ -354,9 +354,6 @@ class EEClassLayoutInfo
        mdTypeDef cl,                // cl of the NStruct being loaded
        BYTE packingSize,            // packing size (from @dll.struct)
        BYTE nlType,                 // nltype (from @dll.struct)
-#ifdef FEATURE_COMINTEROP
-       BOOL isWinRT,                // Is the type a WinRT type
-#endif // FEATURE_COMINTEROP
        BOOL fExplicitOffsets,       // explicit offsets?
        MethodTable *pParentMT,       // the loaded superclass
        ULONG cTotalFields,              // total number of fields (instance and static)

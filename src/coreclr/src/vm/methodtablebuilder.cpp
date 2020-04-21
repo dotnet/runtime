@@ -162,49 +162,10 @@ MethodTableBuilder::CreateClass( Module *pModule,
     if (fHasLayout)
         pEEClass->SetHasLayout();
 
-#ifdef FEATURE_COMINTEROP
     if (IsTdWindowsRuntime(dwAttrClass))
     {
-        Assembly *pAssembly = pModule->GetAssembly();
-
-        // On the desktop CLR, we do not allow non-FX assemblies to use/define WindowsRuntimeImport attribute.
-        //
-        // On CoreCLR, however, we do allow non-FX assemblies to have this attribute. This enables scenarios where we can
-        // activate 3rd-party WinRT components outside AppContainer - 1st party WinRT components are already allowed
-        // to be activated outside AppContainer (on both Desktop and CoreCLR).
-
-        pEEClass->SetProjectedFromWinRT();
+        COMPlusThrowHR(COR_E_TYPELOAD);
     }
-
-    if (pEEClass->IsProjectedFromWinRT())
-    {
-        if (IsTdInterface(dwAttrClass))
-        {
-            //
-            // Check for GuidAttribute
-            //
-            BOOL bHasGuid = FALSE;
-
-            GUID guid;
-            HRESULT hr = pModule->GetMDImport()->GetItemGuid(cl, &guid);
-            IfFailThrow(hr);
-
-            if (IsEqualGUID(guid, GUID_NULL))
-            {
-                // A WinRT interface should have a GUID
-                pModule->GetAssembly()->ThrowTypeLoadException(pModule->GetMDImport(), cl, IDS_EE_WINRT_INTERFACE_WITHOUT_GUID);
-            }
-        }
-    }
-
-    WinMDAdapter::RedirectedTypeIndex redirectedTypeIndex;
-    redirectedTypeIndex = WinRTTypeNameConverter::GetRedirectedTypeIndexByName(pModule, cl);
-    if (redirectedTypeIndex != WinMDAdapter::RedirectedTypeIndex_Invalid)
-    {
-        EnsureOptionalFieldsAreAllocated(pEEClass, pamTracker, pAllocator->GetLowFrequencyHeap());
-        pEEClass->SetWinRTRedirectedTypeIndex(redirectedTypeIndex);
-    }
-#endif // FEAUTRE_COMINTEROP
 
 #ifdef _DEBUG
     pModule->GetClassLoader()->m_dwDebugClasses++;
@@ -1879,7 +1840,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif // UNIX_AMD64_ABI
     }
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     pMT->SetDebugClassName(GetDebugClassName());
 #endif
 
@@ -10318,26 +10279,7 @@ MethodTableBuilder::SetupMethodTable2(
 
             if (bResult)
             {
-                pClass->SetExportedToWinRT();
-
-                // We need optional fields for activation from WinRT.
-                EnsureOptionalFieldsAreAllocated(pClass, m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
-            }
-        }
-
-        if (pClass->IsProjectedFromWinRT() || pClass->IsExportedToWinRT())
-        {
-            const BYTE *        pVal;
-            ULONG               cbVal;
-            HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::WinRTMarshalingBehaviorAttribute, (const void **) &pVal, &cbVal);
-            if (hr == S_OK)
-            {
-                CustomAttributeParser cap(pVal, cbVal);
-                IfFailThrow(cap.SkipProlog());
-                UINT32 u = 0;
-                IfFailThrow(cap.GetU4(&u));
-                if(u > 0)
-                    pClass->SetMarshalingType(u);
+                COMPlusThrowHR(COR_E_TYPELOAD);
             }
         }
 #endif // FEATURE_COMINTEROP
@@ -12309,9 +12251,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
                     cl,
                     nstructPackingSize,
                     nstructNLT,
-#ifdef FEATURE_COMINTEROP
-                    pClass->IsProjectedFromWinRT(),
-#endif // FEATURE_COMINTEROP
                     fExplicitOffsets,
                     pParentMethodTable,
                     cFields,
