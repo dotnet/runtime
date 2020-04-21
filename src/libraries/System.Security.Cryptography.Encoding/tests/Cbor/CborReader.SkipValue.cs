@@ -8,12 +8,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public void SkipValue()
         {
-            int depth = 0;
+            CborReaderCheckpoint checkpoint = CreateCheckpoint();
 
-            do
+            try
             {
-                SkipNextNode(ref depth);
-            } while (depth > 0);
+                int depth = 0;
+
+                do
+                {
+                    SkipNextNode(ref depth);
+                } while (depth > 0);
+            }
+            catch
+            {
+                RestoreCheckpoint(checkpoint);
+                throw;
+            }
         }
 
         private void SkipNextNode(ref int depth)
@@ -21,7 +31,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = Peek()) == CborReaderState.Tag)
+            while ((state = PeekState()) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -97,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
                 case CborReaderState.SpecialValue:
-                    ReadSpecialValue();
+                    ReadSimpleValue();
                     break;
 
                 case CborReaderState.EndOfData:

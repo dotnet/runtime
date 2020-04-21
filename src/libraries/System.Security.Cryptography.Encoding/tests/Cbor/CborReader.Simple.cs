@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public float ReadSingle()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Special);
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
             ReadOnlySpan<byte> buffer = _buffer.Span;
             float result;
 
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public double ReadDouble()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Special);
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
             ReadOnlySpan<byte> buffer = _buffer.Span;
             double result;
 
@@ -75,30 +75,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public bool ReadBoolean()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Special);
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
-            switch (header.AdditionalInfo)
+            bool result = header.AdditionalInfo switch
             {
-                case CborAdditionalInfo.SpecialValueFalse:
-                    AdvanceBuffer(1);
-                    AdvanceDataItemCounters();
-                    return false;
-                case CborAdditionalInfo.SpecialValueTrue:
-                    AdvanceBuffer(1);
-                    AdvanceDataItemCounters();
-                    return true;
-                default:
-                    throw new InvalidOperationException("CBOR data item does not encode a boolean value.");
-            }
+                CborAdditionalInfo.SimpleValueFalse => false,
+                CborAdditionalInfo.SimpleValueTrue => true,
+                _ => throw new InvalidOperationException("CBOR data item does not encode a boolean value."),
+            };
+
+            AdvanceBuffer(1);
+            AdvanceDataItemCounters();
+            return result;
         }
 
         public void ReadNull()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Special);
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo.SpecialValueNull:
+                case CborAdditionalInfo.SimpleValueNull:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
                     return;
@@ -107,30 +104,30 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        public CborSpecialValue ReadSpecialValue()
+        public CborSimpleValue ReadSimpleValue()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Special);
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo info when (byte)info < 24:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
-                    return (CborSpecialValue)header.AdditionalInfo;
+                    return (CborSimpleValue)header.AdditionalInfo;
                 case CborAdditionalInfo.Additional8BitData:
                     EnsureBuffer(2);
                     byte value = _buffer.Span[1];
 
                     if (value < 32)
                     {
-                        throw new FormatException("Two-byte CBOR special value must be between 32 and 255.");
+                        throw new FormatException("Two-byte CBOR simple value must be between 32 and 255.");
                     }
 
                     AdvanceBuffer(2);
                     AdvanceDataItemCounters();
-                    return (CborSpecialValue)value;
+                    return (CborSimpleValue)value;
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a special value.");
+                    throw new InvalidOperationException("CBOR data item does not encode a simple value.");
             }
         }
 

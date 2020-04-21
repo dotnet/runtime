@@ -24,10 +24,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
+            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.PeekState());
             float actualResult = reader.ReadSingle();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -42,10 +42,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.Peek());
+            Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.PeekState());
             double actualResult = reader.ReadDouble();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -58,10 +58,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
+            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.PeekState());
             double actualResult = reader.ReadDouble();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -80,10 +80,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.Peek());
+            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.PeekState());
             double actualResult = reader.ReadDouble();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -102,10 +102,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.Peek());
+            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.PeekState());
             float actualResult = reader.ReadSingle();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Fact]
@@ -113,9 +113,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = "f6".HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.Null, reader.Peek());
+            Assert.Equal(CborReaderState.Null, reader.PeekState());
             reader.ReadNull();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -125,27 +125,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.Boolean, reader.Peek());
+            Assert.Equal(CborReaderState.Boolean, reader.PeekState());
             bool actualResult = reader.ReadBoolean();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
-        [InlineData((CborSpecialValue)0, "e0")]
-        [InlineData(CborSpecialValue.False, "f4")]
-        [InlineData(CborSpecialValue.True, "f5")]
-        [InlineData(CborSpecialValue.Null, "f6")]
-        [InlineData(CborSpecialValue.Undefined, "f7")]
-        [InlineData((CborSpecialValue)32, "f820")]
-        [InlineData((CborSpecialValue)255, "f8ff")]
-        internal static void ReadSpecialValue_SingleValue_HappyPath(CborSpecialValue expectedResult, string hexEncoding)
+        [InlineData((CborSimpleValue)0, "e0")]
+        [InlineData(CborSimpleValue.False, "f4")]
+        [InlineData(CborSimpleValue.True, "f5")]
+        [InlineData(CborSimpleValue.Null, "f6")]
+        [InlineData(CborSimpleValue.Undefined, "f7")]
+        [InlineData((CborSimpleValue)32, "f820")]
+        [InlineData((CborSimpleValue)255, "f8ff")]
+        internal static void ReadSimpleValue_SingleValue_HappyPath(CborSimpleValue expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborSpecialValue actualResult = reader.ReadSpecialValue();
+            CborSimpleValue actualResult = reader.ReadSimpleValue();
             Assert.Equal(expectedResult, actualResult);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -155,13 +155,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("80")] // []
         [InlineData("a0")] // {}
         [InlineData("c202")] // tagged value
-        public static void ReadSpecialValue_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadSimpleValue_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadSpecialValue());
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadSimpleValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -176,9 +176,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c202")] // tagged value
         public static void ReadBoolean_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadBoolean());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -193,9 +194,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c202")] // tagged value
         public static void ReadNull_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadNull());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -209,9 +211,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c202")] // tagged value
         public static void ReadSingle_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadSingle());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -225,9 +228,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("c202")] // tagged value
         public static void ReadDouble_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadDouble());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }
