@@ -5,7 +5,7 @@
 using System;
 using System.Text;
 using System.IO;
-using Dia;
+using DIALib;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 

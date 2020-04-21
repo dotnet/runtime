@@ -3145,6 +3145,12 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return CORPROF_E_DATAINCOMPLETE;
     }
 
+    if (typeHandle.GetModule()->GetLoaderAllocator() == NULL ||
+        typeHandle.GetModule()->GetLoaderAllocator()->GetExposedObject() == NULL)
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
     //
     // Get the field descriptor object
     //

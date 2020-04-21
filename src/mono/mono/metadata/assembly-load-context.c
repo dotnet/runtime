@@ -172,6 +172,14 @@ mono_alc_is_default (MonoAssemblyLoadContext *alc)
 	return alc == mono_alc_domain (alc)->default_alc;
 }
 
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
+{
+	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
+	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
+	return alc;
+}
+
 static MonoAssembly*
 invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, MonoError *error)
 {

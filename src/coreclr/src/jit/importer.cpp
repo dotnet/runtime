@@ -1288,9 +1288,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             src->gtType  = genActualType(returnType);
             call->gtType = src->gtType;
 
-            // !!! The destination could be on stack. !!!
-            // This flag will let us choose the correct write barrier.
-            destFlags = GTF_IND_TGTANYWHERE;
+            if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
+            {
+                // !!! The destination could be on stack. !!!
+                // This flag will let us choose the correct write barrier.
+                destFlags = GTF_IND_TGTANYWHERE;
+            }
         }
     }
     else if (src->OperIsBlk())
@@ -6738,9 +6741,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 

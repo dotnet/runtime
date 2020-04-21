@@ -594,6 +594,24 @@ int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
     return fcntl(fileDescriptor, F_SETFL, flags);
 }
 
+int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
+{
+    if (isNonBlocking == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int flags = fcntl(ToFileDescriptor(fd), F_GETFL);
+    if (flags == -1)
+    {
+        *isNonBlocking = 0;
+        return -1;
+    }
+
+    *isNonBlocking = ((flags & O_NONBLOCK) == O_NONBLOCK) ? 1 : 0;
+    return 0;
+}
+
 int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
@@ -914,15 +932,15 @@ int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t mi
     }
 
     struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
-    int useStackBuffer = eventCount <= (sizeof(stackBuffer)/sizeof(stackBuffer[0]));
+    int useStackBuffer = eventCount <= ARRAY_SIZE(stackBuffer);
     struct pollfd* pollfds = NULL;
     if (useStackBuffer)
     {
-        pollfds = (struct pollfd*)&stackBuffer[0];
+        pollfds = &stackBuffer[0];
     }
     else
     {
-        pollfds = (struct pollfd*)calloc(eventCount, sizeof(*pollfds));
+        pollfds = calloc(eventCount, sizeof(*pollfds));
         if (pollfds == NULL)
         {
             return Error_ENOMEM;

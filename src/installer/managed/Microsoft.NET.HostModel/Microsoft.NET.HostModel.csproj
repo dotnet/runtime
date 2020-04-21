@@ -16,7 +16,7 @@
     <PackageReference Include="System.Reflection.Metadata">
       <Version>1.8.0</Version>
     </PackageReference>
-    <PackageReference Include="System.Text.Json" Version="4.7.0" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
 </Project>

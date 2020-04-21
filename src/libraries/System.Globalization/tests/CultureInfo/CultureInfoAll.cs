@@ -14,9 +14,9 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoAll
     {
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoke to Win32 function
-        public void TestAllCultures()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
+        public void TestAllCultures_Nls()
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");
 

@@ -420,7 +420,7 @@ namespace System.Text.Unicode
                     // in to the text. If this happens strip it off now before seeing if the next character
                     // consists of three code units.
 
-                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte hanging off the end
+                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte from the end.
 
                     nint asciiAdjustment;
                     if (BitConverter.IsLittleEndian)

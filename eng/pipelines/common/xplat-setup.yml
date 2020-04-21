@@ -97,10 +97,6 @@ jobs:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # FreeBSD builds only in the internal project
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: dnceng-freebsd-internal
-
         # Public OSX Build Pool
         ${{ if eq(parameters.osGroup, 'OSX') }}:
           vmImage: 'macOS-10.14'

@@ -25,6 +25,7 @@ namespace System.Text.Json
             ClassType runtimeClassType,
             PropertyInfo? propertyInfo,
             JsonConverter converter,
+            JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -34,17 +35,22 @@ namespace System.Text.Json
                 runtimeClassType,
                 propertyInfo,
                 converter,
+                ignoreCondition,
                 options);
 
             if (propertyInfo != null)
             {
-                if (propertyInfo.GetMethod?.IsPublic == true)
+                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+
+                MethodInfo? getMethod = propertyInfo.GetMethod;
+                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasGetter = true;
                     Get = options.MemberAccessorStrategy.CreatePropertyGetter<TTypeToConvert>(propertyInfo);
                 }
 
-                if (propertyInfo.SetMethod?.IsPublic == true)
+                MethodInfo? setMethod = propertyInfo.SetMethod;
+                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasSetter = true;
                     Set = options.MemberAccessorStrategy.CreatePropertySetter<TTypeToConvert>(propertyInfo);
@@ -57,7 +63,7 @@ namespace System.Text.Json
                 HasSetter = true;
             }
 
-            GetPolicies();
+            GetPolicies(ignoreCondition);
         }
 
         public override JsonConverter ConverterBase
@@ -124,7 +130,6 @@ namespace System.Text.Json
             }
             else
             {
-                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 success = Converter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 

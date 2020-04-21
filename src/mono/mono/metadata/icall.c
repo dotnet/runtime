@@ -1859,7 +1859,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 	//  is messed up when we go to construct the Local as the type arg...
 	//
 	// By contrast, if we started with Mine<System.Generic.Dict<int, Local>> we'd go in with assembly->image
-	// as the root and then even the detour into generics would still not screw us when we went to load Local.
+	// as the root and then even the detour into generics would still not cause issues when we went to load Local.
 	if (!info->assembly.name && !type) {
 		/* try mscorlib */
 		type = mono_reflection_get_type_checked (alc, rootimage, NULL, info, ignoreCase, TRUE, &type_resolve, error);
@@ -8213,9 +8213,9 @@ ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer strea
 #endif
 
 #if defined(TARGET_WASM)
-G_EXTERN_C void mono_timezone_get_local_name (MonoString result);
+G_EXTERN_C void mono_timezone_get_local_name (MonoString **result);
 void
-ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString result)
+ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString **result)
 {
 	// MONO_CROSS_COMPILE returns undefined symbol "_mono_timezone_get_local_name"
 	// The icall offsets will be generated and linked at build time

@@ -109,7 +109,7 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
+        private static readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public static void Startup()
         {
@@ -125,8 +125,6 @@ namespace Internal.JitInterface
             }
 
             _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
-
-            _unboxingThunkFactory = new UnboxingMethodDescFactory();
         }
 
         public TextWriter Log
@@ -293,7 +291,7 @@ namespace Internal.JitInterface
 
                 InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             PublishProfileData();
@@ -1397,6 +1395,12 @@ namespace Internal.JitInterface
             if (classSize.IsIndeterminate)
             {
                 throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             return (uint)classSize.AsInt;

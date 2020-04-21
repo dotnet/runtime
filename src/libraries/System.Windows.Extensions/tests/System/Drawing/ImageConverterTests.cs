@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34755", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class ImageConverterTest
     {
         private readonly Image _image;

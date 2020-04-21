@@ -722,6 +722,14 @@ int GenTree::GetRegisterDstCount() const
 #endif
     }
 #endif
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        assert(TypeGet() == TYP_STRUCT);
+        return 2;
+    }
+#endif
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -1450,7 +1458,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->gtIndexBaseType != op2->AsHWIntrinsic()->gtIndexBaseType))
+                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
                     {
                         return false;
                     }
@@ -2120,7 +2128,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->gtIndexBaseType;
+                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -5550,6 +5558,47 @@ bool GenTree::OperMayThrow(Compiler* comp)
     return false;
 }
 
+//-----------------------------------------------------------------------------------
+// GetFieldCount: Return the register count for a multi-reg lclVar.
+//
+// Arguments:
+//     compiler - the current Compiler instance.
+//
+// Return Value:
+//     Returns the number of registers defined by this node.
+//
+// Notes:
+//     This must be a multireg lclVar.
+//
+unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler)
+{
+    assert(IsMultiReg());
+    LclVarDsc* varDsc = compiler->lvaGetDesc(GetLclNum());
+    return varDsc->lvFieldCnt;
+}
+
+//-----------------------------------------------------------------------------------
+// GetFieldTypeByIndex: Get a specific register's type, based on regIndex, that is produced
+//                    by this multi-reg node.
+//
+// Arguments:
+//     compiler - the current Compiler instance.
+//     idx      - which register type to return.
+//
+// Return Value:
+//     The register type assigned to this index for this node.
+//
+// Notes:
+//     This must be a multireg lclVar and 'regIndex' must be a valid index for this node.
+//
+var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
+{
+    assert(IsMultiReg());
+    LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
+    LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
+    return fieldVarDsc->TypeGet();
+}
+
 #if DEBUGGABLE_GENTREE
 // static
 GenTree::VtablePtr GenTree::s_vtablesForOpers[] = {nullptr};
@@ -7430,7 +7479,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->gtIndexBaseType = hwintrinsicOp->gtIndexBaseType;
+                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
             }
             break;
 #endif
@@ -9874,6 +9923,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     --msgLength;
                     break;
                 }
+                if (tree->gtFlags & GTF_VAR_MULTIREG)
+                {
+                    printf((tree->gtFlags & GTF_VAR_DEF) ? "M" : "m");
+                    --msgLength;
+                    break;
+                }
                 if (tree->gtFlags & GTF_VAR_DEF)
                 {
                     printf("D");
@@ -11284,6 +11339,8 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
             }
+
+            gtDispCommonEndLine(tree);
 
             if (tree->AsField()->gtFldObj && !topOnly)
             {

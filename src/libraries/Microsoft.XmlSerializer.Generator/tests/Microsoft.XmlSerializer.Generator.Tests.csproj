@@ -3,7 +3,7 @@
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CoverageSupported>false</CoverageSupported>
-    <SkipTestsOnPlatform Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Reuse the same runtimeconfig used by MSBuild. -->

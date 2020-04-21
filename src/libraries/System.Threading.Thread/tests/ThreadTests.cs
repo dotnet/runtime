@@ -160,6 +160,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("STAMain.exe", "GetApartmentStateTest")]
         [InlineData("STAMain.exe", "SetApartmentStateTest")]
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
@@ -182,6 +183,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
@@ -226,6 +228,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void GetSetApartmentStateTest_ChangeAfterThreadStarted_Windows(
@@ -248,6 +251,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
@@ -1115,6 +1119,7 @@ namespace System.Threading.Threads.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsPrincipalPolicyTest_Windows_NewThreads()
         {
@@ -1164,6 +1169,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void NoPrincipalToWindowsPrincipalPolicyTest_Windows_NewThreads()
         {

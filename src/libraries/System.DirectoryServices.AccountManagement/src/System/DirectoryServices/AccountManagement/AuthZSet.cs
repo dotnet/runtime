@@ -32,7 +32,6 @@ namespace System.DirectoryServices.AccountManagement
                                     userStoreCtx.GetType());
 
             _userType = userStoreCtx.OwningContext.ContextType;
-            _userCtxBase = userCtxBase;
             _userStoreCtx = userStoreCtx;
             _credentials = credentials;
             _contextOptions = contextOptions;
@@ -43,8 +42,6 @@ namespace System.DirectoryServices.AccountManagement
 
             // Preload the PrincipalContext cache with the user's PrincipalContext
             _contexts[flatUserAuthority] = userStoreCtx.OwningContext;
-
-            IntPtr hUser = IntPtr.Zero;
 
             //
             // Get the SIDs of the groups to which the user belongs
@@ -540,9 +537,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // The user's options
         private readonly ContextOptions _contextOptions;
-
-        // The ctxBase (e.g., DirectoryEntry) from the user's StoreCtx
-        private readonly object _userCtxBase;
 
         // The type (domain, local, etc.) of the user
         private readonly ContextType _userType;

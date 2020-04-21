@@ -833,7 +833,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             if (format & FormatDebug)
             {
                 WCHAR wzAddress[128];
-                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), dac_cast<TADDR>(ty.AsPtr()));
+                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), (VOID *)dac_cast<TADDR>(ty.AsPtr()));
                 tnb.AddName(wzAddress);
             }
 #endif

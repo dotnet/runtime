@@ -49,6 +49,7 @@
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <BuildTargetFramework Condition="'$(BuildAllProjects)' != 'true' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
     <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
 
@@ -271,12 +272,16 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-    
+
     <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
+    <NETCoreAppRuntimePackPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'lib-runtime-packs'))</NETCoreAppRuntimePackPath>
+    <NETCoreAppRuntimePackLibPath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'lib', '$(NETCoreAppFramework)'))</NETCoreAppRuntimePackLibPath>
+    <NETCoreAppRuntimePackNativePath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'native'))</NETCoreAppRuntimePackNativePath>
+    <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
@@ -302,14 +307,12 @@
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <MonoRspFileName>mono.issues.rsp</MonoRspFileName>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsMobile)' != 'true'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
+
+    <BinPlaceTestRuntimePack Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 

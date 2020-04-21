@@ -95,14 +95,14 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-TR"  , 0x041f };
         }
 
-        // On Windows, hiragana characters sort after katakana.
+        // On NLS, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
 
-        // On Windows, all halfwidth characters sort before fullwidth characters.
+        // On NLS, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;

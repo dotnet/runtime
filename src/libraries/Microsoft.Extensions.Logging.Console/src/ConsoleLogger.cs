@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Logging.Console
             // category and event id
             logBuilder.Append(_loglevelPadding);
             logBuilder.Append(logName);
-            logBuilder.Append("[");
+            logBuilder.Append('[');
             logBuilder.Append(eventId);
             logBuilder.AppendLine("]");
 
@@ -179,9 +179,9 @@ namespace Microsoft.Extensions.Logging.Console
 
             // category and event id
             logBuilder.Append(logName);
-            logBuilder.Append("[");
+            logBuilder.Append('[');
             logBuilder.Append(eventId);
-            logBuilder.Append("]");
+            logBuilder.Append(']');
 
             // scope information
             GetScopeInformation(logBuilder, multiLine: false);

@@ -419,6 +419,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)] //Concurrent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
         [InlineData(GCLatencyMode.LowLatency)]
         [InlineData(GCLatencyMode.SustainedLowLatency)]

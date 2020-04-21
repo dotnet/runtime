@@ -258,7 +258,7 @@ void Frame::LogFrame(
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", GetVTablePtr());
+        sprintf_s(buf, COUNTOF(buf), "vtbl@%p", (VOID *)GetVTablePtr());
         pFrameType = buf;
     }
 

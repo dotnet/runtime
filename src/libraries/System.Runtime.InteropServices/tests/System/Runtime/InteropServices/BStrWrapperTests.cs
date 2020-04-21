@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // BStrWrapper is marked as Obsolete.
     public class BStrWrapperTests
     {
         [Theory]
@@ -33,5 +32,4 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidCastException>(() => new BStrWrapper(1));
         }
     }
-#pragma warning restore 0618
 }
