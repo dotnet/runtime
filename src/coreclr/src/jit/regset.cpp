@@ -285,18 +285,17 @@ RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc*
 // Return Value:
 //   None.
 //
-// Assumption:
-//    RyuJIT backend specific: in case of multi-reg call nodes, GTF_SPILL
-//    flag associated with the reg that is being spilled is cleared.  The
-//    caller of this method is expected to clear GTF_SPILL flag on call
-//    node after all of its registers marked for spilling are spilled.
+// Notes:
+//    For multi-reg nodes, only the spill flag associated with this reg is cleared.
+//    The spill flag on the node should be cleared by the caller of this method.
 //
 void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 {
     assert(tree != nullptr);
 
-    GenTreeCall* call = nullptr;
-    var_types    treeType;
+    GenTreeCall*   call = nullptr;
+    GenTreeLclVar* lcl  = nullptr;
+    var_types      treeType;
 #if defined(TARGET_ARM)
     GenTreePutArgSplit* splitArg = nullptr;
     GenTreeMultiRegOp*  multiReg = nullptr;
@@ -320,6 +319,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         treeType = multiReg->GetRegType(regIdx);
     }
 #endif // TARGET_ARM
+    else if (tree->IsMultiRegLclVar())
+    {
+        GenTreeLclVar* lcl    = tree->AsLclVar();
+        LclVarDsc*     varDsc = m_rsCompiler->lvaGetDesc(lcl->GetLclNum());
+        treeType              = varDsc->TypeGet();
+    }
     else
     {
         treeType = tree->TypeGet();
@@ -345,9 +350,8 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     // vars should be handled elsewhere, and to prevent
     // spilling twice clear GTF_SPILL flag on tree node.
     //
-    // In case of multi-reg call nodes only the spill flag
-    // associated with the reg is cleared. Spill flag on
-    // call node should be cleared by the caller of this method.
+    // In case of multi-reg nodes, only the spill flag associated with this reg is cleared.
+    // The spill flag on the node should be cleared by the caller of this method.
     assert((tree->gtFlags & GTF_SPILL) != 0);
 
     unsigned regFlags = 0;
@@ -371,6 +375,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         regFlags &= ~GTF_SPILL;
     }
 #endif // TARGET_ARM
+    else if (lcl != nullptr)
+    {
+        regFlags = lcl->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
     else
     {
         assert(!varTypeIsMultiReg(tree));
@@ -446,6 +456,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         multiReg->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
 #endif // TARGET_ARM
+    else if (lcl != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        lcl->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
 }
 
 #if defined(TARGET_X86)
@@ -565,6 +580,13 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
         multiReg->SetRegSpillFlagByIdx(flags, regIdx);
     }
 #endif // TARGET_ARM
+    else if (tree->IsMultiRegLclVar())
+    {
+        GenTreeLclVar* lcl   = tree->AsLclVar();
+        unsigned       flags = lcl->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        lcl->SetRegSpillFlagByIdx(flags, regIdx);
+    }
     else
     {
         tree->gtFlags &= ~GTF_SPILLED;
