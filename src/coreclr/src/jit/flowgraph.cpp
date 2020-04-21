@@ -25823,6 +25823,10 @@ PhaseStatus Compiler::fgTailMergeThrows()
         JITDUMP("Method does not have multiple noreturn calls.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+    else
+    {
+        JITDUMP("Scanning the %u candidates\n", optNoReturnCallCount);
+    }
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
@@ -25888,11 +25892,16 @@ PhaseStatus Compiler::fgTailMergeThrows()
             continue;
         }
 
-        // For throw helpers the block should have exactly one statement....
-        // (this isn't guaranteed, but seems likely)
-        Statement* stmt = block->firstStmt();
+        // We only look at the first statement for throw helper calls.
+        // Remainder of the block will be dead code.
+        //
+        // Throw helper calls could show up later in the block; we
+        // won't try merging those as we'd need to match up all the
+        // prior statements or split the block at this point, etc.
+        //
+        Statement* const stmt = block->firstStmt();
 
-        if ((stmt == nullptr) || (stmt->GetNextStmt() != nullptr))
+        if (stmt == nullptr)
         {
             continue;
         }
@@ -25954,13 +25963,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // We walk the map rather than the block list, to save a bit of time.
     BlockToBlockMap::KeyIterator iter(blockMap.Begin());
     BlockToBlockMap::KeyIterator end(blockMap.End());
-    int                          updateCount = 0;
+    unsigned                     updateCount = 0;
 
     for (; !iter.Equal(end); iter++)
     {
         BasicBlock* const nonCanonicalBlock = iter.Get();
         BasicBlock* const canonicalBlock    = iter.GetValue();
         flowList*         nextPredEdge      = nullptr;
+        bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
@@ -25974,14 +25984,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_NONE:
                 {
                     fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
                 case BBJ_ALWAYS:
                 {
                     fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -25997,7 +26007,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     {
                         fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26005,7 +26015,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
                     fgReplaceSwitchJumpTarget(predBlock, canonicalBlock, nonCanonicalBlock);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26015,6 +26025,11 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     break;
             }
         }
+
+        if (updated)
+        {
+            updateCount++;
+        }
     }
 
     if (updateCount == 0)
@@ -26022,13 +26037,18 @@ PhaseStatus Compiler::fgTailMergeThrows()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // TODO: Update the count of noreturn call sites -- this feeds a heuristic in morph
+    // to determine if these noreturn calls should be tail called.
+    //
+    // Updating the count does not lead to better results, so deferring for now.
+    //
+    JITDUMP("Made %u updates\n", updateCount);
+    assert(updateCount < optNoReturnCallCount);
+
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
     //
-    // Note we could invoke a cleanup pass here, but optOptimizeFlow
-    // seems to be missing some safety checks and doesn't expect to
-    // see an already cleaned-up flow graph.
     assert(fgModified);
     fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;
