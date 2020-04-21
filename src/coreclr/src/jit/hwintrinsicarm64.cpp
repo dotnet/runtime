@@ -176,7 +176,17 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
     }
 }
 
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types elemType)
+//------------------------------------------------------------------------
+// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
+//
+// Arguments:
+//    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
+//
+// Return Value:
+//     The upper bound for a value of the intrinsic immediate operand
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType)
 {
     assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
 
@@ -194,7 +204,7 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize,
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_Insert:
-                immUpperBound = Compiler::getSIMDVectorLength(simdSize, elemType);
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
                 break;
 
             default:
