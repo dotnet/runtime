@@ -821,14 +821,16 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
         int32_t idx = usearch_last(pSearch, pErrorCode);
         if (idx != USEARCH_DONE)
         {
-            if ((idx + usearch_getMatchedLength(pSearch)) == patternLength)
+            int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
+            assert(matchEnd <= textLength);
+
+            if (matchEnd == textLength)
             {
-                result = TRUE;
+                return TRUE;
             }
             else
             {
-                int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
-                int32_t remainingStringLength = patternLength - matchEnd;
+                int32_t remainingStringLength = textLength - matchEnd;
 
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
