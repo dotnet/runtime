@@ -1577,6 +1577,10 @@ INST1(shsub,   "shsub", 0, 0,  IF_DV_3A,  0x0E202400)
                                    // C7.2.250 SHSUB
                                    //  shsub  Vd,Vn,Vm              DV_3A  0Q001110XX1mmmmm 001001nnnnnddddd   0E20 2400   Vd,Vn,Vm (vector)
 
+INST1(srhadd,  "srhadd", 0, 0, IF_DV_3A,  0x0E201400)
+                                   // C7.2.302 SRHADD
+                                   //  srhadd Vd,Vn,Vm              DV_3A  0Q001110XX1mmmmm 000101nnnnnddddd   0E20 1400   Vd,Vn,Vm (vector)
+
 INST1(subhn,   "subhn", 0, 0,  IF_DV_3H,  0x0E206000)
                                    // C7.2.327 SUBHN, SUBHN2
                                    //  subhn   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 011000nnnnnddddd   0E20 6000   Vd,Vn,Vm (vector)
@@ -1612,6 +1616,10 @@ INST1(uhadd,   "uhadd", 0, 0,  IF_DV_3A,  0x2E200400)
 INST1(uhsub,   "uhsub", 0, 0,  IF_DV_3A,  0x2E202400)
                                    // C7.2.350 UHSUB
                                    //  uhsub  Vd,Vn,Vm              DV_3A  0Q101110XX1mmmmm 001001nnnnnddddd   2E20 2400   Vd,Vn,Vm (vector)
+
+INST1(urhadd,  "urhadd", 0, 0, IF_DV_3A,  0x2E201400)
+                                   // C7.2.373 URHADD
+                                   //  urhadd Vd,Vn,Vm              DV_3A  0Q101110XX1mmmmm 000101nnnnnddddd   2E20 1400   Vd,Vn,Vm (vector)
 
 INST1(shll,    "shll",   0, 0, IF_DV_2M,  0x2F00A400)
                                    //  shll    Vd,Vn,imm            DV_2M  0Q101110XX100001 001110nnnnnddddd   2E21 3800   Vd,Vn, {8/16/32}
