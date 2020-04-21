@@ -359,7 +359,7 @@ void TailCallHelp::LayOutArgBuffer(
     };
 
     // User args
-    if (callSiteSig.HasThis())
+    if (callSiteSig.HasThis() && !callSiteSig.HasExplicitThis())
     {
         TypeHandle thisHnd;
 

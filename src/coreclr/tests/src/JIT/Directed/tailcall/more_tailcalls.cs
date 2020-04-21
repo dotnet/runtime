@@ -16,6 +16,9 @@ struct S16
 {
     public long A, B;
     public override string ToString() => $"{A}, {B}";
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public string InstanceMethod() => "Instance method";
 }
 struct S32
 {
@@ -38,6 +41,7 @@ struct SGC2
     public int D;
     public override string ToString() => $"{A}, ({B}), {C}, {D}";
 }
+
 class HeapInt
 {
     public int Value;
@@ -52,7 +56,8 @@ internal class Program
     private static readonly IntPtr s_calcStaticCalliRetbuf;
     private static readonly IntPtr s_calcStaticCalliRetbufOther;
     private static readonly IntPtr s_emptyCalliOther;
-    
+    private static readonly IntPtr s_instanceMethodOnValueType;
+
     static Program()
     {
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(CalcStaticCalli)));
@@ -65,12 +70,15 @@ internal class Program
         IL.Pop(out IntPtr calcStaticCalliRetbufOther);
         IL.Emit.Ldftn(new MethodRef(typeof(Program), nameof(EmptyCalliOther)));
         IL.Pop(out IntPtr emptyCalliOther);
+        IL.Emit.Ldftn(new MethodRef(typeof(S16), nameof(S16.InstanceMethod)));
+        IL.Pop(out IntPtr instanceMethodOnValueType);
 
         s_calcStaticCalli = calcStaticCalli;
         s_calcStaticCalliOther = calcStaticCalliOther;
         s_calcStaticCalliRetbuf = calcStaticCalliRetbuf;
         s_calcStaticCalliRetbufOther = calcStaticCalliRetbufOther;
         s_emptyCalliOther = emptyCalliOther;
+        s_instanceMethodOnValueType = instanceMethodOnValueType;
     }
 
     private static int Main()
@@ -81,7 +89,7 @@ internal class Program
         int x = numCalcIters;
         S32 s = default;
         int expected = 0;
-        
+
         while (x != 0)
         {
             if (x % 2 == 0)
@@ -144,6 +152,8 @@ internal class Program
         TestCalc(new Instance().CalcInstanceCalli, expected, "Instance calli");
         TestCalc(new Instance().CalcInstanceCalliRetbuf, expectedS32, "Instance calli retbuf");
         Test(() => EmptyCalli(), "Empty calli", "Static calli without args");
+        Test(() => ValueTypeInstanceMethodCalli(), "Instance method", "calli to an instance method on a value type");
+        Test(() => ValueTypeExplicitThisInstanceMethodCalli(), "Instance method", "calli to an instance method on a value type with explicit this");
         Test(() => { var v = new InstanceValueType(); v.CountUp(countUpIters); return v.Count; }, countUpIters, "Value type instance call");
         Test(() => new Instance().GC("2", 3, "4", 5, "6", "7", "8", 9, ref ten), "2 3 4 5 6 7 8 9 10", "Instance with GC");
         Test(() => CountUpHeap(countUpIters, new HeapInt(0)), countUpIters, "Count up with heap int");
@@ -381,6 +391,37 @@ internal class Program
         IL.Push(s_emptyCalliOther);
         IL.Emit.Tail();
         IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard, typeof(string)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string ValueTypeInstanceMethodCalli()
+    {
+        // Force helper-based tailcall out of this function by stackallocing
+        Span<int> values = stackalloc int[Environment.TickCount < 0 ? 30 : 40];
+
+        S16 s16 = new S16();
+
+        IL.Push(ref s16);
+        IL.Push(s_instanceMethodOnValueType);
+        IL.Emit.Tail();
+        IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard | CallingConventions.HasThis, typeof(string)));
+        return IL.Return<string>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string ValueTypeExplicitThisInstanceMethodCalli()
+    {
+        // Force helper-based tailcall out of this function by stackallocing
+        Span<int> values = stackalloc int[Environment.TickCount < 0 ? 30 : 40];
+
+        S16 s16 = new S16();
+
+        IL.Push(ref s16);
+        IL.Push(s_instanceMethodOnValueType);
+        IL.Emit.Tail();
+        IL.Emit.Calli(new StandAloneMethodSig(CallingConventions.Standard | CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                      typeof(string), typeof(S16).MakeByRefType()));
         return IL.Return<string>();
     }
 

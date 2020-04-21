@@ -4,21 +4,22 @@
 
 // See more_tailcalls.cs for the source of this IL.
 
+
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:2:1:0
+  .ver 4:2:2:0
 }
 .assembly extern System.Runtime.Extensions
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:2:1:0
+  .ver 4:2:2:0
 }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:1:1:0
+  .ver 4:1:2:0
 }
 .assembly example1
 {
@@ -30,7 +31,7 @@
   //  .custom instance void [System.Runtime]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 ) 
 
   .custom instance void [System.Runtime]System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(string) = ( 01 00 18 2E 4E 45 54 43 6F 72 65 41 70 70 2C 56   // ....NETCoreApp,V
-                                                                                                              65 72 73 69 6F 6E 3D 76 33 2E 30 01 00 54 0E 14   // ersion=v3.0..T..
+                                                                                                              65 72 73 69 6F 6E 3D 76 33 2E 31 01 00 54 0E 14   // ersion=v3.1..T..
                                                                                                               46 72 61 6D 65 77 6F 72 6B 44 69 73 70 6C 61 79   // FrameworkDisplay
                                                                                                               4E 61 6D 65 00 )                                  // Name.
   .custom instance void [System.Runtime]System.Reflection.AssemblyCompanyAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
@@ -40,19 +41,19 @@
   .custom instance void [System.Runtime]System.Reflection.AssemblyProductAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
   .custom instance void [System.Runtime]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 08 65 78 61 6D 70 6C 65 31 00 00 )          // ...example1..
   .permissionset reqmin
-             = {class 'System.Security.Permissions.SecurityPermissionAttribute, System.Runtime.Extensions, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' = {property bool 'SkipVerification' = bool(true)}}
+             = {class 'System.Security.Permissions.SecurityPermissionAttribute, System.Runtime.Extensions, Version=4.2.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' = {property bool 'SkipVerification' = bool(true)}}
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
 .module example1.dll
-// MVID: {ce6a3553-27c4-436d-8f20-97a7074d04f4}
+// MVID: {E5213016-898B-454A-941D-D8C885B9972D}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
-// Image base: 0x00007F12FF54E000
+// Image base: 0x052D0000
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -79,6 +80,15 @@
                                                                       object)
     IL_0020:  ret
   } // end of method S16::ToString
+
+  .method public hidebysig instance string 
+          InstanceMethod() cil managed noinlining
+  {
+    // Code size       6 (0x6)
+    .maxstack  8
+    IL_0000:  ldstr      "Instance method"
+    IL_0005:  ret
+  } // end of method S16::InstanceMethod
 
 } // end of class S16
 
@@ -251,7 +261,7 @@
 .class private auto ansi Program
        extends [System.Runtime]System.Object
 {
-  .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass6_0'
+  .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass7_0'
          extends [System.Runtime]System.Object
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
@@ -270,7 +280,7 @@
       IL_0000:  ldarg.0
       IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
       IL_0006:  ret
-    } // end of method '<>c__DisplayClass6_0'::.ctor
+    } // end of method '<>c__DisplayClass7_0'::.ctor
 
     .method assembly hidebysig instance void 
             '<Main>g__Test|0'<T>(class [System.Runtime]System.Func`1<!!T> f,
@@ -321,9 +331,9 @@
                                                                           object)
       IL_0061:  ldarg.0
       IL_0062:  ldc.i4.0
-      IL_0063:  stfld      bool Program/'<>c__DisplayClass6_0'::result
+      IL_0063:  stfld      bool Program/'<>c__DisplayClass7_0'::result
       IL_0068:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>g__Test|0'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>g__Test|0'
 
     .method assembly hidebysig instance void 
             '<Main>g__TestCalc|1'<T>(class [System.Runtime]System.Func`3<int32,int32,!!T> f,
@@ -332,27 +342,27 @@
     {
       // Code size       34 (0x22)
       .maxstack  4
-      .locals init (class Program/'<>c__DisplayClass6_1`1'<!!T> V_0)
-      IL_0000:  newobj     instance void class Program/'<>c__DisplayClass6_1`1'<!!T>::.ctor()
+      .locals init (class Program/'<>c__DisplayClass7_1`1'<!!T> V_0)
+      IL_0000:  newobj     instance void class Program/'<>c__DisplayClass7_1`1'<!!T>::.ctor()
       IL_0005:  stloc.0
       IL_0006:  ldloc.0
       IL_0007:  ldarg.1
-      IL_0008:  stfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass6_1`1'<!!T>::f
+      IL_0008:  stfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass7_1`1'<!!T>::f
       IL_000d:  ldarg.0
       IL_000e:  ldloc.0
-      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass6_1`1'<!!T>::'<Main>b__27'()
+      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass7_1`1'<!!T>::'<Main>b__29'()
       IL_0015:  newobj     instance void class [System.Runtime]System.Func`1<!!T>::.ctor(object,
                                                                                          native int)
       IL_001a:  ldarg.2
       IL_001b:  ldarg.3
-      IL_001c:  call       instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<!!0>(class [System.Runtime]System.Func`1<!!0>,
+      IL_001c:  call       instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<!!0>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                 !!0,
                                                                                                 string)
       IL_0021:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'
 
     .method assembly hidebysig instance string 
-            '<Main>b__5'() cil managed
+            '<Main>b__7'() cil managed
     {
       // Code size       51 (0x33)
       .maxstack  10
@@ -367,7 +377,7 @@
       IL_0020:  ldstr      "8"
       IL_0025:  ldc.i4.s   9
       IL_0027:  ldarg.0
-      IL_0028:  ldflda     int32 Program/'<>c__DisplayClass6_0'::ten
+      IL_0028:  ldflda     int32 Program/'<>c__DisplayClass7_0'::ten
       IL_002d:  call       instance string Instance::GC(object,
                                                         int32,
                                                         object,
@@ -378,15 +388,15 @@
                                                         int32,
                                                         int32&)
       IL_0032:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__5'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__7'
 
     .method assembly hidebysig instance string 
-            '<Main>b__17'() cil managed
+            '<Main>b__19'() cil managed
     {
       // Code size       28 (0x1c)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass6_0'::g
+      IL_0001:  ldfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass7_0'::g
       IL_0006:  ldstr      "a"
       IL_000b:  ldc.i4.5
       IL_000c:  ldstr      "b"
@@ -396,15 +406,15 @@
                                                                                                             !!0,
                                                                                                             !!1)
       IL_001b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__17'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__19'
 
     .method assembly hidebysig instance string 
-            '<Main>b__18'() cil managed
+            '<Main>b__20'() cil managed
     {
       // Code size       28 (0x1c)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass6_0'::g
+      IL_0001:  ldfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass7_0'::g
       IL_0006:  ldstr      "a"
       IL_000b:  ldc.i4.5
       IL_000c:  ldstr      "b"
@@ -414,10 +424,10 @@
                                                                                                          !!0,
                                                                                                          !!1)
       IL_001b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__18'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__20'
 
     .method assembly hidebysig instance string 
-            '<Main>b__19'() cil managed
+            '<Main>b__21'() cil managed
     {
       // Code size       28 (0x1c)
       .maxstack  8
@@ -426,32 +436,32 @@
       IL_0006:  ldstr      "c"
       IL_000b:  ldstr      "d"
       IL_0010:  ldarg.0
-      IL_0011:  ldfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass6_0'::ig
+      IL_0011:  ldfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass7_0'::ig
       IL_0016:  call       string Program::GenInterfaceForwardF<string,int32,string,object>(!!0,
                                                                                             !!1,
                                                                                             !!2,
                                                                                             !!3,
                                                                                             class IGenInterface`2<!!0,!!1>)
       IL_001b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__19'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__21'
 
     .method assembly hidebysig instance string 
-            '<Main>b__20'() cil managed
+            '<Main>b__22'() cil managed
     {
       // Code size       18 (0x12)
       .maxstack  8
       IL_0000:  ldstr      "a"
       IL_0005:  ldc.i4.5
       IL_0006:  ldarg.0
-      IL_0007:  ldfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass6_0'::ig
+      IL_0007:  ldfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass7_0'::ig
       IL_000c:  call       string Program::GenInterfaceForwardG<string,int32>(!!0,
                                                                               !!1,
                                                                               class IGenInterface`2<!!0,!!1>)
       IL_0011:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__20'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__22'
 
-    .method assembly hidebysig instance string
-            '<Main>b__21'() cil managed
+    .method assembly hidebysig instance string 
+            '<Main>b__23'() cil managed
     {
       // Code size       28 (0x1c)
       .maxstack  8
@@ -460,77 +470,77 @@
       IL_000a:  ldc.i4.5
       IL_000b:  ldstr      "d"
       IL_0010:  ldarg.0
-      IL_0011:  ldfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass6_0'::ig2
+      IL_0011:  ldfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass7_0'::ig2
       IL_0016:  call       string Program::GenInterfaceForwardNone(string,
                                                                    object,
                                                                    int32,
                                                                    object,
                                                                    class IGenInterface`2<string,object>)
       IL_001b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__21'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__23'
 
-    .method assembly hidebysig instance string
-            '<Main>b__22'() cil managed
+    .method assembly hidebysig instance string 
+            '<Main>b__24'() cil managed
     {
       // Code size       22 (0x16)
       .maxstack  8
       IL_0000:  ldstr      "a"
       IL_0005:  ldstr      "b"
       IL_000a:  ldarg.0
-      IL_000b:  ldfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass6_0'::ig2
+      IL_000b:  ldfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass7_0'::ig2
       IL_0010:  call       string Program::GenInterfaceForward2(string,
                                                                 object,
                                                                 class IGenInterface`2<string,object>)
       IL_0015:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__22'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__24'
 
-    .method assembly hidebysig instance string
-            '<Main>b__23'() cil managed
-    {
-      // Code size       12 (0xc)
-      .maxstack  8
-      IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass6_0'::ga1
-      IL_0006:  call       string Program::GenAbstractFString(class GenAbstract`1<string>)
-      IL_000b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__23'
-
-    .method assembly hidebysig instance string
-            '<Main>b__24'() cil managed
-    {
-      // Code size       12 (0xc)
-      .maxstack  8
-      IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass6_0'::ga2
-      IL_0006:  call       string Program::GenAbstractFInt(class GenAbstract`1<int32>)
-      IL_000b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__24'
-
-    .method assembly hidebysig instance string
+    .method assembly hidebysig instance string 
             '<Main>b__25'() cil managed
     {
       // Code size       12 (0xc)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass6_0'::ga1
-      IL_0006:  call       string Program::GenAbstractGString(class GenAbstract`1<string>)
+      IL_0001:  ldfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass7_0'::ga1
+      IL_0006:  call       string Program::GenAbstractFString(class GenAbstract`1<string>)
       IL_000b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__25'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__25'
 
-    .method assembly hidebysig instance string
+    .method assembly hidebysig instance string 
             '<Main>b__26'() cil managed
     {
       // Code size       12 (0xc)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass6_0'::ga2
+      IL_0001:  ldfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass7_0'::ga2
+      IL_0006:  call       string Program::GenAbstractFInt(class GenAbstract`1<int32>)
+      IL_000b:  ret
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__26'
+
+    .method assembly hidebysig instance string 
+            '<Main>b__27'() cil managed
+    {
+      // Code size       12 (0xc)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  ldfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass7_0'::ga1
+      IL_0006:  call       string Program::GenAbstractGString(class GenAbstract`1<string>)
+      IL_000b:  ret
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__27'
+
+    .method assembly hidebysig instance string 
+            '<Main>b__28'() cil managed
+    {
+      // Code size       12 (0xc)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  ldfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass7_0'::ga2
       IL_0006:  call       string Program::GenAbstractGInt(class GenAbstract`1<int32>)
       IL_000b:  ret
-    } // end of method '<>c__DisplayClass6_0'::'<Main>b__26'
+    } // end of method '<>c__DisplayClass7_0'::'<Main>b__28'
 
-  } // end of class '<>c__DisplayClass6_0'
+  } // end of class '<>c__DisplayClass7_0'
 
-  .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass6_1`1'<T>
+  .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass7_1`1'<T>
          extends [System.Runtime]System.Object
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
@@ -543,43 +553,45 @@
       IL_0000:  ldarg.0
       IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
       IL_0006:  ret
-    } // end of method '<>c__DisplayClass6_1`1'::.ctor
+    } // end of method '<>c__DisplayClass7_1`1'::.ctor
 
     .method assembly hidebysig instance !T 
-            '<Main>b__27'() cil managed
+            '<Main>b__29'() cil managed
     {
       // Code size       18 (0x12)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass6_1`1'<!T>::f
+      IL_0001:  ldfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass7_1`1'<!T>::f
       IL_0006:  ldc.i4     0xf4240
       IL_000b:  ldc.i4.0
       IL_000c:  callvirt   instance !2 class [System.Runtime]System.Func`3<int32,int32,!T>::Invoke(!0,
                                                                                                    !1)
       IL_0011:  ret
-    } // end of method '<>c__DisplayClass6_1`1'::'<Main>b__27'
+    } // end of method '<>c__DisplayClass7_1`1'::'<Main>b__29'
 
-  } // end of class '<>c__DisplayClass6_1`1'
+  } // end of class '<>c__DisplayClass7_1`1'
 
   .class auto ansi serializable sealed nested private beforefieldinit '<>c'
          extends [System.Runtime]System.Object
   {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
     .field public static initonly class Program/'<>c' '<>9'
-    .field public static class [System.Runtime]System.Func`3<int32,int32,int32> '<>9__6_2'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_3'
-    .field public static class [System.Runtime]System.Func`1<int32> '<>9__6_4'
-    .field public static class [System.Runtime]System.Func`1<int32> '<>9__6_6'
-    .field public static class [System.Runtime]System.Func`1<int32> '<>9__6_7'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_8'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_9'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_10'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_11'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_12'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_13'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_14'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_15'
-    .field public static class [System.Runtime]System.Func`1<string> '<>9__6_16'
+    .field public static class [System.Runtime]System.Func`3<int32,int32,int32> '<>9__7_2'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_3'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_4'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_5'
+    .field public static class [System.Runtime]System.Func`1<int32> '<>9__7_6'
+    .field public static class [System.Runtime]System.Func`1<int32> '<>9__7_8'
+    .field public static class [System.Runtime]System.Func`1<int32> '<>9__7_9'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_10'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_11'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_12'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_13'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_14'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_15'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_16'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_17'
+    .field public static class [System.Runtime]System.Func`1<string> '<>9__7_18'
     .method private hidebysig specialname rtspecialname static 
             void  .cctor() cil managed
     {
@@ -601,7 +613,7 @@
     } // end of method '<>c'::.ctor
 
     .method assembly hidebysig instance int32 
-            '<Main>b__6_2'(int32 x,
+            '<Main>b__7_2'(int32 x,
                            int32 s) cil managed
     {
       // Code size       13 (0xd)
@@ -612,19 +624,37 @@
                                                         int32)
       IL_0007:  ldsfld     int32 Program::s_result
       IL_000c:  ret
-    } // end of method '<>c'::'<Main>b__6_2'
+    } // end of method '<>c'::'<Main>b__7_2'
 
-    .method assembly hidebysig instance string
-            '<Main>b__6_3'() cil managed
+    .method assembly hidebysig instance string 
+            '<Main>b__7_3'() cil managed
     {
       // Code size       6 (0x6)
       .maxstack  8
       IL_0000:  call       string Program::EmptyCalli()
       IL_0005:  ret
-    } // end of method '<>c'::'<Main>b__6_3'
+    } // end of method '<>c'::'<Main>b__7_3'
+
+    .method assembly hidebysig instance string 
+            '<Main>b__7_4'() cil managed
+    {
+      // Code size       6 (0x6)
+      .maxstack  8
+      IL_0000:  call       string Program::ValueTypeInstanceMethodCalli()
+      IL_0005:  ret
+    } // end of method '<>c'::'<Main>b__7_4'
+
+    .method assembly hidebysig instance string 
+            '<Main>b__7_5'() cil managed
+    {
+      // Code size       6 (0x6)
+      .maxstack  8
+      IL_0000:  call       string Program::ValueTypeExplicitThisInstanceMethodCalli()
+      IL_0005:  ret
+    } // end of method '<>c'::'<Main>b__7_5'
 
     .method assembly hidebysig instance int32 
-            '<Main>b__6_4'() cil managed
+            '<Main>b__7_6'() cil managed
     {
       // Code size       27 (0x1b)
       .maxstack  2
@@ -637,10 +667,10 @@
       IL_0014:  ldloc.0
       IL_0015:  ldfld      int32 InstanceValueType::Count
       IL_001a:  ret
-    } // end of method '<>c'::'<Main>b__6_4'
+    } // end of method '<>c'::'<Main>b__7_6'
 
     .method assembly hidebysig instance int32 
-            '<Main>b__6_6'() cil managed
+            '<Main>b__7_8'() cil managed
     {
       // Code size       17 (0x11)
       .maxstack  8
@@ -650,10 +680,10 @@
       IL_000b:  call       int32 Program::CountUpHeap(int32,
                                                       class HeapInt)
       IL_0010:  ret
-    } // end of method '<>c'::'<Main>b__6_6'
+    } // end of method '<>c'::'<Main>b__7_8'
 
     .method assembly hidebysig instance int32 
-            '<Main>b__6_7'() cil managed
+            '<Main>b__7_9'() cil managed
     {
       // Code size       28 (0x1c)
       .maxstack  3
@@ -671,40 +701,40 @@
       IL_0019:  ldc.i4.0
       IL_001a:  ldelem.i4
       IL_001b:  ret
-    } // end of method '<>c'::'<Main>b__6_7'
+    } // end of method '<>c'::'<Main>b__7_9'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_8'() cil managed
+            '<Main>b__7_10'() cil managed
     {
       // Code size       11 (0xb)
       .maxstack  8
       IL_0000:  ldstr      "hello"
       IL_0005:  call       string Program::GenName1Forward<string>(!!0)
       IL_000a:  ret
-    } // end of method '<>c'::'<Main>b__6_8'
+    } // end of method '<>c'::'<Main>b__7_10'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_9'() cil managed
+            '<Main>b__7_11'() cil managed
     {
       // Code size       11 (0xb)
       .maxstack  8
       IL_0000:  ldstr      "hello"
       IL_0005:  call       string Program::GenName1Forward<object>(!!0)
       IL_000a:  ret
-    } // end of method '<>c'::'<Main>b__6_9'
+    } // end of method '<>c'::'<Main>b__7_11'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_10'() cil managed
+            '<Main>b__7_12'() cil managed
     {
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldc.i4.5
       IL_0001:  call       string Program::GenName1Forward<int32>(!!0)
       IL_0006:  ret
-    } // end of method '<>c'::'<Main>b__6_10'
+    } // end of method '<>c'::'<Main>b__7_12'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_11'() cil managed
+            '<Main>b__7_13'() cil managed
     {
       // Code size       16 (0x10)
       .maxstack  8
@@ -713,10 +743,10 @@
       IL_000a:  call       string Program::GenName2ForwardBoth<string,object>(!!0,
                                                                               !!1)
       IL_000f:  ret
-    } // end of method '<>c'::'<Main>b__6_11'
+    } // end of method '<>c'::'<Main>b__7_13'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_12'() cil managed
+            '<Main>b__7_14'() cil managed
     {
       // Code size       12 (0xc)
       .maxstack  8
@@ -725,10 +755,10 @@
       IL_0006:  call       string Program::GenName2ForwardBoth<string,int32>(!!0,
                                                                              !!1)
       IL_000b:  ret
-    } // end of method '<>c'::'<Main>b__6_12'
+    } // end of method '<>c'::'<Main>b__7_14'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_13'() cil managed
+            '<Main>b__7_15'() cil managed
     {
       // Code size       16 (0x10)
       .maxstack  8
@@ -737,10 +767,10 @@
       IL_000a:  call       string Program::GenName2ForwardOne<string>(!!0,
                                                                       string)
       IL_000f:  ret
-    } // end of method '<>c'::'<Main>b__6_13'
+    } // end of method '<>c'::'<Main>b__7_15'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_14'() cil managed
+            '<Main>b__7_16'() cil managed
     {
       // Code size       16 (0x10)
       .maxstack  8
@@ -749,10 +779,10 @@
       IL_000a:  call       string Program::GenName2ForwardOne<object>(!!0,
                                                                       string)
       IL_000f:  ret
-    } // end of method '<>c'::'<Main>b__6_14'
+    } // end of method '<>c'::'<Main>b__7_16'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_15'() cil managed
+            '<Main>b__7_17'() cil managed
     {
       // Code size       12 (0xc)
       .maxstack  8
@@ -761,10 +791,10 @@
       IL_0006:  call       string Program::GenName2ForwardOne<int32>(!!0,
                                                                      string)
       IL_000b:  ret
-    } // end of method '<>c'::'<Main>b__6_15'
+    } // end of method '<>c'::'<Main>b__7_17'
 
     .method assembly hidebysig instance string 
-            '<Main>b__6_16'() cil managed
+            '<Main>b__7_18'() cil managed
     {
       // Code size       16 (0x10)
       .maxstack  8
@@ -773,7 +803,7 @@
       IL_000a:  call       string Program::GenName2ForwardNone(object,
                                                                string)
       IL_000f:  ret
-    } // end of method '<>c'::'<Main>b__6_16'
+    } // end of method '<>c'::'<Main>b__7_18'
 
   } // end of class '<>c'
 
@@ -782,17 +812,19 @@
   .field private static initonly native int s_calcStaticCalliRetbuf
   .field private static initonly native int s_calcStaticCalliRetbufOther
   .field private static initonly native int s_emptyCalliOther
+  .field private static initonly native int s_instanceMethodOnValueType
   .field static assembly int32 s_result
   .method private hidebysig specialname rtspecialname static 
           void  .cctor() cil managed
   {
-    // Code size       68 (0x44)
+    // Code size       83 (0x53)
     .maxstack  1
     .locals init (native int V_0,
              native int V_1,
              native int V_2,
              native int V_3,
-             native int V_4)
+             native int V_4,
+             native int V_5)
     IL_0000:  ldftn      int32 Program::CalcStaticCalli(int32,
                                                         int32)
     IL_0006:  stloc.0
@@ -809,26 +841,30 @@
     IL_001b:  stloc.3
     IL_001c:  ldftn      string Program::EmptyCalliOther()
     IL_0022:  stloc.s    V_4
-    IL_0024:  ldloc.0
-    IL_0025:  stsfld     native int Program::s_calcStaticCalli
-    IL_002a:  ldloc.1
-    IL_002b:  stsfld     native int Program::s_calcStaticCalliOther
-    IL_0030:  ldloc.2
-    IL_0031:  stsfld     native int Program::s_calcStaticCalliRetbuf
-    IL_0036:  ldloc.3
-    IL_0037:  stsfld     native int Program::s_calcStaticCalliRetbufOther
-    IL_003c:  ldloc.s    V_4
-    IL_003e:  stsfld     native int Program::s_emptyCalliOther
-    IL_0043:  ret
+    IL_0024:  ldftn      instance string S16::InstanceMethod()
+    IL_002a:  stloc.s    V_5
+    IL_002c:  ldloc.0
+    IL_002d:  stsfld     native int Program::s_calcStaticCalli
+    IL_0032:  ldloc.1
+    IL_0033:  stsfld     native int Program::s_calcStaticCalliOther
+    IL_0038:  ldloc.2
+    IL_0039:  stsfld     native int Program::s_calcStaticCalliRetbuf
+    IL_003e:  ldloc.3
+    IL_003f:  stsfld     native int Program::s_calcStaticCalliRetbufOther
+    IL_0044:  ldloc.s    V_4
+    IL_0046:  stsfld     native int Program::s_emptyCalliOther
+    IL_004b:  ldloc.s    V_5
+    IL_004d:  stsfld     native int Program::s_instanceMethodOnValueType
+    IL_0052:  ret
   } // end of method Program::.cctor
 
   .method private hidebysig static int32 
           Main() cil managed
   {
     .entrypoint
-    // Code size       1639 (0x667)
+    // Code size       1733 (0x6c5)
     .maxstack  4
-    .locals init (class Program/'<>c__DisplayClass6_0' V_0,
+    .locals init (class Program/'<>c__DisplayClass7_0' V_0,
              int32 V_1,
              valuetype S32 V_2,
              int32 V_3,
@@ -839,7 +875,7 @@
              valuetype S32 V_8,
              valuetype S16 V_9,
              valuetype S32 V_10)
-    IL_0000:  newobj     instance void Program/'<>c__DisplayClass6_0'::.ctor()
+    IL_0000:  newobj     instance void Program/'<>c__DisplayClass7_0'::.ctor()
     IL_0005:  stloc.0
     IL_0006:  ldc.i4     0xf4240
     IL_000b:  stloc.1
@@ -867,7 +903,7 @@
 
     IL_0033:  ldloc.0
     IL_0034:  ldc.i4.1
-    IL_0035:  stfld      bool Program/'<>c__DisplayClass6_0'::result
+    IL_0035:  stfld      bool Program/'<>c__DisplayClass7_0'::result
     IL_003a:  newobj     instance void ClassImpl::.ctor()
     IL_003f:  stloc.s    V_4
     IL_0041:  ldloc.s    V_4
@@ -880,19 +916,19 @@
     IL_0055:  callvirt   instance void InterfaceImpl::set_Other(class IInterface)
     IL_005a:  ldloc.0
     IL_005b:  newobj     instance void class GenInstance`2<string,int32>::.ctor()
-    IL_0060:  stfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass6_0'::g
+    IL_0060:  stfld      class GenInstance`2<string,int32> Program/'<>c__DisplayClass7_0'::g
     IL_0065:  ldloc.0
     IL_0066:  newobj     instance void class GenInterfaceImpl`2<string,int32>::.ctor()
-    IL_006b:  stfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass6_0'::ig
+    IL_006b:  stfld      class IGenInterface`2<string,int32> Program/'<>c__DisplayClass7_0'::ig
     IL_0070:  ldloc.0
     IL_0071:  newobj     instance void class GenInterfaceImpl`2<string,object>::.ctor()
-    IL_0076:  stfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass6_0'::ig2
+    IL_0076:  stfld      class IGenInterface`2<string,object> Program/'<>c__DisplayClass7_0'::ig2
     IL_007b:  ldloc.0
     IL_007c:  newobj     instance void class GenAbstractImpl`1<string>::.ctor()
-    IL_0081:  stfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass6_0'::ga1
+    IL_0081:  stfld      class GenAbstractImpl`1<string> Program/'<>c__DisplayClass7_0'::ga1
     IL_0086:  ldloc.0
     IL_0087:  newobj     instance void class GenAbstractImpl`1<int32>::.ctor()
-    IL_008c:  stfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass6_0'::ga2
+    IL_008c:  stfld      class GenAbstractImpl`1<int32> Program/'<>c__DisplayClass7_0'::ga2
     IL_0091:  ldloc.3
     IL_0092:  conv.u8
     IL_0093:  ldc.i4.s   32
@@ -935,7 +971,7 @@
     IL_00e7:  stloc.s    V_8
     IL_00e9:  ldloc.0
     IL_00ea:  ldc.i4.s   10
-    IL_00ec:  stfld      int32 Program/'<>c__DisplayClass6_0'::ten
+    IL_00ec:  stfld      int32 Program/'<>c__DisplayClass7_0'::ten
     IL_00f1:  ldloc.0
     IL_00f2:  ldnull
     IL_00f3:  ldftn      int32 Program::CalcStatic(int32,
@@ -944,7 +980,7 @@
                                                                                                      native int)
     IL_00fe:  ldloc.3
     IL_00ff:  ldstr      "Static non-generic"
-    IL_0104:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0104:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0109:  ldloc.0
@@ -956,7 +992,7 @@
     IL_0116:  ldloc.3
     IL_0117:  conv.u1
     IL_0118:  ldstr      "Static non-generic small"
-    IL_011d:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<uint8>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_011d:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<uint8>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0122:  ldloc.0
@@ -967,7 +1003,7 @@
                                                                                                              native int)
     IL_012f:  ldloc.s    V_8
     IL_0131:  ldstr      "Static non-generic retbuf"
-    IL_0136:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0136:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_013b:  ldloc.0
@@ -978,7 +1014,7 @@
                                                                                                      native int)
     IL_0148:  ldloc.s    V_6
     IL_014a:  ldstr      "Static non-generic long"
-    IL_014f:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int64>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_014f:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int64>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0154:  ldloc.0
@@ -989,25 +1025,25 @@
                                                                                                              native int)
     IL_0161:  ldloc.s    V_7
     IL_0163:  ldstr      "Static non-generic S16"
-    IL_0168:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S16>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0168:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S16>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_016d:  ldloc.0
-    IL_016e:  ldsfld     class [System.Runtime]System.Func`3<int32,int32,int32> Program/'<>c'::'<>9__6_2'
+    IL_016e:  ldsfld     class [System.Runtime]System.Func`3<int32,int32,int32> Program/'<>c'::'<>9__7_2'
     IL_0173:  dup
     IL_0174:  brtrue.s   IL_018d
 
     IL_0176:  pop
     IL_0177:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_017c:  ldftn      instance int32 Program/'<>c'::'<Main>b__6_2'(int32,
+    IL_017c:  ldftn      instance int32 Program/'<>c'::'<Main>b__7_2'(int32,
                                                                       int32)
     IL_0182:  newobj     instance void class [System.Runtime]System.Func`3<int32,int32,int32>::.ctor(object,
                                                                                                      native int)
     IL_0187:  dup
-    IL_0188:  stsfld     class [System.Runtime]System.Func`3<int32,int32,int32> Program/'<>c'::'<>9__6_2'
+    IL_0188:  stsfld     class [System.Runtime]System.Func`3<int32,int32,int32> Program/'<>c'::'<>9__7_2'
     IL_018d:  ldloc.3
     IL_018e:  ldstr      "Static void"
-    IL_0193:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0193:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0198:  ldloc.0
@@ -1018,7 +1054,7 @@
                                                                                                      native int)
     IL_01a9:  ldloc.3
     IL_01aa:  ldstr      "Instance non-generic"
-    IL_01af:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_01af:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_01b4:  ldloc.0
@@ -1029,7 +1065,7 @@
                                                                                                              native int)
     IL_01c5:  ldloc.s    V_8
     IL_01c7:  ldstr      "Instance non-generic retbuf"
-    IL_01cc:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_01cc:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_01d1:  ldloc.0
@@ -1041,7 +1077,7 @@
                                                                                                      native int)
     IL_01e0:  ldloc.3
     IL_01e1:  ldstr      "Abstract class non-generic"
-    IL_01e6:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_01e6:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_01eb:  ldloc.0
@@ -1053,7 +1089,7 @@
                                                                                                              native int)
     IL_01fa:  ldloc.s    V_8
     IL_01fc:  ldstr      "Abstract class non-generic retbuf"
-    IL_0201:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0201:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_0206:  ldloc.0
@@ -1065,7 +1101,7 @@
                                                                                                      native int)
     IL_0215:  ldloc.3
     IL_0216:  ldstr      "Interface non-generic"
-    IL_021b:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_021b:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0220:  ldloc.0
@@ -1077,7 +1113,7 @@
                                                                                                              native int)
     IL_022f:  ldloc.s    V_8
     IL_0231:  ldstr      "Interface non-generic retbuf"
-    IL_0236:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0236:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_023b:  ldloc.0
@@ -1088,7 +1124,7 @@
                                                                                                      native int)
     IL_0248:  ldloc.3
     IL_0249:  ldstr      "Static calli"
-    IL_024e:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_024e:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0253:  ldloc.0
@@ -1099,7 +1135,7 @@
                                                                                                              native int)
     IL_0260:  ldloc.s    V_8
     IL_0262:  ldstr      "Static calli retbuf"
-    IL_0267:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0267:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_026c:  ldloc.0
@@ -1110,7 +1146,7 @@
                                                                                                      native int)
     IL_027d:  ldloc.3
     IL_027e:  ldstr      "Instance calli"
-    IL_0283:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_0283:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<int32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                     !!0,
                                                                                                     string)
     IL_0288:  ldloc.0
@@ -1121,363 +1157,398 @@
                                                                                                              native int)
     IL_0299:  ldloc.s    V_8
     IL_029b:  ldstr      "Instance calli retbuf"
-    IL_02a0:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
+    IL_02a0:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__TestCalc|1'<valuetype S32>(class [System.Runtime]System.Func`3<int32,int32,!!0>,
                                                                                                             !!0,
                                                                                                             string)
     IL_02a5:  ldloc.0
-    IL_02a6:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_3'
+    IL_02a6:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_3'
     IL_02ab:  dup
     IL_02ac:  brtrue.s   IL_02c5
 
     IL_02ae:  pop
     IL_02af:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_02b4:  ldftn      instance string Program/'<>c'::'<Main>b__6_3'()
+    IL_02b4:  ldftn      instance string Program/'<>c'::'<Main>b__7_3'()
     IL_02ba:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_02bf:  dup
-    IL_02c0:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_3'
+    IL_02c0:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_3'
     IL_02c5:  ldstr      "Empty calli"
     IL_02ca:  ldstr      "Static calli without args"
-    IL_02cf:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_02cf:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_02d4:  ldloc.0
-    IL_02d5:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_4'
+    IL_02d5:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_4'
     IL_02da:  dup
     IL_02db:  brtrue.s   IL_02f4
 
     IL_02dd:  pop
     IL_02de:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_02e3:  ldftn      instance int32 Program/'<>c'::'<Main>b__6_4'()
-    IL_02e9:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
-                                                                                         native int)
-    IL_02ee:  dup
-    IL_02ef:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_4'
-    IL_02f4:  ldc.i4     0xf4240
-    IL_02f9:  ldstr      "Value type instance call"
-    IL_02fe:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
-                                                                                                !!0,
-                                                                                                string)
-    IL_0303:  ldloc.0
-    IL_0304:  ldloc.0
-    IL_0305:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__5'()
-    IL_030b:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_02e3:  ldftn      instance string Program/'<>c'::'<Main>b__7_4'()
+    IL_02e9:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_0310:  ldstr      "2 3 4 5 6 7 8 9 10"
-    IL_0315:  ldstr      "Instance with GC"
-    IL_031a:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_02ee:  dup
+    IL_02ef:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_4'
+    IL_02f4:  ldstr      "Instance method"
+    IL_02f9:  ldstr      "calli to an instance method on a value type"
+    IL_02fe:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_031f:  ldloc.0
-    IL_0320:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_6'
-    IL_0325:  dup
-    IL_0326:  brtrue.s   IL_033f
+    IL_0303:  ldloc.0
+    IL_0304:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_5'
+    IL_0309:  dup
+    IL_030a:  brtrue.s   IL_0323
 
-    IL_0328:  pop
-    IL_0329:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_032e:  ldftn      instance int32 Program/'<>c'::'<Main>b__6_6'()
-    IL_0334:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
+    IL_030c:  pop
+    IL_030d:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
+    IL_0312:  ldftn      instance string Program/'<>c'::'<Main>b__7_5'()
+    IL_0318:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+                                                                                          native int)
+    IL_031d:  dup
+    IL_031e:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_5'
+    IL_0323:  ldstr      "Instance method"
+    IL_0328:  ldstr      "calli to an instance method on a value type with e"
+    + "xplicit this"
+    IL_032d:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                 !!0,
+                                                                                                 string)
+    IL_0332:  ldloc.0
+    IL_0333:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_6'
+    IL_0338:  dup
+    IL_0339:  brtrue.s   IL_0352
+
+    IL_033b:  pop
+    IL_033c:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
+    IL_0341:  ldftn      instance int32 Program/'<>c'::'<Main>b__7_6'()
+    IL_0347:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
                                                                                          native int)
-    IL_0339:  dup
-    IL_033a:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_6'
-    IL_033f:  ldc.i4     0xf4240
-    IL_0344:  ldstr      "Count up with heap int"
-    IL_0349:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
+    IL_034c:  dup
+    IL_034d:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_6'
+    IL_0352:  ldc.i4     0xf4240
+    IL_0357:  ldstr      "Value type instance call"
+    IL_035c:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                 !!0,
                                                                                                 string)
-    IL_034e:  ldloc.0
-    IL_034f:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_7'
-    IL_0354:  dup
-    IL_0355:  brtrue.s   IL_036e
-
-    IL_0357:  pop
-    IL_0358:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_035d:  ldftn      instance int32 Program/'<>c'::'<Main>b__6_7'()
-    IL_0363:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
-                                                                                         native int)
-    IL_0368:  dup
-    IL_0369:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__6_7'
-    IL_036e:  ldc.i4     0xf4240
-    IL_0373:  ldstr      "Count up with byref to heap"
-    IL_0378:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
-                                                                                                !!0,
-                                                                                                string)
+    IL_0361:  ldloc.0
+    IL_0362:  ldloc.0
+    IL_0363:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__7'()
+    IL_0369:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+                                                                                          native int)
+    IL_036e:  ldstr      "2 3 4 5 6 7 8 9 10"
+    IL_0373:  ldstr      "Instance with GC"
+    IL_0378:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                 !!0,
+                                                                                                 string)
     IL_037d:  ldloc.0
-    IL_037e:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_8'
+    IL_037e:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_8'
     IL_0383:  dup
     IL_0384:  brtrue.s   IL_039d
 
     IL_0386:  pop
     IL_0387:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_038c:  ldftn      instance string Program/'<>c'::'<Main>b__6_8'()
-    IL_0392:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
-                                                                                          native int)
+    IL_038c:  ldftn      instance int32 Program/'<>c'::'<Main>b__7_8'()
+    IL_0392:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
+                                                                                         native int)
     IL_0397:  dup
-    IL_0398:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_8'
-    IL_039d:  ldstr      "System.String hello"
-    IL_03a2:  ldstr      "Static generic string"
-    IL_03a7:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
-                                                                                                 !!0,
-                                                                                                 string)
+    IL_0398:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_8'
+    IL_039d:  ldc.i4     0xf4240
+    IL_03a2:  ldstr      "Count up with heap int"
+    IL_03a7:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                !!0,
+                                                                                                string)
     IL_03ac:  ldloc.0
-    IL_03ad:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_9'
+    IL_03ad:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_9'
     IL_03b2:  dup
     IL_03b3:  brtrue.s   IL_03cc
 
     IL_03b5:  pop
     IL_03b6:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_03bb:  ldftn      instance string Program/'<>c'::'<Main>b__6_9'()
-    IL_03c1:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
-                                                                                          native int)
+    IL_03bb:  ldftn      instance int32 Program/'<>c'::'<Main>b__7_9'()
+    IL_03c1:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
+                                                                                         native int)
     IL_03c6:  dup
-    IL_03c7:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_9'
-    IL_03cc:  ldstr      "System.Object hello"
-    IL_03d1:  ldstr      "Static generic object"
-    IL_03d6:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
-                                                                                                 !!0,
-                                                                                                 string)
+    IL_03c7:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_9'
+    IL_03cc:  ldc.i4     0xf4240
+    IL_03d1:  ldstr      "Count up with byref to heap"
+    IL_03d6:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                !!0,
+                                                                                                string)
     IL_03db:  ldloc.0
-    IL_03dc:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_10'
+    IL_03dc:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_10'
     IL_03e1:  dup
     IL_03e2:  brtrue.s   IL_03fb
 
     IL_03e4:  pop
     IL_03e5:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_03ea:  ldftn      instance string Program/'<>c'::'<Main>b__6_10'()
+    IL_03ea:  ldftn      instance string Program/'<>c'::'<Main>b__7_10'()
     IL_03f0:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_03f5:  dup
-    IL_03f6:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_10'
-    IL_03fb:  ldstr      "System.Int32 5"
-    IL_0400:  ldstr      "Static generic int"
-    IL_0405:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_03f6:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_10'
+    IL_03fb:  ldstr      "System.String hello"
+    IL_0400:  ldstr      "Static generic string"
+    IL_0405:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_040a:  ldloc.0
-    IL_040b:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_11'
+    IL_040b:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_11'
     IL_0410:  dup
     IL_0411:  brtrue.s   IL_042a
 
     IL_0413:  pop
     IL_0414:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_0419:  ldftn      instance string Program/'<>c'::'<Main>b__6_11'()
+    IL_0419:  ldftn      instance string Program/'<>c'::'<Main>b__7_11'()
     IL_041f:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_0424:  dup
-    IL_0425:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_11'
-    IL_042a:  ldstr      "System.String System.Object hello hello2"
-    IL_042f:  ldstr      "Static generic 2 string object"
-    IL_0434:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0425:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_11'
+    IL_042a:  ldstr      "System.Object hello"
+    IL_042f:  ldstr      "Static generic object"
+    IL_0434:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_0439:  ldloc.0
-    IL_043a:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_12'
+    IL_043a:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_12'
     IL_043f:  dup
     IL_0440:  brtrue.s   IL_0459
 
     IL_0442:  pop
     IL_0443:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_0448:  ldftn      instance string Program/'<>c'::'<Main>b__6_12'()
+    IL_0448:  ldftn      instance string Program/'<>c'::'<Main>b__7_12'()
     IL_044e:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_0453:  dup
-    IL_0454:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_12'
-    IL_0459:  ldstr      "System.String System.Int32 hello 5"
-    IL_045e:  ldstr      "Static generic 2 string int"
-    IL_0463:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0454:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_12'
+    IL_0459:  ldstr      "System.Int32 5"
+    IL_045e:  ldstr      "Static generic int"
+    IL_0463:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_0468:  ldloc.0
-    IL_0469:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_13'
+    IL_0469:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_13'
     IL_046e:  dup
     IL_046f:  brtrue.s   IL_0488
 
     IL_0471:  pop
     IL_0472:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_0477:  ldftn      instance string Program/'<>c'::'<Main>b__6_13'()
+    IL_0477:  ldftn      instance string Program/'<>c'::'<Main>b__7_13'()
     IL_047d:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_0482:  dup
-    IL_0483:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_13'
-    IL_0488:  ldstr      "System.String System.String hello hello2"
-    IL_048d:  ldstr      "Static generic 1 string"
-    IL_0492:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0483:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_13'
+    IL_0488:  ldstr      "System.String System.Object hello hello2"
+    IL_048d:  ldstr      "Static generic 2 string object"
+    IL_0492:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_0497:  ldloc.0
-    IL_0498:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_14'
+    IL_0498:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_14'
     IL_049d:  dup
     IL_049e:  brtrue.s   IL_04b7
 
     IL_04a0:  pop
     IL_04a1:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_04a6:  ldftn      instance string Program/'<>c'::'<Main>b__6_14'()
+    IL_04a6:  ldftn      instance string Program/'<>c'::'<Main>b__7_14'()
     IL_04ac:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_04b1:  dup
-    IL_04b2:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_14'
-    IL_04b7:  ldstr      "System.Object System.String hello hello2"
-    IL_04bc:  ldstr      "Static generic 1 object"
-    IL_04c1:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_04b2:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_14'
+    IL_04b7:  ldstr      "System.String System.Int32 hello 5"
+    IL_04bc:  ldstr      "Static generic 2 string int"
+    IL_04c1:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_04c6:  ldloc.0
-    IL_04c7:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_15'
+    IL_04c7:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_15'
     IL_04cc:  dup
     IL_04cd:  brtrue.s   IL_04e6
 
     IL_04cf:  pop
     IL_04d0:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_04d5:  ldftn      instance string Program/'<>c'::'<Main>b__6_15'()
+    IL_04d5:  ldftn      instance string Program/'<>c'::'<Main>b__7_15'()
     IL_04db:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_04e0:  dup
-    IL_04e1:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_15'
-    IL_04e6:  ldstr      "System.Int32 System.String 5 hello2"
-    IL_04eb:  ldstr      "Static generic 1 int"
-    IL_04f0:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_04e1:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_15'
+    IL_04e6:  ldstr      "System.String System.String hello hello2"
+    IL_04eb:  ldstr      "Static generic 1 string"
+    IL_04f0:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_04f5:  ldloc.0
-    IL_04f6:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_16'
+    IL_04f6:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_16'
     IL_04fb:  dup
     IL_04fc:  brtrue.s   IL_0515
 
     IL_04fe:  pop
     IL_04ff:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
-    IL_0504:  ldftn      instance string Program/'<>c'::'<Main>b__6_16'()
+    IL_0504:  ldftn      instance string Program/'<>c'::'<Main>b__7_16'()
     IL_050a:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
     IL_050f:  dup
-    IL_0510:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__6_16'
+    IL_0510:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_16'
     IL_0515:  ldstr      "System.Object System.String hello hello2"
-    IL_051a:  ldstr      "Static generic 0"
-    IL_051f:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_051a:  ldstr      "Static generic 1 object"
+    IL_051f:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
     IL_0524:  ldloc.0
-    IL_0525:  ldloc.0
-    IL_0526:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__17'()
-    IL_052c:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_0525:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_17'
+    IL_052a:  dup
+    IL_052b:  brtrue.s   IL_0544
+
+    IL_052d:  pop
+    IL_052e:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
+    IL_0533:  ldftn      instance string Program/'<>c'::'<Main>b__7_17'()
+    IL_0539:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_0531:  ldstr      "System.String System.Int32 System.Object System.St"
-    + "ring a 5 b c"
-    IL_0536:  ldstr      "Instance generic 4"
-    IL_053b:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_053e:  dup
+    IL_053f:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_17'
+    IL_0544:  ldstr      "System.Int32 System.String 5 hello2"
+    IL_0549:  ldstr      "Static generic 1 int"
+    IL_054e:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_0540:  ldloc.0
-    IL_0541:  ldloc.0
-    IL_0542:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__18'()
-    IL_0548:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_0553:  ldloc.0
+    IL_0554:  ldsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_18'
+    IL_0559:  dup
+    IL_055a:  brtrue.s   IL_0573
+
+    IL_055c:  pop
+    IL_055d:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
+    IL_0562:  ldftn      instance string Program/'<>c'::'<Main>b__7_18'()
+    IL_0568:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_054d:  ldstr      "System.String System.Int32 System.Object System.St"
-    + "ring a 5 b c"
-    IL_0552:  ldstr      "Virtual instance generic 4"
-    IL_0557:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_056d:  dup
+    IL_056e:  stsfld     class [System.Runtime]System.Func`1<string> Program/'<>c'::'<>9__7_18'
+    IL_0573:  ldstr      "System.Object System.String hello hello2"
+    IL_0578:  ldstr      "Static generic 0"
+    IL_057d:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_055c:  ldloc.0
-    IL_055d:  ldloc.0
-    IL_055e:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__19'()
-    IL_0564:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_0582:  ldloc.0
+    IL_0583:  ldloc.0
+    IL_0584:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__19'()
+    IL_058a:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_0569:  ldstr      "System.String System.Int32 System.String System.Ob"
+    IL_058f:  ldstr      "System.String System.Int32 System.Object System.St"
+    + "ring a 5 b c"
+    IL_0594:  ldstr      "Instance generic 4"
+    IL_0599:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                 !!0,
+                                                                                                 string)
+    IL_059e:  ldloc.0
+    IL_059f:  ldloc.0
+    IL_05a0:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__20'()
+    IL_05a6:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+                                                                                          native int)
+    IL_05ab:  ldstr      "System.String System.Int32 System.Object System.St"
+    + "ring a 5 b c"
+    IL_05b0:  ldstr      "Virtual instance generic 4"
+    IL_05b5:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                 !!0,
+                                                                                                 string)
+    IL_05ba:  ldloc.0
+    IL_05bb:  ldloc.0
+    IL_05bc:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__21'()
+    IL_05c2:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+                                                                                          native int)
+    IL_05c7:  ldstr      "System.String System.Int32 System.String System.Ob"
     + "ject a 5 c d"
-    IL_056e:  ldstr      "Interface generic 4"
-    IL_0573:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_05cc:  ldstr      "Interface generic 4"
+    IL_05d1:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_0578:  ldloc.0
-    IL_0579:  ldloc.0
-    IL_057a:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__20'()
-    IL_0580:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_05d6:  ldloc.0
+    IL_05d7:  ldloc.0
+    IL_05d8:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__22'()
+    IL_05de:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_0585:  ldstr      "System.String System.Int32 a 5"
-    IL_058a:  ldstr      "Interface generic forward G"
-    IL_058f:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_05e3:  ldstr      "System.String System.Int32 a 5"
+    IL_05e8:  ldstr      "Interface generic forward G"
+    IL_05ed:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_0594:  ldloc.0
-    IL_0595:  ldloc.0
-    IL_0596:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__21'()
-    IL_059c:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_05f2:  ldloc.0
+    IL_05f3:  ldloc.0
+    IL_05f4:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__23'()
+    IL_05fa:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_05a1:  ldstr      "System.String System.Object System.Int32 System.Ob"
+    IL_05ff:  ldstr      "System.String System.Object System.Int32 System.Ob"
     + "ject a b 5 d"
-    IL_05a6:  ldstr      "Interface generic 0"
-    IL_05ab:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0604:  ldstr      "Interface generic 0"
+    IL_0609:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_05b0:  ldloc.0
-    IL_05b1:  ldloc.0
-    IL_05b2:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__22'()
-    IL_05b8:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_060e:  ldloc.0
+    IL_060f:  ldloc.0
+    IL_0610:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__24'()
+    IL_0616:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_05bd:  ldstr      "System.String System.Object a b"
-    IL_05c2:  ldstr      "Interface generic without generics on method"
-    IL_05c7:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_061b:  ldstr      "System.String System.Object a b"
+    IL_0620:  ldstr      "Interface generic without generics on method"
+    IL_0625:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_05cc:  ldloc.0
-    IL_05cd:  ldloc.0
-    IL_05ce:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__23'()
-    IL_05d4:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_062a:  ldloc.0
+    IL_062b:  ldloc.0
+    IL_062c:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__25'()
+    IL_0632:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_05d9:  ldstr      "System.String System.Object"
-    IL_05de:  ldstr      "Abstract generic with generic on method 1"
-    IL_05e3:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0637:  ldstr      "System.String System.Object"
+    IL_063c:  ldstr      "Abstract generic with generic on method 1"
+    IL_0641:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_05e8:  ldloc.0
-    IL_05e9:  ldloc.0
-    IL_05ea:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__24'()
-    IL_05f0:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_0646:  ldloc.0
+    IL_0647:  ldloc.0
+    IL_0648:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__26'()
+    IL_064e:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_05f5:  ldstr      "System.Int32 System.Object"
-    IL_05fa:  ldstr      "Abstract generic with generic on method 2"
-    IL_05ff:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_0653:  ldstr      "System.Int32 System.Object"
+    IL_0658:  ldstr      "Abstract generic with generic on method 2"
+    IL_065d:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_0604:  ldloc.0
-    IL_0605:  ldloc.0
-    IL_0606:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__25'()
-    IL_060c:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_0662:  ldloc.0
+    IL_0663:  ldloc.0
+    IL_0664:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__27'()
+    IL_066a:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_0611:  ldstr      "System.String"
-    IL_0616:  ldstr      "Abstract generic without generic on method 1"
-    IL_061b:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_066f:  ldstr      "System.String"
+    IL_0674:  ldstr      "Abstract generic without generic on method 1"
+    IL_0679:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_0620:  ldloc.0
-    IL_0621:  ldloc.0
-    IL_0622:  ldftn      instance string Program/'<>c__DisplayClass6_0'::'<Main>b__26'()
-    IL_0628:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
+    IL_067e:  ldloc.0
+    IL_067f:  ldloc.0
+    IL_0680:  ldftn      instance string Program/'<>c__DisplayClass7_0'::'<Main>b__28'()
+    IL_0686:  newobj     instance void class [System.Runtime]System.Func`1<string>::.ctor(object,
                                                                                           native int)
-    IL_062d:  ldstr      "System.Int32"
-    IL_0632:  ldstr      "Abstract generic without generic on method 2"
-    IL_0637:  callvirt   instance void Program/'<>c__DisplayClass6_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
+    IL_068b:  ldstr      "System.Int32"
+    IL_0690:  ldstr      "Abstract generic without generic on method 2"
+    IL_0695:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<string>(class [System.Runtime]System.Func`1<!!0>,
                                                                                                  !!0,
                                                                                                  string)
-    IL_063c:  ldloc.0
-    IL_063d:  ldfld      bool Program/'<>c__DisplayClass6_0'::result
-    IL_0642:  brfalse.s  IL_0650
+    IL_069a:  ldloc.0
+    IL_069b:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_06a0:  brfalse.s  IL_06ae
 
-    IL_0644:  ldstr      "All tailcall-via-help succeeded"
-    IL_0649:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_064e:  br.s       IL_065a
+    IL_06a2:  ldstr      "All tailcall-via-help succeeded"
+    IL_06a7:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_06ac:  br.s       IL_06b8
 
-    IL_0650:  ldstr      "One or more failures in tailcall-via-help test"
-    IL_0655:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_065a:  ldloc.0
-    IL_065b:  ldfld      bool Program/'<>c__DisplayClass6_0'::result
-    IL_0660:  brtrue.s   IL_0664
+    IL_06ae:  ldstr      "One or more failures in tailcall-via-help test"
+    IL_06b3:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_06b8:  ldloc.0
+    IL_06b9:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_06be:  brtrue.s   IL_06c2
 
-    IL_0662:  ldc.i4.1
-    IL_0663:  ret
+    IL_06c0:  ldc.i4.1
+    IL_06c1:  ret
 
-    IL_0664:  ldc.i4.s   100
-    IL_0666:  ret
+    IL_06c2:  ldc.i4.s   100
+    IL_06c4:  ret
   } // end of method Program::Main
 
   .method public hidebysig static void  Calc(int32& x,
@@ -1947,7 +2018,7 @@
     IL_0019:  ret
   } // end of method Program::CalcStaticCalliOther
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           EmptyCalli() cil managed noinlining
   {
     // Code size       41 (0x29)
@@ -1977,7 +2048,75 @@
     IL_0028:  ret
   } // end of method Program::EmptyCalli
 
-  .method private hidebysig static string
+    .method private hidebysig static string 
+          ValueTypeInstanceMethodCalli() cil managed noinlining
+  {
+    // Code size       51 (0x33)
+    .maxstack  2
+    .locals init (valuetype S16 V_0,
+             int32 V_1)
+    IL_0000:  call       int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
+    IL_0005:  ldc.i4.0
+    IL_0006:  blt.s      IL_000c
+
+    IL_0008:  ldc.i4.s   40
+    IL_000a:  br.s       IL_000e
+
+    IL_000c:  ldc.i4.s   30
+    IL_000e:  stloc.1
+    IL_000f:  ldloc.1
+    IL_0010:  conv.u
+    IL_0011:  ldc.i4.4
+    IL_0012:  mul.ovf.un
+    IL_0013:  localloc
+    IL_0015:  ldloc.1
+    IL_0016:  newobj     instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(void*,
+                                                                                             int32)
+    IL_001b:  pop
+    IL_001c:  ldloca.s   V_0
+    IL_001e:  initobj    S16
+    IL_0024:  ldloca.s   V_0
+    IL_0026:  ldsfld     native int Program::s_instanceMethodOnValueType
+    IL_002b:  tail.
+    IL_002d:  calli      instance string()
+    IL_0032:  ret
+  } // end of method Program::ValueTypeInstanceMethodCalli
+
+  .method private hidebysig static string 
+          ValueTypeExplicitThisInstanceMethodCalli() cil managed noinlining
+  {
+    // Code size       51 (0x33)
+    .maxstack  2
+    .locals init (valuetype S16 V_0,
+             int32 V_1)
+    IL_0000:  call       int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
+    IL_0005:  ldc.i4.0
+    IL_0006:  blt.s      IL_000c
+
+    IL_0008:  ldc.i4.s   40
+    IL_000a:  br.s       IL_000e
+
+    IL_000c:  ldc.i4.s   30
+    IL_000e:  stloc.1
+    IL_000f:  ldloc.1
+    IL_0010:  conv.u
+    IL_0011:  ldc.i4.4
+    IL_0012:  mul.ovf.un
+    IL_0013:  localloc
+    IL_0015:  ldloc.1
+    IL_0016:  newobj     instance void valuetype [System.Runtime]System.Span`1<int32>::.ctor(void*,
+                                                                                             int32)
+    IL_001b:  pop
+    IL_001c:  ldloca.s   V_0
+    IL_001e:  initobj    S16
+    IL_0024:  ldloca.s   V_0
+    IL_0026:  ldsfld     native int Program::s_instanceMethodOnValueType
+    IL_002b:  tail.
+    IL_002d:  calli      explicit instance string(valuetype S16&)
+    IL_0032:  ret
+  } // end of method Program::ValueTypeExplicitThisInstanceMethodCalli
+
+  .method private hidebysig static string 
           EmptyCalliOther() cil managed noinlining
   {
     // Code size       6 (0x6)
@@ -2380,7 +2519,7 @@
     IL_0016:  ret
   } // end of method Program::GenInterfaceForwardF
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenInterfaceForwardG<T1,T2>(!!T1 a,
                                       !!T2 b,
                                       class IGenInterface`2<!!T1,!!T2> igen) cil managed noinlining
@@ -2428,7 +2567,7 @@
     IL_0016:  ret
   } // end of method Program::GenInterfaceForwardNone
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenInterfaceForward2(string a,
                                object b,
                                class IGenInterface`2<string,object> igen) cil managed noinlining
@@ -2449,7 +2588,7 @@
     IL_0013:  ret
   } // end of method Program::GenInterfaceForward2
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenAbstractFString(class GenAbstract`1<string> ga) cil managed noinlining
   {
     // Code size       9 (0x9)
@@ -2460,7 +2599,7 @@
     IL_0008:  ret
   } // end of method Program::GenAbstractFString
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenAbstractGString(class GenAbstract`1<string> ga) cil managed noinlining
   {
     // Code size       9 (0x9)
@@ -2471,7 +2610,7 @@
     IL_0008:  ret
   } // end of method Program::GenAbstractGString
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenAbstractFInt(class GenAbstract`1<int32> ga) cil managed noinlining
   {
     // Code size       9 (0x9)
@@ -2482,7 +2621,7 @@
     IL_0008:  ret
   } // end of method Program::GenAbstractFInt
 
-  .method private hidebysig static string
+  .method private hidebysig static string 
           GenAbstractGInt(class GenAbstract`1<int32> ga) cil managed noinlining
   {
     // Code size       9 (0x9)
@@ -3703,7 +3842,7 @@
   {
   } // end of method IGenInterface`2::F
 
-  .method public hidebysig newslot abstract virtual
+  .method public hidebysig newslot abstract virtual 
           instance string  G(valuetype S32 s,
                              !T1 a,
                              !T2 b) cil managed
@@ -3777,7 +3916,7 @@
     IL_007e:  ret
   } // end of method GenInterfaceImpl`2::F
 
-  .method public hidebysig newslot virtual final
+  .method public hidebysig newslot virtual final 
           instance string  G(valuetype S32 s,
                              !T1 a,
                              !T2 b) cil managed
@@ -3829,17 +3968,17 @@
 .class private abstract auto ansi beforefieldinit GenAbstract`1<T1>
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig newslot abstract virtual
+  .method public hidebysig newslot abstract virtual 
           instance string  F<T2>() cil managed
   {
   } // end of method GenAbstract`1::F
 
-  .method public hidebysig newslot abstract virtual
+  .method public hidebysig newslot abstract virtual 
           instance string  G() cil managed
   {
   } // end of method GenAbstract`1::G
 
-  .method family hidebysig specialname rtspecialname
+  .method family hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -3854,7 +3993,7 @@
 .class private auto ansi beforefieldinit GenAbstractImpl`1<T1>
        extends class GenAbstract`1<!T1>
 {
-  .method public hidebysig virtual instance string
+  .method public hidebysig virtual instance string 
           F<T2>() cil managed
   {
     // Code size       41 (0x29)
@@ -3872,7 +4011,7 @@
     IL_0028:  ret
   } // end of method GenAbstractImpl`1::F
 
-  .method public hidebysig virtual instance string
+  .method public hidebysig virtual instance string 
           G() cil managed
   {
     // Code size       25 (0x19)
@@ -3888,7 +4027,7 @@
     IL_0018:  ret
   } // end of method GenAbstractImpl`1::G
 
-  .method public hidebysig specialname rtspecialname
+  .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -3900,12 +4039,12 @@
 
 } // end of class GenAbstractImpl`1
 
-.class private auto ansi ProcessedByFody
+.class private auto ansi example1_Fody.ProcessedByFody
        extends [System.Runtime]System.Object
 {
-  .field static assembly literal string FodyVersion = "5.2.0.0"
-  .field static assembly literal string InlineIL = "1.2.0.0"
-} // end of class ProcessedByFody
+  .field static assembly literal string FodyVersion = "6.1.1.0"
+  .field static assembly literal string InlineIL = "1.4.0.0"
+} // end of class example1_Fody.ProcessedByFody
 
 
 // =============================================================
