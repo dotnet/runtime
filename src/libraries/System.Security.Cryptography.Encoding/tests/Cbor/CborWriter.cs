@@ -21,15 +21,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // with null representing indefinite length data items.
         // The root context ony permits one data item to be written.
         private uint? _remainingDataItems = 1;
-        private bool _isEvenNumberOfDataItemsWritten = true; // required for indefinite-length map writes
-        private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, uint? remainingDataItems)>? _nestedDataItemStack;
+        private Stack<StackFrame>? _nestedDataItemStack;
+        private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if writer is expecting a tagged value
 
-        public CborWriter()
-        {
+        // Map-specific bookkeeping
+        private int? _currentKeyOffset = null;
+        private int? _currentValueOffset = null;
+        private SortedSet<(int offset, int keyLength, int keyValueLength)>? _keyValueEncodingRanges = null;
 
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.NoConformance)
+        {
+            ConformanceLevel = conformanceLevel;
         }
 
+        public CborConformanceLevel ConformanceLevel { get; }
         public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
         public bool IsWriteCompleted => _remainingDataItems == 0 && (_nestedDataItemStack?.Count ?? 0) == 0;
@@ -105,10 +111,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void PushDataItem(CborMajorType type, uint? expectedNestedItems)
         {
-            _nestedDataItemStack ??= new Stack<(CborMajorType, bool, uint?)>();
-            _nestedDataItemStack.Push((type, _isEvenNumberOfDataItemsWritten, _remainingDataItems));
+            _nestedDataItemStack ??= new Stack<StackFrame>();
+            _nestedDataItemStack.Push(new StackFrame(type, _frameOffset, _remainingDataItems, _currentKeyOffset, _currentValueOffset, _keyValueEncodingRanges));
+            _frameOffset = _offset;
             _remainingDataItems = expectedNestedItems;
-            _isEvenNumberOfDataItemsWritten = true;
+            _currentKeyOffset = (type == CborMajorType.Map) ? new int?(_offset) : null;
+            _currentValueOffset = null;
+            _keyValueEncodingRanges = null;
         }
 
         private void PopDataItem(CborMajorType expectedType)
@@ -118,9 +127,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("No active CBOR nested data item to pop");
             }
 
-            (CborMajorType actualType, bool isEvenNumberOfDataItemsWritten, uint? remainingItems) = _nestedDataItemStack.Peek();
+            StackFrame frame = _nestedDataItemStack.Peek();
 
-            if (expectedType != actualType)
+            if (expectedType != frame.MajorType)
             {
                 throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
             }
@@ -135,16 +144,35 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
 
+            if (expectedType == CborMajorType.Map && ConformanceRequiresSortedKeys())
+            {
+                SortKeyValuePairEncodings();
+            }
+
             _nestedDataItemStack.Pop();
-            _remainingDataItems = remainingItems;
-            _isEvenNumberOfDataItemsWritten = isEvenNumberOfDataItemsWritten;
+            _frameOffset = frame.FrameOffset;
+            _remainingDataItems = frame.RemainingDataItems;
+            _currentKeyOffset = frame.CurrentKeyOffset;
+            _currentValueOffset = frame.CurrentValueOffset;
+            _keyValueEncodingRanges = frame.KeyValueEncodingRanges;
         }
 
         private void AdvanceDataItemCounters()
         {
             _remainingDataItems--;
             _isTagContext = false;
-            _isEvenNumberOfDataItemsWritten = !_isEvenNumberOfDataItemsWritten;
+
+            if (_currentKeyOffset != null) // this is a map context
+            {
+                if (_currentValueOffset == null)
+                {
+                    HandleKeyWritten();
+                }
+                else
+                {
+                    HandleValueWritten();
+                }
+            }
         }
 
         private void WriteInitialByte(CborInitialByte initialByte)
@@ -156,7 +184,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_nestedDataItemStack != null && _nestedDataItemStack.Count > 0)
             {
-                CborMajorType parentType = _nestedDataItemStack.Peek().type;
+                CborMajorType parentType = _nestedDataItemStack.Peek().MajorType;
 
                 switch (parentType)
                 {
@@ -205,6 +233,29 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             return (_offset == 0) ? Array.Empty<byte>() : _buffer.AsSpan(0, _offset).ToArray();
+        }
+
+        private readonly struct StackFrame
+        {
+            public StackFrame(CborMajorType type, int frameOffset, uint? remainingDataItems,
+                              int? currentKeyOffset, int? currentValueOffset,
+                              SortedSet<(int, int, int)>? keyValueEncodingRanges)
+            {
+                MajorType = type;
+                FrameOffset = frameOffset;
+                RemainingDataItems = remainingDataItems;
+                CurrentKeyOffset = currentKeyOffset;
+                CurrentValueOffset = currentValueOffset;
+                KeyValueEncodingRanges = keyValueEncodingRanges;
+            }
+
+            public CborMajorType MajorType { get; }
+            public int FrameOffset { get; }
+            public uint? RemainingDataItems { get; }
+
+            public int? CurrentKeyOffset { get; }
+            public int? CurrentValueOffset { get; }
+            public SortedSet<(int, int, int)>? KeyValueEncodingRanges { get; }
         }
     }
 }

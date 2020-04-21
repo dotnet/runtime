@@ -6,6 +6,13 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
+    internal enum CborConformanceLevel
+    {
+        NoConformance = 0,
+        Rfc7049Canonical = 1,
+        Ctap2Canonical = 2,
+    }
+
     internal enum CborMajorType : byte
     {
         UnsignedInteger = 0,

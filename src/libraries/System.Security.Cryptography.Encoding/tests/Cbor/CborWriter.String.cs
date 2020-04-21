@@ -46,7 +46,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
-            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
@@ -56,13 +55,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             // append break byte
             EnsureWriteCapacity(1);
             _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+            AdvanceDataItemCounters();
         }
 
         public void WriteStartTextStringIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
-            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
@@ -72,6 +71,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             // append break byte
             EnsureWriteCapacity(1);
             _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+            AdvanceDataItemCounters();
         }
     }
 }

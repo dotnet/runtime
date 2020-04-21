@@ -18,7 +18,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);
-            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.Array, (uint)definiteLength);
         }
 
@@ -33,13 +32,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 EnsureWriteCapacity(1);
                 _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
             }
+
+            AdvanceDataItemCounters();
         }
 
         public void WriteStartArrayIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
-            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.Array, expectedNestedItems: null);
         }
     }
