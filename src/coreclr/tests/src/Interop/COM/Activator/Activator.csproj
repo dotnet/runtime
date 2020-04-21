@@ -32,4 +32,10 @@
     </ItemGroup>
     <Move SourceFiles="@(ServerAssembly)" DestinationFolder="$(ServerAssemblyDest)" />
   </Target>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
 </Project>
