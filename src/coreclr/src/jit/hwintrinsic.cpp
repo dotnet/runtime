@@ -529,9 +529,10 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 // addRangeCheckIfNeeded: add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic
 //
 // Arguments:
-//    intrinsic  -- intrinsic ID
-//    immOP      -- the last operand of the intrinsic that points to the imm-arg
-//    mustExpand -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
+//    intrinsic     -- intrinsic ID
+//    immOp         -- the immediate operand of the intrinsic
+//    mustExpand    -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
+//    immUpperBound -- upper bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
 //     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
