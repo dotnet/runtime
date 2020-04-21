@@ -31,7 +31,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
         immUpperBound =
             HWIntrinsicInfo::lookupImmUpperBound(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType);
 
-        if (BranchAtNonZero())
+        if (TestImmOpZeroOrOne())
         {
             nonZeroLabel = codeGen->genCreateTempLabel();
         }
@@ -57,7 +57,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
     {
         BasicBlock* beginLabel = codeGen->genCreateTempLabel();
 
-        if (BranchAtNonZero())
+        if (TestImmOpZeroOrOne())
         {
             GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, nonZeroLabel, nonConstImmReg);
         }
@@ -91,7 +91,7 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitCaseEnd()
         {
             GetEmitter()->emitIns_J(INS_b, endLabel);
 
-            if (BranchAtNonZero())
+            if (TestImmOpZeroOrOne())
             {
                 codeGen->genDefineInlineTempLabel(nonZeroLabel);
             }

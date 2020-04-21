@@ -1073,7 +1073,7 @@ protected:
             return nonConstImmReg != REG_NA;
         }
 
-        bool BranchAtNonZero() const
+        bool TestImmOpZeroOrOne() const
         {
             assert(NonConstImmOp());
             return immUpperBound == 2;
