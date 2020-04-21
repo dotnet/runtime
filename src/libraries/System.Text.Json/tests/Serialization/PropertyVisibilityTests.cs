@@ -242,8 +242,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Serialize
             var obj = new ClassWithPropertyNamingConflictWhichThrows();
-            var ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj));
-            Assert.Contains($"{typeof(ClassWithPublicProperty)}.{nameof(ClassWithPublicProperty.MyString)}", ex.Message);
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
