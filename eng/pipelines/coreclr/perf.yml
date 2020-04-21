@@ -68,6 +68,8 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -76,6 +78,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
