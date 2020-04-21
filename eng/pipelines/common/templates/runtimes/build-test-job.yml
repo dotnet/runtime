@@ -43,9 +43,7 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
-    variables:
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}	
+    variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
 
     # Test jobs should continue on error for internal builds
@@ -58,7 +56,7 @@ jobs:
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: '${{ parameters.runtimeFlavorDisplayName }}Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
