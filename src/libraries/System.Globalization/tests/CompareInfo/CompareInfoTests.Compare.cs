@@ -208,6 +208,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Test's", null, CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, null, null, CompareOptions.None, 0 };
 
+            yield return new object[] { s_invariantCompare, "", "Tests", CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "Tests", "", CompareOptions.None, 1 };
+
+            yield return new object[] { s_invariantCompare, null, "", CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "", null, CompareOptions.None, 1 };
+            yield return new object[] { s_invariantCompare, "", "", CompareOptions.None, 0 };
+
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5555), CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, -1 };
@@ -365,8 +372,12 @@ namespace System.Globalization.Tests
             Assert.Equal(-expected, Math.Sign(compareInfo.Compare(string2, offset2, length2, string1, offset1, length1, options)));
 
             // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+            // We can't run this test for null inputs since they implicitly convert to empty span
 
-            RunSpanCompareTest(compareInfo, string1.AsSpan(offset1, length1), string2.AsSpan(offset2, length2), options, expected);
+            if (string1 != null && string2 != null)
+            {
+                RunSpanCompareTest(compareInfo, string1.AsSpan(offset1, length1), string2.AsSpan(offset2, length2), options, expected);
+            }
 
             static void RunSpanCompareTest(CompareInfo compareInfo, ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options, int expected)
             {
