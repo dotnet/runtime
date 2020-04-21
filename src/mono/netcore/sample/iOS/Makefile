@@ -10,7 +10,8 @@ program:
 	$(DOTNET) build -c $(MONO_CONFIG) Program.csproj
 
 bundle: clean program
-	$(DOTNET) msbuild /t:BuildAppBundle /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)
+	$(DOTNET) msbuild /t:BuildAppBundle /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
+	/p:UseLlvm=$(UseLlvm) /p:LlvmPath=$(LlvmPath)
 
 deploy-sim:
 	$(DOTNET) msbuild /t:IosDeployToSimulator /p:Configuration=$(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH)

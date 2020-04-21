@@ -44,6 +44,9 @@
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
+        UseLlvm="$(UseLlvm)"
+        LlvmPath="$(LlvmPath)"
+        Optimized="False"
         AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
