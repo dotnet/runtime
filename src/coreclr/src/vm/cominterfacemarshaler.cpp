@@ -273,11 +273,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
     }
     else
     {
-        // If delegates were to take this path, we need to fix the identity in MethodPtrAux later
-        _ASSERTE(!(m_flags & RCW::CF_QueryForIdentity));
-
-        // delegate backed by a WinRT interface pointer
-        *pComObj = COMDelegate::ConvertWinRTInterfaceToDelegate(m_pIdentity, m_typeHandle.GetMethodTable());
+        _ASSERTE(!"Creating a COM wrapper for WinRT delegates (which do not inherit from __ComObject) is not supported.");
     }
 
     // make sure we "pin" the syncblock before switching to preemptive mode

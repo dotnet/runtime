@@ -1416,19 +1416,7 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
         MethodTable *pMT = pMD->GetMethodTable();
         if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT() || pCMD->IsWinRTRedirectedMethod())
         {
-            dwStubFlags |= NDIRECTSTUB_FL_WINRT;
-
-            if (pMT->IsDelegate())
-                dwStubFlags |= NDIRECTSTUB_FL_WINRTDELEGATE;
-            else if (pCMD->IsWinRTCtor())
-            {
-                dwStubFlags |= NDIRECTSTUB_FL_WINRTCTOR;
-            }
-            else
-            {
-                if (pCMD->IsWinRTStatic())
-                    dwStubFlags |= NDIRECTSTUB_FL_WINRTSTATIC;
-            }
+            _ASSERTE(false && "WinRT stubs are not supported");
         }
         else
         {

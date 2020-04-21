@@ -794,8 +794,7 @@ public:
             // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
         }
 #ifndef HOST_64BIT
-        else if (SF_IsForwardDelegateStub(m_dwStubFlags) ||
-                (SF_IsForwardCOMStub(m_dwStubFlags) && SF_IsWinRTDelegateStub(m_dwStubFlags)))
+        else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter. Except for AMD64 where we use the secret
@@ -1118,13 +1117,6 @@ public:
 #ifdef FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDGETTER,             "   NDIRECTSTUB_FL_FIELDGETTER\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDSETTER,             "   NDIRECTSTUB_FL_FIELDSETTER\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRT,                   "   NDIRECTSTUB_FL_WINRT\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTDELEGATE,           "   NDIRECTSTUB_FL_WINRTDELEGATE\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTSHAREDGENERIC,      "   NDIRECTSTUB_FL_WINRTSHAREDGENERIC\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTCTOR,               "   NDIRECTSTUB_FL_WINRTCTOR\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTCOMPOSITION,        "   NDIRECTSTUB_FL_WINRTCOMPOSITION\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTSTATIC,             "   NDIRECTSTUB_FL_WINRTSTATIC\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_WINRTHASREDIRECTION,     "   NDIRECTSTUB_FL_WINRTHASREDIRECTION\n", facility, level);
 #endif // FEATURE_COMINTEROP
 
         //
@@ -1152,12 +1144,6 @@ public:
             NDIRECTSTUB_FL_COMEVENTCALL             |   // internal
             NDIRECTSTUB_FL_FIELDGETTER              |
             NDIRECTSTUB_FL_FIELDSETTER              |
-            NDIRECTSTUB_FL_WINRT                    |
-            NDIRECTSTUB_FL_WINRTDELEGATE            |
-            NDIRECTSTUB_FL_WINRTCTOR                |
-            NDIRECTSTUB_FL_WINRTCOMPOSITION         |
-            NDIRECTSTUB_FL_WINRTSTATIC              |
-            NDIRECTSTUB_FL_WINRTHASREDIRECTION      |
 #endif // FEATURE_COMINTEROP
             NULL;
 
@@ -1404,7 +1390,7 @@ public:
                 signature,
                 pTypeContext,
                 TRUE,
-                !SF_IsWinRTStaticStub(dwStubFlags), // fStubHasThis
+                TRUE,
                 dwStubFlags,
                 iLCIDParamIdx,
                 pTargetMD)
@@ -1431,85 +1417,33 @@ public:
         // convert 'this' to COM IP and the target method entry point
         m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-#ifdef TARGET_64BIT
-        if (SF_IsWinRTDelegateStub(m_dwStubFlags))
-        {
-            // write the stub context (EEImplMethodDesc representing the Invoke)
-            // into the secret arg so it shows up in the InlinedCallFrame and can
-            // be used by stub for host
-
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT_ADDR, 0, 1);
-            m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
-            pcsDispatch->EmitSTIND_I();
-            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-        }
-        else
-#endif // TARGET_64BIT
-        {
-            m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
-        }
+        m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
 
         pcsDispatch->EmitLDLOCA(m_slIL.GetTargetEntryPointLocalNum());
 
-        BinderMethodID getCOMIPMethod;
-        bool fDoPostCallIPCleanup = true;
+        DWORD dwIPRequiresCleanupLocalNum = pcsDispatch->NewLocal(ELEMENT_TYPE_BOOLEAN);
+        pcsDispatch->EmitLDLOCA(dwIPRequiresCleanupLocalNum);
 
-        if (SF_IsWinRTStub(dwStubFlags))
-        {
-            // WinRT uses optimized helpers
-            if (SF_IsWinRTSharedGenericStub(dwStubFlags))
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT_SHARED_GENERIC;
-            else if (SF_IsWinRTDelegateStub(dwStubFlags))
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT_DELEGATE;
-            else
-                getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW_WINRT;
-
-            // GetCOMIPFromRCW_WinRT, GetCOMIPFromRCW_WinRTSharedGeneric, and GetCOMIPFromRCW_WinRTDelegate
-            // always cache the COM interface pointer so no post-call cleanup is needed
-            fDoPostCallIPCleanup = false;
-        }
-        else
-        {
-            // classic COM interop uses the non-optimized helper
-            getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW;
-        }
-
-        DWORD dwIPRequiresCleanupLocalNum = (DWORD)-1;
-        if (fDoPostCallIPCleanup)
-        {
-            dwIPRequiresCleanupLocalNum = pcsDispatch->NewLocal(ELEMENT_TYPE_BOOLEAN);
-            pcsDispatch->EmitLDLOCA(dwIPRequiresCleanupLocalNum);
-
-            // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-            pcsDispatch->EmitCALL(getCOMIPMethod, 4, 1);
-        }
-        else
-        {
-            // StubHelpers.GetCOMIPFromRCW_WinRT*(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget)
-            pcsDispatch->EmitCALL(getCOMIPMethod, 3, 1);
-        }
-
+        // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW, 4, 1);
 
         // save it because we'll need it to compute the CALLI target and release it
         pcsDispatch->EmitDUP();
         pcsDispatch->EmitSTLOC(m_slIL.GetTargetInterfacePointerLocalNum());
 
-        if (fDoPostCallIPCleanup)
-        {
-            // make sure it's Release()'ed after the call
-            m_slIL.SetCleanupNeeded();
-            ILCodeStream *pcsCleanup = m_slIL.GetCleanupCodeStream();
+        // make sure it's Release()'ed after the call
+        m_slIL.SetCleanupNeeded();
+        ILCodeStream *pcsCleanup = m_slIL.GetCleanupCodeStream();
 
-            ILCodeLabel *pSkipThisCleanup = pcsCleanup->NewCodeLabel();
+        ILCodeLabel *pSkipThisCleanup = pcsCleanup->NewCodeLabel();
 
-            // and if it requires cleanup (i.e. it's not taken from the RCW cache)
-            pcsCleanup->EmitLDLOC(dwIPRequiresCleanupLocalNum);
-            pcsCleanup->EmitBRFALSE(pSkipThisCleanup);
+        // and if it requires cleanup (i.e. it's not taken from the RCW cache)
+        pcsCleanup->EmitLDLOC(dwIPRequiresCleanupLocalNum);
+        pcsCleanup->EmitBRFALSE(pSkipThisCleanup);
 
-            pcsCleanup->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
-            pcsCleanup->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
-            pcsCleanup->EmitLabel(pSkipThisCleanup);
-        }
+        pcsCleanup->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
+        pcsCleanup->EmitCALL(METHOD__INTERFACEMARSHALER__CLEAR_NATIVE, 1, 0);
+        pcsCleanup->EmitLabel(pSkipThisCleanup);
     }
 };
 
@@ -1538,59 +1472,7 @@ public:
 
         ILStubState::BeginEmit(dwStubFlags);
 
-        if (!SF_IsWinRTStaticStub(dwStubFlags))
-        {
-            // we are not loading 'this' because the target is static
-            // load this
-            m_slIL.GetDispatchCodeStream()->EmitLoadThis();
-        }
-    }
-
-    void MarshalFactoryReturn()
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(SF_IsWinRTCtorStub(m_dwStubFlags));
-        }
-        CONTRACTL_END;
-
-        ILCodeStream *pcsSetup     = m_slIL.GetSetupCodeStream();
-        ILCodeStream *pcsDispatch  = m_slIL.GetDispatchCodeStream();
-        ILCodeStream *pcsUnmarshal = m_slIL.GetReturnUnmarshalCodeStream();
-        ILCodeStream *pcsExCleanup = m_slIL.GetExceptionCleanupCodeStream();
-
-        LocalDesc locDescFactoryRetVal(ELEMENT_TYPE_I);
-        DWORD dwFactoryRetValLocalNum = pcsSetup->NewLocal(locDescFactoryRetVal);
-        pcsSetup->EmitLoadNullPtr();
-        pcsSetup->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        locDescFactoryRetVal.MakeByRef();
-
-        // expect one additional argument - pointer to a location that receives the created instance
-        DWORD dwRetValArgNum = pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
-
-        // convert 'this' to an interface pointer corresponding to the default interface of this class
-        pcsUnmarshal->EmitLoadThis();
-        pcsUnmarshal->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-        pcsUnmarshal->EmitCALL(METHOD__STUBHELPERS__GET_WINRT_FACTORY_RETURN_VALUE, 2, 1);
-        pcsUnmarshal->EmitSTLOC(dwFactoryRetValLocalNum);
-
-        // assign it to the location pointed to by the argument
-        pcsUnmarshal->EmitLDARG(dwRetValArgNum);
-        pcsUnmarshal->EmitLDLOC(dwFactoryRetValLocalNum);
-        pcsUnmarshal->EmitSTIND_I();
-
-        // on exception, we want to release the IInspectable's and assign NULL to output locations
-        m_slIL.SetExceptionCleanupNeeded();
-
-        EmitInterfaceClearNative(pcsExCleanup, dwFactoryRetValLocalNum);
-
-        // *retVal = NULL
-        pcsExCleanup->EmitLDARG(dwRetValArgNum);
-        pcsExCleanup->EmitLoadNullPtr();
-        pcsExCleanup->EmitSTIND_I();
-
+        m_slIL.GetDispatchCodeStream()->EmitLoadThis();
     }
 };
 
@@ -1892,26 +1774,7 @@ void NDirectStubLinker::EmitLoadRCWThis(ILCodeStream *pcsEmit, DWORD dwStubFlags
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardStub(dwStubFlags) &&
-        (SF_IsWinRTCtorStub(dwStubFlags) || SF_IsWinRTStaticStub(dwStubFlags)))
-    {
-        // WinRT ctor/static stubs make the call on the factory object instead of 'this'
-        if (m_dwWinRTFactoryObjectLocalNum == (DWORD)-1)
-        {
-            m_dwWinRTFactoryObjectLocalNum = NewLocal(ELEMENT_TYPE_OBJECT);
-
-            // get the factory object
-            EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-            m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__GET_WINRT_FACTORY_OBJECT, 1, 1);
-            m_pcsSetup->EmitSTLOC(m_dwWinRTFactoryObjectLocalNum);
-        }
-
-        pcsEmit->EmitLDLOC(m_dwWinRTFactoryObjectLocalNum);
-    }
-    else
-    {
-        pcsEmit->EmitLoadThis();
-    }
+    pcsEmit->EmitLoadThis();
 }
 #endif // FEATURE_COMINTEROP
 
@@ -2051,33 +1914,6 @@ void NDirectStubLinker::LoadCleanupWorkList(ILCodeStream* pcsEmit)
 void NDirectStubLinker::Begin(DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTHasRedirection(dwStubFlags))
-    {
-        _ASSERTE(SF_IsForwardCOMStub(dwStubFlags));
-
-        // The very first thing we need to do is check whether the call should be routed to
-        // the marshaling stub for the corresponding projected WinRT interface. If so, we
-        // tail-call there.
-        m_pcsSetup->EmitLoadThis();
-        EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-        m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__SHOULD_CALL_WINRT_INTERFACE, 2, 1);
-
-        ILCodeLabel *pNoRedirection = m_pcsSetup->NewCodeLabel();
-        m_pcsSetup->EmitBRFALSE(pNoRedirection);
-
-        MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterfaceMethod(
-            GetTargetMD(),
-            TypeHandle::Interop_ManagedToNative);
-
-        CONSISTENCY_CHECK(pAdapterMD != NULL && !pAdapterMD->HasMethodInstantiation());
-
-        m_pcsSetup->EmitJMP(m_pcsSetup->GetToken(pAdapterMD));
-
-        m_pcsSetup->EmitLabel(pNoRedirection);
-    }
-#endif // FEATURE_COMINTEROP
 
     if (SF_IsForwardStub(dwStubFlags))
     {
@@ -2530,21 +2366,8 @@ void NDirectStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubF
 
     CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
     CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsWinRTDelegateStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
-    {
-        // we have the delegate 'this' but we need the EEImpl/Instantiated 'Invoke' MD pointer
-        // (Delegate.GetInvokeMethod does not return exact instantiated MD so we call our own helper)
-        pcsEmit->EmitLoadThis();
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_INVOKE_METHOD, 1, 1);
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        // get the secret argument via intrinsic
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-    }
+    // get the secret argument via intrinsic
+    pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -3617,9 +3440,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
 
     if (-1 != iLCIDArg)
     {
-        // LCID is not supported on WinRT
-        _ASSERTE(!SF_IsWinRTStub(dwStubFlags));
-
         // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;
@@ -4319,19 +4139,6 @@ static void CreateNDirectStubAccessMetadata(
         }
     }
 
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsDelegateStub(*pdwStubFlags))
-    {
-        _ASSERTE(!SF_IsWinRTStub(*pdwStubFlags));
-        if (pSigDesc->m_pMD->GetMethodTable()->IsProjectedFromWinRT())
-        {
-            // We do not allow P/Invoking via WinRT delegates to better segregate WinRT
-            // from classic interop scenarios.
-            COMPlusThrow(kMarshalDirectiveException, IDS_EE_DELEGATEPINVOKE_WINRT);
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
     MetaSig msig(pSigDesc->m_sig,
                  pSigDesc->m_pModule,
                  &pSigDesc->m_typeContext);
@@ -4355,19 +4162,6 @@ static void CreateNDirectStubAccessMetadata(
             &dwDescrOffset,
             &dwImplFlags));
 
-#ifdef FEATURE_COMINTEROP
-        if (SF_IsWinRTStub(*pdwStubFlags))
-        {
-            // All WinRT methods do HRESULT swapping
-            if (IsMiPreserveSig(dwImplFlags))
-            {
-                COMPlusThrow(kMarshalDirectiveException, IDS_EE_PRESERVESIG_WINRT);
-            }
-
-            (*pdwStubFlags) |= NDIRECTSTUB_FL_DOHRESULTSWAPPING;
-        }
-        else
-#endif // FEATURE_COMINTEROP
         if (SF_IsReverseStub(*pdwStubFlags))
         {
             // only COM-to-CLR call supports hresult swapping in the reverse direction
@@ -4401,7 +4195,7 @@ static void CreateNDirectStubAccessMetadata(
 
     (*piLCIDArg) = lcidArg;
 
-    if (SF_IsCOMStub(*pdwStubFlags) && !SF_IsWinRTStaticStub(*pdwStubFlags))
+    if (SF_IsCOMStub(*pdwStubFlags))
     {
         CONSISTENCY_CHECK(msig.HasThis());
     }
@@ -4527,7 +4321,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     ULONG cbBytes;
 
     // Support v-table forward classic COM interop calls only
-    if (SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags) && !SF_IsWinRTStub(dwStubFlags))
+    if (SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags))
     {
         if (pTargetMT->HasInstantiation())
         {
@@ -5374,24 +5168,11 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
     StubSigDesc sigDesc(pMD, pSigInfo);
 
-    if (SF_IsWinRTDelegateStub(dwStubFlags))
-    {
-        _ASSERTE(pMD->IsEEImpl());
-
-        return CreateCLRToNativeILStub(&sigDesc,
-                                       (CorNativeLinkType)0,
-                                       (CorNativeLinkFlags)0,
-                                       (CorPinvokeMap)0,
-                                       (pSigInfo->GetStubFlags() | dwStubFlags) & ~NDIRECTSTUB_FL_DELEGATE);
-    }
-    else
-    {
-        return CreateCLRToNativeILStub(&sigDesc,
-                                       pSigInfo->GetCharSet(),
-                                       pSigInfo->GetLinkFlags(),
-                                       pSigInfo->GetCallConv(),
-                                       pSigInfo->GetStubFlags() | dwStubFlags);
-    }
+    return CreateCLRToNativeILStub(&sigDesc,
+                                    pSigInfo->GetCharSet(),
+                                    pSigInfo->GetLinkFlags(),
+                                    pSigInfo->GetCallConv(),
+                                    pSigInfo->GetStubFlags() | dwStubFlags);
 }
 
 MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
@@ -5464,16 +5245,7 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
         }
         else
         {
-#ifdef FEATURE_COMINTEROP
-            if (SF_IsWinRTDelegateStub(dwStubFlags))
-            {
-                return pClass->m_pComPlusCallInfo->m_pStubMD.GetValueMaybeNull();
-            }
-            else
-#endif // FEATURE_COMINTEROP
-            {
-                return pClass->m_pForwardStubMD;
-            }
+            return pClass->m_pForwardStubMD;
         }
     }
     else if (pMD->IsIL())

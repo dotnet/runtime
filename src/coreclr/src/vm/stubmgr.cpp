@@ -1831,19 +1831,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case 0x%x\n", target));
         trace->InitForUnmanaged(target);
     }
-#ifdef FEATURE_COMINTEROP
-    else if (pStubMD->IsDelegateCOMStub())
-    {
-        // This is a delegate, but the target is COM.
-        DelegateObject *pDel = (DelegateObject *)pThis;
-        DelegateEEClass *pClass = (DelegateEEClass *)pDel->GetMethodTable()->GetClass();
-
-        target = GetCOMTarget(pThis, pClass->m_pComPlusCallInfo);
-
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM via delegate case 0x%x\n", target));
-        trace->InitForUnmanaged(target);
-    }
-#endif // FEATURE_COMINTEROP
     else
     {
         // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD

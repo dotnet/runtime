@@ -86,54 +86,25 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
     _ASSERTE(pComInfo != NULL);
 
-    BOOL fWinRTCtor = FALSE;
-    BOOL fWinRTComposition = FALSE;
-    BOOL fWinRTStatic = FALSE;
-    BOOL fWinRTDelegate = FALSE;
-
     if (pMD->IsInterface())
     {
         pComInfo->m_cachedComSlot = pMD->GetComSlot();
         pItfMT = pMT;
         pComInfo->m_pInterfaceMT = pItfMT;
     }
-    else if (pMT->IsWinRTDelegate())
-    {
-        pComInfo->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
-        pItfMT = pMT;
-        pComInfo->m_pInterfaceMT = pItfMT;
-
-        fWinRTDelegate = TRUE;
-    }
     else
     {
-        BOOL fIsWinRTClass = (!pMT->IsInterface() && pMT->IsProjectedFromWinRT());
         MethodDesc *pItfMD;
 
-        if (fIsWinRTClass && pMD->IsCtor())
+        pItfMD = pMD->GetInterfaceMD();
+        if (pItfMD == NULL)
         {
-            // ctors on WinRT classes call factory interface methods
-            pItfMD = GetWinRTFactoryMethodForCtor(pMD, &fWinRTComposition);
-            fWinRTCtor = TRUE;
-        }
-        else if (fIsWinRTClass && pMD->IsStatic())
-        {
-            // static members of WinRT classes call static interface methods
-            pItfMD = GetWinRTFactoryMethodForStatic(pMD);
-            fWinRTStatic = TRUE;
-        }
-        else
-        {
-            pItfMD = pMD->GetInterfaceMD();
-            if (pItfMD == NULL)
-            {
-                // the method does not implement any interface
-                StackSString ssClassName;
-                pMT->_GetFullyQualifiedNameForClass(ssClassName);
-                StackSString ssMethodName(SString::Utf8, pMD->GetName());
+            // the method does not implement any interface
+            StackSString ssClassName;
+            pMT->_GetFullyQualifiedNameForClass(ssClassName);
+            StackSString ssMethodName(SString::Utf8, pMD->GetName());
 
-                COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, ssMethodName.GetUnicode(), ssClassName.GetUnicode());
-            }
+            COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, ssMethodName.GetUnicode(), ssClassName.GetUnicode());
         }
 
         pComInfo->m_cachedComSlot = pItfMD->GetComSlot();
@@ -162,53 +133,10 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     if (fComEventCall)
         dwStubFlags |= NDIRECTSTUB_FL_COMEVENTCALL;
 
-    bool fIsWinRT = (pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedDelegate());
-    if (!fIsWinRT && pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative))
-    {
-        if (!pItfMT->HasInstantiation())
-        {
-            // non-generic redirected interface needs to keep its pre-4.5 classic COM interop
-            // behavior so the IL stub will be special - it will conditionally tail-call to
-            // the new WinRT marshaling routines
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTHASREDIRECTION;
-        }
-        else
-        {
-            fIsWinRT = true;
-        }
-    }
-
-    if (fIsWinRT)
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_WINRT;
-
-        if (pMD->IsGenericComPlusCall())
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTSHAREDGENERIC;
-    }
-
-    if (fWinRTCtor)
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTCTOR;
-
-        if (fWinRTComposition)
-            dwStubFlags |= NDIRECTSTUB_FL_WINRTCOMPOSITION;
-    }
-
-    if (fWinRTStatic)
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTSTATIC;
-
-    if (fWinRTDelegate)
-        dwStubFlags |= NDIRECTSTUB_FL_WINRTDELEGATE | NDIRECTSTUB_FL_WINRT;
-
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
 
-    // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-    // are not going to affect the marshaling behavior.
-    if (!fIsWinRT)
-    {
-        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-    }
+    ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
     if (BestFit)
         dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
