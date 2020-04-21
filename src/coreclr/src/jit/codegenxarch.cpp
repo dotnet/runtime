@@ -4344,12 +4344,18 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
-        // Optimize "X<<1" to "lea [X+X]"
-        if ((tree->GetRegNum() != operandReg) && // shift is smaller if it's the same reg
-            tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
+        // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
+        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
             emitAttr size = emitTypeSize(tree);
-            GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+            if (tree->GetRegNum() == operandReg)
+            {
+                GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+            }
         }
         else
         {
