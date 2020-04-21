@@ -240,15 +240,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static uint Extract(System.Runtime.Intrinsics.Vector128<uint> vector, byte index) { throw null; }
         public static ulong Extract(System.Runtime.Intrinsics.Vector128<ulong> vector, byte index) { throw null; }
         public static byte Extract(System.Runtime.Intrinsics.Vector64<byte> vector, byte index) { throw null; }
-        public static double Extract(System.Runtime.Intrinsics.Vector64<double> vector, byte index) { throw null; }
         public static short Extract(System.Runtime.Intrinsics.Vector64<short> vector, byte index) { throw null; }
         public static int Extract(System.Runtime.Intrinsics.Vector64<int> vector, byte index) { throw null; }
-        public static long Extract(System.Runtime.Intrinsics.Vector64<long> vector, byte index) { throw null; }
         public static sbyte Extract(System.Runtime.Intrinsics.Vector64<sbyte> vector, byte index) { throw null; }
         public static float Extract(System.Runtime.Intrinsics.Vector64<float> vector, byte index) { throw null; }
         public static ushort Extract(System.Runtime.Intrinsics.Vector64<ushort> vector, byte index) { throw null; }
         public static uint Extract(System.Runtime.Intrinsics.Vector64<uint> vector, byte index) { throw null; }
-        public static ulong Extract(System.Runtime.Intrinsics.Vector64<ulong> vector, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ExtractAndNarrowHigh(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
@@ -301,15 +298,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<uint> Insert(System.Runtime.Intrinsics.Vector128<uint> vector, byte index, uint data) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> Insert(System.Runtime.Intrinsics.Vector128<ulong> vector, byte index, ulong data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> Insert(System.Runtime.Intrinsics.Vector64<byte> vector, byte index, byte data) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<double> Insert(System.Runtime.Intrinsics.Vector64<double> vector, byte index, double data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> Insert(System.Runtime.Intrinsics.Vector64<short> vector, byte index, short data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> Insert(System.Runtime.Intrinsics.Vector64<int> vector, byte index, int data) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<long> Insert(System.Runtime.Intrinsics.Vector64<long> vector, byte index, long data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> Insert(System.Runtime.Intrinsics.Vector64<sbyte> vector, byte index, sbyte data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Insert(System.Runtime.Intrinsics.Vector64<float> vector, byte index, float data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> Insert(System.Runtime.Intrinsics.Vector64<ushort> vector, byte index, ushort data) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> Insert(System.Runtime.Intrinsics.Vector64<uint> vector, byte index, uint data) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ulong> Insert(System.Runtime.Intrinsics.Vector64<ulong> vector, byte index, ulong data) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> LeadingSignCount(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> LeadingSignCount(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> LeadingSignCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
