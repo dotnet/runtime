@@ -30,7 +30,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, options: BundleOptions.BundleNativeBinaries);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -156,7 +156,6 @@ namespace AppHost.Bundle.Tests
 
             extractDir.Should().HaveFiles(extractedFiles);
         }
-
 
         public class SharedTestState : IDisposable
         {

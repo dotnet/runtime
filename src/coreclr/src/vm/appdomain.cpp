@@ -1761,7 +1761,7 @@ void SystemDomain::Init()
         sizeof(MethodDesc),
         sizeof(FieldDesc),
         sizeof(Module)
-    ));
+        ));
 #endif // _DEBUG
 
     // The base domain is initialized in SystemDomain::Attach()
@@ -1775,7 +1775,7 @@ void SystemDomain::Init()
     m_pSystemAssembly = NULL;
 
     DWORD size = 0;
-
+    AppDomain* pAppDomain = ::GetAppDomain();
 
     // Get the install directory so we can find mscorlib
     hr = GetInternalSystemDirectory(NULL, &size);
@@ -1783,19 +1783,19 @@ void SystemDomain::Init()
         ThrowHR(hr);
 
     // GetInternalSystemDirectory returns a size, including the null!
-    WCHAR *buffer = m_SystemDirectory.OpenUnicodeBuffer(size-1);
+    WCHAR* buffer = m_SystemDirectory.OpenUnicodeBuffer(size - 1);
     IfFailThrow(GetInternalSystemDirectory(buffer, &size));
     m_SystemDirectory.CloseBuffer();
     m_SystemDirectory.Normalize();
 
     // At this point m_SystemDirectory should already be canonicalized
 
-
     m_BaseLibrary.Append(m_SystemDirectory);
     if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
     {
         m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
     }
+
     m_BaseLibrary.Append(g_pwBaseLibrary);
     m_BaseLibrary.Normalize();
 
@@ -1825,7 +1825,7 @@ void SystemDomain::Init()
 #ifdef _DEBUG
     BOOL fPause = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_PauseOnLoad, FALSE);
 
-    while(fPause)
+    while (fPause)
     {
         ClrSleepEx(20, TRUE);
     }

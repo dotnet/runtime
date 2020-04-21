@@ -18,6 +18,7 @@
 #include "bindertypes.hpp"
 #include "bindresult.hpp"
 #include "coreclrbindercommon.h"
+#include "bundle.h"
 
 class CLRPrivBinderAssemblyLoadContext;
 class CLRPrivBinderCoreCLR;
@@ -54,7 +55,8 @@ namespace BINDER_SPACE
                                    /* in */  BOOL         fIsInGAC,
                                    /* in */  BOOL         fExplicitBindToNativeImage,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  LPCTSTR      szMDAssemblyPath = NULL);
+                                   /* in */  LPCTSTR      szMDAssemblyPath = NULL,
+                                   /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,

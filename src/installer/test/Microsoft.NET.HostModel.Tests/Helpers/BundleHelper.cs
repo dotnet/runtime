@@ -53,8 +53,7 @@ namespace BundleTests.Helpers
 
         public static string[] GetExtractedFiles(TestProjectFixture fixture)
         {
-            string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.dll" };
+            return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
         }
 
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
@@ -62,6 +61,7 @@ namespace BundleTests.Helpers
             string appBaseName = GetAppBaseName(fixture);
             return new string[] { $"{appBaseName}.deps.json",
                                   $"{appBaseName}.runtimeconfig.json",
+                                  $"{appBaseName}.dll",
                                   Path.GetFileName(fixture.TestProject.HostFxrDll),
                                   Path.GetFileName(fixture.TestProject.HostPolicyDll) };
         }
@@ -139,7 +139,7 @@ namespace BundleTests.Helpers
         // which may not (yet) be available in the SDK.
         public static Bundler BundleApp(TestProjectFixture fixture,
                                         out string singleFile,
-                                        BundleOptions options = BundleOptions.BundleNativeBinaries,
+                                        BundleOptions options = BundleOptions.None,
                                         Version targetFrameworkVersion = null,
                                         bool copyExcludedFiles = true)
         {
@@ -153,11 +153,8 @@ namespace BundleTests.Helpers
             return bundler;
         }
 
-        // The defaut option for Bundling apps is BundleOptions.BundleNativeBinaries
-        // Until CoreCLR runtime can learn how to process assemblies from the bundle.
-        // This is because CoreCLR expects System.Private.Corelib.dll to be beside CoreCLR.dll
         public static string BundleApp(TestProjectFixture fixture,
-                                       BundleOptions options = BundleOptions.BundleNativeBinaries,
+                                       BundleOptions options = BundleOptions.None,
                                        Version targetFrameworkVersion = null)
         {
             string singleFile;

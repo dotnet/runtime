@@ -14,7 +14,6 @@
 
 #include "assemblybinder.hpp"
 #include "assemblyname.hpp"
-
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
 #include "bindertracing.h"
@@ -380,23 +379,29 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
+        StackSString sCoreLibDir(systemDirectory);
         if (!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
         {
             sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
-        StackSString sCoreLib;
+        StackSString sCoreLib(sCoreLibDir);
+        StackSString coreLibName(CoreLibName_IL_W);
+        sCoreLib.Append(coreLibName);
 
         // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
-        sCoreLib = sCoreLibDir;
-        sCoreLib.Append(CoreLibName_IL_W);
+        // System.Private.CoreLib.dll is expected to be found at one of the following locations:
+        //   * Non-single-file app: In systemDirectory, beside coreclr.dll
+        //   * Framework-dependent single-file app: In system directory, beside coreclr.dll
+        //   * Self-contained single-file app: Within the single-file bundle.
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
-                                               TRUE /* fIsInGAC */,
-                                               fBindToNativeImage,
-                                               &pSystemAssembly));
+            TRUE /* fIsInGAC */,
+            fBindToNativeImage,
+            &pSystemAssembly,
+            NULL /* szMDAssemblyPath */,
+            Bundle::ProbeAppBundle(coreLibName, /*pathIsBundleRelative */ true)));
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -418,25 +423,32 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sMscorlibSatellite(systemDirectory);
-        ReleaseHolder<Assembly> pSystemAssembly;
+        // Satellite assembly's relative path
+        StackSString relativePath;
 
         // append culture name
         if (!cultureName.IsEmpty())
         {
-            CombinePath(sMscorlibSatellite, cultureName, sMscorlibSatellite);
+            CombinePath(relativePath, cultureName, relativePath);
         }
 
         // append satellite assembly's simple name
-        CombinePath(sMscorlibSatellite, simpleName, sMscorlibSatellite);
+        CombinePath(relativePath, simpleName, relativePath);
 
         // append extension
-        sMscorlibSatellite.Append(W(".dll"));
+        relativePath.Append(W(".dll"));
 
+        // Satellite assembly's absolute path 
+        StackSString sMscorlibSatellite(systemDirectory);
+        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+
+        ReleaseHolder<Assembly> pSystemAssembly;
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
-                                               &pSystemAssembly));
+                                               &pSystemAssembly,
+                                               NULL /* szMDAssemblyPath */,
+                                               Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true)));
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -553,7 +565,9 @@ namespace BINDER_SPACE
                                // specified.  Generally only NGEN PDB generation has
                                // this TRUE.
                                fExplicitBindToNativeImage,
-                               &pAssembly));
+                               &pAssembly,
+                               NULL /* szMDAssemblyPath */,
+                               Bundle::ProbeAppBundle(assemblyPath)));
 
         AssemblyName *pAssemblyName;
         pAssemblyName = pAssembly->GetAssemblyName();
@@ -850,6 +864,13 @@ namespace BINDER_SPACE
 
     /*
      * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
+     *
+     * The search for assemblies will proceed in the following order:
+     *
+     * If this application is a single-file bundle, the meta-data contained in the bundle
+     * will be probed to find the requested assembly. If the assembly is not found,
+     * The list of platform assemblies (TPAs) are considered next.
+     *
      * Platform assemblies are specified as a list of files.  This list is the only set of
      * assemblies that we will load as platform.  They can be specified as IL or NIs.
      *
@@ -903,11 +924,53 @@ namespace BINDER_SPACE
         }
         else
         {
+            ReleaseHolder<Assembly> pTPAAssembly;
+            SString& simpleName = pRequestedAssemblyName->GetSimpleName();
+
+            // Is assembly in the bundle?
+            // Single-file bundle contents take precedence over TPA.
+            // The list of bundled assemblies is contained in the bundle manifest, and NOT in the TPA.
+            // Therefore the bundle is first probed using the assembly's simple name.
+            // If found, the assembly is loaded from the bundle.  
+            if (Bundle::AppIsBundle())
+            {
+                SString candidates[] = { W(".dll"), W(".ni.dll") };
+
+                // Loop through the binding paths looking for a matching assembly
+                for (int i = 0; i < 2; i++)
+                {
+                    SString assemblyFileName(simpleName);
+                    assemblyFileName.Append(candidates[i]);
+
+                    SString assemblyFilePath(Bundle::AppBundle->BasePath());
+                    assemblyFilePath.Append(assemblyFileName);
+
+                    hr = GetAssembly(assemblyFilePath,
+                        TRUE,  // fIsInGAC
+                        FALSE, // fExplicitBindToNativeImage
+                        &pTPAAssembly,
+                        NULL,  // szMDAssemblyPath
+                        Bundle::ProbeAppBundle(assemblyFileName, /* pathIsBundleRelative */ true));
+
+                    if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                    {
+                        // Any other error is fatal
+                        IF_FAIL_GO(hr);
+
+                        if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                        {
+                            // We have found the requested assembly match in the bundle with validation of the full-qualified name. 
+                            // Bind to it.
+                            pBindResult->SetResult(pTPAAssembly);
+                            GO_WITH_HRESULT(S_OK);
+                        }
+                    }
+                }
+            }
+
             // Is assembly on TPA list?
-            SString &simpleName = pRequestedAssemblyName->GetSimpleName();
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
-            ReleaseHolder<Assembly> pTPAAssembly;
             if (pTpaEntry != nullptr)
             {
                 if (pTpaEntry->m_wszNIFileName != nullptr)
@@ -1020,20 +1083,21 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::GetAssembly(SString     &assemblyPath,
-                                        BOOL         fIsInGAC,
+    HRESULT AssemblyBinder::GetAssembly(SString            &assemblyPath,
+                                        BOOL               fIsInGAC,
 
                                         // When binding to the native image, should we
                                         // assume assemblyPath explicitly specifies that
                                         // NI?  (If not, infer the path to the NI
                                         // implicitly.)
-                                        BOOL         fExplicitBindToNativeImage,
+                                        BOOL               fExplicitBindToNativeImage,
 
-                                        Assembly   **ppAssembly,
+                                        Assembly           **ppAssembly,
 
                                         // If assemblyPath refers to a native image without metadata,
                                         // szMDAssemblyPath gives the alternative file to get metadata.
-                                        LPCTSTR      szMDAssemblyPath)
+                                        LPCTSTR            szMDAssemblyPath,
+                                        BundleFileLocation bundleFileLocation)
     {
         HRESULT hr = S_OK;
 
@@ -1053,7 +1117,7 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage, bundleFileLocation);
             IF_FAIL_GO(hr);
 
             // If we found a native image, it might be an MSIL assembly masquerading as an native image
@@ -1068,7 +1132,7 @@ namespace BINDER_SPACE
                     BinderReleasePEImage(pPEImage);
                     BinderReleasePEImage(pNativePEImage);
 
-                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false);
+                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false, bundleFileLocation);
                     IF_FAIL_GO(hr);
                 }
             }
@@ -1094,7 +1158,7 @@ namespace BINDER_SPACE
                 }
                 else
                 {
-                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE);
+                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE, bundleFileLocation);
                     IF_FAIL_GO(hr);
 
                     hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);

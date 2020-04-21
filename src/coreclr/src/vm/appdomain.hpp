@@ -29,6 +29,7 @@
 #include "gchandleutilities.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
+#include "bundle.h"
 
 #ifdef FEATURE_MULTICOREJIT
 #include "multicorejit.h"

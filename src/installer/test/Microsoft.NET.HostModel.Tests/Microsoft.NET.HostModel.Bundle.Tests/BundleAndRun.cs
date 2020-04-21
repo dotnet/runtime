@@ -32,7 +32,7 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private void BundleRun(TestProjectFixture fixture, string publishPath, string singleFileDir)
+        private void BundleRun(TestProjectFixture fixture, string publishPath)
         {
             var hostName = BundleHelper.GetHostName(fixture);
 
@@ -56,33 +56,24 @@ namespace Microsoft.NET.HostModel.Tests
         public void TestWithAbsolutePaths()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
             string publishDir = BundleHelper.GetPublishPath(fixture);
-            string outputDir = BundleHelper.GetBundleDir(fixture).FullName;
-
-            BundleRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir);
         }
 
         [Fact]
         public void TestWithRelativePaths()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
             string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture));
-            string outputDir = RelativePath(BundleHelper.GetBundleDir(fixture).FullName);
-
-            BundleRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir);
         }
 
         [Fact]
         public void TestWithRelativePathsDirSeparator()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
             string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture)) + Path.DirectorySeparatorChar;
-            string outputDir = RelativePath(BundleHelper.GetBundleDir(fixture).FullName) + Path.DirectorySeparatorChar;
-
-            BundleRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir);
         }
 
         public class SharedTestState : IDisposable
