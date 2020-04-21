@@ -529,7 +529,7 @@ namespace System.Text.RegularExpressions
             _int32LocalsPool ??= new Stack<LocalBuilder>(),
             _int32LocalsPool.TryPop(out LocalBuilder? iterationLocal) ? iterationLocal : DeclareInt32());
 
-        /// <summary>Rents an ReadOnlySpan(char) local variable slot from the pool of locals.</summary>
+        /// <summary>Rents a ReadOnlySpan(char) local variable slot from the pool of locals.</summary>
         /// <remarks>
         /// Care must be taken to Dispose of the returned <see cref="RentedLocalBuilder"/> when it's no longer needed,
         /// and also not to jump into the middle of a block involving a rented local from outside of that block.
