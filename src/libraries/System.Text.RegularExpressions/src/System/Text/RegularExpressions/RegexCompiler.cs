@@ -529,7 +529,7 @@ namespace System.Text.RegularExpressions
             _int32LocalsPool ??= new Stack<LocalBuilder>(),
             _int32LocalsPool.TryPop(out LocalBuilder? iterationLocal) ? iterationLocal : DeclareInt32());
 
-        /// <summary>Rents an ReadOnlySpan(char) local variable slot from the pool of locals.</summary>
+        /// <summary>Rents a ReadOnlySpan(char) local variable slot from the pool of locals.</summary>
         /// <remarks>
         /// Care must be taken to Dispose of the returned <see cref="RentedLocalBuilder"/> when it's no longer needed,
         /// and also not to jump into the middle of a block involving a rented local from outside of that block.
@@ -836,6 +836,43 @@ namespace System.Text.RegularExpressions
                 Ldloc(_textInfoLocal!);
                 Ldloc(currentCharLocal);
                 Callvirt(s_textInfoToLowerMethod);
+            }
+        }
+
+        /// <summary>Gets whether the specified character participates in case conversion.</summary>
+        /// <remarks>
+        /// This method is used to perform operations as if they were case-sensitive even if they're
+        /// specified as being case-insensitive.  Such a reduction can be applied when the only character
+        /// that would lower-case to the one being searched for / compared against is that character itself.
+        /// </remarks>
+        private static bool ParticipatesInCaseConversion(int comparison)
+        {
+            Debug.Assert((uint)comparison <= char.MaxValue);
+
+            switch (char.GetUnicodeCategory((char)comparison))
+            {
+                case UnicodeCategory.ClosePunctuation:
+                case UnicodeCategory.ConnectorPunctuation:
+                case UnicodeCategory.Control:
+                case UnicodeCategory.DashPunctuation:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.FinalQuotePunctuation:
+                case UnicodeCategory.InitialQuotePunctuation:
+                case UnicodeCategory.LineSeparator:
+                case UnicodeCategory.OpenPunctuation:
+                case UnicodeCategory.OtherNumber:
+                case UnicodeCategory.OtherPunctuation:
+                case UnicodeCategory.ParagraphSeparator:
+                case UnicodeCategory.SpaceSeparator:
+                    // All chars in these categories meet the criteria that the only way
+                    // `char.ToLower(toTest, AnyCulture) == charInAboveCategory` is when
+                    // toTest == charInAboveCategory.
+                    return false;
+
+                default:
+                    // We don't know (without testing the character against every other
+                    // character), so assume it does.
+                    return true;
             }
         }
 
@@ -1311,7 +1348,7 @@ namespace System.Text.RegularExpressions
                 // ch = runtext[runtextpos];
                 // if (ch == lastChar) goto partialMatch;
                 Rightchar();
-                if (_boyerMoorePrefix.CaseInsensitive)
+                if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(chLast))
                 {
                     CallToLower();
                 }
@@ -1407,7 +1444,7 @@ namespace System.Text.RegularExpressions
                         Dup();
                         Stloc(testLocal);
                         Callvirt(s_stringGetCharsMethod);
-                        if (_boyerMoorePrefix.CaseInsensitive)
+                        if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(_boyerMoorePrefix.Pattern[charindex]))
                         {
                             CallToLower();
                         }
@@ -2439,14 +2476,20 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Onelazy:
                     case RegexNode.Oneloop:
                     case RegexNode.Oneloopatomic:
-                        if (IsCaseInsensitive(node)) CallToLower();
+                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        {
+                            CallToLower();
+                        }
                         Ldc(node.Ch);
                         BneFar(doneLabel);
                         break;
 
                     default:
                         Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop || node.Type == RegexNode.Notoneloopatomic);
-                        if (IsCaseInsensitive(node)) CallToLower();
+                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        {
+                            CallToLower();
+                        }
                         Ldc(node.Ch);
                         BeqFar(doneLabel);
                         break;
@@ -2667,7 +2710,10 @@ namespace System.Text.RegularExpressions
                     EmitTextSpanOffset();
                     textSpanPos++;
                     LdindU2();
-                    if (caseInsensitive) CallToLower();
+                    if (caseInsensitive && ParticipatesInCaseConversion(s[i]))
+                    {
+                        CallToLower();
+                    }
                     Ldc(s[i]);
                     BneFar(doneLabel);
                 }
@@ -2842,7 +2888,7 @@ namespace System.Text.RegularExpressions
 
                 if (node.Type == RegexNode.Notoneloopatomic &&
                     maxIterations == int.MaxValue &&
-                    !IsCaseInsensitive(node))
+                    (!IsCaseInsensitive(node) || !ParticipatesInCaseConversion(node.Ch)))
                 {
                     // For Notoneloopatomic, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
@@ -2976,12 +3022,18 @@ namespace System.Text.RegularExpressions
                     switch (node.Type)
                     {
                         case RegexNode.Oneloopatomic:
-                            if (IsCaseInsensitive(node)) CallToLower();
+                            if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                            {
+                                CallToLower();
+                            }
                             Ldc(node.Ch);
                             BneFar(doneLabel);
                             break;
                         case RegexNode.Notoneloopatomic:
-                            if (IsCaseInsensitive(node)) CallToLower();
+                            if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                            {
+                                CallToLower();
+                            }
                             Ldc(node.Ch);
                             BeqFar(doneLabel);
                             break;
@@ -3064,12 +3116,18 @@ namespace System.Text.RegularExpressions
                 switch (node.Type)
                 {
                     case RegexNode.Oneloopatomic:
-                        if (IsCaseInsensitive(node)) CallToLower();
+                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        {
+                            CallToLower();
+                        }
                         Ldc(node.Ch);
                         BneFar(skipUpdatesLabel);
                         break;
                     case RegexNode.Notoneloopatomic:
-                        if (IsCaseInsensitive(node)) CallToLower();
+                        if (IsCaseInsensitive(node) && ParticipatesInCaseConversion(node.Ch))
+                        {
+                            CallToLower();
+                        }
                         Ldc(node.Ch);
                         BeqFar(skipUpdatesLabel);
                         break;
@@ -4136,7 +4194,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        if (IsCaseInsensitive())
+                        if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
                         {
                             CallToLower();
                         }
@@ -4182,7 +4240,7 @@ namespace System.Text.RegularExpressions
                                 Add();
                             }
                             Callvirt(s_stringGetCharsMethod);
-                            if (IsCaseInsensitive())
+                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(str[i]))
                             {
                                 CallToLower();
                             }
@@ -4225,7 +4283,7 @@ namespace System.Text.RegularExpressions
                             Ldc(str.Length - i);
                             Sub();
                             Callvirt(s_stringGetCharsMethod);
-                            if (IsCaseInsensitive())
+                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(str[i]))
                             {
                                 CallToLower();
                             }
@@ -4428,7 +4486,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            if (IsCaseInsensitive())
+                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
                             {
                                 CallToLower();
                             }
@@ -4537,7 +4595,7 @@ namespace System.Text.RegularExpressions
                         // we can use the vectorized IndexOf to search for the target character.
                         if ((Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic) &&
                             !IsRightToLeft() &&
-                            !IsCaseInsensitive())
+                            (!IsCaseInsensitive() || !ParticipatesInCaseConversion(Operand(0))))
                         {
                             // i = runtext.AsSpan(runtextpos, len).IndexOf(ch);
                             Ldloc(_runtextLocal!);
@@ -4705,7 +4763,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                if (IsCaseInsensitive())
+                                if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
                                 {
                                     CallToLower();
                                 }
@@ -4906,7 +4964,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            if (IsCaseInsensitive())
+                            if (IsCaseInsensitive() && ParticipatesInCaseConversion(Operand(0)))
                             {
                                 CallToLower();
                             }
