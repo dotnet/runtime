@@ -520,7 +520,7 @@ static volatile gint32 sampling_thread_running;
 
 static clock_serv_t sampling_clock;
 
-void
+static void
 clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
 }
@@ -546,7 +546,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 static clockid_t sampling_clock;
 
-void
+static void
 clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
 	switch (mode) {

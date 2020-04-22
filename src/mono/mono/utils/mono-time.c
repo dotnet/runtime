@@ -288,7 +288,7 @@ mono_clock_get_time_ns (void *clk_id)
 	
 	struct timespec ts;
 
-	if (clock_gettime (*(clockid_t *)clock, &ts) == -1)
+	if (clock_gettime (*(clockid_t *)clk_id, &ts) == -1)
 		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
 
 	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
@@ -312,7 +312,7 @@ guint64
 mono_clock_get_time_ns (void *clk_id)
 {
 	// TODO: need to implement time stamp function for PC
-	return 0;
+	g_assert_not_reached ();
 }
 
 #endif
