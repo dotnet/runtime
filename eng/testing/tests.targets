@@ -136,7 +136,10 @@
       <TestBinaries Include="$(OutDir)\*.*"/>
       <AppleTestRunnerBinaries Include="$(AppleTestRunner)\*.*" />
       <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" /> <!-- we use static libmono.a -->
+      
+      <!-- remove PDBs to save some space until we integrate ILLink -->
+      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
     </ItemGroup>
     <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
@@ -170,6 +173,7 @@
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
+        Optimized="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
         AppDir="$(BundleDir)">

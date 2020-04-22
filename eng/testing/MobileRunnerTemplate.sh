@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env bash
 
-EXECUTION_DIR=`dirname $0`
+EXECUTION_DIR=$(dirname $0)
 TEST_NAME=$1
 SIMULATOR_NAME="iPhone 11"
 
@@ -18,8 +18,8 @@ while true; do
     fi
 done
 
-# Debug here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
-AppBundlePath=$EXECUTION_DIR/Bundle/$TEST_NAME/Debug-iphonesimulator/$TEST_NAME.app
+# Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
+AppBundlePath=$EXECUTION_DIR/Bundle/$TEST_NAME/Release-iphonesimulator/$TEST_NAME.app
 
 # kill a simulator if it exists
 xcrun simctl shutdown "$SIMULATOR_NAME" || true
