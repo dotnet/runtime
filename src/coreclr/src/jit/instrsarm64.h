@@ -1569,6 +1569,14 @@ INST1(sadalp,  "sadalp", 0, 0, IF_DV_2T,  0x0E206800)
                                    // C7.2.221 SADALP
                                    //  sadalp  Vd,Vn                DV_2T  0Q001110XX100000 011010nnnnnddddd   0E20 6800   Vd,Vn    (vector)
 
+INST1(saddl,   "saddl",  0, 0, IF_DV_3H,  0x0E200000)
+                                   // C7.2.222 SADDL, SADDL2
+                                   //  saddl   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 000000nnnnnddddd   0E20 0000   Vd,Vn,Vm (vector)
+
+INST1(saddl2,  "saddl2", 0, 0, IF_DV_3H,  0x4E200000)
+                                   // C7.2.222 SADDL, SADDL2
+                                   //  saddl2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 000000nnnnnddddd   4E20 0000   Vd,Vn,Vm (vector)
+
 INST1(shadd,   "shadd", 0, 0,  IF_DV_3A,  0x0E200400)
                                    // C7.2.246 SHADD
                                    //  shadd  Vd,Vn,Vm              DV_3A  0Q001110XX1mmmmm 000001nnnnnddddd   0E20 0400   Vd,Vn,Vm (vector)
@@ -1608,6 +1616,14 @@ INST1(uabdl2,  "uabdl2", 0, 0, IF_DV_3H,  0x6E207000)
 INST1(uadalp,  "uadalp", 0, 0, IF_DV_2T, 0x2E206800)
                                    // C7.2.338 UADALP
                                    //  uadalp  Vd,Vn                DV_2T  0Q101110XX100000 011010nnnnnddddd   2E20 6800   Vd,Vn    (vector)
+
+INST1(uaddl,   "uaddl",  0, 0, IF_DV_3H,  0x2E200000)
+                                   // C7.2.339 UADDL, UADDL2
+                                   //  uaddl   Vd,Vn,Vm             DV_3H  00101110XX1mmmmm 000000nnnnnddddd   2E20 0000   Vd,Vn,Vm (vector)
+
+INST1(uaddl2,  "uaddl2", 0, 0, IF_DV_3H,  0x6E200000)
+                                   // C7.2.339 UADDL, UADDL2
+                                   //  uaddl2  Vd,Vn,Vm             DV_3H  01101110XX1mmmmm 000000nnnnnddddd   6E20 0000   Vd,Vn,Vm (vector)
 
 INST1(uhadd,   "uhadd", 0, 0,  IF_DV_3A,  0x2E200400)
                                    // C7.2.349 UHADD
