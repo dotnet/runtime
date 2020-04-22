@@ -800,6 +800,26 @@ INST2(cmtst,   "cmtst",  0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
                                    //  cmtst   Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
                                    //  cmtst   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
 
+INST2(sqadd,   "sqadd",  0, 0, IF_EN2O,   0x5E200C00,  0x0E200C00)
+                                   // C7.2.275 SQADD
+                                   //  sqadd   Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 000011nnnnnddddd   5E20 0C00   Vd,Vn,Vm   (scalar)
+                                   //  sqadd   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 000011nnnnnddddd   0E20 0C00   Vd,Vn,Vm   (vector)
+
+INST2(sqsub,   "sqadd",  0, 0, IF_EN2O,   0x5E202C00,  0x0E202C00)
+                                   // C7.2.299 SQSUB
+                                   //  sqsub   Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 001011nnnnnddddd   5E20 2C00   Vd,Vn,Vm   (scalar)
+                                   //  sqsub   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 001011nnnnnddddd   0E20 2C00   Vd,Vn,Vm   (vector)
+
+INST2(uqadd,   "uqadd",  0, 0, IF_EN2O,   0x7E200C00,  0x2E200C00)
+                                   // C7.2.364 UQADD
+                                   //  uqadd   Vd,Vn,Vm             DV_3E  01111110XX1mmmmm 000011nnnnnddddd   7E20 0C00   Vd,Vn,Vm   (scalar)
+                                   //  uqadd   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 000011nnnnnddddd   2E20 0C00   Vd,Vn,Vm   (vector)
+
+INST2(uqsub,   "uqadd",  0, 0, IF_EN2O,   0x7E202C00,  0x2E202C00)
+                                   // C7.2.370 UQSUB
+                                   //  uqsub   Vd,Vn,Vm             DV_3E  01111110XX1mmmmm 001011nnnnnddddd   7E20 2C00   Vd,Vn,Vm   (scalar)
+                                   //  uqsub   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 001011nnnnnddddd   2E20 2C00   Vd,Vn,Vm   (vector)
+
 //    enum     name     FP LD/ST            DV_2Q        DV_3B
 INST2(faddp,   "faddp",  0, 0, IF_EN2P,   0x7E30D800,  0x2E20D400)
                                    //  faddp   Vd,Vn                DV_2Q  011111100X110000 110110nnnnnddddd   7E30 D800   Vd,Vn      (scalar)
