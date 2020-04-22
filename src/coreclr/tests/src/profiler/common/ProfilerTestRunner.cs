@@ -25,11 +25,20 @@ namespace Profiler.Tests
                               string testName,
                               Guid profilerClsid,
                               string profileeArguments = "",
+                              Dictionary<string, string> additionalEnvVars = null,
                               ProfileeOptions profileeOptions = ProfileeOptions.None)
         {
             string arguments;
             string program;
             Dictionary<string, string> envVars = new Dictionary<string, string>();
+            if (additionalEnvVars != null)
+            {
+                foreach (string key in additionalEnvVars.Keys)
+                {
+                    envVars.Add(key, additionalEnvVars[key]);
+                }
+            }
+            
             string profileeAppDir = Path.GetDirectoryName(profileePath);
 
             arguments = profileePath + " RunTest " + profileeArguments;

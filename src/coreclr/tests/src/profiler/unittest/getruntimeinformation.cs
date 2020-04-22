@@ -23,8 +23,10 @@ namespace Profiler.Tests
                 return RunTest();
             }
 
+            Console.WriteLine("Launching...");
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "UnitTestGetRuntimeInformation",
+                                          additionalEnvVars: new Dictionary<string, string> { ["FX_PRODUCT_VERSION"] = "5.1.306"},
                                           profilerClsid: GetRuntimeInformationProfilerGuid);
         }
 

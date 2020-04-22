@@ -9204,6 +9204,8 @@ void ProfToEEInterfaceImpl::ParseVersionString(LPCWSTR versionString,
     }
 
     CopyMemory(versionStringWriteable, versionString, cchVersionString * sizeof(WCHAR));
+    // set the last char to null so we can safely use it with wcstok_s
+    versionStringWriteable[cchVersionString - 1] = '\0';
 
     LPCWSTR delims = W(".-");
     WCHAR *buffer;
@@ -9273,44 +9275,19 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         return E_INVALIDARG;
     }
 
-    // Try and get the version set by the host
-    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
-    ULONG cchFxProductVersion =  fxProductVersion == NULL ? 0 : (ULONG)wcslen(fxProductVersion) + 1;
-
-    if (pcchVersionString != NULL || szVersionString != NULL)
+    if ((cchVersionString == 0) != (szVersionString == NULL))
     {
-        if (fxProductVersion != NULL)
-        {
-            if (pcchVersionString != NULL)
-            {
-                *pcchVersionString = cchFxProductVersion;
-            }
-
-            if (cchFxProductVersion >= cchVersionString)
-            {
-                return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-            }
-
-            if (szVersionString != NULL)
-            {
-                CopyMemory(szVersionString, fxProductVersion, cchFxProductVersion * sizeof(WCHAR));
-            }
-        }
-        else
-        {
-            // The host hasn't set a version, fall back to the compile time ones
-            HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
+        return E_INVALIDARG;
     }
 
     // defaults to use if the host hasn't set a version to parse
-    USHORT majorVersion = CLR_MAJOR_VERSION;
-    USHORT minorVersion = CLR_MINOR_VERSION;
-    USHORT buildNumber = CLR_BUILD_VERSION;
+    USHORT majorVersion = 0;
+    USHORT minorVersion = 0;
+    USHORT buildNumber = 0;
+
+    // Try and get the version set by the host
+    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
+    ULONG cchFxProductVersion =  fxProductVersion == NULL ? 0 : (ULONG)wcslen(fxProductVersion) + 1;
 
     if (fxProductVersion != NULL)
     {
@@ -9346,6 +9323,21 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
     if (pQFEVersion != NULL)
     {
         *pQFEVersion = CLR_BUILD_VERSION_QFE;
+    }
+
+    if (pcchVersionString != NULL)
+    {
+        *pcchVersionString = cchFxProductVersion;
+    }
+
+    if (cchFxProductVersion > cchVersionString)
+    {
+        return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    }
+
+    if (szVersionString != NULL && fxProductVersion != NULL)
+    {
+        CopyMemory(szVersionString, fxProductVersion, cchFxProductVersion * sizeof(WCHAR));
     }
 
     return S_OK;

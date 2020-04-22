@@ -49,7 +49,6 @@ HRESULT GetRuntimeInformation::Initialize(IUnknown *pICorProfilerInfoUnk)
     USHORT buildNumber;
     USHORT qfeVersion;
     ULONG versionStringLength;
-    WCHAR versionString[STRING_LENGTH];
 
     hr = pCorProfilerInfo->GetRuntimeInformation(&clrInstanceId,
                                                  &runtimeType,
@@ -57,9 +56,36 @@ HRESULT GetRuntimeInformation::Initialize(IUnknown *pICorProfilerInfoUnk)
                                                  &minorVersion,
                                                  &buildNumber,
                                                  &qfeVersion,
-                                                 STRING_LENGTH,
+                                                 0,
                                                  &versionStringLength,
-                                                 versionString);
+                                                 NULL);
+    if (FAILED(hr) && hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+    {
+        printf("GetRuntimeInformation failed with hr=0x%x\n", hr);
+        return E_FAIL;
+    }
+    
+    // We should return the version even if the profiler doesn't want the version string
+    if (runtimeType != COR_PRF_CORE_CLR
+        || majorVersion == 0
+        || minorVersion == 0
+        || buildNumber == 0)
+    {
+        printf("First call to GetRuntimeInformation didn't return valid information. runtimeType=%u majorVersion=%u minorVersion=%u buildNumber=%u\n",
+            runtimeType, majorVersion, minorVersion, buildNumber);
+        failures++;
+    }
+
+    NewArrayHolder<WCHAR> versionString(new WCHAR[versionStringLength]);
+    hr = pCorProfilerInfo->GetRuntimeInformation(&clrInstanceId,
+                                                 &runtimeType,
+                                                 &majorVersion,
+                                                 &minorVersion,
+                                                 &buildNumber,
+                                                 &qfeVersion,
+                                                 versionStringLength,
+                                                 &versionStringLength,
+                                                 (WCHAR *)versionString);
     if (FAILED(hr))
     {
         printf("GetRuntimeInformation failed with hr=0x%x\n", hr);
@@ -73,7 +99,22 @@ HRESULT GetRuntimeInformation::Initialize(IUnknown *pICorProfilerInfoUnk)
     printf("buildNumber=%u\n", buildNumber);
     printf("qfeVersion=%u\n", qfeVersion);
     printf("versionStringLength=%u\n", versionStringLength);
-    wprintf(L"versionString=%s\n", versionString);
+    wprintf(L"versionString=%s\n", (WCHAR *)versionString);
+
+    // NOTE: this is hardcoded by the test since the tests run under corerun, so it won't
+    // change over time. It would be awesome to validate that it parses correctly over
+    // time, but it's not currently possible with our infrastructure.
+    if (runtimeType != COR_PRF_CORE_CLR
+        || majorVersion != 5
+        || minorVersion != 1
+        || buildNumber != 306
+        || versionStringLength == 0
+        || versionString == NULL)
+    {
+        wprintf(L"Error parsing version string. runtimeType=%u majorVersion=%u minorVersion=%u buildNumber=%u versionString=%s\n",
+            runtimeType, majorVersion, minorVersion, buildNumber, String(versionString).ToWString().c_str());
+        failures++;
+    }
 
     return S_OK;
 }
