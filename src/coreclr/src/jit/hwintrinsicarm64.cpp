@@ -363,17 +363,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = countNode;
             break;
         }
-
-        case NI_Vector64_get_Zero:
-        case NI_Vector128_get_Zero:
-        case NI_Vector64_get_AllBitsSet:
-        case NI_Vector128_get_AllBitsSet:
-        {
-            assert(!sig->hasThis());
-            assert(numArgs == 0);
-            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
-            break;
-        }
         default:
         {
             return nullptr;
