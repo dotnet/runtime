@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            uint? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)

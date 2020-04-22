@@ -125,8 +125,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
             AdvanceBuffer(1);
+            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
         public void ReadEndTextStringIndefiniteLength()
@@ -146,8 +146,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
             AdvanceBuffer(1);
+            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
         public void ReadEndByteStringIndefiniteLength()

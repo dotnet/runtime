@@ -58,19 +58,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map encoding conformance
         //
 
-        private SortedSet<(int offset, int keyLength, int keyValueLength)> GetKeyValueEncodingRanges()
-        {
-            // TODO consider pooling set allocations?
-
-            if (_keyValueEncodingRanges == null)
-            {
-                _comparer ??= new KeyEncodingComparer(this);
-                return _keyValueEncodingRanges = new SortedSet<(int offset, int keyLength, int keyValueLength)>(_comparer);
-            }
-
-            return _keyValueEncodingRanges;
-        }
-
         private void HandleKeyWritten()
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
@@ -165,6 +152,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 return CborConformanceLevelHelpers.CompareEncodings(_writer.GetKeyEncoding(x), _writer.GetKeyEncoding(y), _writer.ConformanceLevel);
             }
+        }
+
+        private SortedSet<(int offset, int keyLength, int keyValueLength)> GetKeyValueEncodingRanges()
+        {
+            // TODO consider pooling set allocations?
+
+            if (_keyValueEncodingRanges == null)
+            {
+                _comparer ??= new KeyEncodingComparer(this);
+                return _keyValueEncodingRanges = new SortedSet<(int offset, int keyLength, int keyValueLength)>(_comparer);
+            }
+
+            return _keyValueEncodingRanges;
         }
     }
 }

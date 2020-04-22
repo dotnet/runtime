@@ -116,6 +116,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
+        [Theory]
+        [InlineData((CborConformanceLevel)(-1))]
+        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborReader(Array.Empty<byte>(), conformanceLevel: level));
+        }
+
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });
         public static IEnumerable<object[]> EncodedValueInvalidInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
     }

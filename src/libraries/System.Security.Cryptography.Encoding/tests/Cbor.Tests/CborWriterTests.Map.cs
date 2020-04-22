@@ -87,18 +87,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData(CborConformanceLevel.NonStrict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
         // indefinite length string payload
         [InlineData(CborConformanceLevel.NonStrict, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a561620002006161007f616360ff000100")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a561620002006161007f616360ff000100")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162007f616360ff00")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162007f616360ff00")]
         // CBOR sorting rules do not match canonical string sorting
         [InlineData(CborConformanceLevel.NonStrict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "aa", 0, "z", 0 }, "a2617a0062616100")]
         // Test case distinguishing between RFC7049 and CTAP2 sorting rules
         [InlineData(CborConformanceLevel.NonStrict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "", 0, 255, 0 }, "a218ff006000")]
         internal static void WriteMap_SimpleValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
@@ -112,6 +116,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         [Theory]
         [InlineData(CborConformanceLevel.NonStrict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a42000a30303020201010061610019010000")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a42000a30303020201010061610019010000")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a4200061610019010000a301010202030300")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a4190100002000616100a301010202030300")]
         internal static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)

@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public void SkipValue()
         {
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            Checkpoint checkpoint = CreateCheckpoint();
 
             try
             {
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
             }
         }

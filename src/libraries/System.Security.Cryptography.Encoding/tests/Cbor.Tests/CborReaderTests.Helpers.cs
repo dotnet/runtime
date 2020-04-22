@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 Assert.Equal(CborReaderState.StartArray, reader.PeekState());
 
-                ulong? length = reader.ReadStartArray();
+                uint? length = reader.ReadStartArray();
 
                 if (expectDefiniteLengthCollections)
                 {
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 Assert.Equal(CborReaderState.StartMap, reader.PeekState());
 
-                ulong? length = reader.ReadStartMap();
+                uint? length = reader.ReadStartMap();
 
                 if (expectDefiniteLengthCollections)
                 {
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 foreach (object value in expectedValues.Skip(1))
                 {
-                    VerifyValue(reader, value);
+                    VerifyValue(reader, value, expectDefiniteLengthCollections);
                 }
 
                 Assert.Equal(CborReaderState.EndMap, reader.PeekState());

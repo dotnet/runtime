@@ -156,6 +156,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Throws<ArgumentException>(() => writer.WriteEncodedValue(new byte[] { 0x01, 0x01 }));
         }
 
+        [Theory]
+        [InlineData((CborConformanceLevel)(-1))]
+        internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
+        }
+
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });
         public static IEnumerable<object[]> EncodedValueBadInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
     }

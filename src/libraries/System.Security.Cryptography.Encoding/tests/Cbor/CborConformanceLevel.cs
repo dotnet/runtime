@@ -17,27 +17,33 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
     internal static class CborConformanceLevelHelpers
     {
+        public static void Validate(CborConformanceLevel conformanceLevel)
+        {
+            if (!Enum.IsDefined(typeof(CborConformanceLevel), conformanceLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            }
+        }
+
         public static bool RequiresUniqueKeys(CborConformanceLevel level)
         {
-            return level switch
-            {
-                CborConformanceLevel.Rfc7049Canonical => true,
-                CborConformanceLevel.Ctap2Canonical => true,
-                CborConformanceLevel.Strict => true,
-                CborConformanceLevel.NonStrict => false,
-                _ => false,
-            };
+            return level != CborConformanceLevel.NonStrict;
         }
 
         public static bool RequiresSortedKeys(CborConformanceLevel level)
         {
-            return level switch
+            switch (level)
             {
-                CborConformanceLevel.Rfc7049Canonical => true,
-                CborConformanceLevel.Ctap2Canonical => true,
-                CborConformanceLevel.Strict => false,
-                CborConformanceLevel.NonStrict => false,
-                _ => false,
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.NonStrict:
+                    return false;
+
+                case CborConformanceLevel.Rfc7049Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    return false;
             };
         }
 
