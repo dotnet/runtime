@@ -156,6 +156,7 @@ namespace Mono.Linker.Dataflow
 			None = 0,
 			IntrospectionExtensions_GetTypeInfo,
 			Type_GetTypeFromHandle,
+			Type_get_TypeHandle,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -183,7 +184,8 @@ namespace Mono.Linker.Dataflow
 			RuntimeReflectionExtensions_GetRuntimeEvent,
 			RuntimeReflectionExtensions_GetRuntimeField,
 			RuntimeReflectionExtensions_GetRuntimeMethod,
-			RuntimeReflectionExtensions_GetRuntimeProperty
+			RuntimeReflectionExtensions_GetRuntimeProperty,
+			RuntimeHelpers_RunClassConstructor
 		}
 
 		static IntrinsicId GetIntrinsicIdForMethod (MethodDefinition calledMethod)
@@ -195,6 +197,9 @@ namespace Mono.Linker.Dataflow
 
 				// System.Type.GetTypeInfo (Type type)
 				"GetTypeFromHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_GetTypeFromHandle,
+
+				// System.Type.GetTypeHandle (Type type)
+				"get_TypeHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_get_TypeHandle,
 
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_MakeGenericType,
@@ -379,6 +384,11 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "String")
 					=> IntrinsicId.Assembly_CreateInstance,
 
+				// System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor (RuntimeTypeHandle type)
+				"RunClassConstructor" when calledMethod.IsDeclaredOnType ("System.Runtime.CompilerServices", "RuntimeHelpers")
+					&& calledMethod.HasParameterOfType (0, "System", "RuntimeTypeHandle")
+					=> IntrinsicId.RuntimeHelpers_RunClassConstructor,
+
 				_ => IntrinsicId.None,
 			};
 		}
@@ -415,6 +425,18 @@ namespace Mono.Linker.Dataflow
 							// Infrastructure piece to support "typeof(Foo)"
 							if (methodParams [0] is RuntimeTypeHandleValue typeHandle)
 								methodReturnValue = new SystemTypeValue (typeHandle.TypeRepresented);
+						}
+						break;
+
+					case IntrinsicId.Type_get_TypeHandle: {
+							foreach (var value in methodParams [0].UniqueValues()) {
+								if (value is SystemTypeValue typeValue)
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new RuntimeTypeHandleValue (typeValue.TypeRepresented));
+								else if (value == NullValue.Instance)
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, value);
+								else 
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, UnknownValue.Instance);
+							}
 						}
 						break;
 
@@ -924,6 +946,28 @@ namespace Mono.Linker.Dataflow
 						//
 						reflectionContext.AnalyzingPattern ();
 						reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' is not yet supported");
+						break;
+
+					//
+					// System.Runtime.CompilerServices.RuntimeHelpers
+					//
+					// RunClassConstructor (RuntimeTypeHandle type)
+					//
+					case IntrinsicId.RuntimeHelpers_RunClassConstructor: {
+							reflectionContext.AnalyzingPattern ();
+							foreach (var typeHandleValue in methodParams [0].UniqueValues ()) {
+								if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
+									_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.MethodCalling));
+									reflectionContext.RecordHandledPattern ();
+								} else if (typeHandleValue == NullValue.Instance)
+									reflectionContext.RecordHandledPattern ();
+								else {
+									reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (typeHandleValue)} " +
+										$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (reflectionContext.MethodCalled.Parameters[0])}. " +
+										$"It's not possible to guarantee availability of the target static constructor.");
+								}
+							}
+						}
 						break;
 
 					default:
