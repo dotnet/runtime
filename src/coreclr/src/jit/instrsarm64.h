@@ -1605,6 +1605,14 @@ INST1(ssubl2,  "ssubl2", 0, 0, IF_DV_3H,  0x4E202000)
                                    // C7.2.311 SSUBL, SSUBL2
                                    //  ssubl2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 001000nnnnnddddd   4E20 2000   Vd,Vn,Vm (vector)
 
+INST1(ssubw,   "ssubw",  0, 0, IF_DV_3H,  0x0E203000)
+                                   // C7.2.312 SSUBW, SSUBW2
+                                   //  ssubw   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 001100nnnnnddddd   0E20 3000   Vd,Vn,Vm (vector)
+
+INST1(ssubw2,  "ssubw2", 0, 0, IF_DV_3H,  0x4E203000)
+                                   // C7.2.312 SSUBW, SSUBW2
+                                   //  ssubw2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 001100nnnnnddddd   4E20 3000   Vd,Vn,Vm (vector)
+
 INST1(subhn,   "subhn", 0, 0,  IF_DV_3H,  0x0E206000)
                                    // C7.2.327 SUBHN, SUBHN2
                                    //  subhn   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 011000nnnnnddddd   0E20 6000   Vd,Vn,Vm (vector)
@@ -1668,6 +1676,14 @@ INST1(usubl,   "usubl",  0, 0, IF_DV_3H,  0x2E202000)
 INST1(usubl2,  "usubl2", 0, 0, IF_DV_3H,  0x6E202000)
                                    // C7.2.383 USUBL, USUBL2
                                    //  usubl2  Vd,Vn,Vm             DV_3H  01101110XX1mmmmm 001000nnnnnddddd   6E20 2000   Vd,Vn,Vm (vector)
+
+INST1(usubw,   "usubw",  0, 0, IF_DV_3H,  0x2E203000)
+                                   // C7.2.384 USUBW, USUBW2
+                                   //  usubw   Vd,Vn,Vm             DV_3H  00101110XX1mmmmm 001100nnnnnddddd   2E20 3000   Vd,Vn,Vm (vector)
+
+INST1(usubw2,  "usubw2", 0, 0, IF_DV_3H,  0x6E203000)
+                                   // C7.2.384 USUBW, USUBW2
+                                   //  usubw2  Vd,Vn,Vm             DV_3H  01101110XX1mmmmm 001100nnnnnddddd   6E20 3000   Vd,Vn,Vm (vector)
 
 INST1(shll,    "shll",   0, 0, IF_DV_2M,  0x2F00A400)
                                    //  shll    Vd,Vn,imm            DV_2M  0Q101110XX100001 001110nnnnnddddd   2E21 3800   Vd,Vn, {8/16/32}
