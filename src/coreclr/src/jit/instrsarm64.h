@@ -1533,6 +1533,14 @@ INST1(addhn2,  "addhn2", 0, 0, IF_DV_3H,  0x4E204000)
                                    // C7.2.3 ADDHN, ADDHN2
                                    //  addhn2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 010000nnnnnddddd   4E20 4000   Vd,Vn,Vm (vector)
 
+INST1(pmull,   "pmull",  0, 0, IF_DV_3H,  0x0E20E000)
+                                   // C7.2.208 PMULL, PMULL2
+                                   //  pmull   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 111000nnnnnddddd   0E20 E000   Vd,Vn,Vm (vector)
+
+INST1(pmull2,  "pmull2", 0, 0, IF_DV_3H,  0x4E20E000)
+                                   // C7.2.208 PMULL, PMULL2
+                                   //  pmull2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 111000nnnnnddddd   4E20 E000   Vd,Vn,Vm (vector)
+
 INST1(raddhn,  "raddhn", 0, 0, IF_DV_3H,  0x2E204000)
                                    // C7.2.209 RADDHN, RADDHN2
                                    //  raddhn   Vd,Vn,Vm            DV_3H  00101110XX1mmmmm 010000nnnnnddddd   2E20 4000   Vd,Vn,Vm (vector)
