@@ -419,7 +419,7 @@ namespace System.Text.Json
             return type.IsByRefLike;
         }
 #else
-        private static readonly PropertyInfo s_isByRefLikePropertyInfo = typeof(Type).GetProperty("IsByRefLike")!;
+        private static readonly PropertyInfo? s_isByRefLikePropertyInfo = typeof(Type).GetProperty("IsByRefLike");
 
         private static bool IsByRefLike(Type type)
         {
@@ -428,7 +428,22 @@ namespace System.Text.Json
                 return false;
             }
 
-            return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
+            if (s_isByRefLikePropertyInfo != null)
+            {
+                return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
+            }
+
+            object[] attributes = type.GetCustomAttributes(inherit: false);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 #endif
     }
