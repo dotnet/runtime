@@ -4,6 +4,8 @@
 
     <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">MobileRunnerTemplate.sh</RunScriptInputName>
+
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
@@ -96,6 +98,7 @@
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)'=='iOS'">"$(RunScriptOutputPath)" $(AssemblyName)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
@@ -117,6 +120,8 @@
 
   <!-- Generate a self-contained app bundle for iOS with tests.
        This target is executed once build is done for a test lib (after CopyFilesToOutputDirectory target) -->
+  <UsingTask TaskName="AppleAppBuilderTask" 
+             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp" AfterTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
@@ -175,8 +180,6 @@
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
-  <UsingTask TaskName="AppleAppBuilderTask" 
-             AssemblyFile="$(ArtifactsObjDir)mono\AppleAppBuilder\$(TargetArchitecture)\$(Configuration)\AppleAppBuilder.dll" />
 
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
