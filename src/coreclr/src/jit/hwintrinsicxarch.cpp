@@ -202,13 +202,15 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
 // isInImmRange: Check if ival is valid for the intrinsic
 //
 // Arguments:
-//    id   -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//    ival -- the imm value to be checked
+//    id        -- the NamedIntrinsic associated with the HWIntrinsic to lookup
+//    ival      -- the imm value to be checked
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
 //
 // Return Value:
 //     true if ival is valid for the intrinsic
 //
-bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
+bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType)
 {
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 

@@ -21,6 +21,7 @@ parameters:
   runInUnloadableContext: false
   variables: {}
   pool: ''
+  runtimeFlavorDisplayName: 'CoreCLR'
 
 ### Test run job
 
@@ -28,7 +29,7 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -53,22 +54,22 @@ jobs:
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - 'coreclr_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - 'coreclr_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
-      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'run_test_p0_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: 'CoreCLR Pri0 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }}  Pri0 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: 'CoreCLR Pri1 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Pri1 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - name: testhostArg
@@ -76,6 +77,13 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: testhostArg
         value: 'buildtesthostonly'
+
+    - name: runtimeFlavorArgs
+      value: ''
+
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - name: runtimeFlavorArgs
+        value: '-excludemonofailures'
 
     - name: crossgenArg
       value: ''
@@ -198,6 +206,23 @@ jobs:
         displayName: 'product build'
 
 
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      # We need to explictly download CoreCLR for Mono
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(coreClrProductRootFolderPath)
+          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+          artifactName: '$(coreClrProductArtifactName)'
+          displayName: 'CoreCLR product download for Mono'
+
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfig)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
+
+
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
@@ -235,8 +260,8 @@ jobs:
         displayName: Generate test host
 
 
-    # Generate test wrappers
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
@@ -247,13 +272,14 @@ jobs:
 
 
     # Send tests to Helix
-    - template: /eng/pipelines/coreclr/templates/send-to-helix-step.yml
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
         displayName: Send tests to Helix
         buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         coreClrRepoRoot: $(coreClrRepoRoot)
+        runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -426,6 +452,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

@@ -2194,8 +2194,8 @@
   <data name="Format_AttributeUsage" xml:space="preserve">
     <value>Duplicate AttributeUsageAttribute found on attribute type {0}.</value>
   </data>
-  <data name="Format_Bad7BitInt32" xml:space="preserve">
-    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  <data name="Format_Bad7BitInt" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7-bit encoded integer.</value>
   </data>
   <data name="Format_BadBase" xml:space="preserve">
     <value>Invalid digits for the specified base.</value>

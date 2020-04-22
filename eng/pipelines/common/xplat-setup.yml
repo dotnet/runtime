@@ -11,6 +11,10 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
+    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+      runtimeFlavorDisplayName: 'CoreCLR'
+    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      runtimeFlavorDisplayName: 'Mono'
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential

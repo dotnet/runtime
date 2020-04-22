@@ -515,6 +515,8 @@ public:
     unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
                                               // eh)
 
+    unsigned char lvSuppressedZeroInit : 1; // local needs zero init if we transform tail call to loop
+
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -3698,7 +3700,7 @@ protected:
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
-    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand);
+    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -5779,8 +5781,13 @@ private:
     // static) written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopNestSideEffects(unsigned lnum);
 
+    // Given a loop number 'lnum' mark it and any nested loops as having 'memoryHavoc'
+    void optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc);
+
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
-    void optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
+    // Returns false if we encounter a block that is not marked as being inside a loop.
+    //
+    bool optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
 
     // Hoist the expression "expr" out of loop "lnum".
     void optPerformHoistExpr(GenTree* expr, unsigned lnum);
@@ -6080,6 +6087,7 @@ protected:
     bool optLoopContains(unsigned l1, unsigned l2);
 
     // Requires "loopInd" to be a valid index into the loop table.
+
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
     // loop nested in "loopInd" that shares the same head as "loopInd".
@@ -6101,6 +6109,9 @@ protected:
     // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
     // of "from".)  Copies the jump destination from "from" to "to".
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
+
+    // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+    bool optIsLoopEntry(BasicBlock* block);
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
     unsigned optLoopDepth(unsigned lnum)
@@ -8441,6 +8452,7 @@ public:
     bool compHasBackwardJump;      // Does the method (or some inlinee) have a lexically backwards jump?
     bool compSwitchedToOptimized;  // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts;    // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    bool compSuppressedZeroInit;   // There are vars with lvSuppressedZeroInit set
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.

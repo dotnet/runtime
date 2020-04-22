@@ -8496,7 +8496,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
     // for all non-parameter IL locals as well as temp structs with GC fields.
     // Liveness phase will remove unnecessary initializations.
-    if (info.compInitMem)
+    if (info.compInitMem || compSuppressedZeroInit)
     {
         unsigned   varNum;
         LclVarDsc* varDsc;
@@ -8513,7 +8513,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 var_types lclType            = varDsc->TypeGet();
                 bool      isUserLocal        = (varNum < info.compLocalsCount);
                 bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
-                if (isUserLocal || structWithGCFields)
+                bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
+                if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
                 {
                     GenTree* lcl  = gtNewLclvNode(varNum, lclType);
                     GenTree* init = nullptr;
@@ -13381,6 +13382,22 @@ DONE_MORPHING_CHILDREN:
                 }
                 else if (op1->OperGet() == GT_ADD)
                 {
+#ifdef TARGET_ARM
+                    // Check for a misalignment floating point indirection.
+                    if (varTypeIsFloating(typ))
+                    {
+                        GenTree* addOp2 = op1->AsOp()->gtGetOp2();
+                        if (addOp2->IsCnsIntOrI())
+                        {
+                            ssize_t offset = addOp2->AsIntCon()->gtIconVal;
+                            if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
+                            {
+                                tree->gtFlags |= GTF_IND_UNALIGNED;
+                            }
+                        }
+                    }
+#endif // TARGET_ARM
+
                     /* Try to change *(&lcl + cns) into lcl[cns] to prevent materialization of &lcl */
 
                     if (op1->AsOp()->gtOp1->OperGet() == GT_ADDR && op1->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
@@ -13430,19 +13447,6 @@ DONE_MORPHING_CHILDREN:
                             {
                                 break;
                             }
-
-#ifdef TARGET_ARM
-                            // Check for a LclVar TYP_STRUCT with misalignment on a Floating Point field
-                            //
-                            if (varTypeIsFloating(typ))
-                            {
-                                if ((ival1 % emitTypeSize(typ)) != 0)
-                                {
-                                    tree->gtFlags |= GTF_IND_UNALIGNED;
-                                    break;
-                                }
-                            }
-#endif
                         }
                         // Now we can fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)

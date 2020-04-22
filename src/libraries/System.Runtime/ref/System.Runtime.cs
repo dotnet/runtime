@@ -2422,7 +2422,6 @@ namespace System
         public static System.IntPtr Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.IntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
-        bool System.IEquatable<System.IntPtr>.Equals(System.IntPtr other) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int ToInt32() { throw null; }
         public long ToInt64() { throw null; }
@@ -4386,7 +4385,6 @@ namespace System
         public static System.UIntPtr Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.UIntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
-        bool System.IEquatable<System.UIntPtr>.Equals(System.UIntPtr other) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public unsafe void* ToPointer() { throw null; }
         public override string ToString() { throw null; }
@@ -6557,7 +6555,8 @@ namespace System.IO
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
         public virtual int Read(System.Span<byte> buffer) { throw null; }
         public virtual int Read(System.Span<char> buffer) { throw null; }
-        protected internal int Read7BitEncodedInt() { throw null; }
+        public int Read7BitEncodedInt() { throw null; }
+        public long Read7BitEncodedInt64() { throw null; }
         public virtual bool ReadBoolean() { throw null; }
         public virtual byte ReadByte() { throw null; }
         public virtual byte[] ReadBytes(int count) { throw null; }
@@ -6618,7 +6617,8 @@ namespace System.IO
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
-        protected void Write7BitEncodedInt(int value) { }
+        public void Write7BitEncodedInt(int value) { }
+        public void Write7BitEncodedInt64(long value) { }
     }
     public sealed partial class BufferedStream : System.IO.Stream
     {

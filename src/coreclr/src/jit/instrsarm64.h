@@ -1279,22 +1279,26 @@ INST1(sha1h,   "sha1h",  0, 0, IF_DV_2U,   0x5E280800)
                                    //  sha1h   Sd, Sn               DV_2U  0101111000101000 000010nnnnnddddd   5E28 0800   Sn Sn
 
 INST1(sha1su0, "sha1su0",  0, 0, IF_DV_3F,  0x5E003000)
-                                   //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S   (vector)
+                                   //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S  (vector)
 
 INST1(sha1su1, "sha1su1",  0, 0, IF_DV_2P,  0x5E281800)
                                    //  sha1su1 Vd.4S, Vn.4S         DV_2P  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256h, "sha256h",  0, 0, IF_DV_3F,  0x5E004000)
-                                   //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010000nnnnnddddd   5E00 4000  Qd Qn Vm.4S   (vector)
+                                   //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010000nnnnnddddd   5E00 4000   Qd Qn Vm.4S   (vector)
 
 INST1(sha256h2, "sha256h2",  0, 0, IF_DV_3F,  0x5E005000)
-                                   //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010100nnnnnddddd   5E00 5000  Qd Qn Vm.4S   (vector)
+                                   //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010100nnnnnddddd   5E00 5000   Qd Qn Vm.4S   (vector)
 
 INST1(sha256su0, "sha256su0",  0, 0, IF_DV_2P,  0x5E282800)
-                                   // sha256su0  Vd.4S,Vn.4S        DV_2P  0101111000101000 001010nnnnnddddd   5E28 2800  Vd.4S Vn.4S   (vector)
+                                   // sha256su0  Vd.4S,Vn.4S        DV_2P  0101111000101000 001010nnnnnddddd   5E28 2800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256su1, "sha256su1",  0, 0, IF_DV_3F,  0x5E006000)
-                                   // sha256su1  Vd.4S,Vn.4S,Vm.4S  DV_3F  01011110000mmmmm 011000nnnnnddddd   5E00 6000  Vd.4S Vn.4S Vm.4S   (vector)
+                                   // sha256su1  Vd.4S,Vn.4S,Vm.4S  DV_3F  01011110000mmmmm 011000nnnnnddddd   5E00 6000   Vd.4S Vn.4S Vm.4S  (vector)
+
+INST1(ext,     "ext",    0, 0, IF_DV_3G,  0x2E000000)
+                                   // C7.2.36 EXT
+                                   //  ext     Vd,Vn,Vm,index       DV_3G  0Q101110000mmmmm 0iiii0nnnnnddddd   2E00 0000   Vd Vn Vm index  (vector)
 
 INST1(sbfm,    "sbfm",   0, 0, IF_DI_2D,  0x13000000)
                                    //  sbfm    Rd,Rn,imr,ims        DI_2D  X00100110Nrrrrrr ssssssnnnnnddddd   1300 0000   imr, ims
