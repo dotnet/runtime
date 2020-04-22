@@ -35,17 +35,12 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm64'">arm64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'iOS'">x64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'tvOS'">x64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Android'">x64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
          the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
-    <RuntimeOS Condition="'$(TargetOS)' == 'iOS'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
-    <RuntimeOS Condition="'$(TargetOS)' == 'tvOS'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
-    <RuntimeOS Condition="'$(TargetOS)' == 'Android'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly' or '$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
@@ -309,10 +304,10 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsMobile)' != 'true'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
-    <BinPlaceTestRuntimePack Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">true</BinPlaceTestRuntimePack>
+    <BinPlaceTestRuntimePack Condition="'$(TargetsMobile)' == 'true'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 

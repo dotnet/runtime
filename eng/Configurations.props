@@ -48,6 +48,10 @@
     <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS'">true</TargetsMobile>
+  </PropertyGroup>
+
   <!--Feature switches -->
   <PropertyGroup>
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
