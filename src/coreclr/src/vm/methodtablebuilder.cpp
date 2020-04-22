@@ -2445,20 +2445,16 @@ MethodTableBuilder::EnumerateMethodImpls()
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MISSING_SIG_BODY);
                 }
 
-                BOOL allowCovariantReturn = IsEligibleForCovariantReturns(theDecl);
-
                 // Can't use memcmp because there may be two AssemblyRefs
                 // in this scope, pointing to the same assembly, etc.).
-                if (!MetaSig::CompareMethodSigs(
-                        pSigDecl,
-                        cbSigDecl,
-                        GetModule(),
-                        &theDeclSubst,
-                        pSigBody,
-                        cbSigBody,
-                        GetModule(),
-                        NULL,
-                        allowCovariantReturn))
+                BOOL compatibleSignatures = MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, FALSE);
+
+                if (!compatibleSignatures && IsEligibleForCovariantReturns(theDecl))
+                {
+                    compatibleSignatures = MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, TRUE);
+                }
+
+                if (!compatibleSignatures)
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }

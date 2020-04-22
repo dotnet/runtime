@@ -119,7 +119,8 @@
   .method public hidebysig newslot virtual instance valuetype A  NonGenThroughGenOverride()
   {
     .override method instance class NonGenThroughGen4 class BaseType<!U,!V>::NonGenThroughGenFunc()
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -130,7 +131,8 @@
   .method public hidebysig newslot virtual instance valuetype A GenToNonGenOverride()
   {
     .override method instance class GenToNonGen3<!1,object> class BaseType<!U,!V>::GenToNonGen()
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -141,7 +143,8 @@
   .method public hidebysig newslot virtual instance valuetype GenStruct<int32,object> NewGenFunc1()
   {
     .override method instance class NonGenericDerived4 class BaseType<!U,!V>::MyGenFunc()
-    ldnull
+    .locals ( [0] valuetype GenStruct<int32,object> )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -152,7 +155,8 @@
   .method public hidebysig newslot virtual instance valuetype GenStruct<!U, class Dictionary<string,!V>> NewGenFunc1()
   {
     .override method instance class GenDerive3<!0,!1> class BaseType<!U,!V>::MyGenFunc()
-    ldnull
+    .locals ( [0] valuetype GenStruct<!U, class Dictionary<string,!V>> )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -163,7 +167,8 @@
   .method public hidebysig newslot virtual instance valuetype A NewFunc2()
   {
     .override method instance class C class BaseType<!U,!V>::MyFunc()
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }

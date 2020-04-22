@@ -1100,7 +1100,7 @@ private:
             Module**    ppBaseTypeTokenModule);
 
         //------------------------------------------------------------------
-        // Extract the base type's signature and stubstitution from the second type signature
+        // Extract the base type's signature and substitution from the second type signature
         // and recompare it with the first type's signature.
         //------------------------------------------------------------------
         static BOOL ComputeBaseTypeAndCompareElementType(

@@ -312,6 +312,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 .class public auto ansi beforefieldinit Invalid2<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -324,6 +325,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 .class public auto ansi beforefieldinit Invalid3<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -336,6 +338,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 .class public auto ansi beforefieldinit Invalid4<U,V> extends class GenMiddleType<!U,!V>
 {
@@ -348,6 +351,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 
 // ========================================================================================

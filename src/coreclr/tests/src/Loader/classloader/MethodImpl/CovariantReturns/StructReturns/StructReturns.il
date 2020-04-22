@@ -88,27 +88,32 @@
 {
   .method public hidebysig newslot virtual instance valuetype A MyFunc() 
   {
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig newslot virtual instance valuetype A GenToNonGen() 
   {
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig newslot virtual instance valuetype A NonGenThroughGenFunc() 
   {
-    ldnull
+    .locals ( [0] valuetype A )
+    ldloc.0
     ret
   }
   .method public hidebysig newslot virtual instance valuetype GenStruct<int32,object> MyGenFunc() 
   {
-    ldnull
+    .locals ( [0] valuetype GenStruct<int32,object> )
+    ldloc.0
     ret
   }
   .method public hidebysig newslot virtual instance valuetype GenStruct<!A, class Dictionary<string,!B>> MyGenFunc() 
   {
-    ldnull
+    .locals ( [0] valuetype GenStruct<!A, class Dictionary<string,!B>> )
+    ldloc.0
     ret
   }
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }

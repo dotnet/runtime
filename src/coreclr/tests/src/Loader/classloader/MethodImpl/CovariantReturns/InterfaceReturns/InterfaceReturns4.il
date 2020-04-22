@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 .assembly extern System.Console { }
+.assembly extern System.Runtime { }
 .assembly extern mscorlib { }
 .assembly InterfaceReturns { }
 
@@ -153,35 +154,40 @@
 {
   .method public static void RunTest1() noinlining 
   {
-    newobj     instance void class Test1<int32,object>::.ctor()
+    ldtoken    class Test1<int32,object>
+    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest2() noinlining 
   {
-    newobj     instance void class Test2<int32,object>::.ctor()
+    ldtoken    class Test2<int32,object>
+    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest3() noinlining 
   {
-    newobj     instance void class Test3<int32,object>::.ctor()
+    ldtoken    class Test3<int32,object>
+    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest4() noinlining 
   {
-    newobj     instance void class Test4<int32,object>::.ctor()
+    ldtoken    class Test4<int32,object>
+    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest5() noinlining 
   {
-    newobj     instance void class Test5<int32,object>::.ctor()
+    ldtoken    class Test5<int32,object>
+    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       void [System.Console]System.Console::WriteLine(object)
     ret
   }
