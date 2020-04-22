@@ -105,9 +105,6 @@ HRESULT EEConfig::Init()
 
     fGCBreakOnOOM = false;
     iGCconcurrent = 0;
-#ifdef _DEBUG
-    iGCLatencyMode = -1;
-#endif //_DEBUG
     iGCHoardVM = 0;
     iGCLOHThreshold = 0;
 
@@ -460,7 +457,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GcCoverage, (LPWSTR*)&pszGcCoverageOnMethod));
     pszGcCoverageOnMethod = NarrowWideChar((LPWSTR)pszGcCoverageOnMethod);
-    iGCLatencyMode = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCLatencyMode, iGCLatencyMode);
 #endif
 
     bool gcConcurrentWasForced = false;

@@ -403,9 +403,6 @@ public:
 
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
     void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT; iGCconcurrent = val;  }
-#ifdef _DEBUG
-    int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT; return iGCLatencyMode; }
-#endif //_DEBUG
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
     DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
 
@@ -670,9 +667,6 @@ private: //----------------------------------------------------------------
 #endif
 
     int  iGCconcurrent;
-#ifdef _DEBUG
-    int  iGCLatencyMode;
-#endif //_DEBUG
     int  iGCHoardVM;
     DWORD iGCLOHThreshold;
 
