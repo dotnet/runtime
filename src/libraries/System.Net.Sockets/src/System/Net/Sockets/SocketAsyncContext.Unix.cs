@@ -829,10 +829,9 @@ namespace System.Net.Sockets
                 }
             }
 
-            // Called on the epoll thread whenever we receive an epoll notification.
-            public void HandleEvent(SocketAsyncContext context)
+            /// <returns>An operation that should be processed, or null if no further processing is required</returns>
+            public AsyncOperation? HandleEvent(SocketAsyncContext context)
             {
-                AsyncOperation op;
                 using (Lock())
                 {
                     Trace(context, $"Enter");
@@ -843,34 +842,29 @@ namespace System.Net.Sockets
                             Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (previously ready)");
-                            return;
+                            return null;
 
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
                             _state = QueueState.Processing;
-                            op = _tail.Next;
-                            // Break out and release lock
-                            break;
+                            return _tail.Next;
 
                         case QueueState.Processing:
                             Debug.Assert(_tail != null, "State == Processing but queue is empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (currently processing)");
-                            return;
+                            return null;
 
                         case QueueState.Stopped:
                             Debug.Assert(_tail == null);
                             Trace(context, $"Exit (stopped)");
-                            return;
+                            return null;
 
                         default:
                             Environment.FailFast("unexpected queue state");
-                            return;
+                            return null;
                     }
                 }
-
-                // Dispatch the op so we can try to process it.
-                op.Dispatch(inlineAsync: true);
             }
 
             internal void ProcessAsyncOperation(TOperation op)
@@ -1959,14 +1953,18 @@ namespace System.Net.Sockets
                 events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
             }
 
-            if ((events & Interop.Sys.SocketEvents.Read) != 0)
+            AsyncOperation? receiveOperation =
+                (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.HandleEvent(this) : null;
+            AsyncOperation? sendOperation =
+                (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.HandleEvent(this) : null;
+            if (sendOperation == null)
             {
-                _receiveQueue.HandleEvent(this);
+                receiveOperation?.Dispatch(inlineAsync: true);
             }
-
-            if ((events & Interop.Sys.SocketEvents.Write) != 0)
+            else
             {
-                _sendQueue.HandleEvent(this);
+                receiveOperation?.Dispatch(inlineAsync: false);
+                sendOperation.Dispatch(inlineAsync: true);
             }
         }
 
