@@ -742,6 +742,30 @@ INST2(mls,     "mls",    0, 0, IF_EN2M,   0x2E209400,  0x2F004000)
                                    //  mls     Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 100101nnnnnddddd   2E20 9400   Vd,Vn,Vm   (vector)
                                    //  mls     Vd,Vn,Vm[]           DV_3AI 0Q101111XXLMmmmm 0100H0nnnnnddddd   2F00 4000   Vd,Vn,Vm[] (vector by elem)
 
+INST2(smlal,   "smlal",  0, 0, IF_EN2R,   0x0E208000,  0x0F002000)
+                                   // C7.2.267 SMLAL, SMLAL2 (by element)
+                                   // C7.2.268 SMLAL, SMLAL2 (vector)
+                                   //  smlal     Vd,Vn,Vm           DV_3H  00001110XX1mmmmm 100000nnnnnddddd   0E20 8000   Vd,Vn,Vm   (vector)
+                                   //  smlal     Vd,Vn,Vm[]         DV_3HI 00001111XXLMmmmm 0010H0nnnnnddddd   0F00 2000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(smlal2,  "smlal2", 0, 0, IF_EN2R,   0x4E208000,  0x4F002000)
+                                   // C7.2.267 SMLAL, SMLAL2 (by element)
+                                   // C7.2.268 SMLAL, SMLAL2 (vector)
+                                   //  smlal2     Vd,Vn,Vm          DV_3H  01001110XX1mmmmm 100000nnnnnddddd   4E20 8000   Vd,Vn,Vm   (vector)
+                                   //  smlal2     Vd,Vn,Vm[]        DV_3HI 01001111XXLMmmmm 0010H0nnnnnddddd   4F00 2000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(umlal,   "umlal",  0, 0, IF_EN2R,   0x2E208000,  0x2F002000)
+                                   // C7.2.357 UMLAL, UMLAL2 (by element)
+                                   // C7.2.358 UMLAL, UMLAL2 (vector)
+                                   //  umlal     Vd,Vn,Vm           DV_3H  00101110XX1mmmmm 100000nnnnnddddd   2E20 8000   Vd,Vn,Vm   (vector)
+                                   //  umlal     Vd,Vn,Vm[]         DV_3HI 00101111XXLMmmmm 0010H0nnnnnddddd   2F00 2000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(umlal2,  "umlal2", 0, 0, IF_EN2R,   0x6E208000,  0x6F002000)
+                                   // C7.2.357 UMLAL, UMLAL2 (by element)
+                                   // C7.2.358 UMLAL, UMLAL2 (vector)
+                                   //  umlal2     Vd,Vn,Vm          DV_3H  01101110XX1mmmmm 100000nnnnnddddd   6E20 8000   Vd,Vn,Vm   (vector)
+                                   //  umlal2     Vd,Vn,Vm[]        DV_3HI 01101111XXLMmmmm 0010H0nnnnnddddd   6F00 2000   Vd,Vn,Vm[] (vector by elem)
+
 //    enum     name     FP LD/ST            DV_2N        DV_2O
 INST2(sshr,    "sshr",   0, 0, IF_EN2N,   0x5F000400,  0x0F000400)
                                    //  sshr    Vd,Vn,imm            DV_2N  010111110iiiiiii 000001nnnnnddddd   5F00 0400   Vd Vn imm  (shift - scalar)
