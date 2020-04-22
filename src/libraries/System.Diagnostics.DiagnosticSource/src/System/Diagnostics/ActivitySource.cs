@@ -20,7 +20,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
-        public ActivitySource(string name, string version = "")
+        public ActivitySource(string name, string? version = "")
         {
             if (name == null)
             {
@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the ActivitySource version.
         /// </summary>
-        public string Version { get; }
+        public string? Version { get; }
 
         /// <summary>
         /// Check if there is any listeners for this ActivitySource.
@@ -228,13 +228,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => {
-                    var activityStarted = listener.ActivityStarted;
-                    if (activityStarted != null)
-                    {
-                        activityStarted(activity);
-                    }
-                });
+                listeners.EnumWithAction(listener => listener.ActivityStarted?.Invoke(activity));
             }
         }
 
@@ -247,11 +241,7 @@ namespace System.Diagnostics
             if (listeners != null &&  listeners.Count > 0)
             {
                 listeners.EnumWithAction(listener => {
-                    var activityStopped = listener.ActivityStopped;
-                    if (activityStopped != null)
-                    {
-                        activityStopped(activity);
-                    }
+                    listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
                 });
             }
         }

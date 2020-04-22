@@ -97,9 +97,9 @@ namespace System.Diagnostics
     }
     public sealed class ActivitySource : IDisposable
     {
-        public ActivitySource(string name, string version = "") { throw null; }
+        public ActivitySource(string name, string? version = "") { throw null; }
         public string Name { get { throw null; } }
-        public string Version { get { throw null; } }
+        public string? Version { get { throw null; } }
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind = ActivityKind.Internal)  { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
