@@ -8,8 +8,6 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal class ManagedQuicListener : QuicListenerProvider
     {
-        private readonly IPEndPoint _listenEndPoint;
-
         private readonly ChannelReader<ManagedQuicConnection> _acceptQueue;
 
         private readonly QuicListenerOptions _options;
@@ -18,7 +16,7 @@ namespace System.Net.Quic.Implementations.Managed
         public ManagedQuicListener(QuicListenerOptions options)
         {
             _options = options;
-            _listenEndPoint = options.ListenEndPoint!;
+            var listenEndPoint = options.ListenEndPoint ?? new IPEndPoint(IPAddress.Any, 0);
 
             var channel = Channel.CreateBounded<ManagedQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
             {
@@ -26,10 +24,10 @@ namespace System.Net.Quic.Implementations.Managed
             });
 
             _acceptQueue = channel.Reader;
-            _socketContext = new QuicServerSocketContext(_listenEndPoint, options, channel.Writer);
+            _socketContext = new QuicServerSocketContext(listenEndPoint, options, channel.Writer);
         }
 
-        internal override IPEndPoint ListenEndPoint => new IPEndPoint(_listenEndPoint.Address, _listenEndPoint.Port);
+        internal override IPEndPoint ListenEndPoint => _socketContext.LocalEndPoint;
 
 
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(

@@ -1,21 +1,23 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionIdCollection
     {
-        private readonly List<ConnectionId> _connectionIds;
+        private ImmutableList<ConnectionId> _connectionIds;
 
         public ConnectionIdCollection()
         {
-            _connectionIds = new List<ConnectionId>();
+            _connectionIds = ImmutableList<ConnectionId>.Empty;
         }
 
         public void Add(ConnectionId connectionId)
         {
-            foreach (var id in _connectionIds)
+            var list = _connectionIds;
+            foreach (var id in list)
             {
                 if (id.Data.AsSpan().StartsWith(connectionId.Data))
                 {
@@ -23,7 +25,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
             }
 
-            _connectionIds.Add(connectionId);
+            _connectionIds = _connectionIds.Add(connectionId);
         }
 
         /// <summary>
@@ -31,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="dcidSpan"></param>
         /// <returns></returns>
-        public ConnectionId? FindConnectionId(in ReadOnlySpan<byte> dcidSpan)
+        public ConnectionId? Find(in ReadOnlySpan<byte> dcidSpan)
         {
             // TODO-RZ Aho-Corassick might be more efficient
             foreach (var connectionId in _connectionIds)
@@ -43,6 +45,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             return null;
+        }
+
+        public void Remove(ConnectionId connectionId)
+        {
+            _connectionIds = _connectionIds.Remove(connectionId);
         }
     }
 }

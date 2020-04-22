@@ -139,10 +139,10 @@ namespace System.Net.Quic.Implementations.Managed
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
-            var localEndpoint = options.LocalEndPoint ?? new IPEndPoint(_remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
+            var listenEndPoint = options.LocalEndPoint ?? new IPEndPoint(_remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
                 ? IPAddress.Any
                 : IPAddress.IPv6Any, 0);
-            _socketContext = new QuicClientSocketContext(localEndpoint, this);
+            _socketContext = new SingleConnectionSocketContext(listenEndPoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
             _tls = new Tls(_gcHandle, options, _localTransportParameters);
@@ -710,6 +710,12 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
+            // make sure the background thread no longer touches this connection
+            if (_socketContext.DetachConnection(this))
+            {
+                _socketContext.Dispose();
+            }
+
             _tls.Dispose();
             _gcHandle.Free();
             _disposed = true;
@@ -814,9 +820,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override bool Connected => HandshakeConfirmed;
 
-        internal override IPEndPoint LocalEndPoint => _clientOpts!.LocalEndPoint!;
+        internal override IPEndPoint LocalEndPoint => _socketContext.LocalEndPoint;
 
-        internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
+        internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndpoint.Address, _remoteEndpoint.Port);
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {

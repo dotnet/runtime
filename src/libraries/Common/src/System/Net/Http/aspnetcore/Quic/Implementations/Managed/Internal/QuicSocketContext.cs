@@ -1,6 +1,8 @@
 #nullable enable
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Sockets;
@@ -13,24 +15,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal sealed class QuicServerSocketContext : QuicSocketContext
     {
         private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
-        private readonly QuicListenerOptions? _listenerOptions;
-        private readonly Dictionary<ConnectionId, ManagedQuicConnection> _connections;
-        private readonly ConnectionIdCollection? _connectionIds;
+        private readonly QuicListenerOptions _listenerOptions;
+        private ImmutableDictionary<ConnectionId, ManagedQuicConnection> _connections;
+        private readonly ConnectionIdCollection _connectionIds;
 
-        internal QuicServerSocketContext(IPEndPoint localEndpoint, QuicListenerOptions listenerOptions,
+        internal QuicServerSocketContext(IPEndPoint? listenEndpoint, QuicListenerOptions listenerOptions,
             ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
-            : base(localEndpoint)
+            : base(listenEndpoint)
         {
             _newConnections = newConnectionsWriter;
             _listenerOptions = listenerOptions;
 
-            _connections = new Dictionary<ConnectionId, ManagedQuicConnection>();
+            _connections = ImmutableDictionary<ConnectionId, ManagedQuicConnection>.Empty;
             _connectionIds = new ConnectionIdCollection();
         }
 
         private ManagedQuicConnection? DispatchPacket(QuicReader reader, IPEndPoint remoteEp)
         {
             ManagedQuicConnection? connection;
+
             // we need to dispatch packets to appropriate connection based on the connection Id, so we need to parse the headers
             byte first = reader.Peek();
             if (HeaderHelpers.IsLongHeader(first))
@@ -41,28 +44,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     return null;
                 }
 
-                var connectionId = _connectionIds!.FindConnectionId(header.DestinationConnectionId);
+                var connectionId = _connectionIds!.Find(header.DestinationConnectionId);
                 if (connectionId == null)
                 {
                     connectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
-                    _connectionIds!.Add(connectionId!);
+                    _connectionIds.Add(connectionId!);
                 }
 
-                if (!_connections!.TryGetValue(connectionId!, out connection))
+                // TODO-RZ: there is a data race with Detach() method
+                if (!_connections.TryGetValue(connectionId!, out connection))
                 {
-                    connection = _connections![connectionId!] =
-                        new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
+                    connection = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
+                    _connections = _connections.Add(connectionId!, connection);
                 }
             }
             else
             {
-                if (!ShortPacketHeader.Read(reader, _connectionIds!, out var header))
+                if (!ShortPacketHeader.Read(reader, _connectionIds!, out var header) ||
+                    !_connections.TryGetValue(header.DestinationConnectionId, out connection))
                 {
-                    // drop packet
+                    // either unknown connection or the connection is connection not associated with this context
+                    // anymore
                     return null;
                 }
-
-                connection = _connections![header.DestinationConnectionId];
             }
 
             reader.Seek(0);
@@ -102,42 +106,59 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 await SendAsync(connection);
             }
         }
+
+        internal override bool DetachConnection(ManagedQuicConnection connection)
+        {
+            _connectionIds.Remove(connection.DestinationConnectionId!);
+
+            // TODO-RZ: Data race with socket thread
+            _connections = _connections.Remove(connection.DestinationConnectionId!);
+            return _connections.IsEmpty;
+        }
     }
 
-    internal sealed class QuicClientSocketContext : QuicSocketContext
+    internal sealed class SingleConnectionSocketContext : QuicSocketContext
     {
-        private readonly ManagedQuicConnection _client;
+        private readonly ManagedQuicConnection _connection;
 
-        internal QuicClientSocketContext(IPEndPoint localEndpoint, ManagedQuicConnection clientConnection)
-            : base(localEndpoint)
+        internal SingleConnectionSocketContext(IPEndPoint listenEndpoint, ManagedQuicConnection connection)
+            : base(listenEndpoint)
         {
-            _client = clientConnection;
+            _connection = connection;
         }
 
         protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
         {
-            _client.ReceiveData(reader, sender, Timestamp.Now);
-            return SendAsync(_client);
+            _connection.ReceiveData(reader, sender, Timestamp.Now);
+            return SendAsync(_connection);
         }
 
         protected override async Task OnSignal()
         {
-             await SendAsync(_client);
+             await SendAsync(_connection);
         }
 
         protected override Task OnTimeout()
         {
-            _client.OnTimeout(Timestamp.Now);
-            return SendAsync(_client);
+            _connection.OnTimeout(Timestamp.Now);
+            return SendAsync(_connection);
+        }
+
+        internal override bool DetachConnection(ManagedQuicConnection connection)
+        {
+            Debug.Assert(connection == _connection);
+            // only one connection, so we can stop the background worker
+            Stop();
+            return true;
         }
     }
 
     /// <summary>
     ///     Class responsible for serving a socket for QUIC connections.
     /// </summary>
-    internal abstract class QuicSocketContext
+    internal abstract class QuicSocketContext : IDisposable
     {
-        protected readonly IPEndPoint _localEndpoint;
+        protected readonly IPEndPoint _listenEndpoint;
         protected readonly CancellationTokenSource _socketTaskCts;
 
         protected TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
@@ -147,7 +168,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected QuicReader _reader;
         protected QuicWriter _writer;
 
-        private readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
+        private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
         private Task _timeoutTask;
         private long _currentTimeout = long.MaxValue;
 
@@ -158,9 +179,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
-        protected QuicSocketContext(IPEndPoint localEndpoint)
+        protected QuicSocketContext(IPEndPoint listenEndpoint)
         {
-            _localEndpoint = localEndpoint;
+            _listenEndpoint = listenEndpoint;
 
             _socketTaskCts = new CancellationTokenSource();
             _timeoutTask = _infiniteTimeoutTask;
@@ -169,14 +190,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _writer = new QuicWriter(_sendBuffer);
         }
 
+        public IPEndPoint LocalEndPoint => (IPEndPoint) _socket.LocalEndPoint;
+
         internal void Start()
         {
             Debug.Assert(_backgroundWorkerTask == null);
-            if (_localEndpoint != null)
-            {
-                _socket.Bind(_localEndpoint);
-            }
+            _socket.Bind(_listenEndpoint);
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
+        }
+
+        internal void Stop()
+        {
+            _socketTaskCts.Cancel();
+            _backgroundWorkerTask!.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -223,7 +249,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             var token = _socketTaskCts.Token;
 
             Task<SocketReceiveFromResult> socketReceiveTask =
-                _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _localEndpoint);
+                _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
 
             _waitingTasks[0] = socketReceiveTask;
             _waitingTasks[1] = _signalTcs.Task;
@@ -249,7 +275,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                         // start new receiving task
                         _waitingTasks[0] = socketReceiveTask =
-                            _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _localEndpoint);
+                            _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
                     }
 
                     if (_signalTcs.Task.IsCompleted)
@@ -275,6 +301,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal void Close()
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        ///     Detaches the given connection from this context, the connection will no longer be updated from the
+        ///     thread running at this socket.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns>
+        ///     Returns true if there are no more connections attached to this context, and the
+        ///     context can be disposed.
+        /// </returns>
+        internal abstract bool DetachConnection(ManagedQuicConnection connection);
+
+        public void Dispose()
+        {
+            Stop();
+            // _socketTaskCts.Dispose();
+            _backgroundWorkerTask?.Dispose();
+            // _timeoutTask.Dispose();
+            _socket.Dispose();
         }
     }
 }
