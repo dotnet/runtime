@@ -314,7 +314,7 @@ namespace System.IO
         /// Like the current NormalizePath this will not try and analyze periods/spaces within directory segments.
         /// </summary>
         /// <remarks>
-        /// The only callers that used to use Path.Normalize(fullCheck=false) were Path.GetDirectoryName() and Path.GetPathRoot(). Both usages do
+        /// The only callers that used to use Path.Normalize(fullCheck=false) were Path.GetDirectoryName() and Path.GetPathRoot(string). Both usages do
         /// not need trimming of trailing whitespace here.
         ///
         /// GetPathRoot() could technically skip normalizing separators after the second segment- consider as a future optimization.
@@ -341,6 +341,22 @@ namespace System.IO
             if (string.IsNullOrEmpty(path))
                 return path;
 
+            Span<char> destination = stackalloc char[path.Length];
+            if (!TryNormalizeDirectorySeparators(path.AsSpan(), destination, out int charsWritten))
+            {
+                return path;
+            }
+
+            return destination.Slice(0, charsWritten).ToString();
+        }
+
+        internal static bool TryNormalizeDirectorySeparators(ReadOnlySpan<char> path, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+
+            if (IsEffectivelyEmpty(path))
+                return false;
+
             char current;
 
             // Make a pass to see if we need to normalize so we can potentially skip allocating
@@ -360,7 +376,7 @@ namespace System.IO
             }
 
             if (normalized)
-                return path;
+                return false;
 
             var builder = new ValueStringBuilder(stackalloc char[MaxShortPath]);
 
@@ -391,7 +407,7 @@ namespace System.IO
                 builder.Append(current);
             }
 
-            return builder.ToString();
+            return builder.TryCopyTo(destination, out charsWritten);
         }
 
         /// <summary>
@@ -411,5 +427,6 @@ namespace System.IO
             }
             return true;
         }
+
     }
 }

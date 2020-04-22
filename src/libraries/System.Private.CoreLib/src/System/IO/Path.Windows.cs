@@ -213,11 +213,18 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return null;
 
-            ReadOnlySpan<char> result = GetPathRoot(path.AsSpan());
-            if (path!.Length == result.Length)
-                return PathInternal.NormalizeDirectorySeparators(path);
+            int rootLength = PathInternal.GetRootLength(path.AsSpan());
+            if (rootLength <= 0)
+                return null;
 
-            return PathInternal.NormalizeDirectorySeparators(result.ToString());
+            Span<char> destination = stackalloc char[rootLength];
+            // Fails when path already normalized (or empty, but won't happen here)
+            if (PathInternal.TryNormalizeDirectorySeparators(path.AsSpan(0, rootLength), destination, out int charsWritten))
+            {
+                return destination.Slice(0, charsWritten).ToString();
+            }
+            // Reaching here means the path was already normalized
+            return path!.Substring(0, rootLength);
         }
 
         /// <remarks>
@@ -228,8 +235,8 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path))
                 return ReadOnlySpan<char>.Empty;
 
-            int pathRoot = PathInternal.GetRootLength(path);
-            return pathRoot <= 0 ? ReadOnlySpan<char>.Empty : path.Slice(0, pathRoot);
+            int rootLength = PathInternal.GetRootLength(path);
+            return rootLength <= 0 ? ReadOnlySpan<char>.Empty : path.Slice(0, rootLength);
         }
 
         /// <summary>Gets whether the system is case-sensitive.</summary>

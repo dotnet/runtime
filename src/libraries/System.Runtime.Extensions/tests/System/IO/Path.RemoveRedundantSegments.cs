@@ -437,6 +437,7 @@ namespace System.IO.Tests
         [MemberData(nameof(WindowsValidCurrentDirectoryData))]
         [MemberData(nameof(WindowsCombinedRedundantData))]
         [MemberData(nameof(WindowsDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsValid_Span(string path, string expected)
         {
             foreach (string prefix in s_Prefixes)

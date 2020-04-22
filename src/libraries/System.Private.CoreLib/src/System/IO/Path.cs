@@ -107,7 +107,18 @@ namespace System.IO
                 return null;
 
             int end = GetDirectoryNameOffset(path.AsSpan());
-            return end >= 0 ? PathInternal.NormalizeDirectorySeparators(path.Substring(0, end)) : null;
+
+            if (end >= 0)
+            {
+                Span<char> destination = stackalloc char[end];
+                // Fails when empty or already normalized
+                if (PathInternal.TryNormalizeDirectorySeparators(path.AsSpan(0, end), destination, out int charsWritten))
+                {
+                    return destination.Slice(0, charsWritten).ToString();
+                }
+                return path.Substring(0, end);
+            }
+            return null;
         }
 
         /// <summary>
