@@ -413,25 +413,14 @@ namespace System.Text.Json
             return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
         }
 
+        private static bool IsByRefLike(Type type)
+        {
 #if BUILDING_INBOX_LIBRARY
-        private static bool IsByRefLike(Type type)
-        {
             return type.IsByRefLike;
-        }
 #else
-        private static readonly PropertyInfo? s_isByRefLikePropertyInfo = typeof(Type).GetProperty("IsByRefLike");
-
-        private static bool IsByRefLike(Type type)
-        {
             if (!type.IsValueType)
             {
                 return false;
-            }
-
-            if (s_isByRefLikePropertyInfo != null)
-            {
-                //return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
-                throw new NotSupportedException();
             }
 
             object[] attributes = type.GetCustomAttributes(inherit: false);
@@ -445,7 +434,7 @@ namespace System.Text.Json
             }
 
             return false;
-        }
 #endif
+        }
     }
 }
