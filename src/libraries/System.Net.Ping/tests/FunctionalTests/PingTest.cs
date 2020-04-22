@@ -140,7 +140,7 @@ namespace System.Net.NetworkInformation.Tests
             }
 
             SendBatchPing(
-                (ping) => ping.Send(localIpAddress),
+                (ping) => ping.Send(localIpAddress, 10000),
                 (pingReply) =>
                 {
                     PingResultValidator(pingReply, localIpAddress);
