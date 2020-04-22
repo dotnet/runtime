@@ -13720,7 +13720,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
                         bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
-                        if (fgVarNeedsExplicitZeroInit(lvaGetDesc(lclNum), bbInALoop, bbIsReturn))
+                        LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                        if (fgVarNeedsExplicitZeroInit(lclDsc, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
                             newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
@@ -13730,6 +13731,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                            false,            // isVolatile
                                                            false);           // not copyBlock
                             impAppendTree(newObjThisPtr, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+                        }
+                        else
+                        {
+                            JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+                            lclDsc->lvSuppressedZeroInit = 1;
+                            compSuppressedZeroInit       = true;
                         }
 
                         // Obtain the address of the temp
