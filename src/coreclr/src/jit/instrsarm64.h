@@ -513,6 +513,22 @@ INST3(ld4r,    "ld4r",   0,LD, IF_EN3J,   0x0D60E000,  0x0DE0E000,  0x0DFFE000)
                                    //  ld4r    {Vt-Vt4},[Xn],Xm     LS_3F  0Q001101111mmmmm 1110ssnnnnnttttt   0DE0 E000   post-indexed by a register
                                    //  ld4r    {Vt-Vt4},[Xn],#8     LS_2E  0Q00110111111111 1110ssnnnnnttttt   0DFF E000   post-indexed by an immediate
 
+INST3(smull,   "smull",  0, 0, IF_EN3K,   0x9B207C00,  0x0E20C000,  0x0F00A000)
+                                   // C6.2.243 SMULL
+                                   // C7.2.272 SMULL, SMULL2 (by element)
+                                   // C7.2.273 SMULL, SMULL2 (vector)
+                                   //  smull   Rd,Rn,Rm             DR_3A  10011011001mmmmm 011111nnnnnddddd   9B20 7C00
+                                   //  smull   Vd,Vn,Vm             DV_3H  0000111000100000 1100000000000000   0E20 C000   Vd,Vn,Vm   (vector)
+                                   //  smull   Vd,Vn,Vm[]           DV_3HI 00001111XXLMmmmm 1010H0nnnnnddddd   0F00 A000   Vd,Vn,Vm[] (vector by elem)
+
+INST3(umull,   "umull",  0, 0, IF_EN3K,   0x9BA07C00,  0x2E20C000,  0x2F00A000)
+                                   // C6.2.340 UMULL
+                                   // C7.2.362 UMULL, UMULL2 (by element)
+                                   // C7.2.363 UMULL, UMULL2 (vector)
+                                   //  umull   Rd,Rn,Rm             DR_3A  10011011101mmmmm 011111nnnnnddddd   9BA0 7C00
+                                   //  umull   Vd,Vn,Vm             DV_3H  00101110XX1mmmmm 110000nnnnnddddd   2E20 C000   Vd,Vn,Vm   (vector)
+                                   //  umull   Vd,Vn,Vm[]           DV_3HI 00101111XXLMmmmm 1010H0nnnnnddddd   2F00 A000   Vd,Vn,Vm[] (vector by elem)
+
 //    enum     name     FP LD/ST            DR_2E        DR_2F
 INST2(negs,    "negs",   0, 0, IF_EN2A,   0x6B0003E0,  0x6B0003E0)
                                    //  negs    Rd,Rm                DR_2E  X1101011000mmmmm 00000011111ddddd   6B00 03E0
@@ -1277,9 +1293,6 @@ INST1(madd,    "madd",   0, 0, IF_DR_4A,  0x1B000000)
 INST1(msub,    "msub",   0, 0, IF_DR_4A,  0x1B008000)
                                    //  msub    Rd,Rn,Rm,Ra          DR_4A  X0011011000mmmmm 1aaaaannnnnddddd   1B00 8000
 
-INST1(smull,   "smull",  0, 0, IF_DR_3A,  0x9B207C00)
-                                   //  smull   Rd,Rn,Rm             DR_3A  10011011001mmmmm 011111nnnnnddddd   9B20 7C00
-
 INST1(smaddl,  "smaddl", 0, 0, IF_DR_4A,  0x9B200000)
                                    //  smaddl  Rd,Rn,Rm,Ra          DR_4A  10011011001mmmmm 0aaaaannnnnddddd   9B20 0000
 
@@ -1291,9 +1304,6 @@ INST1(smsubl,  "smsubl", 0, 0, IF_DR_4A,  0x9B208000)
 
 INST1(smulh,   "smulh",  0, 0, IF_DR_3A,  0x9B407C00)
                                    //  smulh   Rd,Rn,Rm             DR_3A  10011011010mmmmm 011111nnnnnddddd   9B40 7C00
-
-INST1(umull,   "umull",  0, 0, IF_DR_3A,  0x9BA07C00)
-                                   //  umull   Rd,Rn,Rm             DR_3A  10011011101mmmmm 011111nnnnnddddd   9BA0 7C00
 
 INST1(umaddl,  "umaddl", 0, 0, IF_DR_4A,  0x9BA00000)
                                    //  umaddl  Rd,Rn,Rm,Ra          DR_4A  10011011101mmmmm 0aaaaannnnnddddd   9BA0 0000
