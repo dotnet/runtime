@@ -102,7 +102,8 @@ namespace System.Text.Json
                 throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidType, type));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyInfo!.Name, parentClassType));
+            Debug.Assert(propertyInfo != null);
+            throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyInfo.Name, parentClassType));
         }
 
         [DoesNotReturn]
