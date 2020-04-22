@@ -1779,16 +1779,13 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    emitAttr    attr = emitActualTypeSize(targetType);
-    instruction ins  = ins_Load(targetType);
-
 #ifdef TARGET_ARM
     if (tree->IsOffsetMisaligned())
     {
         // Arm supports unaligned access only for integer types,
         // load the floating data as 1 or 2 integer registers and convert them to float.
         regNumber addr = tree->ExtractTempReg();
-        emit->emitIns_R_S(INS_lea, attr, addr, varNum, offs);
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offs);
 
         if (targetType == TYP_FLOAT)
         {
@@ -1804,12 +1801,12 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
             emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt2, addr, 4);
             emit->emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, targetReg, halfdoubleAsInt1, halfdoubleAsInt2);
         }
-
-        emit->emitIns_R_R(ins, attr, targetReg, addr);
     }
     else
 #endif // TARGET_ARM
     {
+        emitAttr    attr = emitActualTypeSize(targetType);
+        instruction ins  = ins_Load(targetType);
         emit->emitIns_R_S(ins, attr, targetReg, varNum, offs);
     }
 

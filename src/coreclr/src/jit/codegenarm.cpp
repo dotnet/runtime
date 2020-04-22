@@ -999,7 +999,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
     GenTree* data = tree->gtOp1;
-    emitAttr attr = emitTypeSize(targetType);
 
     assert(!data->isContained());
     genConsumeReg(data);
@@ -1009,7 +1008,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         // Arm supports unaligned access only for integer types,
         // convert the storing floating data into 1 or 2 integer registers and write them as int.
         regNumber addr = tree->ExtractTempReg();
-        emit->emitIns_R_S(INS_lea, attr, addr, varNum, offset);
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
         if (targetType == TYP_FLOAT)
         {
             regNumber floatAsInt = tree->GetSingleTempReg();
@@ -1027,7 +1026,8 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     else
     {
-        instruction ins = ins_Store(targetType);
+        emitAttr    attr = emitTypeSize(targetType);
+        instruction ins  = ins_Store(targetType);
         emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
     }
 
