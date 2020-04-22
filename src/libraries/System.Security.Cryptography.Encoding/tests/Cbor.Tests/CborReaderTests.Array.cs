@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "98190102030405060708090a0b0c0d0e0f101112131415161718181819")]
         [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "840120604107")]
         [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "83656c6f72656d65697073756d65646f6c6f72")]
+        [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "84f4f6faffc00000fb7ff0000000000000")]
         public static void ReadArray_SimpleValues_HappyPath(object[] expectedValues, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -48,6 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff")]
         [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "9f0120604107ff")]
         [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "9f656c6f72656d65697073756d65646f6c6f72ff")]
+        [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "9ff4f6faffc00000fb7ff0000000000000ff")]
         public static void ReadArray_IndefiniteLength_HappyPath(object[] expectedValues, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();

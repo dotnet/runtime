@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_QuerySid_TestData))]
-        public void Ctor_QuerySid_TestData(SecurityIdentifier querySid, byte[] expectedValue)
+        public void Ctor_QuerySid_Test(SecurityIdentifier querySid, byte[] expectedValue)
         {
             var control = new QuotaControl(querySid);
             Assert.True(control.IsCritical);

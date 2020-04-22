@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="$(TargetOS) == 'Windows_NT'">WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CallbackStressTest.cs" />
+    <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+</Project>

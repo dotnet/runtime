@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(Parse_WithinRange_Signed))]
-        public static void Parse_WithinRange_ReturnsExpected(object expected, long value, string name)
+        public static void Parse_WithinRange_Signed_ReturnsExpected(object expected, long value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
             SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);
@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(Parse_WithinRange_Unsigned))]
-        public static void Parse_WithinRange_ReturnsExpected(object expected, ulong value, string name)
+        public static void Parse_WithinRange_Unsigned_ReturnsExpected(object expected, ulong value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
             SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);

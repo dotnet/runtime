@@ -281,19 +281,7 @@ CHARARRAYREF AllocateCharArray(DWORD dwArrayLength)
     return (CHARARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_CHAR, dwArrayLength);
 }
 
-void Object::ValidatePromote(ScanContext *sc, DWORD flags)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-
-#if defined (VERIFY_HEAP)
-    Validate();
-#endif
-}
-
-void Object::ValidateHeap(Object *from, BOOL bDeep)
+void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

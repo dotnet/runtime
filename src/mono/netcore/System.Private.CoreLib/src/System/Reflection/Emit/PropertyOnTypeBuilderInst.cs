@@ -27,7 +27,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -66,10 +65,10 @@ namespace System.Reflection.Emit
 
         public override Type PropertyType
         {
-            get { return instantiation.InflateType(prop.PropertyType); }
+            get { return instantiation.InflateType(prop.PropertyType)!; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return instantiation.InflateType(prop.DeclaringType); }
         }
@@ -86,8 +85,8 @@ namespace System.Reflection.Emit
 
         public override MethodInfo[] GetAccessors(bool nonPublic)
         {
-            MethodInfo getter = GetGetMethod(nonPublic);
-            MethodInfo setter = GetSetMethod(nonPublic);
+            MethodInfo? getter = GetGetMethod(nonPublic);
+            MethodInfo? setter = GetSetMethod(nonPublic);
 
             int methods = 0;
             if (getter != null)
@@ -107,9 +106,9 @@ namespace System.Reflection.Emit
         }
 
 
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
-            MethodInfo mi = prop.GetGetMethod(nonPublic);
+            MethodInfo? mi = prop.GetGetMethod(nonPublic);
             if (mi != null && prop.DeclaringType == instantiation.generic_type)
             {
                 mi = TypeBuilder.GetMethod(instantiation, mi);
@@ -119,16 +118,16 @@ namespace System.Reflection.Emit
 
         public override ParameterInfo[] GetIndexParameters()
         {
-            MethodInfo method = GetGetMethod(true);
+            MethodInfo? method = GetGetMethod(true);
             if (method != null)
                 return method.GetParameters();
 
             return Array.Empty<ParameterInfo>();
         }
 
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
-            MethodInfo mi = prop.GetSetMethod(nonPublic);
+            MethodInfo? mi = prop.GetSetMethod(nonPublic);
             if (mi != null && prop.DeclaringType == instantiation.generic_type)
             {
                 mi = TypeBuilder.GetMethod(instantiation, mi);
@@ -141,12 +140,12 @@ namespace System.Reflection.Emit
             return string.Format("{0} {1}", PropertyType, Name);
         }
 
-        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }

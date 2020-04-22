@@ -76,7 +76,7 @@ if (GEN_SHARED_LIB)
         dl
     )
 
-    install_library_and_symbols (System.Globalization.Native)
+    install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
 add_library(System.Globalization.Native-Static
@@ -88,7 +88,7 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

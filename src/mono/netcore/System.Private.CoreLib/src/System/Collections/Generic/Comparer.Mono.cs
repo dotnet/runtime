@@ -9,13 +9,13 @@ namespace System.Collections.Generic
 {
     public partial class Comparer<T>
     {
-        private static volatile Comparer<T> defaultComparer;
+        private static volatile Comparer<T>? defaultComparer;
 
         public static Comparer<T> Default
         {
             get
             {
-                Comparer<T> comparer = defaultComparer;
+                Comparer<T>? comparer = defaultComparer;
                 if (comparer == null)
                 {
                     // Do not use static constructor. Generic static constructors are problematic for Mono AOT.

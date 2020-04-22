@@ -35,7 +35,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(ConstructorInfo constructorInfo1, ConstructorInfo constructorInfo2, bool expected)
+        public void EqualsTest(ConstructorInfo constructorInfo1, ConstructorInfo constructorInfo2, bool expected)
         {
             Assert.Equal(expected, constructorInfo1.Equals(constructorInfo2));
             Assert.NotEqual(expected, constructorInfo1 != constructorInfo2);

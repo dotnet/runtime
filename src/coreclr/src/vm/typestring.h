@@ -32,22 +32,6 @@ class TypeString;
 
 class TypeNameBuilder
 {
-public:
-    static void QCALLTYPE _ReleaseTypeNameBuilder(TypeNameBuilder * pTnb);
-    static TypeNameBuilder * QCALLTYPE _CreateTypeNameBuilder();
-    static void QCALLTYPE _OpenGenericArguments(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _CloseGenericArguments(TypeNameBuilder *pTnb);
-    static void QCALLTYPE _OpenGenericArgument(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _CloseGenericArgument(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _AddName(TypeNameBuilder * pTnb, LPCWSTR wszName);
-    static void QCALLTYPE _AddPointer(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _AddByRef(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _AddSzArray(TypeNameBuilder * pTnb);
-    static void QCALLTYPE _AddArray(TypeNameBuilder * pTnb, DWORD dwRank);
-    static void QCALLTYPE _AddAssemblySpec(TypeNameBuilder * pTnb, LPCWSTR wszAssemblySpec);
-    static void QCALLTYPE _ToString(TypeNameBuilder * pTnb, QCall::StringHandleOnStack retString);
-    static void QCALLTYPE _Clear(TypeNameBuilder * pTnb);
-
 private:
     friend class TypeString;
     friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);

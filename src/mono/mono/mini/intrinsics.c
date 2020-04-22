@@ -141,8 +141,9 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				// to align with CoreCLR behavior
 				int xreg = alloc_xreg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_FCONV_TO_R4_X, xreg, args [0]->dreg);
-				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDSS, xreg, xreg);
+				EMIT_NEW_UNALU (cfg, ins, OP_SSE41_ROUNDS, xreg, xreg);
 				ins->inst_c0 = 0x4; // vroundss xmm0, xmm0, xmm0, 0x4 (mode for rounding)
+				ins->inst_c1 = MONO_TYPE_R4;
 				int dreg = alloc_freg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_EXTRACT_R4, dreg, xreg);
 				return ins;

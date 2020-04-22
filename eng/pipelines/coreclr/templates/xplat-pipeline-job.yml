@@ -75,6 +75,9 @@ jobs:
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
+    - name: corelibProductArtifactName
+      value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
     - name: managedTestArtifactName
       value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 

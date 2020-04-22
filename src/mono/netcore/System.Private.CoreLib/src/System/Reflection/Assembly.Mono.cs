@@ -79,7 +79,7 @@ namespace System.Reflection
             return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext)
+        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
             // TODO: pass AssemblyName
             Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
@@ -92,7 +92,7 @@ namespace System.Reflection
         internal static extern Assembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern Type InternalGetType(Module module, string name, bool throwOnError, bool ignoreCase);
+        internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);

@@ -1321,21 +1321,17 @@ namespace Internal.JitInterface
     public struct CORJIT_FLAGS
     {
         private UInt64 _corJitFlags;
-        InstructionSetFlags _instructionSetFlags;
+        public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()
         {
             _corJitFlags = 0;
+            InstructionSetFlags = default(InstructionSetFlags);
         }
 
         public void Set(CorJitFlag flag)
         {
             _corJitFlags |= 1UL << (int)flag;
-        }
-
-        public void Set(InstructionSet instructionSet)
-        {
-            _instructionSetFlags.AddInstructionSet(instructionSet);
         }
 
         public void Clear(CorJitFlag flag)
@@ -1346,11 +1342,6 @@ namespace Internal.JitInterface
         public bool IsSet(CorJitFlag flag)
         {
             return (_corJitFlags & (1UL << (int)flag)) != 0;
-        }
-
-        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
-        {
-            _instructionSetFlags.Set64BitInstructionSetVariants(architecture);
         }
     }
 }

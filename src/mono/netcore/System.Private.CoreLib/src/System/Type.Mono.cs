@@ -76,17 +76,17 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle)
         {
             if (handle.Value == IntPtr.Zero)
-                return null;
+                return null!; // FIXME: shouldn't return null
 
             return internal_from_handle(handle.Value);
         }
 
-        public static Type GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
+        public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
 
-        public static Type GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
+        public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
 
         internal virtual Type InternalResolve()
         {

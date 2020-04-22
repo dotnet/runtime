@@ -15,6 +15,18 @@
   </PropertyGroup>
 
   <!--
+    For mobile targets, we do not need the host, so allow depproj's to opt 
+    out and skip building. 
+  -->
+  <Target Name="MobileSkipBuildProps" 
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android')"
+          BeforeTargets="GetSkipBuildProps">
+    <PropertyGroup>
+      <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
     version generation target. For any with a VersionFromProject, query the ProductVersion from that
     project file and use it as the dependency's version.

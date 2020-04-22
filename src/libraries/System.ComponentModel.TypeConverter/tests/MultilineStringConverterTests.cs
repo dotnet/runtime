@@ -12,7 +12,7 @@ namespace System.ComponentModel.Tests
     public class MultilineStringConverterTests : ConverterTestBase
     {
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_MultilineStringConverter()
         {
             using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
             {

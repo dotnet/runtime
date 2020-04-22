@@ -458,7 +458,7 @@ namespace System
                 }
             }
 
-            if (Method.IsStatic)
+            if (Method!.IsStatic)
             {
                 //
                 // The delegate is bound to _target
@@ -540,13 +540,13 @@ namespace System
                     method_info = GetVirtualMethod_internal();
             }
 
-            return method_info;
+            return method_info!;
         }
 
         private DelegateData CreateDelegateData()
         {
             DelegateData delegate_data = new DelegateData();
-            if (method_info.IsStatic)
+            if (method_info!.IsStatic)
             {
                 if (_target != null)
                 {

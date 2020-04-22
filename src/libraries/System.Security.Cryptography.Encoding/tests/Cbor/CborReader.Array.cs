@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
                 AdvanceBuffer(1);
-                DecrementRemainingItemCount();
+                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Array, null);
                 return null;
             }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
                 AdvanceBuffer(1 + additionalBytes);
-                DecrementRemainingItemCount();
+                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Array, arrayLength);
                 return arrayLength;
             }

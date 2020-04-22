@@ -857,7 +857,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
     // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.")
+                                             W("Invalid Program: attempted to call a NativeCallable method from managed code.")
                                             );
 }
 
@@ -1214,7 +1214,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         if (pMD != NULL)
             new (&sigInfo) PInvokeStaticSigInfo(pMD);
         else
-           new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
         DWORD dwStubFlags = 0;
 

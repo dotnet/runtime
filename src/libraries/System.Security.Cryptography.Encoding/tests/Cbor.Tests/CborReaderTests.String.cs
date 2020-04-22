@@ -486,23 +486,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        public static void ReadTextString_InvalidUnicode_ShouldThrowDecoderFallbackException(string hexEncoding)
+        public static void ReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Throws<System.Text.DecoderFallbackException>(() => reader.ReadTextString());
+            FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
         }
 
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        public static void TryReadTextString_InvalidUnicode_ShouldThrowDecoderFallbackException(string hexEncoding)
+        public static void TryReadTextString_InvalidUnicode_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
             var reader = new CborReader(data);
 
-            Assert.Throws<System.Text.DecoderFallbackException>(() => reader.TryReadTextString(buffer, out int _));
+            FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
         }
 
         [Fact]
@@ -614,7 +618,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_ShouldThrowDecoderFallbackException()
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_ShouldThrowFormatException()
         {
             // while the concatenated string is valid utf8, the individual chunks are not,
             // which is in violation of the CBOR format.
@@ -622,7 +626,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             string hexEncoding = "7f62f090628591ff";
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Throws<DecoderFallbackException>(() => reader.ReadTextString());
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
     }
 }

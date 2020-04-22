@@ -842,6 +842,8 @@ static_assert_no_msg((int)READYTORUN_FIXUP_DeclaringTypeHandle       == (int)ENC
 static_assert_no_msg((int)READYTORUN_FIXUP_IndirectPInvokeTarget     == (int)ENCODE_INDIRECT_PINVOKE_TARGET);
 static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENCODE_PINVOKE_TARGET);
 
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
+
 //
 // READYTORUN_EXCEPTION
 //

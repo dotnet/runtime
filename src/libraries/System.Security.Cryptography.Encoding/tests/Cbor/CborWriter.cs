@@ -5,7 +5,7 @@
 #nullable enable
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private uint? _remainingDataItems = 1;
         private bool _isEvenNumberOfDataItemsWritten = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, uint? remainingDataItems)>? _nestedDataItemStack;
+        private bool _isTagContext = false; // true if writer is expecting a tagged value
 
         public CborWriter()
         {
@@ -32,6 +33,49 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
         public bool IsWriteCompleted => _remainingDataItems == 0 && (_nestedDataItemStack?.Count ?? 0) == 0;
+
+        public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
+        {
+            ValidateEncoding(encodedValue);
+            ReadOnlySpan<byte> encodedValueSpan = encodedValue.Span;
+            EnsureWriteCapacity(encodedValueSpan.Length);
+
+            // even though the encoding might be valid CBOR, it might not be valid within the current writer context.
+            // E.g. we're at the end of a definite-length collection or writing integers in an indefinite-length string.
+            // For this reason we write the initial byte separately and perform the usual validation.
+            CborInitialByte initialByte = new CborInitialByte(encodedValueSpan[0]);
+            WriteInitialByte(initialByte);
+
+            // now copy any remaining bytes
+            encodedValueSpan = encodedValueSpan.Slice(1);
+
+            if (!encodedValueSpan.IsEmpty)
+            {
+                encodedValueSpan.CopyTo(_buffer.AsSpan(_offset));
+                _offset += encodedValueSpan.Length;
+            }
+
+            AdvanceDataItemCounters();
+
+            static void ValidateEncoding(ReadOnlyMemory<byte> encodedValue)
+            {
+                var reader = new CborReader(encodedValue);
+
+                try
+                {
+                    reader.SkipValue();
+                }
+                catch (FormatException e)
+                {
+                    throw new ArgumentException("Payload is not a valid CBOR value.", e);
+                }
+
+                if (reader.BytesRemaining != 0)
+                {
+                    throw new ArgumentException("Payload is not a valid CBOR value.");
+                }
+            }
+        }
 
         private void EnsureWriteCapacity(int pendingCount)
         {
@@ -81,6 +125,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
             }
 
+            if (_isTagContext)
+            {
+                throw new InvalidOperationException("Tagged CBOR value context is incomplete.");
+            }
+
             if (_remainingDataItems > 0)
             {
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
@@ -91,9 +140,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _isEvenNumberOfDataItemsWritten = isEvenNumberOfDataItemsWritten;
         }
 
-        private void DecrementRemainingItemCount()
+        private void AdvanceDataItemCounters()
         {
             _remainingDataItems--;
+            _isTagContext = false;
             _isEvenNumberOfDataItemsWritten = !_isEvenNumberOfDataItemsWritten;
         }
 
@@ -104,13 +154,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Adding a CBOR data item to the current context exceeds its definite length.");
             }
 
-            if (_remainingDataItems.HasValue && initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
-            {
-                throw new InvalidOperationException("Cannot write CBOR break byte in definite-length contexts");
-            }
-
-            // TODO check for tag state
-
             if (_nestedDataItemStack != null && _nestedDataItemStack.Count > 0)
             {
                 CborMajorType parentType = _nestedDataItemStack.Peek().type;
@@ -120,8 +163,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     // indefinite-length string contexts do not permit nesting
                     case CborMajorType.ByteString:
                     case CborMajorType.TextString:
-                        if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
-                            initialByte.MajorType == parentType &&
+                        if (initialByte.MajorType == parentType &&
                             initialByte.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
                         {
                             break;
@@ -144,13 +186,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void Dispose()
         {
-            if (_buffer != null)
-            {
-                s_bufferPool.Return(_buffer, clearArray: true);
-                _buffer = null!;
-            }
+            byte[]? buffer = Interlocked.Exchange(ref _buffer, null!);
 
-            _offset = -1;
+            if (buffer != null)
+            {
+                s_bufferPool.Return(buffer, clearArray: true);
+                _offset = -1;
+            }
         }
 
         public byte[] ToArray()

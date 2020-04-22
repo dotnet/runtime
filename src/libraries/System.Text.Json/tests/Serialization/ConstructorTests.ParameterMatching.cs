@@ -8,14 +8,14 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class ConstructorTests_StringTValue : ConstructorTests
+    public class ConstructorTests_String : ConstructorTests
     {
-        public ConstructorTests_StringTValue() : base(DeserializationWrapper.StringTValueSerializer) { }
+        public ConstructorTests_String() : base(DeserializationWrapper.StringDeserializer) { }
     }
 
-    public class ConstructorTests_StreamTValue : ConstructorTests
+    public class ConstructorTests_Stream : ConstructorTests
     {
-        public ConstructorTests_StreamTValue() : base(DeserializationWrapper.StreamTValueSerializer) { }
+        public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
     }
 
     public abstract partial class ConstructorTests
@@ -301,7 +301,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => Serializer.Deserialize<ClassWrapper_For_Int_Point_3D_String>(@"{""MyPoint3DStruct"":null,""MyString"":""1""}"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33928")]
         [Fact]
         public void OtherPropertiesAreSet()
         {

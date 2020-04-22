@@ -38,7 +38,7 @@ build -h
 On Unix like systems, arguments can be passed in with a single `-` or double hyphen `--`.
 
 The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
-To build just one part you use the root build script (build.cmd/sh), and you add the `-subsetCategory` flag.
+To build just one part you use the root build script (build.cmd/sh), and you add the `-subset` flag.
 
 ## Configurations
 

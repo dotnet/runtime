@@ -80,12 +80,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
-                for (int assemblyRefIndex = 1; assemblyRefIndex < _assemblyRefCount; assemblyRefIndex++)
+
+                if (!_nodeFactory.CompilationModuleGroup.IsInputBubble)
                 {
-                    AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                    AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
-                    string assemblyName = mdReader.GetString(assemblyRef.Name);
-                    _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
+                    for (int assemblyRefIndex = 1; assemblyRefIndex < _assemblyRefCount; assemblyRefIndex++)
+                    {
+                        AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                        AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
+                        string assemblyName = mdReader.GetString(assemblyRef.Name);
+                        _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
+                    }
                 }
 
                 // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata

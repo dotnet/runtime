@@ -53,7 +53,7 @@ check_prereqs()
 
     function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
-    local cmake_version="$(cmake --version | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+")"
+    local cmake_version="$(cmake --version | awk '/^cmake version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
     if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
         echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
@@ -151,8 +151,13 @@ build_native()
 
         popd
     else
-        echo "Executing cmake --build \"$intermediatesDir\" --target install -j $__NumProc"
-        cmake --build "$intermediatesDir" --target install -j "$__NumProc"
+        cmake_command=cmake
+        if [[ "$build_arch" == "wasm" ]]; then
+            cmake_command="emcmake $cmake_command"
+        fi
+
+        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
+        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
     fi
 
     local exit_code="$?"
@@ -204,6 +209,7 @@ __BuildArch=$arch
 __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
+__BuildOS=$os
 
 __msbuildonunsupportedplatform=0
 
@@ -379,7 +385,7 @@ done
 platform=$(uname)
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" ]]; then
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))

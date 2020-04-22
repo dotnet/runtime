@@ -58,7 +58,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Identifier_NetworkCredential_TestData))]
-        public void Ctor_Identifier_AuthType(LdapDirectoryIdentifier identifier, NetworkCredential credential)
+        public void Ctor_Identifier_Credential(LdapDirectoryIdentifier identifier, NetworkCredential credential)
         {
             var connection = new LdapConnection(identifier, credential);
             Assert.Equal(AuthType.Negotiate, connection.AuthType);
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Identifier_NetworkCredential_AuthType_TestData))]
-        public void Ctor_Identifier_AuthType(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
+        public void Ctor_Identifier_Credential_AuthType(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             var connection = new LdapConnection(identifier, credential, authType);
             Assert.Equal(authType, connection.AuthType);

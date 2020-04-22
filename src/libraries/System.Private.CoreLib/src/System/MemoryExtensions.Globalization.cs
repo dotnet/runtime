@@ -142,7 +142,7 @@ namespace System
 
             if (value.Length == 0)
             {
-                return 0;
+                return 0; // empty substring trivially occurs at every index (including start) of search space
             }
 
             if (span.Length == 0)
@@ -192,7 +192,7 @@ namespace System
 
             if (value.Length == 0)
             {
-                return span.Length > 0 ? span.Length - 1 : 0;
+                return span.Length; // empty substring trivially occurs at every index (including end) of search space
             }
 
             if (span.Length == 0)
@@ -337,7 +337,7 @@ namespace System
 
             if (value.Length == 0)
             {
-                return true;
+                return true; // the empty string is trivially a suffix of every other string
             }
 
             if (comparisonType >= StringComparison.Ordinal || GlobalizationMode.Invariant)
@@ -370,7 +370,7 @@ namespace System
 
             if (value.Length == 0)
             {
-                return true;
+                return true; // the empty string is trivially a prefix of every other string
             }
 
             if (comparisonType >= StringComparison.Ordinal || GlobalizationMode.Invariant)

@@ -310,6 +310,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
+                    if (typeDesc.IsWellKnownType(WellKnownType.TypedReference))
+                    {
+                        EmitElementType(CorElementType.ELEMENT_TYPE_TYPEDBYREF);
+                        return;
+                    }
+
                     {
                         ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
                         EmitModuleOverride(token.Module, context);
@@ -345,10 +351,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitModuleOverride(targetModule, context);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
             EmitTypeSignature(type.GetTypeDefinition(), context.InnerContext(targetModule));
+            SignatureContext outerContext = context.OuterContext;
             EmitUInt((uint)type.Instantiation.Length);
             for (int paramIndex = 0; paramIndex < type.Instantiation.Length; paramIndex++)
             {
-                EmitTypeSignature(type.Instantiation[paramIndex], context);
+                EmitTypeSignature(type.Instantiation[paramIndex], outerContext);
             }
         }
 
@@ -530,9 +537,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Instantiation instantiation = method.Method.Instantiation;
                 EmitUInt((uint)instantiation.Length);
+                SignatureContext outerContext = context.OuterContext;
                 for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
                 {
-                    EmitTypeSignature(instantiation[typeParamIndex], context);
+                    EmitTypeSignature(instantiation[typeParamIndex], outerContext);
                 }
             }
         }
@@ -616,7 +624,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 EmitByte((byte)(fixupKind | ReadyToRunFixupKind.ModuleOverride));
                 EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
-                return outerContext.InnerContext(targetModule);
+                return new SignatureContext(targetModule, outerContext.Resolver);
             }
         }
     }

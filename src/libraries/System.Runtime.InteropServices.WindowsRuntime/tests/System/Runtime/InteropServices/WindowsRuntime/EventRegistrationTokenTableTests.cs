@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.WindowsRuntime.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34749", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class EventRegistrationTokenTableTests
     {
         [Fact]

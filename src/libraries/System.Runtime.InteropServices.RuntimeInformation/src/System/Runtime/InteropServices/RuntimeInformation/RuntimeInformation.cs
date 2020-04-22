@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private const string FrameworkName = ".NET Core";
+        private const string FrameworkName = ".NET";
         private static string? s_frameworkDescription;
         private static string? s_runtimeIdentifier;
 

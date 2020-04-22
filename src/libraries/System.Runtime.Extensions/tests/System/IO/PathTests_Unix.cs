@@ -54,7 +54,7 @@ namespace System.IO.Tests
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {
-                    GetTempPath_SetEnvVar("TMPDIR", tempPath[0], tempPath[1]);
+                    GetTempPath_SetEnvVar_Helper("TMPDIR", tempPath[0], tempPath[1]);
                 }
             }).Dispose();
         }

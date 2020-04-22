@@ -19,8 +19,7 @@ if ($buildWindowsContainers)
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
   # This should result in significantly lower build times, for now.
-  & "$REPO_ROOT_DIR/coreclr.cmd" -c Release
-  & "$REPO_ROOT_DIR/libraries.cmd" -ci -c $configuration -runtimeConfiguration release
+  & "$REPO_ROOT_DIR/build.cmd" -ci -subset clr+libs -runtimeconfiguration release -c $configuration
   
   # Dockerize the build artifacts
   if($privateAspNetCore)

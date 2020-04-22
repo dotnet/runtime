@@ -164,6 +164,57 @@ namespace System.Security.Cryptography
         public virtual bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 
+        /// <summary>
+        /// When overridden in a derived class, imports an encrypted RFC 7468
+        /// PEM-encoded key, replacing the keys for this object.
+        /// </summary>
+        /// <param name="input">The PEM text of the encrypted key to import.</param>
+        /// <param name="password">
+        /// The password to use for decrypting the key material.
+        /// </param>
+        /// <exception cref="NotImplementedException">
+        /// A derived type has not overridden this member.
+        /// </exception>
+        /// <remarks>
+        /// Because each algorithm may have algorithm-specific PEM labels, the
+        /// default behavior will throw <see cref="NotImplementedException" />.
+        /// </remarks>
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
+        /// <summary>
+        /// When overridden in a derived class, imports an encrypted RFC 7468
+        /// PEM-encoded key, replacing the keys for this object.
+        /// </summary>
+        /// <param name="input">The PEM text of the encrypted key to import.</param>
+        /// <param name="passwordBytes">
+        /// The bytes to use as a password when decrypting the key material.
+        /// </param>
+        /// <exception cref="NotImplementedException">
+        /// A derived type has not overridden this member.
+        /// </exception>
+        /// <remarks>
+        /// Because each algorithm may have algorithm-specific PEM labels, the
+        /// default behavior will throw <see cref="NotImplementedException" />.
+        /// </remarks>
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
+        /// <summary>
+        /// When overridden in a derived class, imports an RFC 7468 textually
+        /// encoded key, replacing the keys for this object.
+        /// </summary>
+        /// <param name="input">The text of the PEM key to import.</param>
+        /// <exception cref="NotImplementedException">
+        /// A derived type has not overridden this member.
+        /// </exception>
+        /// <remarks>
+        /// Because each algorithm may have algorithm-specific PEM labels, the
+        /// default behavior will throw <see cref="NotImplementedException" />.
+        /// </remarks>
+        public virtual void ImportFromPem(ReadOnlySpan<char> input) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
         private delegate bool TryExportPbe<T>(
             ReadOnlySpan<T> password,
             PbeParameters pbeParameters,

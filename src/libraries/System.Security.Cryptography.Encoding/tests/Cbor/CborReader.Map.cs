@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
                 AdvanceBuffer(1);
-                DecrementRemainingItemCount();
+                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Map, null);
                 return null;
             }
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
-                DecrementRemainingItemCount();
+                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Map, 2 * mapSize);
                 return mapSize;
             }

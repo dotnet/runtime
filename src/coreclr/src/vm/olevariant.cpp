@@ -2101,14 +2101,15 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         FillMemory(pOle, pOleEnd - pOle, 0);
     }
 
-    SIZE_T srcofs = ArrayBase::GetDataPtrOffset( (*pComArray)->GetMethodTable() );
+    const SIZE_T compSize = (*pComArray)->GetComponentSize();
+    SIZE_T offset = 0;
     while (pOle < pOleEnd)
     {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + srcofs;
+        BYTE* managedData = (*pComArray)->GetDataPtr() + offset;
         MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Marshal);
 
         pOle += elemSize;
-        srcofs += (*pComArray)->GetComponentSize();
+        offset += compSize;
     }
 }
 

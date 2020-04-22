@@ -54,6 +54,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelper);
 
+            _instructionSetSupportFixups = new NodeCache<string, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new ReadyToRunInstructionSetSupportSignature(key));
+            });
+
             _fieldAddressCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
@@ -235,6 +242,14 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode CreateReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
+        }
+
+        private NodeCache<string, ISymbolNode> _instructionSetSupportFixups;
+
+        public ISymbolNode PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
+        {
+            string key = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            return _instructionSetSupportFixups.GetOrAdd(key);
         }
 
         private ISymbolNode CreateNewHelper(TypeDesc type)
