@@ -9448,7 +9448,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) &&
+            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
         {
             code++;
         }
@@ -10214,8 +10215,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (!insIsCMOV(ins)) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
+        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
+            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
         {
             code |= 0x1;
         }
