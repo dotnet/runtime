@@ -8977,6 +8977,7 @@ calli_end:
 			    (has_flag = mini_get_method (cfg, method, callvirt_token, NULL, generic_context)) &&
 			    has_flag->klass == mono_defaults.enum_class &&
 			    !strcmp (has_flag->name, "HasFlag") &&
+			    has_flag->signature &&
 			    has_flag->signature->hasthis &&
 			    has_flag->signature->param_count == 1) {
 				CHECK_TYPELOAD (enum_class);
