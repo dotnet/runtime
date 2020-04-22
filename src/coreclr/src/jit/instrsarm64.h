@@ -766,6 +766,12 @@ INST2(smlsl2,  "smlsl2", 0, 0, IF_EN2R,   0x4E20A000,  0x4F006000)
                                    //  smlsl2     Vd,Vn,Vm          DV_3H  01001110XX1mmmmm 101000nnnnnddddd   4E20 A000   Vd,Vn,Vm   (vector)
                                    //  smlsl2     Vd,Vn,Vm[]        DV_3HI 01001111XXLMmmmm 0110H0nnnnnddddd   4F00 6000   Vd,Vn,Vm[] (vector by elem)
 
+INST2(smull2,  "smull2", 0, 0, IF_EN2R,   0x4E20C000,  0x4F00A000)
+                                   // C7.2.272 SMULL, SMULL2 (by element)
+                                   // C7.2.273 SMULL, SMULL2 (vector)
+                                   //  smull2     Vd,Vn,Vm          DV_3H  01001110XX1mmmmm 110000nnnnnddddd   4E20 C000   Vd,Vn,Vm   (vector)
+                                   //  smull2     Vd,Vn,Vm[]        DV_3HI 01001111XXLMmmmm 1010H0nnnnnddddd   4F00 A000   Vd,Vn,Vm[] (vector by elem)
+
 INST2(umlal,   "umlal",  0, 0, IF_EN2R,   0x2E208000,  0x2F002000)
                                    // C7.2.357 UMLAL, UMLAL2 (by element)
                                    // C7.2.358 UMLAL, UMLAL2 (vector)
@@ -789,6 +795,12 @@ INST2(umlsl2,  "umlsl2", 0, 0, IF_EN2R,   0x6E20A000,  0x6F006000)
                                    // C7.2.360 UMLSL, UMLSL2 (vector)
                                    //  umlsl2     Vd,Vn,Vm          DV_3H  01101110XX1mmmmm 101000nnnnnddddd   6E20 A000   Vd,Vn,Vm   (vector)
                                    //  umlsl2     Vd,Vn,Vm[]        DV_3HI 01101111XXLMmmmm 0110H0nnnnnddddd   6F00 6000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(umull2,  "umull2", 0, 0, IF_EN2R,   0x6E20C000,  0x6F00A000)
+                                   // C7.2.362 UMULL, UMULL2 (by element)
+                                   // C7.2.363 UMULL, UMULL2 (vector)
+                                   //  umull2     Vd,Vn,Vm          DV_3H  01101110XX1mmmmm 110000nnnnnddddd   6E20 C000   Vd,Vn,Vm   (vector)
+                                   //  umull2     Vd,Vn,Vm[]        DV_3HI 01101111XXLMmmmm 1010H0nnnnnddddd   6F00 A000   Vd,Vn,Vm[] (vector by elem)
 
 //    enum     name     FP LD/ST            DV_2N        DV_2O
 INST2(sshr,    "sshr",   0, 0, IF_EN2N,   0x5F000400,  0x0F000400)
