@@ -6,13 +6,63 @@ set TESTINITIALBINPATH=%2
 set TESTTARGET_DIR=%3
 set TESTBATCHROOT=%1
 
+
 :Loop
 if "%4"=="" goto Continue
+
 set COMPILEARG=%COMPILEARG% %TESTINITIALBINPATH%\%4.dll
 set COMPOSITENAME=%COMPOSITENAME%%4
+
+if "%5"=="CG2Single" (
+  call :CG2Single
+  shift
+) ELSE (
+  if "%5"=="CG2SingleInputBubble" (
+    call :CG2SingleInputBubble
+    shift
+  ) ELSE (
+    if "%5"=="CG1Single" (
+      call :CG1Single
+      shift
+    ) ELSE (
+      if "%5"=="CG2Composite" (
+        shift
+        call :Continue
+      )
+    )
+  )
+)
+
 shift
 goto Loop
 :Continue
 
-echo on
-call %TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%Composite.dll --composite %COMPILEARG%
+if "%COMPOSITENAME%"=="" goto done
+
+set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%Composite.dll --composite %COMPILEARG%
+call %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%Composite.dll.log 2>&1
+if NOT EXIST %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%Composite.dll del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\a.dll
+goto done
+
+:CG2Single
+del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
+set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll  %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
+call %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
+goto done
+
+:CG2SingleInputBubble
+del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
+set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll --inputbubble %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
+call %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
+goto done
+
+:CG1Single
+del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
+set BUILDCMD=%CORE_ROOT%\crossgen.exe /Platform_Assemblies_Paths %CORE_ROOT%;%TESTINITIALBINPATH% /out %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll /in %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
+call %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
+goto done
+
+:done
+shift
+set COMPILEARG=
+set COMPOSITENAME=
