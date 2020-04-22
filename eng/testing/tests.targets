@@ -18,7 +18,6 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
-
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
@@ -74,28 +73,10 @@
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 
-    <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
-
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
   </Target>
 
-  <Target Name="ValidateTestPlatform">
-    <ItemGroup>
-      <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
-    </PropertyGroup>
-
-    <Message Text="ValidateTestPlatform found TargetOS of [$(TargetOS)]." Importance="Low" />
-
-    <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
-             Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
-  </Target>
-
-  <Target Name="RunTests"
-          Condition="'$(TestDisabled)' != 'true'"
-          DependsOnTargets="ValidateTestPlatform">
+  <Target Name="RunTests">
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
@@ -231,6 +212,7 @@
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)runsettings.targets" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->

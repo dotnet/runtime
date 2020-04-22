@@ -1,0 +1,41 @@
+<Project>
+  <PropertyGroup>
+    <RunSettingsInputFilePath Condition="'$(RunSettingsInputFilePath)' == ''">$(MSBuildThisFileDirectory).runsettings</RunSettingsInputFilePath>
+    <RunSettingsOutputFilePath Condition="'$(RunSettingsOutputFilePath)' == ''">$(OutDir).runsettings</RunSettingsOutputFilePath>
+    <PrepareForRunDependsOn>GenerateRunSettingsFile;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Categories -->
+    <_testFilter Condition="'$(_withCategories)' != ''">$(_withCategories.Replace(';', '&amp;amp;category='))</_testFilter>
+    <_testFilter Condition="'$(_withoutCategories)' != ''">$(_testFilter)$(_withoutCategories.Replace(';', '&amp;amp;category!='))</_testFilter>
+    <_testFilter>$(_testFilter.Trim('&amp;amp;'))</_testFilter>
+  </PropertyGroup>
+
+  <Target Name="GenerateRunSettingsFile">
+    <PropertyGroup>
+      <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$TESTCASEFILTER$$', '$(_testFilter)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DEVPATH$$', '$(TestHostRootPath)'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(RunSettingsOutputFilePath)"
+                      Lines="$(RunSettingsFileContent)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
+    
+    <!-- Set RunSettingsFilePath property which is read by VSTest. -->
+    <PropertyGroup>
+      <RunSettingsFilePath>$(RunSettingsOutputFilePath)</RunSettingsFilePath>
+    </PropertyGroup>
+  </Target>
+</Project>
