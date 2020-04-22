@@ -2041,7 +2041,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     if (IsWinRTScenario())
                     {
                         // In WinRT scenarios delegates must be WinRT delegates
-                        if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                        if (!m_pMT->IsProjectedFromWinRT())
                         {
                             m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
                             IfFailGoto(E_FAIL, lFail);
@@ -2068,12 +2068,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     (!pDefaultMT->IsProjectedFromWinRT() && !pDefaultMT->IsExportedToWinRT()) ||
                     !pDefaultMT->HasExplicitGuid())
                 {
-                    // This might also be a redirected interface - which is also allowed
-                    if (!pDefaultMT->IsWinRTRedirectedInterface(TypeHandle::Interop_NativeToManaged))
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_WINRT_IFACE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
+                    m_resID = IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_WINRT_IFACE;
+                    IfFailGoto(E_FAIL, lFail);
                 }
 
                 // Validate that it's one of the component interfaces of the class in the signature
@@ -2343,7 +2339,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         case NATIVE_TYPE_DEFAULT:
 #ifdef FEATURE_COMINTEROP
-                            if (IsWinRTScenario() || m_pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                            if (IsWinRTScenario() || m_pMT->IsProjectedFromWinRT())
                             {
                                 m_type = MARSHAL_TYPE_INTERFACE;
                             }

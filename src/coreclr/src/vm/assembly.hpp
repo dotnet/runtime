@@ -23,6 +23,9 @@
 #include "iceefilegen.h"
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
+#ifdef FEATURE_COMINTEROP
+#include "../md/winmd/inc/adapter.h"
+#endif
 
 class BaseDomain;
 class AppDomain;

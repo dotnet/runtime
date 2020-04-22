@@ -326,18 +326,7 @@ inline BOOL MethodTable::SupportsGenericInterop(TypeHandle::InteropKind interopK
                         MethodTable::Mode mode /*= modeAll*/)
 {
     LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    return ((IsInterface() || IsDelegate()) &&    // interface or delegate
-            HasInstantiation() &&                 // generic
-            !IsSharedByGenericInstantiations() && // unshared
-            !ContainsGenericVariables() &&        // closed over concrete types
-            // defined in .winmd or one of the redirected mscorlib interfaces
-            ((((mode & modeProjected) != 0) && IsProjectedFromWinRT()) ||
-             (((mode & modeRedirected) != 0) && (IsWinRTRedirectedInterface(interopKind) || IsWinRTRedirectedDelegate()))));
-#else // FEATURE_COMINTEROP
     return FALSE;
-#endif // FEATURE_COMINTEROP
 }
 
 
@@ -1068,7 +1057,7 @@ inline BOOL MethodTable::IsExportedToWinRT()
 inline BOOL MethodTable::IsWinRTDelegate()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (IsProjectedFromWinRT() && IsDelegate()) || IsWinRTRedirectedDelegate();
+    return (IsProjectedFromWinRT() && IsDelegate());
 }
 
 #else // FEATURE_COMINTEROP

@@ -1680,10 +1680,6 @@ public:
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
 
-#ifdef FEATURE_COMINTEROP
-    MethodTable *GetRedirectedType(WinMDAdapter::RedirectedTypeIndex index);
-#endif // FEATURE_COMINTEROP
-
 
     //****************************************************************************************
 
@@ -2160,10 +2156,6 @@ public:
             // Don't cache mscorlib-internal declarations of WinRT types.
             if (pMT->GetModule()->IsSystem() && pMT->IsProjectedFromWinRT())
                 return FALSE;
-
-            // Don't cache redirected WinRT types.
-            if (WinRTTypeNameConverter::IsRedirectedWinRTSourceType(pMT))
-                return FALSE;
         }
 
         return TRUE;
@@ -2327,10 +2319,6 @@ private:
 #ifdef FEATURE_COMINTEROP
     DispIDCache *m_pRefDispIDCache;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
-
-    MethodTable* m_rpCLRTypes[WinMDAdapter::RedirectedTypeIndex_Count];
-
-    MethodTable* LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex index, WinMDAdapter::FrameworkAssemblyIndex assembly);
 #endif // FEATURE_COMINTEROP
 
 public:

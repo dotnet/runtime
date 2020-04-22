@@ -707,8 +707,6 @@ public:
     BOOL IsProjectedFromWinRT();
     BOOL IsExportedToWinRT();
     BOOL IsWinRTDelegate();
-    BOOL IsWinRTRedirectedInterface(TypeHandle::InteropKind interopKind);
-    BOOL IsWinRTRedirectedDelegate();
 
 #ifdef FEATURE_COMINTEROP
     TypeHandle GetCoClassForInterface();

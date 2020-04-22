@@ -982,7 +982,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
 }
 #endif //CROSSGEN_COMPILE
 
-void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BOOL fRedirectedInterface /* = FALSE */)
+void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
 {
     CONTRACTL
     {
@@ -1003,9 +1003,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BO
     m_dwSlotInfo = 0;
     m_pwStubStackSlotOffsets = NULL;
 #endif // TARGET_X86
-
-    if (fRedirectedInterface)
-        m_flags |= enum_IsWinRTRedirected;
 
     // check whether this is a WinRT ctor/static/event method
     MethodDesc *pCallMD = GetCallMethodDesc();
@@ -1414,7 +1411,7 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
         _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
         MethodTable *pMT = pMD->GetMethodTable();
-        if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT() || pCMD->IsWinRTRedirectedMethod())
+        if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT())
         {
             _ASSERTE(false && "WinRT stubs are not supported");
         }

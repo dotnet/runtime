@@ -2049,20 +2049,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
 #ifdef FEATURE_COMINTEROP
     g_pBaseCOMObject = MscorlibBinder::GetClass(CLASS__COM_OBJECT);
-
-    MscorlibBinder::GetClass(CLASS__IDICTIONARYGENERIC);
-    MscorlibBinder::GetClass(CLASS__IREADONLYDICTIONARYGENERIC);
-    MscorlibBinder::GetClass(CLASS__ATTRIBUTE);
-    MscorlibBinder::GetClass(CLASS__EVENT_HANDLERGENERIC);
-
-    MscorlibBinder::GetClass(CLASS__IENUMERABLE);
-    MscorlibBinder::GetClass(CLASS__ICOLLECTION);
-    MscorlibBinder::GetClass(CLASS__ILIST);
-    MscorlibBinder::GetClass(CLASS__IDISPOSABLE);
-
-#ifdef _DEBUG
-    WinRTInterfaceRedirector::VerifyRedirectedInterfaceStubs();
-#endif // _DEBUG
 #endif
 
 #ifdef FEATURE_ICASTABLE
@@ -2688,7 +2674,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
     m_pRCWRefCache = NULL;
-    memset(m_rpCLRTypes, 0, sizeof(m_rpCLRTypes));
 #endif // FEATURE_COMINTEROP
 
     m_handleStore = NULL;
@@ -2885,97 +2870,6 @@ void AppDomain::Stop()
 }
 
 #endif // !CROSSGEN_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-MethodTable *AppDomain::GetRedirectedType(WinMDAdapter::RedirectedTypeIndex index)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // If we have the type loaded already, use that
-    if (m_rpCLRTypes[index] != nullptr)
-    {
-        return m_rpCLRTypes[index];
-    }
-
-    WinMDAdapter::FrameworkAssemblyIndex frameworkAssemblyIndex;
-    WinMDAdapter::GetRedirectedTypeInfo(index, nullptr, nullptr, nullptr, &frameworkAssemblyIndex, nullptr, nullptr);
-    MethodTable * pMT = LoadRedirectedType(index, frameworkAssemblyIndex);
-    m_rpCLRTypes[index] = pMT;
-    return pMT;
-}
-
-MethodTable* AppDomain::LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex index, WinMDAdapter::FrameworkAssemblyIndex assembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(index < WinMDAdapter::RedirectedTypeIndex_Count);
-    }
-    CONTRACTL_END;
-
-    LPCSTR szClrNamespace;
-    LPCSTR szClrName;
-    LPCSTR szFullWinRTName;
-    WinMDAdapter::FrameworkAssemblyIndex nFrameworkAssemblyIndex;
-
-    WinMDAdapter::GetRedirectedTypeInfo(index, &szClrNamespace, &szClrName, &szFullWinRTName, &nFrameworkAssemblyIndex, nullptr, nullptr);
-
-    _ASSERTE(nFrameworkAssemblyIndex >= WinMDAdapter::FrameworkAssembly_Mscorlib &&
-             nFrameworkAssemblyIndex < WinMDAdapter::FrameworkAssembly_Count);
-
-    if (assembly != nFrameworkAssemblyIndex)
-    {
-        // The framework type does not live in the assembly we were requested to load redirected types from
-        return nullptr;
-    }
-    else if (nFrameworkAssemblyIndex == WinMDAdapter::FrameworkAssembly_Mscorlib)
-    {
-        return ClassLoader::LoadTypeByNameThrowing(MscorlibBinder::GetModule()->GetAssembly(),
-                                                   szClrNamespace,
-                                                   szClrName,
-                                                   ClassLoader::ThrowIfNotFound,
-                                                   ClassLoader::LoadTypes,
-                                                   CLASS_LOAD_EXACTPARENTS).GetMethodTable();
-    }
-    else
-    {
-        LPCSTR pSimpleName;
-        AssemblyMetaDataInternal context;
-        const BYTE * pbKeyToken;
-        DWORD cbKeyTokenLength;
-        DWORD dwFlags;
-
-        WinMDAdapter::GetExtraAssemblyRefProps(nFrameworkAssemblyIndex,
-                                               &pSimpleName,
-                                               &context,
-                                               &pbKeyToken,
-                                               &cbKeyTokenLength,
-                                               &dwFlags);
-
-        Assembly* pAssembly = AssemblySpec::LoadAssembly(pSimpleName,
-                                                         &context,
-                                                         pbKeyToken,
-                                                         cbKeyTokenLength,
-                                                         dwFlags);
-
-        return ClassLoader::LoadTypeByNameThrowing(
-            pAssembly,
-            szClrNamespace,
-            szClrName,
-            ClassLoader::ThrowIfNotFound,
-            ClassLoader::LoadTypes,
-            CLASS_LOAD_EXACTPARENTS).GetMethodTable();
-    }
-}
-#endif //FEATURE_COMINTEROP
 
 #endif //!DACCESS_COMPILE
 

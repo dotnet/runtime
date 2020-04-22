@@ -2255,7 +2255,7 @@ VirtualCallStubManager::Resolver(
             MethodDesc * pTargetMD = ds.GetMethodDesc();
             if (!pTargetMD->HasMethodInstantiation())
             {
-                _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
+                _ASSERTE(pItfMT->IsProjectedFromWinRT());
 
                 MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                     pTargetMD,

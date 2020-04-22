@@ -47,9 +47,6 @@
 #include "typectxt.h"
 #include "iterator_util.h"
 
-#ifdef FEATURE_COMINTEROP
-#include "..\md\winmd\inc\adapter.h"
-#endif
 #include "packedfields.inl"
 #include "array.h"
 #define IBCLOG(x) g_IBCLogger.##x
@@ -581,8 +578,6 @@ class EEClassOptionalFields
     // Points to activation information if the type is an activatable COM/WinRT class.
     ClassFactoryBase *m_pClassFactory;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-    WinMDAdapter::RedirectedTypeIndex m_WinRTRedirectedTypeIndex;
 
 #endif // FEATURE_COMINTEROP
 
@@ -1532,21 +1527,6 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
         GetOptionalFields()->m_pCoClassForIntf = th;
-    }
-
-    inline WinMDAdapter::RedirectedTypeIndex GetWinRTRedirectedTypeIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_WinRTRedirectedTypeIndex
-                                   : WinMDAdapter::RedirectedTypeIndex_Invalid;
-    }
-
-    inline void SetWinRTRedirectedTypeIndex(WinMDAdapter::RedirectedTypeIndex index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        _ASSERTE(index != WinMDAdapter::RedirectedTypeIndex_Invalid);
-        GetOptionalFields()->m_WinRTRedirectedTypeIndex = index;
     }
 
     OBJECTHANDLE GetOHDelegate()

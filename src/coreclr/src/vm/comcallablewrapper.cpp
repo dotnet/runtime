@@ -499,9 +499,9 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                                 MethodDesc* pTargetMD = pCMD->GetMethodDesc();
                                 MetaSig::EnsureSigValueTypesLoaded(pTargetMD);
 
-                                if (pCMD->IsWinRTCtor() || pCMD->IsWinRTStatic() || pCMD->IsWinRTRedirectedMethod())
+                                if (pCMD->IsWinRTCtor() || pCMD->IsWinRTStatic())
                                 {
-                                    // Activation, static method invocation, and call through a redirected interface may be the first
+                                    // Activation, static method invocation, may be the first
                                     // managed code that runs in the module. Fully load it here so we don't have to call EnsureInstanceActive
                                     // on every activation/static call.
                                     pTargetMD->GetMethodTable()->EnsureInstanceActive();
@@ -3096,7 +3096,7 @@ static IUnknown* GetComIPFromCCW_UsingVariance(ComCallWrapper *pWrap, REFIID rii
             //
             TypeHandle thClass = pWrap->GetComCallWrapperTemplate()->GetClassType();
 
-            ComCallWrapperTemplate::CCWInterfaceMapIterator it(thClass, NULL, false);
+            ComCallWrapperTemplate::CCWInterfaceMapIterator it(thClass, NULL);
             while (it.Next())
             {
                 MethodTable *pImplementedIntfMT = it.GetInterface();
@@ -4485,15 +4485,6 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
             pClassMD = ComCall::GetStaticForWinRTFactoryMethod(pClsMT, pIntfMD);
             _ASSERTE(pClassMD->IsStatic());
         }
-        else if (IsWinRTRedirectedInterface())
-        {
-            pClassMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterface(
-                GetWinRTRedirectedInterfaceIndex(),
-                i,
-                TypeHandle::Interop_NativeToManaged,
-                FALSE,
-                m_pMT->GetInstantiation());
-        }
         else if (pClsMT != NULL)
         {
             DispatchSlot impl(pClsMT->FindDispatchSlotForInterfaceMD(pIntfMD, FALSE /* throwOnConflict */));
@@ -4502,7 +4493,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
 
         if (pClassMD != NULL)
         {
-            pNewMD->InitMethod(pClassMD, pIntfMD, IsWinRTRedirectedInterface());
+            pNewMD->InitMethod(pClassMD, pIntfMD);
         }
         else
         {
@@ -4510,7 +4501,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
             // note that even in fully statically typed WinRT, we don't always have an implementation
             // MethodDesc in the hierarchy because our metadata adapter does not make these up for
             // redirected interfaces
-            pNewMD->InitMethod(pIntfMD, NULL, IsWinRTRedirectedInterface());
+            pNewMD->InitMethod(pIntfMD, NULL);
         }
 
         pMethodDescMemory += (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc));
@@ -4660,18 +4651,6 @@ void ComMethodTable::LayOutDelegateMethodTable()
     BYTE *pMethodDescMemory = NULL;
     IUnkVtable* pUnkVtable;
     SLOT *pComVtable;
-
-    // If this is a redirected delegate, then we need to get its WinRT ABI definition type
-    WinMDAdapter::RedirectedTypeIndex index = static_cast<WinMDAdapter::RedirectedTypeIndex>(0);
-    if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pDelegateMT, &index))
-    {
-        pDelegateMT = WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(index);
-
-        if (m_pMT->HasInstantiation())
-        {
-            pDelegateMT = TypeHandle(pDelegateMT).Instantiate(m_pMT->GetInstantiation()).AsMethodTable();
-        }
-    }
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutDelegateMethodTable: %s, this: %p\n", pDelegateMT->GetDebugClassName(), this));
 
@@ -4935,7 +4914,7 @@ void ComCallWrapperTemplate::IIDToInterfaceTemplateCache::InsertInterfaceTemplat
 //---------------------------------------------------------
 // ComCallWrapperTemplate::CCWInterfaceMapIterator
 //---------------------------------------------------------
-ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact, bool fIterateRedirectedInterfaces)
+ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact)
 {
     CONTRACTL
     {
@@ -4953,23 +4932,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     while (it.Next())
     {
         MethodTable *pItfMT = it.GetInterface();
-        AppendInterface(pItfMT, false);
-
-        if (fIterateRedirectedInterfaces && WinRTSupported())
-        {
-            WinMDAdapter::RedirectedTypeIndex redirectedIndex;
-            if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &redirectedIndex) && pItfMT->IsLegalNonArrayWinRTType())
-            {
-                MethodTable *pWinRTItfMT = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedIndex);
-                if (pItfMT->HasInstantiation())
-                {
-                    _ASSERTE(pWinRTItfMT->HasInstantiation());
-                    pWinRTItfMT = TypeHandle(pWinRTItfMT).Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
-                }
-
-                AppendInterface(pWinRTItfMT, true).m_RedirectedIndex = redirectedIndex;
-            }
-        }
+        AppendInterface(pItfMT);
     }
 
     // add factory and static interfaces
@@ -4981,7 +4944,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
             COUNT_T NumInterfaces = pExtraInterfaces->GetCount();
             for (COUNT_T i = 0; i < NumInterfaces; i++)
             {
-                AppendInterface((*pExtraInterfaces)[i], false).m_dwIsFactoryInterface = true;
+                AppendInterface((*pExtraInterfaces)[i]).m_dwIsFactoryInterface = true;
             }
         }
 
@@ -4991,7 +4954,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
             COUNT_T NumInterfaces = pExtraInterfaces->GetCount();
             for (COUNT_T i = 0; i < NumInterfaces; i++)
             {
-                AppendInterface((*pExtraInterfaces)[i], false).m_dwIsStaticInterface = true;
+                AppendInterface((*pExtraInterfaces)[i]).m_dwIsStaticInterface = true;
             }
         }
     }
@@ -5000,7 +4963,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
 }
 
 // Append a new interface to the m_Interfaces array.
-ComCallWrapperTemplate::CCWInterfaceMapIterator::InterfaceProps &ComCallWrapperTemplate::CCWInterfaceMapIterator::AppendInterface(MethodTable *pItfMT, bool isRedirected)
+ComCallWrapperTemplate::CCWInterfaceMapIterator::InterfaceProps &ComCallWrapperTemplate::CCWInterfaceMapIterator::AppendInterface(MethodTable *pItfMT)
 {
     CONTRACTL
     {
@@ -5013,8 +4976,6 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::InterfaceProps &ComCallWrapperT
     InterfaceProps &props = *m_Interfaces.Append();
 
     props.m_pItfMT = pItfMT;
-    props.m_RedirectedIndex = (WinMDAdapter::RedirectedTypeIndex)-1;
-    props.m_dwIsRedirectedInterface = isRedirected;
     props.m_dwIsFactoryInterface = false;
     props.m_dwIsStaticInterface = false;
 
@@ -5128,7 +5089,7 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
 
     // We haven't set it up yet, generate one.
     ComMethodTable* pClassComMT;
-    if (pMT->IsDelegate() && (pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pMT)))
+    if (pMT->IsDelegate() && pMT->IsProjectedFromWinRT())
     {
         // WinRT delegates have a special class vtable
         pClassComMT = CreateComMethodTableForDelegate(pMT);
@@ -5770,16 +5731,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForDelegate(MethodTa
     pComMT->m_Flags = enum_ClassVtableMask | clsIfNone | enum_ComVisible | enum_IsWinRTDelegate;
 
     MethodTable *pMTForIID = pDelegateMT;
-    WinMDAdapter::RedirectedTypeIndex index = static_cast<WinMDAdapter::RedirectedTypeIndex>(0);
-    if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pDelegateMT, &index))
-    {
-        pMTForIID = WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(index);
-
-        if (pDelegateMT->HasInstantiation())
-        {
-            pMTForIID = TypeHandle(pMTForIID).Instantiate(pDelegateMT->GetInstantiation()).AsMethodTable();
-        }
-    }
     pMTForIID->GetGuid(&pComMT->m_IID, TRUE);
 
     pComMT->m_Flags |= enum_GuidGenerated;
@@ -5915,7 +5866,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
     }
 
     // Preload the policy for this interface
-    CCWInterfaceMapIterator it(thClass, pClsFact, true);
+    CCWInterfaceMapIterator it(thClass, pClsFact);
 
     // Num interfaces in the template.
     unsigned numInterfaces = it.GetCount();
@@ -5991,9 +5942,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             MethodTable *pItfMT = it.GetInterface();
             ComMethodTable *pItfComMT = pTemplate->InitializeForInterface(pParentMT, pItfMT, it.GetIndex());
 
-            if (it.IsRedirectedInterface())
-                pItfComMT->SetWinRTRedirectedInterfaceIndex(it.GetRedirectedInterfaceIndex());
-            else if (it.IsFactoryInterface())
+            if (it.IsFactoryInterface())
                 pItfComMT->SetIsWinRTFactoryInterface();
             else if (it.IsStaticInterface())
                 pItfComMT->SetIsWinRTStaticInterface();
@@ -6115,20 +6064,7 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     // Initialize the one ComMethodTable
     ComMethodTable *pItfComMT;
 
-    WinMDAdapter::RedirectedTypeIndex redirectedInterfaceIndex;
-    if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &redirectedInterfaceIndex))
-    {
-        // pItfMT is redirected, initialize the ComMethodTable accordingly
-        MethodTable *pWinRTItfMT = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-        pWinRTItfMT = TypeHandle(pWinRTItfMT).Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
-
-        pItfComMT = pTemplate->InitializeForInterface(NULL, pWinRTItfMT, 0);
-        pItfComMT->SetWinRTRedirectedInterfaceIndex(redirectedInterfaceIndex);
-    }
-    else
-    {
-        pItfComMT = pTemplate->InitializeForInterface(NULL, pItfMT, 0);
-    }
+    pItfComMT = pTemplate->InitializeForInterface(NULL, pItfMT, 0);
 
     // Cache the template on the interface.
     if (!pItfMT->SetComCallWrapperTemplate(pTemplate))

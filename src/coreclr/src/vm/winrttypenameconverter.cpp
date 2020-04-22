@@ -16,87 +16,6 @@
 #include "winrttypenameconverter.h"
 #include "typeresolution.h"
 
-struct RedirectedTypeNames
-{
-    LPCSTR  szClrNamespace;
-    LPCSTR  szClrName;
-    WinMDAdapter::FrameworkAssemblyIndex assembly;
-    WinMDAdapter::WinMDTypeKind kind;
-};
-
-#define DEFINE_PROJECTED_TYPE(szWinRTNS, szWinRTName, szClrNS, szClrName, nClrAsmIdx, ncontractAsmIndex, nWinRTIndex, nClrIndex, nWinMDTypeKind) \
-    { szClrNS, szClrName, WinMDAdapter::FrameworkAssembly_ ## nClrAsmIdx, WinMDAdapter::WinMDTypeKind_ ## nWinMDTypeKind },
-
-static const RedirectedTypeNames g_redirectedTypeNames[WinMDAdapter::RedirectedTypeIndex_Count] =
-{
-#include "winrtprojectedtypes.h"
-};
-
-#undef DEFINE_PROJECTED_TYPE
-
-struct RedirectedTypeNamesKey
-{
-    RedirectedTypeNamesKey(LPCSTR szNamespace, LPCSTR szName) :
-        m_szNamespace(szNamespace),
-        m_szName(szName)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    LPCSTR  m_szNamespace;
-    LPCSTR  m_szName;
-};
-
-class RedirectedTypeNamesTraits : public NoRemoveSHashTraits< DefaultSHashTraits<const RedirectedTypeNames *> >
-{
-public:
-    typedef RedirectedTypeNamesKey key_t;
-
-    static key_t GetKey(element_t e)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return RedirectedTypeNamesKey(e->szClrNamespace, e->szClrName);
-    }
-    static BOOL Equals(key_t k1, key_t k2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (strcmp(k1.m_szName, k2.m_szName) == 0) && (strcmp(k1.m_szNamespace, k2.m_szNamespace) == 0);
-    }
-    static count_t Hash(key_t k)
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Only use the Name when calculating the hash value. Many redirected types share the same namespace so
-        // there isn't a lot of value in using the namespace when calculating the hash value.
-        return HashStringA(k.m_szName);
-    }
-
-    static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
-};
-
-typedef SHash< RedirectedTypeNamesTraits > RedirectedTypeNamesHashTable;
-static RedirectedTypeNamesHashTable * s_pRedirectedTypeNamesHashTable = NULL;
-
-//
-// Return the redirection index and type kind if the MethodTable* is a redirected type
-//
-bool WinRTTypeNameConverter::ResolveRedirectedType(MethodTable *pMT, WinMDAdapter::RedirectedTypeIndex * pIndex, WinMDAdapter::WinMDTypeKind * pKind /*=NULL*/)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    WinMDAdapter::RedirectedTypeIndex index = pMT->GetClass()->GetWinRTRedirectedTypeIndex();
-    if (index == WinMDAdapter::RedirectedTypeIndex_Invalid)
-        return false;
-
-    if (pIndex != NULL)
-        *pIndex = index;
-
-    if (pKind != NULL)
-        *pKind = g_redirectedTypeNames[index].kind;
-
-    return true;
-}
-
 #ifndef DACCESS_COMPILE
 
 class MethodTableListNode;
@@ -194,14 +113,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
     MethodTable *pMT = thManagedType.GetMethodTable();
     BOOL fIsIReference = FALSE, fIsIReferenceArray = FALSE;
 
-    WinMDAdapter::RedirectedTypeIndex index;
-    if (ResolveRedirectedType(pMT, &index))
-    {
-        // Redirected types
-        // Use the redirected WinRT name
-        strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(index));
-    }
-    else if (fIsIReference || fIsIReferenceArray)
+    if (fIsIReference || fIsIReferenceArray)
     {
         //
         // Convert CLRIReferenceImpl<T>/CLRIReferenceArrayImpl<T> to a WinRT Type
@@ -352,35 +264,26 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
             }
         }
 
-        // This is the "top" most redirected interface implemented by pMT.
+        // This is the "top" most WinRT interface implemented by pMT.
         // E.g. if pMT implements both IList`1 and IEnumerable`1, we pick IList`1.
 
         MethodTable* pTopIfaceMT = NULL;
-        WinMDAdapter::RedirectedTypeIndex idxTopIface = (WinMDAdapter::RedirectedTypeIndex)-1;
 
         MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
         while (it.Next())
         {
             MethodTable* pIfaceMT = it.GetInterface();
-            if (ResolveRedirectedType(pIfaceMT, &index) ||
-                pIfaceMT->IsProjectedFromWinRT())
+            if (pIfaceMT->IsProjectedFromWinRT())
             {
                 if (pTopIfaceMT == NULL || pIfaceMT->ImplementsInterface(pTopIfaceMT))
                 {
                     pTopIfaceMT = pIfaceMT;
-
-                    // If pIfaceMT is not a redirected type, idxTopIface will contain garbage.
-                    // But that is fine because we will only use idxTopIface if pTopIfaceMT
-                    // is a redirected type.
-                    idxTopIface = index;
                 }
             }
         }
 
         if (pTopIfaceMT != NULL)
         {
-            strWinRTTypeName.Append(WinMDAdapter::GetRedirectedTypeFullWinRTName(idxTopIface));
-
             // Since we are returning the typeName for the pTopIfaceMT we should use the same interfaceType
             // to check for instantiation and creating the closed generic.
             pMT = pTopIfaceMT;
@@ -580,125 +483,6 @@ bool WinRTTypeNameConverter::AppendWinRTNameForPrimitiveType(MethodTable *pMT, S
     return false;
 }
 
-// static
-bool WinRTTypeNameConverter::IsRedirectedType(MethodTable *pMT, WinMDAdapter::WinMDTypeKind kind)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    WinMDAdapter::RedirectedTypeIndex index;
-    return (ResolveRedirectedType(pMT, &index) && (g_redirectedTypeNames[index].kind == kind));
-}
-
-//
-// Determine if the given type redirected only by doing name comparisons.  This is used to
-// calculate the redirected type index at EEClass creation time.
-//
-
-// static
-WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndexByName(
-    Module *pModule,
-    mdTypeDef token)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    // If the redirected type hashtable has not been initialized initialize it
-    if (s_pRedirectedTypeNamesHashTable == NULL)
-    {
-        NewHolder<RedirectedTypeNamesHashTable> pRedirectedTypeNamesHashTable = new RedirectedTypeNamesHashTable();
-        pRedirectedTypeNamesHashTable->Reallocate(2 * COUNTOF(g_redirectedTypeNames));
-
-        for (int i = 0; i < COUNTOF(g_redirectedTypeNames); ++i)
-        {
-            pRedirectedTypeNamesHashTable->Add(&(g_redirectedTypeNames[i]));
-        }
-
-        if (InterlockedCompareExchangeT(&s_pRedirectedTypeNamesHashTable, pRedirectedTypeNamesHashTable.GetValue(), NULL) == NULL)
-        {
-            pRedirectedTypeNamesHashTable.SuppressRelease();
-        }
-    }
-
-    IMDInternalImport *pInternalImport = pModule->GetMDImport();
-    LPCSTR szName;
-    LPCSTR szNamespace;
-    IfFailThrow(pInternalImport->GetNameOfTypeDef(token, &szName, &szNamespace));
-
-    const RedirectedTypeNames *const * ppRedirectedNames = s_pRedirectedTypeNamesHashTable->LookupPtr(RedirectedTypeNamesKey(szNamespace, szName));
-    if (ppRedirectedNames == NULL)
-    {
-        return WinMDAdapter::RedirectedTypeIndex_Invalid;
-    }
-
-    UINT redirectedTypeIndex = (UINT)(*ppRedirectedNames - g_redirectedTypeNames);
-    _ASSERTE(redirectedTypeIndex < COUNTOF(g_redirectedTypeNames));
-
-    // If the redirected assembly is mscorlib just compare it directly. This is necessary because
-    // WinMDAdapter::GetExtraAssemblyRefProps does not support mscorlib
-    if (g_redirectedTypeNames[redirectedTypeIndex].assembly == WinMDAdapter::FrameworkAssembly_Mscorlib)
-    {
-        return MscorlibBinder::GetModule()->GetAssembly() == pModule->GetAssembly() ?
-            (WinMDAdapter::RedirectedTypeIndex)redirectedTypeIndex :
-            WinMDAdapter::RedirectedTypeIndex_Invalid;
-    }
-
-    LPCSTR pSimpleName;
-    AssemblyMetaDataInternal context;
-    const BYTE * pbKeyToken;
-    DWORD cbKeyTokenLength;
-    DWORD dwFlags;
-    WinMDAdapter::GetExtraAssemblyRefProps(
-        g_redirectedTypeNames[redirectedTypeIndex].assembly,
-        &pSimpleName,
-        &context,
-        &pbKeyToken,
-        &cbKeyTokenLength,
-        &dwFlags);
-
-    AssemblySpec spec;
-    IfFailThrow(spec.Init(
-        pSimpleName,
-        &context,
-        pbKeyToken,
-        cbKeyTokenLength,
-        dwFlags));
-    Assembly* pRedirectedAssembly = spec.LoadAssembly(
-        FILE_LOADED,
-        FALSE); // fThrowOnFileNotFound
-
-    if (pRedirectedAssembly == NULL)
-    {
-        return WinMDAdapter::RedirectedTypeIndex_Invalid;
-    }
-
-    // Resolve the name in the redirected assembly to the actual type def and assembly
-    NameHandle nameHandle(szNamespace, szName);
-    nameHandle.SetTokenNotToLoad(tdAllTypes);
-    Module * pTypeDefModule;
-    mdTypeDef typeDefToken;
-
-    if (ClassLoader::ResolveNameToTypeDefThrowing(
-        pRedirectedAssembly->GetManifestModule(),
-        &nameHandle,
-        &pTypeDefModule,
-        &typeDefToken,
-        Loader::DontLoad))
-    {
-        // Finally check if the assembly from this type def token mathes the assembly type forwareded from the
-        // redirected assembly
-        if (pTypeDefModule->GetAssembly() == pModule->GetAssembly())
-        {
-            return (WinMDAdapter::RedirectedTypeIndex)redirectedTypeIndex;
-        }
-    }
-
-    return WinMDAdapter::RedirectedTypeIndex_Invalid;
-}
-
 struct WinRTPrimitiveTypeMapping
 {
 
@@ -774,30 +558,6 @@ bool WinRTTypeNameConverter::GetMethodTableFromWinRTPrimitiveType(LPCWSTR wszTyp
 
     // it's not a primitive
     return false;
-}
-
-// Is the specified MethodTable a redirected WinRT type?
-bool WinRTTypeNameConverter::IsRedirectedWinRTSourceType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pMT->IsProjectedFromWinRT())
-        return false;
-
-    // redirected types are hidden (made internal) by the adapter
-    if (IsTdPublic(pMT->GetClass()->GetProtection()))
-        return false;
-
-    DefineFullyQualifiedNameForClassW();
-    LPCWSTR pszName = GetFullyQualifiedNameForClassW_WinRT(pMT);
-
-    return !!WinMDAdapter::ConvertWellKnownFullTypeNameFromWinRTToClr(&pszName, NULL);
 }
 
 //
@@ -986,17 +746,9 @@ TypeHandle WinRTTypeNameConverter::GetManagedTypeFromSimpleWinRTNameInternal(SSt
     // Redirection
     //
     LPCWSTR pwszTypeName = ssTypeName->GetUnicode();
-    WinMDAdapter::RedirectedTypeIndex uIndex;
     MethodTable *pMT = NULL;
 
-    if (WinMDAdapter::ConvertWellKnownFullTypeNameFromWinRTToClr(&pwszTypeName, &uIndex))
-    {
-        //
-        // Well known redirected types
-        //
-        return TypeHandle(GetAppDomain()->GetRedirectedType(uIndex));
-    }
-    else if (GetMethodTableFromWinRTPrimitiveType(pwszTypeName, ssTypeName->GetCount(), &pMT))
+    if (GetMethodTableFromWinRTPrimitiveType(pwszTypeName, ssTypeName->GetCount(), &pMT))
     {
 
         //

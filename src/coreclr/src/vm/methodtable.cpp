@@ -6327,54 +6327,33 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
         return FALSE;
     }
 
-    bool fIsRedirected = false;
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-    {
-        // If the type is not primitive and not coming from .winmd, it can still be legal if
-        // it's one of the redirected types (e.g. IEnumerable<T>).
-        if (!WinRTTypeNameConverter::IsRedirectedType(this))
-            return FALSE;
-
-        fIsRedirected = true;
-    }
-
     if (IsValueType())
     {
-        if (!fIsRedirected)
+        // check fields
+        ApproxFieldDescIterator fieldIterator(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
+        for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            // check fields
-            ApproxFieldDescIterator fieldIterator(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
-            for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+            TypeHandle thField = pFD->GetFieldTypeHandleThrowing(CLASS_LOAD_EXACTPARENTS);
+
+            if (thField.IsTypeDesc())
+                return FALSE;
+
+            MethodTable *pFieldMT = thField.GetMethodTable();
+
+            // the only allowed reference types are System.String and types projected from WinRT value types
+            if (!pFieldMT->IsValueType() && !pFieldMT->IsString())
             {
-                TypeHandle thField = pFD->GetFieldTypeHandleThrowing(CLASS_LOAD_EXACTPARENTS);
-
-                if (thField.IsTypeDesc())
-                    return FALSE;
-
-                MethodTable *pFieldMT = thField.GetMethodTable();
-
-                // the only allowed reference types are System.String and types projected from WinRT value types
-                if (!pFieldMT->IsValueType() && !pFieldMT->IsString())
-                {
-                    WinMDAdapter::RedirectedTypeIndex index;
-                    if (!WinRTTypeNameConverter::ResolveRedirectedType(pFieldMT, &index))
-                        return FALSE;
-
-                    WinMDAdapter::WinMDTypeKind typeKind;
-                    WinMDAdapter::GetRedirectedTypeInfo(index, NULL, NULL, NULL, NULL, NULL, &typeKind);
-                    if (typeKind != WinMDAdapter::WinMDTypeKind_Struct && typeKind != WinMDAdapter::WinMDTypeKind_Enum)
-                        return FALSE;
-                }
-
-                if (!pFieldMT->IsLegalNonArrayWinRTType())
-                    return FALSE;
+                return FALSE;
             }
+
+            if (!pFieldMT->IsLegalNonArrayWinRTType())
+                return FALSE;
         }
     }
 
-    if (IsInterface() || IsDelegate() || (IsValueType() && fIsRedirected))
+    if (IsInterface() || IsDelegate())
     {
-        // interfaces, delegates, and redirected structures can be generic - check the instantiation
+        // interfaces, delegates can be generic - check the instantiation
         if (HasInstantiation())
         {
             Instantiation inst = GetInstantiation();
@@ -7571,26 +7550,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         return;
     }
 
-#ifdef FEATURE_COMINTEROP
-    if ((SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeProjected))
-        || (!bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType()))
-    {
-        // Closed generic WinRT interfaces/delegates have their GUID computed
-        // based on the "PIID" in metadata and the instantiation.
-        // Note that we explicitly do this computation for redirected mscorlib
-        // interfaces only if !bClassic, so typeof(Enumerable<T>).GUID
-        // for example still returns the same result as pre-v4.5 runtimes.
-        // ComputeGuidForGenericType() may throw for generics nested beyond 64 levels.
-        WinRTGuidGenerator::ComputeGuidForGenericType(this, pGuid);
-
-        // This GUID is per-instantiation so make sure that the cache
-        // where we are going to keep it is per-instantiation as well.
-        _ASSERTE(IsCanonicalMethodTable() || HasGuidInfo());
-    }
-    else
-#endif // FEATURE_COMINTEROP
     if (GetClass()->HasNoGuid())
     {
         *pGuid = GUID_NULL;
@@ -9920,83 +9879,6 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
     return nullptr;
 #endif
 }
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedDelegate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!IsDelegate())
-    {
-        return FALSE;
-    }
-
-    return !!WinRTDelegateRedirector::ResolveRedirectedDelegate(this, nullptr);
-}
-
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedInterface(TypeHandle::InteropKind interopKind)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsInterface())
-        return FALSE;
-
-    if (!HasRCWPerTypeData())
-    {
-        // All redirected interfaces have per-type RCW data
-        return FALSE;
-    }
-
-#ifdef DACCESS_COMPILE
-    RCWPerTypeData *pData = NULL;
-#else // DACCESS_COMPILE
-    // We want to keep this function LIMITED_METHOD_CONTRACT so we call GetRCWPerTypeData with
-    // the non-throwing flag. pData can be NULL if it could not be allocated.
-    RCWPerTypeData *pData = GetRCWPerTypeData(false);
-#endif // DACCESS_COMPILE
-
-    DWORD dwFlags = (pData != NULL ? pData->m_dwFlags : 0);
-    if ((dwFlags & RCWPerTypeData::InterfaceFlagsInited) == 0)
-    {
-        dwFlags = RCWPerTypeData::InterfaceFlagsInited;
-
-        if (WinRTInterfaceRedirector::ResolveRedirectedInterface(this, NULL))
-        {
-            dwFlags |= RCWPerTypeData::IsRedirectedInterface;
-        }
-        else if (HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)) ||
-                 HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)) ||
-                 this == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-        {
-            dwFlags |= RCWPerTypeData::IsICollectionGeneric;
-        }
-
-        if (pData != NULL)
-        {
-            FastInterlockOr(&pData->m_dwFlags, dwFlags);
-        }
-    }
-
-    if ((dwFlags & RCWPerTypeData::IsRedirectedInterface) != 0)
-        return TRUE;
-
-    if (interopKind == TypeHandle::Interop_ManagedToNative)
-    {
-        // ICollection<T> is redirected in the managed->WinRT direction (i.e. we have stubs
-        // that implement ICollection<T> methods in terms of IVector/IMap), but it is not
-        // treated specially in the WinRT->managed direction (we don't build a WinRT vtable
-        // for a class that only implements ICollection<T>).  IReadOnlyCollection<T> is
-        // treated similarly.
-        if ((dwFlags & RCWPerTypeData::IsICollectionGeneric) != 0)
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

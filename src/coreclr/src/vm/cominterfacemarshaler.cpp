@@ -102,42 +102,6 @@ VOID COMInterfaceMarshaler::Init(IUnknown* pUnk, MethodTable* pClassMT, Thread *
     }
 }
 
-// Returns true if the type is WinRT-redirected and requires special marshaler functionality
-// to convert an interface pointer to its corresponding managed instance.
-static bool IsRedirectedToNonRCWType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pMT == nullptr)
-    {
-        return false;
-    }
-
-    WinMDAdapter::RedirectedTypeIndex index;
-    if (!WinRTTypeNameConverter::ResolveRedirectedType(pMT, &index))
-    {
-        return false;
-    }
-
-    if (index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_KeyValuePair)
-    {
-        // we need to convert IKeyValuePair to boxed KeyValuePair
-        return true;
-    }
-
-    // redirected runtime classes are not RCWs
-    WinMDAdapter::WinMDTypeKind kind;
-    WinMDAdapter::GetRedirectedTypeInfo(index, nullptr, nullptr, nullptr, nullptr, nullptr, &kind);
-
-    return kind == WinMDAdapter::WinMDTypeKind_Runtimeclass;
-}
-
 //--------------------------------------------------------------------------------
 // VOID COMInterfaceMarshaler::InitializeObjectClass()
 //--------------------------------------------------------------------------------
@@ -201,17 +165,12 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
                     {
                         m_itfTypeHandle = typeHandle;
                     }
-                    else if (IsRedirectedToNonRCWType(typeHandle.GetMethodTable()))
-                    {
-                        m_typeHandle = typeHandle;
-                        m_fNonRCWType = true;
-                    }
                     else if (!typeHandle.IsValueType())
                     {
                         // if the type returned from GetRuntimeClassName is a class, it must be derived from __ComObject
                         // or be a WinRT delegate for us to be able to build an RCW for it
                         if (typeHandle.IsComObjectType() ||
-                            (!typeHandle.IsTypeDesc() && typeHandle.GetMethodTable()->IsDelegate() && (typeHandle.IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(typeHandle.GetMethodTable()))))
+                            (!typeHandle.IsTypeDesc() && typeHandle.GetMethodTable()->IsDelegate() && typeHandle.IsProjectedFromWinRT()))
                         {
                             m_typeHandle = typeHandle;
                         }
@@ -252,7 +211,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         MODE_COOPERATIVE;
         PRECONDITION(IsProtectedByGCFrame(pComObj));
         PRECONDITION(!m_typeHandle.IsNull());
-        PRECONDITION(m_typeHandle.IsComObjectType() || (m_typeHandle.GetMethodTable()->IsDelegate() && (m_typeHandle.GetMethodTable()->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(m_typeHandle.GetMethodTable()))));
+        PRECONDITION(m_typeHandle.IsComObjectType() || (m_typeHandle.GetMethodTable()->IsDelegate() && m_typeHandle.GetMethodTable()->IsProjectedFromWinRT()));
         PRECONDITION(m_pThread == GetThread());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }

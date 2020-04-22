@@ -936,11 +936,6 @@ FCFuncStart(gInterfaceMarshalerFuncs)
     FCFuncElement("ConvertToManagedWithoutUnboxing", StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing)
 FCFuncEnd()
 
-FCFuncStart(gUriMarshalerFuncs)
-    FCFuncElement("GetRawUriFromNative", StubHelpers::UriMarshaler__GetRawUriFromNative)
-    FCFuncElement("CreateNativeUriInstanceHelper", StubHelpers::UriMarshaler__CreateNativeUriInstance)
-FCFuncEnd()
-
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdSafeArrayMarshaler::ConvertSpaceToNative)
@@ -990,7 +985,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetCOMIPFromRCW_WinRTSharedGeneric", StubHelpers::GetCOMIPFromRCW_WinRTSharedGeneric)
     FCFuncElement("GetCOMIPFromRCW_WinRTDelegate", StubHelpers::GetCOMIPFromRCW_WinRTDelegate)
     FCFuncElement("ShouldCallWinRTInterface", StubHelpers::ShouldCallWinRTInterface)
-    FCFuncElement("GetTargetForAmbiguousVariantCall", StubHelpers::GetTargetForAmbiguousVariantCall)
     FCFuncElement("GetDelegateInvokeMethod", StubHelpers::GetDelegateInvokeMethod)
     FCFuncElement("GetWinRTFactoryObject", StubHelpers::GetWinRTFactoryObject)
     FCFuncElement("GetWinRTFactoryReturnValue", StubHelpers::GetWinRTFactoryReturnValue)
@@ -1277,9 +1271,6 @@ FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("UriMarshaler", "System.StubHelpers", gUriMarshalerFuncs)
-#endif
 #ifdef FEATURE_UTF8STRING
 FCClassElement("Utf8String", "System", gUtf8StringFuncs)
 #endif // FEATURE_UTF8STRING

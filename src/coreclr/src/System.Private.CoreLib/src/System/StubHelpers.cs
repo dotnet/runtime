@@ -1305,9 +1305,6 @@ namespace System.StubHelpers
         internal static extern bool ShouldCallWinRTInterface(object objSrc, IntPtr pCPCMD);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Delegate GetTargetForAmbiguousVariantCall(object objSrc, IntPtr pMT, out bool fUseString);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateInvokeMethod(Delegate pThis);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

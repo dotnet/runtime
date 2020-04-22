@@ -84,7 +84,6 @@ struct OverrideProcArgs
             VARTYPE         m_vt;
 #ifdef FEATURE_COMINTEROP
             SIZE_T          m_cbElementSize;
-            WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
 #endif // FEATURE_COMINTEROP
         } na;
 
@@ -781,7 +780,6 @@ public:
     , m_errorResourceId(0)
     , m_flags(flags)
 #ifdef FEATURE_COMINTEROP
-    , m_redirectedTypeIndex((WinMDAdapter::RedirectedTypeIndex)0)
     , m_cbElementSize(0)
 #endif // FEATURE_COMINTEROP
     {
@@ -862,11 +860,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    WinMDAdapter::RedirectedTypeIndex GetRedirectedTypeIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_redirectedTypeIndex;
-    }
 
     SIZE_T GetElementSize()
     {
@@ -898,7 +891,6 @@ protected:
     ArrayMarshalInfoFlags m_flags;
 
 #ifdef FEATURE_COMINTEROP
-    WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
     SIZE_T m_cbElementSize;
 #endif // FEATURE_COMINTEROP
 };

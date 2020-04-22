@@ -45,11 +45,11 @@ namespace Generics
         {
             if (pOldMT->IsInterface())
             {
-                fHasGuidInfo = (pOldMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pOldMT, WinMDAdapter::WinMDTypeKind_PInterface));
+                fHasGuidInfo = (pOldMT->IsProjectedFromWinRT());
             }
             else if (pOldMT->IsDelegate())
             {
-                fHasGuidInfo = (pOldMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pOldMT, WinMDAdapter::WinMDTypeKind_PDelegate));
+                fHasGuidInfo = (pOldMT->IsProjectedFromWinRT());
 
                 // Generic WinRT delegates expose a class interface and need a CCW template
                 fHasCCWTemplate = fHasGuidInfo;
@@ -61,7 +61,7 @@ namespace Generics
                 {
                     // Interfaces need the CCW template if they are redirected and need variance
                     if (pOldMT->HasVariance() &&
-                        (pOldMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pOldMT, WinMDAdapter::WinMDTypeKind_PInterface)))
+                        pOldMT->IsProjectedFromWinRT())
                         {
                             fHasCCWTemplate = TRUE;
                         }
@@ -76,7 +76,7 @@ namespace Generics
                         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
                         MethodTable *pItfMT = pOldIMap[iItf].GetApproxMethodTable(pOldMT->GetLoaderModule());
                         if (pItfMT->HasInstantiation() &&
-                            (pItfMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pItfMT, WinMDAdapter::WinMDTypeKind_PInterface)))
+                            pItfMT->IsProjectedFromWinRT())
                         {
                             fHasCCWTemplate = TRUE;
                             break;

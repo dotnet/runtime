@@ -312,7 +312,6 @@ ErrExit:
         LPCSTR      szName,                 // [IN] CustomAttribute's name to scope the search
         HENUMInternal *phEnum)         // [OUT] the enumerator to fill
     {
-        WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(&szName);
         return m_pRawInternalImport->EnumCustomAttributeByNameInit(tkParent, szName, phEnum);
     }
 
@@ -463,19 +462,9 @@ ErrExit:
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName)
     {
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG           cbOrigSig;
         HRESULT hr = S_OK;
-        IfFailRet(m_pRawInternalImport->GetNameAndSigOfMethodDef(methoddef, &pOrigSig, &cbOrigSig, pszName));
-        IfFailRet(m_pWinMDAdapter->ModifyMethodProps(methoddef, NULL, NULL, NULL, pszName));
-
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtMethodDef>(
-            methoddef,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSig,         // pcbOrigSig
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawInternalImport);
+        IfFailRet(m_pRawInternalImport->GetNameAndSigOfMethodDef(methoddef, ppvSigBlob, pcbSigBlob, pszName));
+        return m_pWinMDAdapter->ModifyMethodProps(methoddef, NULL, NULL, NULL, pszName);
     }
 
     // return the name of a FieldDef
@@ -617,13 +606,7 @@ ErrExit:
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         PCCOR_SIGNATURE *ppSig)
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtMethodDef>(
-            methoddef,
-            NULL,
-            NULL,
-            ppSig,
-            pcbSigBlob,
-            m_pRawInternalImport);
+        return m_pRawInternalImport->GetSigOfMethodDef(methoddef, pcbSigBlob, ppSig);
     }
 
     __checkReturn
@@ -632,13 +615,7 @@ ErrExit:
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         PCCOR_SIGNATURE *ppSig)
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtFieldDef>(
-            fielddef,
-            NULL,
-            NULL,
-            ppSig,
-            pcbSigBlob,
-            m_pRawInternalImport);
+        return m_pRawInternalImport->GetSigOfFieldDef(fielddef, pcbSigBlob, ppSig);
     }
 
     __checkReturn
@@ -647,19 +624,6 @@ ErrExit:
         ULONG *           pcbSig,
         PCCOR_SIGNATURE * ppSig)
     {
-        if (TypeFromToken(tk) == mdtMethodDef)
-        {
-            return GetSigOfMethodDef(tk, pcbSig, ppSig);
-        }
-        else if (TypeFromToken(tk) == mdtFieldDef)
-        {
-            return GetSigOfFieldDef(tk, pcbSig, ppSig);
-        }
-        else if (TypeFromToken(tk) == mdtTypeSpec)
-        {
-            return GetTypeSpecFromToken(tk, ppSig, pcbSig);
-        }
-        // Note: mdtSignature is not part of public WinMD surface, so it does not need signature rewriting - just call the underlying "raw" implementation
         return m_pRawInternalImport->GetSigFromToken(tk, pcbSig, ppSig);
     }
 
@@ -781,19 +745,9 @@ ErrExit:
         LPCSTR          *pszName)
     {
         HRESULT hr = S_OK;
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG           cbOrigSig;
 
-        IfFailRet(m_pRawInternalImport->GetNameAndSigOfMemberRef(memberref, &pOrigSig, &cbOrigSig, pszName));
-        IfFailRet(m_pWinMDAdapter->ModifyMemberProps(memberref, NULL, NULL, NULL, pszName));
-
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtMemberRef>(
-            memberref,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSig,         // pcbOrigSig
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawInternalImport);
+        IfFailRet(m_pRawInternalImport->GetNameAndSigOfMemberRef(memberref, ppvSigBlob, pcbSigBlob, pszName));
+        return m_pWinMDAdapter->ModifyMemberProps(memberref, NULL, NULL, NULL, pszName);
     }
 
     //*****************************************************************************
@@ -898,19 +852,7 @@ ErrExit:
         PCCOR_SIGNATURE *ppvSig,            // [OUT] property type. pointing to meta data internal blob
         ULONG       *pcbSig)                // [OUT] count of bytes in *ppvSig
     {
-        HRESULT hr = S_OK;
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG           cbOrigSig;
-
-        IfFailRet(m_pRawInternalImport->GetPropertyProps(prop, szProperty, pdwPropFlags, &pOrigSig, &cbOrigSig));
-
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtProperty>(
-            prop,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSig,         // pcbOrigSig
-            ppvSig,
-            pcbSig,
-            m_pRawInternalImport);
+        return m_pRawInternalImport->GetPropertyProps(prop, szProperty, pdwPropFlags, ppvSig, pcbSig);
     }
 
     //**********************************
@@ -1174,13 +1116,7 @@ ErrExit:
         PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to token.
         ULONG       *pcbSig)                // [OUT] return size of signature.
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtTypeSpec>(
-            typespec,
-            NULL,          // ppOrigSig
-            NULL,          // pcbOrigSig
-            ppvSig,
-            pcbSig,
-            m_pRawInternalImport);
+        return m_pRawInternalImport->GetTypeSpecFromToken(typespec, ppvSig, pcbSig);
     }
 
     __checkReturn
@@ -1357,19 +1293,7 @@ ErrExit:
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob)            // [OUT] actual size of signature blob
     {
-        HRESULT hr = S_OK;
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG           cbOrigSig;
-
-        IfFailRet(m_pRawInternalImport->GetMethodSpecProps(ms, tkParent, &pOrigSig, &cbOrigSig));
-
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtMethodSpec>(
-            ms,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSig,         // pcbOrigSig
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawInternalImport);
+        return m_pRawInternalImport->GetMethodSpecProps(ms, tkParent, ppvSigBlob, pcbSigBlob);
     }
 
     __checkReturn
@@ -1450,7 +1374,6 @@ ErrExit:
     {
         HRESULT hr;
         IfFailRet(m_pRawInternalImport->GetNameOfCustomAttribute(mdAttribute, pszNamespace, pszName));
-        WinMDAdapter::ConvertWellKnownTypeNameFromWinRTToClr(pszNamespace, pszName);
         return hr;
     }
 
@@ -1528,13 +1451,7 @@ ErrExit:
         PCCOR_SIGNATURE *ppvSig,
         ULONG           *pcbSig)
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMDInternalImport, mdtTypeSpec>(
-            ts,
-            NULL,          // ppOrigSig
-            NULL,          // pcbOrigSig
-            ppvSig,
-            pcbSig,
-            m_pRawInternalImport);
+        return m_pRawMetaModelCommon->CommonGetTypeSpecProps(ts, ppvSig, pcbSig);
     }
 
     __checkReturn

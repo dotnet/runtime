@@ -217,8 +217,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
         if (ReqIpType & ComIpType_Inspectable)
         {
-            WinMDAdapter::RedirectedTypeIndex redirectedTypeIndex;
-
             MethodTable * pMT = (*poref)->GetMethodTable();
 
             //
@@ -234,71 +232,9 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
             if (pMT->IsLegalWinRTType(poref) ||
                 MscorlibBinder::IsClass(pMT, CLASS__CLASS))
             {
-                if (WinRTTypeNameConverter::ResolveRedirectedType(pMT, &redirectedTypeIndex))
-                {
-                    // This is a redirected type - see if we need to manually marshal it
-                    if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Uri)
-                    {
-                        UriMarshalingInfo *pUriMarshalInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
-                        struct
-                        {
-                            OBJECTREF ref;
-                            STRINGREF refRawUri;
-                        }
-                        gc;
-                        ZeroMemory(&gc, sizeof(gc));
-                        GCPROTECT_BEGIN(gc);
-
-                        gc.ref = *poref;
-
-                        MethodDescCallSite getRawURI(pUriMarshalInfo->GetSystemUriOriginalStringMD());
-                        ARG_SLOT getRawURIArgs[] =
-                        {
-                            ObjToArgSlot(gc.ref)
-                        };
-
-                        gc.refRawUri = (STRINGREF)getRawURI.Call_RetOBJECTREF(getRawURIArgs);
-
-                        DWORD cchRawUri = gc.refRawUri->GetStringLength();
-                        LPCWSTR wszRawUri = gc.refRawUri->GetBuffer();
-
-                        {
-                            GCX_PREEMP();
-                            pUnk = CreateWinRTUri(wszRawUri, static_cast<INT32>(cchRawUri));
-                        }
-
-                        GCPROTECT_END();
-                    }
-                    else if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs ||
-                             redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventArgs)
-                    {
-                        MethodDesc *pMD;
-                        EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetEventArgsMarshalingInfo();
-
-                        if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs)
-                            pMD = pInfo->GetSystemNCCEventArgsToWinRTNCCEventArgsMD();
-                        else
-                            pMD = pInfo->GetSystemPCEventArgsToWinRTPCEventArgsMD();
-
-                        MethodDescCallSite marshalMethod(pMD);
-                        ARG_SLOT methodArgs[] =
-                        {
-                            ObjToArgSlot(*poref)
-                        };
-                        pUnk = (IUnknown *)marshalMethod.Call_RetLPVOID(methodArgs);
-                    }
-                    else
-                    {
-                        _ASSERTE(!W("Unexpected redirected type seen in GetComIPFromObjectRef"));
-                    }
-                }
-                else
-                {
-                    //
-                    // WinRT reference type - marshal as IInspectable
-                    //
-                    pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
-                }
+                // WinRT reference type - marshal as IInspectable
+                //
+                pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, IID_IInspectable, /* pIntfMT = */ NULL);
             }
             else
             {
@@ -533,7 +469,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             if (pMTClass)
             {
                 if (pMTClass->IsComObjectType() ||
-                    (pMTClass->IsDelegate() && (pMTClass->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pMTClass))))
+                    (pMTClass->IsDelegate() && pMTClass->IsProjectedFromWinRT()))
                 {
                     pComClassMT = pMTClass;
                 }

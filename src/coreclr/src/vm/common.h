@@ -424,10 +424,6 @@ extern DummyGlobalContract ___contract;
 #include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
-#ifdef FEATURE_COMINTEROP
-#include "WinRTRedirector.h"
-#include "winrtredirector.inl"
-#endif // FEATURE_COMINTEROP
 #include "eventtrace.inl"
 
 #if defined(COMMON_TURNED_FPO_ON)

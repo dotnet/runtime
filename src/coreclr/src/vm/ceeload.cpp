@@ -921,10 +921,6 @@ BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
     if (IsSystem() && pMT->IsProjectedFromWinRT())
         return FALSE;
 
-    // Don't cache redirected WinRT types.
-    if (WinRTTypeNameConverter::IsRedirectedWinRTSourceType(pMT))
-        return FALSE;
-
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Don't cache in a module that's not the NGen target, since the result
     // won't be saved, and since the such a module might be read-only.
@@ -7729,24 +7725,6 @@ void Module::ExpandAll(DataImage *image)
 
                 LPCSTR szNameSpace = NULL;
                 LPCSTR szName = NULL;
-                if (SUCCEEDED(pInternalImport->GetNameOfTypeRef(parent, &szNameSpace, &szName)))
-                {
-                    if (WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(&szNameSpace, &szName))
-                    {
-                        //
-                        // This is a MemberRef from a redirected WinRT type
-                        // We should skip it as managed view will never see this MemberRef anyway
-                        // Not skipping this will result MissingMethodExceptions as members in redirected
-                        // types doesn't exactly match their redirected CLR type counter part
-                        //
-                        // Typically we only need to do this for interfaces as we should never see MemberRef
-                        // from non-interfaces, but here to keep things simple I'm skipping every memberref that
-                        // belongs to redirected WinRT type
-                        //
-                        continue;
-                    }
-                }
-
             }
 #endif // FEATURE_COMINTEROP
 

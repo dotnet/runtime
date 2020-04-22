@@ -526,69 +526,6 @@ FCIMPL2(FC_BOOL_RET, StubHelpers::ShouldCallWinRTInterface, Object *pSrcUNSAFE, 
 }
 FCIMPLEND
 
-NOINLINE static DelegateObject *GetTargetForAmbiguousVariantCallHelper(RCW *pRCW, MethodTable *pMT, BOOL fIsEnumerable, CLR_BOOL *pfUseString)
-{
-    FC_INNER_PROLOG(StubHelpers::GetTargetForAmbiguousVariantCall);
-
-    DelegateObject *pRetVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Note that if the call succeeds, it will set the right OBJECTHANDLE/flags on the RCW so we won't have to do this
-    // next time. If the call fails, we don't care because it is an error and an exception will be thrown later.
-    SafeComHolder<IUnknown> pUnk = pRCW->GetComIPFromRCW(pMT);
-
-    WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType = WinRTInterfaceRedirector::GetStructureBaseType(pMT->GetInstantiation());
-
-    BOOL fUseString = FALSE;
-    BOOL fUseT = FALSE;
-    pRetVal = (DelegateObject *)OBJECTREFToObject(pRCW->GetTargetForAmbiguousVariantCall(fIsEnumerable, baseType, &fUseString, &fUseT));
-
-    *pfUseString = !!fUseString;
-
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
-
-    return pRetVal;
-}
-
-// Performs a run-time check to see how an ambiguous variant call on an RCW should be handled. Returns a delegate which should
-// be called, or sets *pfUseString to true which means that the caller should use the <string> instantiation. If NULL is returned
-// and *pfUseString is false, the caller should attempt to handle the call as usual.
-FCIMPL3(DelegateObject*, StubHelpers::GetTargetForAmbiguousVariantCall, Object *pSrcUNSAFE, MethodTable *pMT, CLR_BOOL *pfUseString)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW == NULL)
-    {
-        // ignore this - the call we'll attempt to make later will throw the right exception
-        *pfUseString = false;
-        return NULL;
-    }
-
-    BOOL fIsEnumerable = pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC));
-    _ASSERTE(fIsEnumerable || pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)));
-
-    WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType = WinRTInterfaceRedirector::GetStructureBaseType(pMT->GetInstantiation());
-
-    BOOL fUseString = FALSE;
-    BOOL fUseT = FALSE;
-    DelegateObject *pRetVal = (DelegateObject *)OBJECTREFToObject(pRCW->GetTargetForAmbiguousVariantCall(fIsEnumerable, baseType, &fUseString, &fUseT));
-
-    if (pRetVal != NULL || fUseT || fUseString)
-    {
-        *pfUseString = !!fUseString;
-        return pRetVal;
-    }
-
-    // we haven't seen QI for the interface yet, trigger it now
-    FC_INNER_RETURN(DelegateObject*, GetTargetForAmbiguousVariantCallHelper(pRCW, pMT, fIsEnumerable, pfUseString));
-}
-FCIMPLEND
-
 FCIMPL2(void, StubHelpers::ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest)
 {
     FCALL_CONTRACT;
@@ -696,64 +633,6 @@ void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
     END_QCALL;
 }
 #include <optdefault.h>
-
-
-
-
-FCIMPL1(StringObject*, StubHelpers::UriMarshaler__GetRawUriFromNative, ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == pIUriRC)
-    {
-        return NULL;
-    }
-
-    STRINGREF strRef = NULL;
-    UINT32 cchRawUri = 0;
-    LPCWSTR pwszRawUri = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(strRef);
-
-    WinRtString hsRawUriName;
-
-    {
-        GCX_PREEMP();
-
-        // Get the RawUri string from the WinRT URI object
-        IfFailThrow(pIUriRC->get_RawUri(hsRawUriName.Address()));
-
-        pwszRawUri = hsRawUriName.GetRawBuffer(&cchRawUri);
-    }
-
-    strRef = StringObject::NewString(pwszRawUri, cchRawUri);
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(strRef);
-}
-FCIMPLEND
-
-FCIMPL2(IUnknown*, StubHelpers::UriMarshaler__CreateNativeUriInstance, WCHAR* pRawUri, UINT strLen)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pRawUri));
-    }
-    CONTRACTL_END;
-
-    ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    GCX_PREEMP();
-    pIUriRC = CreateWinRTUri(pRawUri, strLen);
-
-    HELPER_METHOD_FRAME_END();
-
-    return pIUriRC;
-}
-FCIMPLEND
 
 // A helper to convert an IP to object using special flags.
 FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative)

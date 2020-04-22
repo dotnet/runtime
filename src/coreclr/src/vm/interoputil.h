@@ -22,7 +22,6 @@ do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
 #ifdef FEATURE_COMINTEROP
 #include "winrttypenameconverter.h"
 #include "roparameterizediid.h"
-#include "../md/winmd/inc/adapter.h"
 #include <windows.foundation.h>
 
 // The format string to use to format unknown members to be passed to
@@ -445,33 +444,6 @@ TypeHandle LoadWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound, ICLRPrivBin
 //--------------------------------------------------------------------------------
 // Try to get the class from IInspectable.
 TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable, bool *pfSupportsIReference, bool *pfSupportsIReferenceArray);
-
-//--------------------------------------------------------------------------------
-// Build a WinRT URI for a given raw URI
-ABI::Windows::Foundation::IUriRuntimeClass *CreateWinRTUri(LPCWSTR wszUri, INT32 cchUri);
-
-// Generates GUIDs for parameterized WinRT types.
-class WinRTGuidGenerator
-{
-    class MetaDataLocator : public IRoMetaDataLocator
-    {
-        // IRoMetaDataLocator implementation:
-        STDMETHOD(Locate)(PCWSTR nameElement, IRoSimpleMetaDataBuilder &metaDataDestination) const;
-
-        // helper methods:
-        static HRESULT LocateTypeWithDefaultInterface(MethodTable *pMT, LPCWSTR pszName, IRoSimpleMetaDataBuilder &metaDataDestination);
-        static HRESULT LocateStructure(MethodTable *pMT, LPCWSTR pszName, IRoSimpleMetaDataBuilder &metaDataDestination);
-        static HRESULT LocateRedirectedType(MethodTable *pMT, IRoSimpleMetaDataBuilder &metaDataDestination);
-    };
-
-    static void PopulateNames(MethodTable *pMT, SArray<BYTE> &namesBuf, PCWSTR* &pszNames, COUNT_T &cNames);
-    static void PopulateNamesAppendNamePointers(MethodTable *pMT, SArray<BYTE> &namesBuf, PCWSTR* &pszNames, COUNT_T cNames);
-    static void PopulateNamesAppendTypeName(MethodTable *pMT, SArray<BYTE> &namesBuf, COUNT_T &cNames);
-public:
-    //--------------------------------------------------------------------------
-    // pGuid is filled with the constructed IID by the function.
-    static void ComputeGuidForGenericType(MethodTable *pMT, GUID *pGuid);
-};  // class WinRTGuidGenerator
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);

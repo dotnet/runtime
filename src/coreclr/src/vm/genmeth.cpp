@@ -383,7 +383,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             else if (getWrappedCode)
             {
                 pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
-#ifdef _DEBUG 
+#ifdef _DEBUG
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
@@ -417,12 +417,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         if (pExactMT->IsProjectedFromWinRT())
         {
             forComInterop = (pExactMT->IsInterface() || (pExactMT->IsDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-        else
-        {
-            // redirected interfaces and delegates also support interop
-            forComInterop = (pExactMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) ||
-                            (pExactMT->IsWinRTRedirectedDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
         }
 #endif // FEATURE_COMINTEROP
 

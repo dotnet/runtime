@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "..\md\winmd\inc\adapter.h"
 #include "clrprivbinding.h"
 
 struct WinRTTypeNameInfo;
@@ -41,11 +40,6 @@ public :
         bool            *pbIsPrimitive);
 
     //
-    // Return the redirection index and type kind if the MethodTable* is a redirected type
-    //
-    static bool ResolveRedirectedType(MethodTable *pMT, WinMDAdapter::RedirectedTypeIndex * pIndex, WinMDAdapter::WinMDTypeKind * pKind = NULL);
-
-    //
     // Append the WinRT type name for the method table, if it is a WinRT primitive type
     //
     static bool AppendWinRTNameForPrimitiveType(MethodTable *pMT, SString &strName);
@@ -59,33 +53,10 @@ public :
         return GetWinRTNameForPrimitiveType(pMT, NULL);
     }
 
-    //
-    // Is the specified MethodTable a redirected CLR type?
-    //
-    static bool IsRedirectedType(MethodTable *pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ResolveRedirectedType(pMT, NULL);
-    }
-
-    static bool IsRedirectedType(MethodTable *pMT, WinMDAdapter::WinMDTypeKind kind);
-
-    //
-    // Determine if the given type redirected only by doing name comparisons.  This is used to
-    // calculate the redirected type index at EEClass creation time.
-    //
-    static WinMDAdapter::RedirectedTypeIndex GetRedirectedTypeIndexByName(
-        Module *pModule,
-        mdTypeDef token);
 public :
     //==============================================================================================
     // WinRT -> Managed
     //==============================================================================================
-
-    //
-    // Is the specified MethodTable a redirected WinRT type?
-    //
-    static bool IsRedirectedWinRTSourceType(MethodTable *pMT);
 
     //
     // Get TypeHandle from a WinRT type name

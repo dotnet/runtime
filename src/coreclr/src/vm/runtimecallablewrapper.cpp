@@ -3010,86 +3010,6 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
 
 #endif //#ifndef CROSSGEN_COMPILE
 
-//-----------------------------------------------------------------
-// Returns a redirected collection interface corresponding to a given ICollection/ICollection<T> or NULL
-// if the given interface is not ICollection/ICollection<T>. This also works for IReadOnlyCollection<T>.
-// The BOOL parameters help resolve the ambiguity around ICollection<KeyValuePair<K, V>>.
-// static
-MethodTable *RCW::ResolveICollectionInterface(MethodTable *pItfMT, BOOL fPreferIDictionary, BOOL *pfChosenIDictionary)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(pfChosenIDictionary, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (pfChosenIDictionary != NULL)
-        *pfChosenIDictionary = FALSE;
-
-    // Casting/calling via ICollection<T> means QI/calling through IVector<T>, casting/calling via ICollection<KeyValuePair<K, V>> means
-    // QI/calling via IMap<K, V> OR IVector<IKeyValuePair<K, V>>. See which case it is.
-    if (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)))
-    {
-        Instantiation inst = pItfMT->GetInstantiation();
-        TypeHandle arg = inst[0];
-
-        if (fPreferIDictionary)
-        {
-            if (!arg.IsTypeDesc() && arg.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-            {
-                // ICollection<KeyValuePair<K, V>> -> IDictionary<K, V>
-                if (pfChosenIDictionary != NULL)
-                    *pfChosenIDictionary = TRUE;
-
-                pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IDictionary);
-                return TypeHandle(pItfMT).Instantiate(arg.GetInstantiation()).GetMethodTable();
-            }
-        }
-
-        // ICollection<T> -> IList<T>
-        pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IList);
-        return TypeHandle(pItfMT).Instantiate(inst).GetMethodTable();
-    }
-
-    // Casting/calling via IReadOnlyCollection<T> means QI/calling through IVectorView<T>, casting/calling via IReadOnlyCollection<KeyValuePair<K, V>> means
-    // QI/calling via IMapView<K, V> OR IVectorView<IKeyValuePair<K, V>>. See which case it is.
-    if (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)))
-    {
-        Instantiation inst = pItfMT->GetInstantiation();
-        TypeHandle arg = inst[0];
-
-        if (fPreferIDictionary)
-        {
-            if (!arg.IsTypeDesc() && arg.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-            {
-                // IReadOnlyCollection<KeyValuePair<K, V>> -> IReadOnlyDictionary<K, V>
-                if (pfChosenIDictionary != NULL)
-                    *pfChosenIDictionary = TRUE;
-
-                pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyDictionary);
-                return TypeHandle(pItfMT).Instantiate(arg.GetInstantiation()).GetMethodTable();
-            }
-        }
-
-        // IReadOnlyCollection<T> -> IReadOnlyList<T>
-        pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyList);
-        return TypeHandle(pItfMT).Instantiate(inst).GetMethodTable();
-    }
-
-    // Casting/calling via ICollection means QI/calling through IBindableVector (projected to IList).
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-    {
-        return MscorlibBinder::GetExistingClass(CLASS__ILIST);
-    }
-
-    // none of the above
-    return NULL;
-}
-
 // Helper method to allow us to compare a MethodTable against a known method table
 // from mscorlib.  If the mscorlib type isn't loaded, we don't load it because we
 // know that it can't be the MethodTable we're curious about.
@@ -3156,7 +3076,7 @@ MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
     }
     CONTRACT_END;
 
-    if (!pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::ResolveRedirectedType(pMT, NULL))
+    if (!pMT->IsProjectedFromWinRT())
     {
         RETURN NULL;
     }
@@ -3185,7 +3105,7 @@ RCW::InterfaceRedirectionKind RCW::GetInterfaceForQI(MethodTable *pItfMT, Method
     CONTRACTL_END;
 
     // We don't want to be redirecting interfaces if the underlying COM object is not a WinRT type
-    if (SupportsIInspectable() || pItfMT->IsWinRTRedirectedDelegate())
+    if (SupportsIInspectable())
     {
         MethodTable *pNewItfMT1;
         MethodTable *pNewItfMT2;
@@ -3289,75 +3209,6 @@ RCW::InterfaceRedirectionKind RCW::ComputeInterfacesForQI(MethodTable *pItfMT, M
         PRECONDITION(CheckPointer(ppNewItfMT2));
     }
     CONTRACTL_END;
-
-    WinMDAdapter::RedirectedTypeIndex redirectedInterfaceIndex;
-    RCW::InterfaceRedirectionKind redirectionKind = InterfaceRedirection_None;
-
-    BOOL fChosenIDictionary;
-    MethodTable *pResolvedItfMT = ResolveICollectionInterface(pItfMT, TRUE, &fChosenIDictionary);
-    if (pResolvedItfMT == NULL)
-    {
-        pResolvedItfMT = pItfMT;
-        // Let ResolveRedirectedType convert IDictionary/IList to the corresponding WinRT type as usual
-    }
-
-    if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex))
-    {
-        TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-
-        if (th.HasInstantiation())
-        {
-            *ppNewItfMT1 = th.Instantiate(pResolvedItfMT->GetInstantiation()).GetMethodTable();
-            if (pItfMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
-            {
-                redirectionKind = InterfaceRedirection_IEnumerable;
-            }
-            else
-            {
-                _ASSERTE(!fChosenIDictionary);
-                redirectionKind = InterfaceRedirection_Other;
-            }
-        }
-        else
-        {
-            // pItfMT is a non-generic redirected interface - for compat reasons do QI for the interface first,
-            // and if it fails, use redirection
-            *ppNewItfMT1 = pItfMT;
-            *ppNewItfMT2 = th.GetMethodTable();
-            redirectionKind = InterfaceRedirection_Other_RetryOnFailure;
-        }
-    }
-
-    if (fChosenIDictionary)
-    {
-        // pItfMT is the ambiguous ICollection<KeyValuePair<K, V>> and *ppNewItfMT1 at this point is the
-        // corresponding IMap<K, V>, now we are going to assign IVector<IKeyValuePair<K, V>> to *ppNewItfMT2
-        pResolvedItfMT = ResolveICollectionInterface(pItfMT, FALSE, NULL);
-
-        VERIFY(WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex));
-        TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-
-        *ppNewItfMT2 = th.Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
-        redirectionKind = InterfaceRedirection_IEnumerable_RetryOnFailure;
-    }
-
-    if (redirectionKind != InterfaceRedirection_None)
-    {
-        return redirectionKind;
-    }
-
-    if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pItfMT, &redirectedInterfaceIndex))
-    {
-        TypeHandle th = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(redirectedInterfaceIndex));
-
-        if (pItfMT->HasInstantiation())
-        {
-            th = th.Instantiate(pItfMT->GetInstantiation());
-        }
-
-        *ppNewItfMT1 = th.GetMethodTable();
-        return InterfaceRedirection_Other;
-    }
 
     *ppNewItfMT1 = pItfMT;
     return InterfaceRedirection_None;
@@ -3763,7 +3614,7 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
         RETURN NULL;
 
     bool fAllowOutOfContextCache = true;
-    if (!pMT->IsProjectedFromWinRT() && !pMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) && !pMT->IsWinRTRedirectedDelegate())
+    if (!pMT->IsProjectedFromWinRT())
     {
         // This is not a WinRT interface and we could in theory use the out-of-context auxiliary cache,
         // at worst we would just do
@@ -4201,38 +4052,7 @@ TypeHandle::CastResult RCW::SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfM
     }
     CONTRACTL_END;
 
-    WinMDAdapter::RedirectedTypeIndex index;
-
-    // @TODO: Make this nicer?
-    RedirectionBehavior redirectionBehavior;
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IEnumerable;
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_ICollection;
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ILIST))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IList;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_INotifyCollectionChanged)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_INotifyCollectionChanged;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_INotifyPropertyChanged)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_INotifyPropertyChanged;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Windows_Input_ICommand)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_ICommand;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_IDisposable)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IDisposable;
-    else
-    {
-        UNREACHABLE_MSG("Unknown redirected interface");
-    }
-
-    if ((redirectionBehavior & RedirectionBehaviorComputed) == 0)
-    {
-        // we don't know yet what the behavior should be
-        return TypeHandle::MaybeCast;
-    }
-
-    return ((redirectionBehavior & RedirectionBehaviorEnabled) == 0 ?
-        TypeHandle::CannotCast :
-        TypeHandle::CanCast);
+    return TypeHandle::CannotCast;
 }
 
 //---------------------------------------------------------------------
@@ -4247,67 +4067,7 @@ bool RCW::SupportsWinRTInteropInterface(MethodTable *pItfMT)
     }
     CONTRACTL_END;
 
-    TypeHandle::CastResult result = SupportsWinRTInteropInterfaceNoGC(pItfMT);
-    switch (result)
-    {
-        case TypeHandle::CanCast: return true;
-        case TypeHandle::CannotCast: return false;
-    }
-
-    WinMDAdapter::RedirectedTypeIndex index;
-    bool fLegacySupported;
-
-    // @TODO: Make this nicer?
-    RedirectionBehavior redirectionBehavior;
-    RCWFlags newFlags = { 0 };
-
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IEnumerable = redirectionBehavior;
-        newFlags.m_RedirectionBehavior_IEnumerable_LegacySupported = fLegacySupported;
-    }
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_ICollection = redirectionBehavior;
-    }
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ILIST))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IList = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_INotifyCollectionChanged)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_INotifyCollectionChanged = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_INotifyPropertyChanged)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_INotifyPropertyChanged = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Windows_Input_ICommand)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_ICommand = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_IDisposable)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IDisposable = redirectionBehavior;
-    }
-    else
-    {
-        UNREACHABLE_MSG("Unknown redirected interface");
-    }
-
-    // Use interlocked operation so we don't race with other threads trying to set some other flags on the RCW.
-    // Note that since we are in cooperative mode, we don't race with RCWCache::DetachWrappersWorker here.
-    FastInterlockOr(&m_Flags.m_dwFlags, newFlags.m_dwFlags);
-
-    _ASSERTE((redirectionBehavior & RedirectionBehaviorComputed) != 0);
-    return ((redirectionBehavior & RedirectionBehaviorEnabled) != 0);
+    return false;
 }
 
 //---------------------------------------------------------------------
@@ -4322,41 +4082,7 @@ RCW::RedirectionBehavior RCW::ComputeRedirectionBehavior(MethodTable *pItfMT, bo
     }
     CONTRACTL_END;
 
-    *pfLegacySupported = false;
-
-    // @TODO: It may be possible to take advantage of metadata (e.g. non-WinRT ComImport class says it implements ICollection -> use classic COM)
-    // and/or the interface cache but for now we'll just QI.
-
-    IID iid;
-    pItfMT->GetGuid(&iid, TRUE, TRUE);
-
-    SafeComHolder<IUnknown> pUnk;
-    if (SUCCEEDED(SafeQueryInterfaceRemoteAware(iid, &pUnk)))
-    {
-        // if the object supports the legacy COM interface we don't use redirection
-        *pfLegacySupported = true;
-        return RedirectionBehaviorComputed;
-    }
-
-    if (SupportsMngStdInterface(pItfMT))
-    {
-        // if the object supports the corresponding "managed std" interface we don't use redirection
-        *pfLegacySupported = true;
-        return RedirectionBehaviorComputed;
-    }
-
-    COMOBJECTREF oref = GetExposedObject();
-    if (ComObject::SupportsInterface(oref, pItfMT))
-    {
-        // the cast succeeded but we know that the legacy COM interface is not implemented
-        // -> we know for sure that the object supports the WinRT redirected interface
-        return (RedirectionBehavior)(RedirectionBehaviorComputed | RedirectionBehaviorEnabled);
-    }
-
-    // The object does not support anything which means that we are in a failure case and an
-    // exception will be thrown. For back compat we want the exception message to include the
-    // classic COM IID so we'll return the "no redirection" result.
-    return RedirectionBehaviorComputed;
+    return (RCW::RedirectionBehavior)0;
 }
 
 //--------------------------------------------------------------------------------

@@ -249,8 +249,7 @@ public:
 
     // Iterates COM-exposed interfaces of a class. Handles arrays which support IIterable<T>,
     // IVector<T>, and IVectorView<T>, as well as WinRT class factories which support factory
-    // and static interfaces. It is also aware of redirected interfaces - both the .NET and the
-    // corresponding WinRT type are reported
+    // and static interfaces.
     class CCWInterfaceMapIterator
     {
     private:
@@ -258,9 +257,6 @@ public:
         {
             MethodTable *m_pItfMT;
 
-            WinMDAdapter::RedirectedTypeIndex m_RedirectedIndex; // valid if m_dwIsRedirectedInterface is set
-
-            DWORD m_dwIsRedirectedInterface : 1;
             DWORD m_dwIsFactoryInterface    : 1;
             DWORD m_dwIsStaticInterface     : 1;
         };
@@ -274,10 +270,10 @@ public:
             return m_Interfaces[(COUNT_T)m_Index];
         }
 
-        InterfaceProps &AppendInterface(MethodTable *pItfMT, bool isRedirected);
+        InterfaceProps &AppendInterface(MethodTable *pItfMT);
 
     public:
-        CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact, bool fIterateRedirectedInterfaces);
+        CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact);
 
         BOOL Next()
         {
@@ -319,18 +315,6 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             return GetCurrentInterfaceProps().m_dwIsStaticInterface;
-        }
-
-        BOOL IsRedirectedInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsRedirectedInterface;
-        }
-
-        WinMDAdapter::RedirectedTypeIndex GetRedirectedInterfaceIndex() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_RedirectedIndex;
         }
     };
 
@@ -547,9 +531,7 @@ enum Masks
     enum_IsWinRTTrivialAggregate        = 0x00008000,
     enum_IsWinRTFactoryInterface        = 0x00010000,
     enum_IsWinRTStaticInterface         = 0x00020000,
-    enum_IsWinRTRedirectedInterface     = 0x00040000,
-
-    enum_WinRTRedirectedInterfaceMask   = 0xFF000000, // the highest byte contains redirected interface index
+    // enum_unused                      = 0x00040000,
 };
 
 typedef DPTR(struct ComMethodTable) PTR_ComMethodTable;
@@ -685,27 +667,6 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
         m_Flags |= enum_IsWinRTStaticInterface;
-    }
-
-    BOOL IsWinRTRedirectedInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTRedirectedInterface) != 0;
-    }
-
-    WinMDAdapter::RedirectedTypeIndex GetWinRTRedirectedInterfaceIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WinMDAdapter::RedirectedTypeIndex)((m_Flags & enum_WinRTRedirectedInterfaceMask) >> 24);
-    }
-
-    void SetWinRTRedirectedInterfaceIndex(WinMDAdapter::RedirectedTypeIndex index)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_Flags |= ((size_t)index << 24);
-        m_Flags |= enum_IsWinRTRedirectedInterface;
-        _ASSERTE(GetWinRTRedirectedInterfaceIndex() == index);
     }
 
     BOOL HasInvisibleParent()

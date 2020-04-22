@@ -489,9 +489,6 @@ struct RCW
         InterfaceRedirection_Other_RetryOnFailure,        // non-generic redirected interface
     };
 
-    // Returns a redirected collection interface corresponding to a given ICollection<T>, IReadOnlyCollection<T>, or NULL.
-    static MethodTable *ResolveICollectionInterface(MethodTable *pItfMT, BOOL fPreferIDictionary, BOOL *pfChosenIDictionary);
-
     // Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
     static MethodTable *GetVariantMethodTable(MethodTable *pMT);
     static MethodTable *ComputeVariantMethodTable(MethodTable *pMT);
@@ -831,70 +828,6 @@ struct RCW
         IReadOnlyListSupportedViaStringInstantiation    = 8,  // the object failed QI for IReadOnlyList<T> but succeeded QI for IReadOnlyList<string>
     };
 
-    // Returns a delegate object that points to the right GetEnumerator/Indexer_Get stub that should be used when calling these methods via
-    // IEnumerable<object>/IReadOnlyList<object> or NULL in which case the BOOL argument are relevant:
-    // *pfUseString == true means that the caller should use IEnumerable<string>/IReadOnlyList<string>
-    // *pfUseT == true means that the caller should handle the call as normal, i.e. invoking the stub instantiated over T.
-    OBJECTREF GetTargetForAmbiguousVariantCall(BOOL fIsEnumerable, WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType, BOOL *pfUseString, BOOL *pfUseT)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_pAuxiliaryData != NULL)
-        {
-            if (baseType == WinRTInterfaceRedirector::BaseType_Object)
-            {
-                if (fIsEnumerable)
-                {
-                    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable))
-                        return ObjectFromHandle(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable);
-
-                    if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable == VARIANCE_STUB_TARGET_USE_STRING)
-                        *pfUseString = TRUE;
-                    else if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable == VARIANCE_STUB_TARGET_USE_T)
-                        *pfUseT = TRUE;
-                }
-                else
-                {
-                    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList))
-                        return ObjectFromHandle(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList);
-
-                    if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList == VARIANCE_STUB_TARGET_USE_STRING)
-                        *pfUseString = TRUE;
-                    else if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList == VARIANCE_STUB_TARGET_USE_T)
-                        *pfUseT = TRUE;
-                }
-            }
-            else
-            {
-                InterfaceVarianceBehavior varianceBehavior = (baseType == WinRTInterfaceRedirector::BaseType_IEnumerable) ?
-                    (InterfaceVarianceBehavior)m_pAuxiliaryData->m_AuxFlags.m_InterfaceVarianceBehavior_OfIEnumerable :
-                    (InterfaceVarianceBehavior)m_pAuxiliaryData->m_AuxFlags.m_InterfaceVarianceBehavior_OfIEnumerableOfChar;
-
-                if (fIsEnumerable)
-                {
-                    if ((varianceBehavior & IEnumerableSupported) != 0)
-                    {
-                        if ((varianceBehavior & IEnumerableSupportedViaStringInstantiation) != 0)
-                            *pfUseString = TRUE;
-                        else
-                            *pfUseT = TRUE;
-                    }
-                }
-                else
-                {
-                    if ((varianceBehavior & IReadOnlyListSupported) != 0)
-                    {
-                        if ((varianceBehavior & IReadOnlyListSupportedViaStringInstantiation) != 0)
-                            *pfUseString = TRUE;
-                        else
-                            *pfUseT = TRUE;
-                    }
-                }
-            }
-        }
-        return NULL;
-    }
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -1167,10 +1100,9 @@ struct RCWPerTypeData
         VariantTypeInited       = 0x01,     // m_pVariantMT is set
         RedirectionInfoInited   = 0x02,     // m_pMTForQI1, m_pMTForQI2, and m_RedirectionKind are set
         GetEnumeratorInited     = 0x04,     // m_pGetEnumeratorMethod is set
-        InterfaceFlagsInited    = 0x08,     // IsRedirectedInterface and IsICollectionGeneric are set
-
-        IsRedirectedInterface   = 0x10,     // the type is a redirected interface
-        IsICollectionGeneric    = 0x20,     // the type is ICollection`1
+        // unused               = 0x08,
+        // unused               = 0x10,
+        // unused               = 0x20,
     };
     DWORD m_dwFlags;
 };

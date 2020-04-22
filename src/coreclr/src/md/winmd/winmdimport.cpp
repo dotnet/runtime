@@ -787,17 +787,7 @@ class WinMDImport : public IMetaDataImport2
             return m_pRawImport->GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags);
         }
 
-        ULONG cbOrigSigBlob = (ULONG)(-1);
-        PCCOR_SIGNATURE pOrigSig = NULL;
-        IfFailRet(hrNameTruncation = m_pRawImport->GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, &pOrigSig, &cbOrigSigBlob, pulCodeRVA, pdwImplFlags));
-
-        IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodDef>(
-            mb,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawImport)));
+        IfFailRet(hrNameTruncation = m_pRawImport->GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags));
 
         LPCSTR szNewName = NULL;
         IfFailRet(m_pWinMDAdapter->ModifyMethodProps(mb, pdwAttr, pdwImplFlags, pulCodeRVA, &szNewName));
@@ -825,18 +815,9 @@ class WinMDImport : public IMetaDataImport2
         HRESULT hr = S_OK;
         HRESULT hrNameTruncation;
 
-        ULONG cbOrigSigBlob = (ULONG)(-1);
-        PCCOR_SIGNATURE pOrigSig = NULL;
-        IfFailRet(hrNameTruncation = m_pRawImport->GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, &pOrigSig, &cbOrigSigBlob));
+        IfFailRet(hrNameTruncation = m_pRawImport->GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig));
         LPCSTR szNewName = NULL;
         IfFailRet(m_pWinMDAdapter->ModifyMemberProps(mr, NULL, NULL, NULL, &szNewName));
-        IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMemberRef>(
-            mr,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob,
-            pbSig,
-            m_pRawImport)));
         if (szNewName != NULL)
         {
             // We want to return name truncation status from the method that really fills the output buffer, rewrite the previous value
@@ -993,13 +974,7 @@ class WinMDImport : public IMetaDataImport2
         PCCOR_SIGNATURE *ppvSig,            // [OUT] return pointer to TypeSpec signature
         ULONG       *pcbSig)                // [OUT] return size of signature.
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtTypeSpec>(
-            typespec,
-            NULL,     // ppOrigSig
-            NULL,     // pcbOrigSig
-            ppvSig,
-            pcbSig,
-            m_pRawImport);
+        return m_pRawImport->GetTypeSpecFromToken(typespec, ppvSig, pcbSig);
     }
 
 
@@ -1178,42 +1153,10 @@ class WinMDImport : public IMetaDataImport2
             return m_pRawImport->GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue);
         }
 
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG cbOrigSig;
-
-        IfFailRet(hrNameTruncation = m_pRawImport->GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, &pOrigSig, &cbOrigSig, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue));
+        IfFailRet(hrNameTruncation = m_pRawImport->GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue));
 
         LPCSTR szNewName = NULL;
         IfFailRet(m_pWinMDAdapter->ModifyMemberProps(mb, pdwAttr, pdwImplFlags, pulCodeRVA, &szNewName));
-
-        if (IsValidNonNilToken(mb, mdtMethodDef))
-        {
-            IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodDef>(
-                mb,
-                &pOrigSig,          // ppOrigSig
-                &cbOrigSig,         // pcbOrigSig
-                ppvSigBlob,
-                pcbSigBlob,
-                m_pRawImport)));
-        }
-        else if (IsValidNonNilToken(mb, mdtFieldDef))
-        {
-            IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtFieldDef>(
-                mb,
-                &pOrigSig,          // ppOrigSig
-                &cbOrigSig,         // pcbOrigSig
-                ppvSigBlob,
-                pcbSigBlob,
-                m_pRawImport)));
-        }
-        else
-        {
-            if (ppvSigBlob != NULL)
-                *ppvSigBlob = pOrigSig;
-
-            if (pcbSigBlob != NULL)
-                *pcbSigBlob = cbOrigSig;
-        }
 
         if (szNewName != NULL)
         {
@@ -1243,18 +1186,9 @@ class WinMDImport : public IMetaDataImport2
         HRESULT hr;
         HRESULT hrNameTruncation;
 
-        PCCOR_SIGNATURE pOrigSig;
-        ULONG cbOrigSig;
-        IfFailRet(hrNameTruncation = m_pRawImport->GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, &pOrigSig, &cbOrigSig, pdwCPlusTypeFlag, ppValue, pcchValue));
+        IfFailRet(hrNameTruncation = m_pRawImport->GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag, ppValue, pcchValue));
 
         IfFailRet(m_pWinMDAdapter->ModifyFieldDefProps(mb, pdwAttr));
-        IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtFieldDef>(
-            mb,
-            &pOrigSig,
-            &cbOrigSig,
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawImport)));
 
         // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
         return hrNameTruncation;
@@ -1279,22 +1213,7 @@ class WinMDImport : public IMetaDataImport2
         ULONG       cMax,                   // [IN] size of rmdOtherMethod
         ULONG       *pcOtherMethod)         // [OUT] total number of other method of this property
     {
-        HRESULT hr = S_OK;
-        HRESULT hrNameTruncation;
-
-        ULONG cbOrigSigBlob = (ULONG)(-1);
-        PCCOR_SIGNATURE pOrigSig = NULL;
-        IfFailRet(hrNameTruncation = m_pRawImport->GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, &pOrigSig, &cbOrigSigBlob, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod));
-
-        IfFailRet((m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtProperty>(
-            prop,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSigBlob,     // pcbOrigSig
-            ppvSig,
-            pbSig,
-            m_pRawImport)));
-        // Return the success code from name filling (S_OK or CLDB_S_TRUNCATION)
-        return hrNameTruncation;
+        return m_pRawImport->GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod);
     }
 
 
@@ -1428,19 +1347,7 @@ class WinMDImport : public IMetaDataImport2
         PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to the blob value of meta data
         ULONG       *pcbSigBlob)            // [OUT] actual size of signature blob
     {
-        HRESULT hr = S_OK;
-
-        ULONG cbOrigSigBlob = (ULONG)(-1);
-        PCCOR_SIGNATURE pOrigSig = NULL;
-        IfFailRet(m_pRawImport->GetMethodSpecProps(mi, tkParent, &pOrigSig, &cbOrigSigBlob));
-
-        return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtMethodSpec>(
-            mi,
-            &pOrigSig,          // ppOrigSig
-            &cbOrigSigBlob,     // pcbOrigSig
-            ppvSigBlob,
-            pcbSigBlob,
-            m_pRawImport);
+        return m_pRawImport->GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob);
     }
 
 
@@ -1840,13 +1747,7 @@ ErrExit:
         PCCOR_SIGNATURE *ppvSig,
         ULONG       *pcbSig)
     {
-        return m_pWinMDAdapter->GetSignatureForToken<IMetaDataImport2, mdtTypeSpec>(
-            ts,
-            NULL,     // ppOrigSig
-            NULL,     // pcbOrigSig
-            ppvSig,
-            pcbSig,
-            m_pRawImport);
+        return m_pRawMetaModelCommonRO->CommonGetTypeSpecProps(ts, ppvSig, pcbSig);
     }
 
 

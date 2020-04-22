@@ -36,7 +36,7 @@ enum ComCallFlags
     enum_IsWinRTCall                = 0x2000,   // The method is declared on a WinRT interface/delegate
     enum_IsWinRTCtor                = 0x4000,   // The method is a WinRT constructor
     enum_IsWinRTStatic              = 0x8000,   // The method is a WinRT static
-    enum_IsWinRTRedirected          = 0x10000,  // The method is declared on a redirected WinRT interface
+    // unused                       = 0x10000
 };
 
 
@@ -107,7 +107,7 @@ class ComCallMethodDesc
 
 public:
     // init method
-    void InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BOOL fRedirectedInterface = FALSE);
+    void InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD);
 
     // init field
     void InitField(FieldDesc* pField, BOOL isGetter);
@@ -219,12 +219,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_flags & enum_IsWinRTStatic;
-    }
-
-    BOOL IsWinRTRedirectedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsWinRTRedirected;
     }
 
     BOOL IsNativeInfoInitialized()

@@ -3109,7 +3109,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 type = METHOD_TYPE_NORMAL;
             }
             else if (bmtGenerics->GetNumGenericArgs() != 0 &&
-                (bmtGenerics->fSharedByGenericInstantiations || (!bmtProp->fIsRedirectedInterface && !GetHalfBakedClass()->IsProjectedFromWinRT())))
+                (bmtGenerics->fSharedByGenericInstantiations || !GetHalfBakedClass()->IsProjectedFromWinRT()))
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 // mcComInterop is only useful for unshared instantiated WinRT interfaces. If the interface is
@@ -11057,50 +11057,10 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 
                 } while (FALSE);
 
-                if (strcmp(pszFullyQualifiedName, g_CollectionsGenericCollectionItfName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_CollectionsGenericReadOnlyCollectionItfName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_CollectionsCollectionItfName) == 0)
-                {
-                    // ICollection`1, ICollection and IReadOnlyCollection`1 are special cases the adapter is unaware of
-                    bmtProp->fIsRedirectedInterface = true;
-                }
-                else
-                {
-                    if (strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IEnumerable)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IList)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IDictionary)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyList)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyDictionary)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_IEnumerable)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_Collections_IList)) == 0 ||
-                        strcmp(pszFullyQualifiedName, WinMDAdapter::GetRedirectedTypeFullCLRName(WinMDAdapter::RedirectedTypeIndex_System_IDisposable)) == 0)
-                    {
-                        bmtProp->fIsRedirectedInterface = true;
-                    }
-                }
-
                 // We want to allocate the per-type RCW data optional MethodTable field for
                 // 1. Redirected interfaces
                 // 2. Mscorlib-declared [WindowsRuntimeImport] interfaces
-                bmtProp->fNeedsRCWPerTypeData = (bmtProp->fIsRedirectedInterface || GetHalfBakedClass()->IsProjectedFromWinRT());
-
-                if (!bmtProp->fNeedsRCWPerTypeData)
-                {
-                    // 3. Non-generic IEnumerable
-                    if (strcmp(pszFullyQualifiedName, g_CollectionsEnumerableItfName) == 0)
-                    {
-                        bmtProp->fNeedsRCWPerTypeData = true;
-                    }
-                }
-            }
-        }
-        else if (IsDelegate() && bmtGenerics->HasInstantiation())
-        {
-            // 4. Redirected delegates
-            if (GetHalfBakedClass()->GetWinRTRedirectedTypeIndex()
-                != WinMDAdapter::RedirectedTypeIndex_Invalid)
-            {
-                bmtProp->fNeedsRCWPerTypeData = true;
+                bmtProp->fNeedsRCWPerTypeData = GetHalfBakedClass()->IsProjectedFromWinRT();
             }
         }
     }
@@ -11125,32 +11085,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
                 {
                     bmtProp->fNeedsRCWPerTypeData = true;
                 }
-            }
-        }
-    }
-    else if ((IsInterface() || IsDelegate()) &&
-        IsTdPublic(GetHalfBakedClass()->GetAttrClass()) &&
-        GetHalfBakedClass()->GetWinRTRedirectedTypeIndex() != WinMDAdapter::RedirectedTypeIndex_Invalid)
-    {
-        // 7. System.Collections.Specialized.INotifyCollectionChanged
-        // 8. System.Collections.Specialized.NotifyCollectionChangedEventHandler
-        // 9. System.ComponentModel.INotifyPropertyChanged
-        // 10. System.ComponentModel.PropertyChangedEventHandler
-        // 11. System.Windows.Input.ICommand
-        LPCUTF8 pszClassName;
-        LPCUTF8 pszClassNamespace;
-        if (SUCCEEDED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-        {
-            LPUTF8 pszFullyQualifiedName = NULL;
-            MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-            if (strcmp(pszFullyQualifiedName, g_INotifyCollectionChangedName) == 0 ||
-                strcmp(pszFullyQualifiedName, g_NotifyCollectionChangedEventHandlerName) == 0 ||
-                strcmp(pszFullyQualifiedName, g_INotifyPropertyChangedName) == 0 ||
-                strcmp(pszFullyQualifiedName, g_PropertyChangedEventHandlerName) == 0 ||
-                strcmp(pszFullyQualifiedName, g_ICommandName) == 0)
-            {
-                bmtProp->fNeedsRCWPerTypeData = true;
             }
         }
     }

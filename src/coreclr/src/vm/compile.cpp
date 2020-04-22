@@ -5081,52 +5081,6 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
     if (!pMT->HasInstantiation() || pMT->ContainsGenericVariables())
         return;
 
-#ifdef FEATURE_COMINTEROP
-    // At run-time, generic redirected interfaces and delegates need matching instantiations
-    // of other types/methods in order to be marshaled across the interop boundary.
-    if (m_image->GetModule()->IsWindowsRuntimeModule() || IsInstantationOfShadowWinRTType(pMT))
-    {
-        // We only apply WinRT dependencies when compiling .winmd assemblies since redirected
-        // types are heavily used in non-WinRT code as well and would bloat native images.
-        if (pMT->IsLegalNonArrayWinRTType())
-        {
-            TypeHandle thWinRT;
-            WinMDAdapter::RedirectedTypeIndex index;
-            if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pMT, &index))
-            {
-                // redirected interface needs the mscorlib-local definition of the corresponding WinRT type
-                MethodTable *pWinRTMT = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(index);
-                thWinRT = TypeHandle(pWinRTMT);
-
-                // and matching stub methods
-                WORD wNumSlots = pWinRTMT->GetNumVirtuals();
-                for (WORD i = 0; i < wNumSlots; i++)
-                {
-                    MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterface(
-                        index,
-                        i,
-                        TypeHandle::Interop_NativeToManaged,
-                        FALSE,
-                        pMT->GetInstantiation());
-
-                    TriageMethodForZap(pAdapterMD, TRUE);
-                }
-            }
-            if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pMT, &index))
-            {
-                // redirected delegate needs the mscorlib-local definition of the corresponding WinRT type
-                thWinRT = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(index));
-            }
-
-            if (!thWinRT.IsNull())
-            {
-                thWinRT = thWinRT.Instantiate(pMT->GetInstantiation());
-                TriageTypeForZap(thWinRT, TRUE);
-            }
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
     pMT = pMT->GetCanonicalMethodTable();
 
     // The TypeDependencyAttribute attribute is currently only allowed on mscorlib types
@@ -6214,15 +6168,12 @@ void CEEPreloader::GenerateMethodStubs(
 
             // we can filter out non-WinRT generic delegates right off the top
             if (!pMD->HasClassOrMethodInstantiation() || pMT->IsProjectedFromWinRT()
-#ifdef FEATURE_COMINTEROP
-                || WinRTTypeNameConverter::IsRedirectedType(pMT)
-#endif // FEATURE_COMINTEROP
                 )
             {
                 if (COMDelegate::IsDelegateInvokeMethod(pMD)) // build forward stub
                 {
 #ifdef FEATURE_COMINTEROP
-                    if ((pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pMT)) &&
+                    if (pMT->IsProjectedFromWinRT() &&
                         (!pMT->HasInstantiation() || pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))) // filter out shared generics
                     {
                         // Build the stub for all WinRT delegates, these will definitely be used for interop.

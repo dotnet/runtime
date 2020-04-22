@@ -4298,22 +4298,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     MethodTable *pTargetMT = pTargetMD->GetMethodTable();
 
-    // Check if this is a redirected interface - we have static stubs in mscorlib for those.
-    if (SF_IsForwardCOMStub(dwStubFlags) && pTargetMT->IsInterface())
-    {
-
-        // Redirect generic redirected interfaces to the corresponding adapter methods in mscorlib
-        if (pTargetMT->HasInstantiation())
-        {
-            MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterfaceMethod(pTargetMD, TypeHandle::Interop_ManagedToNative);
-            if (pAdapterMD != NULL)
-            {
-                *ppRetStubMD = pAdapterMD;
-                return S_OK;
-            }
-        }
-    }
-
     //
     // Find out if we have the attribute
     //
