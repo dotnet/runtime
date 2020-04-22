@@ -42,10 +42,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">
-    <MonoPath>--cli %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\dotnet</MonoPath>
+    <MonoPath>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\dotnet</MonoPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' != 'Windows_NT'">
-    <MonoPath>--cli $(BaseDirectory)/dotnet-mono/dotnet</MonoPath>
+    <MonoPath>--corerun $(BaseDirectory)/dotnet-mono/dotnet</MonoPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCoreRun)' == 'true'">
