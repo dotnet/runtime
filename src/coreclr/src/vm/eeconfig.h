@@ -399,27 +399,24 @@ public:
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
 #endif
 
-    bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT;  return fGCBreakOnOOM; }
+    bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT; return fGCBreakOnOOM; }
 
-    size_t  GetGCgen0size  ()               const {LIMITED_METHOD_CONTRACT;  return iGCgen0size;   }
-    void    SetGCgen0size  (size_t iSize)   {LIMITED_METHOD_CONTRACT; iGCgen0size = iSize;   }
-    size_t  GetSegmentSize ()               const {LIMITED_METHOD_CONTRACT;  return iGCSegmentSize; }
-    void    SetSegmentSize (size_t iSize)   {LIMITED_METHOD_CONTRACT;  iGCSegmentSize = iSize; }
+    size_t  GetGCgen0size  ()               const {LIMITED_METHOD_CONTRACT; return iGCgen0size;   }
+    void    SetGCgen0size  (size_t iSize)         {LIMITED_METHOD_CONTRACT; iGCgen0size = iSize;   }
+    size_t  GetSegmentSize ()               const {LIMITED_METHOD_CONTRACT; return iGCSegmentSize; }
+    void    SetSegmentSize (size_t iSize)         {LIMITED_METHOD_CONTRACT; iGCSegmentSize = iSize; }
 
-    int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT;  return iGCconcurrent; }
-    void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT;  iGCconcurrent = val;  }
+    int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
+    void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT; iGCconcurrent = val;  }
 #ifdef _DEBUG
-    int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT;  return iGCLatencyMode; }
+    int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT; return iGCLatencyMode; }
 #endif //_DEBUG
     int     GetGCForceCompact()             const {LIMITED_METHOD_CONTRACT; return iGCForceCompact; }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
     DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
     int     GetGCLOHCompactionMode()        const {LIMITED_METHOD_CONTRACT; return iGCLOHCompactionMode;}
-    int     GetGCHeapCount()                const {LIMITED_METHOD_CONTRACT; return iGCHeapCount;}
-    int     GetGCNoAffinitize ()            const {LIMITED_METHOD_CONTRACT; return iGCNoAffinitize;}
     size_t  GetGCAffinityMask()             const {LIMITED_METHOD_CONTRACT; return iGCAffinityMask;}
     size_t  GetGCHeapHardLimit()            const {LIMITED_METHOD_CONTRACT; return iGCHeapHardLimit;}
-    int     GetGCHeapHardLimitPercent()     const {LIMITED_METHOD_CONTRACT; return iGCHeapHardLimitPercent;}
 
 #ifdef GCTRIMCOMMIT
 
@@ -698,11 +695,8 @@ private: //----------------------------------------------------------------
     int  iGCHoardVM;
     int  iGCLOHCompactionMode;
     DWORD iGCLOHThreshold;
-    int  iGCHeapCount;
-    int  iGCNoAffinitize;
     size_t  iGCAffinityMask;
     size_t iGCHeapHardLimit;
-    int iGCHeapHardLimitPercent;
 
 #ifdef GCTRIMCOMMIT
 

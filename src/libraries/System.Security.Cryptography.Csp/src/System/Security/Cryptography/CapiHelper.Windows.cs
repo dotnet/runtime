@@ -20,7 +20,7 @@ namespace Internal.NativeCrypto
     /// </summary>
     internal static partial class CapiHelper
     {
-        private static readonly byte[] s_RgbPubKey =
+        private static ReadOnlySpan<byte> RgbPubKey => new byte[]
         {
                 0x06, 0x02, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00,
                 0x52, 0x53, 0x41, 0x31, 0x00, 0x02, 0x00, 0x00,
@@ -1022,7 +1022,7 @@ namespace Internal.NativeCrypto
             }
 
             SafeKeyHandle hKey;
-            if (!CryptImportKey(saveProvHandle, keyBlob, keyBlob.Length, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
+            if (!CryptImportKey(saveProvHandle, keyBlob, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
 
@@ -1330,7 +1330,7 @@ namespace Internal.NativeCrypto
             try
             {
                 // Import the public key
-                if (!CryptImportKey(hProv, s_RgbPubKey, s_RgbPubKey.Length, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
+                if (!CryptImportKey(hProv, RgbPubKey, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
@@ -1469,19 +1469,21 @@ namespace Internal.NativeCrypto
             return response;
         }
 
-        public static bool CryptImportKey(
+        public static unsafe bool CryptImportKey(
             SafeProvHandle hProv,
-            byte[] pbData,
-            int dwDataLen,
+            ReadOnlySpan<byte> pbData,
             SafeKeyHandle hPubKey,
             int dwFlags,
             out SafeKeyHandle phKey)
         {
-            bool response = Interop.Advapi32.CryptImportKey(hProv, pbData, dwDataLen, hPubKey, dwFlags, out phKey);
+            fixed (byte* pbDataPtr = pbData)
+            {
+                bool response = Interop.Advapi32.CryptImportKey(hProv, pbDataPtr, pbData.Length, hPubKey, dwFlags, out phKey);
 
-            phKey.SetParent(hProv);
+                phKey.SetParent(hProv);
 
-            return response;
+                return response;
+            }
         }
 
         public static bool CryptCreateHash(

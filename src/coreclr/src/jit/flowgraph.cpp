@@ -21227,6 +21227,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     return;
                 }
                 break;
+            case GT_ADDR:
+                assert(!op1->CanCSE());
 
             default:
                 break;
@@ -21898,7 +21900,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
-
+        assert(inlineContext->GetCode() != nullptr);
         depth++;
 
         if (inlineContext->GetCode() == candidateCode)
@@ -23649,14 +23651,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             // If the local is used check whether we need to insert explicit zero initialization.
             if (tmpNum != BAD_VAR_NUM)
             {
-                if (!fgVarNeedsExplicitZeroInit(lvaGetDesc(tmpNum), bbInALoop, bbIsReturn))
+                LclVarDsc* const tmpDsc = lvaGetDesc(tmpNum);
+                if (!fgVarNeedsExplicitZeroInit(tmpDsc, bbInALoop, bbIsReturn))
                 {
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nSkipping zero initialization of V%02u\n", tmpNum);
-                    }
-#endif // DEBUG
+                    JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", tmpNum);
+                    tmpDsc->lvSuppressedZeroInit = 1;
+                    compSuppressedZeroInit       = true;
                     continue;
                 }
 

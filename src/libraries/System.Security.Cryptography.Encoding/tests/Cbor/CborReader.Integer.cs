@@ -8,62 +8,38 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public ulong ReadUInt64()
-        {
-            CborInitialByte header = PeekInitialByte();
-
-            switch (header.MajorType)
-            {
-                case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
-                    AdvanceBuffer(1 + additionalBytes);
-                    AdvanceDataItemCounters();
-                    return value;
-
-                case CborMajorType.NegativeInteger:
-                    throw new OverflowException();
-
-                default:
-                    throw new InvalidOperationException("Data item major type mismatch.");
-            }
-        }
-
         // Implements major type 0,1 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
         public long ReadInt64()
         {
-            long value;
-            int additionalBytes;
-
-            CborInitialByte header = PeekInitialByte();
-
-            switch (header.MajorType)
-            {
-                case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    AdvanceDataItemCounters();
-                    return value;
-
-                case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
-                    AdvanceBuffer(1 + additionalBytes);
-                    AdvanceDataItemCounters();
-                    return value;
-
-                default:
-                    throw new InvalidOperationException("Data item major type mismatch.");
-            }
+            long value = PeekSignedInteger(out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
         }
 
-        public CborTag ReadTag()
+        public ulong ReadUInt64()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
-            ulong tag = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+            ulong value = PeekUnsignedInteger(out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
-            // NB tag reads do not advance data item counters
-            _isTagContext = true;
-            return (CborTag)tag;
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        public int ReadInt32()
+        {
+            int value = checked((int)PeekSignedInteger(out int additionalBytes));
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
+        }
+
+        public uint ReadUInt32()
+        {
+            uint value = checked((uint)PeekUnsignedInteger(out int additionalBytes));
+            AdvanceBuffer(1 + additionalBytes);
+            AdvanceDataItemCounters();
+            return value;
         }
 
         // Returns the next CBOR negative integer encoding according to
@@ -75,6 +51,44 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceBuffer(1 + additionalBytes);
             AdvanceDataItemCounters();
             return value;
+        }
+
+        private ulong PeekUnsignedInteger(out int additionalBytes)
+        {
+            CborInitialByte header = PeekInitialByte();
+
+            switch (header.MajorType)
+            {
+                case CborMajorType.UnsignedInteger:
+                    ulong value = ReadUnsignedInteger(_buffer.Span, header, out additionalBytes);
+                    return value;
+
+                case CborMajorType.NegativeInteger:
+                    throw new OverflowException();
+
+                default:
+                    throw new InvalidOperationException("Data item major type mismatch.");
+            }
+        }
+
+        private long PeekSignedInteger(out int additionalBytes)
+        {
+            CborInitialByte header = PeekInitialByte();
+            long value;
+
+            switch (header.MajorType)
+            {
+                case CborMajorType.UnsignedInteger:
+                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    return value;
+
+                case CborMajorType.NegativeInteger:
+                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
+                    return value;
+
+                default:
+                    throw new InvalidOperationException("Data item major type mismatch.");
+            }
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
@@ -107,7 +121,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
 
                 default:
-                    throw new FormatException("initial byte contains invalid integer encoding data");
+                    throw new FormatException("initial byte contains invalid integer encoding data.");
             }
         }
     }
