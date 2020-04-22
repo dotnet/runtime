@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  liveRuntimeBuildConfig: ''
 
   # When set to a non-empty value (Debug / Release), it determines libraries
   # build configuration to use for the tests. Setting this property implies
@@ -18,6 +19,7 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  runtimeFlavorDisplayName: 'CoreCLR'
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -27,8 +29,9 @@ parameters:
 ### over to its reference assembly we should be able to remove this dependency and
 ### run managed test builds in parallel with the product build job.
 
+
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -47,14 +50,13 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
-    # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'coreclr_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: 'CoreCLR Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      name: 'coreclr_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: 'CoreCLR Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -65,7 +67,7 @@ jobs:
     # by switching over to using reference assembly.
     ${{ if ne(parameters.stagedBuild, true) }}:
       dependsOn:
-      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
         - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
@@ -97,6 +99,15 @@ jobs:
           artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
+
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:  
+      # We need to explictly download CoreCLR for Mono because the CoreCLR tests depend on it
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(coreClrProductRootFolderPath)
+          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+          artifactName: '$(coreClrProductArtifactName)'
+          displayName: 'CoreCLR product build for Mono'
 
 
     # Download product binaries directory
@@ -143,6 +154,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

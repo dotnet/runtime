@@ -122,15 +122,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
+            <Issue>Unix does not support tailcall helper</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
             <Issue>https://github.com/dotnet/runtime/issues/12166</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
-            <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
     </ItemGroup>
 
