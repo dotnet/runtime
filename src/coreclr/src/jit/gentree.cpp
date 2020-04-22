@@ -19099,3 +19099,20 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
 }
+
+#ifdef TARGET_ARM
+//------------------------------------------------------------------------
+// IsOffsetMisaligned: check if the field needs a special handling on arm.
+//
+// Return Value:
+//    true if it is a float field with a misaligned offset, false otherwise.
+//
+bool GenTreeLclFld::IsOffsetMisaligned() const
+{
+    if (varTypeIsFloating(gtType))
+    {
+        return ((m_lclOffs % emitTypeSize(TYP_FLOAT)) != 0);
+    }
+    return false;
+}
+#endif // TARGET_ARM

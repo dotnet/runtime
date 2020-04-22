@@ -3119,9 +3119,21 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
 // Third, use internal registers.
-#ifdef FEATURE_SIMD
+#ifdef TARGET_ARM
+    if (storeLoc->OperIs(GT_STORE_LCL_FLD) && storeLoc->AsLclFld()->IsOffsetMisaligned())
+    {
+        buildInternalIntRegisterDefForNode(storeLoc); // to generate address.
+        buildInternalIntRegisterDefForNode(storeLoc); // to move float into an int reg.
+        if (storeLoc->TypeIs(TYP_DOUBLE))
+        {
+            buildInternalIntRegisterDefForNode(storeLoc); // to move the second half into an int reg.
+        }
+    }
+#endif // TARGET_ARM
+
+#if defined(FEATURE_SIMD) || defined(TARGET_ARM)
     buildInternalRegisterUses();
-#endif // FEATURE_SIMD
+#endif // FEATURE_SIMD || TARGET_ARM
 
     // Fourth, define destination registers.
 
