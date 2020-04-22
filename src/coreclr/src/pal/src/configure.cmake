@@ -824,23 +824,25 @@ check_cxx_source_runs("
 int main(void) {
   double pi = 3.14159265358979323846;
   double result;
+  double y = 0.0;
+  double x = 0.0;
 
-  result = atan2(0.0, -0.0);
+  result = atan2(y, -x);
   if (fabs(pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2(-0.0, -0.0);
+  result = atan2(-y, -x);
   if (fabs(-pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2 (-0.0, 0.0);
+  result = atan2 (-y, x);
   if (result != 0.0 || copysign (1.0, result) > 0) {
     exit(1);
   }
 
-  result = atan2 (0.0, 0.0);
+  result = atan2 (y, x);
   if (result != 0.0 || copysign (1.0, result) < 0) {
     exit(1);
   }
