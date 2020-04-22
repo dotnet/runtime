@@ -127,6 +127,7 @@ namespace Mono.Linker.Steps {
 			DependencyKind.Override,
 			DependencyKind.OverrideOnInstantiatedType,
 			DependencyKind.PreservedDependency,
+			DependencyKind.PreservedMethod,
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.SerializationMethodForType,
 			DependencyKind.TriggersCctorForCalledMethod,

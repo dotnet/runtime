@@ -23,6 +23,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
 	[RemovedAssembly ("Unused.dll")]
 	[RemovedForwarder ("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AnotherLibrary`1")]
+	[RemovedAssemblyReference ("Forwarder.dll", "Unused")]
 	class UsedAndUnusedForwarderWithAssemblyCopy
 	{
 		static void Main()

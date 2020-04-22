@@ -72,7 +72,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new [] {
 			"call",
 			"pop",
-			"nop",
 			"ldloca.s",
 			"initobj",
 			"ldloc.0",
@@ -133,7 +132,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"br.s",
 			"call",
 			"pop",
-			"nop",
 			"ret"
 			})]
 		static void TestProperty_enum_1 ()
