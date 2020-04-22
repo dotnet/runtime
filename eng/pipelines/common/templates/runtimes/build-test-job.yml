@@ -58,12 +58,12 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ testPriority }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ testPriority }} Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ parameters.testPriority }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ parameters.testPriority }} Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ testPriority }}_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ testPriority }} Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ parameters.testPriority }}_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ parameters.testPriority }} Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
