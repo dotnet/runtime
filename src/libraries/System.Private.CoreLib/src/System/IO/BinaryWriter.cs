@@ -453,17 +453,42 @@ namespace System.IO
             }
         }
 
-        protected void Write7BitEncodedInt(int value)
+        public void Write7BitEncodedInt(int value)
         {
-            // Write out an int 7 bits at a time.  The high bit of the byte,
+            uint uValue = (uint)value;
+
+            // Write out an int 7 bits at a time. The high bit of the byte,
             // when on, tells reader to continue reading more bytes.
-            uint v = (uint)value;   // support negative numbers
-            while (v >= 0x80)
+            //
+            // Using the constants 0x7F and ~0x7F below offers smaller
+            // codegen than using the constant 0x80.
+
+            while (uValue > 0x7Fu)
             {
-                Write((byte)(v | 0x80));
-                v >>= 7;
+                Write((byte)(uValue | ~0x7Fu));
+                uValue >>= 7;
             }
-            Write((byte)v);
+
+            Write((byte)uValue);
+        }
+
+        public void Write7BitEncodedInt64(long value)
+        {
+            ulong uValue = (ulong)value;
+
+            // Write out an int 7 bits at a time. The high bit of the byte,
+            // when on, tells reader to continue reading more bytes.
+            //
+            // Using the constants 0x7F and ~0x7F below offers smaller
+            // codegen than using the constant 0x80.
+
+            while (uValue > 0x7Fu)
+            {
+                Write((byte)((uint)uValue | ~0x7Fu));
+                uValue >>= 7;
+            }
+
+            Write((byte)uValue);
         }
     }
 }
