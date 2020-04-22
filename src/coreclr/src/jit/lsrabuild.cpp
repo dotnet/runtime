@@ -2604,7 +2604,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
-    RegisterType type;
+    RegisterType type; // second variant
     if (!tree->IsMultiRegNode())
     {
         type = getDefType(tree);

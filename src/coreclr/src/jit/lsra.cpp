@@ -6994,7 +6994,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
             // LSRA is agnostic to those choices but needs
             // to know what they are here.
-            var_types typ;
+            var_types typ; // first variant
 
             GenTree* treeNode = refPosition->treeNode;
             if (treeNode == nullptr)
@@ -7030,7 +7030,20 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             {
                 typ = treeNode->TypeGet();
             }
-            typ = RegSet::tmpNormalizeType(typ);
+            var_types type1BeforeNormalize = typ;
+            typ                            = RegSet::tmpNormalizeType(typ);
+
+            var_types type2;
+            if (!treeNode->IsMultiRegNode())
+            {
+                type2 = getDefType(treeNode);
+            }
+            else
+            {
+                type2 = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
+            }
+
+            assert(type2 == type1BeforeNormalize);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
