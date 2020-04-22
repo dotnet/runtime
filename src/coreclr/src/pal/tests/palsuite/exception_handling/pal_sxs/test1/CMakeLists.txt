@@ -24,7 +24,12 @@ endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NET
 
 if(CLR_CMAKE_TARGET_OSX)
     set(EXPORTS_LINKER_OPTION1 -Wl,-exported_symbols_list,${EXPORTS_FILE1})
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_HOST_OSX)
+
+if(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_SUNOS)
 
 set(DLL1SOURCES dlltest1.cpp)
 add_library(paltest_pal_sxs_test1_dll1 SHARED ${DLL1SOURCES})
