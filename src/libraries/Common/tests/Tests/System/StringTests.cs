@@ -2516,7 +2516,15 @@ namespace System.Tests
                 Assert.Equal(s1.GetHashCode(), s1.GetHashCode());
             }
 
-            Assert.Equal(expected, s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            if (string.IsNullOrEmpty(s1) && string.IsNullOrEmpty(s2))
+            {
+                // null strings are normalized to empty spans
+                Assert.True(s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            }
+            else
+            {
+                Assert.Equal(expected, s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
+            }
         }
 
         public static IEnumerable<object[]> Equals_EncyclopaediaData()
