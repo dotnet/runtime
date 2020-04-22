@@ -1940,6 +1940,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
 
         if (lvaGenericsContextInUse)
         {
+            JITDUMP("Reporting this as generic context\n");
             return true;
         }
     }

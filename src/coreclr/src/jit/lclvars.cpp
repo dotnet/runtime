@@ -4022,16 +4022,18 @@ void Compiler::lvaMarkLocalVars()
         return;
     }
 
+    const bool reportParamTypeArg = lvaReportParamTypeArg();
+
     // Update bookkeeping on the generic context.
     if (lvaKeepAliveAndReportThis())
     {
-        lvaGetDesc(0u)->lvImplicitlyReferenced = lvaReportParamTypeArg();
+        lvaGetDesc(0u)->lvImplicitlyReferenced = reportParamTypeArg;
     }
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
         assert(info.compTypeCtxtArg != BAD_VAR_NUM);
-        lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = lvaReportParamTypeArg();
+        lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
 #if ASSERTION_PROP
