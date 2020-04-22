@@ -428,9 +428,9 @@ namespace System
             return new ArgumentException(GetResourceString(resource));
         }
 
-        private static InvalidOperationException GetInvalidOperationException(ExceptionResource resource)
+        internal static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, Exception? innerException = null)
         {
-            return new InvalidOperationException(GetResourceString(resource));
+            return new InvalidOperationException(GetResourceString(resource), innerException);
         }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object? key, Type targetType)

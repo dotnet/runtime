@@ -1920,7 +1920,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    IntrospectiveSortUtilities.ThrowBadComparer(comparer);
                 }
                 catch (Exception e)
                 {
@@ -2126,7 +2126,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    IntrospectiveSortUtilities.ThrowBadComparer(comparer);
                 }
                 catch (Exception e)
                 {
