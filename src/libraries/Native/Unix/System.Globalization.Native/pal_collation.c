@@ -445,6 +445,20 @@ int32_t GlobalizationNative_CompareString(
 
     if (U_SUCCESS(err))
     {
+        // Workaround for https://unicode-org.atlassian.net/projects/ICU/issues/ICU-9396
+        // The ucol_strcoll routine on some older versions of ICU doesn't correctly
+        // handle nullptr inputs. We'll play defensively and always flow a non-nullptr.
+
+        UChar dummyChar = 0;
+        if (lpStr1 == NULL)
+        {
+            lpStr1 = &dummyChar;
+        }
+        if (lpStr2 == NULL)
+        {
+            lpStr2 = &dummyChar; 
+        }
+
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
     }
 
