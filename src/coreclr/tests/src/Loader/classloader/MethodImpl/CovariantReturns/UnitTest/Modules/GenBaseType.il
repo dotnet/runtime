@@ -23,7 +23,7 @@
 
   .method public hidebysig newslot virtual instance object MyFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "object GenBaseType.MyFunc()"
     stind.ref
     newobj instance void [A]A::.ctor()
@@ -31,7 +31,7 @@
   }
   .method public hidebysig newslot virtual instance class [B]B MyFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.MyFunc()"
     stind.ref
     newobj instance void [B]B::.ctor()
@@ -39,7 +39,7 @@
   }
   .method public hidebysig newslot virtual instance class [B]B GenToNonGen(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.GenToNonGen()"
     stind.ref
     newobj instance void [B]B::.ctor()
@@ -47,7 +47,7 @@
   }
   .method public hidebysig newslot virtual instance class [B]B NonGenThroughGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.NonGenThroughGenFunc()"
     stind.ref
     newobj instance void [B]B::.ctor()
@@ -55,7 +55,7 @@
   }
   .method public hidebysig newslot virtual instance class [GenRetType]GenRetType<int32,object> MyGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<int32,object> GenBaseType.MyGenFunc()"
     stind.ref
     newobj instance void class [GenRetType]GenRetType<int32,object>::.ctor()
@@ -63,7 +63,7 @@
   }
   .method public hidebysig newslot virtual instance class [GenRetType]GenRetType<!A, class [Dictionary]Dictionary<string,!B>> MyGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<!A, class Dictionary<string,!B>> GenBaseType.MyGenFunc()"
     stind.ref
     newobj instance void class [GenRetType]GenRetType<!A, class [Dictionary]Dictionary<string,!B>>::.ctor()
@@ -71,7 +71,7 @@
   }
   .method public hidebysig newslot virtual instance class [GenRetType]GenRetType<!A,!B> TestNonGenericDerived(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<!A,!B> GenBaseType.TestNonGenericDerived()"
     stind.ref
     newobj instance void class [GenRetType]GenRetType<!A,!B>::.ctor()

@@ -8,31 +8,88 @@
 .assembly extern mscorlib { }
 .assembly IncompatibleReturnNoValidation { }
 
-.class public auto ansi beforefieldinit A { }
-.class public auto ansi beforefieldinit B extends A { }
-.class public auto ansi beforefieldinit C extends B { }
+.class public auto ansi beforefieldinit A 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit B extends A 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit C extends B 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
-.class public auto ansi beforefieldinit GenRetType<X,Y> { }
-.class public auto ansi beforefieldinit Dictionary<KEY,VAL> { }
+.class public auto ansi beforefieldinit GenRetType<X,Y> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit Dictionary<KEY,VAL> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
-.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> { }
-.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> { }
+.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
-.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> { }
-.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> { }
-.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> { }
-.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 { }
+.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
-.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C { }
-.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> { }
+.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
 
-.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C { }
-.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> { }
-.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 { }
+.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
@@ -46,7 +103,7 @@
 
   .method public hidebysig newslot virtual instance object MyFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "object GenBaseType.MyFunc()"
     stind.ref
     newobj instance void A::.ctor()
@@ -54,7 +111,7 @@
   }
   .method public hidebysig newslot virtual instance class B MyFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.MyFunc()"
     stind.ref
     newobj instance void B::.ctor()
@@ -62,7 +119,7 @@
   }
   .method public hidebysig newslot virtual instance class B GenToNonGen(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.GenToNonGen()"
     stind.ref
     newobj instance void B::.ctor()
@@ -70,7 +127,7 @@
   }
   .method public hidebysig newslot virtual instance class B NonGenThroughGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "B GenBaseType.NonGenThroughGenFunc()"
     stind.ref
     newobj instance void B::.ctor()
@@ -78,7 +135,7 @@
   }
   .method public hidebysig newslot virtual instance class GenRetType<int32,object> MyGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<int32,object> GenBaseType.MyGenFunc()"
     stind.ref
     newobj instance void class GenRetType<int32,object>::.ctor()
@@ -86,7 +143,7 @@
   }
   .method public hidebysig newslot virtual instance class GenRetType<!A, class Dictionary<string,!B>> MyGenFunc(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<!A, class Dictionary<string,!B>> GenBaseType.MyGenFunc()"
     stind.ref
     newobj instance void class GenRetType<!A, class Dictionary<string,!B>>::.ctor()
@@ -94,7 +151,7 @@
   }
   .method public hidebysig newslot virtual instance class GenRetType<!A,!B> TestNonGenericDerived(string& res) 
   {
-    ldarg.0
+    ldarg.1
     ldstr "GenRetType<!A,!B> GenBaseType.TestNonGenericDerived()"
     stind.ref
     newobj instance void class GenRetType<!A,!B>::.ctor()

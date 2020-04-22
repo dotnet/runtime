@@ -6,4 +6,8 @@
 .assembly extern mscorlib{}
 .assembly A{}
 
-.class public auto ansi beforefieldinit A { }
+.class public auto ansi beforefieldinit A
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+

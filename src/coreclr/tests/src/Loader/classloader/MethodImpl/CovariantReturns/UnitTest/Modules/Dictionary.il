@@ -6,4 +6,8 @@
 .assembly extern mscorlib{}
 .assembly Dictionary{}
 
-.class public auto ansi beforefieldinit Dictionary<KEY,VAL> { }
+.class public auto ansi beforefieldinit Dictionary<KEY,VAL>
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+

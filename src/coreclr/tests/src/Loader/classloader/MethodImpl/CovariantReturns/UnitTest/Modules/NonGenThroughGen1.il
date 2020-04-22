@@ -6,4 +6,6 @@
 .assembly extern C{}
 .assembly NonGenThroughGen1{}
 
-.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends [C]C { }
+.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends [C]C { 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

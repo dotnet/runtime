@@ -6,4 +6,7 @@
 .assembly extern mscorlib{}
 .assembly GenRetType{}
 
-.class public auto ansi beforefieldinit GenRetType<X,Y> { }
+.class public auto ansi beforefieldinit GenRetType<X,Y> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

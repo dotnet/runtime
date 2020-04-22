@@ -10,27 +10,78 @@
 .class public sealed auto ansi GenStruct<A,B>  extends [mscorlib]System.ValueType { }
 
 
-.class public auto ansi C { }
-.class public auto ansi GenRetType<A,B> { }
-.class public auto ansi beforefieldinit Dictionary<KEY,VAL> { }
+.class public auto ansi C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi GenRetType<A,B> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit Dictionary<KEY,VAL> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
-.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> { }
-.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> { }
+.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class GenRetType<!V1,!V2> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class GenDerive1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class GenDerive2<!T1,!T2,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
-.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> { }
-.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> { }
-.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> { }
-.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 { }
+.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class GenRetType<!ARG1,!ARG2> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class NonGenericDerived1<!T,object> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived3 extends class NonGenericDerived2<int32> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenericDerived4 extends NonGenericDerived3 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
-.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C { }
-.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> { }
+.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen2<U1,U2,U3> extends class GenToNonGen1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> extends class GenToNonGen2<!T1,!T2,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
-.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends class C { }
-.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> { }
-.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> { }
-.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 { }
+.class public auto ansi beforefieldinit NonGenThroughGen1<V1,V2> extends class C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenThroughGen2<U1,U2,U3> extends class NonGenThroughGen1<!U1, class Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenThroughGen3 extends class NonGenThroughGen2<object,int32,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+.class public auto ansi beforefieldinit NonGenThroughGen4 extends NonGenThroughGen3 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
 
 .class public auto ansi beforefieldinit BaseType<A,B>
@@ -60,6 +111,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class public auto ansi beforefieldinit Test1<U,V> extends class BaseType<!U,!V>
@@ -70,6 +122,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class public auto ansi beforefieldinit Test2<U,V> extends class BaseType<!U,!V>
@@ -80,6 +133,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class public auto ansi beforefieldinit Test3<U,V> extends class BaseType<!U,!V>
@@ -90,6 +144,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class public auto ansi beforefieldinit Test4<U,V> extends class BaseType<!U,!V>
@@ -100,6 +155,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 .class public auto ansi beforefieldinit Test5<U,V> extends class BaseType<!U,!V>
@@ -110,6 +166,7 @@
     ldnull
     ret
   }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
 

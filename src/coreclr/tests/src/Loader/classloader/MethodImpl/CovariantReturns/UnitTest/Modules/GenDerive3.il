@@ -7,5 +7,7 @@
 .assembly extern GenDerive2{}
 .assembly GenDerive3{}
 
-.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class [GenDerive2]GenDerive2<!T1,!T2,string> { }
-
+.class public auto ansi beforefieldinit GenDerive3<T1,T2> extends class [GenDerive2]GenDerive2<!T1,!T2,string> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

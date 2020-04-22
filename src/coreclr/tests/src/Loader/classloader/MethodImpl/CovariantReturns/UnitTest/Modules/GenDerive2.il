@@ -8,4 +8,7 @@
 .assembly extern Dictionary{}
 .assembly GenDerive2{}
 
-.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class [GenDerive1]GenDerive1<!U1, class [Dictionary]Dictionary<!U3,!U2>> { }
+.class public auto ansi beforefieldinit GenDerive2<U1,U2,U3> extends class [GenDerive1]GenDerive1<!U1, class [Dictionary]Dictionary<!U3,!U2>> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

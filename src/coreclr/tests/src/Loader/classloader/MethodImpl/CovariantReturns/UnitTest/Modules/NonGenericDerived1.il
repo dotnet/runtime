@@ -7,4 +7,6 @@
 
 .assembly NonGenericDerived1 { }
 
-.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class [GenRetType]GenRetType<!ARG1,!ARG2> { }
+.class public auto ansi beforefieldinit NonGenericDerived1<ARG1,ARG2> extends class [GenRetType]GenRetType<!ARG1,!ARG2> { 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

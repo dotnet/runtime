@@ -7,4 +7,7 @@
 .assembly extern C{}
 .assembly GenToNonGen1{}
 
-.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends [C]C { }
+.class public auto ansi beforefieldinit GenToNonGen1<V1,V2> extends [C]C 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

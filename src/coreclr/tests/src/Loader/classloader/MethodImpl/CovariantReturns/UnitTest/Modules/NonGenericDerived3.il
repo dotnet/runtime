@@ -6,4 +6,6 @@
 .assembly extern NonGenericDerived2{}
 .assembly NonGenericDerived3{}
 
-.class public auto ansi beforefieldinit NonGenericDerived3 extends class [NonGenericDerived2]NonGenericDerived2<int32> { }
+.class public auto ansi beforefieldinit NonGenericDerived3 extends class [NonGenericDerived2]NonGenericDerived2<int32> {
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}

@@ -6,4 +6,8 @@
 .assembly extern NonGenThroughGen3{}
 .assembly NonGenThroughGen4{}
 
-.class public auto ansi beforefieldinit NonGenThroughGen4 extends [NonGenThroughGen3]NonGenThroughGen3 { }
+.class public auto ansi beforefieldinit NonGenThroughGen4 extends [NonGenThroughGen3]NonGenThroughGen3 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+

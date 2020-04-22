@@ -7,4 +7,8 @@
 .assembly extern B{}
 .assembly C{}
 
-.class public auto ansi beforefieldinit C extends [B]B { }
+.class public auto ansi beforefieldinit C extends [B]B 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
+

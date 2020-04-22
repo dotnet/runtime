@@ -7,4 +7,7 @@
 .assembly extern NonGenericDerived1{}
 .assembly NonGenericDerived2{}
 
-.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class [NonGenericDerived1]NonGenericDerived1<!T,object> { }
+.class public auto ansi beforefieldinit NonGenericDerived2<T> extends class [NonGenericDerived1]NonGenericDerived1<!T,object> {
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+

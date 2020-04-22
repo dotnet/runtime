@@ -7,4 +7,7 @@
 .assembly extern GenRetType{}
 .assembly GenDerive1{}
 
-.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class [GenRetType]GenRetType<!V1,!V2> { }
+.class public auto ansi beforefieldinit GenDerive1<V1,V2> extends class [GenRetType]GenRetType<!V1,!V2> 
+{
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+}
