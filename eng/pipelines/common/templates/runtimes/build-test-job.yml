@@ -100,25 +100,14 @@ jobs:
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:  
-      # We need to explictly download CoreCLR for Mono because the CoreCLR tests depend on it
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(coreClrProductRootFolderPath)
-          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-          artifactName: '$(coreClrProductArtifactName)'
-          displayName: 'CoreCLR product build for Mono'
-
-
-    # Download product binaries directory
+    # We need to explictly download CoreCLR, even if building Mono because the CoreCLR tests depend on it
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
-
-
+        unpackFolder: $(coreClrProductRootFolderPath)
+        artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
+        artifactName: '$(coreClrProductArtifactName)'
+        displayName: 'CoreCLR product build'
+    
     # Build managed test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
