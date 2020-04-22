@@ -493,45 +493,42 @@ namespace System.Net.Quic.Implementations.Managed
         private void WriteStreamFrames(QuicWriter writer, SendContext context)
         {
             ManagedQuicStream? stream;
-            while (writer.BytesAvailable > 0 && (stream = _streams.GetFirstFlushableStream()) != null)
+            while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstFlushableStream()) != null)
             {
                 var buffer = stream!.OutboundBuffer!;
-                // TODO-RZ IsFlushable is not threadsafe
-                // Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
+                Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
 
                 (long offset, long count) = buffer.GetNextSendableRange();
-                if (count == 0 && !buffer.SizeKnown) return;
-
                 int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));
+
                 count = Math.Min(count,  writer.BytesAvailable - overhead);
 
-                // TODO-RZ: respect stream MaxData limits
-
+                // if size is known, WrittenBytes is no longer mutable
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
-                if (count < 0)
-                {
-                    break; // no more data can fit into the packet
-                }
 
                 if (count > 0 || fin)
                 {
-                    var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int) count, fin);
+                    var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
 
                     if (count > 0)
                     {
                         buffer.CheckOut(data);
                     }
 
-                    context.SentPacket.SentStreamData.Add(new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
+                    context.SentPacket.SentStreamData.Add(
+                        new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
                 }
 
-                if (fin)
+                if (buffer.IsFlushable)
                 {
-                    _streams.MarkFlushable(stream!, false);
+                    _streams.MarkFlushable(stream!);
                 }
 
-                // if (!buffer.IsFlushable)
-                //     _streams.MarkFlushable(stream!, false);
+                if (count <= 0)
+                {
+                    // no more data could fit into the packet.
+                    break;
+                }
             }
         }
 

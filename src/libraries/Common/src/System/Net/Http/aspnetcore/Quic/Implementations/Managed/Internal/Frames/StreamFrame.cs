@@ -8,6 +8,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
     internal readonly ref struct StreamFrame
     {
         /// <summary>
+        ///     Minimum useful Stream frame size.
+        /// </summary>
+        internal const int MinSize = 5;
+
+        /// <summary>
         ///     Id of the data stream.
         /// </summary>
         internal readonly long StreamId;
