@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
@@ -692,8 +693,7 @@ namespace System.Net.Quic.Implementations.Managed
                             stream.OutboundBuffer!.OnLost(data.Offset, data.Count);
                         }
 
-                        // TODO: mark only if wasn't already flushable
-                        _streams.MarkFlushable(stream, true);
+                        _streams.MarkFlushable(stream);
                     }
                 }
 
@@ -742,7 +742,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            GetPacketNumberSpace(level).CryptoOutboundStream.Enqueue(data);
+            OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
+            cryptoOutboundStream.Enqueue(data);
+            cryptoOutboundStream.QueuePartialChunk();
             return 1;
         }
 

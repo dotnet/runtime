@@ -29,7 +29,6 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint ListenEndPoint => _socketContext.LocalEndPoint;
 
-
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(
             CancellationToken cancellationToken = default)
         {

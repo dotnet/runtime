@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     All streams which are flushable (have data to send).
         /// </summary>
-        private readonly HashSet<ManagedQuicStream> _flushable = new HashSet<ManagedQuicStream>();
+        private readonly LinkedList<ManagedQuicStream> _flushable = new LinkedList<ManagedQuicStream>();
 
         /// <summary>
         ///     Channel of streams that were opened by the peer but not yet accepted by this endpoint.
@@ -47,7 +47,14 @@ namespace System.Net.Quic.Implementations.Managed
         {
             lock (_flushable)
             {
-                return _flushable.FirstOrDefault();
+                var first = _flushable.First;
+                if (first == null)
+                {
+                    return null;
+                }
+
+                _flushable.RemoveFirst();
+                return first.Value;
             }
         }
 
@@ -123,16 +130,18 @@ namespace System.Net.Quic.Implementations.Managed
             return stream;
         }
 
-        internal void MarkFlushable(ManagedQuicStream stream, bool flushable)
+        internal void MarkFlushable(ManagedQuicStream stream)
         {
-            // TODO-RZ: remove the need for this lock
-            lock (_flushable)
+            // use double checking to prevent frequent locking
+            if (stream._flushableListNode.List == null)
             {
-                Debug.Assert(stream.CanWrite);
-                if (flushable)
-                    _flushable.Add(stream);
-                else
-                    _flushable.Remove(stream);
+                // TODO-RZ: remove the need for this lock
+                lock (_flushable)
+                {
+                    Debug.Assert(stream.CanWrite);
+                    if (stream._flushableListNode.List == null)
+                        _flushable.AddLast(stream._flushableListNode);
+                }
             }
         }
 

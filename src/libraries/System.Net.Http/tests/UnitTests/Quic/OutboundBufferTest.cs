@@ -19,6 +19,7 @@ namespace System.Net.Quic.Tests
             }
 
             buffer.Enqueue(tmp);
+            buffer.QueuePartialChunk();
         }
 
         [Fact]

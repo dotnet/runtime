@@ -63,7 +63,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             Debug.Assert(!HeaderHelpers.IsLongHeader(firstByte), "Trying to parse long header as short");
 
             // TODO-RZ: maybe expect only single connection id
-            var dcid = connectionIds.FindConnectionId(reader.PeekSpan(reader.BytesLeft));
+            var dcid = connectionIds.Find(reader.PeekSpan(reader.BytesLeft));
             if (dcid == null)
             {
                 header = default;

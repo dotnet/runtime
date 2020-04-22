@@ -1,6 +1,8 @@
 #nullable  enable
 
 using System.Buffers;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
@@ -9,8 +11,10 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed
 {
-    internal class ManagedQuicStream : QuicStreamProvider
+    internal sealed class ManagedQuicStream : QuicStreamProvider
     {
+        internal LinkedListNode<ManagedQuicStream> _flushableListNode;
+
         private bool _disposed;
 
         /// <summary>
@@ -36,6 +40,7 @@ namespace System.Net.Quic.Implementations.Managed
             OutboundBuffer = outboundBuffer;
             _streamCollection = streamCollection;
             _ctx = ctx;
+            _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
         }
 
         #region Public API
@@ -70,26 +75,79 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
+            WriteAsyncInternal(buffer, endStream, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        private ValueTask WriteAsyncInternal(ReadOnlySpan<byte> buffer, bool endStream,
+            CancellationToken cancellationToken)
+        {
+            // TODO-RZ: block until flow control limit is available
             OutboundBuffer!.Enqueue(buffer);
             if (endStream)
                 OutboundBuffer!.MarkEndOfData();
-            // TODO-RZ: this is not threadsafe yet
-            // if (OutboundBuffer.IsFlushable)
-            _streamCollection.MarkFlushable(this, true);
-            _ctx.Ping();
+
+            if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            {
+                _streamCollection.MarkFlushable(this);
+                _ctx.Ping();
+            }
+
+            return new ValueTask();
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(buffer, false, cancellationToken);
+        }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
 
-        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            // TODO-RZ: optimize away some of the copying
+            return WriteAsyncInternal(buffer.Span, endStream, cancellationToken);
+        }
 
-        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            foreach (ReadOnlyMemory<byte> buffer in buffers)
+            {
+                await WriteAsyncInternal(buffer.Span, false, cancellationToken);
+            }
+        }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            foreach (ReadOnlyMemory<byte> buffer in buffers)
+            {
+                await WriteAsyncInternal(buffer.Span, false, cancellationToken);
+            }
+
+            OutboundBuffer!.MarkEndOfData();
+        }
+
+        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(buffers, false, cancellationToken);
+        }
+
+        internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            for (int i = 0; i < buffers.Span.Length; i++)
+            {
+                await WriteAsyncInternal(buffers.Span[i].Span, endStream && i == buffers.Length - 1,cancellationToken);
+            }
+        }
 
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -100,13 +158,22 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 OutboundBuffer!.MarkEndOfData();
                 // ensure that the stream is marked as flushable so that the fin bit is sent even if no more data was written since last time
-                _streamCollection.MarkFlushable(this, true);
+                _streamCollection.MarkFlushable(this);
             }
         }
 
-        internal override void Flush() => throw new NotImplementedException();
+        internal override void Flush()
+        {
+            FlushAsync(CancellationToken.None).GetAwaiter().GetResult();
+        }
 
-        internal override Task FlushAsync(CancellationToken cancellationToken) => throw new NotImplementedException();
+        internal override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            return OutboundBuffer!.QueuePartialChunk().AsTask();
+        }
 
         public override void Dispose()
         {

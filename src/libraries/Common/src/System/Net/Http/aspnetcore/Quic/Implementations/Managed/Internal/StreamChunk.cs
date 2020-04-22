@@ -31,7 +31,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Length of the chunk and number of bytes actually stored in the <see cref="Buffer"/>.
         /// </summary>
-        internal long Length => Memory.Length;
+        internal int Length => Memory.Length;
 
         public StreamChunk(long streamOffset, ReadOnlyMemory<byte> memory, byte[]? buffer = null)
         {

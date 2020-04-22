@@ -1,7 +1,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 {
@@ -10,6 +12,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer
     {
+        private const int PreferredChunkSize = 8024;
+
         /// <summary>
         ///     Ranges of bytes acked by the peer.
         /// </summary>
@@ -26,9 +30,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private readonly RangeSet _pending = new RangeSet();
 
         /// <summary>
+        ///     Chunk to be filled from user data.
+        /// </summary>
+        private StreamChunk _toBeQueuedChunk = new StreamChunk(0, ReadOnlyMemory<byte>.Empty, ArrayPool<byte>.Shared.Rent(PreferredChunkSize));
+
+        /// <summary>
         ///     Channel of incoming chunks of memory from the user.
         /// </summary>
-        private readonly Channel<StreamChunk> _boundaryChannel =
+        private readonly Channel<StreamChunk> _toSendChannel =
             Channel.CreateUnbounded<StreamChunk>(new UnboundedChannelOptions
             {
                 SingleReader = true, SingleWriter = true
@@ -40,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private readonly List<StreamChunk> _chunks = new List<StreamChunk>();
 
         /// <summary>
-        ///     Number of bytes dequeued from the _boundaryChannel.
+        ///     Number of bytes dequeued from the <see cref="_toSendChannel"/>.
         /// </summary>
         private long _dequedBytes;
 
@@ -52,17 +61,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Total number of bytes written into this stream.
         /// </summary>
+        /// <remarks>
+        ///     This property is updated by the user-code thread.
+        /// </remarks>
         internal long WrittenBytes { get; private set; }
 
         /// <summary>
-        ///     Number of bytes present in <see cref="_boundaryChannel" />
+        ///     Number of bytes present in <see cref="_toSendChannel" />
         /// </summary>
         private long BytesInChannel => WrittenBytes - _dequedBytes;
 
         /// <summary>
         ///     Number of contiguous bytes that were acknowledged by the peer.
         /// </summary>
-        internal long SentBytes => _acked.Count > 0 ? _acked[0].End + 1 : 0;
+        internal long AckedOffset => _acked.Count > 0 ? _acked[0].End + 1 : 0;
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
@@ -77,7 +89,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     True if all data has been transmitted and acknowledged.
         /// </summary>
-        internal bool Finished => SizeKnown && SentBytes == WrittenBytes;
+        internal bool Finished => SizeKnown && AckedOffset == WrittenBytes;
 
         /// <summary>
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
@@ -90,6 +102,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     True if there is data that has not been confirmed received.
         /// </summary>
         internal bool HasUnackedData => _pending.Count + _checkedOut.Count != 0;
+
+        /// <summary>
+        ///     Queues the not yet full chunk of stream into flush queue.
+        /// </summary>
+        internal ValueTask QueuePartialChunk()
+        {
+            if (_toBeQueuedChunk.Length == 0)
+            {
+                // nothing to do
+                return new ValueTask();
+            }
+
+            var tmp = _toBeQueuedChunk;
+            var buffer = ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+
+            _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
+            return _toSendChannel.Writer.WriteAsync(tmp);
+        }
 
         /// <summary>
         ///     Updates the <see cref="MaxData" /> parameter.
@@ -106,10 +136,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="data">Data to be sent.</param>
         internal void Enqueue(ReadOnlySpan<byte> data)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
-            data.CopyTo(buffer);
+            while (data.Length > 0)
+            {
+                int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, data.Length);
+                data.Slice(0, toWrite).CopyTo(_toBeQueuedChunk.Buffer!.AsSpan(_toBeQueuedChunk.Length, toWrite));
+                WrittenBytes += toWrite;
+                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset, _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
 
-            EnqueueInternal(buffer.AsMemory(0, data.Length), buffer);
+                if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
+                {
+                    // TODO-RZ: make this method return ValueTask
+                    QueuePartialChunk().GetAwaiter().GetResult();
+                }
+
+                data = data.Slice(toWrite);
+            }
         }
 
         /// <summary>
@@ -128,14 +169,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             long offset = WrittenBytes;
 
-            _boundaryChannel.Writer.TryWrite(new StreamChunk(offset, memory, buffer));
+            _toSendChannel.Writer.TryWrite(new StreamChunk(offset, memory, buffer));
 
             WrittenBytes += memory.Length;
         }
 
         internal void DrainIncomingChunks()
         {
-            var reader = _boundaryChannel.Reader;
+            var reader = _toSendChannel.Reader;
             while (reader.TryRead(out var chunk))
             {
                 Debug.Assert(_dequedBytes == chunk.StreamOffset);

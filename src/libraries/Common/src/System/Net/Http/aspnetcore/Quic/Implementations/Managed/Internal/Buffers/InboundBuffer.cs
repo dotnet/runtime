@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Received stream chunks which cannot be delivered yet because of out of order delivery of frames.
         /// </summary>
-        internal List<StreamChunk> _chunks = new List<StreamChunk>();
+        internal readonly List<StreamChunk> _chunks = new List<StreamChunk>();
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
@@ -159,7 +159,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         internal async ValueTask<int> DeliverAsync(Memory<byte> destination)
         {
-            // TODO-RZ: This can probably be optimized
             int delivered = Deliver(destination.Span);
 
             if (delivered > 0)

@@ -109,6 +109,7 @@ namespace System.Net.Quic.Tests
             {
                 // enforce sending a packet
                 clientStream.Write(new[]{(byte) i});
+                clientStream.Flush();
                 PacketBase packet = _harness.Get1RttToSend(_client);
 
                 // make sure our testing strategy works
