@@ -285,6 +285,22 @@ namespace Mono.Linker {
 
 						continue;
 
+					case "--custom-data":
+						if (arguments.Count < 1) {
+							ErrorMissingArgument (token);
+							return -1;
+						}
+
+						var arg = arguments.Dequeue ();
+						string [] values = arg.Split ('=');
+						if (values?.Length != 2) {
+							Console.WriteLine ($"Value used with '--custom-data' has to be in the KEY=VALUE format");
+							return -1;
+						}
+
+						context.SetCustomData (values [0], values [1]);
+						continue;
+
 					case "--keep-facades":
 						if (!GetBoolParam (token, l => context.KeepTypeForwarderOnlyAssemblies = l))
 							return -1;
@@ -460,14 +476,6 @@ namespace Mono.Linker {
 
 						continue;
 #endif
-					case "m":
-						if (arguments.Count < 2) {
-							ErrorMissingArgument (token);
-							return -1;
-						}
-
-						context.SetParameter (arguments.Dequeue (), arguments.Dequeue ());
-						continue;
 					case "b":
 						if (!GetBoolParam (token, l => context.LinkSymbols = l))
 							return -1;
@@ -926,6 +934,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("                            TYPE,PATH_TO_ASSEMBLY: Add user defined type as last step to the pipeline");
 			Console.WriteLine ("                            -NAME:TYPE,PATH_TO_ASSEMBLY: Inserts step type before existing step with name");
 			Console.WriteLine ("                            +NAME:TYPE,PATH_TO_ASSEMBLY: Add step type after existing step");
+			Console.WriteLine ("  --custom-data KEY=VALUE   Populates context data set with user specified key-value pair");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");

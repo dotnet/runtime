@@ -25,6 +25,7 @@
     <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary_3.cs" />
     <Compile Remove="TypeForwarding\Dependencies\ImplementationLibrary_3.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
+    <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
     <Compile Remove="Extensibility\Dependencies\*.cs" />
   </ItemGroup>
@@ -97,6 +98,7 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
     <Content Include="LinkXml\UsedNonRequiredTypeIsKept.xml" />
+    <Content Include="LinkXml\SecondLevelMethodIsKept.xml" />
     <Content Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" />

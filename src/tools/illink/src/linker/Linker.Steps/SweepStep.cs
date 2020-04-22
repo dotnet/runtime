@@ -309,6 +309,12 @@ namespace Mono.Linker.Steps {
 
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var et in assembly.MainModule.ExportedTypes) {
+					//
+					// Don't import references for forwarders which will be removed
+					//
+					if (ShouldRemove (et))
+						continue;
+
 					var td = et.Resolve ();
 					if (td == null)
 						continue;
