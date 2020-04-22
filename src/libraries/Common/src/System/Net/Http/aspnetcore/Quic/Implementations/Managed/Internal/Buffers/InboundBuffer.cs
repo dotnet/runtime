@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Received stream chunks which cannot be delivered yet because of out of order delivery of frames.
         /// </summary>
-        internal readonly List<StreamChunk> _chunks = new List<StreamChunk>();
+        internal readonly SortedSet<StreamChunk> _outOfOrderChunks = new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
@@ -57,7 +57,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Number of bytes streamed through the <see cref="_deliverableChannel"/>.
         /// </summary>
-        internal long _bytesChanneled;
+        private long _bytesDeliverable;
 
         /// <summary>
         ///     Total number of bytes delivered.
@@ -77,7 +77,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
-        internal long BytesAvailable => _bytesChanneled - BytesRead;
+        internal long BytesAvailable => _bytesDeliverable - BytesRead;
 
         /// <summary>
         ///     Receives a chunk of data and buffers it for delivery.
@@ -106,55 +106,44 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 offset = deliverable;
             }
 
-
             // optimized hot path - in-order delivery
-            if (_chunks.Count == 0 || _chunks[^1].StreamOffset + _chunks[^1].Length <= offset)
+            if (_outOfOrderChunks.Count == 0 && _bytesDeliverable == offset)
             {
                 var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
                 data.CopyTo(buffer);
-
-                _chunks.Add(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
+                _bytesDeliverable += data.Length;
+                _deliverableChannel.Writer.TryWrite(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
+                return;
             }
-            else
+
+            // out of order delivery, use ranges to remove duplicate data
+            RangeSet toDeliver = new RangeSet {{offset, offset + data.Length - 1}};
+            foreach (var range in _undelivered)
             {
-                // out of order delivery, use ranges to remove duplicate data
-                RangeSet toDeliver = new RangeSet();
-                toDeliver.Add(offset, offset + data.Length - 1);
-                foreach (var range in _undelivered)
-                {
-                    toDeliver.Remove(range.Start, range.End);
-                }
+                toDeliver.Remove(range.Start, range.End);
+            }
 
-                foreach (var range in toDeliver)
-                {
-                    // find appropriate index
-                    int index = _chunks.FindLastIndex(c => c.StreamOffset < range.Start) + 1;
-                    var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
-                    data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
-
-                    _chunks.Insert(index, new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
-                }
+            foreach (var range in toDeliver)
+            {
+                var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
+                data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
+                _outOfOrderChunks.Add(new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
             }
 
             _undelivered.Add(offset, offset + data.Length - 1);
-            FlushChunksToUser();
+            DrainDeliverableOutOfOrderChunks();
         }
 
-        private void FlushChunksToUser()
+        private void DrainDeliverableOutOfOrderChunks()
         {
-            // push chunks to the output channel for the user thread to read.
-            int pushed = 0;
-            var channelWriter = _deliverableChannel.Writer;
-            while (pushed < _chunks.Count && _chunks[pushed].StreamOffset == _bytesChanneled)
+            while (_outOfOrderChunks.Count > 0 && _outOfOrderChunks.Min.StreamOffset == _bytesDeliverable)
             {
-                var chunk = _chunks[pushed];
+                var chunk = _outOfOrderChunks.Min;
                 _undelivered.Remove(chunk.StreamOffset, chunk.StreamOffset + chunk.Length - 1);
-                channelWriter.TryWrite(chunk);
-                _bytesChanneled += chunk.Length;
-                pushed++;
+                _bytesDeliverable += chunk.Length;
+                _deliverableChannel.Writer.TryWrite(chunk);
+                _outOfOrderChunks.Remove(chunk);
             }
-
-            _chunks.RemoveRange(0, pushed);
         }
 
         internal async ValueTask<int> DeliverAsync(Memory<byte> destination)
@@ -245,8 +234,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             Debug.Assert(BytesAvailable == 0, "Can skip only if the data has not been received.");
             _undelivered.Remove(BytesRead, BytesRead + length - 1);
             BytesRead += length;
-            _bytesChanneled += length;
-            FlushChunksToUser();
+            _bytesDeliverable += length;
+            DrainDeliverableOutOfOrderChunks();
         }
     }
 }
