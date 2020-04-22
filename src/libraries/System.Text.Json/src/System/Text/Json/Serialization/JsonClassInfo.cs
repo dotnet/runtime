@@ -430,7 +430,8 @@ namespace System.Text.Json
 
             if (s_isByRefLikePropertyInfo != null)
             {
-                return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
+                //return (bool)s_isByRefLikePropertyInfo.GetValue(type)!;
+                throw new NotSupportedException();
             }
 
             object[] attributes = type.GetCustomAttributes(inherit: false);
