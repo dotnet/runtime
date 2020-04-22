@@ -97,6 +97,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_BadComparer(object? comparer)
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
@@ -428,9 +434,9 @@ namespace System
             return new ArgumentException(GetResourceString(resource));
         }
 
-        internal static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, Exception? innerException = null)
+        private static InvalidOperationException GetInvalidOperationException(ExceptionResource resource)
         {
-            return new InvalidOperationException(GetResourceString(resource), innerException);
+            return new InvalidOperationException(GetResourceString(resource));
         }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object? key, Type targetType)
