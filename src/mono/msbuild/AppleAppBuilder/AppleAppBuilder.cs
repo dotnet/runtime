@@ -97,6 +97,18 @@ public class AppleAppBuilderTask : Task
     public bool UseConsoleUITemplate { get; set; }
 
     /// <summary>
+    /// Use LLVM for FullAOT
+    /// The cross-compiler must be built with LLVM support
+    /// </summary>
+    public bool UseLlvm { get; set; }
+
+    /// <summary>
+    /// Path to LLVM binaries (opt and llc)
+    /// It's required if UseLlvm is set
+    /// </summary>
+    public string? LlvmPath { get; set; }
+
+    /// <summary>
     /// Path to *.app bundle
     /// </summary>
     [Output]
@@ -127,6 +139,12 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
+        if (UseLlvm && !string.IsNullOrEmpty(LlvmPath))
+        {
+            // otherwise we might accidentally use some random llc/opt from PATH (installed with clang)
+            throw new ArgumentException($"LlvmPath shoun't be empty when UseLlvm is set");
+        }
+
         string[] excludes = new string[0];
         if (ExcludeFromAppDir != null)
         {
@@ -154,7 +172,7 @@ public class AppleAppBuilderTask : Task
 
             AotCompiler.PrecompileLibraries(CrossCompiler, Arch, !DisableParallelAot, binDir, libsToAot,
                 new Dictionary<string, string> { {"MONO_PATH", AppDir} },
-                Optimized);
+                Optimized, UseLlvm, LlvmPath);
         }
 
         // generate modules.m

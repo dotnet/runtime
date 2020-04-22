@@ -11,14 +11,20 @@ using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XHarness.Tests.Runners;
 using Microsoft.DotNet.XHarness.Tests.Runners.Core;
 
-public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
+public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
-    private static List<string> testLibs = new List<string>();
+    // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
+    [DllImport("__Internal")]
+    public extern static void mono_ios_append_output (string value);
+
+    [DllImport("__Internal")]
+    public extern static void mono_ios_set_summary (string value);
+
+    private static List<string> s_testLibs = new List<string>();
+    private static string? s_MainTestName;
 
     public static async Task<int> Main(string[] args)
     {
-        // Redirect all Console.WriteLines to iOS UI
-        Console.SetOut(new AppleConsole());
         Console.WriteLine($"ProcessorCount = {Environment.ProcessorCount}");
 
         Console.Write("Args: ");
@@ -30,39 +36,78 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
 
         foreach (string arg in args.Where(a => a.StartsWith("testlib:")))
         {
-            testLibs.Add(arg.Remove(0, "testlib:".Length));
+            s_testLibs.Add(arg.Remove(0, "testlib:".Length));
         }
+        bool verbose = args.Contains("--verbose");
 
-        if (testLibs.Count < 1)
+        if (s_testLibs.Count < 1)
         {
             // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
-            testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+            s_testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
         }
 
-        if (testLibs.Count < 1)
+        if (s_testLibs.Count < 1)
         {
             Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
             return -1;
         }
 
         Console.Write("Test libs: ");
-        foreach (string testLib in testLibs)
+        foreach (string testLib in s_testLibs)
         {
             Console.WriteLine(testLib);
         }
         Console.WriteLine(".");
+        s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
 
-        AppleConsole.mono_ios_set_summary($"Running\n{Path.GetFileName(testLibs[0])} tests...");
-        var simpleTestRunner = new SimpleTestRunner();
+        mono_ios_set_summary($"Starting tests...");
+        var simpleTestRunner = new SimpleTestRunner(verbose);
+        simpleTestRunner.TestStarted += (target, e) =>
+        {
+            mono_ios_append_output($"[STARTING] {e}\n");
+        };
+
+        int failed = 0, passed = 0, skipped = 0;
+        simpleTestRunner.TestCompleted += (target, e) =>
+        {
+            if (e.Item2 == TestResult.Passed)
+            {
+                passed++;
+            }
+            else if (e.Item2 == TestResult.Failed)
+            {
+                failed++;
+            }
+            else if (e.Item2 == TestResult.Skipped)
+            {
+                skipped++;
+            }
+            mono_ios_set_summary($"{s_MainTestName}\nPassed:{passed}, Failed: {failed}, Skipped:{skipped}");
+        };
+
         await simpleTestRunner.RunAsync();
-        AppleConsole.mono_ios_set_summary("Done.");
+        mono_ios_append_output($"\nDone.\n");
         Console.WriteLine("----- Done -----");
         return 0;
     }
 
+    public SimpleTestRunner(bool verbose)
+    {
+        if (verbose)
+        {
+            MinimumLogLevel = MinimumLogLevel.Verbose;
+            _maxParallelThreads = 1;
+        }
+        else
+        {
+            MinimumLogLevel = MinimumLogLevel.Info;
+            _maxParallelThreads = Environment.ProcessorCount;
+        }
+    }
+
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
-        foreach (string file in testLibs!)
+        foreach (string file in s_testLibs)
         {
             yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
         }
@@ -73,13 +118,15 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
         Console.WriteLine("[TerminateWithSuccess]");
     }
 
-    protected override int? MaxParallelThreads => Environment.ProcessorCount;
+    private int? _maxParallelThreads;
+
+    protected override int? MaxParallelThreads => _maxParallelThreads;
 
     protected override IDevice Device => this;
 
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
-    protected override string? IgnoreFilesDirectory { get; }
+    protected override string? IgnoreFilesDirectory => Environment.CurrentDirectory;
 
     public string BundleIdentifier => "net.dot.test-runner";
 
@@ -94,23 +141,4 @@ public class SimpleTestRunner : iOSApplicatonEntryPoint, IDevice
     public string? SystemVersion { get; }
 
     public string? Locale { get; }
-}
-
-internal class AppleConsole : TextWriter
-{
-    public override Encoding Encoding => Encoding.Default;
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_append_output (string value);
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_set_summary (string value);
-
-    public override void Write(string? value)
-    {
-        if (value != null)
-        {
-            mono_ios_append_output(value);
-        }
-    }
 }

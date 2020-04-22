@@ -48,8 +48,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Fast path that avoids validation and extra indirection.
                 for (; index < array.Length; index++)
                 {
-                    // TODO: https://github.com/dotnet/runtime/issues/32523
-                    elementConverter.Write(writer, array[index]!, options);
+                    elementConverter.Write(writer, array[index], options);
                 }
             }
             else

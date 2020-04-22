@@ -34,7 +34,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
     <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
     <NETCoreAppFrameworkBrandName>.NET $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>

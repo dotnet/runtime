@@ -22,22 +22,18 @@ WARNING:   When setting properties based on their current state (for example:
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
   </PropertyGroup>
-  <ItemGroup>
-    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'true'" Include = "export RunCrossGen=1"/>
-    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'true'" Include = "set RunCrossGen=1"/>
-    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen"/>
-    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen="/>
-    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen2"/>
-    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen2="/>
-  </ItemGroup>
-
+  
   <!--
     This returns the portion of the execution script that generates the required lines to crossgen the test executable.
+
+    Tests can opt out of ahead-of-time (AOT) compilation from crossgen / crossgen2 by setting this property in their project:
+
+      <CrossGenTest>false</CrossGenTest>
   -->
   <Target Name="GetCrossgenBashScript">
 
     <PropertyGroup>
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
 # CrossGen Script
 if [ ! -z ${RunCrossGen+x} ]%3B then
@@ -131,7 +127,7 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
 
 REM CrossGen Script

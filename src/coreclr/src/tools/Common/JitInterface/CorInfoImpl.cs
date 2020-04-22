@@ -1396,6 +1396,12 @@ namespace Internal.JitInterface
             {
                 throw new RequiresRuntimeJitException(type);
             }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                _methodCodeNode.Fixups.Add(node);
+            }
 #endif
             return (uint)classSize.AsInt;
         }
