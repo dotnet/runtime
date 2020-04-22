@@ -46,9 +46,9 @@ GUID GetAppDomainStaticAddress::GetClsid()
     return clsid;
 }
 
-HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pIpCorProfilerInfoUnk)
+HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
 {
-    HRESULT hr = Profiler::Initialize(pIpCorProfilerInfoUnk);
+    HRESULT hr = Profiler::Initialize(pICorProfilerInfoUnk);
     if (FAILED(hr))
     {
         failures++;
