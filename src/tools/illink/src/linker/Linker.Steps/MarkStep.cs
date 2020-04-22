@@ -756,7 +756,7 @@ namespace Mono.Linker.Steps {
 			return true;
 		}
 
-		protected void MarkStaticConstructor (TypeDefinition type, in DependencyInfo reason)
+		internal protected void MarkStaticConstructor (TypeDefinition type, in DependencyInfo reason)
 		{
 			if (MarkMethodIf (type.Methods, IsNonEmptyStaticConstructor, reason) != null)
 				Annotations.SetPreservedStaticCtor (type);
