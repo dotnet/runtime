@@ -218,9 +218,11 @@ namespace System.Net.Test.Common
                 }
                 sb.Append("\r\n");
                 writer.Write(sb.ToString());
+
                 // Forward the response body from the server to the client.
                 string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 writer.Write(responseBody);
+
                 return true;
             }
         }

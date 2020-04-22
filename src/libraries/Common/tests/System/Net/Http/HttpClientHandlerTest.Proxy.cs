@@ -113,10 +113,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static bool IsHttpHandler => !HttpClientHandlerTestBase.IsWinHttpHandler;
+        public static bool IsSocketsHttpHandler => !HttpClientHandlerTestBase.IsWinHttpHandler;
 
         [OuterLoop("Uses external server")]
-        [ConditionalFact(nameof(IsHttpHandler))]
+        [ConditionalFact(nameof(IsSocketsHttpHandler))]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
             RemoteExecutor.Invoke(async (useVersionString) =>
