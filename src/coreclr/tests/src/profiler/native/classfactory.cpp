@@ -8,7 +8,6 @@
 #include "eventpipeprofiler/eventpipeprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
-#include "getruntimeinformation/getruntimeinformation.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -61,8 +60,7 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
         new ReJITProfiler(),
         new EventPipeProfiler(),
         new MetaDataGetDispenser(),
-        new GetAppDomainStaticAddress(),
-        new GetRuntimeInformation()
+        new GetAppDomainStaticAddress()
 		// add new profilers here
 	};
 
