@@ -862,6 +862,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -870,19 +871,52 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
-    var_types           baseType    = node->gtSIMDBaseType;
+    const HWIntrinsic intrin(node);
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
-    GenTree* op3 = nullptr;
-
-    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId))
+    if (!HWIntrinsicInfo::SupportsContainment(intrin.id))
     {
         // Exit early if containment isn't supported
         return;
+    }
+
+    switch (intrin.id)
+    {
+        case NI_AdvSimd_Extract:
+            if (intrin.op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, intrin.op2);
+            }
+            break;
+
+        case NI_AdvSimd_ExtractVector64:
+        case NI_AdvSimd_ExtractVector128:
+            if (intrin.op3->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, intrin.op3);
+            }
+            break;
+
+        case NI_AdvSimd_Insert:
+            if (intrin.op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, intrin.op2);
+
+                if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
+                {
+                    assert(varTypeIsFloating(intrin.baseType));
+
+                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+
+                    if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+                    {
+                        MakeSrcContained(node, intrin.op3);
+                    }
+                }
+            }
+            break;
+
+        default:
+            unreached();
     }
 }
 #endif // FEATURE_HW_INTRINSICS
