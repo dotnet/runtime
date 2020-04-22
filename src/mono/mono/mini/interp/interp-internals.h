@@ -246,6 +246,7 @@ typedef struct {
 	gint32 movlocs;
 	gint32 copy_propagations;
 	gint32 constant_folds;
+	gint32 ldlocas_removed;
 	gint32 killed_instructions;
 	gint32 emitted_instructions;
 	gint32 super_instructions;

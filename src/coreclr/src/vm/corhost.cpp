@@ -50,11 +50,10 @@ extern void PrintToStdOutW(const WCHAR *pwzString);
 
 //***************************************************************************
 
-ULONG CorRuntimeHostBase::m_Version = 0;
-
 // *** ICorRuntimeHost methods ***
 
-CorHost2::CorHost2() : m_fFirstToLoadCLR(FALSE), m_fStarted(FALSE), m_fAppDomainCreated(FALSE)
+CorHost2::CorHost2() :
+    m_cRef(0), m_fFirstToLoadCLR(FALSE), m_fStarted(FALSE), m_fAppDomainCreated(FALSE)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -104,7 +103,7 @@ STDMETHODIMP CorHost2::Start()
     }
     else
     {
-        hr = CorRuntimeHostBase::Start();
+        hr = EnsureEEStarted();
         if (SUCCEEDED(hr))
         {
             // Set our flag that this host invoked the Start method.
@@ -127,28 +126,6 @@ STDMETHODIMP CorHost2::Start()
     return hr;
 }
 
-// Starts the runtime.
-HRESULT CorRuntimeHostBase::Start()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        DISABLED(GC_TRIGGERS);
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    {
-        m_Started = TRUE;
-        hr = EnsureEEStarted();
-    }
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
 
 
 HRESULT CorHost2::Stop()
@@ -581,7 +558,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
 
 #define EMPTY_STRING_TO_NULL(s) {if(s && s[0] == 0) {s=NULL;};}
 
-HRESULT CorHost2::_CreateAppDomain(
+HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR wszFriendlyName,
     DWORD  dwFlags,
     LPCWSTR wszAppDomainManagerAssemblyName,
@@ -746,7 +723,7 @@ HRESULT CorHost2::_CreateAppDomain(
     return hr;
 }
 
-HRESULT CorHost2::_CreateDelegate(
+HRESULT CorHost2::CreateDelegate(
     DWORD appDomainID,
     LPCWSTR wszAssemblyName,
     LPCWSTR wszClassName,
@@ -819,11 +796,25 @@ HRESULT CorHost2::_CreateDelegate(
             }
         }
 
-        if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables())
+        if (pMD==NULL || !pMD->IsStatic() || pMD->HasClassOrMethodInstantiation())
             ThrowHR(COR_E_MISSINGMETHOD);
 
-        UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
-        *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+        if (pMD->HasNativeCallableAttribute())
+        {
+            if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+                ThrowHR(COR_E_INVALIDPROGRAM);
+
+#ifdef TARGET_X86
+            *fnPtr = (INT_PTR)COMDelegate::ConvertToCallback(pMD);
+#else
+            *fnPtr = pMD->GetMultiCallableAddrOfCode();
+#endif
+        }
+        else
+        {
+            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+        }
     }
 
     END_EXTERNAL_ENTRYPOINT;
@@ -831,41 +822,6 @@ HRESULT CorHost2::_CreateDelegate(
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
-}
-
-HRESULT CorHost2::CreateAppDomainWithManager(
-    LPCWSTR wszFriendlyName,
-    DWORD  dwFlags,
-    LPCWSTR wszAppDomainManagerAssemblyName,
-    LPCWSTR wszAppDomainManagerTypeName,
-    int nProperties,
-    LPCWSTR* pPropertyNames,
-    LPCWSTR* pPropertyValues,
-    DWORD* pAppDomainID)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return _CreateAppDomain(
-        wszFriendlyName,
-        dwFlags,
-        wszAppDomainManagerAssemblyName,
-        wszAppDomainManagerTypeName,
-        nProperties,
-        pPropertyNames,
-        pPropertyValues,
-        pAppDomainID);
-}
-
-HRESULT CorHost2::CreateDelegate(
-    DWORD appDomainID,
-    LPCWSTR wszAssemblyName,
-    LPCWSTR wszClassName,
-    LPCWSTR wszMethodName,
-    INT_PTR* fnPtr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return _CreateDelegate(appDomainID, wszAssemblyName, wszClassName, wszMethodName, fnPtr);
 }
 
 HRESULT CorHost2::Authenticate(ULONGLONG authKey)
@@ -1000,41 +956,15 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
     return hr;
 }
 
-HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
-{
-    return UnloadAppDomain2(dwDomainId, fWaitUntilDone, nullptr);
-}
-
-HRESULT CorRuntimeHostBase::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        FORBID_FAULT; // Unloading domains cannot fail due to OOM
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    return COR_E_CANNOTUNLOADAPPDOMAIN;
-}
-
 //*****************************************************************************
 // IUnknown
 //*****************************************************************************
 
-ULONG CorRuntimeHostBase::AddRef()
+ULONG CorHost2::AddRef()
 {
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
     return InterlockedIncrement(&m_cRef);
 }
-
 
 ULONG CorHost2::Release()
 {
@@ -1042,13 +972,11 @@ ULONG CorHost2::Release()
 
     ULONG cRef = InterlockedDecrement(&m_cRef);
     if (!cRef) {
-            delete this;
+        delete this;
     }
 
     return (cRef);
 }
-
-
 
 HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 {
@@ -1081,18 +1009,10 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
     }
     else if (riid == IID_ICLRRuntimeHost2)
     {
-        ULONG version = 2;
-        if (m_Version == 0)
-            FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
-
         *ppUnk = static_cast<ICLRRuntimeHost2 *>(this);
     }
     else if (riid == IID_ICLRRuntimeHost4)
     {
-        ULONG version = 4;
-        if (m_Version == 0)
-            FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
-
         *ppUnk = static_cast<ICLRRuntimeHost4 *>(this);
     }
 #ifndef TARGET_UNIX
@@ -1152,8 +1072,8 @@ HRESULT CorHost2::CreateObject(REFIID riid, void **ppUnk)
     else
     {
         hr = pCorHost->QueryInterface(riid, ppUnk);
-    if (FAILED(hr))
-        delete pCorHost;
+        if (FAILED(hr))
+            delete pCorHost;
     }
     return (hr);
 }
@@ -1331,8 +1251,6 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
 }
 
 #endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION
-
-
 
 
 #endif // !DACCESS_COMPILE

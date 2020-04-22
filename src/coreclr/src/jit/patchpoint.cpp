@@ -195,14 +195,15 @@ private:
 // Patchpoints are placed in the JIT IR during importation, and get expanded
 // here into normal JIT IR.
 //
-void Compiler::fgTransformPatchpoints()
+// Returns:
+//   phase status indicating if changes were made
+//
+PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    JITDUMP("\n*************** in fgTransformPatchpoints\n");
-
     if (!doesMethodHavePatchpoints())
     {
-        JITDUMP(" -- no patchpoints to transform\n");
-        return;
+        JITDUMP("\n -- no patchpoints to transform\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
@@ -217,8 +218,8 @@ void Compiler::fgTransformPatchpoints()
     // optimizing the method (ala QJFL=0).
     if (compLocallocUsed)
     {
-        JITDUMP(" -- unable to handle methods with localloc\n");
-        return;
+        JITDUMP("\n -- unable to handle methods with localloc\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We currently can't do OSR in synchronized methods. We need to alter
@@ -227,18 +228,18 @@ void Compiler::fgTransformPatchpoints()
     // obtained flag to true (or reuse the original method slot value).
     if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
-        JITDUMP(" -- unable to handle synchronized methods\n");
-        return;
+        JITDUMP("\n -- unable to handle synchronized methods\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.IsReversePInvoke())
     {
         JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
-    JITDUMP("\n*************** After fgTransformPatchpoints() [%d patchpoints transformed]\n", count);
-    INDEBUG(if (verbose) { fgDispBasicBlocks(true); });
+    JITDUMP("\n -- %d patchpoints transformed\n", count);
+    return (count == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

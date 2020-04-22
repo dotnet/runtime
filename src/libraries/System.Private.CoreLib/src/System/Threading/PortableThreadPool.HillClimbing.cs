@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Threading
 {
@@ -83,13 +82,13 @@ namespace System.Threading
             private double _completionsSinceLastChange;
             private int _accumulatedCompletionCount;
             private double _accumulatedSampleDurationSeconds;
-            private double[] _samples;
-            private double[] _threadCounts;
+            private readonly double[] _samples;
+            private readonly double[] _threadCounts;
             private int _currentSampleMs;
 
-            private Random _randomIntervalGenerator = new Random();
+            private readonly Random _randomIntervalGenerator = new Random();
 
-            private LogEntry[] _log = new LogEntry[LogCapacity];
+            private readonly LogEntry[] _log = new LogEntry[LogCapacity];
             private int _logStart = 0;
             private int _logSize = 0;
 
@@ -197,10 +196,10 @@ namespace System.Threading
                 //
                 // Set up defaults for our metrics
                 //
-                Complex threadWaveComponent = default(Complex);
-                Complex throughputWaveComponent = default(Complex);
+                Complex threadWaveComponent = default;
+                Complex throughputWaveComponent = default;
                 double throughputErrorEstimate = 0;
-                Complex ratio = default(Complex);
+                Complex ratio = default;
                 double confidence = 0;
 
                 StateOrTransition state = StateOrTransition.Warmup;
@@ -399,7 +398,7 @@ namespace System.Threading
                 // Use the _log array as a circular array for log entries
                 int index = (_logStart + _logSize) % LogCapacity;
 
-                if(_logSize == LogCapacity)
+                if (_logSize == LogCapacity)
                 {
                     _logStart = (_logStart + 1) % LogCapacity;
                     _logSize--; // hide this slot while we update it
@@ -420,7 +419,7 @@ namespace System.Threading
 
             public void ForceChange(int newThreadCount, StateOrTransition state)
             {
-                if(_lastThreadCount != newThreadCount)
+                if (_lastThreadCount != newThreadCount)
                 {
                     _currentControlSetting += newThreadCount - _lastThreadCount;
                     ChangeThreadCount(newThreadCount, state);
@@ -442,7 +441,7 @@ namespace System.Threading
                 double cos = Math.Cos(w);
                 double coeff = 2 * cos;
                 double q0 = 0, q1 = 0, q2 = 0;
-                for(int i = 0; i < numSamples; ++i)
+                for (int i = 0; i < numSamples; ++i)
                 {
                     q0 = coeff * q1 - q2 + samples[(_totalSamples - numSamples + i) % _samplesToMeasure];
                     q2 = q1;

@@ -75,22 +75,22 @@ namespace System.Net.NetworkInformation
 
         public override IPv4InterfaceProperties GetIPv4Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv4Enabled) == 0)
+            if (_ipv4Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv4Properties!;
+            return _ipv4Properties;
         }
 
         public override IPv6InterfaceProperties GetIPv6Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv6Enabled) == 0)
+            if (_ipv6Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv6Properties!;
+            return _ipv6Properties;
         }
 
         public override string DnsSuffix

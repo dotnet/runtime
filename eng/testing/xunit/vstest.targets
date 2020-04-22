@@ -1,12 +1,15 @@
 <Project>
   <PropertyGroup>
-    <RunCommand>"$(RunScriptHost)"</RunCommand>
+    <RunCommand>"$(DotNetTool)"</RunCommand>
+    <RunCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">dotnet</RunCommand>
     <RunArguments>test $(TargetFileName)</RunArguments>
 
     <!-- CLI options -->
-    <RunArguments>$(RunArguments) --logger "xunit;LogFilePath=$(TestResultsName)"</RunArguments>
+    <RunArguments>$(RunArguments) --nologo</RunArguments>
+    <RunArguments>$(RunArguments) --logger "trx;LogFileName=$(TrxTestResultsName)"</RunArguments>
+    <RunArguments>$(RunArguments) --logger "html;LogFileName=$(HtmlTestResultsName)"</RunArguments>
     <RunArguments>$(RunArguments) --framework $(TargetFramework)</RunArguments>
-    <RunArguments>$(RunArguments) --platform $(ArchGroup)</RunArguments>
+    <RunArguments>$(RunArguments) --platform $(TargetArchitecture)</RunArguments>
     <RunArguments Condition="'$(TestDisableParallelization)' != 'true'">$(RunArguments) --parallel</RunArguments>
     <RunArguments Condition="'$(TestBlame)' == 'true'">$(RunArguments) --blame</RunArguments>
 
@@ -27,6 +30,7 @@
     <!-- RunConfiguration settings. -->
     <RunSettingsOptions Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsOptions) RunConfiguration.DisableParallelization=true</RunSettingsOptions>
     <RunSettingsOptions Condition="'$(TestDisableAppDomain)' == 'true'">$(RunSettingsOptions) RunConfiguration.DisableAppDomain=true</RunSettingsOptions>
-    <RunArguments Condition="'$(RunSettingsOptions)' != ''">$(RunArguments)  --(RunSettingsOptions)</RunArguments>
+    <RunSettingsOptions>$(RunSettingsOptions) RunConfiguration.DotNetHostPath="$(RunScriptHost)"</RunSettingsOptions>
+    <RunArguments>$(RunArguments) --$(RunSettingsOptions)</RunArguments>
   </PropertyGroup>
 </Project>

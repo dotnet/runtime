@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.Logging
             if (actualCount != expectedNamedParameterCount)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.UnexpectedNumberOfNamedParameters, expectedNamedParameterCount, actualCount));
+                    SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));
             }
 
             return logValuesFormatter;

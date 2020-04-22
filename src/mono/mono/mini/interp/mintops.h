@@ -70,6 +70,7 @@ typedef enum {
 #define MINT_IS_LDLOCFLD(op) ((op) >= MINT_LDLOCFLD_I1 && (op) <= MINT_LDLOCFLD_O)
 #define MINT_IS_STLOCFLD(op) ((op) >= MINT_STLOCFLD_I1 && (op) <= MINT_STLOCFLD_O)
 #define MINT_IS_LOCUNOP(op) ((op) >= MINT_LOCADD1_I4 && (op) <= MINT_LOCSUB1_I8)
+#define MINT_IS_LDFLD(op) ((op) >= MINT_LDFLD_I1 && (op) <= MINT_LDFLD_O)
 
 
 #define MINT_POP_ALL	-2

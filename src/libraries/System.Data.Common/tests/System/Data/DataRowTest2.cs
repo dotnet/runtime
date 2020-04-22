@@ -134,7 +134,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             DataTable myTable = new DataTable("myTable");
             DataRow dr1, dr2;
@@ -389,7 +389,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void GetHashCode()
+        public void GetHashCodeTest()
         {
             int iHashCode;
             DataRow dr;

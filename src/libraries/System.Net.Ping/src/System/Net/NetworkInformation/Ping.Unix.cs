@@ -19,6 +19,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
+        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         [ThreadStatic]
         private static Random? t_idGenerator;
 
@@ -46,19 +48,36 @@ namespace System.Net.NetworkInformation
             return reply;
         }
 
-        private SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
             Random rand = t_idGenerator ??= new Random();
             ushort id = (ushort)rand.Next(ushort.MaxValue + 1);
+            IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
+            bool sendIpHeader = ipv4 && options != null && _sendIpHeader;
+
+             if (sendIpHeader)
+             {
+                iph.VersionAndLength = 0x45;
+                // On OSX this strangely must be host byte order.
+                iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
+                iph.Protocol = 1; // ICMP
+                iph.Ttl = (byte)options!.Ttl;
+                iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
+#pragma warning disable 618
+                iph.DestinationAddress = (uint)address.Address;
+#pragma warning restore 618
+                // No need to fill in SourceAddress or checksum.
+                // If left blank, kernel will fill it in - at least on OSX.
+             }
 
             return new SocketConfig(
                 new IPEndPoint(address, 0), timeout, options,
                 ipv4, ipv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6, id,
-                CreateSendMessageBuffer(new IcmpHeader()
+                CreateSendMessageBuffer(iph, new IcmpHeader()
                 {
                     Type = ipv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
                     Identifier = id,
@@ -68,12 +87,16 @@ namespace System.Net.NetworkInformation
         private Socket GetRawSocket(SocketConfig socketConfig)
         {
             IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
-
-            // Setting Socket.DontFragment and .Ttl is not supported on Unix, so socketConfig.Options is ignored.
             AddressFamily addrFamily = ep.Address.AddressFamily;
+
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
+            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                socket.DualMode = false;
+            }
+
             if (socketConfig.Options != null && socketConfig.Options.Ttl > 0)
             {
                 socket.Ttl = (short)socketConfig.Options.Ttl;
@@ -81,13 +104,21 @@ namespace System.Net.NetworkInformation
 
             if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
             {
-                socket.DontFragment = socketConfig.Options.DontFragment;
+                if (_sendIpHeader)
+                {
+                    // some platforms like OSX don't support DontFragment so we construct IP header instead.
+                    socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
+                }
+                else
+                {
+                    socket.DontFragment = socketConfig.Options.DontFragment;
+                }
             }
 
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (!ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            if (_needsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
@@ -359,6 +390,24 @@ namespace System.Net.NetworkInformation
         }
 #endif
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct IpHeader
+        {
+            internal byte VersionAndLength;
+            internal byte Tos;
+            internal ushort TotalLength;
+
+            internal ushort Identifier;
+            internal ushort Flags;
+
+            internal byte Ttl;
+            internal byte Protocol;
+            internal ushort HeaderChecksum;
+
+            internal uint SourceAddress;
+            internal uint DestinationAddress;
+        };
+
         // Must be 8 bytes total.
         [StructLayout(LayoutKind.Sequential)]
         internal struct IcmpHeader
@@ -395,21 +444,34 @@ namespace System.Net.NetworkInformation
             public readonly byte[] SendBuffer;
         }
 
-        private static unsafe byte[] CreateSendMessageBuffer(IcmpHeader header, byte[] payload)
+        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload)
         {
-            int headerSize = sizeof(IcmpHeader);
-            byte[] result = new byte[headerSize + payload.Length];
-            Marshal.Copy(new IntPtr(&header), result, 0, headerSize);
-            payload.CopyTo(result, headerSize);
-            ushort checksum = ComputeBufferChecksum(result);
+            int icmpHeaderSize = sizeof(IcmpHeader);
+            int offset = 0;
+            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : checked(icmpHeaderSize + payload.Length);
+            byte[] result = new byte[packetSize];
+
+            if (ipHeader.TotalLength != 0)
+            {
+                int ipHeaderSize = sizeof(IpHeader);
+                new Span<byte>(&ipHeader, sizeof(IpHeader)).CopyTo(result);
+                offset = ipHeaderSize;
+            }
+
+            //byte[] result = new byte[headerSize + payload.Length];
+            Marshal.Copy(new IntPtr(&icmpHeader), result, offset, icmpHeaderSize);
+            payload.CopyTo(result, offset + icmpHeaderSize);
+
+            // offset now still points to beginning of ICMP header.
+            ushort checksum = ComputeBufferChecksum(result.AsSpan().Slice(offset));
             // Jam the checksum into the buffer.
-            result[2] = (byte)(checksum >> 8);
-            result[3] = (byte)(checksum & (0xFF));
+            result[offset + 2] = (byte)(checksum >> 8);
+            result[offset + 3] = (byte)(checksum & (0xFF));
 
             return result;
         }
 
-        private static ushort ComputeBufferChecksum(byte[] buffer)
+        private static ushort ComputeBufferChecksum(ReadOnlySpan<byte> buffer)
         {
             // This is using the "deferred carries" approach outlined in RFC 1071.
             uint sum = 0;

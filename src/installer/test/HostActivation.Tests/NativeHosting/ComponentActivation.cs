@@ -6,6 +6,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -143,6 +144,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void CallDelegate_UnhandledException()
+        {
+            string entryPoint = "ThrowException";
+            var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
+            string[] args =
+            {
+                ComponentActivationArg,
+                sharedState.HostFxrPath,
+                componentProject.RuntimeConfigJson,
+                componentProject.AppDll,
+                sharedState.ComponentTypeName,
+                entryPoint,
+            };
+
+            sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute()
+                .Should().Fail()
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
+                .And.ExecuteComponentEntryPointWithException(entryPoint, 1);
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
@@ -179,8 +202,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     {
         public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount, int returnValue)
         {
-            return assertion.HaveStdOutContaining($"Called {methodName}(0xdeadbeef, 42) - component call count: {componentCallCount}")
+            return assertion.ExecuteComponentEntryPoint(methodName, componentCallCount)
                 .And.HaveStdOutContaining($"{methodName} delegate result: 0x{returnValue.ToString("x")}");
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPointWithException(this CommandResultAssertions assertion, string methodName, int componentCallCount)
+        {
+            var constraint = assertion.ExecuteComponentEntryPoint(methodName, componentCallCount);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return constraint.And.HaveStdOutContaining($"{methodName} delegate threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
+            }
+            else
+            {
+                // Exception is unhandled by native host on non-Windows systems
+                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
+                    .And.HaveStdErrContaining($"Unhandled exception. System.InvalidOperationException: {methodName}");
+            }
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount)
+        {
+            return assertion.HaveStdOutContaining($"Called {methodName}(0xdeadbeef, 42) - component call count: {componentCallCount}");
         }
     }
 }

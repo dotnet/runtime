@@ -14,6 +14,7 @@ namespace System.Text.Json
     internal class JsonParameterInfo<T> : JsonParameterInfo
     {
         private JsonConverter<T> _converter = null!;
+        private bool _ignoreNullValues;
         private Type _runtimePropertyType = null!;
 
         public override JsonConverter ConverterBase => _converter;
@@ -21,22 +22,21 @@ namespace System.Text.Json
         public T TypedDefaultValue { get; private set; } = default!;
 
         public override void Initialize(
-            string matchingPropertyName,
             Type declaredPropertyType,
             Type runtimePropertyType,
             ParameterInfo parameterInfo,
-            JsonConverter converter,
+            JsonPropertyInfo matchingProperty,
             JsonSerializerOptions options)
         {
             base.Initialize(
-                matchingPropertyName,
                 declaredPropertyType,
                 runtimePropertyType,
                 parameterInfo,
-                converter,
+                matchingProperty,
                 options);
 
-            _converter = (JsonConverter<T>)converter;
+            _converter = (JsonConverter<T>)matchingProperty.ConverterBase;
+            _ignoreNullValues = matchingProperty.IgnoreNullValues;
             _runtimePropertyType = runtimePropertyType;
 
             if (parameterInfo.HasDefaultValue)
@@ -55,8 +55,7 @@ namespace System.Text.Json
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken &&
-                ((!_converter.HandleNullValue && !state.IsContinuation) || Options.IgnoreNullValues))
+            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
             {
                 // Don't have to check for IgnoreNullValue option here because we set the default value (likely null) regardless
                 value = DefaultValue;
@@ -85,10 +84,8 @@ namespace System.Text.Json
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken &&
-                ((!_converter.HandleNullValue && !state.IsContinuation) || Options.IgnoreNullValues))
+            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
             {
-                // Don't have to check for IgnoreNullValue option here because we set the default value (likely null) regardless
                 value = TypedDefaultValue;
                 return true;
             }

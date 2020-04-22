@@ -59,11 +59,10 @@ namespace System.Text.Json
         public bool ShouldDeserialize { get; private set; }
 
         public virtual void Initialize(
-            string matchingPropertyName,
             Type declaredPropertyType,
             Type runtimePropertyType,
             ParameterInfo parameterInfo,
-            JsonConverter converter,
+            JsonPropertyInfo matchingProperty,
             JsonSerializerOptions options)
         {
             _runtimePropertyType = runtimePropertyType;
@@ -73,12 +72,12 @@ namespace System.Text.Json
             Position = parameterInfo.Position;
             ShouldDeserialize = true;
 
-            DetermineParameterName(matchingPropertyName);
+            DetermineParameterName(matchingProperty);
         }
 
-        private void DetermineParameterName(string matchingPropertyName)
+        private void DetermineParameterName(JsonPropertyInfo matchingProperty)
         {
-            NameAsString = matchingPropertyName;
+            NameAsString = matchingProperty.NameAsString!;
 
             // `NameAsString` is valid UTF16, so just call the simple UTF16->UTF8 encoder.
             ParameterName = Encoding.UTF8.GetBytes(NameAsString);
@@ -89,8 +88,8 @@ namespace System.Text.Json
         // Create a parameter that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
         public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
-            string matchingPropertyName,
             ParameterInfo parameterInfo,
+            JsonPropertyInfo matchingProperty,
             JsonSerializerOptions options)
         {
             JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
@@ -98,7 +97,7 @@ namespace System.Text.Json
             jsonParameterInfo.ParameterInfo = parameterInfo;
             jsonParameterInfo.ShouldDeserialize = false;
 
-            jsonParameterInfo.DetermineParameterName(matchingPropertyName);
+            jsonParameterInfo.DetermineParameterName(matchingProperty);
 
             return jsonParameterInfo;
         }

@@ -30,6 +30,11 @@
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="browser">
+      <Parent>any</Parent>
+      <Architectures>wasm</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="centos">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
@@ -59,9 +64,13 @@
 
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
+      <Architectures>arm</Architectures>
+      <Versions>8;9;10</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="ios">
+      <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
-      <!-- starting from 11 because 10 will need different graph with arm included -->
-      <Versions>11;12;13</Versions>
+      <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->

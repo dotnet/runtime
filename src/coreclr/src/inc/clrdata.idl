@@ -197,6 +197,20 @@ interface ICLRDataTarget3 : ICLRDataTarget2
     HRESULT GetExceptionThreadID([out] ULONG32* threadID);
 };
 
+[
+    object,
+    local,
+    uuid(b760bf44-9377-4597-8be7-58083bdc5146),
+    pointer_default(unique)
+]
+interface ICLRRuntimeLocator : IUnknown
+{
+    /*
+     Returns the base address of the module containing the runtime.
+     */
+    HRESULT GetRuntimeBase([out] CLRDATA_ADDRESS* baseAddress);
+};
+
 /*
  * Interface used by the data access services layer to locate metadata
  * of assemblies in a target.

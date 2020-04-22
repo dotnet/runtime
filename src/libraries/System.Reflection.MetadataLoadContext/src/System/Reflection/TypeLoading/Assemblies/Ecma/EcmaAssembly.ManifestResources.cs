@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading.Ecma
             {
                 // Must get resource info from other assembly, and OR in the contained in another assembly information
                 ManifestResourceInfo underlyingManifestResourceInfo = internalManifestResourceInfo.ReferencedAssembly.GetManifestResourceInfo(resourceName)!;
-                internalManifestResourceInfo.FileName = underlyingManifestResourceInfo.FileName;
+                internalManifestResourceInfo.FileName = underlyingManifestResourceInfo.FileName ?? string.Empty;
                 internalManifestResourceInfo.ResourceLocation = underlyingManifestResourceInfo.ResourceLocation | ResourceLocation.ContainedInAnotherAssembly;
                 if (underlyingManifestResourceInfo.ReferencedAssembly != null)
                     internalManifestResourceInfo.ReferencedAssembly = underlyingManifestResourceInfo.ReferencedAssembly;

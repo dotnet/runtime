@@ -4,8 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Configuration.Xml.cs" />
-    <Reference Include="Microsoft.Extensions.Configuration"  />
-    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions"  />
-    <Reference Include="System.Security.Cryptography.Xml"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration\ref\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.FileExtensions\ref\Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.FileProviders.Abstractions\ref\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
   </ItemGroup>
 </Project>

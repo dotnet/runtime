@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -39,7 +38,7 @@ namespace System.Text.Json
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
                 JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
-                if (dataExtProperty != null)
+                if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
 

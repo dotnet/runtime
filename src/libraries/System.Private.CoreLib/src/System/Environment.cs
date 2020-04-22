@@ -144,7 +144,7 @@ namespace System
             {
                 // FX_PRODUCT_VERSION is expected to be set by the host
                 // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
-                string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION") ??
+                string? versionString = AppContext.GetData("FX_PRODUCT_VERSION") as string ??
                     typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
                 ReadOnlySpan<char> versionSpan = versionString.AsSpan();

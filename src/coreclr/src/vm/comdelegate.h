@@ -84,11 +84,11 @@ public:
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
     // Marshals a managed method to an unmanaged callback.
-    // This is only used on x86 Windows. See usage for further details.
+    // This is only used on x86. See usage for further details.
     static PCODE ConvertToCallback(MethodDesc* pMD);
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86)
 
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);

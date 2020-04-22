@@ -8,15 +8,13 @@
     <NETStandardSupportPackageVersion>2.0.1-servicing-26011-01</NETStandardSupportPackageVersion>
     <NETStandardSupportRoot>$(NuGetPackageRoot)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
     <AddNetStandardSupportPackage Condition="'$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net47'">true</AddNetStandardSupportPackage>
-    <TargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;$(netcoreappCurrent)</TargetFrameworks>
+    <TargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472</TargetFrameworks>
+    <!-- if we aren't building all configurations, ensure we populate NetFxRefPath for netcoreapp by building this project -->
+    <TargetFrameworks Condition="'$(BuildAllConfigurations)' != 'true'">$(TargetFrameworks);$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' != ''">
-    <TargetFrameworks Condition="$(TargetFramework.Contains('net4'))">net45;net451;net46;net461;net462;net47;net471;net472</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- For things not .NETFramework we need the net472 targeting pack to generate facades -->
     <AssetTargetFallback>$(NetFrameworkCurrent)</AssetTargetFallback>
-    <NoWarn>$(NoWarn);NU1701</NoWarn>
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
   </PropertyGroup>
 
@@ -67,7 +65,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(TargetingPackNugetPackageId)">
+    <PackageReference Include="$(TargetingPackNugetPackageId)" NoWarn="NU1701">
       <Version >$(_TargetingPackVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net46'">

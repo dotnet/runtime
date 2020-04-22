@@ -5302,7 +5302,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
 #ifdef FEATURE_SIMD
-    if (featureSIMD && varTypeIsStruct(elemTyp) && elemSize <= maxSIMDStructBytes())
+    if (featureSIMD && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
@@ -5376,7 +5376,12 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree->ChangeOper(GT_IND);
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
+        bool canCSE               = indir->CanCSE();
         indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
+        if (!canCSE)
+        {
+            indir->SetDoNotCSE();
+        }
 
 #ifdef DEBUG
         indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
@@ -8137,7 +8142,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
     // for all non-parameter IL locals as well as temp structs with GC fields.
     // Liveness phase will remove unnecessary initializations.
-    if (info.compInitMem)
+    if (info.compInitMem || compSuppressedZeroInit)
     {
         unsigned   varNum;
         LclVarDsc* varDsc;
@@ -8154,7 +8159,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 var_types lclType            = varDsc->TypeGet();
                 bool      isUserLocal        = (varNum < info.compLocalsCount);
                 bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
-                if (isUserLocal || structWithGCFields)
+                bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
+                if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
                 {
                     GenTree* lcl  = gtNewLclvNode(varNum, lclType);
                     GenTree* init = nullptr;
@@ -13384,9 +13390,6 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
-
-            /* op1 of a GT_ADDR is an l-value. Only r-values can be CSEed */
-            op1->gtFlags |= GTF_DONT_CSE;
             break;
 
         case GT_COLON:
@@ -15467,10 +15470,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 {
     fgRemoveRestOfBlock = false;
 
-    /* Make the current basic block address available globally */
-
-    compCurBB = block;
-
     *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
@@ -15668,10 +15667,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
     }
 #endif
 
-#ifdef DEBUG
-    compCurBB = (BasicBlock*)INVALID_POINTER_VALUE;
-#endif
-
     // Reset this back so that it doesn't leak out impacting other blocks
     fgRemoveRestOfBlock = false;
 }
@@ -15754,125 +15749,27 @@ void Compiler::fgMorphBlocks()
             optAssertionReset(0);
         }
 #endif
+        // Make the current basic block address available globally.
+        compCurBB = block;
 
-        /* Process all statement trees in the basic block */
-
+        // Process all statement trees in the basic block.
         fgMorphStmts(block, &lnot, &loadw);
 
-        /* Are we using a single return block? */
-
-        if (block->bbJumpKind == BBJ_RETURN)
+        // Do we need to merge the result of this block into a single return block?
+        if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
-            if ((genReturnBB != nullptr) && (genReturnBB != block) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+            if ((genReturnBB != nullptr) && (genReturnBB != block))
             {
-
-                // Note 1: A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
-                // For example a method returning void could have an empty block with jump kind BBJ_RETURN.
-                // Such blocks do materialize as part of in-lining.
-                //
-                // Note 2: A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
-                // It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
-                // For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
-                // is BAD_VAR_NUM.
-                //
-                // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
-
-                Statement* lastStmt = block->lastStmt();
-                GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
-
-                if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
-                {
-                    // This return was generated during epilog merging, so leave it alone
-                }
-                else
-                {
-                    /* We'll jump to the genReturnBB */
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_X86)
-                    if (info.compFlags & CORINFO_FLG_SYNCH)
-                    {
-                        fgConvertSyncReturnToLeave(block);
-                    }
-                    else
-#endif // !TARGET_X86
-                    {
-                        block->bbJumpKind = BBJ_ALWAYS;
-                        block->bbJumpDest = genReturnBB;
-                        fgAddRefPred(genReturnBB, block);
-                        fgReturnCount--;
-                    }
-                    if (genReturnLocal != BAD_VAR_NUM)
-                    {
-                        // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
-
-                        // Method must be returning a value other than TYP_VOID.
-                        noway_assert(compMethodHasRetVal());
-
-                        // This block must be ending with a GT_RETURN
-                        noway_assert(lastStmt != nullptr);
-                        noway_assert(lastStmt->GetNextStmt() == nullptr);
-                        noway_assert(ret != nullptr);
-
-                        // GT_RETURN must have non-null operand as the method is returning the value assigned to
-                        // genReturnLocal
-                        noway_assert(ret->OperGet() == GT_RETURN);
-                        noway_assert(ret->gtGetOp1() != nullptr);
-
-                        Statement* pAfterStatement = lastStmt;
-                        IL_OFFSETX offset          = lastStmt->GetILOffsetX();
-                        GenTree*   tree =
-                            gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, offset, block);
-                        if (tree->OperIsCopyBlkOp())
-                        {
-                            tree = fgMorphCopyBlock(tree);
-                        }
-
-                        if (pAfterStatement == lastStmt)
-                        {
-                            lastStmt->SetRootNode(tree);
-                        }
-                        else
-                        {
-                            // gtNewTempAssign inserted additional statements after last
-                            fgRemoveStmt(block, lastStmt);
-                            Statement* newStmt = gtNewStmt(tree, offset);
-                            fgInsertStmtAfter(block, pAfterStatement, newStmt);
-                            lastStmt = newStmt;
-                        }
-
-                        // make sure that copy-prop ignores this assignment.
-                        lastStmt->GetRootNode()->gtFlags |= GTF_DONT_CSE;
-                    }
-                    else if (ret != nullptr && ret->OperGet() == GT_RETURN)
-                    {
-                        // This block ends with a GT_RETURN
-                        noway_assert(lastStmt != nullptr);
-                        noway_assert(lastStmt->GetNextStmt() == nullptr);
-
-                        // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
-                        // block
-                        noway_assert(ret->TypeGet() == TYP_VOID);
-                        noway_assert(ret->gtGetOp1() == nullptr);
-
-                        fgRemoveStmt(block, lastStmt);
-                    }
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-                        fgTableDispBasicBlock(block);
-                    }
-#endif
-                }
+                fgMergeBlockReturn(block);
             }
         }
+
         block = block->bbNext;
-    } while (block);
+    } while (block != nullptr);
 
-    /* We are done with the global morphing phase */
-
+    // We are done with the global morphing phase
     fgGlobalMorph = false;
+    compCurBB     = nullptr;
 
 #ifdef DEBUG
     if (verboseTrees)
@@ -15880,6 +15777,116 @@ void Compiler::fgMorphBlocks()
         fgDispBasicBlocks(true);
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// fgMergeBlockReturn: assign the block return value (if any) into the single return temp
+//   and branch to the single return block.
+//
+// Arguments:
+//   block - the block to process.
+//
+// Notes:
+//   A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
+//   For example a method returning void could have an empty block with jump kind BBJ_RETURN.
+//   Such blocks do materialize as part of in-lining.
+//
+//   A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
+//   It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
+//   For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
+//   is BAD_VAR_NUM.
+//
+void Compiler::fgMergeBlockReturn(BasicBlock* block)
+{
+    assert((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert((genReturnBB != nullptr) && (genReturnBB != block));
+
+    // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
+
+    Statement* lastStmt = block->lastStmt();
+    GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
+
+    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+    {
+        // This return was generated during epilog merging, so leave it alone
+    }
+    else
+    {
+        // We'll jump to the genReturnBB.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(TARGET_X86)
+        if (info.compFlags & CORINFO_FLG_SYNCH)
+        {
+            fgConvertSyncReturnToLeave(block);
+        }
+        else
+#endif // !TARGET_X86
+        {
+            block->bbJumpKind = BBJ_ALWAYS;
+            block->bbJumpDest = genReturnBB;
+            fgAddRefPred(genReturnBB, block);
+            fgReturnCount--;
+        }
+        if (genReturnLocal != BAD_VAR_NUM)
+        {
+            // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
+
+            // Method must be returning a value other than TYP_VOID.
+            noway_assert(compMethodHasRetVal());
+
+            // This block must be ending with a GT_RETURN
+            noway_assert(lastStmt != nullptr);
+            noway_assert(lastStmt->GetNextStmt() == nullptr);
+            noway_assert(ret != nullptr);
+
+            // GT_RETURN must have non-null operand as the method is returning the value assigned to
+            // genReturnLocal
+            noway_assert(ret->OperGet() == GT_RETURN);
+            noway_assert(ret->gtGetOp1() != nullptr);
+
+            Statement* pAfterStatement = lastStmt;
+            IL_OFFSETX offset          = lastStmt->GetILOffsetX();
+            GenTree*   tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, offset, block);
+            if (tree->OperIsCopyBlkOp())
+            {
+                tree = fgMorphCopyBlock(tree);
+            }
+
+            if (pAfterStatement == lastStmt)
+            {
+                lastStmt->SetRootNode(tree);
+            }
+            else
+            {
+                // gtNewTempAssign inserted additional statements after last
+                fgRemoveStmt(block, lastStmt);
+                Statement* newStmt = gtNewStmt(tree, offset);
+                fgInsertStmtAfter(block, pAfterStatement, newStmt);
+                lastStmt = newStmt;
+            }
+        }
+        else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+        {
+            // This block ends with a GT_RETURN
+            noway_assert(lastStmt != nullptr);
+            noway_assert(lastStmt->GetNextStmt() == nullptr);
+
+            // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
+            // block
+            noway_assert(ret->TypeGet() == TYP_VOID);
+            noway_assert(ret->gtGetOp1() == nullptr);
+
+            fgRemoveStmt(block, lastStmt);
+        }
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
+            fgTableDispBasicBlock(block);
+        }
+#endif
+    }
 }
 
 /*****************************************************************************
@@ -16827,8 +16834,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 tree->SetOper(GT_LCL_VAR);
                 tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
                 tree->gtType = fieldType;
-                tree->gtFlags &= GTF_NODE_MASK;
-                tree->gtFlags &= ~GTF_GLOB_REF;
+                tree->gtFlags &= GTF_NODE_MASK; // Note: that clears all flags except `GTF_COLON_COND`.
 
                 if (parent->gtOper == GT_ASG)
                 {
@@ -17672,7 +17678,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     if (verbose)
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
-        printf("From " FMT_BB ", stmt", block->bbNum);
+        printf("From " FMT_BB ", stmt ", block->bbNum);
         printStmtID(stmt);
         printf(" to stmt");
         printStmtID(lastStmt);
@@ -17738,12 +17744,15 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n" FMT_BB " stmt", block->bbNum);
+        printf("\n" FMT_BB " stmt ", block->bbNum);
         printStmtID(stmt);
         printf("(before)\n");
         gtDispStmt(stmt);
     }
 #endif
+
+    assert(!simdStructNode->CanCSE());
+    simdStructNode->ClearDoNotCSE();
 
     tree = gtNewAssignNode(dstNode, simdStructNode);
 

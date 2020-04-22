@@ -1146,22 +1146,25 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 static MonoObject*
 ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackval *values, MonoError *error)
 {
-	uintptr_t *lengths;
-	intptr_t *lower_bounds;
-	int i;
-
-	lengths = g_newa (uintptr_t, m_class_get_rank (klass) * 2);
-	for (i = 0; i < param_count; ++i) {
-		lengths [i] = values->data.i;
-		values ++;
-	}
-	if (m_class_get_rank (klass) == param_count) {
-		/* Only lengths provided. */
-		lower_bounds = NULL;
-	} else {
+	int rank = m_class_get_rank (klass);
+	uintptr_t *lengths = g_newa (uintptr_t, rank * 2);
+	intptr_t *lower_bounds = NULL;
+	if (2 * rank == param_count) {
+		for (int l = 0; l < 2; ++l) {
+			int src = l;
+			int dst = l * rank;
+			for (int r = 0; r < rank; ++r, src += 2, ++dst) {
+				lengths [dst] = values [src].data.i;
+			}
+		}
 		/* lower bounds are first. */
 		lower_bounds = (intptr_t *) lengths;
-		lengths += m_class_get_rank (klass);
+		lengths += rank;
+	} else {
+		/* Only lengths provided. */
+		for (int i = 0; i < param_count; ++i) {
+			lengths [i] = values [i].data.i;
+		}
 	}
 	return (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, error);
 }
@@ -5745,12 +5748,6 @@ call_newobj:
 			sp [-1].data.l = (gint64)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_I8)
-			if ((guint64)sp [-1].data.l > G_MAXINT32)
-				goto overflow_label;
-			sp [-1].data.i = (gint32)sp [-1].data.l;
-			++ip;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BOX) {
 			mono_interp_box (frame, ip, sp);
 			ip += 3;
@@ -6016,7 +6013,7 @@ call_newobj:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT32)
+			if ((guint64)sp [-1].data.l > G_MAXINT32)
 				goto overflow_label;
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
@@ -7649,6 +7646,7 @@ register_interp_stats (void)
 	mono_counters_register ("Copy propagations", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.copy_propagations);
 	mono_counters_register ("Added pop count", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.added_pop_count);
 	mono_counters_register ("Constant folds", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.constant_folds);
+	mono_counters_register ("Ldlocas removed", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.ldlocas_removed);
 	mono_counters_register ("Super instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.super_instructions);
 	mono_counters_register ("Killed instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.killed_instructions);
 	mono_counters_register ("Emitted instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.emitted_instructions);

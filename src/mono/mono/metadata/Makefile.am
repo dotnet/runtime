@@ -455,6 +455,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-config.h		\
 	mono-debug.h		\
 	mono-gc.h		\
+	mono-private-unstable.h	\
 	object.h		\
 	object-forward.h	\
 	opcodes.h		\

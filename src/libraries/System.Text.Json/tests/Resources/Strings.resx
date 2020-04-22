@@ -20278,4 +20278,7 @@ tiline\"another\" String\\"],"str":"\"\""}</value>
   <data name="LoremIpsum40WordsBase64" xml:space="preserve">
     <value>TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdC4gQ3VyYWJpdHVyIHZpdmVycmEgbmVxdWUgYXQgZXJhdCBsYW9yZWV0LCBhdCBzYWdpdHRpcyBhcmN1IGVmZmljaXR1ci4gVXQgcHVsdmluYXIgZXJvcyBuZWMgb2RpbyBjdXJzdXMgZWxlaWZlbmQuIE1hZWNlbmFzIHZpdmVycmEgZWxlbWVudHVtIHBvcnR0aXRvci4gTnVsbGFtIG1pIHZlbGl0LCBtYWxlc3VhZGEgY29tbW9kbyB0cmlzdGlxdWUgZXUsIG1vbGxpcyBhIHZlbGl0LiBNb3JiaS4=</value>
   </data>
+  <data name="BufferMaximumSizeExceeded" xml:space="preserve">
+    <value>Cannot allocate a buffer of size {0}.</value>
+  </data>
 </root>

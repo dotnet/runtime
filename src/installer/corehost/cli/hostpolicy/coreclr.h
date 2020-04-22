@@ -67,6 +67,7 @@ enum class common_property
     StartUpHooks,
     AppPaths,
     AppNIPaths,
+    RuntimeIdentifier,
 
     // Sentinel value - new values should be defined above
     Last

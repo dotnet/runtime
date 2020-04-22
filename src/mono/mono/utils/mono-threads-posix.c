@@ -170,16 +170,25 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {
 	THREADS_SUSPEND_DEBUG ("sending signal %d to %p[%p]\n", signum, info, mono_thread_info_get_tid (info));
 
+	const int signal_queue_ovf_retry_count G_GNUC_UNUSED = 5;
+	const gulong signal_queue_ovf_sleep_us G_GNUC_UNUSED = 10 * 1000; /* 10 milliseconds */
+	int retry_count G_GNUC_UNUSED = 0;
 	int result;
 
+#if defined (__linux__)
+redo:
+#endif
+
 #ifdef USE_TKILL_ON_ANDROID
-	int old_errno = errno;
+	{
+		int old_errno = errno;
 
-	result = tkill (info->native_handle, signum);
+		result = tkill (info->native_handle, signum);
 
-	if (result < 0) {
-		result = errno;
-		mono_set_errno (old_errno);
+		if (result < 0) {
+			result = errno;
+			mono_set_errno (old_errno);
+		}
 	}
 #elif defined (HAVE_PTHREAD_KILL)
 	result = pthread_kill (mono_thread_info_get_tid (info), signum);
@@ -205,8 +214,23 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 #if defined (__MACH__) && defined (ENOTSUP)
 	    && result != ENOTSUP
 #endif
+#if defined (__linux__)
+	    && !(result == EAGAIN && retry_count < signal_queue_ovf_retry_count)
+#endif
 	    )
 		g_error ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow", __func__, result);
+
+#if defined (__linux__)
+	if (result == EAGAIN && retry_count < signal_queue_ovf_retry_count) {
+		/* HACK: if the signal queue overflows on linux, try again a couple of times.
+		 * Tries to address https://github.com/dotnet/runtime/issues/32377
+		 */
+		g_warning ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow, sleeping for %ld microseconds", __func__, result, signal_queue_ovf_sleep_us);
+		g_usleep (signal_queue_ovf_sleep_us);
+		++retry_count;
+		goto redo;
+	}
+#endif
 
 	return result;
 }

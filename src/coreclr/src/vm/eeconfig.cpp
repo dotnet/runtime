@@ -40,63 +40,6 @@ using namespace clr;
 Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 #endif // STRESS_HEAP
 
-
-ConfigSource::ConfigSource()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    } CONTRACTL_END;
-
-    m_pNext = this;
-    m_pPrev = this;
-}// ConfigSource::ConfigSource
-
-ConfigSource::~ConfigSource()
-{
-    CONTRACTL {
-        NOTHROW;
-        FORBID_FAULT;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    for(ConfigStringHashtable::Iterator iter = m_Table.Begin(), end = m_Table.End(); iter != end; iter++)
-    {
-        ConfigStringKeyValuePair * pair = *(iter);
-        delete[] pair->key;
-        delete[] pair->value;
-        delete pair;
-    }
-}// ConfigSource::~ConfigSource
-
-ConfigStringHashtable * ConfigSource::Table()
-{
-    LIMITED_METHOD_CONTRACT;
-    return &(m_Table);
-}// ConfigSource::Table
-
-void ConfigSource::Add(ConfigSource* prev)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(prev));
-        PRECONDITION(CheckPointer(prev->m_pNext));
-    } CONTRACTL_END;
-
-    m_pPrev = prev;
-    m_pNext = prev->m_pNext;
-
-    m_pNext->m_pPrev = this;
-    prev->m_pNext = this;
-}// ConfigSource::Add
-
-
-
 /**************************************************************/
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
@@ -160,11 +103,6 @@ HRESULT EEConfig::Init()
     iGCStress     = 0;
 #endif
 
-#ifdef STRESS_HEAP
-    iGCStressMix  = 0;
-    iGCStressStep = 1;
-#endif
-
     fGCBreakOnOOM = false;
     iGCgen0size = 0;
     iGCSegmentSize = 0;
@@ -176,8 +114,6 @@ HRESULT EEConfig::Init()
     iGCHoardVM = 0;
     iGCLOHCompactionMode = 0;
     iGCLOHThreshold = 0;
-    iGCHeapCount = 0;
-    iGCNoAffinitize = 0;
     iGCAffinityMask = 0;
 
 #ifdef GCTRIMCOMMIT
@@ -356,31 +292,8 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
-    // After initialization, register the code:#GetConfigValueCallback method with code:CLRConfig to let
-    // CLRConfig access config files. This is needed because CLRConfig lives outside the VM and can't
-    // statically link to EEConfig.
-    CLRConfig::RegisterGetConfigValueCallback(&GetConfigValueCallback);
-
     return S_OK;
 }
-
-#ifdef _DEBUG
-static int DumpConfigTable(ConfigStringHashtable* table, __in_z LPCSTR label, int count)
-{
-    LIMITED_METHOD_CONTRACT;
-    LOG((LF_ALWAYS, LL_ALWAYS, label, count++));
-    LOG((LF_ALWAYS, LL_ALWAYS, "*********************************\n", count++));
-    for(ConfigStringHashtable::Iterator iter = table->Begin(), end = table->End(); iter != end; iter++)
-    {
-        ConfigStringKeyValuePair * pair = *(iter);
-        LPCWSTR keyString = pair->key;
-        LPCWSTR data = pair->value;
-        LOG((LF_ALWAYS, LL_ALWAYS, "%S = %S\n", keyString, data));
-    }
-    LOG((LF_ALWAYS, LL_ALWAYS, "\n"));
-    return count;
-}
-#endif
 
 /**************************************************************/
 HRESULT EEConfig::Cleanup()
@@ -391,30 +304,6 @@ HRESULT EEConfig::Cleanup()
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig) {
-        // TODO: Do we even need this? CLRConfig::GetConfigValue has FORBID_FAULT in its contract.
-        FAULT_NOT_FATAL();  // If GetConfigValue fails the alloc, that's ok.
-
-        DWORD setting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpConfiguration);
-        if (setting != 0)
-       {
-            ConfigList::ConfigIter iter(&m_Configuration);
-            int count = 0;
-            for(ConfigStringHashtable* table = iter.Next();table; table = iter.Next())
-            {
-                count = DumpConfigTable(table, "\nSystem Configuration Table: %d\n", count);
-            }
-            ConfigList::ConfigIter iter2(&m_Configuration);
-            count = 0;
-            for (ConfigStringHashtable* table = iter2.Previous();table; table = iter2.Previous())
-            {
-                count = DumpConfigTable(table, "\nApplication Configuration Table: %d\n", count);
-            }
-        }
-    }
-#endif
 
     if (m_fFreepZapSet)
         delete[] pZapSet;
@@ -485,7 +374,7 @@ HRESULT EEConfig::Cleanup()
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR *outVal, BOOL fPrependCOMPLUS, ConfigSearch direction)
+HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR *outVal, BOOL fPrependCOMPLUS)
 {
     CONTRACT(HRESULT) {
         NOTHROW;
@@ -496,24 +385,7 @@ HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LP
         POSTCONDITION(CheckPointer(outVal, NULL_OK));
     } CONTRACT_END;
 
-    LPWSTR pvalue = REGUTIL::GetConfigString_DontUse_(name, fPrependCOMPLUS);
-    if(pvalue == NULL && g_pConfig != NULL)
-    {
-        LPCWSTR pResult;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pResult)) && pResult != NULL)
-        {
-            size_t len = wcslen(pResult) + 1;
-            pvalue = new (nothrow) WCHAR[len];
-            if (pvalue == NULL)
-            {
-                RETURN E_OUTOFMEMORY;
-            }
-
-            wcscpy_s(pvalue,len,pResult);
-        }
-    }
-
-    *outVal = pvalue;
+    *outVal = REGUTIL::GetConfigString_DontUse_(name, fPrependCOMPLUS);
 
     RETURN S_OK;
 }
@@ -523,7 +395,7 @@ HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LP
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
@@ -533,25 +405,7 @@ DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWO
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    DWORD result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue && g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-
-    return result;
+    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 //
@@ -560,7 +414,7 @@ DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWO
 //
 // Note for PAL: right now PAL does not have a _wcstoui64 API, so I am temporarily reading in all numbers as
 // a 32-bit number. When we have the _wcstoui64 API on MAC we will use that instead of wcstoul.
-ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
@@ -570,80 +424,14 @@ ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG d
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    ULONGLONG result = REGUTIL::GetConfigULONGLONG_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue && g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end;
-            errno = 0;
-            result = _wcstoui64(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-
-    return result;
+    return REGUTIL::GetConfigULONGLONG_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 //
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-// This is very similar to GetConfigDWORD, except that it favors the settings in config files over those in the
-// registry. This is the Shim's policy with configuration flags, and there are a few flags in EEConfig that adhere
-// to this policy.
-//
-DWORD EEConfig::GetConfigDWORDFavoringConfigFile_DontUse_(__in_z LPCWSTR name,
-                                                 DWORD defValue,
-                                                 DWORD level,
-                                                 BOOL fPrependCOMPLUS,
-                                                 ConfigSearch direction)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(name));
-    } CONTRACTL_END;
-
-    DWORD result = defValue;
-
-    if (g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if (SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end = NULL;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-        else
-        {
-            result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-        }
-    }
-
-    return result;
-}
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
@@ -653,24 +441,7 @@ DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defVa
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    DWORD result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end = NULL;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-    return result;
+    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 /**************************************************************/
@@ -702,16 +473,16 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
     bool gcConcurrentWasForced = false;
-    // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
-    // positive value as 'forcing' concurrent GC to be on. Because the standard logic
-    // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
-    // like any other nonzero value), we will explicitly check the DWORD later if this
-    // check returns false.
     gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), false);
 
     int gcConcurrentConfigVal = 0;
     if (!gcConcurrentWasForced)
     {
+        // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
+        // positive value as 'forcing' concurrent GC to be on. Because the standard logic
+        // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
+        // like any other nonzero value), we will explicitly check the DWORD later if this
+        // check returns false.
         gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
         gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
     }
@@ -729,17 +500,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef STRESS_HEAP
     BOOL bGCStressAndHeapVerifyAllowed = true;
-    iGCStressMix        =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressMix);
-    iGCStressStep       =  CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressStep);
-
-    // For GC stress mix mode ensure reasonable defaults
-    if (iGCStressMix != 0)
-    {
-        if (iGCStress == 0)
-            iGCStress |= int(GCSTRESS_ALLOC) | int(GCSTRESS_TRANSITION);
-        if (iGCStressStep == 0 || iGCStressStep == 1)
-            iGCStressStep = 0x10;
-    }
 
     if (iGCStress)
     {
@@ -780,21 +540,14 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             else
             {
                 // If GCStress was enabled, and
-                // If GcConcurrent was NOT explicitly specified in the environment, and
-                // If GSCtressMix was NOT specified
-                // Then let's turn off concurrent GC since it make objects move less
-                if (iGCStressMix == 0)
-                {
-                    iGCconcurrent   =
-                    g_IGCconcurrent = 0;
-                }
+                // If GcConcurrent was NOT explicitly specified in the environment,
+                // then let's turn off concurrent GC since it make objects move less
+                iGCconcurrent = g_IGCconcurrent = 0;
             }
         }
         else
         {
             iGCStress = 0;
-            iGCStressMix  = 0;
-            iGCStressStep = 1;
         }
     }
 
@@ -809,7 +562,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef HOST_64BIT
     iGCAffinityMask = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"));
+    if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"), 0);
     if (!iGCSegmentSize) iGCSegmentSize =  GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
     if (!iGCgen0size) iGCgen0size = GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
 #else
@@ -819,11 +572,10 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
 #endif //HOST_64BIT
 
-    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
+    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"), 0);
     iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
         ? static_cast<size_t>(ullHeapHardLimit)
         : ClrSafeInt<size_t>::MaxInt();
-    iGCHeapHardLimitPercent = Configuration::GetKnobDWORDValue(W("System.GC.HeapHardLimitPercent"), 0);
 
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;
@@ -884,9 +636,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
     iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
-    iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"),
-                                                         CLRConfig::EXTERNAL_GCNoAffinitize);
-    iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::EXTERNAL_GCHeapCount);
 
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
@@ -1296,110 +1045,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
     return hr;
-}
-
-//
-// #GetConfigValueCallback
-// Provides a way for code:CLRConfig to access configuration file values.
-//
-// static
-HRESULT EEConfig::GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LPCWSTR* pValue, BOOL systemOnly, BOOL applicationFirst)
-{
-    CONTRACT (HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pValue));
-        PRECONDITION(CheckPointer(pKey));
-    } CONTRACT_END;
-
-    // Ensure that both options aren't set.
-    _ASSERTE(!(systemOnly && applicationFirst));
-
-    if(g_pConfig != NULL)
-    {
-        ConfigSearch direction = CONFIG_SYSTEM;
-        if(systemOnly)
-        {
-            direction = CONFIG_SYSTEMONLY;
-        }
-        else if(applicationFirst)
-        {
-            direction = CONFIG_APPLICATION;
-        }
-
-        RETURN g_pConfig->GetConfiguration_DontUse_(pKey, direction, pValue);
-    }
-    else
-    {
-        RETURN E_FAIL;
-    }
-}
-
-HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* pValue)
-{
-    CONTRACT (HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pValue));
-        PRECONDITION(CheckPointer(pKey));
-    } CONTRACT_END;
-
-    Thread *pThread = GetThread();
-    ConfigStringKeyValuePair * pair = NULL;
-
-    *pValue = NULL;
-    ConfigList::ConfigIter iter(&m_Configuration);
-
-    switch(direction) {
-    case CONFIG_SYSTEMONLY:
-    {
-        // for things that only admin should be able to set
-        ConfigStringHashtable* table = iter.Next();
-        if(table != NULL)
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    case CONFIG_SYSTEM:
-    {
-        for(ConfigStringHashtable* table = iter.Next();
-            table != NULL;
-            table = iter.Next())
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    case CONFIG_APPLICATION: {
-        for(ConfigStringHashtable* table = iter.Previous();
-            table != NULL;
-            table = iter.Previous())
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    default:
-        RETURN E_FAIL;
-    }
 }
 
 bool EEConfig::RequireZap(LPCUTF8 assemblyName) const

@@ -1846,13 +1846,13 @@ Assert.False(true);
             Assert.False(col2.Unique);
         }
 
-        private void RowChanging(object o, DataRowChangeEventArgs e)
+        private void RowChangingEventHandler(object o, DataRowChangeEventArgs e)
         {
             Assert.Equal(_rowChangingExpectedAction, e.Action);
             _rowChangingRowChanging = true;
         }
 
-        private void RowChanged(object o, DataRowChangeEventArgs e)
+        private void RowChangedEventHandler(object o, DataRowChangeEventArgs e)
         {
             Assert.Equal(_rowChangingExpectedAction, e.Action);
             _rowChangingRowChanged = true;
@@ -1867,8 +1867,8 @@ Assert.False(true);
             DataTable dt = new DataTable("table");
             dt.Columns.Add("col1");
             dt.Columns.Add("col2");
-            dt.RowChanging += new DataRowChangeEventHandler(RowChanging);
-            dt.RowChanged += new DataRowChangeEventHandler(RowChanged);
+            dt.RowChanging += new DataRowChangeEventHandler(RowChangingEventHandler);
+            dt.RowChanged += new DataRowChangeEventHandler(RowChangedEventHandler);
             _rowChangingExpectedAction = DataRowAction.Add;
             dt.Rows.Add(new object[] { 1, 2 });
             Assert.True(_rowChangingRowChanging);

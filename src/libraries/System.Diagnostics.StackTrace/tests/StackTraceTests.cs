@@ -124,7 +124,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Ctor_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
+        public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(InvokeException(), fNeedFileInfo);
             VerifyFrames(stackTrace, fNeedFileInfo);

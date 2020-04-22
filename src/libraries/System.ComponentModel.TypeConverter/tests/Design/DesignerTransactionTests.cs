@@ -22,7 +22,7 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Description")]
-        public void Ctor_Default(string description)
+        public void Ctor_Description(string description)
         {
             using (var transaction = new TestDesignerTransaction(description))
             {

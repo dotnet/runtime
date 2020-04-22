@@ -5,4 +5,7 @@
     <File Include="PackageOverrides.txt" TargetPath="data/" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+  </PropertyGroup>
 </Project>

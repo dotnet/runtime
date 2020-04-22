@@ -112,7 +112,7 @@ namespace System.Tests
         [InlineData(double.NaN, -double.NaN, true)]
         [InlineData(789.0, 789.0f, false)]
         [InlineData(789.0, "789", false)]
-        public static void Equals(double d1, object value, bool expected)
+        public static void EqualsTest(double d1, object value, bool expected)
         {
             if (value is double d2)
             {

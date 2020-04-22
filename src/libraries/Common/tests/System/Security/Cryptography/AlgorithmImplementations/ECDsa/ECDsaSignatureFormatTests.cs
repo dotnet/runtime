@@ -12,9 +12,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public abstract class ECDsaSignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool SupportsSha2 => true;
 
         private static KeyDescription CreateKey(ECCurve curve)
@@ -38,7 +35,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 dsa.KeySize);
         }
 
-        private static IEnumerable<KeyDescription> LocalGenerateTestKeys()
+        protected static IEnumerable<KeyDescription> LocalGenerateTestKeys()
         {
             if (ECDsaFactory.IsCurveValid(EccTestData.BrainpoolP160r1Key1.Curve.Oid))
             {
@@ -58,8 +55,11 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaArraySignatureFormatTests : ECDsaSignatureFormatTests
     {
-        protected override bool IsArrayBased => true;
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
 
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
+        protected override bool IsArrayBased => true;
+        
         protected override byte[] SignHash(
             KeyDescription key,
             byte[] hash,
@@ -99,6 +99,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaArrayOffsetSignatureFormatTests : ECDsaSignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -217,6 +220,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
     public sealed class ECDsaSpanSignatureFormatTests : ECDsaSignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => false;
 
         protected override byte[] SignHash(

@@ -506,7 +506,7 @@ namespace System.Net
         {
             if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
             {
-                // Set no result so that just in case there are waiters, they don't hang in the spin lock.
+                // Set no result so that just in case there are waiters, they don't get stuck in the spin lock.
                 _result = null;
                 Cleanup();
             }

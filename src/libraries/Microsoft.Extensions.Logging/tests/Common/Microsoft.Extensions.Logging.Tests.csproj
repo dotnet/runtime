@@ -2,28 +2,32 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Binder" />
-    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Json" />
-    <Reference Include="Microsoft.Extensions.Configuration" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection" />
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Logging.Configuration" />
-    <Reference Include="Microsoft.Extensions.Logging.Console" />
-    <Reference Include="Microsoft.Extensions.Logging.Debug" />
-    <Reference Include="Microsoft.Extensions.Logging.EventLog" />
-    <Reference Include="Microsoft.Extensions.Logging.Testing" />
-    <Reference Include="Microsoft.Extensions.Logging.TraceSource" />
-    <Reference Include="Microsoft.Extensions.Logging" />
-    <Reference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-    <Reference Include="Microsoft.Extensions.Options" />
-    <Reference Include="Microsoft.Extensions.Primitives" />
+    <Compile Include="..\DI.Common\Common\src\TestSink.cs">
+      <Link>tests\DI.Common\Common\src\TestSink.cs</Link>
+    </Compile>
+    <Compile Include="..\DI.Common\Common\src\WriteContext.cs">
+      <Link>tests\DI.Common\Common\src\WriteContext.cs</Link>
+    </Compile>
+    <Compile Include="..\DI.Common\Common\src\BeginScopeContext.cs">
+      <Link>tests\DI.Common\Common\src\BeginScopeContext.cs</Link>
+    </Compile>
+    <Compile Include="..\DI.Common\Common\src\ITestSink.cs">
+      <Link>tests\DI.Common\Common\src\ITestSink.cs</Link>
+    </Compile>
+    <Compile Include="..\DI.Common\Common\src\TestLogger.cs">
+      <Link>tests\DI.Common\Common\src\TestLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\DI.Common\Common\src\TestLoggerFactory.cs">
+      <Link>tests\DI.Common\Common\src\TestLoggerFactory.cs</Link>
+    </Compile>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Abstractions" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Console" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.EventLog" />
   </ItemGroup>
 
 </Project>

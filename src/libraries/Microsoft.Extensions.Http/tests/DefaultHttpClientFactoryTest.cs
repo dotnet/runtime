@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Http
                 var mockHandler = new Mock<HttpMessageHandler>();
                 mockHandler
                     .Protected()
-                    .Setup("Dispose", true)
+                    .Setup("Dispose", ItExpr.IsAny<bool>())
                     .Throws(new Exception("Dispose should not be called"));
 
                 b.PrimaryHandler = mockHandler.Object;
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Http
                 var mockHandler = new Mock<HttpMessageHandler>();
                 mockHandler
                     .Protected()
-                    .Setup("Dispose", true)
+                    .Setup("Dispose", ItExpr.IsAny<bool>())
                     .Throws(new Exception("Dispose should not be called"));
 
                 b.PrimaryHandler = mockHandler.Object;
@@ -413,6 +413,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34023", TestRuntimes.Mono)]
         public async Task Factory_CleanupCycle_DisposesLiveHandler()
         {
             // Arrange

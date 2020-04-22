@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                 var key = ConfigurationPath.Combine(prefixStack.Reverse());
                                 if (data.ContainsKey(key))
                                 {
-                                    throw new FormatException(Resources.FormatError_KeyIsDuplicated(key,
+                                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key,
                                         GetLineInfo(reader)));
                                 }
 
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                             break;
 
                         default:
-                            throw new FormatException(Resources.FormatError_UnsupportedNodeType(reader.NodeType,
+                            throw new FormatException(SR.Format(SR.Error_UnsupportedNodeType, reader.NodeType,
                                 GetLineInfo(reader)));
                     }
                     preNodeType = reader.NodeType;
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         {
             var lineInfo = reader as IXmlLineInfo;
             return lineInfo == null ? string.Empty :
-                Resources.FormatMsg_LineInfo(lineInfo.LineNumber, lineInfo.LinePosition);
+                SR.Format(SR.Msg_LineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
         }
 
         private static void ProcessAttributes(XmlReader reader, Stack<string> prefixStack, IDictionary<string, string> data,
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 // If there is a namespace attached to current attribute
                 if (!string.IsNullOrEmpty(reader.NamespaceURI))
                 {
-                    throw new FormatException(Resources.FormatError_NamespaceIsNotSupported(GetLineInfo(reader)));
+                    throw new FormatException(SR.Format(SR.Error_NamespaceIsNotSupported, GetLineInfo(reader)));
                 }
 
                 act(reader, prefixStack, data, writer);
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             var key = ConfigurationPath.Combine(prefixStack.Reverse());
             if (data.ContainsKey(key))
             {
-                throw new FormatException(Resources.FormatError_KeyIsDuplicated(key, GetLineInfo(reader)));
+                throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, GetLineInfo(reader)));
             }
 
             data[key] = reader.Value;

@@ -149,7 +149,9 @@ namespace System.Net.Http
                 Debug.Assert(_readAheadTask == null || _socket == null, "Should only already have a read-ahead task if we don't have a socket to poll");
                 if (_readAheadTask == null)
                 {
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
                     _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
+#pragma warning restore CA2012
                 }
             }
             catch (Exception error)
@@ -196,7 +198,7 @@ namespace System.Net.Http
         {
             if (headers.HeaderStore != null)
             {
-                foreach (KeyValuePair<HeaderDescriptor, HttpHeaders.HeaderStoreItemInfo> header in headers.HeaderStore)
+                foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
                 {
                     if (header.Key.KnownHeader != null)
                     {
@@ -932,21 +934,25 @@ namespace System.Net.Http
                 pos++;
             }
 
-            string headerValue = descriptor.GetHeaderValue(line.Slice(pos));
-
             // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
-            // Request headers returned on the response must be treated as custom headers.
+            ReadOnlySpan<byte> value = line.Slice(pos);
             if (isFromTrailer)
             {
+                string headerValue = descriptor.GetHeaderValue(value);
                 response.TrailingHeaders.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
             else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
             {
+                string headerValue = descriptor.GetHeaderValue(value);
                 response.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
             else
             {
-                response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                // Request headers returned on the response must be treated as custom headers.
+                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value);
+                response.Headers.TryAddWithoutValidation(
+                    (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
+                    headerValue);
             }
         }
 

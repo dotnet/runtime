@@ -68,11 +68,11 @@
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
     <ItemGroup>
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(InstallerProject)" Targets="GenerateInstallers" />
+    <MSBuild Projects="@(_InstallerProject)" Targets="GenerateInstallers" />
   </Target>
 
   <Target Name="InitPackage">
@@ -81,6 +81,7 @@
       <OutDirs Include="$(HostFxrPublishRoot)" />
       <OutDirs Include="$(SharedFrameworkPublishRoot)" />
       <OutDirs Include="$(NetHostPublishRoot)" />
+      <OutDirs Include="$(Crossgen2PublishRoot)" />
     </ItemGroup>
 
     <RemoveDir Directories="@(OutDirs)" />
@@ -113,6 +114,15 @@
     </ItemGroup>
     <Copy Sourcefiles="@(SharedFxFiles)"
           DestinationFolder="$(SharedFrameworkPublishRoot)shared/%(SharedFxFiles.RecursiveDir)" />
+    
+    <!-- copy crossgen2 -->
+    <ItemGroup>
+      <Crossgen2Files Include="$(CoreCLRCrossgen2Dir)\*" />
+      <Crossgen2Files Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT" />
+      <Crossgen2Files Include="$(RepoRoot)LICENSE.TXT" />
+    </ItemGroup>
+    <Copy Sourcefiles="@(Crossgen2Files)"
+          DestinationFolder="$(Crossgen2PublishRoot)%(Crossgen2Files.RecursiveDir)" />
 
     <!-- Copy nethost -->
     <PropertyGroup>
@@ -198,6 +208,11 @@
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
+        SourceDirectory="$(Crossgen2PublishRoot)"
+        DestinationArchive="$(AssetOutputPath)$(Crossgen2CompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
         SourceDirectory="$(SharedFrameworkPublishRoot)"
         DestinationArchive="$(AssetOutputPath)$(SharedFrameworkCompressedFile)"
         OverwriteDestination="true" />
@@ -222,6 +237,9 @@
     <Exec Command="tar -C $(NetHostPublishRoot) -czf $(AssetOutputPath)$(NetHostCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(Crossgen2PublishRoot) -czf $(AssetOutputPath)$(Crossgen2CompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(AssetOutputPath)$(SharedFrameworkCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
@@ -231,6 +249,7 @@
     <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(CombinedCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(HostFxrCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(NetHostCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(NetHostCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(Crossgen2CompressedFile)')" Message="Unable to create $(AssetOutputPath)$(Crossgen2CompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>

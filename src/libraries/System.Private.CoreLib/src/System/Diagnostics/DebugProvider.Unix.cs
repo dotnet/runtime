@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-
 namespace System.Diagnostics
 {
     public partial class DebugProvider
@@ -56,7 +54,7 @@ namespace System.Diagnostics
             }
             else
             {
-                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
+                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
             }
         }
 

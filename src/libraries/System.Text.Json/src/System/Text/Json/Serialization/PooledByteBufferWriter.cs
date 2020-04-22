@@ -146,7 +146,7 @@ namespace System.Text.Json
                     newSize = currentLength + sizeHint;
                     if ((uint)newSize > int.MaxValue)
                     {
-                        newSize = int.MaxValue;
+                        ThrowHelper.ThrowOutOfMemoryException_BufferMaximumSizeExceeded((uint)newSize);
                     }
                 }
 

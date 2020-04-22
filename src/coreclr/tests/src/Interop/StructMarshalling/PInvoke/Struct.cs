@@ -495,3 +495,11 @@ public struct UnicodeCharArrayClassification
     public char[] arr;
     public float f;
 }
+
+delegate int IntIntDelegate(int a);
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DelegateFieldMarshaling
+{
+    public Delegate IntIntFunction;
+}

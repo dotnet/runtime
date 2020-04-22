@@ -25,7 +25,7 @@ namespace System.ComponentModel.Tests
         [InlineData((EditorBrowsableState)12345, (EditorBrowsableState)12345, true)]
         [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Always, false)]
         [InlineData(EditorBrowsableState.Advanced, EditorBrowsableState.Never, false)]
-        public static void Equals(EditorBrowsableState state1, EditorBrowsableState state2, bool equal)
+        public static void EqualsTest(EditorBrowsableState state1, EditorBrowsableState state2, bool equal)
         {
             var attr1 = new EditorBrowsableAttribute(state1);
             var attr2 = new EditorBrowsableAttribute(state2);

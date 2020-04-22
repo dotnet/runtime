@@ -6,41 +6,41 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-	internal unsafe sealed partial class LowLevelLifoSemaphore : IDisposable
-	{
-		IntPtr lifo_semaphore;
+    internal sealed unsafe partial class LowLevelLifoSemaphore : IDisposable
+    {
+        private IntPtr lifo_semaphore;
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static IntPtr InitInternal ();
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern IntPtr InitInternal();
 
-		private void Create (int maximumSignalCount)
-		{
-			lifo_semaphore = InitInternal ();
-		}
+        private void Create(int maximumSignalCount)
+        {
+            lifo_semaphore = InitInternal();
+        }
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static void DeleteInternal (IntPtr semaphore);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void DeleteInternal(IntPtr semaphore);
 
-		public void Dispose ()
-		{
-			DeleteInternal (lifo_semaphore);
-			lifo_semaphore = IntPtr.Zero;
-		}
+        public void Dispose()
+        {
+            DeleteInternal(lifo_semaphore);
+            lifo_semaphore = IntPtr.Zero;
+        }
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static int TimedWaitInternal (IntPtr semaphore, int timeoutMs);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int TimedWaitInternal(IntPtr semaphore, int timeoutMs);
 
-		private bool WaitCore (int timeoutMs)
-		{
-			return TimedWaitInternal (lifo_semaphore, timeoutMs) != 0;
-		}
+        private bool WaitCore(int timeoutMs)
+        {
+            return TimedWaitInternal(lifo_semaphore, timeoutMs) != 0;
+        }
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static void ReleaseInternal (IntPtr semaphore, int count);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void ReleaseInternal(IntPtr semaphore, int count);
 
-		private void ReleaseCore (int count)
-		{
-			ReleaseInternal (lifo_semaphore, count);
-		}
-	}
+        private void ReleaseCore(int count)
+        {
+            ReleaseInternal(lifo_semaphore, count);
+        }
+    }
 }

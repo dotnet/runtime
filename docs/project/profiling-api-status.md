@@ -1,6 +1,6 @@
 # Status of CoreCLR Profiler APIs
 
-The .NET Core project started with the codebase from the desktop CoreCLR/Silverlight so all the profiler APIs present there are also present in the code here. This is the status of our testing and porting efforts for these APIs.
+The CoreCLR project started with the codebase from the .NET Framework so all the profiler APIs present there are also present in the code here. This is the status of our testing and porting efforts for these APIs.
 
 ## Platform test coverage
 

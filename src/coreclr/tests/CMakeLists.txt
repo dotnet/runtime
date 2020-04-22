@@ -27,7 +27,7 @@ if (CLR_CMAKE_HOST_WIN32)
     # 5027 - move assignment operator was implicitly defined as deleted
     # 5039 - pointer or reference to potentially throwing function passed to extern C function under -EHc. Undefined behavior may occur if this function throws an exception.
     add_compile_options(-wd4100 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 
 MACRO(SUBDIRLIST result curdir)

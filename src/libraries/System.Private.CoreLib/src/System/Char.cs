@@ -13,6 +13,7 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -182,7 +183,7 @@ namespace System
             return s[0];
         }
 
-        public static bool TryParse(string? s, out char result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
             result = '\0';
             if (s == null)
@@ -353,10 +354,7 @@ namespace System
         }
 
         // Converts a character to upper-case for invariant culture.
-        public static char ToUpperInvariant(char c)
-        {
-            return TextInfo.Invariant.ToUpper(c);
-        }
+        public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
         /*===================================ToLower====================================
         **
@@ -382,10 +380,7 @@ namespace System
         }
 
         // Converts a character to lower-case for invariant culture.
-        public static char ToLowerInvariant(char c)
-        {
-            return TextInfo.Invariant.ToLower(c);
-        }
+        public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
 
         //
         // IConvertible implementation

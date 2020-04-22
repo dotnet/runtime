@@ -1009,7 +1009,7 @@ PCODE MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJit
 // API Function: SettProfileRoot, store information with MulticoreJitManager class
 // Threading: protected by InterlockedExchange(m_fMulticoreJITEnabled)
 
-void MulticoreJitManager::SetProfileRoot(AppDomain * pDomain, const WCHAR * pProfilePath)
+void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1211,7 +1211,7 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
     {
         int suffix = (int) InterlockedIncrement(& g_nMulticoreAutoStart);
 
-        SetProfileRoot(pDomain, W("")); // Fake a SetProfileRoot call
+        SetProfileRoot(W("")); // Fake a SetProfileRoot call
 
         StartProfile(
             pDomain,
@@ -1438,7 +1438,7 @@ void QCALLTYPE MultiCoreJITNative::InternalSetProfileRoot(__in_z LPCWSTR wszProf
 
     AppDomain * pDomain = GetAppDomain();
 
-    pDomain->GetMulticoreJitManager().SetProfileRoot(pDomain, wszProfilePath);
+    pDomain->GetMulticoreJitManager().SetProfileRoot(wszProfilePath);
 
     END_QCALL;
 }

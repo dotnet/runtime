@@ -115,6 +115,9 @@ static int __cdecl _whiteout(int *, miniFILE *);
 
 #endif  /* CPRFLAG */
 
+#undef _ISDIGIT
+#undef _ISXDIGIT
+
 #ifndef _UNICODE
 #define _ISDIGIT(chr)   isdigit((unsigned char)chr)
 #define _ISXDIGIT(chr)  isxdigit((unsigned char)chr)

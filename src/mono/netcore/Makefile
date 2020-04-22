@@ -38,11 +38,11 @@ run-sample-coreclr:
 
 # build System.Private.CoreLib.dll
 bcl corelib:
-	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
+	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.CoreLib
 
 # build runtime and copy to artifacts
 runtime:
-	$(DOTNET) msbuild /t:Build $(MONO_PROJ)
+	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
 
 # call it if you want to use $(DOTNET_MONO) in this Makefile
 patch-mono-dotnet:
@@ -58,7 +58,7 @@ copy-runtime-files-to:
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
-# NOTE: make sure you've built them (cd src/coreclr && ./build-test.sh -c release)
+# NOTE: make sure you've built them (cd src/coreclr && ./build-test.sh release)
 run-tests-coreclr:
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" $(MONO_PROJ)
 

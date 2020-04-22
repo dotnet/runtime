@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Helpers.VerifyMap(reader, expectedValues);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Helpers.VerifyMap(reader, expectedValues);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -51,7 +51,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Helpers.VerifyValue(reader, expectedValue);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(new object[] { Map }, "bfff")]
+        [InlineData(new object[] { Map, 1, 2, 3, 4 }, "bf01020304ff")]
+        [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "bf6161614161626142616361436164614461656145ff")]
+        [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "bf616161412002404101ff")]
+        public static void ReadMap_IndefiniteLength_SimpleValues_HappyPath(object[] exoectedValues, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Helpers.VerifyMap(reader, exoectedValues, expectDefiniteLengthCollections: false);
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
 
@@ -62,7 +75,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Helpers.VerifyMap(reader, values);
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -83,7 +96,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64(); // value
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -109,7 +124,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndMap();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -129,7 +146,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64(); // value
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -154,7 +173,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndMap();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -170,7 +191,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadStartArray();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -190,7 +213,70 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64(); // value
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData("bf")]
+        [InlineData("bf0102")]
+        [InlineData("bf01020304")]
+        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            while (reader.PeekState() == CborReaderState.UnsignedInteger)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData("bf0102ff", 1)]
+        [InlineData("bf01020304ff", 2)]
+        [InlineData("bf010203040506ff", 3)]
+        public static void ReadMap_IndefiniteLength_PrematureEndArrayCall_ShouldThrowInvalidOperationException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            for (int i = 1; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            int bytesRemaining = reader.BytesRemaining;
+
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
+
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData("bf01ff", 1)]
+        [InlineData("bf010203ff", 3)]
+        [InlineData("bf0102030405ff", 5)]
+        public static void ReadMap_IndefiniteLength_OddKeyValuePairs_ShouldThrowFormatException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            for (int i = 0; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            int bytesRemaining = reader.BytesRemaining;
+
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState()); // don't want this to fail
+            Assert.Throws<FormatException>(() => reader.ReadEndMap());
+
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -214,7 +300,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadEndArray();
             }
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Fact]
@@ -223,7 +311,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -237,9 +327,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("fb3ff199999999999a")] // 1.1
         public static void ReadStartMap_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
             Assert.Throws<InvalidOperationException>(() => reader.ReadStartMap());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -254,10 +346,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("bb00000000000000")]
         public static void ReadStartMap_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -266,10 +359,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("bb7fffffffffffffff")] // long.MaxValue
         public static void ReadStartMap_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -277,10 +371,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("bbffffffffffffffff")] // ulong.MaxValue
         public static void ReadStartMap_LargeFieldCount_ShouldThrowOverflowException(string hexEncoding)
         {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadStartMap());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
     }
 }

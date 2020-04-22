@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(2, 2, 1)]
         [InlineData(2, 1, 2)]
         [InlineData(2, 0, 3)]
-        public void ReadWriteArray_NegativeCount_ThrowsArgumentOutOfRangeException(int arrayLength, int index, int count)
+        public void ReadWriteArray_NegativeCount_ThrowsArgumentException(int arrayLength, int index, int count)
         {
             var wrapper = new SubBuffer(true);
             AssertExtensions.Throws<ArgumentException>(null, () => wrapper.ReadArray(0, new int[arrayLength], index, count));

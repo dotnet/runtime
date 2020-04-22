@@ -73,11 +73,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 // AVX supports broadcast instructions to populate YMM reg with a single float/double value from memory.
                 // AVX2 supports broadcast instructions to populate YMM reg with a single value from memory or mm reg.
-                // If we decide to use AVX2 only, we can remove this assert.
-                if (!compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_USE_AVX2))
-                {
-                    assert(baseType == TYP_FLOAT || baseType == TYP_DOUBLE);
-                }
                 switch (baseType)
                 {
                     case TYP_FLOAT:

@@ -1,7 +1,10 @@
 project(System.IO.Compression.Native C)
 
-if (CLR_CMAKE_TARGET_WASM)
+if (CLR_CMAKE_TARGET_ARCH_WASM)
     add_definitions(-s USE_ZLIB)
+elseif (CLR_CMAKE_TARGET_ANDROID)
+    # need special case here since we want to link against libz.so but find_package() would resolve libz.a
+    set(ZLIB_LIBRARIES z)
 else ()
     find_package(ZLIB REQUIRED)
 endif ()
@@ -53,7 +56,7 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.IO.Compression.Native
         ${ZLIB_LIBRARIES}
     )
-    install_library_and_symbols (System.IO.Compression.Native)
+    install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
 endif ()
 
 add_library(System.IO.Compression.Native-Static
