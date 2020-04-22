@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
 
-            if (expectedType == CborMajorType.Map && ConformanceRequiresSortedKeys())
+            if (expectedType == CborMajorType.Map && CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
                 SortKeyValuePairEncodings();
             }

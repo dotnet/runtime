@@ -85,6 +85,7 @@
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Cbor\CborWriter.Tag.cs" />
+    <Compile Include="Cbor\CborConformanceLevel.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />

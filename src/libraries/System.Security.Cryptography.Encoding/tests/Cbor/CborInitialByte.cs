@@ -6,14 +6,6 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
-    internal enum CborConformanceLevel
-    {
-        NonStrict = 0,
-        Strict = 1,
-        Rfc7049Canonical = 2,
-        Ctap2Canonical = 3,
-    }
-
     internal enum CborMajorType : byte
     {
         UnsignedInteger = 0,

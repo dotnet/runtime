@@ -58,30 +58,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map encoding conformance
         //
 
-        private bool ConformanceRequiresUniqueKeys()
-        {
-            return ConformanceLevel switch
-            {
-                CborConformanceLevel.Rfc7049Canonical => true,
-                CborConformanceLevel.Ctap2Canonical => true,
-                CborConformanceLevel.Strict => true,
-                CborConformanceLevel.NonStrict => false,
-                _ => false,
-            };
-        }
-
-        private bool ConformanceRequiresSortedKeys()
-        {
-            return ConformanceLevel switch
-            {
-                CborConformanceLevel.Rfc7049Canonical => true,
-                CborConformanceLevel.Ctap2Canonical => true,
-                CborConformanceLevel.Strict => false,
-                CborConformanceLevel.NonStrict => false,
-                _ => false,
-            };
-        }
-
         private SortedSet<(int offset, int keyLength, int keyValueLength)> GetKeyValueEncodingRanges()
         {
             // TODO consider pooling set allocations?
@@ -101,7 +77,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             _currentValueOffset = _offset;
 
-            if (ConformanceRequiresUniqueKeys())
+            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
                 SortedSet<(int offset, int keyLength, int keyValueLength)> ranges = GetKeyValueEncodingRanges();
 
@@ -122,7 +98,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (ConformanceRequiresUniqueKeys() || ConformanceRequiresSortedKeys())
+            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel) || CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
                 SortedSet<(int offset, int keyLength, int keyValueLength)> ranges = GetKeyValueEncodingRanges();
 
@@ -176,51 +152,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _buffer.AsSpan(keyValueRange.offset, keyValueRange.keyValueLength);
         }
 
-        private static int CompareEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, CborConformanceLevel level)
-        {
-            Debug.Assert(!left.IsEmpty && !right.IsEmpty);
-
-            switch (level)
-            {
-                // Strict mode only concerns itself with uniqueness, not sorting
-                // so any total order for buffers should do.
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Rfc7049Canonical:
-                    // Implements key sorting according to
-                    // https://tools.ietf.org/html/rfc7049#section-3.9
-
-                    if (left.Length != right.Length)
-                    {
-                        return left.Length - right.Length;
-                    }
-
-                    return left.SequenceCompareTo(right);
-
-                case CborConformanceLevel.Ctap2Canonical:
-                    // Implements key sorting according to
-                    // https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#message-encoding
-
-                    int leftMt = (int)new CborInitialByte(left[0]).MajorType;
-                    int rightMt = (int)new CborInitialByte(right[0]).MajorType;
-
-                    if (leftMt != rightMt)
-                    {
-                        return leftMt - rightMt;
-                    }
-
-                    if (left.Length != right.Length)
-                    {
-                        return left.Length - right.Length;
-                    }
-
-                    return left.SequenceCompareTo(right);
-
-                default:
-                    Debug.Fail("Invalid conformance level used in encoding sort.");
-                    throw new Exception("Invalid conformance level used in encoding sort.");
-            }
-        }
-
         private class KeyEncodingComparer : IComparer<(int, int, int)>
         {
             private readonly CborWriter _writer;
@@ -232,7 +163,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int Compare((int, int, int) x, (int, int, int) y)
             {
-                return CompareEncodings(_writer.GetKeyEncoding(x), _writer.GetKeyEncoding(y), _writer.ConformanceLevel);
+                return CborConformanceLevelHelpers.CompareEncodings(_writer.GetKeyEncoding(x), _writer.GetKeyEncoding(y), _writer.ConformanceLevel);
             }
         }
     }
