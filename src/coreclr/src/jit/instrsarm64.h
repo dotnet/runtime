@@ -754,6 +754,18 @@ INST2(smlal2,  "smlal2", 0, 0, IF_EN2R,   0x4E208000,  0x4F002000)
                                    //  smlal2     Vd,Vn,Vm          DV_3H  01001110XX1mmmmm 100000nnnnnddddd   4E20 8000   Vd,Vn,Vm   (vector)
                                    //  smlal2     Vd,Vn,Vm[]        DV_3HI 01001111XXLMmmmm 0010H0nnnnnddddd   4F00 2000   Vd,Vn,Vm[] (vector by elem)
 
+INST2(smlsl,   "smlsl",  0, 0, IF_EN2R,   0x0E20A000,  0x0F006000)
+                                   // C7.2.269 SMLSL, SMLSL2 (by element)
+                                   // C7.2.270 SMLSL, SMLSL2 (vector)
+                                   //  smlsl     Vd,Vn,Vm           DV_3H  00001110XX1mmmmm 101000nnnnnddddd   0E20 A000   Vd,Vn,Vm   (vector)
+                                   //  smlsl     Vd,Vn,Vm[]         DV_3HI 00001111XXLMmmmm 0110H0nnnnnddddd   0F00 6000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(smlsl2,  "smlsl2", 0, 0, IF_EN2R,   0x4E20A000,  0x4F006000)
+                                   // C7.2.269 SMLSL, SMLSL2 (by element)
+                                   // C7.2.270 SMLSL, SMLSL2 (vector)
+                                   //  smlsl2     Vd,Vn,Vm          DV_3H  01001110XX1mmmmm 101000nnnnnddddd   4E20 A000   Vd,Vn,Vm   (vector)
+                                   //  smlsl2     Vd,Vn,Vm[]        DV_3HI 01001111XXLMmmmm 0110H0nnnnnddddd   4F00 6000   Vd,Vn,Vm[] (vector by elem)
+
 INST2(umlal,   "umlal",  0, 0, IF_EN2R,   0x2E208000,  0x2F002000)
                                    // C7.2.357 UMLAL, UMLAL2 (by element)
                                    // C7.2.358 UMLAL, UMLAL2 (vector)
@@ -765,6 +777,18 @@ INST2(umlal2,  "umlal2", 0, 0, IF_EN2R,   0x6E208000,  0x6F002000)
                                    // C7.2.358 UMLAL, UMLAL2 (vector)
                                    //  umlal2     Vd,Vn,Vm          DV_3H  01101110XX1mmmmm 100000nnnnnddddd   6E20 8000   Vd,Vn,Vm   (vector)
                                    //  umlal2     Vd,Vn,Vm[]        DV_3HI 01101111XXLMmmmm 0010H0nnnnnddddd   6F00 2000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(umlsl,   "umlsl",  0, 0, IF_EN2R,   0x2E20A000,  0x2F006000)
+                                   // C7.2.359 UMLSL, UMLSL2 (by element)
+                                   // C7.2.360 UMLSL, UMLSL2 (vector)
+                                   //  umlsl     Vd,Vn,Vm           DV_3H  00101110XX1mmmmm 101000nnnnnddddd   2E20 A000   Vd,Vn,Vm   (vector)
+                                   //  umlsl     Vd,Vn,Vm[]         DV_3HI 00101111XXLMmmmm 0110H0nnnnnddddd   2F00 6000   Vd,Vn,Vm[] (vector by elem)
+
+INST2(umlsl2,  "umlsl2", 0, 0, IF_EN2R,   0x6E20A000,  0x6F006000)
+                                   // C7.2.359 UMLSL, UMLSL2 (by element)
+                                   // C7.2.360 UMLSL, UMLSL2 (vector)
+                                   //  umlsl2     Vd,Vn,Vm          DV_3H  01101110XX1mmmmm 101000nnnnnddddd   6E20 A000   Vd,Vn,Vm   (vector)
+                                   //  umlsl2     Vd,Vn,Vm[]        DV_3HI 01101111XXLMmmmm 0110H0nnnnnddddd   6F00 6000   Vd,Vn,Vm[] (vector by elem)
 
 //    enum     name     FP LD/ST            DV_2N        DV_2O
 INST2(sshr,    "sshr",   0, 0, IF_EN2N,   0x5F000400,  0x0F000400)
