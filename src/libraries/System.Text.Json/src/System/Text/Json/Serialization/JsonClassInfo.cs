@@ -400,7 +400,7 @@ namespace System.Text.Json
             return converter;
         }
 
-        public static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo, JsonSerializerOptions options)
+        private static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo, JsonSerializerOptions options)
         {
             if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
             {
@@ -408,20 +408,20 @@ namespace System.Text.Json
             }
         }
 
-        public static bool IsInvalidForSerialization(Type type)
+        private static bool IsInvalidForSerialization(Type type)
         {
             return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
         }
 
 #if BUILDING_INBOX_LIBRARY
-        public static bool IsByRefLike(Type type)
+        private static bool IsByRefLike(Type type)
         {
             return type.IsByRefLike;
         }
 #else
         private static readonly PropertyInfo s_isByRefLikePropertyInfo = typeof(Type).GetProperty("IsByRefLike")!;
 
-        public static bool IsByRefLike(Type type)
+        private static bool IsByRefLike(Type type)
         {
             if (!type.IsValueType)
             {

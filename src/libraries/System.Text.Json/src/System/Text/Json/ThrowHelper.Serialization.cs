@@ -98,6 +98,7 @@ namespace System.Text.Json
         {
             if (parentClassType == null)
             {
+                Debug.Assert(propertyInfo == null);
                 throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidType, type));
             }
 
