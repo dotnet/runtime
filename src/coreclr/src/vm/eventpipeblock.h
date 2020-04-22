@@ -269,7 +269,7 @@ public:
         pSerializer->WriteBuffer((BYTE*)&headerSizeV1, sizeof(headerSizeV1));
         const unsigned short flags = 0;
         pSerializer->WriteBuffer((BYTE*)&flags, sizeof(flags));
-        const LARGE_INTEGER unusedTimestamp = { 0 };
+        const LARGE_INTEGER unusedTimestamp = { { 0 } };
         pSerializer->WriteBuffer((BYTE*)&unusedTimestamp, sizeof(unusedTimestamp));
         pSerializer->WriteBuffer((BYTE*)&unusedTimestamp, sizeof(unusedTimestamp));
 
