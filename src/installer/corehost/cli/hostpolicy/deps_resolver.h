@@ -259,9 +259,6 @@ private:
     // Special entry for coreclr library version
     pal::string_t m_coreclr_library_version;
 
-    // Special entry for JIT path
-    pal::string_t m_clrjit_path;
-
     // The filepaths for the app custom deps
     std::vector<pal::string_t> m_additional_deps_files;
 

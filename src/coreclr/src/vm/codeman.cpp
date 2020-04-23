@@ -1541,14 +1541,6 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-// Global that holds the path to custom JIT location
-LPCWSTR g_CLRJITPath = nullptr;
-
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1587,21 +1579,6 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     extern HINSTANCE g_hThisInst;
     bool havePath = false;
 
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    if (g_CLRJITPath != nullptr)
-    {
-        // If we have been asked to load a specific JIT binary, load from that path.
-        // The main JIT load will use exactly that name because pwzJitName will have
-        // been computed as the last component of g_CLRJITPath by ExecutionManager::GetJitName().
-        // Non-primary JIT names (such as compatjit or altjit) will be loaded from the
-        // same directory.
-        // (Ideally, g_CLRJITPath would just be the JIT path without the filename component,
-        // but that's not how the JIT_PATH variable was originally defined.)
-        CoreClrFolderHolder.Set(g_CLRJITPath);
-        havePath = true;
-    }
-    else
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
         // Load JIT from next to CoreCLR binary
@@ -4381,8 +4358,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     return FALSE;
 }
 
-#ifndef DACCESS_COMPILE
-
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/
 // This static method returns the name of the jit dll
@@ -4391,33 +4366,9 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzJitName = NULL;
-
-#if !defined(CROSSGEN_COMPILE)
-    if (g_CLRJITPath != nullptr)
-    {
-        const WCHAR* p = wcsrchr(g_CLRJITPath, DIRECTORY_SEPARATOR_CHAR_W);
-        if (p != nullptr)
-        {
-            pwzJitName = p + 1; // Return just the filename, not the directory name
-        }
-        else
-        {
-            pwzJitName = g_CLRJITPath;
-        }
-    }
-#endif // !defined(CROSSGEN_COMPILE)
-
-    if (NULL == pwzJitName)
-    {
-        pwzJitName = MAKEDLLNAME_W(W("clrjit"));
-    }
-
-    return pwzJitName;
+    return MAKEDLLNAME_W(W("clrjit"));
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
-
-#endif // #ifndef DACCESS_COMPILE
 
 RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
 {
