@@ -5116,12 +5116,6 @@ void CodeGen::genArm64EmitterUnitTests()
         return;
     }
 
-    if (!compiler->opts.altJit)
-    {
-        // No point doing this in a "real" JIT.
-        return;
-    }
-
     // Mark the "fake" instructions in the output.
     printf("*************** In genArm64EmitterUnitTests()\n");
 
