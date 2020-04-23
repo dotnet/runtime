@@ -42,10 +42,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">
-    <MonoPath>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\shared\Microsoft.NETCore.App\5.0.0\corerun.exe</MonoPath>
+    <CoreRunArgument>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\shared\Microsoft.NETCore.App\5.0.0\corerun.exe</MonoPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' != 'Windows_NT'">
-    <MonoPath>--corerun $(BaseDirectory)/dotnet-mono/shared/Microsoft.NETCore.App/5.0.0/corerun</MonoPath>
+    <CoreRunArgument>--corerun $(BaseDirectory)/dotnet-mono/shared/Microsoft.NETCore.App/5.0.0/corerun</MonoPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCoreRun)' == 'true'">
@@ -92,7 +92,7 @@
     <HelixWorkItem Include="@(Partition)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</PreCommands>
-      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(MonoPath) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
+      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults);$(FinalCommand)</PostCommands>
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
@@ -102,7 +102,7 @@
     <HelixWorkItem Include="$(BuildConfig).WorkItem">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands Condition="'$(Compare)' == 'true'">$(WorkItemCommand) --bdn-artifacts $(BaselineArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(BaselineCoreRunArgument)"</PreCommands>
-      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(MonoPath) $(CoreRunArgument)"</Command>
+      <Command>$(WorkItemCommand) --bdn-artifacts $(ArtifactsDirectory) --bdn-arguments="--anyCategories $(BDNCategories) $(ExtraBenchmarkDotNetArguments) $(CoreRunArgument)"</Command>
       <PostCommands Condition="'$(Compare)' == 'true'">$(DotnetExe) run -f $(_Framework) -p $(ResultsComparer) --base $(BaselineArtifactsDirectory) --diff $(ArtifactsDirectory) --threshold 2$(Percent) --xml $(XMLResults)</PostCommands>
       <Timeout>4:00</Timeout>
     </HelixWorkItem>
