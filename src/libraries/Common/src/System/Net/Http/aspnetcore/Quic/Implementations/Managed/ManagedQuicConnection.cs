@@ -343,8 +343,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
             {
-                throw new NotImplementedException("Duplicate receipt should not happen yet");
-                // return ProcessPacketResult.Ok; // already processed;
+                // already processed or outside congestion window
+                // TODO-RZ: there may be false positives if the packet number is 64 lesser than largest received
+                return ProcessPacketResult.Ok;
             }
 
             if (pnSpace.LargestReceivedPacketNumber < packetNumber)
@@ -744,7 +745,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
             cryptoOutboundStream.Enqueue(data);
-            cryptoOutboundStream.QueuePartialChunk();
+            cryptoOutboundStream.ForceFlushPartialChunk();
             return 1;
         }
 

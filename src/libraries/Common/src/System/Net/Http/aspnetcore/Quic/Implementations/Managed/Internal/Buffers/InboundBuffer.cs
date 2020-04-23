@@ -67,7 +67,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Final size of the stream. Null if final size is not known yet.
         /// </summary>
-        internal long? FinalSize { get; set; }
+        internal long? FinalSize { get; private set; }
 
         /// <summary>
         ///     Estimated size of the stream. Final size may not be lower than this value.
@@ -84,54 +84,60 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         /// <param name="offset">Offset on the stream of the received data.</param>
         /// <param name="data">The data to be received.</param>
-        internal void Receive(long offset, ReadOnlySpan<byte> data)
+        /// <param name="fin">True if this is the last segment of the stream.</param>
+        internal void Receive(long offset, ReadOnlySpan<byte> data, bool fin = false)
         {
             Debug.Assert(FinalSize == null || offset + data.Length <= FinalSize, "Writing after final size");
 
-            if (data.IsEmpty)
+            if (fin)
             {
-                return;
+                Debug.Assert(FinalSize == null || FinalSize == offset + data.Length);
+                FinalSize = offset + data.Length;
             }
 
-            long deliverable = BytesRead + BytesAvailable;
-            if (offset + data.Length <= deliverable)
+            // deliver new data if present
+            if (!data.IsEmpty && offset + data.Length > _bytesDeliverable)
             {
-                return; // entirely duplicate
+                if (offset < _bytesDeliverable)
+                {
+                    // drop duplicate prefix;
+                    data = data.Slice((int)(_bytesDeliverable - offset));
+                    offset = _bytesDeliverable;
+                }
+
+                // optimized hot path - in-order delivery
+                if (_outOfOrderChunks.Count == 0 && _bytesDeliverable == offset)
+                {
+                    var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
+                    data.CopyTo(buffer);
+                    _bytesDeliverable += data.Length;
+                    _deliverableChannel.Writer.TryWrite(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
+                }
+                else
+                {
+                    // out of order delivery, use ranges to remove duplicate data
+                    RangeSet toDeliver = new RangeSet {{offset, offset + data.Length - 1}};
+                    foreach (var range in _undelivered)
+                    {
+                        toDeliver.Remove(range.Start, range.End);
+                    }
+
+                    foreach (var range in toDeliver)
+                    {
+                        var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
+                        data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
+                        _outOfOrderChunks.Add(new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
+                    }
+
+                    _undelivered.Add(offset, offset + data.Length - 1);
+                    DrainDeliverableOutOfOrderChunks();
+                }
             }
 
-            if (offset < deliverable)
+            if (FinalSize == _bytesDeliverable)
             {
-                // drop duplicate prefix;
-                data = data.Slice((int)(deliverable - offset));
-                offset = deliverable;
+                _deliverableChannel.Writer.TryComplete();
             }
-
-            // optimized hot path - in-order delivery
-            if (_outOfOrderChunks.Count == 0 && _bytesDeliverable == offset)
-            {
-                var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
-                data.CopyTo(buffer);
-                _bytesDeliverable += data.Length;
-                _deliverableChannel.Writer.TryWrite(new StreamChunk(offset, buffer.AsMemory(0, data.Length), buffer));
-                return;
-            }
-
-            // out of order delivery, use ranges to remove duplicate data
-            RangeSet toDeliver = new RangeSet {{offset, offset + data.Length - 1}};
-            foreach (var range in _undelivered)
-            {
-                toDeliver.Remove(range.Start, range.End);
-            }
-
-            foreach (var range in toDeliver)
-            {
-                var buffer = ArrayPool<byte>.Shared.Rent((int)range.Length);
-                data.Slice((int) (range.Start - offset), (int) range.Length).CopyTo(buffer);
-                _outOfOrderChunks.Add(new StreamChunk(range.Start, buffer.AsMemory(0, (int) range.Length), buffer));
-            }
-
-            _undelivered.Add(offset, offset + data.Length - 1);
-            DrainDeliverableOutOfOrderChunks();
         }
 
         private void DrainDeliverableOutOfOrderChunks()
@@ -153,9 +159,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (delivered > 0)
                 return delivered;
 
-            _deliveryLeftoverChunk = await _deliverableChannel.Reader.ReadAsync();
+            if (await _deliverableChannel.Reader.WaitToReadAsync())
+            {
+                return Deliver(destination.Span);
+            }
 
-            return Deliver(destination.Span);
+            return 0;
         }
 
         /// <summary>

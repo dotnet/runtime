@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer
     {
-        private const int PreferredChunkSize = 8024;
+        private const int PreferredChunkSize = 4 * 1024;
 
         /// <summary>
         ///     Ranges of bytes acked by the peer.
@@ -28,6 +29,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Ranges of bytes awaiting to be sent.
         /// </summary>
         private readonly RangeSet _pending = new RangeSet();
+
+        /// <summary>
+        ///     True if the peer has acked a frame specifying the final size of the stream.
+        /// </summary>
+        private bool _finAcked;
 
         /// <summary>
         ///     Chunk to be filled from user data.
@@ -82,6 +88,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long MaxData { get; private set; }
 
         /// <summary>
+        ///     Limit when <see cref="_maxDataUpdateTcs"/> should be finished.
+        /// </summary>
+        private long _awaitedMaxData;
+
+        /// <summary>
+        ///     Completion source for waiting until flow control limit is available.
+        /// </summary>
+        private readonly ResettableCompletionSource<long> _maxDataUpdateTcs = new ResettableCompletionSource<long>();
+
+        /// <summary>
         ///     True if the stream is closed for further writing (no more data can be added).
         /// </summary>
         internal bool SizeKnown { get; private set; }
@@ -89,7 +105,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     True if all data has been transmitted and acknowledged.
         /// </summary>
-        internal bool Finished => SizeKnown && AckedOffset == WrittenBytes;
+        internal bool Finished => SizeKnown && AckedOffset == WrittenBytes && _finAcked;
 
         /// <summary>
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
@@ -104,21 +120,45 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal bool HasUnackedData => _pending.Count + _checkedOut.Count != 0;
 
         /// <summary>
-        ///     Queues the not yet full chunk of stream into flush queue.
+        ///     Queues the not yet full chunk of stream into flush queue, blocking when control flow limit is not
+        ///     sufficient.
         /// </summary>
-        internal ValueTask QueuePartialChunk()
+        internal async ValueTask FlushChunkAsync(CancellationToken cancellationToken = default)
         {
             if (_toBeQueuedChunk.Length == 0)
             {
                 // nothing to do
-                return new ValueTask();
+                return;
             }
 
             var tmp = _toBeQueuedChunk;
             var buffer = ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
 
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
-            return _toSendChannel.Writer.WriteAsync(tmp);
+
+            if (tmp.StreamOffset >= MaxData)
+            {
+                // wait until suitable flow-control limit is available
+                // TODO-RZ: is probably is not the best way to write this, the await should happen mostly only once,
+                // twice only due to data race with UpdateMaxData
+                _awaitedMaxData = tmp.StreamOffset;
+                while (tmp.StreamOffset < await _maxDataUpdateTcs.GetValueTask())
+                {
+                    // continue waiting
+                }
+            }
+
+            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken);
+        }
+
+        /// <summary>
+        ///     Flushes partially full chunk into sending queue, regardless of <see cref="MaxData"/> limit.
+        /// </summary>
+        internal void ForceFlushPartialChunk()
+        {
+            _toSendChannel.Writer.TryWrite(_toBeQueuedChunk);
+            var buffer = ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+            _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
         }
 
         /// <summary>
@@ -128,6 +168,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal void UpdateMaxData(long value)
         {
             MaxData = Math.Max(MaxData, value);
+            if (MaxData > _awaitedMaxData)
+            {
+                _awaitedMaxData = MaxData;
+                _maxDataUpdateTcs.Complete(value);
+            }
+        }
+
+        internal async ValueTask EnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            while (buffer.Length > 0)
+            {
+                int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, buffer.Length);
+                buffer.Span.Slice(0, toWrite).CopyTo(_toBeQueuedChunk.Buffer!.AsSpan(_toBeQueuedChunk.Length, toWrite));
+                WrittenBytes += toWrite;
+                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset, _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
+
+                if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
+                {
+                    await FlushChunkAsync(cancellationToken);
+                }
+
+                buffer = buffer.Slice(toWrite);
+            }
         }
 
         /// <summary>
@@ -146,35 +209,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
                 {
                     // TODO-RZ: make this method return ValueTask
-                    QueuePartialChunk().GetAwaiter().GetResult();
+                    FlushChunkAsync().AsTask().GetAwaiter().GetResult();
                 }
 
                 data = data.Slice(toWrite);
             }
         }
 
-        /// <summary>
-        ///     Schedules given memory to the outbound stream to be sent. The memory must be unchanged until it is acked.
-        /// </summary>
-        /// <param name="data">Memory to be sent.</param>
-        internal void Enqueue(ReadOnlyMemory<byte> data)
-        {
-            // EnqueueInternal(data, null);
-            throw new NotImplementedException("zero-copy sending not implemented");
-        }
-
-        private void EnqueueInternal(ReadOnlyMemory<byte> memory, byte[] buffer)
-        {
-            Debug.Assert(!SizeKnown, "Trying to add data to finished OutboundBuffer");
-
-            long offset = WrittenBytes;
-
-            _toSendChannel.Writer.TryWrite(new StreamChunk(offset, memory, buffer));
-
-            WrittenBytes += memory.Length;
-        }
-
-        internal void DrainIncomingChunks()
+        private void DrainIncomingChunks()
         {
             var reader = _toSendChannel.Reader;
             while (reader.TryRead(out var chunk))
@@ -262,8 +304,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         /// <param name="offset">Start of the range.</param>
         /// <param name="count">Number of bytes acked.</param>
-        internal void OnAck(long offset, long count)
+        /// <param name="fin">Whether the sent frame contained the FIN bit.</param>
+        internal void OnAck(long offset, long count, bool fin = false)
         {
+            if (fin)
+            {
+                Debug.Assert(offset + count == WrittenBytes);
+                _finAcked = true;
+            }
+
+            if (count == 0)
+            {
+                return;
+            }
+
             long end = offset + count - 1;
 
             Debug.Assert(_checkedOut.Includes(offset, end));

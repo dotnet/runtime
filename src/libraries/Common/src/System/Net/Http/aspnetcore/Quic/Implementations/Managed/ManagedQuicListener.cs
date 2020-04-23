@@ -11,7 +11,7 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly ChannelReader<ManagedQuicConnection> _acceptQueue;
 
         private readonly QuicListenerOptions _options;
-        private readonly QuicSocketContext _socketContext;
+        private readonly QuicServerSocketContext _socketContext;
 
         public ManagedQuicListener(QuicListenerOptions options)
         {
@@ -43,9 +43,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override void Close()
         {
-            _socketContext.Close();
+            _socketContext.StopAcceptingConnections();
         }
 
-        public override void Dispose() => throw new NotImplementedException();
+        public override void Dispose()
+        {
+            // TODO-RZ: dispose pattern
+            Close();
+        }
     }
 }

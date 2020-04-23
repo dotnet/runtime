@@ -19,7 +19,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private ImmutableDictionary<ConnectionId, ManagedQuicConnection> _connections;
         private readonly ConnectionIdCollection _connectionIds;
 
-        internal QuicServerSocketContext(IPEndPoint? listenEndpoint, QuicListenerOptions listenerOptions,
+        private bool _acceptNewConnections;
+
+        internal QuicServerSocketContext(IPEndPoint listenEndpoint, QuicListenerOptions listenerOptions,
             ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
             : base(listenEndpoint)
         {
@@ -28,6 +30,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             _connections = ImmutableDictionary<ConnectionId, ManagedQuicConnection>.Empty;
             _connectionIds = new ConnectionIdCollection();
+            _acceptNewConnections = true;
         }
 
         private ManagedQuicConnection? DispatchPacket(QuicReader reader, IPEndPoint remoteEp)
@@ -47,15 +50,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 var connectionId = _connectionIds!.Find(header.DestinationConnectionId);
                 if (connectionId == null)
                 {
+                    // new connection attempt
+                    if (!_acceptNewConnections)
+                    {
+                        return null;
+                    }
+
                     connectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
                     _connectionIds.Add(connectionId!);
-                }
 
-                // TODO-RZ: there is a data race with Detach() method
-                if (!_connections.TryGetValue(connectionId!, out connection))
-                {
+                    // TODO-RZ: there is a data race with Detach() method
                     connection = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
                     _connections = _connections.Add(connectionId!, connection);
+                }
+                else
+                {
+                    connection = _connections[connectionId!];
                 }
             }
             else
@@ -80,6 +90,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             return connection;
+        }
+
+        internal void StopAcceptingConnections()
+        {
+            _acceptNewConnections = false;
         }
 
         protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
@@ -158,6 +173,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal abstract class QuicSocketContext : IDisposable
     {
+        private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
+
         protected readonly IPEndPoint _listenEndpoint;
         protected readonly CancellationTokenSource _socketTaskCts;
 
@@ -168,7 +185,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected QuicReader _reader;
         protected QuicWriter _writer;
 
-        private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
         private Task _timeoutTask;
         private long _currentTimeout = long.MaxValue;
 
@@ -296,11 +312,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 Console.WriteLine(e);
             }
-        }
-
-        internal void Close()
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>

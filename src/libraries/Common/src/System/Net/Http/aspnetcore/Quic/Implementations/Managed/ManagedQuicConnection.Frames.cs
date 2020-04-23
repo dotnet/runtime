@@ -351,8 +351,6 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.InconsistentFinalSize);
                 }
-
-                buffer.FinalSize = finalSize;
             }
 
             if (buffer.FinalSize != null && frame.Offset + frame.StreamData.Length > buffer.FinalSize)
@@ -360,7 +358,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize);
             }
 
-            buffer.Receive(frame.Offset, frame.StreamData);
+            buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
 
             return ProcessPacketResult.Ok;
         }
@@ -545,9 +543,13 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     // empty frames are sent only to send the FIN bit
                     Debug.Assert(data.Count > 0 || data.Fin);
-                    if (data.Count > 0)
+
+                    var stream = _streams[data.StreamId];
+                    var buffer = stream.OutboundBuffer!;
+                    buffer.OnAck(data.Offset, data.Count, data.Fin);
+                    if (buffer.Finished)
                     {
-                        _streams[data.StreamId].OutboundBuffer!.OnAck(data.Offset, data.Count);
+                        stream.NotifyShutdownWriteCompleted();
                     }
                 }
             }

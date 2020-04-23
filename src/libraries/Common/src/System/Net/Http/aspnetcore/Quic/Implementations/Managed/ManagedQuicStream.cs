@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,7 +14,9 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed class ManagedQuicStream : QuicStreamProvider
     {
-        internal LinkedListNode<ManagedQuicStream> _flushableListNode;
+        internal readonly LinkedListNode<ManagedQuicStream> _flushableListNode;
+
+        private readonly ResettableCompletionSource<int> _shutdownWriteCs = new ResettableCompletionSource<int>();
 
         private bool _disposed;
 
@@ -41,6 +44,28 @@ namespace System.Net.Quic.Implementations.Managed
             _streamCollection = streamCollection;
             _ctx = ctx;
             _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
+        }
+
+        private ValueTask WriteAsyncInternal(ReadOnlySpan<byte> buffer, bool endStream,
+            CancellationToken cancellationToken)
+        {
+            // TODO-RZ: block until flow control limit is available
+            OutboundBuffer!.Enqueue(buffer);
+            if (endStream)
+                OutboundBuffer!.MarkEndOfData();
+
+            if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            {
+                _streamCollection.MarkFlushable(this);
+                _ctx.Ping();
+            }
+
+            return new ValueTask();
+        }
+
+        internal void NotifyShutdownWriteCompleted()
+        {
+            _shutdownWriteCs.Complete(0);
         }
 
         #region Public API
@@ -76,23 +101,6 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotWritable();
 
             WriteAsyncInternal(buffer, endStream, CancellationToken.None).GetAwaiter().GetResult();
-        }
-
-        private ValueTask WriteAsyncInternal(ReadOnlySpan<byte> buffer, bool endStream,
-            CancellationToken cancellationToken)
-        {
-            // TODO-RZ: block until flow control limit is available
-            OutboundBuffer!.Enqueue(buffer);
-            if (endStream)
-                OutboundBuffer!.MarkEndOfData();
-
-            if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
-            {
-                _streamCollection.MarkFlushable(this);
-                _ctx.Ping();
-            }
-
-            return new ValueTask();
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -149,7 +157,14 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
+        {
+            Shutdown();
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            return _shutdownWriteCs.GetTypelessValueTask();
+        }
 
         internal override void Shutdown()
         {
@@ -172,13 +187,13 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
-            return OutboundBuffer!.QueuePartialChunk().AsTask();
+            return OutboundBuffer!.FlushChunkAsync().AsTask();
         }
 
         public override void Dispose()
         {
             _disposed = true;
-            throw new NotImplementedException();
+            // TODO-RZ: we might need to do more
         }
 
         public override ValueTask DisposeAsync() => throw new NotImplementedException();
