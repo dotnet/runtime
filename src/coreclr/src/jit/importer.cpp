@@ -3506,6 +3506,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 return hwintrinsic;
             }
+
+            if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+            {
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            }
 #endif // FEATURE_HW_INTRINSICS
         }
     }
@@ -4453,6 +4458,21 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
+    else if (strcmp(namespaceName, "System.Numerics") == 0)
+    {
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(method, &sig);
+
+        int sizeOfVectorT = 16;
+#if defined(TARGET_XARCH)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            sizeOfVectorT = 32;
+        }
+#endif // TARGET_XARCH
+
+        result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
+    }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
         namespaceName += 25;

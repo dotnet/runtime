@@ -920,6 +920,13 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
+        // produces a TYP_SIMD16 result
+        node->gtType = TYP_SIMD16;
+    }
+
     switch (node->gtHWIntrinsicId)
     {
         case NI_SSE_CompareScalarOrderedEqual:
@@ -2975,12 +2982,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
+    unsigned            simdSize    = node->gtSIMDSize;
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
     GenTree* op3 = nullptr;
 
-    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId))
+    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId) || (simdSize == 8) || (simdSize == 12))
     {
         // AVX2 gather are not containable and always have constant IMM argument
         if (HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsicId))
