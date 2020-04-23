@@ -19,6 +19,7 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
 
 ### Build managed test components (native components are getting built as part
