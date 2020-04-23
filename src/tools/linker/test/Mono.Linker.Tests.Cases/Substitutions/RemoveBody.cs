@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		struct NestedType
 		{
 			[Kept]
-			[ExpectedInstructionSequence (new [] {
+			[ExpectedInstructionSequence (new[] {
 				"ldstr",
 				"newobj",
 				"throw"
@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldarg.0",
 				"call",
 				"ldstr",
@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldstr",
 				"newobj",
 				"throw"
@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldstr",
 				"newobj",
 				"throw"

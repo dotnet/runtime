@@ -1,8 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Interop.InternalCalls {
-	class UnusedFieldsOfTypesWhenHasThisAreNotRemoved {
+namespace Mono.Linker.Tests.Cases.Interop.InternalCalls
+{
+	class UnusedFieldsOfTypesWhenHasThisAreNotRemoved
+	{
 		public static void Main ()
 		{
 			A a = new A ();
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Interop.InternalCalls {
 		}
 
 		[KeptMember (".ctor()")]
-		class A {
+		class A
+		{
 			[Kept] private int field1;
 
 			[Kept]

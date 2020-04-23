@@ -20,7 +20,7 @@ namespace Mono.Linker.Steps
 		//
 		public bool FeatureGlobalization { get; set; }
 
-		readonly static string[] MonoCollationResources = new [] {
+		readonly static string[] MonoCollationResources = new[] {
 			"collation.cjkCHS.bin",
 			"collation.cjkCHT.bin",
 			"collation.cjkJA.bin",
@@ -87,7 +87,7 @@ namespace Mono.Linker.Steps
 
 			foreach (var field in type.Fields)
 				RemoveCustomAttributes (field);
-				
+
 			foreach (var method in type.Methods)
 				RemoveCustomAttributes (method);
 
@@ -239,33 +239,27 @@ namespace Mono.Linker.Steps
 			var annotations = Context.Annotations;
 
 
-			switch (type.Name)
-			{
-				case "SimpleCollator":
-					if (type.Namespace == "Mono.Globalization.Unicode")
-					{
-						foreach (var method in type.Methods)
-						{
-							if (MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
-								annotations.SetAction(method, MethodAction.ConvertToThrow);
+			switch (type.Name) {
+			case "SimpleCollator":
+				if (type.Namespace == "Mono.Globalization.Unicode") {
+					foreach (var method in type.Methods) {
+						if (MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
+							annotations.SetAction (method, MethodAction.ConvertToThrow);
+					}
+				}
+
+				break;
+			case "CompareInfo":
+				if (type.Namespace == "System.Globalization") {
+					foreach (var method in type.Methods) {
+						if (method.Name == "get_UseManagedCollation") {
+							annotations.SetAction (method, MethodAction.ConvertToStub);
+							break;
 						}
 					}
+				}
 
-					break;
-				case "CompareInfo":
-					if (type.Namespace == "System.Globalization")
-					{
-						foreach (var method in type.Methods)
-						{
-							if (method.Name == "get_UseManagedCollation")
-							{
-								annotations.SetAction(method, MethodAction.ConvertToStub);
-								break;
-							}
-						}
-					}
-
-					break;
+				break;
 			}
 		}
 
@@ -277,7 +271,7 @@ namespace Mono.Linker.Steps
 			var attrsToRemove = provider.CustomAttributes.Where (IsCustomAttributeExcluded).ToArray ();
 			foreach (var remove in attrsToRemove)
 				provider.CustomAttributes.Remove (remove);
-			
+
 			return attrsToRemove.Length > 0;
 		}
 

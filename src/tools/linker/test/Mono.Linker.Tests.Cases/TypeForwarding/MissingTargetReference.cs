@@ -2,10 +2,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.TypeForwarding {
+namespace Mono.Linker.Tests.Cases.TypeForwarding
+{
 	[SkipUnresolved (true)]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("TypeForwarderMissingReference.dll", new [] { "Dependencies/TypeForwarderMissingReference.il" })]
+	[SetupCompileBefore ("TypeForwarderMissingReference.dll", new[] { "Dependencies/TypeForwarderMissingReference.il" })]
 	[SetupLinkerAction ("link", "TypeForwarderMissingReference.dll")]
 
 	[KeptMemberInAssembly ("TypeForwarderMissingReference.dll", "DummyClass", ".ctor()")]

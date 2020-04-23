@@ -1,7 +1,9 @@
 using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false, AllowMultiple = false)]
-	public class ExpectExceptionHandlersModifiedAttribute : BaseInAssemblyAttribute {
+	public class ExpectExceptionHandlersModifiedAttribute : BaseInAssemblyAttribute
+	{
 	}
 }

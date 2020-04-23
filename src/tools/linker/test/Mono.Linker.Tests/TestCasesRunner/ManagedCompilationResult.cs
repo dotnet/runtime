@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Extensions;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class ManagedCompilationResult {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class ManagedCompilationResult
+	{
 		public ManagedCompilationResult (NPath inputAssemblyPath, NPath expectationsAssemblyPath)
 		{
 			InputAssemblyPath = inputAssemblyPath;

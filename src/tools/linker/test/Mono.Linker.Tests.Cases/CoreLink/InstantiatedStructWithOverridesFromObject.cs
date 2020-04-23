@@ -1,11 +1,13 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.CoreLink {
+namespace Mono.Linker.Tests.Cases.CoreLink
+{
 	[SetupLinkerCoreAction ("link")]
 	// Need to skip due to `Runtime critical type System.Reflection.CustomAttributeData not found` failure
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-	public class InstantiatedStructWithOverridesFromObject {
+	public class InstantiatedStructWithOverridesFromObject
+	{
 		public static void Main ()
 		{
 			HelperToUseFoo (new Foo ());
@@ -27,7 +29,8 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 		}
 
 		[Kept]
-		struct Foo {
+		struct Foo
+		{
 			[Kept]
 			public override bool Equals (object obj)
 			{

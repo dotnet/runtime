@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass6 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	class ClassImplemtingInterfaceMethodsThroughBaseClass6
+	{
 		public static void Main ()
 		{
 			B tmp = new B ();
@@ -9,26 +11,30 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 			i.Foo ();
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			[Kept] // FIXME: Needs to be removed
 			public void Foo ()
 			{
 			}
 		}
 
-		class A : B, IFoo {
+		class A : B, IFoo
+		{
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class C : IFoo {
+		class C : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{

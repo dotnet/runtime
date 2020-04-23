@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class NestedDelegateInvokeMethodsPreserved {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class NestedDelegateInvokeMethodsPreserved
+	{
 		[Kept]
 		static B.Delegate @delegate;
 
@@ -11,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[Kept]
-		public class B {
+		public class B
+		{
 			[Kept]
 			[KeptMember ("Invoke()")]
 			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]

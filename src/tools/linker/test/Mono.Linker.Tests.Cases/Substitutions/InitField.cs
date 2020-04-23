@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		static readonly bool BoolValue;
 
-		public static void Main()
+		public static void Main ()
 		{
 			TestField_1 ();
 		}

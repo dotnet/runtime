@@ -1,9 +1,11 @@
 using System;
 using Mono.Cecil;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public static class AssemblyUtilities {
+	public static class AssemblyUtilities
+	{
 
 		public static bool IsCrossgened (this ModuleDefinition module)
 		{

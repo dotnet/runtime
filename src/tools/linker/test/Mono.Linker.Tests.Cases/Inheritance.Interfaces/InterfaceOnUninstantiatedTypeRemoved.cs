@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
+{
 	[SetupLinkerArgument ("--disable-opt", "unusedinterfaces")]
-	public class InterfaceOnUninstantiatedTypeRemoved {
+	public class InterfaceOnUninstantiatedTypeRemoved
+	{
 		public static void Main ()
 		{
 			A a = HelperToMarkA ();
@@ -13,13 +15,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
 
 		[Kept]
-		class A : IFoo {
+		class A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -27,12 +31,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces {
 		}
 
 		[Kept]
-		static A HelperToMarkA () {
+		static A HelperToMarkA ()
+		{
 			return null;
 		}
 
 		[Kept]
-		static void StandaloneHelperToMarkIFoo () {
+		static void StandaloneHelperToMarkIFoo ()
+		{
 			// Reference IFoo outside Main to prevent it from being
 			// kept by the body stack logic
 			IFoo i = HelperToMarkIFoo ();
@@ -40,7 +46,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces {
 		}
 
 		[Kept]
-		static IFoo HelperToMarkIFoo () {
+		static IFoo HelperToMarkIFoo ()
+		{
 			return null;
 		}
 	}

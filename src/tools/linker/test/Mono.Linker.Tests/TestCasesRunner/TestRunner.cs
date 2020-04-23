@@ -6,8 +6,10 @@ using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 using NUnit.Framework;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class TestRunner {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class TestRunner
+	{
 		private readonly ObjectFactory _factory;
 
 		public TestRunner (ObjectFactory factory)
@@ -47,20 +49,20 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var inputCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
 			var expectationsCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
-			var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
+			var sourceFiles = sandbox.SourceFiles.Select (s => s.ToString ()).ToArray ();
 
 			var assemblyName = metadataProvider.GetAssemblyName ();
 
-			var commonReferences = metadataProvider.GetCommonReferencedAssemblies(sandbox.InputDirectory).ToArray ();
-			var mainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory).ToArray ();
+			var commonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.InputDirectory).ToArray ();
+			var mainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.InputDirectory).ToArray ();
 			var resources = sandbox.ResourceFiles.ToArray ();
 			var additionalArguments = metadataProvider.GetSetupCompilerArguments ().ToArray ();
-			
+
 			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			var inputTask = Task.Run(() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
-			var expectationsTask = Task.Run(() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] {"INCLUDE_EXPECTATIONS"}, resources, additionalArguments));
+			var inputTask = Task.Run (() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
+			var expectationsTask = Task.Run (() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments));
 
 			NPath inputAssemblyPath = null;
 			NPath expectationsAssemblyPath = null;
@@ -70,15 +72,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			} catch (Exception) {
 				// If completing the input assembly task threw, we need to wait for the expectations task to complete before continuing
 				// otherwise we could set the next test up for a race condition with the expectations compilation over access to the sandbox directory
-				if (inputAssemblyPath == null && expectationsAssemblyPath == null)
-				{
+				if (inputAssemblyPath == null && expectationsAssemblyPath == null) {
 					try {
 						expectationsTask.Wait ();
 					} catch (Exception) {
 						// Don't care, we want to throw the first exception
 					}
 				}
-				
+
 				throw;
 			}
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
@@ -97,7 +98,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
-			LinkerTestLogger logger = new LinkerTestLogger();
+			LinkerTestLogger logger = new LinkerTestLogger ();
 			linker.Link (builder.ToArgs (), linkerCustomizations, logger);
 
 			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logger, linkerCustomizations);
@@ -123,7 +124,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		protected virtual LinkerCustomizations CustomizeLinker(LinkerDriver linker, TestCaseMetadaProvider metadataProvider)
+		protected virtual LinkerCustomizations CustomizeLinker (LinkerDriver linker, TestCaseMetadaProvider metadataProvider)
 		{
 			LinkerCustomizations customizations = new LinkerCustomizations ();
 
@@ -144,7 +145,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					|| e.InnerException is InconclusiveException)
 						throw e.InnerException;
 				}
-				
+
 				throw;
 			}
 		}

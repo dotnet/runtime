@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	class CopyOfCoreLibrariesKeepsUnusedTypes
 	{
-		public static void Main()
+		public static void Main ()
 		{
 		}
 	}

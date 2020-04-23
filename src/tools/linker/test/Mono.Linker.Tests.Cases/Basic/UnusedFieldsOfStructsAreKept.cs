@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	public class UnusedFieldsOfStructsAreKept {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	public class UnusedFieldsOfStructsAreKept
+	{
 		public static void Main ()
 		{
 			A a = new A ();
@@ -14,7 +16,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[Kept]
-		struct A {
+		struct A
+		{
 			[Kept]
 			private int UnusedField1;
 			[Kept]

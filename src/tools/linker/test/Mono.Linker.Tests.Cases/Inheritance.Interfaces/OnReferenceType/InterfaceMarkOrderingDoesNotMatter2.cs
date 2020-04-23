@@ -15,9 +15,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 	[KeptInterface (typeof (InterfaceMarkOrderingDoesNotMatter2_Z.E))]
 	class InterfaceMarkOrderingDoesNotMatter2_A : InterfaceMarkOrderingDoesNotMatter2_Z.A, InterfaceMarkOrderingDoesNotMatter2_Z.B, InterfaceMarkOrderingDoesNotMatter2_Z.Y,
 		InterfaceMarkOrderingDoesNotMatter2_Z.Z, InterfaceMarkOrderingDoesNotMatter2_Z.C, InterfaceMarkOrderingDoesNotMatter2_Z.D,
-		InterfaceMarkOrderingDoesNotMatter2_Z.Nested.F, InterfaceMarkOrderingDoesNotMatter2_Z.E {
+		InterfaceMarkOrderingDoesNotMatter2_Z.Nested.F, InterfaceMarkOrderingDoesNotMatter2_Z.E
+	{
 		[Kept]
-		public void AMethod()
+		public void AMethod ()
 		{
 		}
 
@@ -59,84 +60,94 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 
 	public class InterfaceMarkOrderingDoesNotMatter2
 	{
-		public static void Main()
+		public static void Main ()
 		{
-			CauseAToBeMarked().AMethod();
-			CauseZToBeMarked().ZMethod();
+			CauseAToBeMarked ().AMethod ();
+			CauseZToBeMarked ().ZMethod ();
 
-			InterfaceMarkOrderingDoesNotMatter2_A mUsedInCode = new InterfaceMarkOrderingDoesNotMatter2_A();
+			InterfaceMarkOrderingDoesNotMatter2_A mUsedInCode = new InterfaceMarkOrderingDoesNotMatter2_A ();
 
 			InterfaceMarkOrderingDoesNotMatter2_Z.B b = mUsedInCode;
 			InterfaceMarkOrderingDoesNotMatter2_Z.Y y = mUsedInCode;
 			InterfaceMarkOrderingDoesNotMatter2_Z.Nested.F f = mUsedInCode;
 
-			b.BMethod();
-			y.YMethod();
-			f.FMethod();
+			b.BMethod ();
+			y.YMethod ();
+			f.FMethod ();
 		}
-		
+
 		[Kept]
 		static InterfaceMarkOrderingDoesNotMatter2_Z.A CauseAToBeMarked ()
 		{
 			return null;
 		}
-		
+
 		[Kept]
 		static InterfaceMarkOrderingDoesNotMatter2_Z.Z CauseZToBeMarked ()
 		{
 			return null;
 		}
 	}
-	
+
 	[Kept]
-	public class InterfaceMarkOrderingDoesNotMatter2_Z {
+	public class InterfaceMarkOrderingDoesNotMatter2_Z
+	{
 		[Kept]
-		public interface A {
+		public interface A
+		{
 			[Kept]
 			void AMethod ();
 		}
 
 		[Kept]
-		public interface Z {
+		public interface Z
+		{
 			[Kept]
 			void ZMethod ();
 		}
-		
+
 		[Kept]
-		public interface C {
+		public interface C
+		{
 			[Kept]
 			void CMethod ();
 		}
 
 		[Kept]
-		public static class Nested {
+		public static class Nested
+		{
 			[Kept]
-			public interface F {
+			public interface F
+			{
 				[Kept]
 				void FMethod ();
 			}
 		}
 
 		[Kept]
-		public interface B {
+		public interface B
+		{
 			[Kept]
 			void BMethod ();
 		}
 
 		[Kept]
-		public interface Y {
+		public interface Y
+		{
 			[Kept]
 			void YMethod ();
 		}
 
 		[Kept]
-		public interface D {
+		public interface D
+		{
 			[Kept]
 			void DMethod ();
 		}
 
 		[Kept]
-		public interface E {
+		public interface E
+		{
 			[Kept]
 			void EMethod ();
 		}

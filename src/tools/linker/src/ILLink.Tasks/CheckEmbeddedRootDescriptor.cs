@@ -18,7 +18,7 @@ namespace ILLink.Tasks
 		[Output]
 		public bool HasEmbeddedRootDescriptor { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
 			ModuleDefinition module = ModuleDefinition.ReadModule (AssemblyPath.ItemSpec);
 			string assemblyName = module.Assembly.Name.Name;

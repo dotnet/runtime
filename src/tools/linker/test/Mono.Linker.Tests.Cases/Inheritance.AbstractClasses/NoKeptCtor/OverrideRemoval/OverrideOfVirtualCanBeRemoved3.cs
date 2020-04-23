@@ -1,10 +1,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval {
-	public class OverrideOfVirtualCanBeRemoved3 {
+namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval
+{
+	public class OverrideOfVirtualCanBeRemoved3
+	{
 		public static void Main ()
 		{
-			HelperToMarkFoo2AndRequireBase();
+			HelperToMarkFoo2AndRequireBase ();
 			Base b = HelperToMarkFooAndRequireBase ();
 			b.Method ();
 		}
@@ -14,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		{
 			return null;
 		}
-		
+
 		[Kept]
 		static Foo2 HelperToMarkFoo2AndRequireBase ()
 		{
@@ -22,7 +24,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		}
 
 		[Kept]
-		class Base {
+		class Base
+		{
 			[Kept]
 			public virtual void Method ()
 			{
@@ -31,7 +34,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Foo : Base {
+		class Foo : Base
+		{
 			public override void Method ()
 			{
 			}
@@ -39,7 +43,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 
 		[Kept]
 		[KeptBaseType (typeof (Foo))]
-		class Foo2 : Foo {
+		class Foo2 : Foo
+		{
 		}
 	}
 }

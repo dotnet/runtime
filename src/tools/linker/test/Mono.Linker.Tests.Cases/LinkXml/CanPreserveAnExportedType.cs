@@ -12,8 +12,10 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 
 	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Library.dll", typeof (CanPreserveAnExportedType_Library), "Field1", "Method()", ".ctor()")]
-	class CanPreserveAnExportedType {
-		public static void Main () {
+	class CanPreserveAnExportedType
+	{
+		public static void Main ()
+		{
 		}
 	}
 }

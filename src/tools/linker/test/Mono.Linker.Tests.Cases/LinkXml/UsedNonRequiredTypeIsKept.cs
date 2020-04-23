@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.LinkXml {
-	public class UsedNonRequiredTypeIsKept {
+namespace Mono.Linker.Tests.Cases.LinkXml
+{
+	public class UsedNonRequiredTypeIsKept
+	{
 		public static void Main ()
 		{
 			var tmp = typeof (Used1).ToString ();
@@ -9,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 			tmp = typeof (Used3).ToString ();
 		}
 
-		class Used1 {
+		class Used1
+		{
 			[Kept]
 			public int field;
 
@@ -21,7 +24,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 		}
 
 		[KeptMember (".ctor()")]
-		class Used2 {
+		class Used2
+		{
 			public int field;
 
 			[Kept]
@@ -35,7 +39,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 		}
 
 		[KeptMember (".ctor()")]
-		class Used3 {
+		class Used3
+		{
 			[Kept]
 			public int field;
 

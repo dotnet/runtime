@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
-	public class SimpleMethodOnNoInstanceCtor2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
+	public class SimpleMethodOnNoInstanceCtor2
+	{
 		public static void Main ()
 		{
 			IFoo f = new OtherWithFoo ();
@@ -10,13 +12,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Method ();
 		}
 
 		[Kept]
-		class BaseFoo {
+		class BaseFoo
+		{
 			public void Method ()
 			{
 			}
@@ -24,9 +28,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 
 		[Kept]
 		[KeptBaseType (typeof (BaseFoo))]
-		class FooWithBase : BaseFoo, IFoo {
+		class FooWithBase : BaseFoo, IFoo
+		{
 			[Kept]
-			public static void UsedToMarkTypeOnly()
+			public static void UsedToMarkTypeOnly ()
 			{
 			}
 		}
@@ -34,7 +39,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class OtherWithFoo : IFoo {
+		class OtherWithFoo : IFoo
+		{
 			[Kept]
 			public void Method ()
 			{

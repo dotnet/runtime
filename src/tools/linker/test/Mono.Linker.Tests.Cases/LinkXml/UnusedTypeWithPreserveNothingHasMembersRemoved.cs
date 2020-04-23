@@ -1,13 +1,16 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.LinkXml {
-	class UnusedTypeWithPreserveNothingHasMembersRemoved {
+namespace Mono.Linker.Tests.Cases.LinkXml
+{
+	class UnusedTypeWithPreserveNothingHasMembersRemoved
+	{
 		public static void Main ()
 		{
 		}
 
 		[Kept]
-		class Unused {
+		class Unused
+		{
 			public int Field1;
 			private int Field2;
 			internal int Field3;

@@ -30,7 +30,7 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.AttributeDebuggerTests))]
 		public void AttributesDebuggerTests (TestCase testCase)
 		{
@@ -61,10 +61,10 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
-		[TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.ReferencesTests))]
-		public void ReferencesTests(TestCase testCase)
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.ReferencesTests))]
+		public void ReferencesTests (TestCase testCase)
 		{
-			Run(testCase);
+			Run (testCase);
 		}
 
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.ResourcesTests))]
@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
-		[TestCaseSource(typeof (TestDatabase), nameof (TestDatabase.TestFrameworkTests))]
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TestFrameworkTests))]
 		public void TestFrameworkTests (TestCase testCase)
 		{
 			Run (testCase);
@@ -108,37 +108,37 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SymbolsTests))]
 		public void SymbolsTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.LibrariesTests))]
 		public void LibrariesTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InheritanceInterfaceTests))]
 		public void InheritanceInterfaceTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InheritanceAbstractClassTests))]
 		public void InheritanceAbstractClassTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InheritanceVirtualMethodsTests))]
 		public void InheritanceVirtualMethodsTests (TestCase testCase)
 		{
 			Run (testCase);
 		}
-		
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InheritanceComplexTests))]
 		public void InheritanceComplexTests (TestCase testCase)
 		{
@@ -161,7 +161,7 @@ namespace Mono.Linker.Tests.TestCases
 		public void CodegenAnnotationTests (TestCase testCase)
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-				Assert.Ignore("These tests are not valid when linking against .NET Framework");
+				Assert.Ignore ("These tests are not valid when linking against .NET Framework");
 
 #if NETCOREAPP
 			Assert.Ignore("These tests are not valid when linking against .NET Core");

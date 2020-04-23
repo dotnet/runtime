@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class MixOfMethods {
+	public class MixOfMethods
+	{
 		public static void Main ()
 		{
 			UseInstanceMethods (null);
@@ -18,18 +20,19 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 			f.Method1 ();
 			f.Method2 ();
 			f.Method3 ();
-			
+
 			f.BaseMethod1 ();
 			f.BaseMethod2 ();
 			f.BaseMethod3 ();
-			
+
 			f.Base2Method1 ();
 			f.Base2Method2 ();
 			f.Base2Method3 ();
 		}
-		
+
 		[Kept]
-		class Base {
+		class Base
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public void BaseMethod1 ()
@@ -54,11 +57,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 			void UsedByInstance ()
 			{
 			}
-			
+
 			[Kept]
 			public static void BasePublicStatic ()
 			{
-				UsedByStatic();
+				UsedByStatic ();
 			}
 
 			[Kept]
@@ -69,7 +72,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Base2 : Base {
+		class Base2 : Base
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public void Base2Method1 ()
@@ -94,11 +98,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 			void UsedByInstance ()
 			{
 			}
-			
+
 			[Kept]
 			public static void Base2PublicStatic ()
 			{
-				UsedByStatic();
+				UsedByStatic ();
 			}
 
 			[Kept]
@@ -109,7 +113,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 
 		[Kept]
 		[KeptBaseType (typeof (Base2))]
-		class Foo : Base2 {
+		class Foo : Base2
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public void Method1 ()
@@ -138,7 +143,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 			[Kept]
 			public static void PublicStatic ()
 			{
-				UsedByStatic();
+				UsedByStatic ();
 			}
 
 			[Kept]

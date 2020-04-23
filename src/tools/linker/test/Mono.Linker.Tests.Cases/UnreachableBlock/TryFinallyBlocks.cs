@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.3",
 			"beq.s",

@@ -1,14 +1,17 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	public class NeverInstantiatedTypeWithOverridesFromObject {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	public class NeverInstantiatedTypeWithOverridesFromObject
+	{
 		public static void Main ()
 		{
 			typeof (Foo).ToString ();
 		}
 
 		[Kept]
-		class Foo {
+		class Foo
+		{
 			~Foo ()
 			{
 				// Finalize shouldn't be empty

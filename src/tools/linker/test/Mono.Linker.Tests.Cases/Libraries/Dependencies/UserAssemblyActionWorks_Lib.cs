@@ -1,5 +1,7 @@
-namespace Mono.Linker.Tests.Cases.Libraries.Dependencies {
-	public class UserAssemblyActionWorks_Lib {
+namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
+{
+	public class UserAssemblyActionWorks_Lib
+	{
 		public static void Used ()
 		{
 		}

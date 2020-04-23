@@ -4,7 +4,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.Dependencies
 	{
 		public interface IFoo
 		{
-			bool ExplicitMethod();
+			bool ExplicitMethod ();
 		}
 	}
 }

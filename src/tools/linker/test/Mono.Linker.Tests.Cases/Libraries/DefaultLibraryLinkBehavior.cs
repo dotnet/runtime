@@ -1,11 +1,13 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Libraries {
+namespace Mono.Linker.Tests.Cases.Libraries
+{
 	[SetupCompileAsLibrary]
 	[Kept]
 	[KeptMember (".ctor()")]
-	public class DefaultLibraryLinkBehavior {
+	public class DefaultLibraryLinkBehavior
+	{
 		// Kept because by default libraries their action set to copy
 		[Kept]
 		public static void Main ()

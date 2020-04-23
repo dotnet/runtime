@@ -18,7 +18,7 @@ namespace ILLink.Tasks.Tests
 	// the task -> response file -> parsed arguments -> options on LinkContext
 	public class TaskArgumentTests
 	{
-		public static IEnumerable<object []> AssemblyPathsCases => new List<object []> {
+		public static IEnumerable<object[]> AssemblyPathsCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
 					new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "action", "copy" } })
@@ -59,7 +59,7 @@ namespace ILLink.Tasks.Tests
 
 		[Theory]
 		[MemberData (nameof (AssemblyPathsCases))]
-		public void TestAssemblyPaths (ITaskItem [] assemblyPaths)
+		public void TestAssemblyPaths (ITaskItem[] assemblyPaths)
 		{
 			var task = new MockTask () {
 				AssemblyPaths = assemblyPaths
@@ -78,8 +78,8 @@ namespace ILLink.Tasks.Tests
 					var action = item.GetMetadata ("action");
 					if (String.IsNullOrEmpty (action))
 						continue;
-					AssemblyAction expectedAction = (AssemblyAction)Enum.Parse (typeof(AssemblyAction), action, ignoreCase: true);
-					AssemblyAction actualAction = (AssemblyAction) context.Actions [Path.GetFileNameWithoutExtension (assemblyPath)];
+					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), action, ignoreCase: true);
+					AssemblyAction actualAction = (AssemblyAction) context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
 					Assert.Equal (expectedAction, actualAction);
 				}
 			}
@@ -89,18 +89,18 @@ namespace ILLink.Tasks.Tests
 		public void TestAssemblyPathsWithInvalidAction ()
 		{
 			var task = new MockTask () {
-				AssemblyPaths = new ITaskItem [] { new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "action", "invalid" } }) }
+				AssemblyPaths = new ITaskItem[] { new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "action", "invalid" } }) }
 			};
-			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 
 		// the InlineData string [] parameters are wrapped in object [] as described in https://github.com/xunit/xunit/issues/2060
 
 		[Theory]
-		[InlineData (new object [] { new string [] { "path/to/Assembly.dll" } })]
-		[InlineData (new object [] { new string [] { "path with/spaces/Assembly.dll" } })]
-		[InlineData (new object [] { new string [] { "path/to/Assembly With Spaces.dll" } })]
-		public void TestReferenceAssemblyPaths (string [] referenceAssemblyPaths)
+		[InlineData (new object[] { new string[] { "path/to/Assembly.dll" } })]
+		[InlineData (new object[] { new string[] { "path with/spaces/Assembly.dll" } })]
+		[InlineData (new object[] { new string[] { "path/to/Assembly With Spaces.dll" } })]
+		public void TestReferenceAssemblyPaths (string[] referenceAssemblyPaths)
 		{
 			var task = new MockTask () {
 				ReferenceAssemblyPaths = referenceAssemblyPaths.Select (p => new TaskItem (p)).ToArray ()
@@ -111,15 +111,15 @@ namespace ILLink.Tasks.Tests
 				Assert.Equal (expectedReferences.OrderBy (a => a), actualReferences.OrderBy (a => a));
 				foreach (var reference in expectedReferences) {
 					var referenceName = Path.GetFileNameWithoutExtension (reference);
-					var actualAction = driver.Context.Actions [referenceName];
+					var actualAction = driver.Context.Actions[referenceName];
 					Assert.Equal (AssemblyAction.Skip, actualAction);
 				}
 			}
 		}
 
 		[Theory]
-		[InlineData (new object [] { new string [] { "AssemblyName" } })]
-		public void TestRootAssemblyNames (string [] rootAssemblyNames)
+		[InlineData (new object[] { new string[] { "AssemblyName" } })]
+		public void TestRootAssemblyNames (string[] rootAssemblyNames)
 		{
 			var task = new MockTask () {
 				RootAssemblyNames = rootAssemblyNames.Select (a => new TaskItem (a)).ToArray ()
@@ -146,11 +146,11 @@ namespace ILLink.Tasks.Tests
 		}
 
 		[Theory]
-		[InlineData (new object [] { new string [] { "path/to/descriptor.xml" } })]
-		[InlineData (new object [] { new string [] { "path with/spaces/descriptor.xml" } })]
-		[InlineData (new object [] { new string [] { "descriptor with spaces.xml" } })]
-		[InlineData (new object [] { new string [] { "descriptor1.xml", "descriptor2.xml" } })]
-		public void TestRootDescriptorFiles (string [] rootDescriptorFiles)
+		[InlineData (new object[] { new string[] { "path/to/descriptor.xml" } })]
+		[InlineData (new object[] { new string[] { "path with/spaces/descriptor.xml" } })]
+		[InlineData (new object[] { new string[] { "descriptor with spaces.xml" } })]
+		[InlineData (new object[] { new string[] { "descriptor1.xml", "descriptor2.xml" } })]
+		public void TestRootDescriptorFiles (string[] rootDescriptorFiles)
 		{
 			var task = new MockTask () {
 				RootDescriptorFiles = rootDescriptorFiles.Select (f => new TaskItem (f)).ToArray ()
@@ -161,10 +161,11 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
-		public static IEnumerable<object []> OptimizationsCases () {
+		public static IEnumerable<object[]> OptimizationsCases ()
+		{
 			foreach (var optimization in MockTask.OptimizationNames) {
-				yield return new object [] { optimization, true };
-				yield return new object [] { optimization, false };
+				yield return new object[] { optimization, true };
+				yield return new object[] { optimization, false };
 			}
 		}
 
@@ -182,17 +183,18 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
-		public static IEnumerable<object []> PerAssemblyOptimizationsCases () {
+		public static IEnumerable<object[]> PerAssemblyOptimizationsCases ()
+		{
 			// test that we can individually enable/disable each optimization
 			foreach (var optimization in MockTask.OptimizationNames) {
-				yield return new object [] {
+				yield return new object[] {
 					new ITaskItem [] {
 						new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
 							{ optimization, "True" }
 						})
 					}
 				};
-				yield return new object [] {
+				yield return new object[] {
 					new ITaskItem [] {
 						new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
 							{ optimization, "False" }
@@ -201,7 +203,7 @@ namespace ILLink.Tasks.Tests
 				};
 			}
 			// complex case with multiple optimizations, assemblies
-			yield return new object [] {
+			yield return new object[] {
 				new ITaskItem [] {
 					new TaskItem ("path/to/Assembly1.dll", new Dictionary<string, string> {
 						{ "ClearInitLocals", "True" },
@@ -217,7 +219,7 @@ namespace ILLink.Tasks.Tests
 
 		[Theory]
 		[MemberData (nameof (PerAssemblyOptimizationsCases))]
-		public void TestPerAssemblyOptimizations (ITaskItem [] assemblyPaths)
+		public void TestPerAssemblyOptimizations (ITaskItem[] assemblyPaths)
 		{
 			var task = new MockTask () {
 				AssemblyPaths = assemblyPaths
@@ -242,7 +244,7 @@ namespace ILLink.Tasks.Tests
 		public void TestInvalidPerAssemblyOptimizations ()
 		{
 			var task = new MockTask () {
-				AssemblyPaths = new ITaskItem [] {
+				AssemblyPaths = new ITaskItem[] {
 					new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
 						{ "ClearInitLocals", "invalid" }
 					})
@@ -304,7 +306,7 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
-		public static IEnumerable<object []> FeatureSettingsCases => new List<object []> {
+		public static IEnumerable<object[]> FeatureSettingsCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
 					new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "true" } })
@@ -326,7 +328,7 @@ namespace ILLink.Tasks.Tests
 
 		[Theory]
 		[MemberData (nameof (FeatureSettingsCases))]
-		public void TestFeatureSettings (ITaskItem [] featureSettings)
+		public void TestFeatureSettings (ITaskItem[] featureSettings)
 		{
 			var task = new MockTask () {
 				FeatureSettings = featureSettings
@@ -334,8 +336,8 @@ namespace ILLink.Tasks.Tests
 			using (var driver = task.CreateDriver ()) {
 				var expectedSettings = featureSettings.Select (f => new { Feature = f.ItemSpec, Value = f.GetMetadata ("Value") })
 					.GroupBy (f => f.Feature)
-					.Select (f => f.Last())
-					.ToDictionary (f => f.Feature, f => bool.Parse(f.Value));
+					.Select (f => f.Last ())
+					.ToDictionary (f => f.Feature, f => bool.Parse (f.Value));
 				var actualSettings = driver.Context.FeatureSettings;
 				Assert.Equal (expectedSettings, actualSettings);
 			}
@@ -345,9 +347,9 @@ namespace ILLink.Tasks.Tests
 		public void TestInvalidFeatureSettings ()
 		{
 			var task = new MockTask () {
-				FeatureSettings = new ITaskItem [] { new TaskItem ("FeatureName") }
+				FeatureSettings = new ITaskItem[] { new TaskItem ("FeatureName") }
 			};
-			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 
 		[Fact]
@@ -375,7 +377,7 @@ namespace ILLink.Tasks.Tests
 			using (var driver = task.CreateDriver ()) {
 				Assert.Equal (dumpDependencies, driver.GetDependencyRecorders ()?.Single () == MockXmlDependencyRecorder.Singleton);
 			}
-		}		
+		}
 
 		[Theory]
 		[InlineData (true)]
@@ -400,7 +402,7 @@ namespace ILLink.Tasks.Tests
 				DefaultAction = defaultAction
 			};
 			using (var driver = task.CreateDriver ()) {
-				var expectedAction = (AssemblyAction)Enum.Parse (typeof(AssemblyAction), defaultAction, ignoreCase: true);
+				var expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), defaultAction, ignoreCase: true);
 				Assert.Equal (expectedAction, driver.Context.CoreAction);
 				Assert.Equal (expectedAction, driver.Context.UserAction);
 			}
@@ -412,10 +414,10 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				DefaultAction = "invalid"
 			};
-			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 
-		public static IEnumerable<object []> CustomStepsCases => new List<object []> {
+		public static IEnumerable<object[]> CustomStepsCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
 					new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
@@ -463,7 +465,7 @@ namespace ILLink.Tasks.Tests
 
 		[Theory]
 		[MemberData (nameof (CustomStepsCases))]
-		public void TestCustomSteps (ITaskItem [] customSteps)
+		public void TestCustomSteps (ITaskItem[] customSteps)
 		{
 			var task = new MockTask () {
 				CustomSteps = customSteps
@@ -493,7 +495,7 @@ namespace ILLink.Tasks.Tests
 		[Fact]
 		public void TestCustomStepsWithBeforeAndAfterSteps ()
 		{
-			var customSteps = new ITaskItem [] {
+			var customSteps = new ITaskItem[] {
 				new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
 					{ "Type", "ILLink.Tasks.Tests.MockCustomStep" },
 					{ "BeforeStep", "MarkStep" },
@@ -503,19 +505,19 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				CustomSteps = customSteps
 			};
-			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 
 		[Fact]
 		public void TestCustomStepsMissingType ()
 		{
-			var customSteps = new ITaskItem [] {
+			var customSteps = new ITaskItem[] {
 				new TaskItem (Assembly.GetExecutingAssembly ().Location)
 			};
 			var task = new MockTask () {
 				CustomSteps = customSteps
 			};
-			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 	}
 }

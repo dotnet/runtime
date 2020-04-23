@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
 	static class AttributeArgumentForwardedWithCopyAction
 	{
-		static void Main()
+		static void Main ()
 		{
 			Test_1 ();
 		}
@@ -48,14 +48,14 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestType2Attribute))]
-		[TestType2 (typeof (ImplementationLibrary [,] []))]
+		[TestType2 (typeof (ImplementationLibrary[,][]))]
 		public static void Test_1c ()
 		{
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (TestType2Attribute))]
-		[TestType2 (TestProperty = new object [] { typeof (ImplementationLibrary) })]
+		[TestType2 (TestProperty = new object[] { typeof (ImplementationLibrary) })]
 		public static void Test_2 ()
 		{
 		}
@@ -77,7 +77,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	}
 
 	[KeptBaseType (typeof (Attribute))]
-	public class TestType2Attribute : Attribute {
+	public class TestType2Attribute : Attribute
+	{
 		[Kept]
 		public TestType2Attribute ()
 		{
@@ -97,6 +98,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	}
 
 	[Kept]
-	static class SomeGenericType2<T> {
+	static class SomeGenericType2<T>
+	{
 	}
 }

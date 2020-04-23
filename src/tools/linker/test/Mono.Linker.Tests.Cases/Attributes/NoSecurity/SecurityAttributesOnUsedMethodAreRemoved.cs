@@ -2,9 +2,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity {
+namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity
+{
 	[SetupLinkerArgument ("--strip-security", "true")]
-	public class SecurityAttributesOnUsedMethodAreRemoved {
+	public class SecurityAttributesOnUsedMethodAreRemoved
+	{
 		static void Main ()
 		{
 			new Foo ().Method ();
@@ -12,7 +14,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[SecurityPermission (SecurityAction.LinkDemand)]
 			[Kept]
 			[RemovedPseudoAttribute (16384)]

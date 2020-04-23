@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Statics
 			C.Foo ();
 		}
 
-		[KeptMember(".cctor()")]
+		[KeptMember (".cctor()")]
 		static class C
 		{
 			[Kept]

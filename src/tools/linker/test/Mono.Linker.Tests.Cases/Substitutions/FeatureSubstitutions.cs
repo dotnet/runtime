@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		static bool IsOptionalFeatureEnabled {
 			[Kept]
-			[ExpectedInstructionSequence (new [] {
+			[ExpectedInstructionSequence (new[] {
 				"ldc.i4.0",
 				"ret",
 			})]
@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectBodyModified]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"brfalse",
 			"call",

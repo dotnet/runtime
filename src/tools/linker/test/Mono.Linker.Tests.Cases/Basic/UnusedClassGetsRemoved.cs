@@ -1,10 +1,13 @@
-﻿namespace Mono.Linker.Tests.Cases.Basic {
-	public class UnusedClassGetsRemoved {
+﻿namespace Mono.Linker.Tests.Cases.Basic
+{
+	public class UnusedClassGetsRemoved
+	{
 		public static void Main ()
 		{
 		}
 	}
 
-	class Unused {
+	class Unused
+	{
 	}
 }

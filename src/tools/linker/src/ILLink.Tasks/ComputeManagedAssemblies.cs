@@ -20,11 +20,11 @@ namespace ILLink.Tasks
 		[Output]
 		public ITaskItem[] ManagedAssemblies { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
 			ManagedAssemblies = Assemblies
-				.Where(f => Utils.IsManagedAssembly(f.ItemSpec))
-				.ToArray();
+				.Where (f => Utils.IsManagedAssembly (f.ItemSpec))
+				.ToArray ();
 			return true;
 		}
 	}

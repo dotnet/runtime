@@ -8,7 +8,7 @@ namespace Mono.Linker
 {
 	static class FieldDefinitionExtensions
 	{
-		public static bool IsCompilerGenerated(this FieldDefinition field)
+		public static bool IsCompilerGenerated (this FieldDefinition field)
 		{
 			if (!field.HasCustomAttributes)
 				return false;

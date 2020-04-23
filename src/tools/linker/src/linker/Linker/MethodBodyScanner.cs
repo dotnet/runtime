@@ -4,14 +4,16 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker {
-	public static class MethodBodyScanner {
+namespace Mono.Linker
+{
+	public static class MethodBodyScanner
+	{
 		public static bool IsWorthConvertingToThrow (MethodBody body)
 		{
 			// Some bodies are cheaper size wise to leave alone than to convert to a throw
 			Instruction previousMeaningful = null;
 			int meaningfulCount = 0;
-			foreach (var ins in body.Instructions)  {
+			foreach (var ins in body.Instructions) {
 				// Handle ignoring noops because because (1) it's a valid case to ignore
 				// and (2) When running the tests on .net core roslyn tosses in no ops
 				// and that leads to a difference in test results between mcs and .net framework csc.
@@ -19,23 +21,23 @@ namespace Mono.Linker {
 					continue;
 
 				meaningfulCount++;
-				
+
 				if (meaningfulCount == 1 && ins.OpCode.Code == Code.Ret)
 					return false;
 
 				if (meaningfulCount == 2 && ins.OpCode.Code == Code.Ret && previousMeaningful != null) {
 					if (previousMeaningful.OpCode.StackBehaviourPop == StackBehaviour.Pop0) {
 						switch (previousMeaningful.OpCode.StackBehaviourPush) {
-							case StackBehaviour.Pushi:
-							case StackBehaviour.Pushi8:
-							case StackBehaviour.Pushr4:
-							case StackBehaviour.Pushr8:
-								return false;
+						case StackBehaviour.Pushi:
+						case StackBehaviour.Pushi8:
+						case StackBehaviour.Pushr4:
+						case StackBehaviour.Pushr8:
+							return false;
 						}
-					
+
 						switch (previousMeaningful.OpCode.Code) {
-							case Code.Ldnull:
-								return false;
+						case Code.Ldnull:
+							return false;
 						}
 					}
 				}
@@ -82,7 +84,7 @@ namespace Mono.Linker {
 		static HashSet<TypeDefinition> AllPossibleStackTypes (MethodDefinition method)
 		{
 			if (!method.HasBody)
-				throw new ArgumentException();
+				throw new ArgumentException ();
 
 			var body = method.Body;
 			var types = new HashSet<TypeDefinition> ();
@@ -90,7 +92,7 @@ namespace Mono.Linker {
 			foreach (VariableDefinition var in body.Variables)
 				AddIfResolved (types, var.VariableType);
 
-			foreach(var parameter in body.Method.Parameters)
+			foreach (var parameter in body.Method.Parameters)
 				AddIfResolved (types, parameter.ParameterType);
 
 			foreach (ExceptionHandler eh in body.ExceptionHandlers) {
@@ -126,7 +128,7 @@ namespace Mono.Linker {
 			return types;
 		}
 
-		static void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition [] interfaceTypes)
+		static void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
 		{
 			foreach (var interfaceType in interfaceTypes) {
 				if (type.HasInterface (interfaceType, out InterfaceImplementation implementation))

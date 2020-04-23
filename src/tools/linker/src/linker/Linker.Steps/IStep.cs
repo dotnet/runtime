@@ -26,9 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public interface IStep {
+	public interface IStep
+	{
 		void Process (LinkContext context);
 	}
 }

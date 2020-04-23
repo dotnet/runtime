@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval {
+namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval
+{
 	[SetupLinkerArgument ("--disable-opt", "overrideremoval")]
-	public class CanDisableOverrideRemoval {
+	public class CanDisableOverrideRemoval
+	{
 		public static void Main ()
 		{
 			Base b = HelperToMarkFooAndRequireBase ();
@@ -17,7 +19,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		}
 
 		[Kept]
-		class Base {
+		class Base
+		{
 			[Kept]
 			public virtual void Method ()
 			{
@@ -26,7 +29,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Foo : Base {
+		class Foo : Base
+		{
 			[Kept]
 			public override void Method ()
 			{

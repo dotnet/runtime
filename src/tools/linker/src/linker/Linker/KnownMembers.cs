@@ -13,7 +13,7 @@ namespace Mono.Linker
 			if (!method.IsConstructor || method.IsStatic || !method.HasParameters)
 				return false;
 
-			if (method.Parameters.Count != 1 || method.Parameters [0].ParameterType.MetadataType != MetadataType.String)
+			if (method.Parameters.Count != 1 || method.Parameters[0].ParameterType.MetadataType != MetadataType.String)
 				return false;
 
 			return true;

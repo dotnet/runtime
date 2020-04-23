@@ -126,7 +126,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (knownStacks.ContainsKey (newOffset)) {
-				knownStacks [newOffset] = MergeStack (knownStacks [newOffset], newStack, method, newOffset);
+				knownStacks[newOffset] = MergeStack (knownStacks[newOffset], newStack, method, newOffset);
 			} else {
 				knownStacks.Add (newOffset, new Stack<StackSlot> (newStack.Reverse ()));
 			}
@@ -192,7 +192,7 @@ namespace Mono.Linker.Dataflow
 				// old value.
 				newValue.Value = MergePointValue.MergeValues (existingValue.Value, valueToStore);
 			}
-			valueCollection [collectionKey] = newValue;
+			valueCollection[collectionKey] = newValue;
 		}
 
 		public void Scan (MethodBody methodBody)
@@ -215,9 +215,9 @@ namespace Mono.Linker.Dataflow
 				if (knownStacks.ContainsKey (operation.Offset)) {
 					if (currentStack == null) {
 						// The stack copy constructor reverses the stack
-						currentStack = new Stack<StackSlot> (knownStacks [operation.Offset].Reverse ());
+						currentStack = new Stack<StackSlot> (knownStacks[operation.Offset].Reverse ());
 					} else {
-						currentStack = MergeStack (currentStack, knownStacks [operation.Offset], methodBody, operation.Offset);
+						currentStack = MergeStack (currentStack, knownStacks[operation.Offset], methodBody, operation.Offset);
 					}
 				}
 
@@ -226,364 +226,364 @@ namespace Mono.Linker.Dataflow
 				}
 
 				switch (operation.OpCode.Code) {
-					case Code.Add:
-					case Code.Add_Ovf:
-					case Code.Add_Ovf_Un:
-					case Code.And:
-					case Code.Div:
-					case Code.Div_Un:
-					case Code.Mul:
-					case Code.Mul_Ovf:
-					case Code.Mul_Ovf_Un:
-					case Code.Or:
-					case Code.Rem:
-					case Code.Rem_Un:
-					case Code.Sub:
-					case Code.Sub_Ovf:
-					case Code.Sub_Ovf_Un:
-					case Code.Xor:
-					case Code.Cgt:
-					case Code.Cgt_Un:
-					case Code.Clt:
-					case Code.Clt_Un:
-					case Code.Ldelem_I:
-					case Code.Ldelem_I1:
-					case Code.Ldelem_I2:
-					case Code.Ldelem_I4:
-					case Code.Ldelem_I8:
-					case Code.Ldelem_R4:
-					case Code.Ldelem_R8:
-					case Code.Ldelem_U1:
-					case Code.Ldelem_U2:
-					case Code.Ldelem_U4:
-					case Code.Shl:
-					case Code.Shr:
-					case Code.Shr_Un:
-					case Code.Ldelem_Any:
-					case Code.Ldelem_Ref:
-					case Code.Ldelema:
-					case Code.Ceq:
-						PopUnknown (currentStack, 2, methodBody, operation.Offset);
-						PushUnknown (currentStack);
-						break;
+				case Code.Add:
+				case Code.Add_Ovf:
+				case Code.Add_Ovf_Un:
+				case Code.And:
+				case Code.Div:
+				case Code.Div_Un:
+				case Code.Mul:
+				case Code.Mul_Ovf:
+				case Code.Mul_Ovf_Un:
+				case Code.Or:
+				case Code.Rem:
+				case Code.Rem_Un:
+				case Code.Sub:
+				case Code.Sub_Ovf:
+				case Code.Sub_Ovf_Un:
+				case Code.Xor:
+				case Code.Cgt:
+				case Code.Cgt_Un:
+				case Code.Clt:
+				case Code.Clt_Un:
+				case Code.Ldelem_I:
+				case Code.Ldelem_I1:
+				case Code.Ldelem_I2:
+				case Code.Ldelem_I4:
+				case Code.Ldelem_I8:
+				case Code.Ldelem_R4:
+				case Code.Ldelem_R8:
+				case Code.Ldelem_U1:
+				case Code.Ldelem_U2:
+				case Code.Ldelem_U4:
+				case Code.Shl:
+				case Code.Shr:
+				case Code.Shr_Un:
+				case Code.Ldelem_Any:
+				case Code.Ldelem_Ref:
+				case Code.Ldelema:
+				case Code.Ceq:
+					PopUnknown (currentStack, 2, methodBody, operation.Offset);
+					PushUnknown (currentStack);
+					break;
 
-					case Code.Dup:
-						currentStack.Push (currentStack.Peek ());
-						break;
+				case Code.Dup:
+					currentStack.Push (currentStack.Peek ());
+					break;
 
-					case Code.Ldnull:
-						currentStack.Push (new StackSlot (NullValue.Instance));
-						break;
+				case Code.Ldnull:
+					currentStack.Push (new StackSlot (NullValue.Instance));
+					break;
 
 
-					case Code.Ldc_I4_0:
-					case Code.Ldc_I4_1:
-					case Code.Ldc_I4_2:
-					case Code.Ldc_I4_3:
-					case Code.Ldc_I4_4:
-					case Code.Ldc_I4_5:
-					case Code.Ldc_I4_6:
-					case Code.Ldc_I4_7:
-					case Code.Ldc_I4_8: {
-							int value = operation.OpCode.Code - Code.Ldc_I4_0;
-							ConstIntValue civ = new ConstIntValue (value);
-							StackSlot slot = new StackSlot (civ);
-							currentStack.Push (slot);
+				case Code.Ldc_I4_0:
+				case Code.Ldc_I4_1:
+				case Code.Ldc_I4_2:
+				case Code.Ldc_I4_3:
+				case Code.Ldc_I4_4:
+				case Code.Ldc_I4_5:
+				case Code.Ldc_I4_6:
+				case Code.Ldc_I4_7:
+				case Code.Ldc_I4_8: {
+						int value = operation.OpCode.Code - Code.Ldc_I4_0;
+						ConstIntValue civ = new ConstIntValue (value);
+						StackSlot slot = new StackSlot (civ);
+						currentStack.Push (slot);
+					}
+					break;
+
+				case Code.Ldc_I4_M1: {
+						ConstIntValue civ = new ConstIntValue (-1);
+						StackSlot slot = new StackSlot (civ);
+						currentStack.Push (slot);
+					}
+					break;
+
+				case Code.Ldc_I4: {
+						int value = (int) operation.Operand;
+						ConstIntValue civ = new ConstIntValue (value);
+						StackSlot slot = new StackSlot (civ);
+						currentStack.Push (slot);
+					}
+					break;
+
+				case Code.Ldc_I4_S: {
+						int value = (sbyte) operation.Operand;
+						ConstIntValue civ = new ConstIntValue (value);
+						StackSlot slot = new StackSlot (civ);
+						currentStack.Push (slot);
+					}
+					break;
+
+				case Code.Arglist:
+				case Code.Ldftn:
+				case Code.Sizeof:
+				case Code.Ldc_I8:
+				case Code.Ldc_R4:
+				case Code.Ldc_R8:
+					PushUnknown (currentStack);
+					break;
+
+				case Code.Ldarg:
+				case Code.Ldarg_0:
+				case Code.Ldarg_1:
+				case Code.Ldarg_2:
+				case Code.Ldarg_3:
+				case Code.Ldarg_S:
+				case Code.Ldarga:
+				case Code.Ldarga_S:
+					ScanLdarg (operation, currentStack, thisMethod, methodBody);
+					break;
+
+				case Code.Ldloc:
+				case Code.Ldloc_0:
+				case Code.Ldloc_1:
+				case Code.Ldloc_2:
+				case Code.Ldloc_3:
+				case Code.Ldloc_S:
+				case Code.Ldloca:
+				case Code.Ldloca_S:
+					ScanLdloc (operation, currentStack, thisMethod, methodBody, locals);
+					break;
+
+				case Code.Ldstr: {
+						StackSlot slot = new StackSlot (new KnownStringValue ((string) operation.Operand));
+						currentStack.Push (slot);
+					}
+					break;
+
+				case Code.Ldtoken:
+					ScanLdtoken (operation, currentStack, thisMethod, methodBody);
+					break;
+
+				case Code.Ldind_I:
+				case Code.Ldind_I1:
+				case Code.Ldind_I2:
+				case Code.Ldind_I4:
+				case Code.Ldind_I8:
+				case Code.Ldind_R4:
+				case Code.Ldind_R8:
+				case Code.Ldind_U1:
+				case Code.Ldind_U2:
+				case Code.Ldind_U4:
+				case Code.Ldlen:
+				case Code.Ldvirtftn:
+				case Code.Localloc:
+				case Code.Refanytype:
+				case Code.Refanyval:
+				case Code.Conv_I1:
+				case Code.Conv_I2:
+				case Code.Conv_I4:
+				case Code.Conv_Ovf_I1:
+				case Code.Conv_Ovf_I1_Un:
+				case Code.Conv_Ovf_I2:
+				case Code.Conv_Ovf_I2_Un:
+				case Code.Conv_Ovf_I4:
+				case Code.Conv_Ovf_I4_Un:
+				case Code.Conv_Ovf_U:
+				case Code.Conv_Ovf_U_Un:
+				case Code.Conv_Ovf_U1:
+				case Code.Conv_Ovf_U1_Un:
+				case Code.Conv_Ovf_U2:
+				case Code.Conv_Ovf_U2_Un:
+				case Code.Conv_Ovf_U4:
+				case Code.Conv_Ovf_U4_Un:
+				case Code.Conv_U1:
+				case Code.Conv_U2:
+				case Code.Conv_U4:
+				case Code.Conv_I8:
+				case Code.Conv_Ovf_I8:
+				case Code.Conv_Ovf_I8_Un:
+				case Code.Conv_Ovf_U8:
+				case Code.Conv_Ovf_U8_Un:
+				case Code.Conv_U8:
+				case Code.Conv_I:
+				case Code.Conv_Ovf_I:
+				case Code.Conv_Ovf_I_Un:
+				case Code.Conv_U:
+				case Code.Conv_R_Un:
+				case Code.Conv_R4:
+				case Code.Conv_R8:
+				case Code.Ldind_Ref:
+				case Code.Ldobj:
+				case Code.Mkrefany:
+				case Code.Unbox:
+				case Code.Unbox_Any:
+				case Code.Box:
+				case Code.Neg:
+				case Code.Not:
+					PopUnknown (currentStack, 1, methodBody, operation.Offset);
+					PushUnknown (currentStack);
+					break;
+
+				case Code.Isinst:
+				case Code.Castclass:
+					// We can consider a NOP because the value doesn't change.
+					// It might change to NULL, but for the purposes of dataflow analysis
+					// it doesn't hurt much.
+					break;
+
+				case Code.Ldfld:
+				case Code.Ldsfld:
+				case Code.Ldflda:
+				case Code.Ldsflda:
+					ScanLdfld (operation, currentStack, thisMethod, methodBody);
+					break;
+
+				case Code.Newarr: {
+						StackSlot count = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+						currentStack.Push (new StackSlot (new ArrayValue (count.Value)));
+					}
+					break;
+
+				case Code.Cpblk:
+				case Code.Initblk:
+				case Code.Stelem_I:
+				case Code.Stelem_I1:
+				case Code.Stelem_I2:
+				case Code.Stelem_I4:
+				case Code.Stelem_I8:
+				case Code.Stelem_R4:
+				case Code.Stelem_R8:
+				case Code.Stelem_Any:
+				case Code.Stelem_Ref:
+					PopUnknown (currentStack, 3, methodBody, operation.Offset);
+					break;
+
+				case Code.Stfld:
+				case Code.Stsfld:
+					ScanStfld (operation, currentStack, thisMethod, methodBody);
+					break;
+
+				case Code.Cpobj:
+					PopUnknown (currentStack, 2, methodBody, operation.Offset);
+					break;
+
+				case Code.Stind_I:
+				case Code.Stind_I1:
+				case Code.Stind_I2:
+				case Code.Stind_I4:
+				case Code.Stind_I8:
+				case Code.Stind_R4:
+				case Code.Stind_R8:
+				case Code.Stind_Ref:
+				case Code.Stobj:
+					ScanIndirectStore (operation, currentStack, methodBody);
+					break;
+
+				case Code.Initobj:
+				case Code.Pop:
+					PopUnknown (currentStack, 1, methodBody, operation.Offset);
+					break;
+
+				case Code.Starg:
+				case Code.Starg_S:
+					ScanStarg (operation, currentStack, thisMethod, methodBody);
+					break;
+
+				case Code.Stloc:
+				case Code.Stloc_S:
+				case Code.Stloc_0:
+				case Code.Stloc_1:
+				case Code.Stloc_2:
+				case Code.Stloc_3:
+					ScanStloc (operation, currentStack, methodBody, locals, curBasicBlock);
+					break;
+
+				case Code.Constrained:
+				case Code.No:
+				case Code.Readonly:
+				case Code.Tail:
+				case Code.Unaligned:
+				case Code.Volatile:
+					break;
+
+				case Code.Brfalse:
+				case Code.Brfalse_S:
+				case Code.Brtrue:
+				case Code.Brtrue_S:
+					PopUnknown (currentStack, 1, methodBody, operation.Offset);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					break;
+
+				case Code.Calli:
+					// TODO: currently not emitted by any mainstream compilers but we should implement
+					break;
+
+				case Code.Call:
+				case Code.Callvirt:
+				case Code.Newobj:
+					HandleCall (methodBody, operation, currentStack);
+					break;
+
+				case Code.Jmp:
+					// Not generated by mainstream compilers
+					break;
+
+				case Code.Br:
+				case Code.Br_S:
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					ClearStack (ref currentStack);
+					break;
+
+				case Code.Leave:
+				case Code.Leave_S:
+					ClearStack (ref currentStack);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, new Stack<StackSlot> (methodBody.MaxStackSize), methodBody);
+					break;
+
+				case Code.Endfilter:
+				case Code.Endfinally:
+				case Code.Rethrow:
+				case Code.Throw:
+					ClearStack (ref currentStack);
+					break;
+
+				case Code.Ret: {
+						bool hasReturnValue = methodBody.Method.ReturnType.MetadataType != MetadataType.Void;
+						if (currentStack.Count != (hasReturnValue ? 1 : 0)) {
+							WarnAboutInvalidILInMethod (methodBody, operation.Offset);
 						}
-						break;
-
-					case Code.Ldc_I4_M1: {
-							ConstIntValue civ = new ConstIntValue (-1);
-							StackSlot slot = new StackSlot (civ);
-							currentStack.Push (slot);
+						if (hasReturnValue) {
+							StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+							MethodReturnValue = MergePointValue.MergeValues (MethodReturnValue, retValue.Value);
 						}
-						break;
-
-					case Code.Ldc_I4: {
-							int value = (int)operation.Operand;
-							ConstIntValue civ = new ConstIntValue (value);
-							StackSlot slot = new StackSlot (civ);
-							currentStack.Push (slot);
-						}
-						break;
-
-					case Code.Ldc_I4_S: {
-							int value = (sbyte)operation.Operand;
-							ConstIntValue civ = new ConstIntValue (value);
-							StackSlot slot = new StackSlot (civ);
-							currentStack.Push (slot);
-						}
-						break;
-
-					case Code.Arglist:
-					case Code.Ldftn:
-					case Code.Sizeof:
-					case Code.Ldc_I8:
-					case Code.Ldc_R4:
-					case Code.Ldc_R8:
-						PushUnknown (currentStack);
-						break;
-
-					case Code.Ldarg:
-					case Code.Ldarg_0:
-					case Code.Ldarg_1:
-					case Code.Ldarg_2:
-					case Code.Ldarg_3:
-					case Code.Ldarg_S:
-					case Code.Ldarga:
-					case Code.Ldarga_S:
-						ScanLdarg (operation, currentStack, thisMethod, methodBody);
-						break;
-
-					case Code.Ldloc:
-					case Code.Ldloc_0:
-					case Code.Ldloc_1:
-					case Code.Ldloc_2:
-					case Code.Ldloc_3:
-					case Code.Ldloc_S:
-					case Code.Ldloca:
-					case Code.Ldloca_S:
-						ScanLdloc (operation, currentStack, thisMethod, methodBody, locals);
-						break;
-
-					case Code.Ldstr: {
-							StackSlot slot = new StackSlot (new KnownStringValue ((string)operation.Operand));
-							currentStack.Push (slot);
-						}
-						break;
-
-					case Code.Ldtoken:
-						ScanLdtoken (operation, currentStack, thisMethod, methodBody);
-						break;
-
-					case Code.Ldind_I:
-					case Code.Ldind_I1:
-					case Code.Ldind_I2:
-					case Code.Ldind_I4:
-					case Code.Ldind_I8:
-					case Code.Ldind_R4:
-					case Code.Ldind_R8:
-					case Code.Ldind_U1:
-					case Code.Ldind_U2:
-					case Code.Ldind_U4:
-					case Code.Ldlen:
-					case Code.Ldvirtftn:
-					case Code.Localloc:
-					case Code.Refanytype:
-					case Code.Refanyval:
-					case Code.Conv_I1:
-					case Code.Conv_I2:
-					case Code.Conv_I4:
-					case Code.Conv_Ovf_I1:
-					case Code.Conv_Ovf_I1_Un:
-					case Code.Conv_Ovf_I2:
-					case Code.Conv_Ovf_I2_Un:
-					case Code.Conv_Ovf_I4:
-					case Code.Conv_Ovf_I4_Un:
-					case Code.Conv_Ovf_U:
-					case Code.Conv_Ovf_U_Un:
-					case Code.Conv_Ovf_U1:
-					case Code.Conv_Ovf_U1_Un:
-					case Code.Conv_Ovf_U2:
-					case Code.Conv_Ovf_U2_Un:
-					case Code.Conv_Ovf_U4:
-					case Code.Conv_Ovf_U4_Un:
-					case Code.Conv_U1:
-					case Code.Conv_U2:
-					case Code.Conv_U4:
-					case Code.Conv_I8:
-					case Code.Conv_Ovf_I8:
-					case Code.Conv_Ovf_I8_Un:
-					case Code.Conv_Ovf_U8:
-					case Code.Conv_Ovf_U8_Un:
-					case Code.Conv_U8:
-					case Code.Conv_I:
-					case Code.Conv_Ovf_I:
-					case Code.Conv_Ovf_I_Un:
-					case Code.Conv_U:
-					case Code.Conv_R_Un:
-					case Code.Conv_R4:
-					case Code.Conv_R8:
-					case Code.Ldind_Ref:
-					case Code.Ldobj:
-					case Code.Mkrefany:
-					case Code.Unbox:
-					case Code.Unbox_Any:
-					case Code.Box:
-					case Code.Neg:
-					case Code.Not:
-						PopUnknown (currentStack, 1, methodBody, operation.Offset);
-						PushUnknown (currentStack);
-						break;
-
-					case Code.Isinst:
-					case Code.Castclass:
-						// We can consider a NOP because the value doesn't change.
-						// It might change to NULL, but for the purposes of dataflow analysis
-						// it doesn't hurt much.
-						break;
-
-					case Code.Ldfld:
-					case Code.Ldsfld:
-					case Code.Ldflda:
-					case Code.Ldsflda:
-						ScanLdfld (operation, currentStack, thisMethod, methodBody);
-						break;
-
-					case Code.Newarr: {
-							StackSlot count = PopUnknown (currentStack, 1, methodBody, operation.Offset);
-							currentStack.Push (new StackSlot (new ArrayValue (count.Value)));
-						}
-						break;
-
-					case Code.Cpblk:
-					case Code.Initblk:
-					case Code.Stelem_I:
-					case Code.Stelem_I1:
-					case Code.Stelem_I2:
-					case Code.Stelem_I4:
-					case Code.Stelem_I8:
-					case Code.Stelem_R4:
-					case Code.Stelem_R8:
-					case Code.Stelem_Any:
-					case Code.Stelem_Ref:
-						PopUnknown (currentStack, 3, methodBody, operation.Offset);
-						break;
-
-					case Code.Stfld:
-					case Code.Stsfld:
-						ScanStfld (operation, currentStack, thisMethod, methodBody);
-						break;
-
-					case Code.Cpobj:
-						PopUnknown (currentStack, 2, methodBody, operation.Offset);
-						break;
-
-					case Code.Stind_I:
-					case Code.Stind_I1:
-					case Code.Stind_I2:
-					case Code.Stind_I4:
-					case Code.Stind_I8:
-					case Code.Stind_R4:
-					case Code.Stind_R8:
-					case Code.Stind_Ref:
-					case Code.Stobj:
-						ScanIndirectStore (operation, currentStack, methodBody);
-						break;
-
-					case Code.Initobj:
-					case Code.Pop:
-						PopUnknown (currentStack, 1, methodBody, operation.Offset);
-						break;
-
-					case Code.Starg:
-					case Code.Starg_S:
-						ScanStarg (operation, currentStack, thisMethod, methodBody);
-						break;
-
-					case Code.Stloc:
-					case Code.Stloc_S:
-					case Code.Stloc_0:
-					case Code.Stloc_1:
-					case Code.Stloc_2:
-					case Code.Stloc_3:
-						ScanStloc (operation, currentStack, methodBody, locals, curBasicBlock);
-						break;
-
-					case Code.Constrained:
-					case Code.No:
-					case Code.Readonly:
-					case Code.Tail:
-					case Code.Unaligned:
-					case Code.Volatile:
-						break;
-
-					case Code.Brfalse:
-					case Code.Brfalse_S:
-					case Code.Brtrue:
-					case Code.Brtrue_S:
-						PopUnknown (currentStack, 1, methodBody, operation.Offset);
-						NewKnownStack (knownStacks, ((Instruction)operation.Operand).Offset, currentStack, methodBody);
-						break;
-
-					case Code.Calli:
-						// TODO: currently not emitted by any mainstream compilers but we should implement
-						break;
-
-					case Code.Call:
-					case Code.Callvirt:
-					case Code.Newobj:
-						HandleCall (methodBody, operation, currentStack);
-						break;
-
-					case Code.Jmp:
-						// Not generated by mainstream compilers
-						break;
-
-					case Code.Br:
-					case Code.Br_S:
-						NewKnownStack (knownStacks, ((Instruction)operation.Operand).Offset, currentStack, methodBody);
 						ClearStack (ref currentStack);
 						break;
+					}
 
-					case Code.Leave:
-					case Code.Leave_S:
-						ClearStack (ref currentStack);
-						NewKnownStack (knownStacks, ((Instruction)operation.Operand).Offset, new Stack<StackSlot> (methodBody.MaxStackSize), methodBody);
-						break;
-
-					case Code.Endfilter:
-					case Code.Endfinally:
-					case Code.Rethrow:
-					case Code.Throw:
-						ClearStack (ref currentStack);
-						break;
-
-					case Code.Ret: {
-							bool hasReturnValue = methodBody.Method.ReturnType.MetadataType != MetadataType.Void;
-							if (currentStack.Count != (hasReturnValue ? 1 : 0)) {
-								WarnAboutInvalidILInMethod (methodBody, operation.Offset);
-							}
-							if (hasReturnValue) {
-								StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
-								MethodReturnValue = MergePointValue.MergeValues (MethodReturnValue, retValue.Value);
-							}
-							ClearStack (ref currentStack);
-							break;
+				case Code.Switch: {
+						PopUnknown (currentStack, 1, methodBody, operation.Offset);
+						Instruction[] targets = (Instruction[]) operation.Operand;
+						foreach (Instruction target in targets) {
+							NewKnownStack (knownStacks, target.Offset, currentStack, methodBody);
 						}
-
-					case Code.Switch: {
-							PopUnknown (currentStack, 1, methodBody, operation.Offset);
-							Instruction [] targets = (Instruction [])operation.Operand;
-							foreach (Instruction target in targets) {
-								NewKnownStack (knownStacks, target.Offset, currentStack, methodBody);
-							}
-							break;
-						}
-
-					case Code.Beq:
-					case Code.Beq_S:
-					case Code.Bne_Un:
-					case Code.Bne_Un_S:
-					case Code.Bge:
-					case Code.Bge_S:
-					case Code.Bge_Un:
-					case Code.Bge_Un_S:
-					case Code.Bgt:
-					case Code.Bgt_S:
-					case Code.Bgt_Un:
-					case Code.Bgt_Un_S:
-					case Code.Ble:
-					case Code.Ble_S:
-					case Code.Ble_Un:
-					case Code.Ble_Un_S:
-					case Code.Blt:
-					case Code.Blt_S:
-					case Code.Blt_Un:
-					case Code.Blt_Un_S:
-						PopUnknown (currentStack, 2, methodBody, operation.Offset);
-						NewKnownStack (knownStacks, ((Instruction)operation.Operand).Offset, currentStack, methodBody);
 						break;
+					}
+
+				case Code.Beq:
+				case Code.Beq_S:
+				case Code.Bne_Un:
+				case Code.Bne_Un_S:
+				case Code.Bge:
+				case Code.Bge_S:
+				case Code.Bge_Un:
+				case Code.Bge_Un_S:
+				case Code.Bgt:
+				case Code.Bgt_S:
+				case Code.Bgt_Un:
+				case Code.Bgt_Un_S:
+				case Code.Ble:
+				case Code.Ble_S:
+				case Code.Ble_Un:
+				case Code.Ble_Un_S:
+				case Code.Blt:
+				case Code.Blt_S:
+				case Code.Blt_Un:
+				case Code.Blt_Un_S:
+					PopUnknown (currentStack, 2, methodBody, operation.Offset);
+					NewKnownStack (knownStacks, ((Instruction) operation.Operand).Offset, currentStack, methodBody);
+					break;
 				}
 			}
 		}
@@ -623,28 +623,25 @@ namespace Mono.Linker.Dataflow
 				if (thisMethod.HasImplicitThis ()) {
 					if (paramNum == 0) {
 						isByRef = thisMethod.DeclaringType.IsValueType;
-					}
-					else {
-						isByRef = thisMethod.Parameters [paramNum - 1].ParameterType.IsByRefOrPointer();
+					} else {
+						isByRef = thisMethod.Parameters[paramNum - 1].ParameterType.IsByRefOrPointer ();
 					}
 				} else {
-					isByRef = thisMethod.Parameters [paramNum].ParameterType.IsByRefOrPointer();
+					isByRef = thisMethod.Parameters[paramNum].ParameterType.IsByRefOrPointer ();
 				}
 			} else {
-				var paramDefinition = (ParameterDefinition)operation.Operand;
-				if (thisMethod.HasImplicitThis()) {
+				var paramDefinition = (ParameterDefinition) operation.Operand;
+				if (thisMethod.HasImplicitThis ()) {
 					if (paramDefinition == methodBody.ThisParameter) {
 						paramNum = 0;
-					}
-					else {
+					} else {
 						paramNum = paramDefinition.Index + 1;
 					}
-				}
-				else {
+				} else {
 					paramNum = paramDefinition.Index;
 				}
 
-				isByRef = paramDefinition.ParameterType.IsByRefOrPointer();
+				isByRef = paramDefinition.ParameterType.IsByRefOrPointer ();
 			}
 
 			isByRef |= code == Code.Ldarga || code == Code.Ldarga_S;
@@ -653,13 +650,13 @@ namespace Mono.Linker.Dataflow
 			currentStack.Push (slot);
 		}
 
-		private void ScanStarg(
+		private void ScanStarg (
 			Instruction operation,
 			Stack<StackSlot> currentStack,
 			MethodDefinition thisMethod,
 			MethodBody methodBody)
 		{
-			ParameterDefinition param = (ParameterDefinition)operation.Operand;
+			ParameterDefinition param = (ParameterDefinition) operation.Operand;
 			var valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			HandleStoreParameter (thisMethod, param.Sequence, operation, valueToStore.Value);
 		}
@@ -678,7 +675,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			bool isByRef = operation.OpCode.Code == Code.Ldloca || operation.OpCode.Code == Code.Ldloca_S
-				|| localDef.VariableType.IsByRefOrPointer();
+				|| localDef.VariableType.IsByRefOrPointer ();
 
 			ValueBasicBlockPair localValue;
 			locals.TryGetValue (localDef, out localValue);
@@ -735,9 +732,9 @@ namespace Mono.Linker.Dataflow
 
 			foreach (var uniqueDestination in destination.Value.UniqueValues ()) {
 				if (uniqueDestination.Kind == ValueNodeKind.LoadField) {
-					HandleStoreField (methodBody.Method, ((LoadFieldValue)uniqueDestination).Field, operation, valueToStore.Value);
+					HandleStoreField (methodBody.Method, ((LoadFieldValue) uniqueDestination).Field, operation, valueToStore.Value);
 				} else if (uniqueDestination.Kind == ValueNodeKind.MethodParameter) {
-					HandleStoreParameter (methodBody.Method, ((MethodParameterValue)uniqueDestination).ParameterIndex, operation, valueToStore.Value);
+					HandleStoreParameter (methodBody.Method, ((MethodParameterValue) uniqueDestination).ParameterIndex, operation, valueToStore.Value);
 				}
 			}
 
@@ -795,11 +792,11 @@ namespace Mono.Linker.Dataflow
 		{
 			Code code = operation.OpCode.Code;
 			if (code >= Code.Ldloc_0 && code <= Code.Ldloc_3)
-				return localVariables [code - Code.Ldloc_0];
+				return localVariables[code - Code.Ldloc_0];
 			if (code >= Code.Stloc_0 && code <= Code.Stloc_3)
-				return localVariables [code - Code.Stloc_0];
+				return localVariables[code - Code.Stloc_0];
 
-			return (VariableDefinition)operation.Operand;
+			return (VariableDefinition) operation.Operand;
 		}
 
 		private ValueNodeList PopCallArguments (
@@ -835,7 +832,7 @@ namespace Mono.Linker.Dataflow
 			Instruction operation,
 			Stack<StackSlot> currentStack)
 		{
-			MethodReference calledMethod = (MethodReference)operation.Operand;
+			MethodReference calledMethod = (MethodReference) operation.Operand;
 
 			bool isNewObj = (operation.OpCode.Code == Code.Newobj);
 
@@ -866,7 +863,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (methodReturnValue != null)
-				currentStack.Push (new StackSlot (methodReturnValue, calledMethod.ReturnType.IsByRefOrPointer()));
+				currentStack.Push (new StackSlot (methodReturnValue, calledMethod.ReturnType.IsByRefOrPointer ()));
 		}
 
 		public abstract bool HandleCall (

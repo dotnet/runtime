@@ -129,7 +129,7 @@ namespace Mono.Linker.Dataflow
 			if (!(other is ValueNode))
 				return false;
 
-			return this.Equals ((ValueNode)other);
+			return this.Equals ((ValueNode) other);
 		}
 
 		#region Specialized Collection Nested Types
@@ -188,12 +188,12 @@ namespace Mono.Linker.Dataflow
 			IEnumerator<ValueNode> IEnumerable<ValueNode>.GetEnumerator ()
 			{
 				// note the boxing!
-				return (IEnumerator<ValueNode>)new Enumerator (_parentNode);
+				return (IEnumerator<ValueNode>) new Enumerator (_parentNode);
 			}
 			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
 			{
 				// note the boxing!
-				return (System.Collections.IEnumerator)new Enumerator (_parentNode);
+				return (System.Collections.IEnumerator) new Enumerator (_parentNode);
 			}
 
 			public int Count { get { return (_parentNode != null) ? _parentNode.NumChildren : 0; } }
@@ -235,7 +235,7 @@ namespace Mono.Linker.Dataflow
 				}
 
 				// note the boxing!
-				return (IEnumerator<ValueNode>)GetEnumerator ();
+				return (IEnumerator<ValueNode>) GetEnumerator ();
 			}
 
 			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
@@ -245,7 +245,7 @@ namespace Mono.Linker.Dataflow
 				}
 
 				// note the boxing!
-				return (System.Collections.IEnumerator)GetEnumerator ();
+				return (System.Collections.IEnumerator) GetEnumerator ();
 			}
 
 
@@ -357,50 +357,50 @@ namespace Mono.Linker.Dataflow
 
 			bool foundCycle = false;
 			switch (node.Kind) {
-				//
-				// Leaf nodes
-				//
-				case ValueNodeKind.Unknown:
-				case ValueNodeKind.Null:
-				case ValueNodeKind.SystemType:
-				case ValueNodeKind.RuntimeTypeHandle:
-				case ValueNodeKind.KnownString:
-				case ValueNodeKind.ConstInt:
-				case ValueNodeKind.MethodParameter:
-				case ValueNodeKind.LoadField:
-					break;
+			//
+			// Leaf nodes
+			//
+			case ValueNodeKind.Unknown:
+			case ValueNodeKind.Null:
+			case ValueNodeKind.SystemType:
+			case ValueNodeKind.RuntimeTypeHandle:
+			case ValueNodeKind.KnownString:
+			case ValueNodeKind.ConstInt:
+			case ValueNodeKind.MethodParameter:
+			case ValueNodeKind.LoadField:
+				break;
 
-				//
-				// Nodes with children
-				//
-				case ValueNodeKind.MergePoint:
-					foreach (ValueNode val in ((MergePointValue)node).Values) {
-						if (val.DetectCycle (seenNodes, allNodesSeen)) {
-							foundCycle = true;
-						}
+			//
+			// Nodes with children
+			//
+			case ValueNodeKind.MergePoint:
+				foreach (ValueNode val in ((MergePointValue) node).Values) {
+					if (val.DetectCycle (seenNodes, allNodesSeen)) {
+						foundCycle = true;
 					}
-					break;
+				}
+				break;
 
-				case ValueNodeKind.GetTypeFromString:
-					GetTypeFromStringValue gtfsv = (GetTypeFromStringValue)node;
-					foundCycle = gtfsv.AssemblyIdentity.DetectCycle (seenNodes, allNodesSeen);
-					foundCycle |= gtfsv.NameString.DetectCycle (seenNodes, allNodesSeen);
-					break;
+			case ValueNodeKind.GetTypeFromString:
+				GetTypeFromStringValue gtfsv = (GetTypeFromStringValue) node;
+				foundCycle = gtfsv.AssemblyIdentity.DetectCycle (seenNodes, allNodesSeen);
+				foundCycle |= gtfsv.NameString.DetectCycle (seenNodes, allNodesSeen);
+				break;
 
-				case ValueNodeKind.Array:
-					ArrayValue av = (ArrayValue)node;
-					foundCycle = av.Size.DetectCycle (seenNodes, allNodesSeen);
-					break;
+			case ValueNodeKind.Array:
+				ArrayValue av = (ArrayValue) node;
+				foundCycle = av.Size.DetectCycle (seenNodes, allNodesSeen);
+				break;
 
-				default:
-					throw new Exception (String.Format ("Unknown node kind: {0}", node.Kind));
+			default:
+				throw new Exception (String.Format ("Unknown node kind: {0}", node.Kind));
 			}
 			seenNodes.Remove (node);
 
 			return foundCycle;
 		}
 
-		public static ValueNode.UniqueValueCollection UniqueValues(this ValueNode node)
+		public static ValueNode.UniqueValueCollection UniqueValues (this ValueNode node)
 		{
 			if (node == null)
 				return new ValueNode.UniqueValueCollection (UnknownValue.Instance);
@@ -408,7 +408,7 @@ namespace Mono.Linker.Dataflow
 			return node.UniqueValues;
 		}
 
-		public static int? AsConstInt(this ValueNode node)
+		public static int? AsConstInt (this ValueNode node)
 		{
 			if (node is ConstIntValue constInt)
 				return constInt.Value;
@@ -418,7 +418,7 @@ namespace Mono.Linker.Dataflow
 
 	static internal class ValueNodeDump
 	{
-		internal static string ValueNodeToString (ValueNode node, params object [] args)
+		internal static string ValueNodeToString (ValueNode node, params object[] args)
 		{
 			if (node == null)
 				return "<null>";
@@ -430,7 +430,7 @@ namespace Mono.Linker.Dataflow
 				for (int i = 0; i < args.Length; i++) {
 					if (i > 0)
 						sb.Append (",");
-					sb.Append (args [i] == null ? "<null>" : args [i].ToString ());
+					sb.Append (args[i] == null ? "<null>" : args[i].ToString ());
 				}
 			}
 			sb.Append (")");
@@ -550,7 +550,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			return Equals(this.TypeRepresented, ((SystemTypeValue)other).TypeRepresented);
+			return Equals (this.TypeRepresented, ((SystemTypeValue) other).TypeRepresented);
 		}
 
 		public override int GetHashCode ()
@@ -584,7 +584,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			return Equals(this.TypeRepresented, ((RuntimeTypeHandleValue)other).TypeRepresented);
+			return Equals (this.TypeRepresented, ((RuntimeTypeHandleValue) other).TypeRepresented);
 		}
 
 		public override int GetHashCode ()
@@ -618,7 +618,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			return this.Contents == ((KnownStringValue)other).Contents;
+			return this.Contents == ((KnownStringValue) other).Contents;
 		}
 
 		public override int GetHashCode ()
@@ -666,7 +666,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			var otherValue = (MethodParameterValue)other;
+			var otherValue = (MethodParameterValue) other;
 			return this.ParameterIndex == otherValue.ParameterIndex && this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
 		}
 
@@ -699,7 +699,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			var otherValue = (MethodReturnValue)other;
+			var otherValue = (MethodReturnValue) other;
 			return this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
 		}
 
@@ -728,14 +728,14 @@ namespace Mono.Linker.Dataflow
 			m_values = new ValueNodeHashSet ();
 
 			if (one.Kind == ValueNodeKind.MergePoint) {
-				MergePointValue mpvOne = (MergePointValue)one;
+				MergePointValue mpvOne = (MergePointValue) one;
 				foreach (ValueNode value in mpvOne.Values)
 					m_values.Add (value);
 			} else
 				m_values.Add (one);
 
 			if (two.Kind == ValueNodeKind.MergePoint) {
-				MergePointValue mpvTwo = (MergePointValue)two;
+				MergePointValue mpvTwo = (MergePointValue) two;
 				foreach (ValueNode value in mpvTwo.Values)
 					m_values.Add (value);
 			} else
@@ -754,7 +754,7 @@ namespace Mono.Linker.Dataflow
 			//InvalidateIsOpen ();
 
 			if (node.Kind == ValueNodeKind.MergePoint) {
-				foreach (ValueNode value in ((MergePointValue)node).Values)
+				foreach (ValueNode value in ((MergePointValue) node).Values)
 					m_values.Add (value);
 			} else
 				m_values.Add (node);
@@ -807,7 +807,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			MergePointValue otherMpv = (MergePointValue)other;
+			MergePointValue otherMpv = (MergePointValue) other;
 			if (this.Values.Count != otherMpv.Values.Count)
 				return false;
 
@@ -869,7 +869,7 @@ namespace Mono.Linker.Dataflow
 						names = new HashSet<string> ();
 					}
 
-					string typeName = ((KnownStringValue)nameStringValue).Contents;
+					string typeName = ((KnownStringValue) nameStringValue).Contents;
 					names.Add (typeName);
 				}
 			}
@@ -879,7 +879,7 @@ namespace Mono.Linker.Dataflow
 			if (names != null) {
 				foreach (ValueNode assemblyValue in AssemblyIdentity.UniqueValues) {
 					if (assemblyValue.Kind == ValueNodeKind.KnownString) {
-						string assemblyName = ((KnownStringValue)assemblyValue).Contents;
+						string assemblyName = ((KnownStringValue) assemblyValue).Contents;
 
 						foreach (string name in names) {
 							TypeDefinition typeDefinition = _resolver (assemblyName, name);
@@ -903,7 +903,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			GetTypeFromStringValue otherGtfs = (GetTypeFromStringValue)other;
+			GetTypeFromStringValue otherGtfs = (GetTypeFromStringValue) other;
 
 			return this.AssemblyIdentity.Equals (otherGtfs.AssemblyIdentity) &&
 				this.NameString.Equals (otherGtfs.NameString);
@@ -942,10 +942,10 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			LoadFieldValue otherLfv = (LoadFieldValue)other;
+			LoadFieldValue otherLfv = (LoadFieldValue) other;
 			if (!Equals (this.Field, otherLfv.Field))
 				return false;
-			
+
 			return this.DynamicallyAccessedMemberKinds == otherLfv.DynamicallyAccessedMemberKinds;
 		}
 
@@ -985,7 +985,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			ConstIntValue otherCiv = (ConstIntValue)other;
+			ConstIntValue otherCiv = (ConstIntValue) other;
 			return Value == otherCiv.Value;
 		}
 
@@ -1022,7 +1022,7 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			ArrayValue otherArr = (ArrayValue)other;
+			ArrayValue otherArr = (ArrayValue) other;
 			return Size.Equals (otherArr.Size);
 		}
 
@@ -1076,7 +1076,7 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			for (int i = 0; i < Count; i++) {
-				if (!otherList [i].Equals (this [i]))
+				if (!otherList[i].Equals (this[i]))
 					return false;
 			}
 			return true;

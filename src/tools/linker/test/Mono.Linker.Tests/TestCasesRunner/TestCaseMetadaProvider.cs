@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,8 +8,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class TestCaseMetadaProvider {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class TestCaseMetadaProvider
+	{
 		protected readonly TestCase _testCase;
 		protected readonly AssemblyDefinition _fullTestCaseAssemblyDefinition;
 		protected readonly TypeDefinition _testCaseTypeDefinition;
@@ -39,44 +41,42 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				StripResources = GetOptionAttributeValue (nameof (StripResourcesAttribute), true),
 			};
 
-			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute)))
-			{
+			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
 				var ca = assemblyAction.ConstructorArguments;
-				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string)ca [0].Value, (string)ca [1].Value));
+				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string) ca[0].Value, (string) ca[1].Value));
 			}
 
 			foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerSubstitutionFileAttribute))) {
 				var ca = subsFile.ConstructorArguments;
-				var file = (string)ca [0].Value;
+				var file = (string) ca[0].Value;
 				tclo.Substitutions.Add (Path.Combine (inputPath, file));
 			}
 
 			foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerAttributeDefinitionsFile))) {
 				var ca = subsFile.ConstructorArguments;
-				var file = (string)ca [0].Value;
+				var file = (string) ca[0].Value;
 				tclo.AttributeDefinitions.Add (Path.Combine (inputPath, file));
 			}
 
-			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute)))
-			{
+			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute))) {
 				var ca = additionalArgumentAttr.ConstructorArguments;
-				var values = ((CustomAttributeArgument [])ca [1].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
+				var values = ((CustomAttributeArgument[]) ca[1].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
 				// Since custom attribute arguments need to be constant expressions, we need to add
 				// the path to the temp directory (where the custom assembly is located) here.
-				if ((string)ca [0].Value == "--custom-step") {
-					int pos = values [0].IndexOf (",");
+				if ((string) ca[0].Value == "--custom-step") {
+					int pos = values[0].IndexOf (",");
 					if (pos != -1) {
-						string custom_assembly_path = values [0].Substring (pos + 1);
+						string custom_assembly_path = values[0].Substring (pos + 1);
 						if (!Path.IsPathRooted (custom_assembly_path))
-							values [0] = values [0].Substring (0, pos + 1) + Path.Combine (inputPath, custom_assembly_path);
+							values[0] = values[0].Substring (0, pos + 1) + Path.Combine (inputPath, custom_assembly_path);
 					}
 				}
-				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ((string)ca [0].Value, values));
+				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ((string) ca[0].Value, values));
 			}
 
-			if (_testCaseTypeDefinition.CustomAttributes.Any (attr => 
+			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
 				attr.AttributeType.Name == nameof (LogContainsAttribute) || attr.AttributeType.Name == nameof (LogDoesNotContainAttribute))) {
-				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ("--verbose", new string [] { }));
+				tclo.AdditionalArguments.Add (new KeyValuePair<string, string[]> ("--verbose", new string[] { }));
 			}
 
 			return tclo;
@@ -92,7 +92,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				};
 			}
 
-			if (ValidatesReflectionAccessPatterns(_testCaseTypeDefinition)) {
+			if (ValidatesReflectionAccessPatterns (_testCaseTypeDefinition)) {
 				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
 				customizations.CustomizeContext += context => {
 					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
@@ -173,7 +173,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (ReferenceDependencyAttribute))
-				.Select (attr => (string) attr.ConstructorArguments [0].Value);
+				.Select (attr => (string) attr.ConstructorArguments[0].Value);
 		}
 
 		public virtual IEnumerable<string> GetReferenceValues ()
@@ -225,7 +225,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var ignoreAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (IgnoreTestCaseAttribute));
 			if (ignoreAttribute != null) {
-				reason = (string)ignoreAttribute.ConstructorArguments.First ().Value;
+				reason = (string) ignoreAttribute.ConstructorArguments.First ().Value;
 				return true;
 			}
 
@@ -265,11 +265,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			yield return "NETCOREAPP";
 #endif
 
-			foreach (var attr in  _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (DefineAttribute)))
+			foreach (var attr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (DefineAttribute)))
 				yield return (string) attr.ConstructorArguments.First ().Value;
 		}
 
-		public virtual bool LinkPublicAndFamily()
+		public virtual bool LinkPublicAndFamily ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkPublicAndFamilyAttribute)) != null;
@@ -306,10 +306,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		SourceAndDestinationPair GetSourceAndRelativeDestinationValue (CustomAttribute attribute)
 		{
-			var fullSource = SourceFileForAttributeArgumentValue (attribute.ConstructorArguments.First ().Value); 
-			var destinationFileName = (string) attribute.ConstructorArguments [1].Value;
-			return new SourceAndDestinationPair
-			{
+			var fullSource = SourceFileForAttributeArgumentValue (attribute.ConstructorArguments.First ().Value);
+			var destinationFileName = (string) attribute.ConstructorArguments[1].Value;
+			return new SourceAndDestinationPair {
 				Source = fullSource,
 				DestinationFileName = string.IsNullOrEmpty (destinationFileName) ? fullSource.FileName : destinationFileName
 			};
@@ -318,16 +317,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private SetupCompileInfo CreateSetupCompileAssemblyInfo (CustomAttribute attribute)
 		{
 			var ctorArguments = attribute.ConstructorArguments;
-			return new SetupCompileInfo
-			{
-				OutputName = (string) ctorArguments [0].Value,
-				SourceFiles = SourceFilesForAttributeArgument (ctorArguments [1]), 
-				References = ((CustomAttributeArgument []) ctorArguments [2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
-				Defines = ((CustomAttributeArgument []) ctorArguments [3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
-				Resources = ((CustomAttributeArgument []) ctorArguments [4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
-				AdditionalArguments = (string) ctorArguments [5].Value,
-				CompilerToUse = (string) ctorArguments [6].Value,
-				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments [7].Value : true
+			return new SetupCompileInfo {
+				OutputName = (string) ctorArguments[0].Value,
+				SourceFiles = SourceFilesForAttributeArgument (ctorArguments[1]),
+				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
+				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
+				Resources = ((CustomAttributeArgument[]) ctorArguments[4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
+				AdditionalArguments = (string) ctorArguments[5].Value,
+				CompilerToUse = (string) ctorArguments[6].Value,
+				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true
 			};
 		}
 
@@ -338,7 +336,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected NPath[] SourceFilesForAttributeArgument (CustomAttributeArgument attributeArgument)
 		{
-			return ((CustomAttributeArgument []) attributeArgument.Value)
+			return ((CustomAttributeArgument[]) attributeArgument.Value)
 				.Select (attributeArg => SourceFileForAttributeArgumentValue (attributeArg.Value))
 				.Distinct ()
 				.ToArray ();
@@ -351,7 +349,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				var parentType = ParentMostType (valueAsTypeRef);
 				var pathRelativeToAssembly = $"{parentType.FullName.Substring (parentType.Module.Name.Length - 3).Replace ('.', '/')}.cs".ToNPath ();
 				var pathElements = pathRelativeToAssembly.Elements.ToArray ();
-				var topMostDirectoryName = pathElements [0];
+				var topMostDirectoryName = pathElements[0];
 				var topMostDirectory = _testCase.SourceFile.RecursiveParents.Reverse ().FirstOrDefault (d => !d.IsRoot && d.FileName == topMostDirectoryName);
 
 				if (topMostDirectory == null) {
@@ -370,7 +368,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				}
 
 				var fullPath = topMostDirectory.Parent.Combine (pathRelativeToAssembly);
-						
+
 				if (!fullPath.Exists ())
 					throw new ArgumentException ($"Unable to locate the source file for type {valueAsTypeRef}.  Expected {fullPath}.  Ensure the type name matches the file name.  And the namespace match the directory structure on disk");
 

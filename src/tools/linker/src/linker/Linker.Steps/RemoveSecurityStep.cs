@@ -1,8 +1,10 @@
 using System.Linq;
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
-	public class RemoveSecurityStep : BaseStep {
+namespace Mono.Linker.Steps
+{
+	public class RemoveSecurityStep : BaseStep
+	{
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) == AssemblyAction.Link) {

@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
 	[RemovedAssembly ("Forwarder.dll")]
-	[RemovedAssembly("Implementation.dll")]
+	[RemovedAssembly ("Implementation.dll")]
 	class UnusedForwarderWithAssemblyCopyUsed
 	{
 		static void Main ()

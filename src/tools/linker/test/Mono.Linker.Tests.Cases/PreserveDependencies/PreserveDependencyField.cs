@@ -2,9 +2,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.PreserveDependencies {
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	public class PreserveDependencyField {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies
+{
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
+	public class PreserveDependencyField
+	{
 		public static void Main ()
 		{
 			var b = new B ();
@@ -12,7 +14,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			[Kept]
 			[PreserveDependency ("ExtraMethod1")]
 			public int field;

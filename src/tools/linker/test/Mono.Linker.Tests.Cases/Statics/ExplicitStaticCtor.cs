@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.Statics
 			}
 		}
 
-		[AddedPseudoAttributeAttribute ((uint)TypeAttributes.BeforeFieldInit)]
+		[AddedPseudoAttributeAttribute ((uint) TypeAttributes.BeforeFieldInit)]
 		static class CEmpty
 		{
 			static CEmpty ()

@@ -10,12 +10,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			var test = 42;
 
-			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, null, new Type [] { }, new ParameterModifier [] { });
-			constructor.Invoke(null, new object[] { });
+			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, null, new Type[] { }, new ParameterModifier[] { });
+			constructor.Invoke (null, new object[] { });
 
 			if (test == 42) {
 				var method = typeof (OnlyUsedViaReflection).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
-				method.Invoke (null, new object [] { });
+				method.Invoke (null, new object[] { });
 			}
 		}
 

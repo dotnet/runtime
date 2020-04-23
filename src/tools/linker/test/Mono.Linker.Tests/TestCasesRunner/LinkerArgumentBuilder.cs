@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using Mono.Linker.Tests.Extensions;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class LinkerArgumentBuilder {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class LinkerArgumentBuilder
+	{
 		private readonly List<string> _arguments = new List<string> ();
 		private readonly TestCaseMetadaProvider _metadaProvider;
 
@@ -51,7 +53,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append ("-a");
 			Append (fileName);
 		}
-		
+
 		public virtual void LinkFromPublicAndFamily (string fileName)
 		{
 			Append ("-r");
@@ -75,13 +77,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (bool.Parse (value))
 				Append ("-t");
 		}
-		
+
 		public virtual void AddLinkSymbols (string value)
 		{
 			Append ("-b");
 			Append (value);
 		}
-		
+
 		public virtual void AddKeepDebugMembers (string value)
 		{
 			Append ("-v");
@@ -123,7 +125,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (file);
 		}
 
-		public string [] ToArgs ()
+		public string[] ToArgs ()
 		{
 			return _arguments.ToArray ();
 		}
@@ -133,7 +135,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_arguments.Add (arg);
 		}
 
-		public virtual void AddAdditionalArgument (string flag, string [] values)
+		public virtual void AddAdditionalArgument (string flag, string[] values)
 		{
 			Append (flag);
 			if (values != null) {
@@ -141,7 +143,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					Append (val);
 			}
 		}
-		
+
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
 		{
 			if (_metadaProvider.LinkPublicAndFamily ())
@@ -174,10 +176,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
 				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
-			
+
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
-			
+
 			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
 				AddKeepDebugMembers (options.KeepDebugMembers);
 

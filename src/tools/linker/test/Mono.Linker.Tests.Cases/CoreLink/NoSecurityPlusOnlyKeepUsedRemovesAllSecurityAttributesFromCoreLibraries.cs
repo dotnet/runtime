@@ -4,7 +4,8 @@ using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.CoreLink {
+namespace Mono.Linker.Tests.Cases.CoreLink
+{
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerArgument ("--strip-security", "true")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
@@ -31,7 +32,8 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 	// detects a GetType("SHA256CryptoServiceProvider") in System.dll, which then causes a type in System.Core.dll to be marked.
 	// PeVerify fails on the original GAC copy of System.Core.dll so it's expected that it will also fail on the stripped version we output
 	[SkipPeVerify ("System.Core.dll")]
-	public class NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries {
+	public class NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries
+	{
 		public static void Main ()
 		{
 			// Use something that has security attributes to make this test more meaningful

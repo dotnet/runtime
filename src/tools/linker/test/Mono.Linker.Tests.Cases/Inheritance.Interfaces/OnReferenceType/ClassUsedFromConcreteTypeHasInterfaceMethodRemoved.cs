@@ -2,7 +2,8 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	class ClassUsedFromConcreteTypeHasInterfaceMethodRemoved {
+	class ClassUsedFromConcreteTypeHasInterfaceMethodRemoved
+	{
 		public static void Main ()
 		{
 			A a = new A ();
@@ -11,14 +12,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class A : IFoo {
+		class A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
 			}
 		}
 
-		public interface IFoo {
+		public interface IFoo
+		{
 			void Foo ();
 		}
 	}

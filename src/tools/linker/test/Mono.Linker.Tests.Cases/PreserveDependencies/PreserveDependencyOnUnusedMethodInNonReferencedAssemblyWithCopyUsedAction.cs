@@ -2,12 +2,14 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.PreserveDependencies {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies
+{
 	[SetupLinkerUserAction ("copyused")]
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	[SetupCompileBefore ("library.dll", new [] {"Dependencies/PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs"}, addAsReference: false)]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs" }, addAsReference: false)]
 	[RemovedAssembly ("library.dll")]
-	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction {
+	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction
+	{
 		public static void Main ()
 		{
 		}

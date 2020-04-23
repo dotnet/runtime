@@ -14,22 +14,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[Kept]
 	class AttributeConstructorDataflow
 	{
-		[KeptAttributeAttribute(typeof(KeepsPublicConstructorAttribute))]
+		[KeptAttributeAttribute (typeof (KeepsPublicConstructorAttribute))]
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-		[KeepsPublicConstructor(typeof(ClassWithKeptPublicConstructor))]
-		[KeepsPublicMethods("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
-		public static void Main()
+		[KeepsPublicConstructor (typeof (ClassWithKeptPublicConstructor))]
+		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
+		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 		}
 
 		[Kept]
-		[KeptBaseType(typeof(Attribute))]
+		[KeptBaseType (typeof (Attribute))]
 		class KeepsPublicConstructorAttribute : Attribute
 		{
 			[Kept]
-			public KeepsPublicConstructorAttribute(
+			public KeepsPublicConstructorAttribute (
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
 				Type type)
@@ -38,7 +38,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[KeptBaseType(typeof(Attribute))]
+		[KeptBaseType (typeof (Attribute))]
 		class KeepsPublicMethodsAttribute : Attribute
 		{
 			[Kept]
@@ -54,19 +54,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class ClassWithKeptPublicConstructor
 		{
 			[Kept]
-			public ClassWithKeptPublicConstructor(int unused) { }
+			public ClassWithKeptPublicConstructor (int unused) { }
 
-			private ClassWithKeptPublicConstructor(short unused) { }
+			private ClassWithKeptPublicConstructor (short unused) { }
 
-			public void Method() { }
+			public void Method () { }
 		}
 
 		[Kept]
 		class ClassWithKeptPublicMethods
 		{
 			[Kept]
-			public static void KeptMethod() { }
-			static void Method() { }
+			public static void KeptMethod () { }
+			static void Method () { }
 		}
 	}
 }

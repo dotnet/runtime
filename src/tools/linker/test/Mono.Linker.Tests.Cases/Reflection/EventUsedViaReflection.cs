@@ -3,9 +3,11 @@ using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
 	[SetupCSharpCompilerToUse ("csc")]
-	public class EventUsedViaReflection {
+	public class EventUsedViaReflection
+	{
 		public static void Main ()
 		{
 			new Foo (); // Needed to avoid lazy body marking stubbing
@@ -24,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
 			typeof (Foo), nameof (Foo.Event), (Type[]) null)]
 		static void TestByName ()
 		{
@@ -39,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		static void TestNameWrongBindingFlags()
+		static void TestNameWrongBindingFlags ()
 		{
 			var eventInfo = typeof (Bar).GetEvent ("PublicEvent", BindingFlags.NonPublic);
 		}
@@ -77,7 +79,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) })]
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) })]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -86,14 +88,14 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.IfEvent), (Type [])null)]
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.IfEvent), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.ElseEvent), (Type [])null)]
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.ElseEvent), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
-			typeof (ElseClass), nameof (ElseClass.IfEvent), (Type [])null)]
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.IfEvent), (Type[]) null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -103,7 +105,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				myType = typeof (ElseClass);
 			}
 			String myString;
-			if(i == 1) {
+			if (i == 1) {
 				myString = "IfEvent";
 			} else {
 				myString = "ElseEvent";
@@ -113,8 +115,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type [] { typeof (string) },
-			typeof (BaseClass), nameof (BaseClass.PublicEventOnBase), (Type [])null)]
+			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.PublicEventOnBase), (Type[]) null)]
 		static void TestEventInBaseType ()
 		{
 			typeof (DerivedClass).GetEvent ("ProtectedEventOnBase");
@@ -122,7 +124,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptEventAddMethod]
@@ -141,7 +144,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			private event EventHandler<EventArgs> PrivateEvent;
 			public event EventHandler<EventArgs> PublicEvent;
 		}
-		
+
 		class IfClass
 		{
 			[Kept]

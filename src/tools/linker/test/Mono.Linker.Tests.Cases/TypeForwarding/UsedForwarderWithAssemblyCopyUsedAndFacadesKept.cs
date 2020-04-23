@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	class UsedForwarderWithAssemblyCopyUsedAndFacadesKept
 	{
-		static void Main()
+		static void Main ()
 		{
 			new ImplementationLibrary ().GetSomeValue ();
 		}

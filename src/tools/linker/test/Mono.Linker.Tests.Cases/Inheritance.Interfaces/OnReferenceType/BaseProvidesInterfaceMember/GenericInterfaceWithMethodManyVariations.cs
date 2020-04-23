@@ -1,26 +1,30 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
-	public class GenericInterfaceWithMethodManyVariations {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
+	public class GenericInterfaceWithMethodManyVariations
+	{
 		public static void Main ()
 		{
 			var fb = new FooWithBase ();
 			IFoo<object> fo = fb;
 			fo.Method (null);
-			
+
 			IFoo<int> fi = fb;
 			fi.Method (0);
 		}
 
 		[Kept]
-		interface IFoo<T> {
+		interface IFoo<T>
+		{
 			[Kept]
 			void Method (T arg);
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class BaseFoo {
+		class BaseFoo
+		{
 			[Kept]
 			public void Method (object arg)
 			{
@@ -55,11 +59,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[KeptInterface (typeof (IFoo<int>))]
 		[KeptInterface (typeof (IFoo<string>))] // FIXME : Should be removed
 		[KeptInterface (typeof (IFoo<Bar>))] // FIXME : Should be removed
-		class FooWithBase : BaseFoo, IFoo<object>, IFoo<int>, IFoo<string>, IFoo<Bar> {
+		class FooWithBase : BaseFoo, IFoo<object>, IFoo<int>, IFoo<string>, IFoo<Bar>
+		{
 		}
 
 		[Kept] // FIXME : Should be removed
-		class Bar {
+		class Bar
+		{
 		}
 	}
 }

@@ -2,8 +2,9 @@
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	class UsedStructIsKept {
-		public static void Main()
+	class UsedStructIsKept
+	{
+		public static void Main ()
 		{
 			A a;
 			a.MethodVerifiedByKeptMember ();
@@ -12,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Basic
 		[Kept]
 		// This KeptMember is here to make sure the test framework's support of KeptMember on value types is working correctly
 		[KeptMember ("MethodVerifiedByKeptMember()")]
-		struct A {
+		struct A
+		{
 			public void MethodVerifiedByKeptMember ()
 			{
 			}

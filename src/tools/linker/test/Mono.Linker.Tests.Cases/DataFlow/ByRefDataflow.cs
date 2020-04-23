@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[Kept]
 	class ByRefDataflow
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			{
 				Type t = typeof (ClassPassedToMethodTakingTypeByRef);
@@ -41,21 +41,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type s_typeWithDefaultConstructor;
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string [] { "System.Type&" })]
-		public static void PassRefToField()
+		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "System.Type&" })]
+		public static void PassRefToField ()
 		{
 			MethodWithRefParameter (ref s_typeWithDefaultConstructor);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string [] { "System.Type&" })]
-		public static void PassRefToParameter(Type parameter)
+		[UnrecognizedReflectionAccessPattern (typeof (ByRefDataflow), nameof (MethodWithRefParameter), new string[] { "System.Type&" })]
+		public static void PassRefToParameter (Type parameter)
 		{
 			MethodWithRefParameter (ref parameter);
 		}
 
 		[Kept]
-		public static void MethodWithRefParameter(
+		public static void MethodWithRefParameter (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicMethods)]
 			ref Type type)
@@ -67,8 +67,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class ClassPassedToMethodTakingTypeByRef
 		{
 			[Kept]
-			public static void KeptMethod() { }
-			internal static void RemovedMethod() { }
+			public static void KeptMethod () { }
+			internal static void RemovedMethod () { }
 		}
 
 		[Kept]

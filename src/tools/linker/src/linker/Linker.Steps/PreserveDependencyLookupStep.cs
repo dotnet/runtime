@@ -30,8 +30,10 @@ using System;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-namespace Mono.Linker.Steps {
-	public class PreserveDependencyLookupStep : LoadReferencesStep {
+namespace Mono.Linker.Steps
+{
+	public class PreserveDependencyLookupStep : LoadReferencesStep
+	{
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			var module = assembly.MainModule;
@@ -86,7 +88,7 @@ namespace Mono.Linker.Steps {
 				if (ca.ConstructorArguments.Count != 3)
 					continue;
 
-				if (!(ca.ConstructorArguments [2].Value is string assemblyName))
+				if (!(ca.ConstructorArguments[2].Value is string assemblyName))
 					continue;
 
 				var newDependency = Context.Resolve (new AssemblyNameReference (assemblyName, new Version ()));

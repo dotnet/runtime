@@ -1,11 +1,13 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
 
-namespace Mono.Linker.Tests.Extensions {
-	public static class CecilExtensions {
+namespace Mono.Linker.Tests.Extensions
+{
+	public static class CecilExtensions
+	{
 		public static IEnumerable<TypeDefinition> AllDefinedTypes (this AssemblyDefinition assemblyDefinition)
 		{
 			return assemblyDefinition.Modules.SelectMany (m => m.AllDefinedTypes ());
@@ -58,30 +60,30 @@ namespace Mono.Linker.Tests.Extensions {
 
 		public static IEnumerable<MethodDefinition> AllMethods (this TypeDefinition type)
 		{
-			foreach (var m in type.AllMembers()) {
+			foreach (var m in type.AllMembers ()) {
 				switch (m) {
-					case MethodDefinition method: 
-						yield return method;
-						break;
-					case PropertyDefinition @property:
-						if (@property.GetMethod != null)
-							yield return @property.GetMethod;
+				case MethodDefinition method:
+					yield return method;
+					break;
+				case PropertyDefinition @property:
+					if (@property.GetMethod != null)
+						yield return @property.GetMethod;
 
-						if (@property.SetMethod != null)
-							yield return @property.SetMethod;
+					if (@property.SetMethod != null)
+						yield return @property.SetMethod;
 
-						break;
-					case EventDefinition @event:
-						if (@event.AddMethod != null)
-							yield return @event.AddMethod;
+					break;
+				case EventDefinition @event:
+					if (@event.AddMethod != null)
+						yield return @event.AddMethod;
 
-						if (@event.RemoveMethod != null)
-							yield return @event.RemoveMethod;
+					if (@event.RemoveMethod != null)
+						yield return @event.RemoveMethod;
 
-						break;
+					break;
 
-					default:
-						break;
+				default:
+					break;
 				}
 			}
 		}
@@ -127,9 +129,9 @@ namespace Mono.Linker.Tests.Extensions {
 				builder.Append ('<');
 
 				for (int i = 0; i < method.GenericParameters.Count - 1; i++)
-					builder.Append ($"{method.GenericParameters [i]},");
+					builder.Append ($"{method.GenericParameters[i]},");
 
-				builder.Append ($"{method.GenericParameters [method.GenericParameters.Count - 1]}>");
+				builder.Append ($"{method.GenericParameters[method.GenericParameters.Count - 1]}>");
 			}
 
 			builder.Append ("(");
@@ -138,10 +140,10 @@ namespace Mono.Linker.Tests.Extensions {
 				for (int i = 0; i < method.Parameters.Count - 1; i++) {
 					// TODO: modifiers
 					// TODO: default values
-					builder.Append ($"{method.Parameters [i].ParameterType},");
+					builder.Append ($"{method.Parameters[i].ParameterType},");
 				}
 
-				builder.Append (method.Parameters [method.Parameters.Count - 1].ParameterType);
+				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
 			}
 
 			builder.Append (")");

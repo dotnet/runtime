@@ -33,11 +33,12 @@ using Mono.Cecil;
 using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
 	public class SweepStep : BaseStep
 	{
-		AssemblyDefinition [] assemblies;
+		AssemblyDefinition[] assemblies;
 		readonly bool sweepSymbols;
 		readonly HashSet<AssemblyDefinition> BypassNGenToSave = new HashSet<AssemblyDefinition> ();
 
@@ -193,7 +194,7 @@ namespace Mono.Linker.Steps {
 				var resources = assembly.MainModule.Resources;
 
 				for (int i = 0; i < resources.Count; i++) {
-					if (!(resources [i] is EmbeddedResource resource))
+					if (!(resources[i] is EmbeddedResource resource))
 						continue;
 
 					if (resourcesToRemove.Contains (resource.Name))
@@ -211,7 +212,7 @@ namespace Mono.Linker.Steps {
 
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
-				var reference = references [i];
+				var reference = references[i];
 
 				AssemblyDefinition ad = Context.Resolver.Resolve (reference);
 				if (ad == null || !AreSameReference (ad.Name, referenceToRemove.Name))
@@ -337,7 +338,7 @@ namespace Mono.Linker.Steps {
 
 		static void UpdateCustomAttributesTypesScopes (TypeDefinition typeDefinition)
 		{
-			UpdateCustomAttributesTypesScopes ((ICustomAttributeProvider)typeDefinition);
+			UpdateCustomAttributesTypesScopes ((ICustomAttributeProvider) typeDefinition);
 
 			if (typeDefinition.HasEvents)
 				UpdateCustomAttributesTypesScopes (typeDefinition.Events);
@@ -484,11 +485,11 @@ namespace Mono.Linker.Steps {
 		protected void SweepNestedTypes (TypeDefinition type)
 		{
 			for (int i = 0; i < type.NestedTypes.Count; i++) {
-				var nested = type.NestedTypes [i];
+				var nested = type.NestedTypes[i];
 				if (Annotations.IsMarked (nested)) {
 					SweepType (nested);
 				} else {
-					ElementRemoved (type.NestedTypes [i]);
+					ElementRemoved (type.NestedTypes[i]);
 					type.NestedTypes.RemoveAt (i--);
 				}
 			}
@@ -497,7 +498,7 @@ namespace Mono.Linker.Steps {
 		protected void SweepInterfaces (TypeDefinition type)
 		{
 			for (int i = type.Interfaces.Count - 1; i >= 0; i--) {
-				var iface = type.Interfaces [i];
+				var iface = type.Interfaces[i];
 				if (Annotations.IsMarked (iface)) {
 					SweepCustomAttributes (iface);
 					continue;
@@ -551,7 +552,8 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			if (definition.Namespace == "System.Security") {
-				return definition.FullName switch {
+				return definition.FullName switch
+				{
 					// This seems to be one attribute in the System.Security namespace that doesn't count
 					// as an attribute that requires HasSecurity to be true
 					"System.Security.SecurityCriticalAttribute" => false,
@@ -567,15 +569,15 @@ namespace Mono.Linker.Steps {
 
 		protected IList<CustomAttribute> SweepCustomAttributes (ICustomAttributeProvider provider)
 		{
-			var removed = new List<CustomAttribute>();
+			var removed = new List<CustomAttribute> ();
 
 			for (int i = provider.CustomAttributes.Count - 1; i >= 0; i--) {
-				var attribute = provider.CustomAttributes [i];
+				var attribute = provider.CustomAttributes[i];
 				if (Annotations.IsMarked (attribute)) {
 					UpdateForwardedTypesScope (attribute);
 				} else {
 					CustomAttributeUsageRemoved (provider, attribute);
-					removed.Add (provider.CustomAttributes [i]);
+					removed.Add (provider.CustomAttributes[i]);
 					provider.CustomAttributes.RemoveAt (i);
 				}
 			}
@@ -631,7 +633,7 @@ namespace Mono.Linker.Steps {
 				if (scope.HasConstants) {
 					var constants = scope.Constants;
 					for (int i = 0; i < constants.Count; ++i) {
-						if (!Annotations.IsMarked (constants [i].ConstantType))
+						if (!Annotations.IsMarked (constants[i].ConstantType))
 							constants.RemoveAt (i--);
 					}
 				}
@@ -641,7 +643,7 @@ namespace Mono.Linker.Steps {
 					if (import.HasTargets) {
 						var targets = import.Targets;
 						for (int i = 0; i < targets.Count; ++i) {
-							var ttype = targets [i].Type;
+							var ttype = targets[i].Type;
 							if (ttype != null && !Annotations.IsMarked (ttype))
 								targets.RemoveAt (i--);
 
@@ -657,11 +659,11 @@ namespace Mono.Linker.Steps {
 		protected void SweepCollectionWithCustomAttributes<T> (IList<T> list) where T : ICustomAttributeProvider
 		{
 			for (int i = 0; i < list.Count; i++)
-				if (ShouldRemove (list [i])) {
-					ElementRemoved (list [i]);
+				if (ShouldRemove (list[i])) {
+					ElementRemoved (list[i]);
 					list.RemoveAt (i--);
 				} else {
-					SweepCustomAttributes (list [i]);
+					SweepCustomAttributes (list[i]);
 				}
 		}
 
@@ -670,8 +672,8 @@ namespace Mono.Linker.Steps {
 			bool removed = false;
 
 			for (int i = 0; i < list.Count; i++) {
-				if (ShouldRemove (list [i])) {
-					ElementRemoved (list [i]);
+				if (ShouldRemove (list[i])) {
+					ElementRemoved (list[i]);
 					list.RemoveAt (i--);
 					removed = true;
 				}

@@ -3,13 +3,15 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 {
-	class UnusedTypeWithSequentialLayoutIsRemoved {
+	class UnusedTypeWithSequentialLayoutIsRemoved
+	{
 		static void Main ()
 		{
 		}
 
 		[StructLayout (LayoutKind.Sequential)]
-		class B {
+		class B
+		{
 			int a;
 		}
 	}

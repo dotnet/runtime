@@ -16,8 +16,8 @@ public static class Utils
 
 	private static bool IsCPPCLIAssembly (ModuleDefinition module)
 	{
-		return module.Types.Any(t =>
-			t.Namespace == "<CppImplementationDetails>" ||
-			t.Namespace == "<CrtImplementationDetails>");
+		return module.Types.Any (t =>
+			 t.Namespace == "<CppImplementationDetails>" ||
+			 t.Namespace == "<CrtImplementationDetails>");
 	}
 }

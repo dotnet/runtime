@@ -16,19 +16,22 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 [assembly: KeptAttributeAttribute (typeof (AssemblyAttributeKeptInComplexCase.FooAttribute))]
 [assembly: KeptAttributeAttribute (typeof (AssemblyAttributeKeptInComplexCase_Lib.OtherAssemblyAttribute))]
 
-namespace Mono.Linker.Tests.Cases.Attributes {
-	[SetupCompileBefore ("library2.dll", new [] { "Dependencies/AssemblyAttributeKeptInComplexCase_Lib.cs" })]
+namespace Mono.Linker.Tests.Cases.Attributes
+{
+	[SetupCompileBefore ("library2.dll", new[] { "Dependencies/AssemblyAttributeKeptInComplexCase_Lib.cs" })]
 	[KeptAssembly ("library2.dll")]
 	[KeptMemberInAssembly ("library2.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib.OtherAssemblyAttribute), ".ctor()")]
 	[KeptMemberInAssembly ("library2.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib), "MethodThatWillBeUsed()")]
-	public class AssemblyAttributeKeptInComplexCase {
+	public class AssemblyAttributeKeptInComplexCase
+	{
 		static void Main ()
 		{
 		}
 
 		[Kept]
 		[KeptBaseType (typeof (Attribute))]
-		public class FooAttribute : Attribute {
+		public class FooAttribute : Attribute
+		{
 			[Kept]
 			public FooAttribute ()
 			{

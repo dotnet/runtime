@@ -1,26 +1,31 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class UnusedTypeHasExplicitInterfacePropertyPreservedViaXml {
+	public class UnusedTypeHasExplicitInterfacePropertyPreservedViaXml
+	{
 		public static void Main ()
 		{
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			int Foo { [Kept] get; [Kept] set; }
 		}
 
-		interface IBar {
+		interface IBar
+		{
 			int Bar { get; set; }
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		class A : IBar, IFoo {
+		class A : IBar, IFoo
+		{
 			[Kept]
 			int IFoo.Foo { [Kept] [ExpectBodyModified] get; [Kept] [ExpectBodyModified] set; }
 

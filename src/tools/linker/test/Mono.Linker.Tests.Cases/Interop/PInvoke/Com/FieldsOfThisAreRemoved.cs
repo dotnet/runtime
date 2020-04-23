@@ -2,8 +2,10 @@
 using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Com {
-	class FieldsOfThisAreRemoved {
+namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Com
+{
+	class FieldsOfThisAreRemoved
+	{
 		public static void Main ()
 		{
 			new A ().SomeMethod ();
@@ -14,7 +16,8 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Com {
 		[KeptAttributeAttribute (typeof (GuidAttribute))]
 		[ComImport]
 		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
-		class A {
+		class A
+		{
 			private int field;
 
 			[Kept]

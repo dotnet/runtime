@@ -4,9 +4,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies
 {
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupLinkerArgument ("--keep-dep-attributes", "true")]
-	[KeptTypeInAssembly("FakeSystemAssembly.dll", typeof(PreserveDependencyAttribute))]
+	[KeptTypeInAssembly ("FakeSystemAssembly.dll", typeof (PreserveDependencyAttribute))]
 	class PreserveDependencyKeptOption
 	{
 		public static void Main ()

@@ -32,9 +32,11 @@ using System.Diagnostics;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public partial class AnnotationStore {
+	public partial class AnnotationStore
+	{
 
 		protected readonly LinkContext context;
 
@@ -53,14 +55,14 @@ namespace Mono.Linker {
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> class_type_base_hierarchy = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
-		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> derived_interfaces = new Dictionary<TypeDefinition, List<TypeDefinition>>();
+		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> derived_interfaces = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 		protected readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
 		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<TypeDefinition> marked_instantiated = new HashSet<TypeDefinition> ();
-		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
+		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition> ();
 
 
 		public AnnotationStore (LinkContext context) => this.context = context;
@@ -95,7 +97,7 @@ namespace Mono.Linker {
 			if (assembly_actions.TryGetValue (assembly, out AssemblyAction action))
 				return action;
 
-			throw new InvalidOperationException($"No action for the assembly {assembly.Name} defined");
+			throw new InvalidOperationException ($"No action for the assembly {assembly.Name} defined");
 		}
 
 		public MethodAction GetAction (MethodDefinition method)
@@ -108,7 +110,7 @@ namespace Mono.Linker {
 
 		public void SetAction (AssemblyDefinition assembly, AssemblyAction action)
 		{
-			assembly_actions [assembly] = action;
+			assembly_actions[assembly] = action;
 		}
 
 		public bool HasAction (AssemblyDefinition assembly)
@@ -118,17 +120,17 @@ namespace Mono.Linker {
 
 		public void SetAction (MethodDefinition method, MethodAction action)
 		{
-			method_actions [method] = action;
+			method_actions[method] = action;
 		}
 
 		public void SetMethodStubValue (MethodDefinition method, object value)
 		{
-			method_stub_values [method] = value;
+			method_stub_values[method] = value;
 		}
 
 		public void SetFieldValue (FieldDefinition field, object value)
 		{
-			field_values [field] = value;
+			field_values[field] = value;
 		}
 
 		public void SetSubstitutedInit (FieldDefinition field)
@@ -233,7 +235,7 @@ namespace Mono.Linker {
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
 			if (preserved_types.TryGetValue (type, out TypePreserve existing))
-				preserved_types [type] = ChoosePreserveActionWhichPreservesTheMost (existing, preserve);
+				preserved_types[type] = ChoosePreserveActionWhichPreservesTheMost (existing, preserve);
 			else
 				preserved_types.Add (type, preserve);
 		}
@@ -293,7 +295,7 @@ namespace Mono.Linker {
 		public void AddResourceToRemove (AssemblyDefinition assembly, string name)
 		{
 			if (!resources_to_remove.TryGetValue (assembly, out HashSet<string> resources))
-				resources = resources_to_remove [assembly] = new HashSet<string> ();
+				resources = resources_to_remove[assembly] = new HashSet<string> ();
 
 			resources.Add (name);
 		}
@@ -329,7 +331,7 @@ namespace Mono.Linker {
 			var methods = GetBaseMethods (method);
 			if (methods == null) {
 				methods = new List<MethodDefinition> ();
-				base_methods [method] = methods;
+				base_methods[method] = methods;
 			}
 
 			methods.Add (@base);
@@ -376,7 +378,7 @@ namespace Mono.Linker {
 			var methods = GetPreservedMethods (definition);
 			if (methods == null) {
 				methods = new List<MethodDefinition> ();
-				preserved_methods [definition] = methods;
+				preserved_methods[definition] = methods;
 			}
 
 			methods.Add (method);
@@ -384,7 +386,7 @@ namespace Mono.Linker {
 
 		public void AddSymbolReader (AssemblyDefinition assembly, ISymbolReader symbolReader)
 		{
-			symbol_readers [assembly] = symbolReader;
+			symbol_readers[assembly] = symbolReader;
 		}
 
 		public void CloseSymbolReader (AssemblyDefinition assembly)
@@ -414,7 +416,7 @@ namespace Mono.Linker {
 				custom_annotations.Add (key, slots);
 			}
 
-			slots [item] = value;
+			slots[item] = value;
 		}
 
 		public bool HasPreservedStaticCtor (TypeDefinition type)
@@ -429,7 +431,7 @@ namespace Mono.Linker {
 
 		public void SetClassHierarchy (TypeDefinition type, List<TypeDefinition> bases)
 		{
-			class_type_base_hierarchy [type] = bases;
+			class_type_base_hierarchy[type] = bases;
 		}
 
 		public List<TypeDefinition> GetClassHierarchy (TypeDefinition type)
@@ -449,16 +451,16 @@ namespace Mono.Linker {
 				throw new ArgumentException ($"{nameof (derived)} must be an interface");
 
 			if (!derived_interfaces.TryGetValue (@base, out List<TypeDefinition> derivedInterfaces))
-				derived_interfaces [@base] = derivedInterfaces = new List<TypeDefinition> ();
-			
-			derivedInterfaces.Add(derived);
+				derived_interfaces[@base] = derivedInterfaces = new List<TypeDefinition> ();
+
+			derivedInterfaces.Add (derived);
 		}
 
 		public List<TypeDefinition> GetDerivedInterfacesForInterface (TypeDefinition @interface)
 		{
 			if (!@interface.IsInterface)
 				throw new ArgumentException ($"{nameof (@interface)} must be an interface");
-			
+
 			if (derived_interfaces.TryGetValue (@interface, out List<TypeDefinition> derivedInterfaces))
 				return derivedInterfaces;
 

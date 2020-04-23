@@ -9,6 +9,6 @@ namespace Mono.Linker
 		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = "", MessageOrigin? origin = null) { throw null; }
 		public static MessageContainer CreateWarningMessage (string text, int code, string subcategory = "", MessageOrigin? origin = null) { throw null; }
 		public static MessageContainer CreateInfoMessage (string text) { throw null; }
-		public static MessageContainer CreateDiagnosticMessage (string text) { throw null;  }
+		public static MessageContainer CreateDiagnosticMessage (string text) { throw null; }
 	}
 }

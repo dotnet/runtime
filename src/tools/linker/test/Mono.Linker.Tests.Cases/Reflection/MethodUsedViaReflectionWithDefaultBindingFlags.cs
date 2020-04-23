@@ -1,8 +1,10 @@
 ﻿using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
-	public class MethodUsedViaReflectionWithDefaultBindingFlags {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
+	public class MethodUsedViaReflectionWithDefaultBindingFlags
+	{
 		public static void Main ()
 		{
 			new Foo (); // Needed to avoid lazy body marking stubbing
@@ -11,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			private static int OnlyCalledViaReflection ()
 			{

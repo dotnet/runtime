@@ -1,8 +1,10 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Class)]
-	public class IgnoreTestCaseAttribute : Attribute {
+	public class IgnoreTestCaseAttribute : Attribute
+	{
 
 		public IgnoreTestCaseAttribute (string reason)
 		{

@@ -31,15 +31,17 @@ using System.Collections.Generic;
 
 using Mono.Linker.Steps;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public class Pipeline {
+	public class Pipeline
+	{
 
 		readonly List<IStep> _steps;
 
 		public Pipeline ()
 		{
-			_steps = new List<IStep>();
+			_steps = new List<IStep> ();
 		}
 
 		public void PrependStep (IStep step)
@@ -55,7 +57,7 @@ namespace Mono.Linker {
 		public void AddStepBefore (Type target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
-				if (target.IsInstanceOfType (_steps [i])) {
+				if (target.IsInstanceOfType (_steps[i])) {
 					_steps.Insert (i, step);
 					return;
 				}
@@ -67,7 +69,7 @@ namespace Mono.Linker {
 		public void AddStepBefore (IStep target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps [i] == target) {
+				if (_steps[i] == target) {
 					_steps.Insert (i, step);
 					return;
 				}
@@ -83,7 +85,7 @@ namespace Mono.Linker {
 		public void AddStepAfter (Type target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
-				if (target.IsInstanceOfType (_steps [i])) {
+				if (target.IsInstanceOfType (_steps[i])) {
 					if (i == _steps.Count - 1)
 						_steps.Add (step);
 					else
@@ -98,7 +100,7 @@ namespace Mono.Linker {
 		public void AddStepAfter (IStep target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps [i] == target) {
+				if (_steps[i] == target) {
 					if (i == _steps.Count - 1)
 						_steps.Add (step);
 					else
@@ -111,7 +113,7 @@ namespace Mono.Linker {
 		public void RemoveStep (Type target)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps [i].GetType () != target)
+				if (_steps[i].GetType () != target)
 					continue;
 
 				_steps.RemoveAt (i);
@@ -122,18 +124,18 @@ namespace Mono.Linker {
 		public void Process (LinkContext context)
 		{
 			while (_steps.Count > 0) {
-				IStep step = _steps [0];
+				IStep step = _steps[0];
 				ProcessStep (context, step);
 				_steps.Remove (step);
 			}
 		}
-		
+
 		protected virtual void ProcessStep (LinkContext context, IStep step)
 		{
 			step.Process (context);
 		}
 
-		public IStep [] GetSteps ()
+		public IStep[] GetSteps ()
 		{
 			return _steps.ToArray ();
 		}

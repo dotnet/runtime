@@ -2,7 +2,8 @@
 using System;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
 	[SetupCSharpCompilerToUse ("csc")]
 	public class PropertyUsedViaReflection
 	{
@@ -22,32 +23,32 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.OnlyUsedViaReflection), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.OnlyUsedViaReflection), (Type[]) null)]
 		static void TestGetterAndSetter ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("OnlyUsedViaReflection");
-			property.GetValue (null, new object [] { });
+			property.GetValue (null, new object[] { });
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.SetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.SetterOnly), (Type[]) null)]
 		static void TestSetterOnly ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("SetterOnly");
-			property.SetValue (null, 42, new object [] { });
+			property.SetValue (null, 42, new object[] { });
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.GetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (PropertyUsedViaReflection), nameof (PropertyUsedViaReflection.GetterOnly), (Type[]) null)]
 		static void TestGetterOnly ()
 		{
 			var property = typeof (PropertyUsedViaReflection).GetProperty ("GetterOnly");
-			property.GetValue (null, new object [] { });
+			property.GetValue (null, new object[] { });
 		}
 
 		[Kept]
@@ -83,7 +84,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) })]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) })]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -92,22 +93,22 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.SetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.SetterOnly), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.GetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.GetterOnly), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (ElseClass), nameof (ElseClass.SetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.SetterOnly), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (ElseClass), nameof (ElseClass.GetterOnly), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.GetterOnly), (Type[]) null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
 			if (i == 1) {
-				myType = typeof(IfClass);
+				myType = typeof (IfClass);
 			} else {
 				myType = typeof (ElseClass);
 			}
@@ -122,11 +123,11 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type [] { typeof (string) },
-			typeof (BaseClass), nameof (BaseClass.GetterSetterOnBaseClass), (Type [])null)]
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.GetterSetterOnBaseClass), (Type[]) null)]
 		static void TestPropertyInBaseType ()
 		{
-			var property = typeof(DerivedClass).GetProperty ("GetterSetterOnBaseClass");
+			var property = typeof (DerivedClass).GetProperty ("GetterSetterOnBaseClass");
 		}
 		[Kept]
 		static int _field;
@@ -208,8 +209,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[KeptBaseType (typeof(BaseClass))]
-		class DerivedClass : BaseClass 
+		[KeptBaseType (typeof (BaseClass))]
+		class DerivedClass : BaseClass
 		{
 		}
 	}

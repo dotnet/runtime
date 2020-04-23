@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
 	public partial class AnnotationStore
 	{
-		internal AnnotationStore() {}
+		internal AnnotationStore () { }
 
 		public IEnumerable<OverrideInformation> GetOverrides (MethodDefinition method) { throw null; }
 
@@ -25,7 +26,7 @@ namespace Mono.Linker {
 		public void SetAction (AssemblyDefinition assembly, AssemblyAction action) { throw null; }
 		public bool HasAction (AssemblyDefinition assembly) { throw null; }
 
-		public object GetCustomAnnotation (object key, IMetadataTokenProvider item) { throw null;  }
-		public void SetCustomAnnotation (object key, IMetadataTokenProvider item, object value) { throw null;  }
+		public object GetCustomAnnotation (object key, IMetadataTokenProvider item) { throw null; }
+		public void SetCustomAnnotation (object key, IMetadataTokenProvider item, object value) { throw null; }
 	}
 }

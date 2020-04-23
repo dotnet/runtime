@@ -35,9 +35,11 @@ using System.Xml.XPath;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public class XApiReader {
+	public class XApiReader
+	{
 
 		static readonly string _name = "name";
 		static readonly string _ns = string.Empty;

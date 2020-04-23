@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
-	public class GenericInterfaceWithMethodManyBases2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
+	public class GenericInterfaceWithMethodManyBases2
+	{
 		public static void Main ()
 		{
 			IFoo<object> f = new FooWithBase ();
@@ -9,14 +11,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		}
 
 		[Kept]
-		interface IFoo<T> {
+		interface IFoo<T>
+		{
 			[Kept]
 			void Method (T arg);
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class BaseFoo {
+		class BaseFoo
+		{
 			public void Method (object arg)
 			{
 			}
@@ -25,13 +29,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo))]
-		class BaseFoo2 : BaseFoo {
+		class BaseFoo2 : BaseFoo
+		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo2))]
-		class BaseFoo3 : BaseFoo2 {
+		class BaseFoo3 : BaseFoo2
+		{
 			[Kept]
 			public void Method (object arg)
 			{
@@ -41,14 +47,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo3))]
-		class BaseFoo4 : BaseFoo3 {
+		class BaseFoo4 : BaseFoo3
+		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo4))]
 		[KeptInterface (typeof (IFoo<object>))]
-		class FooWithBase : BaseFoo4, IFoo<object> {
+		class FooWithBase : BaseFoo4, IFoo<object>
+		{
 		}
 	}
 }

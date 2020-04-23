@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Attributes {
-	class AttributeOnParameterInUsedMethodIsKept {
+namespace Mono.Linker.Tests.Cases.Attributes
+{
+	class AttributeOnParameterInUsedMethodIsKept
+	{
 		static void Main ()
 		{
 			Method ("Bar");
@@ -15,8 +17,9 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof(Attribute))]
-		class FooAttribute : Attribute {
+		[KeptBaseType (typeof (Attribute))]
+		class FooAttribute : Attribute
+		{
 		}
 	}
 }

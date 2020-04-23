@@ -1,15 +1,17 @@
 using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
-	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-	public class KeptBaseOnTypeInAssemblyAttribute : BaseInAssemblyAttribute {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
+	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+	public class KeptBaseOnTypeInAssemblyAttribute : BaseInAssemblyAttribute
+	{
 		public KeptBaseOnTypeInAssemblyAttribute (string assemblyFileName, Type type, string baseAssemblyFileName, Type baseType)
 		{
 			if (type == null)
 				throw new ArgumentNullException (nameof (type));
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
-			
+
 			if (string.IsNullOrEmpty (baseAssemblyFileName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (baseAssemblyFileName));
 			if (baseType == null)
@@ -22,7 +24,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
 			if (string.IsNullOrEmpty (typeName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeName));
-			
+
 			if (string.IsNullOrEmpty (baseAssemblyFileName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (baseAssemblyFileName));
 			if (string.IsNullOrEmpty (baseTypeName))

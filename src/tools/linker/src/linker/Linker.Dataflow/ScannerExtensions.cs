@@ -27,7 +27,7 @@ namespace Mono.Linker.Dataflow
 				Object value = operation.Operand;
 				if (value is Instruction inst) {
 					branchTargets.Add (inst.Offset);
-				} else if (value is Instruction [] instructions) {
+				} else if (value is Instruction[] instructions) {
 					foreach (Instruction switchLabel in instructions) {
 						branchTargets.Add (switchLabel.Offset);
 					}
@@ -42,7 +42,7 @@ namespace Mono.Linker.Dataflow
 			return branchTargets;
 		}
 
-		public static bool IsByRefOrPointer(this TypeReference typeRef)
+		public static bool IsByRefOrPointer (this TypeReference typeRef)
 		{
 			return typeRef.IsByReference || typeRef.IsPointer;
 		}

@@ -2,7 +2,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Resources {
+namespace Mono.Linker.Tests.Cases.Resources
+{
 	[SetupLinkerCoreAction ("link")]
 	[IncludeBlacklistStep (true)]
 
@@ -10,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.Resources {
 	[SetupCompileResource ("Dependencies/NonLinkerEmbeddedResourceHasNoImpact.xml", "test.xml")]
 	[SkipPeVerify]
 	[KeptResource ("test.xml")]
-	public class NonLinkerEmbeddedResourceHasNoImpact {
+	public class NonLinkerEmbeddedResourceHasNoImpact
+	{
 		public static void Main ()
 		{
 		}

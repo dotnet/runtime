@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class TestCaseAssemblyResolver : DefaultAssemblyResolver {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class TestCaseAssemblyResolver : DefaultAssemblyResolver
+	{
 		readonly HashSet<IDisposable> itemsToDispose;
 
 		public TestCaseAssemblyResolver ()

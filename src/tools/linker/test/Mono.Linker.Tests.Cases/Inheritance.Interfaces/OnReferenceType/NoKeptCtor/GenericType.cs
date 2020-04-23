@@ -1,22 +1,27 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor {
-	public class GenericType {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
+{
+	public class GenericType
+	{
 		public static void Main ()
 		{
 			object o = new Bar<Foo> ();
 		}
 
 		[Kept]
-		[KeptMember(".ctor()")]
-		class Bar<T> {
+		[KeptMember (".ctor()")]
+		class Bar<T>
+		{
 		}
 
 		[Kept]
-		class Foo : IFoo {
+		class Foo : IFoo
+		{
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 		}
 	}
 }

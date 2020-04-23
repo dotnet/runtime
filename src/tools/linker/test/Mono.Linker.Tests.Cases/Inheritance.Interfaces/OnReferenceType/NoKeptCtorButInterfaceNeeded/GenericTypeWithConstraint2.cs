@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded {
-	public class GenericTypeWithConstraint2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded
+{
+	public class GenericTypeWithConstraint2
+	{
 		public static void Main ()
 		{
 			Foo f = null;
@@ -9,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		}
 
 		[Kept]
-		static class Bar<T> where T : IFoo {
+		static class Bar<T> where T : IFoo
+		{
 			[Kept]
 			public static void Helper (T arg)
 			{
@@ -18,11 +21,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		class Foo : IFoo {
+		class Foo : IFoo
+		{
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 		}
 	}
 }

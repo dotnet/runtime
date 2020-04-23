@@ -1,14 +1,17 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class UnusedMethodGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class UnusedMethodGetsRemoved
+	{
 		public static void Main ()
 		{
 			new UnusedMethodGetsRemoved.B ().Method ();
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			public void Unused ()
 			{
 			}

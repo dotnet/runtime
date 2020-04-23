@@ -1,18 +1,20 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Attributes.Dependencies {
+namespace Mono.Linker.Tests.Cases.Attributes.Dependencies
+{
 	[AttributeUsage (AttributeTargets.All, AllowMultiple = true)]
-	public class AttributeDefinedInReference : Attribute {
+	public class AttributeDefinedInReference : Attribute
+	{
 		public Type FieldType;
-		
+
 		public AttributeDefinedInReference ()
 		{
 		}
-		
+
 		public AttributeDefinedInReference (Type t)
 		{
 		}
-		
+
 		public AttributeDefinedInReference (Type[] t)
 		{
 		}
@@ -20,7 +22,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.Dependencies {
 		public Type PropertyType { get; set; }
 	}
 
-	public class AttributeDefinedInReference_OtherType {
+	public class AttributeDefinedInReference_OtherType
+	{
 		public static void Method ()
 		{
 		}

@@ -1,9 +1,11 @@
-﻿﻿using System;
+﻿using System;
 using System.Linq;
 using Mono.Linker.Tests.Extensions;
 
-namespace Mono.Linker.Tests.TestCases {
-	public class TestCase {
+namespace Mono.Linker.Tests.TestCases
+{
+	public class TestCase
+	{
 		public TestCase (NPath sourceFile, NPath rootCasesDirectory, NPath originalTestCaseAssemblyPath)
 		{
 			SourceFile = sourceFile;
@@ -34,8 +36,7 @@ namespace Mono.Linker.Tests.TestCases {
 		}
 
 		public NPath LinkXmlFile {
-			get
-			{
+			get {
 				if (!HasLinkXmlFile)
 					throw new InvalidOperationException ("This test case does not have a link xml file");
 

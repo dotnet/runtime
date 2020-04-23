@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class MultiStageRemoval
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			TestMethod_1 ();
 			TestMethod_2 ();
@@ -53,7 +53,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				return -1;
 
 			return 0;
-		}        
+		}
 
 		[Kept]
 		static int Prop {
@@ -69,14 +69,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			get {
 				return true;
 			}
-		}        
-        
+		}
+
 		static void NeverReached_1 ()
-		{			
+		{
 		}
 
 		static void NeverReached_2 ()
-		{			
-		}        
+		{
+		}
 	}
 }

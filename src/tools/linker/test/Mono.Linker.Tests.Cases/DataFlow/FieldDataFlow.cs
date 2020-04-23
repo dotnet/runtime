@@ -32,19 +32,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToStaticFieldOnADifferentClass ();
 		}
 
-		[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		Type _typeWithDefaultConstructor;
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		static Type _staticTypeWithDefaultConstructor;
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) },
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) },
 			"The field 'System.Type Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::_typeWithDefaultConstructor' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is passed into " +
 			"the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::RequirePublicConstructors(System.Type)' " +
 			"which requires dynamically accessed member kinds `PublicConstructors`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceField ()
 		{
 			RequireDefaultConstructor (_typeWithDefaultConstructor);
@@ -53,7 +53,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (_typeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceField), new Type [] { })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceField), new Type[] { })]
 		private void WriteToInstanceField ()
 		{
 			_typeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
@@ -62,8 +62,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_typeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceFieldOnADifferentClass ()
 		{
 			var store = new TypeStore ();
@@ -74,7 +74,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (store._typeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceFieldOnADifferentClass), new Type [] { })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceFieldOnADifferentClass), new Type[] { })]
 		private void WriteToInstanceFieldOnADifferentClass ()
 		{
 			var store = new TypeStore ();
@@ -85,8 +85,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			store._typeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticField ()
 		{
 			RequireDefaultConstructor (_staticTypeWithDefaultConstructor);
@@ -95,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (_staticTypeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticField), new Type [] { })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticField), new Type[] { })]
 		private void WriteToStaticField ()
 		{
 			_staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
@@ -104,8 +104,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_staticTypeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticFieldOnADifferentClass ()
 		{
 			RequireDefaultConstructor (TypeStore._staticTypeWithDefaultConstructor);
@@ -114,7 +114,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (TypeStore._staticTypeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticFieldOnADifferentClass), new Type [] { })]
+		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticFieldOnADifferentClass), new Type[] { })]
 		private void WriteToStaticFieldOnADifferentClass ()
 		{
 			TypeStore._staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();

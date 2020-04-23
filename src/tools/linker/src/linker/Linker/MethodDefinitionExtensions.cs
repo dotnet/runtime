@@ -2,7 +2,7 @@
 
 namespace Mono.Linker
 {
-	public static class MethodDefinitionExtensions 
+	public static class MethodDefinitionExtensions
 	{
 		public static bool IsDefaultConstructor (this MethodDefinition method)
 		{
@@ -81,7 +81,7 @@ namespace Mono.Linker
 
 			return true;
 		}
-		
+
 		public static void ClearDebugInformation (this MethodDefinition method)
 		{
 			// TODO: This always allocates, update when Cecil catches up

@@ -14,19 +14,19 @@ namespace ILLink.Tasks
 		///   input to the linker.
 		/// </summary>
 		[Required]
-		public ITaskItem [] AssemblyPaths { get; set; }
+		public ITaskItem[] AssemblyPaths { get; set; }
 
 		/// <summary>
 		///   Application assembly names.
 		/// </summary>
 		[Required]
-		public ITaskItem [] ApplicationAssemblyNames { get; set; }
+		public ITaskItem[] ApplicationAssemblyNames { get; set; }
 
 		/// <summary>
 		///   Platform assembly names.
 		/// </summary>
 		[Required]
-		public ITaskItem [] PlatformAssemblyNames { get; set; }
+		public ITaskItem[] PlatformAssemblyNames { get; set; }
 
 		/// <summary>
 		///   Action to perform on used application assemblies.
@@ -53,7 +53,7 @@ namespace ILLink.Tasks
 		public ITaskItem UnusedPlatformAssemblyAction { get; set; }
 
 		[Output]
-		public ITaskItem [] AssemblyPathsWithActions { get; set; }
+		public ITaskItem[] AssemblyPathsWithActions { get; set; }
 
 		public override bool Execute ()
 		{
@@ -117,7 +117,7 @@ namespace ILLink.Tasks
 			return true;
 		}
 
-		void AddAssemblyActionMetadata (ITaskItem [] assemblies, string action, List<ITaskItem> resultList)
+		void AddAssemblyActionMetadata (ITaskItem[] assemblies, string action, List<ITaskItem> resultList)
 		{
 			HashSet<string> assemblyHashSet = new HashSet<string> ();
 			foreach (var assembly in assemblies) {

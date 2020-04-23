@@ -12,7 +12,7 @@ namespace ILLink.Tasks
 		///   Items to scan.
 		/// </summary>
 		[Required]
-		public ITaskItem [] Items { get; set; }
+		public ITaskItem[] Items { get; set; }
 
 		/// <summary>
 		///   Name of metadata to scan for.
@@ -26,14 +26,14 @@ namespace ILLink.Tasks
 		///   items.
 		/// </summary>
 		[Output]
-		public ITaskItem [] DuplicateItems { get; set; }
+		public ITaskItem[] DuplicateItems { get; set; }
 
 		/// <summary>
 		///   Duplicate representatives: includes one input
 		///   item from each set of duplicates.
 		/// </summary>
 		[Output]
-		public ITaskItem [] DuplicateRepresentatives { get; set; }
+		public ITaskItem[] DuplicateRepresentatives { get; set; }
 
 		public override bool Execute ()
 		{

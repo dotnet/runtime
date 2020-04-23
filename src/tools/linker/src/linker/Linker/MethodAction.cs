@@ -26,9 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public enum MethodAction {
+	public enum MethodAction
+	{
 		Nothing,
 		Parse,
 		ForceParse,

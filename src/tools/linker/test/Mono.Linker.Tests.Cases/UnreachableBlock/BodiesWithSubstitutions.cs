@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		static int field;
 
-		public static void Main()
+		public static void Main ()
 		{
 			TestProperty_int_1 ();
 			TestField_int_1 ();

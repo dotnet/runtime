@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
-	[KeptMember(".ctor()")]
+	[KeptMember (".ctor()")]
 	public class ActivatorCreateInstance
 	{
 		public static void Main ()
@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Activator.CreateInstance (typeof (Test1));
 			Activator.CreateInstance (typeof (Test2), true);
 			Activator.CreateInstance (typeof (Test3), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
-			Activator.CreateInstance (typeof (Test4), new object [] { 1, "ss" });
+			Activator.CreateInstance (typeof (Test4), new object[] { 1, "ss" });
 
 			var p = new ActivatorCreateInstance ();
 
@@ -130,8 +130,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public FromParameterOnStaticMethodTypeB (int arg) { }
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (object []) })]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object []), typeof (CultureInfo) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (object[]) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) })]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
@@ -140,8 +140,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Only default ctor is available from the parameter, so only the first one should work
 			Activator.CreateInstance (type);
-			Activator.CreateInstance (type, new object [] { 1 });
-			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object [] { 1, 2 }, null);
+			Activator.CreateInstance (type, new object[] { 1 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object[] { 1, 2 }, null);
 		}
 
 		[Kept]
@@ -163,8 +163,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// All ctors are required by the parameter, so all cases should work
 			Activator.CreateInstance (type);
-			Activator.CreateInstance (type, new object [] { 1 });
-			Activator.CreateInstance (type, BindingFlags.NonPublic, new object [] { 1, 2 });
+			Activator.CreateInstance (type, new object[] { 1 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, new object[] { 1, 2 });
 		}
 
 		[Kept]
@@ -178,7 +178,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			private FromParameterWithConstructorsType (int arg, int arg2) { }
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object []), typeof (CultureInfo) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) })]
 		[Kept]
 		private static void FromParameterWithPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
@@ -187,8 +187,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Only public ctors and default ctor are required, so only those cases should work
 			Activator.CreateInstance (type);
-			Activator.CreateInstance (type, new object [] { 1 });
-			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object [] { 1, 2 }, null);
+			Activator.CreateInstance (type, new object[] { 1 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object[] { 1, 2 }, null);
 		}
 
 		[Kept]
@@ -262,9 +262,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private static void WithAssemblyName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
-			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless2", new object [] { });
-			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNamePublicOnly", false, BindingFlags.Public, null, new object [] { }, null, new object [] { });
-			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNamePrivateOnly", false, BindingFlags.NonPublic, null, new object [] { }, null, new object [] { });
+			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless2", new object[] { });
+			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNamePublicOnly", false, BindingFlags.Public, null, new object[] { }, null, new object[] { });
+			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNamePrivateOnly", false, BindingFlags.NonPublic, null, new object[] { }, null, new object[] { });
 
 			WithNullAssemblyName ();
 			WithNonExistingAssemblyName ();
@@ -273,14 +273,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (string), typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) })]
 		private static void WithNullAssemblyName ()
 		{
 			Activator.CreateInstance (null, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (string), typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) })]
 		private static void WithNonExistingAssemblyName ()
 		{
 			Activator.CreateInstance ("NonExisting", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -290,17 +290,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private static string _typeNameField;
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (string), typeof (string), typeof (object []) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string), typeof (object[]) })]
 		private static void WithAssemblyAndUnknownTypeName ()
 		{
-			Activator.CreateInstance ("test", _typeNameField, new object [] { });
+			Activator.CreateInstance ("test", _typeNameField, new object[] { });
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (string), typeof (string), typeof (object []) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string), typeof (object[]) })]
 		private static void WithAssemblyAndNonExistingTypeName ()
 		{
-			Activator.CreateInstance ("test", "NonExisting", new object [] { });
+			Activator.CreateInstance ("test", "NonExisting", new object[] { });
 		}
 
 		[Kept]
@@ -338,34 +338,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Just a basic test that these are all recognized, we're not testing that it marks correctly as it has the exact same implementation
 			// as the above tested Activator.CreateInstance overloads
 			AppDomain.CurrentDomain.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType");
-			AppDomain.CurrentDomain.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object [] { });
+			AppDomain.CurrentDomain.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object[] { });
 			AppDomain.CurrentDomain.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", false, BindingFlags.Public, null, null, null, null);
 
 			AppDomain.CurrentDomain.CreateInstanceAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType");
-			AppDomain.CurrentDomain.CreateInstanceAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object [] { });
+			AppDomain.CurrentDomain.CreateInstanceAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object[] { });
 			AppDomain.CurrentDomain.CreateInstanceAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", false, BindingFlags.Public, null, null, null, null);
 
 			AppDomain.CurrentDomain.CreateInstanceFrom ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType");
-			AppDomain.CurrentDomain.CreateInstanceFrom ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object [] { });
+			AppDomain.CurrentDomain.CreateInstanceFrom ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object[] { });
 			AppDomain.CurrentDomain.CreateInstanceFrom ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", false, BindingFlags.Public, null, null, null, null);
 
 			AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType");
-			AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object [] { });
+			AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", new object[] { });
 			AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+AppDomainCreateInstanceType", false, BindingFlags.Public, null, null, null, null);
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance) + "<T>", new Type [0])]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type [] { typeof (string), typeof (bool) })]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type [] { typeof (string), typeof (bool), typeof (BindingFlags), typeof (Binder), typeof (object []), typeof (CultureInfo), typeof (object []) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance) + "<T>", new Type[0])]
+		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string), typeof (bool) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string), typeof (bool), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo), typeof (object[]) })]
 		private static void UnsupportedCreateInstance ()
 		{
 			Activator.CreateInstance<Test1> ();
 
 			typeof (ActivatorCreateInstance).Assembly.CreateInstance ("NonExistent");
 			typeof (ActivatorCreateInstance).Assembly.CreateInstance ("NonExistent", ignoreCase: false);
-			typeof (ActivatorCreateInstance).Assembly.CreateInstance ("NonExistent", false, BindingFlags.Public, null, new object [] { }, null, new object [] { });
+			typeof (ActivatorCreateInstance).Assembly.CreateInstance ("NonExistent", false, BindingFlags.Public, null, new object[] { }, null, new object[] { });
 
 		}
 
@@ -402,7 +402,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance) + "<T>", new Type [0])]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance) + "<T>", new Type[0])]
 		private static void TestCreateInstanceOfTWithNoConstraint<T> ()
 		{
 			Activator.CreateInstance<T> ();

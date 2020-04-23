@@ -5,10 +5,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: AttributeInReference]
 
-namespace Mono.Linker.Tests.Cases.Attributes {
-	[SetupCompileBefore ("library.dll", new [] { "Dependencies/AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly_Lib.cs" })]
+namespace Mono.Linker.Tests.Cases.Attributes
+{
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly_Lib.cs" })]
 	[RemovedAssembly ("library.dll")]
-	class AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly {
+	class AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly
+	{
 		static void Main ()
 		{
 		}

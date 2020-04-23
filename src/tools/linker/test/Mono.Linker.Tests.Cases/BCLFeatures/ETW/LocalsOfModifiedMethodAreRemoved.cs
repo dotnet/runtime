@@ -2,7 +2,8 @@ using System.Diagnostics.Tracing;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
+namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
+{
 #if NETCOREAPP
 	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
 #endif
@@ -11,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	[SetupLinkerCoreAction ("skip")]
 	// Used to avoid different compilers generating different IL which can mess up the instruction asserts
 	[SetupCompileArgument ("/optimize+")]
-	public class LocalsOfModifiedMethodAreRemoved {
+	public class LocalsOfModifiedMethodAreRemoved
+	{
 		public static void Main ()
 		{
 			var b = LocalsAreCleared_RemovedEventSource.Log.IsEnabled ();
@@ -19,22 +21,25 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 				LocalsAreCleared_RemovedEventSource.Log.SomeMethod ();
 		}
 
-		public class ClassForLocal {
+		public class ClassForLocal
+		{
 		}
 
 		public static void CallsToForceALocal (int arg1, int arg2, int arg3)
 		{
 		}
 	}
-	
+
 	[Kept]
 	[KeptBaseType (typeof (EventSource))]
 	[KeptMember (".ctor()")]
 	[KeptMember (".cctor()")]
 	[EventSource (Name = "MyCompany")]
-	class LocalsAreCleared_RemovedEventSource : EventSource {
-		public class Keywords {
-			public const EventKeywords Page = (EventKeywords)1;
+	class LocalsAreCleared_RemovedEventSource : EventSource
+	{
+		public class Keywords
+		{
+			public const EventKeywords Page = (EventKeywords) 1;
 
 			public int Unused;
 		}
@@ -52,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 			LocalsOfModifiedMethodAreRemoved.CallsToForceALocal (1, 3, 4);
 			LocalsOfModifiedMethodAreRemoved.CallsToForceALocal (1, 4, 4);
 			var hashcode = tmp.GetHashCode ();
-			LocalsOfModifiedMethodAreRemoved.CallsToForceALocal(1, hashcode, 3);
+			LocalsOfModifiedMethodAreRemoved.CallsToForceALocal (1, hashcode, 3);
 		}
 
 		[Kept]

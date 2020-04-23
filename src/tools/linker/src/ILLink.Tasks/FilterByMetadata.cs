@@ -34,12 +34,12 @@ namespace ILLink.Tasks
 		[Output]
 		public ITaskItem[] FilteredItems { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
-			var metadataValues = new HashSet<string>(MetadataValues.Select(v => v.ItemSpec));
+			var metadataValues = new HashSet<string> (MetadataValues.Select (v => v.ItemSpec));
 			FilteredItems = Items
-				.Where(i => metadataValues.Contains(i.GetMetadata(MetadataName)))
-				.ToArray();
+				.Where (i => metadataValues.Contains (i.GetMetadata (MetadataName)))
+				.ToArray ();
 			return true;
 		}
 	}

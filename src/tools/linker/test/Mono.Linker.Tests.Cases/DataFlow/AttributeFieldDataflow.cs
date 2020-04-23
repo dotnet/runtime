@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeptAttributeAttribute (typeof (KeepsPublicConstructorsAttribute))]
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 		[KeepsPublicConstructors (Type = typeof (ClassWithKeptPublicConstructor))]
-		[KeepsPublicMethods("Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods")]
+		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods")]
 		public static void Main ()
 		{
 			typeof (AttributeFieldDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[KeptBaseType(typeof(Attribute))]
+		[KeptBaseType (typeof (Attribute))]
 		class KeepsPublicMethodsAttribute : Attribute
 		{
 			[Kept]
@@ -67,8 +67,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class ClassWithKeptPublicMethods
 		{
 			[Kept]
-			public static void KeptMethod() { }
-			static void Method() { }
+			public static void KeptMethod () { }
+			static void Method () { }
 		}
 	}
 }

@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class UsedPropertyIsKept {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class UsedPropertyIsKept
+	{
 		public static void Main ()
 		{
 			var obj = new B ();
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			[Kept]
 			[KeptBackingField]
 			public int Prop { [Kept] get; [Kept] set; }

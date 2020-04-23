@@ -1,10 +1,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class ExplicitInstructionCheck {
-		public static void Main()
+	public class ExplicitInstructionCheck
+	{
+		public static void Main ()
 		{
 			UsedToMarkMethod (null);
 		}
@@ -16,9 +18,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		}
 
 		[Kept]
-		class Foo {
+		class Foo
+		{
 			[Kept]
-			[ExpectedInstructionSequence(new []
+			[ExpectedInstructionSequence (new[]
 			{
 				"ldstr",
 				"newobj",

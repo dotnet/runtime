@@ -4,9 +4,11 @@
 
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public abstract class BaseStep : IStep {
+	public abstract class BaseStep : IStep
+	{
 		public LinkContext Context { get { throw null; } }
 		public AnnotationStore Annotations { get { throw null; } }
 		public void Process (LinkContext context) { throw null; }

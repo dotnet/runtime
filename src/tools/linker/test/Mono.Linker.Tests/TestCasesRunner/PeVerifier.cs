@@ -8,8 +8,10 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class PeVerifier {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class PeVerifier
+	{
 		private readonly string _peExecutable;
 
 		public PeVerifier ()
@@ -56,16 +58,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				if (!attr.HasConstructorArguments) {
 					skipCheckEntirely = true;
 				} else if (ctorArg.Type.Name == nameof (SkipPeVerifyForToolchian)) {
-					var skipToolchain = (SkipPeVerifyForToolchian)ctorArg.Value;
+					var skipToolchain = (SkipPeVerifyForToolchian) ctorArg.Value;
 
 					if (skipToolchain == SkipPeVerifyForToolchian.Pedump) {
 						if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 							skipCheckEntirely = true;
-					}
-					else
+					} else
 						throw new ArgumentException ($"Unhandled platform and toolchain values of {Environment.OSVersion.Platform} and {skipToolchain}");
 				} else if (ctorArg.Type.Name == nameof (String)) {
-					assembliesToSkip.Add ((string)ctorArg.Value);
+					assembliesToSkip.Add ((string) ctorArg.Value);
 				} else {
 					throw new ArgumentException ($"Unhandled constructor argument type of {ctorArg.Type} on {nameof (SkipPeVerifyAttribute)}");
 				}
@@ -98,7 +99,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT) {
-				process.StartInfo.Environment ["MONO_PATH"] = assemblyPath.Parent.ToString ();
+				process.StartInfo.Environment["MONO_PATH"] = assemblyPath.Parent.ToString ();
 			}
 		}
 
@@ -123,7 +124,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var sdkKeyName in key.GetSubKeyNames ().OrderBy (name => new Version (name.TrimStart ('v').TrimEnd ('A'))).Reverse ()) {
 				var sdkKey = Registry.LocalMachine.OpenSubKey ($"{keyPath}\\{sdkKeyName}");
 
-				var sdkDir = (string)sdkKey.GetValue ("InstallationFolder");
+				var sdkDir = (string) sdkKey.GetValue ("InstallationFolder");
 				if (string.IsNullOrEmpty (sdkDir))
 					continue;
 

@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Generics {
-	class GenericInstanceInterfaceMethodImplementedWithDifferentGenericArgumentNameDoesNotGetStripped {
+namespace Mono.Linker.Tests.Cases.Generics
+{
+	class GenericInstanceInterfaceMethodImplementedWithDifferentGenericArgumentNameDoesNotGetStripped
+	{
 		public static void Main ()
 		{
 			ISomething it = new Concrete ();
@@ -9,17 +11,20 @@ namespace Mono.Linker.Tests.Cases.Generics {
 		}
 
 		[Kept]
-		public class GenericType<T> {
+		public class GenericType<T>
+		{
 		}
 
-		public interface ISomething {
+		public interface ISomething
+		{
 			[Kept]
 			GenericType<TInInterface> ShouldNotGetStripped<TInInterface> ();
 		}
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (ISomething))]
-		public class Concrete : ISomething {
+		public class Concrete : ISomething
+		{
 			[Kept]
 			public GenericType<TInConcrete> ShouldNotGetStripped<TInConcrete> ()
 			{

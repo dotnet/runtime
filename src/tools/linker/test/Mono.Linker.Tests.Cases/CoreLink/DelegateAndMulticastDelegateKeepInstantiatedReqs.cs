@@ -3,7 +3,8 @@ using System.Runtime.Serialization;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.CoreLink {
+namespace Mono.Linker.Tests.Cases.CoreLink
+{
 	/// <summary>
 	/// Delegate and is created from 
 	/// </summary>
@@ -16,16 +17,17 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), "GetHashCode()")]
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), "Equals(System.Object)")]
-	[KeptInterfaceOnTypeInAssembly(PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ICloneable))]
+	[KeptInterfaceOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ICloneable))]
 #if NETCOREAPP
 	[KeptInterfaceOnTypeInAssembly(PlatformAssemblies.CoreLib, typeof (Delegate), "System.Runtime.dll", typeof (ISerializable))]
 #else
-	[KeptInterfaceOnTypeInAssembly(PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ISerializable))]
+	[KeptInterfaceOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (Delegate), PlatformAssemblies.CoreLib, typeof (ISerializable))]
 #endif
 
 	// Fails due to Runtime critical type System.Reflection.CustomAttributeData not found.
-	[SkipPeVerify(SkipPeVerifyForToolchian.Pedump)]
-	public class DelegateAndMulticastDelegateKeepInstantiatedReqs {
+	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
+	public class DelegateAndMulticastDelegateKeepInstantiatedReqs
+	{
 		public static void Main ()
 		{
 			typeof (MulticastDelegate).ToString ();
@@ -33,7 +35,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 			// Cause the interfaces to be marked in order to eliminate the possibility of them being removed
 			// due to no code path marking the interface type
 			typeof (ISerializable).ToString ();
-			typeof (ICloneable).ToString();
+			typeof (ICloneable).ToString ();
 		}
 	}
 }

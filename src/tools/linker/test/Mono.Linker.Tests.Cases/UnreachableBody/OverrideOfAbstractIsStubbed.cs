@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class OverrideOfAbstractIsStubbed {
+	public class OverrideOfAbstractIsStubbed
+	{
 		public static void Main ()
 		{
 			Base b = HelperToMarkFooAndRequireBase ();
@@ -25,7 +27,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Foo : Base {
+		class Foo : Base
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public override void Method ()

@@ -2,7 +2,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.Debugger {
+namespace Mono.Linker.Tests.Cases.Attributes.Debugger
+{
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 
@@ -10,18 +11,20 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger {
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), ".ctor(System.String)")]
-	public class DebuggerDisplayAttributeOnType {
+	public class DebuggerDisplayAttributeOnType
+	{
 		public static void Main ()
 		{
 			var foo = new Foo ();
-			var bar = new Bar();
+			var bar = new Bar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
 		[DebuggerDisplay ("{Property}")]
-		class Foo {
+		class Foo
+		{
 			public int Property { get; set; }
 		}
 
@@ -29,7 +32,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger {
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
 		[DebuggerDisplay ("{Method()}")]
-		class Bar {
+		class Bar
+		{
 			public int Method ()
 			{
 				return 1;

@@ -7,7 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Sealer
 {
 	[SetupLinkerArgument ("--enable-opt", "sealer")]
-	[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	public class TypesCanBeSealed
 	{
 		public static void Main ()
@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.Sealer
 		}
 
 		[Kept]
-		[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+		[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 		class SimpleNestedClass
 		{
 		}
@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.Cases.Sealer
 namespace Mono.Linker.Tests.Cases.Sealer.Data
 {
 	[Kept]
-	[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	class SimpleClass
 	{
 	}
@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.Sealer.Data
 
 	[Kept]
 	[KeptBaseType (typeof (Base))]
-	[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	class Derived : Base
 	{
 	}
@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.Cases.Sealer.Data
 	class BaseWithNested
 	{
 		[Kept]
-		[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+		[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 		internal class Nested
 		{
 		}
@@ -74,7 +74,7 @@ namespace Mono.Linker.Tests.Cases.Sealer.Data
 
 	[Kept]
 	[KeptBaseType (typeof (BaseWithNested))]
-	[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	class DerivedWithNested : BaseWithNested
 	{
 	}
@@ -84,13 +84,13 @@ namespace Mono.Linker.Tests.Cases.Sealer.Data
 	}
 
 	[Kept]
-	[AddedPseudoAttributeAttribute ((uint)TypeAttributes.Sealed)]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	class BaseWithUnusedDerivedClass
 	{
 
 	}
 
-	class UnusedDerivedClass: BaseWithUnusedDerivedClass
+	class UnusedDerivedClass : BaseWithUnusedDerivedClass
 	{
 	}
 }

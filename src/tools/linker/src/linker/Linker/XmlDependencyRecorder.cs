@@ -162,12 +162,12 @@ namespace Mono.Linker
 		bool WillAssemblyBeModified (AssemblyDefinition assembly)
 		{
 			switch (context.Annotations.GetAction (assembly)) {
-				case AssemblyAction.Link:
-				case AssemblyAction.AddBypassNGen:
-				case AssemblyAction.AddBypassNGenUsed:
-					return true;
-				default:
-					return false;
+			case AssemblyAction.Link:
+			case AssemblyAction.AddBypassNGen:
+			case AssemblyAction.AddBypassNGenUsed:
+				return true;
+			default:
+				return false;
 			}
 		}
 

@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupLinkerSubstitutionFile ("StubBodyWithValue.xml")]
 	public class StubBodyWithValue
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			TestMethod_1 ();
 			TestMethod_2 ();
@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldstr",
 				"ret",
 			})]
@@ -34,7 +34,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4",
 				"ret",
 			})]
@@ -44,7 +44,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4",
 				"ret",
 			})]
@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4",
 				"ret"
 			})]
@@ -64,37 +64,37 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.1",
 				"ret",
 			})]
-		static bool TestMethod_5()
+		static bool TestMethod_5 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.1",
 				"ret",
 			})]
-		static bool TestMethod_6()
+		static bool TestMethod_6 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.r8",
 				"ret",
 			})]
-		static double TestMethod_7()
+		static double TestMethod_7 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4",
 				"ret"
 			})]
@@ -104,27 +104,27 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.r4",
 				"ret",
 			})]
-		static float TestMethod_9()
+		static float TestMethod_9 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i8",
 				"ret",
 			})]
-		static ulong TestMethod_10()
+		static ulong TestMethod_10 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i8",
 				"ret",
 			})]
@@ -134,7 +134,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4",
 				"ret",
 			})]

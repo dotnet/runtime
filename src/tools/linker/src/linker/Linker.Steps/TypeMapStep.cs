@@ -29,9 +29,11 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class TypeMapStep : BaseStep {
+	public class TypeMapStep : BaseStep
+	{
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
@@ -62,7 +64,7 @@ namespace Mono.Linker.Steps {
 				var resolved = iface.InterfaceType.Resolve ();
 				if (resolved == null)
 					continue;
-				
+
 				Annotations.AddDerivedInterfaceForInterface (resolved, type);
 			}
 		}
@@ -98,14 +100,14 @@ namespace Mono.Linker.Steps {
 
 		static MethodReference CreateGenericInstanceCandidate (Inflater.GenericContext context, TypeDefinition candidateType, MethodDefinition interfaceMethod)
 		{
-			var methodReference = new MethodReference (interfaceMethod.Name, interfaceMethod.ReturnType, candidateType) {HasThis = interfaceMethod.HasThis};
-			
+			var methodReference = new MethodReference (interfaceMethod.Name, interfaceMethod.ReturnType, candidateType) { HasThis = interfaceMethod.HasThis };
+
 			foreach (var genericMethodParameter in interfaceMethod.GenericParameters)
 				methodReference.GenericParameters.Add (new GenericParameter (genericMethodParameter.Name, methodReference));
-			
+
 			if (interfaceMethod.ReturnType.IsGenericParameter || interfaceMethod.ReturnType.IsGenericInstance)
 				methodReference.ReturnType = Inflater.InflateType (context, interfaceMethod.ReturnType);
-			
+
 			foreach (var p in interfaceMethod.Parameters) {
 				var parameterType = p.ParameterType;
 				if (parameterType.IsGenericParameter || parameterType.IsGenericInstance)
@@ -219,7 +221,7 @@ namespace Mono.Linker.Steps {
 			TypeReference @base = type.GetInflatedBaseType ();
 			while (@base != null) {
 				var candidate = CreateGenericInstanceCandidate (context, @base.Resolve (), interfaceMethod);
-				
+
 				MethodDefinition base_method = TryMatchMethod (@base, candidate);
 				if (base_method != null)
 					return base_method;
@@ -333,7 +335,7 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			for (int i = 0; i < gaa.Count; i++) {
-				if (!TypeMatch (gaa [i], gab [i]))
+				if (!TypeMatch (gaa[i], gab[i]))
 					return false;
 			}
 

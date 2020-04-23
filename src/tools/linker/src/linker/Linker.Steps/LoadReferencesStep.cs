@@ -31,9 +31,11 @@ using System.Collections.Generic;
 
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class LoadReferencesStep : BaseStep {
+	public class LoadReferencesStep : BaseStep
+	{
 
 		readonly HashSet<AssemblyNameDefinition> references = new HashSet<AssemblyNameDefinition> ();
 

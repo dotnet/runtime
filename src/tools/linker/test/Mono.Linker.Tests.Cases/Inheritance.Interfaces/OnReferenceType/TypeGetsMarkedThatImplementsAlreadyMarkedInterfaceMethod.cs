@@ -1,21 +1,25 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	class TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	class TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod
+	{
 		public static void Main ()
 		{
 			IFoo i = new A ();
 			i.Foo ();
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class B : IFoo {
+		class B : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -24,7 +28,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class A : IFoo {
+		class A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{

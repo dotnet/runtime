@@ -1,19 +1,22 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class UnusedGenericInterfaceIsRemoved {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	public class UnusedGenericInterfaceIsRemoved
+	{
 		public static void Main ()
 		{
 			var fb = new Foo ();
 			IFoo<object> fo = fb;
 			fo.Method (null);
-			
+
 			IFoo<int> fi = fb;
 			fi.Method (0);
 		}
 
 		[Kept]
-		interface IFoo<T> {
+		interface IFoo<T>
+		{
 			[Kept]
 			void Method (T arg);
 		}
@@ -24,7 +27,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		[KeptInterface (typeof (IFoo<int>))]
 		[KeptInterface (typeof (IFoo<string>))] // FIXME : Should be removed
 		[KeptInterface (typeof (IFoo<Bar>))] // FIXME : Should be removed
-		class Foo : IFoo<object>, IFoo<int>, IFoo<string>, IFoo<Bar> {
+		class Foo : IFoo<object>, IFoo<int>, IFoo<string>, IFoo<Bar>
+		{
 			[Kept]
 			public void Method (object arg)
 			{
@@ -53,7 +57,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept] // FIXME : Should be removed
-		class Bar {
+		class Bar
+		{
 		}
 	}
 }

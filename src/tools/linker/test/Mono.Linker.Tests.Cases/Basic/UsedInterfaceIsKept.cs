@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Basic
 		public static void Main ()
 		{
 			A a = new A ();
-			var t = typeof (I).ToString();
+			var t = typeof (I).ToString ();
 		}
 
 		[Kept]
@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.Basic
 
 		[Kept]
 		interface I
-		{ 
+		{
 		}
 	}
 }

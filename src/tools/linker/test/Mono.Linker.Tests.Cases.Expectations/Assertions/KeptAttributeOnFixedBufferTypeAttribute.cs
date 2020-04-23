@@ -1,8 +1,10 @@
 using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Field, Inherited = false, AllowMultiple = true)]
-	public class KeptAttributeOnFixedBufferTypeAttribute : KeptAttribute {
+	public class KeptAttributeOnFixedBufferTypeAttribute : KeptAttribute
+	{
 		public KeptAttributeOnFixedBufferTypeAttribute (string attributeName)
 		{
 			if (string.IsNullOrEmpty (attributeName))

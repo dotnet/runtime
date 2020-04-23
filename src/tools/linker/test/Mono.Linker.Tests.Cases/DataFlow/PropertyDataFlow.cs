@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
 		static Type StaticPropertyWithPublicConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
 			RequireDefaultConstructor (PropertyWithPublicConstructor);
@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (PropertyWithPublicConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromStaticProperty ()
 		{
 			RequireDefaultConstructor (StaticPropertyWithPublicConstructor);
@@ -58,8 +58,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (StaticPropertyWithPublicConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToInstanceProperty ()
 		{
 			PropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
@@ -68,8 +68,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropertyWithPublicConstructor = GetUnkownType ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (StaticPropertyWithPublicConstructor), new Type[] { typeof (Type) })]
 		private void WriteToStaticProperty ()
 		{
 			StaticPropertyWithPublicConstructor = GetTypeWithDefaultConstructor ();
@@ -102,7 +102,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				return _fieldWithPublicConstructors;
 			}
 
-			[UnrecognizedReflectionAccessPattern(typeof (PropertyDataFlow), "set_" + nameof (PropertyDefaultConstructorWithExplicitAccessors), new Type [] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyDefaultConstructorWithExplicitAccessors), new Type[] { typeof (Type) })]
 			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
@@ -110,7 +110,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		Type PropertyConstructorsWithExplicitAccessors {
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors), new Type [] { })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors), new Type[] { })]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 			get {
 				return _fieldWithPublicConstructors;

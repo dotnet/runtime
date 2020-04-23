@@ -1,13 +1,16 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Generics {
-	public class UsedOverloadedGenericMethodWithNoParametersIsNotStripped {
+namespace Mono.Linker.Tests.Cases.Generics
+{
+	public class UsedOverloadedGenericMethodWithNoParametersIsNotStripped
+	{
 		public static void Main ()
 		{
 			B.Call<string, int> ();
 		}
 
-		public class B {
+		public class B
+		{
 			public static void Method<T> ()
 			{
 			}

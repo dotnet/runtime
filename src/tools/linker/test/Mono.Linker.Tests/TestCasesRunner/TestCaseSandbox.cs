@@ -1,12 +1,14 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class TestCaseSandbox {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class TestCaseSandbox
+	{
 		protected readonly TestCase _testCase;
 		protected readonly NPath _directory;
 
@@ -80,21 +82,21 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				if (destination.Parent == InputDirectory)
 					dep.Source.Copy (ExpectationsDirectory.Combine (destination.RelativeTo (InputDirectory)));
 			}
-			
+
 			// Copy non class library dependencies to the sandbox
 			foreach (var fileName in metadataProvider.GetReferenceValues ()) {
 				if (!fileName.StartsWith ("System.", StringComparison.Ordinal) && !fileName.StartsWith ("Mono.", StringComparison.Ordinal) && !fileName.StartsWith ("Microsoft.", StringComparison.Ordinal))
 					CopyToInputAndExpectations (_testCase.SourceFile.Parent.Combine (fileName.ToNPath ()));
 			}
-			
+
 			foreach (var referenceDependency in metadataProvider.GetReferenceDependencies ())
-				CopyToInputAndExpectations (_testCase.SourceFile.Parent.Combine (referenceDependency.ToNPath()));
+				CopyToInputAndExpectations (_testCase.SourceFile.Parent.Combine (referenceDependency.ToNPath ()));
 
 			foreach (var res in metadataProvider.GetResources ()) {
 				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.DestinationFileName));
 			}
 
-			foreach (var res in metadataProvider.GetResponseFiles()) {
+			foreach (var res in metadataProvider.GetResponseFiles ()) {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
@@ -106,20 +108,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
-			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())
-			{
+			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ()) {
 				var destination = BeforeReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.SourceFiles.Copy (destination);
-				
+
 				destination = BeforeReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.Resources?.Copy (destination);
 			}
 
-			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesAfter ())
-			{
+			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesAfter ()) {
 				var destination = AfterReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.SourceFiles.Copy (destination);
-				
+
 				destination = AfterReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.Resources?.Copy (destination);
 			}
@@ -145,7 +145,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			return _directory.Combine ($"ref_source_after_{Path.GetFileNameWithoutExtension (outputName)}");
 		}
-		
+
 		public NPath BeforeReferenceResourceDirectoryFor (string outputName)
 		{
 			return _directory.Combine ($"ref_resource_before_{Path.GetFileNameWithoutExtension (outputName)}");

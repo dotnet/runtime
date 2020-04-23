@@ -1,14 +1,17 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
-	class VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
+{
+	class VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly
+	{
 		public static void Main ()
 		{
 			new A ().Foo ();
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			[Kept] // TODO: Would be nice to be removed
 			public virtual void Foo ()
 			{
@@ -17,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		class A : B {
+		class A : B
+		{
 			[Kept]
 			public override void Foo ()
 			{

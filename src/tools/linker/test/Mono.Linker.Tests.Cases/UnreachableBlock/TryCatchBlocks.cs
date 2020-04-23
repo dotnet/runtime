@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.6",
 			"beq.s",
@@ -26,13 +26,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		static int TestSimpleTryUnreachable ()
 		{
 			if (Prop != 6) {
-                try {
+				try {
 					Unreached_1 ();
 					return 1;
-                } catch {
-                    return 2;
-                }
-            }
+				} catch {
+					return 2;
+				}
+			}
 
 			return 3;
 		}

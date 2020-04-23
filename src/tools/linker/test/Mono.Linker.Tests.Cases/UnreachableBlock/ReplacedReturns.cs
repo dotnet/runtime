@@ -32,7 +32,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",
@@ -50,7 +50,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",
@@ -68,7 +68,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"ldsfld",
@@ -87,7 +87,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"ldsfld",
@@ -108,7 +108,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"ldsfld",
@@ -132,7 +132,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",
@@ -161,7 +161,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",
@@ -192,7 +192,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.0",
 			"stloc.0",
 			"call",
@@ -231,7 +231,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedExceptionHandlerSequence (new string[0])]
 		[ExpectedLocalsSequence (new string[0])]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",
@@ -250,7 +250,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"call",
 			"pop",
 			"call",

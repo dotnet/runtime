@@ -1,8 +1,10 @@
 using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-	public class RemovedAttributeInAssembly : BaseInAssemblyAttribute {
+	public class RemovedAttributeInAssembly : BaseInAssemblyAttribute
+	{
 		/// <summary>
 		/// Asserts a CustomAttribute was kept on an assembly
 		/// </summary>
@@ -11,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 		public RemovedAttributeInAssembly (string assemblyName, string attributeTypeName)
 		{
 		}
-		
+
 		/// <summary>
 		/// Asserts a CustomAttribute was kept on an assembly
 		/// </summary>
@@ -20,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 		public RemovedAttributeInAssembly (string assemblyName, Type attributeType)
 		{
 		}
-		
+
 		/// <summary>
 		/// Asserts a CustomAttribute was kept on a specific type
 		/// </summary>
@@ -30,7 +32,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 		public RemovedAttributeInAssembly (string assemblyName, string attributeTypeName, string onType)
 		{
 		}
-		
+
 		/// <summary>
 		/// Asserts a CustomAttribute was kept on a specific type
 		/// </summary>
@@ -40,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 		public RemovedAttributeInAssembly (string assemblyName, Type attributeType, Type onType)
 		{
 		}
-		
+
 		/// <summary>
 		/// Asserts a CustomAttribute was kept on a member in a specific type
 		/// </summary>

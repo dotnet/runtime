@@ -26,9 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public enum AssemblyAction {
+	public enum AssemblyAction
+	{
 		// Ignore the assembly
 		Skip,
 		// Copy the existing files, assembly and symbols, into the output destination. E.g. .dll and .mdb

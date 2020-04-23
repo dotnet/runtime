@@ -2,7 +2,8 @@
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
 	public class MethodUsedViaReflectionAndLocal
 	{
 		public static void Main ()
@@ -19,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		public class A {
+		public class A
+		{
 			[Kept]
 			public int Foo ()
 			{
@@ -29,7 +31,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		public class B {
+		public class B
+		{
 			public int Foo ()
 			{
 				return 43;

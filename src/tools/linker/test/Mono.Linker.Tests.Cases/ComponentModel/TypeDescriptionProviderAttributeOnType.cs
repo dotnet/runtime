@@ -24,11 +24,11 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 			{
 			}
 		}
-	}	
+	}
 
 	[Reference ("System.dll")]
 	public class TypeDescriptionProviderAttributeOnType
-	{		
+	{
 		public static void Main ()
 		{
 			var r1 = new CustomTypeDescriptionProvider_1 ();
