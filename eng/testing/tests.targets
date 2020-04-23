@@ -141,6 +141,8 @@
       <!-- remove PDBs to save some space until we integrate ILLink -->
       <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
     </ItemGroup>
+    <Error Condition="'$(TargetArchitecture)' == 'arm64' and '$(DevTeamProvisioning)' == ''" 
+           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
     <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
