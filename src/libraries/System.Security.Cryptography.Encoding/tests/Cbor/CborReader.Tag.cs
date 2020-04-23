@@ -13,6 +13,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
 
+            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+            }
+
             AdvanceBuffer(1 + additionalBytes);
             _isTagContext = true;
             return tag;
@@ -21,6 +26,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void ReadTag(CborTag expectedTag)
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
+
+            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            {
+                throw new FormatException("Tagged items are not permitted under the current conformance level.");
+            }
 
             if (expectedTag != tag)
             {

@@ -210,7 +210,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             new object[]
             {
                 new object[] { CborTag.MimeMessage, 42 },
-                42m,
+                42.0m,
+                (BigInteger)1,
                 DateTimeOffset.UnixEpoch,
             };
     }

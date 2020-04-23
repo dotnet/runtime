@@ -58,23 +58,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             };
         }
 
-        public static bool RequiresSkipSemanticValidation(CborConformanceLevel conformanceLevel)
-        {
-            switch (conformanceLevel)
-            {
-                case CborConformanceLevel.Strict:
-                    return true;
-
-                case CborConformanceLevel.Lax:
-                case CborConformanceLevel.Rfc7049Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
-                    return false;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
-            };
-        }
-
         public static bool AllowsTags(CborConformanceLevel conformanceLevel)
         {
             switch (conformanceLevel)
