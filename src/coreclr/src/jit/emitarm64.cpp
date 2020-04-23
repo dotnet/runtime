@@ -867,10 +867,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2})
+                       // subhn{2}, pmull{2})
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(elemsize != EA_8BYTE);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
@@ -966,7 +964,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
         case IF_DV_3H:  // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                        // subhn{2})
+                        // subhn{2}, pmull{2})
         case IF_DV_3HI: // DV_3HI ........XXLMmmmm ....H.nnnnnddddd       Vd Vn Vm[] (smlal{2}, smlsl{2}, smull{2},
                         // umlal{2}, umlsl{2}, umull{2} vector by elem)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
@@ -5998,7 +5996,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(size == EA_8BYTE);
-            assert(opt == INS_OPTS_8B);
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_1D));
             fmt = IF_DV_3H;
             break;
 
@@ -6007,7 +6005,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(size == EA_16BYTE);
-            assert(opt == INS_OPTS_16B);
+            assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_2D));
             fmt = IF_DV_3H;
             break;
 
@@ -10865,7 +10863,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2})
+                       // subhn{2}, pmull{2})
             code     = emitInsCode(ins, fmt);
             elemsize = optGetElemsize(id->idInsOpt());
             code |= insEncodeElemsize(elemsize);   // XX
@@ -12531,7 +12529,7 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
-                       // subhn{2})
+                       // subhn{2}, pmull{2})
             if ((ins == INS_addhn) || (ins == INS_addhn2) || (ins == INS_raddhn) || (ins == INS_raddhn2) ||
                 (ins == INS_subhn) || (ins == INS_subhn2) || (ins == INS_rsubhn) || (ins == INS_rsubhn2))
             {
@@ -12543,7 +12541,17 @@ void emitter::emitDispIns(
             }
             else
             {
-                emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                if (((ins == INS_pmull) && (id->idInsOpt() == INS_OPTS_1D)) ||
+                    (ins == (INS_pmull2) && (id->idInsOpt() == INS_OPTS_2D)))
+                {
+                    // PMULL Vd.1Q, Vn.1D, Vm.1D
+                    // PMULL2 Vd.1Q, Vn.2D, Vm.2D
+                    printf("%s.1q, ", emitVectorRegName(id->idReg1()));
+                }
+                else
+                {
+                    emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                }
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             }
@@ -14422,7 +14430,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3H:  // addhn{2}, raddhn{2}, rsubhn{2}, sabal{2}, sabdl{2}, saddl{2}, saddw{2}, ssubl{2}, ssubw{2}
+        case IF_DV_3H:  // addhn{2}, raddhn{2}, rsubhn{2}, sabal{2}, sabdl{2}, saddl{2}, saddw{2}, ssubl{2}, ssubw{2},
+                        // pmull{2}
         case IF_DV_3HI: // subhn{2}, uabal{2}, uabdl{2}, uaddl{2}, uaddw{2}, usubl{2}, usubw{2}
             switch (ins)
             {
@@ -14484,9 +14493,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 case INS_pmull:
                 case INS_pmull2:
-                    assert((id->idInsOpt() == INS_OPTS_8B) || (id->idInsOpt() == INS_OPTS_16B));
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    if ((id->idInsOpt() == INS_OPTS_8B) || (id->idInsOpt() == INS_OPTS_16B))
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        // Crypto polynomial (64x64) multiply long
+                        assert((id->idInsOpt() == INS_OPTS_1D) || (id->idInsOpt() == INS_OPTS_2D));
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
                     break;
 
                 default:
