@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -13,7 +12,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer
     {
-        private const int PreferredChunkSize = 4 * 1024;
+        private const int PreferredChunkSize = 16 * 1024;
+
+        private const int MaximumHeldChunks = 16;
 
         /// <summary>
         ///     Ranges of bytes acked by the peer.
@@ -38,7 +39,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Chunk to be filled from user data.
         /// </summary>
-        private StreamChunk _toBeQueuedChunk = new StreamChunk(0, ReadOnlyMemory<byte>.Empty, ArrayPool<byte>.Shared.Rent(PreferredChunkSize));
+        private StreamChunk _toBeQueuedChunk = new StreamChunk(0, ReadOnlyMemory<byte>.Empty,
+            ArrayPool<byte>.Shared.Rent(PreferredChunkSize));
 
         /// <summary>
         ///     Channel of incoming chunks of memory from the user.
@@ -88,14 +90,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long MaxData { get; private set; }
 
         /// <summary>
-        ///     Limit when <see cref="_maxDataUpdateTcs"/> should be finished.
+        ///     Synchronization for avoiding overfilling the buffer.
         /// </summary>
-        private long _awaitedMaxData;
-
-        /// <summary>
-        ///     Completion source for waiting until flow control limit is available.
-        /// </summary>
-        private readonly ResettableCompletionSource<long> _maxDataUpdateTcs = new ResettableCompletionSource<long>();
+        private readonly SemaphoreSlim _bufferLimitSemaphore = new SemaphoreSlim(MaximumHeldChunks - 1);
 
         /// <summary>
         ///     True if the stream is closed for further writing (no more data can be added).
@@ -131,24 +128,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 return;
             }
 
+            var buffer = await RentBufferAsync(cancellationToken);
             var tmp = _toBeQueuedChunk;
-            var buffer = ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
-
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
 
-            if (tmp.StreamOffset >= MaxData)
+            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken);
+        }
+
+        /// <summary>
+        ///     Queues the not yet full chunk of stream into flush queue, blocking when control flow limit is not
+        ///     sufficient.
+        /// </summary>
+        internal void FlushChunk()
+        {
+            if (_toBeQueuedChunk.Length == 0)
             {
-                // wait until suitable flow-control limit is available
-                // TODO-RZ: is probably is not the best way to write this, the await should happen mostly only once,
-                // twice only due to data race with UpdateMaxData
-                _awaitedMaxData = tmp.StreamOffset;
-                while (tmp.StreamOffset < await _maxDataUpdateTcs.GetValueTask())
-                {
-                    // continue waiting
-                }
+                // nothing to do
+                return;
             }
 
-            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken);
+            var buffer = RentBuffer();
+            var tmp = _toBeQueuedChunk;
+            _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
+
+            _toSendChannel.Writer.TryWrite(tmp);
         }
 
         /// <summary>
@@ -168,11 +171,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal void UpdateMaxData(long value)
         {
             MaxData = Math.Max(MaxData, value);
-            if (MaxData > _awaitedMaxData)
-            {
-                _awaitedMaxData = MaxData;
-                _maxDataUpdateTcs.Complete(value);
-            }
         }
 
         internal async ValueTask EnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -182,7 +180,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, buffer.Length);
                 buffer.Span.Slice(0, toWrite).CopyTo(_toBeQueuedChunk.Buffer!.AsSpan(_toBeQueuedChunk.Length, toWrite));
                 WrittenBytes += toWrite;
-                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset, _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
+                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset,
+                    _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
 
                 if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
                 {
@@ -204,12 +203,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, data.Length);
                 data.Slice(0, toWrite).CopyTo(_toBeQueuedChunk.Buffer!.AsSpan(_toBeQueuedChunk.Length, toWrite));
                 WrittenBytes += toWrite;
-                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset, _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
+                _toBeQueuedChunk = new StreamChunk(_toBeQueuedChunk.StreamOffset,
+                    _toBeQueuedChunk.Buffer!.AsMemory(0, _toBeQueuedChunk.Length + toWrite), _toBeQueuedChunk.Buffer);
 
                 if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
                 {
-                    // TODO-RZ: make this method return ValueTask
-                    FlushChunkAsync().AsTask().GetAwaiter().GetResult();
+                    FlushChunk();
                 }
 
                 data = data.Slice(toWrite);
@@ -345,11 +344,29 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             {
                 if (_chunks[i].Buffer != null)
                 {
-                    ArrayPool<byte>.Shared.Return(_chunks[i].Buffer!);
+                    ReturnBuffer(_chunks[i].Buffer!);
                 }
             }
 
             _chunks.RemoveRange(0, toRemove);
+        }
+
+        private byte[] RentBuffer()
+        {
+            _bufferLimitSemaphore.Wait();
+            return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+        }
+
+        private async ValueTask<byte[]> RentBufferAsync(CancellationToken cancellationToken)
+        {
+            await _bufferLimitSemaphore.WaitAsync(cancellationToken);
+            return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
+        }
+
+        private void ReturnBuffer(byte[] buffer)
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            _bufferLimitSemaphore.Release();
         }
     }
 }

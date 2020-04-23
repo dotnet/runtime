@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
@@ -28,7 +29,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Received stream chunks which cannot be delivered yet because of out of order delivery of frames.
         /// </summary>
-        internal readonly SortedSet<StreamChunk> _outOfOrderChunks = new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
+        private readonly SortedSet<StreamChunk> _outOfOrderChunks = new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
@@ -152,14 +153,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
         }
 
-        internal async ValueTask<int> DeliverAsync(Memory<byte> destination)
+        internal async ValueTask<int> DeliverAsync(Memory<byte> destination, CancellationToken token)
         {
             int delivered = Deliver(destination.Span);
 
             if (delivered > 0)
                 return delivered;
 
-            if (await _deliverableChannel.Reader.WaitToReadAsync())
+            if (await _deliverableChannel.Reader.WaitToReadAsync(token))
             {
                 return Deliver(destination.Span);
             }

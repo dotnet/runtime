@@ -494,7 +494,12 @@ namespace System.Net.Quic.Implementations.Managed
             while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstFlushableStream()) != null)
             {
                 var buffer = stream!.OutboundBuffer!;
-                Debug.Assert(buffer.IsFlushable || buffer.SizeKnown);
+
+                if (!buffer.IsFlushable && !buffer.SizeKnown)
+                {
+                    // race condition, should not happen terribly often
+                    continue;
+                }
 
                 (long offset, long count) = buffer.GetNextSendableRange();
                 int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));

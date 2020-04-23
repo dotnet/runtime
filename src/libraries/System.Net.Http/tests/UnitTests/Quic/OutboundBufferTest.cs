@@ -20,17 +20,18 @@ namespace System.Net.Quic.Tests
             }
 
             buffer.Enqueue(tmp);
-            buffer.FlushChunkAsync().AsTask().GetAwaiter().GetResult();
+            buffer.ForceFlushPartialChunk();
         }
 
-        [Fact(Skip = "This needs to be rewritten since enqueue may block due to control flow limits")]
+        [Fact]
         public void ReturnsCorrectPendingRange()
         {
-            buffer.UpdateMaxData(10);
             EnqueueBytes(10);
             Assert.False(buffer.IsFlushable); // MaxData is 0 yet
 
+            buffer.UpdateMaxData(10);
             Assert.True(buffer.IsFlushable);
+
             var (start, count) = buffer.GetNextSendableRange();
             Assert.Equal(0u, start);
             Assert.Equal(10u, count);
