@@ -56,13 +56,13 @@ namespace CrossBoundaryLayout
         public static int Test()
         {
             int failure = 0;
+
             {
                 var a = (A)Activator.CreateInstance(typeof(A));
                 a._aVal = 1;
                 if (1 != (byte)typeof(A).GetField("_aVal").GetValue(a))
                 {
-                    failure++;
-                    Console.WriteLine("C a._aVal");
+                    ATest.ReportTestFailure("C a_aVal", a, ref failure);
                 }
             }
 
@@ -71,8 +71,7 @@ namespace CrossBoundaryLayout
                 a2._aVal = 1;
                 if (1 != (byte)typeof(AGeneric<byte>).GetField("_aVal").GetValue(a2))
                 {
-                    failure++;
-                    Console.WriteLine("C a2_aVal");
+                    ATest.ReportTestFailure("C a2_aVal", a2, ref failure);
                 }
             }
 
@@ -81,8 +80,7 @@ namespace CrossBoundaryLayout
                 a3._aVal._dVal = 1;
                 if (1 != ((ByteStruct)typeof(AGeneric<ByteStruct>).GetField("_aVal").GetValue(a3))._dVal)
                 {
-                    failure++;
-                    Console.WriteLine("C a3_aVal");
+                    ATest.ReportTestFailure("C a3_aVal", a3, ref failure);
                 }
             }
 
@@ -91,8 +89,7 @@ namespace CrossBoundaryLayout
                 a4._aVal = 1;
                 if (1 != (byte)typeof(ABoringGeneric<byte>).GetField("_aVal").GetValue(a4))
                 {
-                    failure++;
-                    Console.WriteLine("C a4_aVal");
+                    ATest.ReportTestFailure("C a4_aVal", a4, ref failure);
                 }
             }
 
@@ -101,18 +98,17 @@ namespace CrossBoundaryLayout
                 a5._aVal = 1;
                 if (1 != (byte)typeof(ABoringGeneric<ByteStruct>).GetField("_aVal").GetValue(a5))
                 {
-                    failure++;
-                    Console.WriteLine("C a5_aVal");
+                    ATest.ReportTestFailure("C a5_aVal", a5, ref failure);
                 }
             }
+
 
             {
                 var b = (B_A)Activator.CreateInstance(typeof(B_A));
                 b._bVal = 1;
                 if (1 != (byte)typeof(B_A).GetField("_bVal").GetValue(b))
                 {
-                    failure++;
-                    Console.WriteLine("C b._bVal");
+                    ATest.ReportTestFailure("C b_bVal", b, ref failure);
                 }
             }
 
@@ -121,8 +117,7 @@ namespace CrossBoundaryLayout
                 b2._bVal = 1;
                 if (1 != (byte)typeof(B_A_byte).GetField("_bVal").GetValue(b2))
                 {
-                    failure++;
-                    Console.WriteLine("C b2._bVal");
+                    ATest.ReportTestFailure("C b2_bVal", b2, ref failure);
                 }
             }
 
@@ -131,8 +126,7 @@ namespace CrossBoundaryLayout
                 b3._bVal = 1;
                 if (1 != (byte)typeof(B_A_D).GetField("_bVal").GetValue(b3))
                 {
-                    failure++;
-                    Console.WriteLine("C b3._bVal");
+                    ATest.ReportTestFailure("C b3_bVal", b3, ref failure);
                 }
             }
 
@@ -141,8 +135,7 @@ namespace CrossBoundaryLayout
                 b4._bVal = 1;
                 if (1 != (byte)typeof(B_A_Generic<byte>).GetField("_bVal").GetValue(b4))
                 {
-                    failure++;
-                    Console.WriteLine("C b4._bVal");
+                    ATest.ReportTestFailure("C b4_bVal", b4, ref failure);
                 }
             }
 
@@ -151,8 +144,7 @@ namespace CrossBoundaryLayout
                 b5._bVal = 1;
                 if (1 != (byte)typeof(B_A_byte_Generic<byte>).GetField("_bVal").GetValue(b5))
                 {
-                    failure++;
-                    Console.WriteLine("C b5._bVal");
+                    ATest.ReportTestFailure("C b5_bVal", b5, ref failure);
                 }
             }
 
@@ -161,8 +153,7 @@ namespace CrossBoundaryLayout
                 b6._bVal = 1;
                 if (1 != (byte)typeof(B_A_D_Generic<byte>).GetField("_bVal").GetValue(b6))
                 {
-                    failure++;
-                    Console.WriteLine("C b6._bVal");
+                    ATest.ReportTestFailure("C b6_bVal", b6, ref failure);
                 }
             }
 
@@ -171,8 +162,7 @@ namespace CrossBoundaryLayout
                 b7._bVal._dVal = 1;
                 if (1 != ((ByteStruct)typeof(B_A_Generic<ByteStruct>).GetField("_bVal").GetValue(b7))._dVal)
                 {
-                    failure++;
-                    Console.WriteLine("C b7._bVal");
+                    ATest.ReportTestFailure("C b7_bVal", b7, ref failure);
                 }
             }
 
@@ -181,8 +171,7 @@ namespace CrossBoundaryLayout
                 b8._bVal._dVal = 1;
                 if (1 != ((ByteStruct)typeof(B_A_byte_Generic<ByteStruct>).GetField("_bVal").GetValue(b8))._dVal)
                 {
-                    failure++;
-                    Console.WriteLine("C b8._bVal");
+                    ATest.ReportTestFailure("C b8_bVal", b8, ref failure);
                 }
             }
 
@@ -191,8 +180,7 @@ namespace CrossBoundaryLayout
                 b9._bVal._dVal = 1;
                 if (1 != ((ByteStruct)typeof(B_A_D_Generic<ByteStruct>).GetField("_bVal").GetValue(b9))._dVal)
                 {
-                    failure++;
-                    Console.WriteLine("C b9._bVal");
+                    ATest.ReportTestFailure("C b9_bVal", b9, ref failure);
                 }
             }
 
@@ -201,8 +189,7 @@ namespace CrossBoundaryLayout
                 b10._bVal = 1;
                 if (1 != (byte)typeof(B_ABoring_byte).GetField("_bVal").GetValue(b10))
                 {
-                    failure++;
-                    Console.WriteLine("C b10._bVal");
+                    ATest.ReportTestFailure("C b10_bVal", b10, ref failure);
                 }
             }
 
@@ -211,19 +198,16 @@ namespace CrossBoundaryLayout
                 b11._bVal = 1;
                 if (1 != (byte)typeof(B_ABoring_D).GetField("_bVal").GetValue(b11))
                 {
-                    failure++;
-                    Console.WriteLine("C b11._bVal");
+                    ATest.ReportTestFailure("C b11_bVal", b11, ref failure);
                 }
             }
-
 
             {
                 var c = (C_B_A)Activator.CreateInstance(typeof(C_B_A));
                 c._cVal = 1;
                 if (1 != (byte)typeof(C_B_A).GetField("_cVal").GetValue(c))
                 {
-                    failure++;
-                    Console.WriteLine("C c._cVal");
+                    ATest.ReportTestFailure("C c_bVal", c, ref failure);
                 }
             }
 
@@ -232,8 +216,7 @@ namespace CrossBoundaryLayout
                 c2._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_byte).GetField("_cVal").GetValue(c2))
                 {
-                    failure++;
-                    Console.WriteLine("C c2._cVal");
+                    ATest.ReportTestFailure("C c2_bVal", c2, ref failure);
                 }
             }
 
@@ -242,8 +225,7 @@ namespace CrossBoundaryLayout
                 c3._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_D).GetField("_cVal").GetValue(c3))
                 {
-                    failure++;
-                    Console.WriteLine("C c3._cVal");
+                    ATest.ReportTestFailure("C c3_bVal", c3, ref failure);
                 }
             }
 
@@ -252,8 +234,7 @@ namespace CrossBoundaryLayout
                 c4._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_Generic_byte).GetField("_cVal").GetValue(c4))
                 {
-                    failure++;
-                    Console.WriteLine("C c4._cVal");
+                    ATest.ReportTestFailure("C c4_bVal", c4, ref failure);
                 }
             }
 
@@ -262,8 +243,7 @@ namespace CrossBoundaryLayout
                 c5._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_byte_Generic_byte).GetField("_cVal").GetValue(c5))
                 {
-                    failure++;
-                    Console.WriteLine("C c5._cVal");
+                    ATest.ReportTestFailure("C c5_bVal", c5, ref failure);
                 }
             }
 
@@ -272,8 +252,7 @@ namespace CrossBoundaryLayout
                 c6._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_D_Generic_byte).GetField("_cVal").GetValue(c6))
                 {
-                    failure++;
-                    Console.WriteLine("C c6._cVal");
+                    ATest.ReportTestFailure("C c6_bVal", c6, ref failure);
                 }
             }
 
@@ -282,8 +261,7 @@ namespace CrossBoundaryLayout
                 c7._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_Generic_D).GetField("_cVal").GetValue(c7))
                 {
-                    failure++;
-                    Console.WriteLine("C c7._cVal");
+                    ATest.ReportTestFailure("C c7_bVal", c7, ref failure);
                 }
             }
 
@@ -292,8 +270,7 @@ namespace CrossBoundaryLayout
                 c8._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_byte_Generic_D).GetField("_cVal").GetValue(c8))
                 {
-                    failure++;
-                    Console.WriteLine("C c8._cVal");
+                    ATest.ReportTestFailure("C c8_bVal", c8, ref failure);
                 }
             }
 
@@ -302,8 +279,7 @@ namespace CrossBoundaryLayout
                 c9._cVal = 1;
                 if (1 != (byte)typeof(C_B_A_D_Generic_D).GetField("_cVal").GetValue(c9))
                 {
-                    failure++;
-                    Console.WriteLine("C c9._cVal");
+                    ATest.ReportTestFailure("C c9_bVal", c9, ref failure);
                 }
             }
 

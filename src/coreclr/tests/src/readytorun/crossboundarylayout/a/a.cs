@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
 
 namespace CrossBoundaryLayout
 {
@@ -23,6 +24,19 @@ namespace CrossBoundaryLayout
 
     public class ATest
     {
+        public static volatile object s_testFailObj;
+        public static void ReportTestFailure(string test, object o, ref int failCount)
+        {
+            Console.WriteLine(test);
+            s_testFailObj = o;
+            failCount++;
+            while (true)
+            {
+                s_testFailObj = o;
+                Thread.Sleep(1000);
+            }
+        }
+
         public static int Test()
         {
             int failure = 0;
@@ -31,8 +45,7 @@ namespace CrossBoundaryLayout
                 a._aVal = 1;
                 if (1 != (byte)typeof(A).GetField("_aVal").GetValue(a))
                 {
-                    failure++;
-                    Console.WriteLine("A a._aVal");
+                    ATest.ReportTestFailure("A a._aVal", a, ref failure);
                 }
             }
 
@@ -42,7 +55,7 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(AGeneric<byte>).GetField("_aVal").GetValue(a2))
                 {
                     failure++;
-                    Console.WriteLine("A a2_aVal");
+                    ATest.ReportTestFailure("A a2_aVal", a2, ref failure);
                 }
             }
 
@@ -51,8 +64,7 @@ namespace CrossBoundaryLayout
                 a3._aVal._dVal = 1;
                 if (1 != ((ByteStruct)typeof(AGeneric<ByteStruct>).GetField("_aVal").GetValue(a3))._dVal)
                 {
-                    failure++;
-                    Console.WriteLine("A a3_aVal");
+                    ATest.ReportTestFailure("A a3_aVal", a3, ref failure);
                 }
             }
 
@@ -61,8 +73,7 @@ namespace CrossBoundaryLayout
                 a4._aVal = 1;
                 if (1 != (byte)typeof(ABoringGeneric<byte>).GetField("_aVal").GetValue(a4))
                 {
-                    failure++;
-                    Console.WriteLine("A a4_aVal");
+                    ATest.ReportTestFailure("A a4_aVal", a4, ref failure);
                 }
             }
 
@@ -71,8 +82,7 @@ namespace CrossBoundaryLayout
                 a5._aVal = 1;
                 if (1 != (byte)typeof(ABoringGeneric<ByteStruct>).GetField("_aVal").GetValue(a5))
                 {
-                    failure++;
-                    Console.WriteLine("A a5_aVal");
+                    ATest.ReportTestFailure("A a5_aVal", a5, ref failure);
                 }
             }
 
