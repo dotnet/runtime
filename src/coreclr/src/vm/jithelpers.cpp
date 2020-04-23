@@ -5455,6 +5455,7 @@ void JIT_UncommonPatchpoint(int ilOffset)
         // Should be fatal
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_UncommonPatchpoint: patchpoint (0x%p) TRANSITION"
             " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
     // Now unwind back to the original method caller frame.

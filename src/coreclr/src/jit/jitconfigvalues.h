@@ -396,10 +396,10 @@ CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtuali
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
-// Enable uncommon patchpoints in Tier0 methods
-CONFIG_INTEGER(TC_UncommonPatchpoint, W("TC_UncommonPatchpoint"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+// Enable uncommon patchpoints in Tier0 methods (aka partial compilation -- disabled by default)
+CONFIG_INTEGER(TC_UncommonPatchpoint, W("TC_UncommonPatchpoint"), 0)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

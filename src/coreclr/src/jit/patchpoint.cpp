@@ -209,14 +209,19 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // TransformUncommon: expand current block to include uncommon patchpoint logic.
+    // TransformUncommon: delete all the statements in the block and insert
+    //     a call to the uncommon patchpoint helper
     //
-    //  S;
+    //  S0; S1; S2; ... SN;
     //
     //  ==>
     //
-    //  call JIT_UNCOMMON_PATHCPOINT (ilOffset)
-    //  (S deleted)
+    //  ~~{ S0; ... SN; }~~ (deleted)
+    //  call JIT_UNCOMMON_PATCHPOINT(ilOffset)
+    //
+    // Note S0 -- SN are not forever lost -- they will appear in the OSR version
+    // of the method created when the patchpoint is hit. Also note the patchpoint
+    // helper call will not return control to this method.
     //
     void TransformUncommon(BasicBlock* block)
     {

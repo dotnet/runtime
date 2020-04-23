@@ -4631,11 +4631,11 @@ public:
         }
         else
         {
+            // For the normal case the first block of the try is the try entry block.
+            //
             BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
         }
 
-        // TODO -- possible bug: we may need to merge in the out set for every block in the try range.
-        //
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
     }
 
