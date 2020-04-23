@@ -92,6 +92,10 @@ jobs:
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
+      # also get info about the disk
+      - script: df -h && du -h -d 3 ..
+        displayName: Disk utilization
+       
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
@@ -142,6 +146,11 @@ jobs:
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
             NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+      # Get info about the disk again at the end
+      - script: df -h && du -h -d 3 ..
+        displayName: Disk utilization
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
