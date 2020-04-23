@@ -69,7 +69,7 @@
   </Target>
 
   <Target Name="SetupRuntimePackNative"
-          Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          Condition="'$(RuntimeFlavor)' == 'Mono'"
           AfterTargets="AfterResolveReferences">
     <ItemGroup>
       <NativeBinPlaceItem Include="@(RuntimeFiles)" />
@@ -98,7 +98,7 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
