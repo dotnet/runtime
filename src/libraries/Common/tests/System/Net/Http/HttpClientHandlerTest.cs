@@ -1640,7 +1640,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         // a simple WebApp running on Azure
                         // punycode: xn--nicode-2ya.azurewebsites.net
-                        string backupServer = "http://ünicode.azurewebsites.net/time";
+                        string backupServer = "http://\u00FCnicode.azurewebsites.net/time";
                         using (HttpResponseMessage response = await client.GetAsync(backupServer))
                         {
                             response.EnsureSuccessStatusCode();
