@@ -50,7 +50,12 @@
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -99,6 +104,7 @@
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
+      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
