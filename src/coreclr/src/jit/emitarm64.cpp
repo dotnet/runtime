@@ -5912,6 +5912,32 @@ void emitter::emitIns_R_R_R(
             fmt  = IF_LS_3F;
             break;
 
+        case INS_addhn:
+        case INS_raddhn:
+        case INS_rsubhn:
+        case INS_subhn:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = x is reserved.
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_addhn2:
+        case INS_raddhn2:
+        case INS_rsubhn2:
+        case INS_subhn2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_2D); // The encoding size = 11, Q = x is reserved.
+            fmt = IF_DV_3H;
+            break;
+
         default:
             unreached();
             break;
