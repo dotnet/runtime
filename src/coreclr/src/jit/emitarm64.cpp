@@ -1578,6 +1578,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
     const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
+    const static insFormat formatEncode3K[3] = {IF_DR_3A, IF_DV_3H, IF_DV_3HI};
     const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
     const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
     const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
@@ -1595,6 +1596,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
     const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
     const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
+    const static insFormat formatEncode2R[2] = {IF_DV_3H, IF_DV_3HI};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1878,6 +1880,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
+        case IF_EN3K:
+            for (index = 0; index < 3; index++)
+            {
+                if (fmt == formatEncode3K[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
         case IF_EN2A:
             for (index = 0; index < 2; index++)
             {
@@ -2058,6 +2071,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 2; index++)
             {
                 if (fmt == formatEncode2Q[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN2R:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2R[index])
                 {
                     encoding_found = true;
                     break;

@@ -71,6 +71,7 @@ IF_DEF(EN3G, IS_NONE, NONE) // Instruction has 3 possible encoding types, type G
 IF_DEF(EN3H, IS_NONE, NONE) // Instruction has 3 possible encoding types, type H
 IF_DEF(EN3I, IS_NONE, NONE) // Instruction has 3 possible encoding types, type I
 IF_DEF(EN3J, IS_NONE, NONE) // Instruction has 3 possible encoding types, type J
+IF_DEF(EN3K, IS_NONE, NONE) // Instruction has 3 possible encoding types, type K
 IF_DEF(EN2A, IS_NONE, NONE) // Instruction has 2 possible encoding types, type A
 IF_DEF(EN2B, IS_NONE, NONE) // Instruction has 2 possible encoding types, type B
 IF_DEF(EN2C, IS_NONE, NONE) // Instruction has 2 possible encoding types, type C
@@ -88,6 +89,7 @@ IF_DEF(EN2N, IS_NONE, NONE) // Instruction has 2 possible encoding types, type N
 IF_DEF(EN2O, IS_NONE, NONE) // Instruction has 2 possible encoding types, type O
 IF_DEF(EN2P, IS_NONE, NONE) // Instruction has 2 possible encoding types, type P
 IF_DEF(EN2Q, IS_NONE, NONE) // Instruction has 2 possible encoding types, type Q
+IF_DEF(EN2R, IS_NONE, NONE) // Instruction has 2 possible encoding types, type R
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
