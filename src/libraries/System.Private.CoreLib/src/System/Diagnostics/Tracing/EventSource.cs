@@ -2152,18 +2152,18 @@ namespace System.Diagnostics.Tracing
         private unsafe void WriteEventString(EventLevel level, long keywords, string msgString)
         {
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
+            bool allAreNull = true;
 #if FEATURE_MANAGED_ETW
-            if (m_etwProvider == null)
-            {
-                return;
-            }
+            allAreNull &= (m_etwProvider == null);
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
-            if (m_eventPipeProvider == null)
+            allAreNull &= (m_eventPipeProvider == null);
+#endif // FEATURE_PERFTRACING
+            if (allAreNull)
             {
                 return;
             }
-#endif // FEATURE_PERFTRACING
+
             const string EventName = "EventSourceMessage";
             if (SelfDescribingEvents)
             {
