@@ -42,7 +42,7 @@
     <Error Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_HOME)' == ''" Text="Error: You need to set the ANDROID_NDK_HOME environment variable pointing to the Android NDK root." />
+    <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == ''" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
 
     <!-- Common options -->
     <ItemGroup>
@@ -482,10 +482,10 @@
       <_MonoConfigureParams Include="--enable-minimal=ssa,portability,attach,verifier,full_messages,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,interpreter,,gac,cfgdir_config" />
       <_MonoConfigureParams Include="--enable-monodroid" />
       <_MonoConfigureParams Include="--enable-dynamic-btls" />
-      <_MonoConfigureParams Include="--with-btls-android-ndk=$(ANDROID_NDK_HOME)" />
+      <_MonoConfigureParams Include="--with-btls-android-ndk=$(ANDROID_NDK_ROOT)" />
       <_MonoConfigureParams Include="--with-btls-android-api=$(AndroidApiVersion)" />
       <_MonoConfigureParams Include="--with-btls-android-ndk-asm-workaround" />
-      <_MonoConfigureParams Include="--with-btls-android-cmake-toolchain=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake" />
+      <_MonoConfigureParams Include="--with-btls-android-cmake-toolchain=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake" />
       <_MonoConfigureParams Include="--with-sigaltstack=yes" />
       <_MonoConfigureParams Include="--with-tls=pthread" />
       <_MonoConfigureParams Include="--without-ikvm-native" />
@@ -513,10 +513,10 @@
       <_MonoCXXFLAGS Include="-fstack-protector" />
 
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-DANDROID64" />
-      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/aarch64-linux-android" />
-      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/arm-linux-androideabi" />
-      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/x86_64-linux-android" />
-      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/i686-linux-android" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/aarch64-linux-android" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/arm-linux-androideabi" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/x86_64-linux-android" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/i686-linux-android" />
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-m64" />
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-m32" />
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64'" Include="-DL_cuserid=9" />
@@ -524,15 +524,15 @@
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DSK_RELEASE" />
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DNDEBUG" />
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-UDEBUG" />
-      <_MonoCPPFLAGS Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include" />
+      <_MonoCPPFLAGS Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include" />
       <_MonoCPPFLAGS Include="-DMONODROID=1" />
       <_MonoCPPFLAGS Include="-D__ANDROID_API__=$(AndroidApiVersion)" />
 
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-DANDROID64" />
-      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/aarch64-linux-android" />
-      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/arm-linux-androideabi" />
-      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/x86_64-linux-android" />
-      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include/i686-linux-android" />
+      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/aarch64-linux-android" />
+      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/arm-linux-androideabi" />
+      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/x86_64-linux-android" />
+      <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include/i686-linux-android" />
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x64'" Include="-m64" />
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'x86'" Include="-m32" />
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64'" Include="-DL_cuserid=9" />
@@ -540,19 +540,19 @@
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DSK_RELEASE" />
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DNDEBUG" />
       <_MonoCXXCPPFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-UDEBUG" />
-      <_MonoCXXCPPFLAGS Include="-I$(ANDROID_NDK_HOME)/sysroot/usr/include" />
+      <_MonoCXXCPPFLAGS Include="-I$(ANDROID_NDK_ROOT)/sysroot/usr/include" />
       <_MonoCXXCPPFLAGS Include="-DMONODROID=1" />
       <_MonoCXXCPPFLAGS Include="-D__ANDROID_API__=$(AndroidApiVersion)" />
 
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-L$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-arm64/usr/lib" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-Wl,-rpath-link=$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-arm64/usr/lib,-dynamic-linker=/system/bin/linker" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-L$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-arm/usr/lib" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-Wl,-rpath-link=$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-arm/usr/lib,-dynamic-linker=/system/bin/linker" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-L$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-arm64/usr/lib" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-Wl,-rpath-link=$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-arm64/usr/lib,-dynamic-linker=/system/bin/linker" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-L$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-arm/usr/lib" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-Wl,-rpath-link=$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-arm/usr/lib,-dynamic-linker=/system/bin/linker" />
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm'" Include="-Wl,--fix-cortex-a8" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'x86'" Include="-L$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-x86/usr/lib" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'x86'" Include="-Wl,-rpath-link=$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-x86/usr/lib,-dynamic-linker=/system/bin/linker" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'x64'" Include="-L$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-x86_64/usr/lib" />
-      <_MonoLDFLAGS Condition="'$(Platform)' == 'x64'" Include="-Wl,-rpath-link=$(ANDROID_NDK_HOME)/platforms/android-$(AndroidApiVersion)/arch-x86_64/usr/lib,-dynamic-linker=/system/bin/linker" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'x86'" Include="-L$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-x86/usr/lib" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'x86'" Include="-Wl,-rpath-link=$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-x86/usr/lib,-dynamic-linker=/system/bin/linker" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'x64'" Include="-L$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-x86_64/usr/lib" />
+      <_MonoLDFLAGS Condition="'$(Platform)' == 'x64'" Include="-Wl,-rpath-link=$(ANDROID_NDK_ROOT)/platforms/android-$(AndroidApiVersion)/arch-x86_64/usr/lib,-dynamic-linker=/system/bin/linker" />
       <_MonoLDFLAGS Include="-z now" />
       <_MonoLDFLAGS Include="-z relro" />
       <_MonoLDFLAGS Include="-z noexecstack" />
@@ -589,8 +589,8 @@
       <_MonoAndroidBuildHost Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</_MonoAndroidBuildHost>
       <_MonoAndroidBuildHost Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</_MonoAndroidBuildHost>
 
-      <_MonoAndroidToolchainPrefix>$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(_MonoAndroidBuildHost)/bin/$(_MonoAndroidTargetTuple)</_MonoAndroidToolchainPrefix>
-      <_MonoAndroidToolchainPrefixClang Condition="'$(Platform)' == 'arm'">$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(_MonoAndroidBuildHost)/bin/armv7a-linux-androideabi$(AndroidApiVersion)</_MonoAndroidToolchainPrefixClang>
+      <_MonoAndroidToolchainPrefix>$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(_MonoAndroidBuildHost)/bin/$(_MonoAndroidTargetTuple)</_MonoAndroidToolchainPrefix>
+      <_MonoAndroidToolchainPrefixClang Condition="'$(Platform)' == 'arm'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(_MonoAndroidBuildHost)/bin/armv7a-linux-androideabi$(AndroidApiVersion)</_MonoAndroidToolchainPrefixClang>
       <_MonoAndroidToolchainPrefixClang Condition="'$(Platform)' != 'arm'">$(_MonoAndroidToolchainPrefix)$(AndroidApiVersion)</_MonoAndroidToolchainPrefixClang>
 
       <_MonoCCOption>CC="$(_MonoAndroidToolchainPrefixClang)-clang"</_MonoCCOption>
