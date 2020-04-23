@@ -7,6 +7,7 @@ parameters:
   testGroup: ''
   liveRuntimeBuildConfig: ''
   testBuildPhase: ''
+  runtimeFlavor: 'coreclr'
 
   # When set to a non-empty value (Debug / Release), it determines libraries
   # build configuration to use for the tests. Setting this property implies
