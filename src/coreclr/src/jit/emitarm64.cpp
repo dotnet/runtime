@@ -4621,6 +4621,17 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2G;
             break;
 
+        case INS_sadalp:
+        case INS_saddlp:
+        case INS_uadalp:
+        case INS_uaddlp:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+            fmt = IF_DV_2T;
+            break;
+
         default:
             unreached();
             break;
