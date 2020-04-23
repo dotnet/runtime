@@ -50,7 +50,7 @@
       <_MonoConfigureParams Include="--enable-maintainer-mode" />
       <_MonoConfigureParams Include="--enable-compile-warnings" />
       <_MonoConfigureParams Include="--prefix=$(MonoObjDir)out" />
-      <_MonoConfigureParams Condition="'$(MonoEnableLLVM)' == 'true'" Include="--with-llvm=$(MonoLLVMDir)" /> <!-- TODO: integrate for iOS/Android -->
+      <_MonoConfigureParams Condition="'$(MonoEnableLLVM)' == 'true'" Include="--with-llvm=$(MonoLLVMDir)" /> <!-- TODO: integrate for Android -->
       <_MonoConfigureParams Condition="'$(MonoEnableCXX)' == 'true'" Include="--enable-cxx" />
     </ItemGroup>
 
@@ -183,7 +183,7 @@
       <_MonoAotCrossConfigureParams Include="--enable-minimal=com,remoting" />
       <_MonoAotCrossConfigureParams Include="--enable-monotouch" />
       <_MonoAotCrossConfigureParams Include="--disable-crash-reporting" />
-      <!--<_MonoAotCrossConfigureParams Include="with-llvm=/Users/alexander/dev/mono2/sdks/out/llvm-llvm64" /> --> <!-- TODO -->
+      <_MonoAotCrossConfigureParams Include="--with-llvm=$(MonoLLVMDir)" />
 
       <_MonoAotCrossAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
 
@@ -377,7 +377,7 @@
       <_MonoAotCrossConfigureParams Include="--enable-minimal=com,remoting" />
       <_MonoAotCrossConfigureParams Include="--enable-monotouch" />
       <_MonoAotCrossConfigureParams Include="--disable-crash-reporting" />
-      <!--<_MonoAotCrossConfigureParams Include="with-llvm=/Users/alexander/dev/mono2/sdks/out/llvm-llvm64" /> --> <!-- TODO -->
+      <_MonoAotCrossConfigureParams Include="--with-llvm=$(MonoLLVMDir)" />
 
       <_MonoAotCrossAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
 
@@ -965,6 +965,12 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(BinDir)cross\mono-aot-cross</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\llc">
+        <Destination>$(BinDir)cross\llc</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\opt">
+        <Destination>$(BinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
     </ItemGroup>
