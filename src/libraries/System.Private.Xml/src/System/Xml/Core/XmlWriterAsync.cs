@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading.Tasks;
 
 using System;
@@ -44,14 +45,14 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public virtual Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public virtual Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string subset)
         {
             throw new NotImplementedException();
         }
 
         // Writes out the specified start tag and associates it with the given namespace and prefix.
 
-        public virtual Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public virtual Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             throw new NotImplementedException();
         }
@@ -72,7 +73,7 @@ namespace System.Xml
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string prefix, string localName, string ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
@@ -94,7 +95,7 @@ namespace System.Xml
 
         // Writes the start of an attribute.
 
-        protected internal virtual Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal virtual Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             throw new NotImplementedException();
         }
@@ -224,11 +225,11 @@ namespace System.Xml
         }
 
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
-        public virtual async Task WriteQualifiedNameAsync(string localName, string ns)
+        public virtual async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             if (ns != null && ns.Length > 0)
             {
-                string prefix = LookupPrefix(ns);
+                string? prefix = LookupPrefix(ns);
                 if (prefix == null)
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
@@ -568,7 +569,7 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public async Task WriteElementStringAsync(string prefix, string localName, string ns, string value)
+        public async Task WriteElementStringAsync(string? prefix, string localName, string? ns, string value)
         {
             await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
             if (null != value && 0 != value.Length)
