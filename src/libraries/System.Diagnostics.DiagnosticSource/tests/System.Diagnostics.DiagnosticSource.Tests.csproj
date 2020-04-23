@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="DiagnosticSourceTests.cs" />
     <Compile Include="ActivityTests.cs" />
+    <Compile Include="ActivitySourceTests.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsNetFx)' == 'true'">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />

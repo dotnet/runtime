@@ -62,7 +62,7 @@
         <PackageTargetRuntime>netbsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
         <TargetsWebAssembly>true</TargetsWebAssembly>

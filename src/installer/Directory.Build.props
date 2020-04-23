@@ -357,7 +357,7 @@
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

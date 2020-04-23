@@ -57,7 +57,7 @@ jobs:
         - _subset: libs
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
-        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+        - ${{ if eq(parameters.osGroup, 'Browser') }}:
           - EMSDK_PATH: /usr/local/emscripten
         # for coreclr library builds (when not testing) build corelib as well.   
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
