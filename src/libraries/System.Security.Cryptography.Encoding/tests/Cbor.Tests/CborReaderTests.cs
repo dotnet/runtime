@@ -51,6 +51,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(0, reader.BytesRemaining);
         }
 
+        [Fact]
+        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        {
+            var reader = new CborReader(Array.Empty<byte>());
+            Assert.Equal(CborConformanceLevel.Lax, reader.ConformanceLevel);
+        }
+
         [Theory]
         [InlineData(CborMajorType.UnsignedInteger, CborReaderState.UnsignedInteger)]
         [InlineData(CborMajorType.NegativeInteger, CborReaderState.NegativeInteger)]

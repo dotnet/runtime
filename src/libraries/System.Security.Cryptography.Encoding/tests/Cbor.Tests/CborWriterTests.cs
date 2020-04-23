@@ -46,6 +46,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(5, writer.BytesWritten);
         }
 
+        [Fact]
+        public static void ConformanceLevel_DefaultValue_ShouldEqualLax()
+        {
+            using var writer = new CborWriter();
+            Assert.Equal(CborConformanceLevel.Lax, writer.ConformanceLevel);
+        }
+
         [Theory]
         [MemberData(nameof(EncodedValueInputs))]
         public static void WriteEncodedValue_RootValue_HappyPath(string hexEncodedValue)

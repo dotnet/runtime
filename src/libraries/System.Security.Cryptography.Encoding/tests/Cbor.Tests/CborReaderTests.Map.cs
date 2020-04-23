@@ -69,6 +69,42 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(CborConformanceLevel.Lax, "b800")]
+        [InlineData(CborConformanceLevel.Lax, "b90000")]
+        [InlineData(CborConformanceLevel.Lax, "ba00000000")]
+        [InlineData(CborConformanceLevel.Lax, "bb0000000000000000")]
+        [InlineData(CborConformanceLevel.Strict, "b800")]
+        [InlineData(CborConformanceLevel.Strict, "b90000")]
+        [InlineData(CborConformanceLevel.Strict, "ba00000000")]
+        [InlineData(CborConformanceLevel.Strict, "bb0000000000000000")]
+        internal static void ReadMap_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            uint? length = reader.ReadStartMap();
+            Assert.NotNull(length);
+            Assert.Equal(0u, length!.Value);
+            reader.ReadEndMap();
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "b800")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "b90000")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "ba00000000")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "bb0000000000000000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "b800")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "b90000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "ba00000000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "bb0000000000000000")]
+        internal static void ReadMap_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            Assert.Throws<FormatException>(() => reader.ReadStartMap());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
