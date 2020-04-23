@@ -7,7 +7,6 @@ using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace System.Xml.Tests
 {
@@ -1185,11 +1184,6 @@ namespace System.Xml.Tests
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
 
-            // Issue 30218: invalid formatters
-            // TODO remove once invalid formatter is removed from Sch_WhiteSpaceRestriction1.
-            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
-
             Assert.Contains("whiteSpace", ex.Message);
             Assert.Contains("collapse", ex.Message);
             Assert.Contains("preserve", ex.Message);
@@ -1238,11 +1232,6 @@ namespace System.Xml.Tests
             }
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-
-            // Issue 30218: invalid formatters
-            // TODO remove once invalid formatter is removed from Sch_WhiteSpaceRestriction1.
-            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
 
             Assert.Contains("whiteSpace", ex.Message);
             Assert.DoesNotContain("collapse", ex.Message);
