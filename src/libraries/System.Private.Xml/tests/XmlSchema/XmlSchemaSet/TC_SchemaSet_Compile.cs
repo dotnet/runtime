@@ -1177,7 +1177,11 @@ namespace System.Xml.Tests
         public void WhiteSpaceRestriction1_Throws(string schema)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
-            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+            using (StringReader sr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(sr))
+            {
+                ss.Add(null, xmlrdr);
+            }
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
 
