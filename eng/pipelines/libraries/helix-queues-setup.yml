@@ -112,16 +112,14 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-          # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
-          #- Windows.7.Amd64.Open
-          #- Windows.81.Amd64.Open
+          - Windows.7.Amd64.Open
+          - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
-            # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
-            #- Windows.7.Amd64.Open
-            #- Windows.81.Amd64.Open
+            - Windows.7.Amd64.Open
+            - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
             - Windows.10.Amd64.Server19H1.Open
