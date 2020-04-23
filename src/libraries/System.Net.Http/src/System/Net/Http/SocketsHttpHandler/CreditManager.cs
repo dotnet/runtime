@@ -36,50 +36,6 @@ namespace System.Net.Http
             get => this;
         }
 
-        public int RequestCredit(int amount, CancellationToken cancellationToken)
-        {
-            lock (SyncObject)
-            {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(CreditManager));
-                }
-
-                if (_current > 0)
-                {
-                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
-
-                    int granted = Math.Min(amount, _current);
-                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
-                    _current -= granted;
-                    return granted;
-                }
-
-                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
-
-                // Otherwise, create a new waiter.
-                CreditWaiter waiter = cancellationToken.CanBeCanceled ?
-                    new CancelableCreditWaiter(SyncObject, cancellationToken) :
-                    new CreditWaiter();
-                waiter.Amount = amount;
-
-                // Add the waiter at the tail of the queue.
-                if (_waitersTail is null)
-                {
-                    _waitersTail = waiter.Next = waiter;
-                }
-                else
-                {
-                    waiter.Next = _waitersTail.Next;
-                    _waitersTail.Next = waiter;
-                    _waitersTail = waiter;
-                }
-
-                // TODO: This is sync-over-async... don't see a good way around this.
-                return waiter.AsValueTask().AsTask().GetAwaiter().GetResult();
-            }
-        }
-
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
         {
             lock (SyncObject)
