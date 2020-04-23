@@ -18,6 +18,11 @@ set(SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/empty.cpp
 )
 
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND SOURCES
+        Exports.def)
+endif()
+
 set(HEADERS
 )
 
