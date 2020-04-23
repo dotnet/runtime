@@ -394,15 +394,14 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - OSX_x64
+    - ${{ if ne(variables['debugOnPrReleaseOnRolling'], 'Release') }}:
+      - OSX_x64
     jobParameters:
       liveRuntimeBuildConfig: release
       condition: >-
-        and(
-          ne(variables['debugOnPrReleaseOnRolling'], 'Release'),
-          or(
-            eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-            eq(variables['isFullMatrix'], true)))
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build libraries using Mono CoreLib only
