@@ -12349,6 +12349,32 @@ void emitter::emitDispIns(
             emitDispImm(emitGetInsSC(id), false);
             break;
 
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2})
+            if ((ins == INS_addhn) || (ins == INS_addhn2) || (ins == INS_raddhn) || (ins == INS_raddhn2) ||
+                (ins == INS_subhn) || (ins == INS_subhn2) || (ins == INS_rsubhn) || (ins == INS_rsubhn2))
+            {
+                // These are "high narrow" instruction i.e. their source registers are "wider" than the destination
+                // register.
+                emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg2(), optWidenElemsize(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg3(), optWidenElemsize(id->idInsOpt()), false);
+            }
+            else
+            {
+                emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
+            }
+            break;
+
+        case IF_DV_3HI:
+            emitDispVectorReg(id->idReg1(), optWidenElemsize(id->idInsOpt()), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+            elemsize = optGetElemsize(id->idInsOpt());
+            emitDispVectorRegIndex(id->idReg3(), elemsize, emitGetInsSC(id), false);
+            break;
+
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
