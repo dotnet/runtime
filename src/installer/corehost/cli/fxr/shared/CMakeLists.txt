@@ -15,6 +15,11 @@ set(SOURCES
     ./hostpolicy_resolver.cpp
 )
 
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND SOURCES
+        Exports.def)
+endif()
+
 set(HEADERS
     ../static/command_line.h
     ../static/corehost_init.h
