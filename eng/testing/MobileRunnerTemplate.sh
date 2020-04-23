@@ -4,15 +4,18 @@ EXECUTION_DIR=$(dirname $0)
 TEST_NAME=$1
 TARGET_ARCH=$2
 TARGET=
-
-# Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
-APP_BUNDLE=$EXECUTION_DIR/Bundle/$TEST_NAME/Release-iphonesimulator/$TEST_NAME.app
+SCHEME_SDK=
 
 if [ "$TARGET_ARCH" == "arm64" ]; then
-    TARGET=ios-device-64
+    TARGET=ios-device
+    SCHEME_SDK=Release-iphoneos
 else
     TARGET=ios-simulator-64
+    SCHEME_SDK=Release-iphonesimulator
 fi
+
+# Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
+APP_BUNDLE=$EXECUTION_DIR/Bundle/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/runonsim.lock
@@ -27,6 +30,6 @@ while true; do
 done
 
 dotnet xharness ios test --app="$APP_BUNDLE" \
-    --targets=ios-simulator-64 \
+    --targets=$TARGET \
     --output-directory="$EXECUTION_DIR/Bundle/xharness-output" \
     --working-directory="$EXECUTION_DIR/Bundle/xharness-workingdir"

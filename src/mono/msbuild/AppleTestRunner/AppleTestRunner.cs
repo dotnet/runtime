@@ -128,7 +128,7 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
     protected override string? IgnoreFilesDirectory => null;
 
-    public string BundleIdentifier => "net.dot.test-runner";
+    public string BundleIdentifier => "net.dot." + s_MainTestName;
 
     public string? UniqueIdentifier { get; }
 
