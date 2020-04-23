@@ -512,7 +512,7 @@ private:
                                        PCODE addrOfPatcher,
                                        size_t dispatchToken
 #ifdef TARGET_X86
-                                       , MethodTable*     pRepresentativeMT
+                                       , size_t stackArgumentsSize
 #endif
                                        );
 

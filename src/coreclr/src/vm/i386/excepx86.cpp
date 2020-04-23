@@ -3697,31 +3697,25 @@ AdjustContextForVirtualStub(
 
     // set the ESP to what it would be after the call (remove pushed arguments)
 
-    MethodTable* pMT;
-    PCODE stubEntry;
+    size_t stackArgumentsSize;
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
-        stubEntry = f_IP;
-        DispatchHolder *holder = DispatchHolder::FromDispatchEntry(stubEntry);
-        pMT = (MethodTable*)holder->stub()->expectedMT();
+        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
+        DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
+        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
+        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
+        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
+        stackArgumentsSize = pMD->SizeOfArgStack();
     }
     else
     {
-        // Compute the stub entry address from the address of failure (dereferencing of this pointer)
-        stubEntry = f_IP - ResolveStub::offsetOfThisDeref();
-        ResolveHolder *holder = ResolveHolder::FromResolveEntry(stubEntry);
-        pMT = (MethodTable*)holder->stub()->representativeMT();
+        // Compute the stub entry address from the address of failure (location of dereferencing of "this" pointer)
+        ResolveHolder *holder = ResolveHolder::FromResolveEntry(f_IP - ResolveStub::offsetOfThisDeref());
+        stackArgumentsSize = holder->stub()->stackArgumentsSize();
     }
 
-    DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubEntry, sk));
-    MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
-
-    {
-        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-        sp += pMD->SizeOfArgStack();
-    }
-
-    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp)));
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp + stackArgumentsSize)));
 
     return TRUE;
 }

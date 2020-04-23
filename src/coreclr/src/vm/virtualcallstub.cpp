@@ -1912,11 +1912,21 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         PCODE addrOfResolver = (PCODE)(resolvers->Find(&probeR));
                         if (addrOfResolver == CALL_STUB_EMPTY_ENTRY)
                         {
+#ifdef TARGET_X86
+                            MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, objectType);
+                            size_t stackArgumentsSize;
+                            {
+                                ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+                                stackArgumentsSize = pMD->SizeOfArgStack();
+                            }
+
+#endif // TARGET_X86
+
                             pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                              pBackPatchFcn,
                                                              token.To_SIZE_T()
 #ifdef TARGET_X86
-                                                             , objectType
+                                                             , stackArgumentsSize
 #endif
                                                              );
 
@@ -2854,7 +2864,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                                                            PCODE            addrOfPatcher,
                                                            size_t           dispatchToken
 #ifdef TARGET_X86
-                                                           , MethodTable*   pRepresentativeMT
+                                                           , size_t         stackArgumentsSize
 #endif
                                                            )
 {
@@ -2922,7 +2932,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
                        g_resolveCache->GetCacheBaseAddr(), counterAddr
 #ifdef TARGET_X86
-                       , pRepresentativeMT
+                       , stackArgumentsSize
 #endif
                        );
     ClrFlushInstructionCache(holder->stub(), holder->stub()->size());

@@ -267,7 +267,7 @@ struct ResolveStub
     inline size_t token()                   { LIMITED_METHOD_CONTRACT; return _token;          }
     inline size_t size()                    { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
     inline static size_t offsetOfThisDeref(){ LIMITED_METHOD_CONTRACT; return offsetof(ResolveStub, part1) - offsetof(ResolveStub, _resolveEntryPoint); }
-    inline size_t representativeMT()        { LIMITED_METHOD_CONTRACT; return _representativeMT; }
+    inline size_t stackArgumentsSize()      { LIMITED_METHOD_CONTRACT; return _stackArgumentsSize; }
 
 private:
     friend struct ResolveHolder;
@@ -331,7 +331,7 @@ private:
     DISPL _backpatcherDispl;        // xx xx xx xx          backpatcherWorker  == BackPatchWorkerAsmStub
     BYTE  part11 [1];               // eb           jmp
     BYTE toResolveStub;             // xx                   resolveStub, i.e. go back to _resolveEntryPoint
-    size_t  _representativeMT;      // xx xx xx xx
+    size_t _stackArgumentsSize;     // xx xx xx xx
 };
 
 /* ResolveHolders are the containers for ResolveStubs,  They provide
@@ -347,7 +347,7 @@ struct ResolveHolder
     void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32 * counterAddr,
-                     MethodTable* pRepresentativeMT);
+                     size_t stackArgumentsSize);
 
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -935,7 +935,7 @@ void ResolveHolder::InitializeStatic()
 void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr,
-                                MethodTable* pRepresentativeMT)
+                                size_t stackArgumentsSize)
 {
     _stub = resolveInit;
 
@@ -948,7 +948,7 @@ void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._tokenPush          = dispatchToken;
     _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
     _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &_stub._backpatcherDispl   + sizeof(DISPL));
-    _stub._representativeMT   = (size_t) pRepresentativeMT;
+    _stub._stackArgumentsSize = stackArgumentsSize;
 }
 
 ResolveHolder* ResolveHolder::FromFailEntry(PCODE failEntry)
