@@ -1624,12 +1624,32 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient())
             {
-                // international version of the Starbucks website
-                // punycode: xn--oy2b35ckwhba574atvuzkc.com
-                string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
-                using (HttpResponseMessage response = await client.GetAsync(server))
+                try
                 {
-                    response.EnsureSuccessStatusCode();
+                    // international version of the Starbucks website
+                    // punycode: xn--oy2b35ckwhba574atvuzkc.com
+                    string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
+                    using (HttpResponseMessage response = await client.GetAsync(server))
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        // a simple WebApp running on Azure
+                        // punycode: xn--nicode-2ya.azurewebsites.net
+                        string backupServer = "http://ünicode.azurewebsites.net/time";
+                        using (HttpResponseMessage response = await client.GetAsync(backupServer))
+                        {
+                            response.EnsureSuccessStatusCode();
+                        }
+                    }
+                    catch (Exception secondEx)
+                    {
+                        throw new AggregateException(ex, secondEx);
+                    }
                 }
             }
         }
