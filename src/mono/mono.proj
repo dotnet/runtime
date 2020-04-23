@@ -1,6 +1,8 @@
 <Project DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
 
+  <!-- This comment is here to force this project to build and test in the pr.  See https://github.com/dotnet/core-eng/issues/9448 for info -->
+ 
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
