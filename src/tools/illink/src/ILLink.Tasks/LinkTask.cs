@@ -107,6 +107,14 @@ namespace ILLink.Tasks
 		bool? _iPConstProp;
 
 		/// <summary>
+		///   A list of feature names used by the body substitution logic.
+		///   Each Item requires "Value" boolean metadata with the value of
+		///   the feature setting.
+		///   Maps to '--feature'.
+		/// </summary>
+		public ITaskItem [] FeatureSettings { get; set; }
+
+		/// <summary>
 		///   Boolean specifying whether to enable sealer optimization globally.
 		///   Maps to '--enable-opt sealer' or '--disable-opt sealer'.
 		/// </summary>
@@ -326,6 +334,16 @@ namespace ILLink.Tasks
 				args.AppendLine ("--enable-opt clearinitlocals");
 				if (ClearInitLocalsAssemblies?.Length > 0) {
 					args.AppendFormat ($"--custom-data ClearInitLocalsAssemblies={ClearInitLocalsAssemblies}");
+				}
+			}
+
+			if (FeatureSettings != null) {
+				foreach (var featureSetting in FeatureSettings) {
+					var feature = featureSetting.ItemSpec;
+					var featureValue = featureSetting.GetMetadata ("Value");
+					if (String.IsNullOrEmpty(featureValue))
+						throw new ArgumentException ("feature settings require \"Value\" metadata");
+					args.Append ("--feature ").Append (feature).Append(" ").AppendLine (featureValue);
 				}
 			}
 

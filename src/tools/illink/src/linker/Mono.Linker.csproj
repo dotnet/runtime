@@ -29,6 +29,7 @@
     <Compile Remove="Linker\XApiReader.cs" />
     <Compile Remove="Linker.Steps\LoadI18nAssemblies.cs" />
     <Compile Remove="Linker.Steps\PreserveCalendarsStep.cs" />
+    <Compile Remove="Linker.Steps\RemoveFeaturesStep.cs" />
     <Compile Remove="Linker.Steps\ResolveFromXApiStep.cs" />
   </ItemGroup>
 

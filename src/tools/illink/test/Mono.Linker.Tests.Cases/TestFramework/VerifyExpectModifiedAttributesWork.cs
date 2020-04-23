@@ -8,6 +8,9 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 	/// This test is here to give some coverage to the attribute to ensure it doesn't break.  We need to leverage the ETW feature since it is the only
 	/// one that modifies bodies currently
 	/// </summary>
+#if NETCOREAPP
+	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
+#endif
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
 	// Keep framework code that calls EventSource methods like OnEventCommand
 	[SetupLinkerCoreAction ("skip")]

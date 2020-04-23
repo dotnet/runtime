@@ -3,6 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+#if NETCOREAPP
+	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
+#endif
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[SetupLinkerArgument ("--exclude-feature", "com")]
 	public class ComAttributesAreRemovedWhenFeatureExcluded {

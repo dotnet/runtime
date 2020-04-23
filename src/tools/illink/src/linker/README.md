@@ -116,6 +116,9 @@ An example of a substitution XML file
       <field name="MyNumericField" value="5" initialize="true">
       </field>	    
     </type>
+    <type fullname="UserCode.Substitutions.Playground" feature="EnableOptionalFeature" featurevalue="false">
+      <method signature="System.String UseOptionalFeature()" body="remove" />
+    </type>
   </assembly>
 </linker>
 ```
@@ -131,6 +134,11 @@ A similar mechanism is available for fields where a field can be initialized wit
 value and override the existing behaviour. The rule can also apply to static fields which
 if set to default value without explicit `initialize` setting could help to elide whole
 explicit static constructor.
+
+The `feature` and `featurevalue` attributes are optional, but must be used together if they are used.
+They can be applied to any other element to specify conditions under which the contained substitutions
+are applied. For example, the above substitution for `UseOptionalFeature` will be applied only if
+`--feature EnableOptionalFeature false` is passed to the linker.
 
 ### Adding custom steps to the linker.
 

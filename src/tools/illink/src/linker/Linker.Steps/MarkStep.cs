@@ -1178,8 +1178,11 @@ namespace Mono.Linker.Steps {
 		{
 			// Keep default ctor for XmlSerializer support. See https://github.com/mono/linker/issues/957
 			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
-			if (!_context.IsFeatureExcluded ("deserialization"))
-				MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
+#if !FEATURE_ILLINK
+			if (_context.IsFeatureExcluded ("deserialization"))
+				return;
+#endif
+			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
 		}
 
 		internal protected virtual TypeDefinition MarkType (TypeReference reference, DependencyInfo reason)
@@ -1241,7 +1244,12 @@ namespace Mono.Linker.Steps {
 
 			// TODO: This needs work to ensure we handle EventSource appropriately.
 			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
-			if (!_context.IsFeatureExcluded ("etw") && BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)) {
+			if (
+#if !FEATURE_ILLINK
+					!_context.IsFeatureExcluded ("etw") &&
+#endif
+					BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)
+				) {
 				MarkEventSourceProviders (type);
 			}
 
@@ -1288,10 +1296,14 @@ namespace Mono.Linker.Steps {
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod)
 					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type));
 
-				if (_context.IsFeatureExcluded ("deserialization"))
+#if !FEATURE_ILLINK
+				if (_context.IsFeatureExcluded ("deserialization")) {
 					MarkMethodsIf (type.Methods, HasOnSerializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
-				else
+				} else
+#endif
+				{
 					MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type));
+				}
 			}
 
 			DoAdditionalTypeProcessing (type);
