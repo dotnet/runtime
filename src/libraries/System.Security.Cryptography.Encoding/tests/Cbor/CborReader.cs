@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
 
-        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.NonStrict)
+        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 

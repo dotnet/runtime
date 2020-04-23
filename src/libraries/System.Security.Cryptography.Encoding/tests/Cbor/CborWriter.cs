@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private int? _currentValueOffset = null;
         private SortedSet<(int offset, int keyLength, int keyValueLength)>? _keyValueEncodingRanges = null;
 
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.NonStrict)
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 

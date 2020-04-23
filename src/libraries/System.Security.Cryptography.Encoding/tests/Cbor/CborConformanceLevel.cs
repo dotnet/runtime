@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal enum CborConformanceLevel
     {
-        NonStrict = 0,
+        Lax = 0,
         Strict = 1,
         Rfc7049Canonical = 2,
         Ctap2Canonical = 3,
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public static bool RequiresUniqueKeys(CborConformanceLevel level)
         {
-            return level != CborConformanceLevel.NonStrict;
+            return level != CborConformanceLevel.Lax;
         }
 
         public static bool RequiresSortedKeys(CborConformanceLevel level)
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             switch (level)
             {
                 case CborConformanceLevel.Strict:
-                case CborConformanceLevel.NonStrict:
+                case CborConformanceLevel.Lax:
                     return false;
 
                 case CborConformanceLevel.Rfc7049Canonical:
