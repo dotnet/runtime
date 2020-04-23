@@ -202,6 +202,97 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestBasicConstraintsViolation()
+        {
+            byte[] serialNumber = new byte[9];
+            RandomNumberGenerator.Fill(serialNumber);
+            serialNumber[0] &= 0b01111111;
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest rootReq = new CertificateRequest(
+                    "CN=Root",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                rootReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(
+                        certificateAuthority: true,
+                        hasPathLengthConstraint: true,
+                        pathLengthConstraint: 3,
+                        critical: true));
+
+                // Create two intermediates, one that can sign and one that cannot
+                // with the same subject and serial number. This will let us create
+                // a certificate with the CA:TRUE constraint, but build a chain with
+                // the CA:FALSE certificate.
+                CertificateRequest signingIntermediateReq = new CertificateRequest(
+                    "CN=Intermediate",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                signingIntermediateReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(
+                        certificateAuthority: true,
+                        hasPathLengthConstraint: true,
+                        pathLengthConstraint: 2,
+                        critical: true));
+
+                CertificateRequest noSigningIntermediateReq = new CertificateRequest(
+                    "CN=Intermediate",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                noSigningIntermediateReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(
+                        certificateAuthority: false,
+                        hasPathLengthConstraint: true,
+                        pathLengthConstraint: 0,
+                        critical: true));
+
+                CertificateRequest leafReq = new CertificateRequest(
+                    "CN=Leaf",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+
+                using (X509Certificate2 root = rootReq.CreateSelfSigned(notBefore, notAfter))
+                using (X509Certificate2 signingIntermediate = signingIntermediateReq.Create(root, notBefore, notAfter, serialNumber))
+                using (X509Certificate2 noSigningIntermediate = noSigningIntermediateReq.Create(root, notBefore, notAfter, serialNumber))
+                using (X509Certificate2 signingIntermediateWithKey = signingIntermediate.CopyWithPrivateKey(key))
+                using (X509Certificate2 leaf = leafReq.Create(signingIntermediateWithKey, notBefore, notAfter, serialNumber))
+                {
+                    X509Chain chain = new X509Chain();
+                    chain.ChainPolicy.ExtraStore.Add(root);
+                    chain.ChainPolicy.ExtraStore.Add(noSigningIntermediate);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    Assert.False(chain.Build(leaf));
+                    
+                    bool verifiedIntermediate = false;
+
+                    foreach (X509ChainElement element in chain.ChainElements)
+                    {
+                        if (element.Certificate.Subject == "CN=Intermediate")
+                        {
+                            const X509ChainStatusFlags expectedFlag = X509ChainStatusFlags.InvalidBasicConstraints;
+                            X509ChainStatusFlags intermediateStatus = element.AllStatusFlags();
+                            Assert.True((intermediateStatus & expectedFlag) == expectedFlag, $"Has {expectedFlag} flag");
+                            verifiedIntermediate = true;
+                            break;
+                        }
+                    }
+
+                    Assert.True(verifiedIntermediate, "verify leaf certificate");
+                }
+            }
+        }
+
+        [Fact]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())
