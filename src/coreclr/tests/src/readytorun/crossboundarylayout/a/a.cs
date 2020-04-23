@@ -30,11 +30,6 @@ namespace CrossBoundaryLayout
             Console.WriteLine(test);
             s_testFailObj = o;
             failCount++;
-            while (true)
-            {
-                s_testFailObj = o;
-                Thread.Sleep(1000);
-            }
         }
 
         public static int Test()
