@@ -12156,8 +12156,19 @@ void emitter::emitDispIns(
             break;
 
         case IF_DR_2H: // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
-            emitDispReg(id->idReg1(), size, true);
-            emitDispReg(id->idReg2(), size, false);
+            if ((ins == INS_uxtb) || (ins == INS_uxth))
+            {
+                // There is no 64-bit variant of uxtb and uxth
+                // However, we allow idOpSize() to have EA_8BYTE value for these instruction
+                emitDispReg(id->idReg1(), EA_4BYTE, true);
+                emitDispReg(id->idReg2(), EA_4BYTE, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, true);
+                // sxtb, sxth and sxtb always operate on 32-bit source register
+                emitDispReg(id->idReg2(), EA_4BYTE, false);
+            }
             break;
 
         case IF_DR_2I: // DR_2I   X..........mmmmm cccc..nnnnn.nzcv      Rn Rm    nzcv cond
