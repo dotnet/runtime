@@ -1525,6 +1525,30 @@ INST1(frecpx,  "frecpx", 0, 0, IF_DV_2G,  0x5EA1F800)
                                    // C7.2.139 FRECPX
                                    //  frecpx  Vd,Vn                DV_2G  010111101X100001 111110nnnnnddddd   5EA1 F800   Vd,Vn    (scalar)
 
+INST1(addhn,   "addhn",  0, 0, IF_DV_3H,  0x0E204000)
+                                   // C7.2.3 ADDHN, ADDHN2
+                                   //  addhn   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 010000nnnnnddddd   0E20 4000   Vd,Vn,Vm (vector)
+
+INST1(addhn2,  "addhn2", 0, 0, IF_DV_3H,  0x4E204000)
+                                   // C7.2.3 ADDHN, ADDHN2
+                                   //  addhn2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 010000nnnnnddddd   4E20 4000   Vd,Vn,Vm (vector)
+
+INST1(raddhn,  "raddhn", 0, 0, IF_DV_3H,  0x2E204000)
+                                   // C7.2.209 RADDHN, RADDHN2
+                                   //  raddhn   Vd,Vn,Vm            DV_3H  00101110XX1mmmmm 010000nnnnnddddd   2E20 4000   Vd,Vn,Vm (vector)
+
+INST1(raddhn2, "raddhn2",0, 0, IF_DV_3H,  0x6E204000)
+                                   // C7.2.209 RADDHN, RADDHN2
+                                   //  raddhn2  Vd,Vn,Vm            DV_3H  01101110XX1mmmmm 010000nnnnnddddd   6E20 4000   Vd,Vn,Vm (vector)
+
+INST1(rsubhn,  "rsubhn", 0, 0, IF_DV_3H,  0x2E206000)
+                                   // C7.2.216 RSUBHN, RSUBHN2
+                                   //  rsubhn   Vd,Vn,Vm            DV_3H  00101110XX1mmmmm 011000nnnnnddddd   2E20 6000   Vd,Vn,Vm (vector)
+
+INST1(rsubhn2, "rsubhn2",0, 0, IF_DV_3H,  0x6E206000)
+                                   // C7.2.216 RSUBHN, RSUBHN2
+                                   //  rsubhn2  Vd,Vn,Vm            DV_3H  01101110XX1mmmmm 011000nnnnnddddd   6E20 6000   Vd,Vn,Vm (vector)
+
 INST1(sabal,   "sabal",  0, 0, IF_DV_3H,  0x0E205000)
                                    // C7.2.218 SABAL, SABAL2
                                    //  sabal   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 010100nnnnnddddd   0E20 5000   Vd,Vn,Vm (vector)
@@ -1544,6 +1568,14 @@ INST1(sabdl2,  "sabdl2", 0, 0, IF_DV_3H,  0x4E207000)
 INST1(sadalp,  "sadalp", 0, 0, IF_DV_2T,  0x0E206800)
                                    // C7.2.221 SADALP
                                    //  sadalp  Vd,Vn                DV_2T  0Q001110XX100000 011010nnnnnddddd   0E20 6800   Vd,Vn    (vector)
+
+INST1(subhn,   "subhn", 0, 0,  IF_DV_3H,  0x0E206000)
+                                   // C7.2.327 SUBHN, SUBHN2
+                                   //  subhn   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 011000nnnnnddddd   0E20 6000   Vd,Vn,Vm (vector)
+
+INST1(subhn2,  "subhn2",0, 0,  IF_DV_3H,  0x4E206000)
+                                   // C7.2.327 SUBHN, SUBHN2
+                                   //  subhn2  Vd,Vn,Vm             DV_3H  01001110XX1mmmmm 011000nnnnnddddd   4E20 6000   Vd,Vn,Vm (vector)
 
 INST1(uabal,   "uabal",  0, 0, IF_DV_3H,  0x2E205000)
                                    // C7.2.335 UABAL, UABAL2
