@@ -104,7 +104,7 @@ namespace System.DirectoryServices.AccountManagement
                 // if they just passed user then append the machine name here.
                 if (null != userName)
                 {
-                    if (!userName.Contains('\\', StringComparison.CurrentCulture))
+                    if (!userName.Contains('\\'))
                     {
                         userName = _serverName + "\\" + userName;
                     }

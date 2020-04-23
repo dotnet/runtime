@@ -216,7 +216,7 @@ namespace System.Data
 
         internal string QualifiedName(string name)
         {
-            if (!name.Contains(':', StringComparison.CurrentCulture))
+            if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;
             else
                 return name;
