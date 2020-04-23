@@ -9947,6 +9947,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     --msgLength;
                     break;
                 }
+                if (tree->gtFlags & GTF_VAR_CONTEXT)
+                {
+                    printf("!");
+                    --msgLength;
+                    break;
+                }
+
                 goto DASH;
 
             case GT_EQ:
@@ -12478,11 +12485,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree*             op2TunneledHandle  = nullptr;
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
-        unsigned             runtimeLookupCount = 0;
 
         // Try and find class handles from op1 and op2
-        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &runtimeLookupCount, &op1TunneledHandle);
-        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &runtimeLookupCount, &op2TunneledHandle);
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &op1TunneledHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &op2TunneledHandle);
 
         // If we have both class handles, try and resolve the type equality test completely.
         bool resolveFailed = false;
@@ -12501,11 +12507,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
                 JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
                 GenTree* result = gtNewIconNode(compareResult);
-
-                // Any runtime lookups that fed into this compare are
-                // now dead code, so they no longer require the runtime context.
-                assert(lvaGenericsContextUseCount >= runtimeLookupCount);
-                lvaGenericsContextUseCount -= runtimeLookupCount;
                 return result;
             }
             else
@@ -12668,15 +12669,12 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 //
 // Arguments:
 //    tree - tree that passes the handle to the helper
-//    runtimeLookupCount [optional, in/out] - incremented if tree was a runtime lookup
 //    handleTree [optional, out] - set to the literal operand tree for indirect handles
 //
 // Returns:
 //    The compile time class handle if known.
 //
-CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
-                                                         unsigned* runtimeLookupCount,
-                                                         GenTree** handleTree)
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree** handleTree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -12696,11 +12694,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     else if (tree->OperGet() == GT_RUNTIMELOOKUP)
     {
         result = tree->AsRuntimeLookup()->GetClassHandle();
-
-        if (runtimeLookupCount != nullptr)
-        {
-            *runtimeLookupCount = *runtimeLookupCount + 1;
-        }
     }
     // Or something reached indirectly
     else if (tree->gtOper == GT_IND)

@@ -7899,7 +7899,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
-        lvaGenericsContextUseCount++;
+        lvaGenericsContextInUse = true;
 
         switch (kind.runtimeLookupKind)
         {
@@ -7913,6 +7913,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the class handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 break;
             }
 
@@ -7920,6 +7921,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the method handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
                 tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewCallArgs(tree));
@@ -23793,38 +23795,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
-    // If this inlinee was passed a runtime lookup generic context and
-    // ignores it, we can decrement the "generic context was used" ref
-    // count, because we created a new lookup tree and incremented the
-    // count when we imported the type parameter argument to pass to
-    // the inlinee. See corresponding logic in impImportCall that
-    // checks the sig for CORINFO_CALLCONV_PARAMTYPE.
-    //
-    // Does this method require a context (type) parameter?
-    if ((inlineInfo->inlineCandidateInfo->methInfo.args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
-    {
-        // Did the computation of that parameter require the
-        // caller to perform a runtime lookup?
-        if (inlineInfo->inlineCandidateInfo->exactContextNeedsRuntimeLookup)
-        {
-            // Fetch the temp for the generic context as it would
-            // appear in the inlinee's body.
-            const unsigned typeCtxtArg = inlineInfo->typeContextArg;
-            const unsigned tmpNum      = inlineInfo->lclTmpNum[typeCtxtArg];
-
-            // Was it used in the inline body?
-            if (tmpNum == BAD_VAR_NUM)
-            {
-                // No -- so the associated runtime lookup is not needed
-                // and also no longer provides evidence that the generic
-                // context should be kept alive.
-                JITDUMP("Inlinee ignores runtime lookup generics context\n");
-                assert(lvaGenericsContextUseCount > 0);
-                lvaGenericsContextUseCount--;
-            }
-        }
-    }
-
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
     {
