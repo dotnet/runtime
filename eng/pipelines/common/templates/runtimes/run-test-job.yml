@@ -22,6 +22,7 @@ parameters:
   variables: {}
   pool: ''
   runtimeFlavorDisplayName: 'CoreCLR'
+  testBuildPhased : false
 
 ### Test run job
 
@@ -57,6 +58,11 @@ jobs:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+        - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -189,6 +195,13 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: '$(managedTestArtifactRootFolderPath)'
+            artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+            artifactName: '$(managedGenericTestArtifactName)'
+            displayName: 'generic managed test artifacts'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
