@@ -6,7 +6,6 @@ parameters:
   container: ''
   testGroup: ''
   liveRuntimeBuildConfig: ''
-  testBuildPhase: ''
   runtimeFlavor: 'coreclr'
 
   # When set to a non-empty value (Debug / Release), it determines libraries
