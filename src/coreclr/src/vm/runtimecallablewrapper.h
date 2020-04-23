@@ -479,25 +479,10 @@ struct RCW
 
 #endif // #ifndef DACCESS_COMPILE
 
-    enum InterfaceRedirectionKind
-    {
-        InterfaceRedirection_None,
-        InterfaceRedirection_IEnumerable,                 // IEnumerable`1 - based interface
-        InterfaceRedirection_IEnumerable_RetryOnFailure,  // IEnumerable`1 - based interface, retry on QI failure
-        InterfaceRedirection_UnresolvedIEnumerable,       // unknown IEnumerable`1 instantiation
-        InterfaceRedirection_Other,                       // other interface
-        InterfaceRedirection_Other_RetryOnFailure,        // non-generic redirected interface
-    };
 
     // Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
     static MethodTable *GetVariantMethodTable(MethodTable *pMT);
     static MethodTable *ComputeVariantMethodTable(MethodTable *pMT);
-
-    // Determines the interface that should be QI'ed for when the RCW is cast to pItfMT.
-    // Returns the kind of interface redirection that has been performed.
-    InterfaceRedirectionKind GetInterfaceForQI(MethodTable *pItfMT, MethodTable **pNewItfMT);
-    static InterfaceRedirectionKind GetInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2);
-    static InterfaceRedirectionKind ComputeInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2);
 
     // Performs QI for the given interface, optionally instantiating it with the given generic args.
     HRESULT CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk);
@@ -520,9 +505,6 @@ struct RCW
 
     // Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
     static MethodDesc *ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT);
-
-    // Notifies the RCW of an interface that is known to be supported by the COM object.
-    void SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst);
 
     //-----------------------------------------------------------------
     // Retrieve correct COM IP for the current apartment.
@@ -1082,23 +1064,14 @@ struct RCWPerTypeData
     // Corresponding type with variance or NULL if the type does not exhibit variant behavior.
     MethodTable *m_pVariantMT;
 
-    // Types that should be used for QI. m_pMTForQI1 is tried first; if it fails and m_pMTForQI2
-    // is not NULL, QI for m_pMTForQI2 is performed. We need two types to supports ambiguous casts
-    // to ICollection<KeyValuePair<K, V>>.
-    MethodTable *m_pMTForQI1;
-    MethodTable *m_pMTForQI2;
-
     // The corresponding IEnumerator<T>::GetEnumerator instantiation or NULL if the type does not
     // act like IEnumerable.
     MethodDesc *m_pGetEnumeratorMethod;
 
-    // The kind of redirection performed by QI'ing for m_pMTForQI1.
-    RCW::InterfaceRedirectionKind m_RedirectionKind;
-
     enum
     {
         VariantTypeInited       = 0x01,     // m_pVariantMT is set
-        RedirectionInfoInited   = 0x02,     // m_pMTForQI1, m_pMTForQI2, and m_RedirectionKind are set
+        //unused                = 0x02,
         GetEnumeratorInited     = 0x04,     // m_pGetEnumeratorMethod is set
         // unused               = 0x08,
         // unused               = 0x10,

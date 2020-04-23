@@ -6322,7 +6322,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
 
     // Attributes are not legal
     MethodTable *pParentMT = GetParentMethodTable();
-    if (pParentMT == MscorlibBinder::GetExistingClass(CLASS__ATTRIBUTE))
+    if (pParentMT == MscorlibBinder::GetClass(CLASS__ATTRIBUTE))
     {
         return FALSE;
     }

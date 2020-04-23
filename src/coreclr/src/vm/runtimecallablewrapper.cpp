@@ -3091,131 +3091,6 @@ MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
 
 #ifndef CROSSGEN_COMPILE
 //-----------------------------------------------------------------
-// Determines the interface that should be QI'ed for when the RCW is cast to pItfMT.
-RCW::InterfaceRedirectionKind RCW::GetInterfaceForQI(MethodTable *pItfMT, MethodTable **pNewItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(pNewItfMT));
-    }
-    CONTRACTL_END;
-
-    // We don't want to be redirecting interfaces if the underlying COM object is not a WinRT type
-    if (SupportsIInspectable())
-    {
-        MethodTable *pNewItfMT1;
-        MethodTable *pNewItfMT2;
-        InterfaceRedirectionKind redirectionKind = GetInterfacesForQI(pItfMT, &pNewItfMT1, &pNewItfMT2);
-
-        //
-        // IEnumerable may need three QI attempts:
-        // 1. IEnumerable/IDispatch+DISPID_NEWENUM
-        // 2. IBindableIterable
-        // 3. IIterable<T> for a T
-        //
-        // Is this 3rd attempt on IEnumerable (non-generic)?
-        if (redirectionKind == InterfaceRedirection_Other_RetryOnFailure &&
-            pItfMT != *pNewItfMT && *pNewItfMT != NULL &&
-            pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-        {
-            return InterfaceRedirection_UnresolvedIEnumerable;
-        }
-
-        if ((redirectionKind != InterfaceRedirection_IEnumerable_RetryOnFailure &&
-             redirectionKind != InterfaceRedirection_Other_RetryOnFailure) || *pNewItfMT == NULL)
-        {
-            // First attempt - use pNewItfMT1
-            *pNewItfMT = pNewItfMT1;
-            return redirectionKind;
-        }
-        else
-        {
-            // Second attempt - use pNewItfMT2
-            *pNewItfMT = pNewItfMT2;
-
-            if (redirectionKind == InterfaceRedirection_IEnumerable_RetryOnFailure)
-                return InterfaceRedirection_IEnumerable;
-
-            // Get ready for the 3rd attmpt if 2nd attempt fails
-            // This only happens for non-generic IEnumerable
-            if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-                return InterfaceRedirection_IEnumerable_RetryOnFailure;
-
-            return InterfaceRedirection_IEnumerable;
-        }
-    }
-
-    *pNewItfMT = pItfMT;
-    return InterfaceRedirection_None;
-}
-#endif // !CROSSGEN_COMPILE
-
-// static
-RCW::InterfaceRedirectionKind RCW::GetInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(ppNewItfMT1));
-        PRECONDITION(CheckPointer(ppNewItfMT2));
-    }
-    CONTRACTL_END;
-
-    RCWPerTypeData *pData = pItfMT->GetRCWPerTypeData();
-    if (pData == NULL)
-    {
-#ifdef _DEBUG
-        // verify that if the per-type data is NULL, the type has indeed no redirection
-        MethodTable *pNewItfMT1;
-        MethodTable *pNewItfMT2;
-        _ASSERTE(ComputeInterfacesForQI(pItfMT, &pNewItfMT1, &pNewItfMT2) == InterfaceRedirection_None);
-#endif // _DEBUG
-
-        *ppNewItfMT1 = pItfMT;
-        *ppNewItfMT2 = NULL;
-        return InterfaceRedirection_None;
-    }
-    else
-    {
-        if ((pData->m_dwFlags & RCWPerTypeData::RedirectionInfoInited) == 0)
-        {
-            pData->m_RedirectionKind = ComputeInterfacesForQI(pItfMT, &pData->m_pMTForQI1, &pData->m_pMTForQI2);
-            FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::RedirectionInfoInited);
-        }
-
-        *ppNewItfMT1 = pData->m_pMTForQI1;
-        *ppNewItfMT2 = pData->m_pMTForQI2;
-        return pData->m_RedirectionKind;
-    }
-}
-
-// static
-RCW::InterfaceRedirectionKind RCW::ComputeInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(ppNewItfMT1));
-        PRECONDITION(CheckPointer(ppNewItfMT2));
-    }
-    CONTRACTL_END;
-
-    *ppNewItfMT1 = pItfMT;
-    return InterfaceRedirection_None;
-}
-
-#ifndef CROSSGEN_COMPILE
-//-----------------------------------------------------------------
 // Returns a known working IEnumerable<T>::GetEnumerator to be used in lieu of the non-generic
 // IEnumerable::GetEnumerator.
 MethodDesc *RCW::GetGetEnumeratorMethod()
@@ -3353,25 +3228,6 @@ MethodDesc *RCW::ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT)
     return pMD;
 }
 
-
-//-----------------------------------------------------------------
-// Notifies the RCW of an interface that is known to be supported by the COM object.
-// pItfMT is the type which the object directly supports, originalInst is the instantiation
-// that we asked for. I.e. we know that the object supports pItfMT<originalInst> via
-// variance because the QI for IID(pItfMT) succeeded.
-void RCW::SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(false);
-}
-
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -3384,53 +3240,22 @@ HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid,
     CONTRACTL_END;
 
     HRESULT hr;
-    MethodTable *pCastToMT = pMT;
-    MethodTable *pCOMItfMT = NULL;
-    InterfaceRedirectionKind redirection = InterfaceRedirection_None;
 
     if (!inst.IsEmpty())
     {
         pMT = TypeHandle(pMT).Instantiate(inst).GetMethodTable();
     }
 
-    do
-    {
-        redirection = GetInterfaceForQI(pMT, &pCOMItfMT);
-
-        if (redirection == InterfaceRedirection_UnresolvedIEnumerable)
-        {
-            // We just say no in this case. If we threw an exception, we would make the "as" operator
-            // throwing which would be ECMA violation.
-            return E_NOINTERFACE;
-        }
-
-        // To avoid throwing BadImageFormatException later in ComputeGuidForGenericTypes we must fail early if this is a generic type and not a legal WinRT type.
-        if (pCOMItfMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, MethodTable::modeProjected) && !pCOMItfMT->IsLegalNonArrayWinRTType())
-        {
-            return E_NOINTERFACE;
-        }
-        else
-        {
-            // Retrieve the IID of the interface.
-            pCOMItfMT->GetGuid(piid, TRUE);
-        }
-
-        // QI for the interface.
-        hr = SafeQueryInterfaceRemoteAware(*piid, ppUnk);
-    }
-    while (hr == E_NOINTERFACE &&   // Terminate the loop if the QI failed for some other reasons (for example, context transition failure)
-           (redirection == InterfaceRedirection_IEnumerable_RetryOnFailure || redirection == InterfaceRedirection_Other_RetryOnFailure));
+    pMT->GetGuid(piid, TRUE);
+    hr = SafeQueryInterfaceRemoteAware(*piid, ppUnk);
 
     if (SUCCEEDED(hr))
     {
-        if (redirection == InterfaceRedirection_IEnumerable)
+        if (pMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
         {
             // remember the first IEnumerable<T> interface we successfully QI'ed for
             SetGetEnumeratorMethod(pMT);
         }
-
-        // remember successful QI's for interesting interfaces passing the original instantiation so we know that variance was involved
-        SetSupportedInterface(pCOMItfMT, pCastToMT->GetInstantiation());
     }
 
     return hr;
@@ -3996,12 +3821,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
         if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
         {
-            SafeComHolder<IDispatch> pDisp = NULL;
-            if  (!AppX::IsAppXProcess())
-            {
-                 // Get the IDispatch on the current thread.
-                 pDisp = GetIDispatch();
-            }
+            SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)
             {
                 DISPPARAMS DispParams = {0, 0, NULL, NULL};
@@ -4290,13 +4110,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         pRCW.Init(*pObj);
 
         // Retrieve the IID of the interface.
-        MethodTable *pCOMItfMT = NULL;
-        if (pRCW->GetInterfaceForQI(thCastTo.GetMethodTable(), &pCOMItfMT) == RCW::InterfaceRedirection_UnresolvedIEnumerable)
-        {
-            // A special exception message for the case where we are unable to figure out the
-            // redirected interface because we haven't seen a cast to a generic IEnumerable yet.
-            COMPlusThrow(kInvalidCastException, IDS_EE_WINRT_IENUMERABLE_BAD_CAST);
-        }
+        MethodTable *pCOMItfMT = thCastTo.GetMethodTable();
 
         if (pCOMItfMT->IsProjectedFromWinRT())
         {
