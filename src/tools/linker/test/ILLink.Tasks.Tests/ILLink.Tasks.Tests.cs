@@ -304,6 +304,52 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+		public static IEnumerable<object []> FeatureSettingsCases => new List<object []> {
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "true" } })
+				},
+			},
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "true" } }),
+					new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "false" } })
+				},
+			},
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("FeatureName1", new Dictionary<string, string> { { "value", "true" } }),
+					new TaskItem ("FeatureName2", new Dictionary<string, string> { { "value", "false" } }),
+				},
+			},
+		};
+
+		[Theory]
+		[MemberData (nameof (FeatureSettingsCases))]
+		public void TestFeatureSettings (ITaskItem [] featureSettings)
+		{
+			var task = new MockTask () {
+				FeatureSettings = featureSettings
+			};
+			using (var driver = task.CreateDriver ()) {
+				var expectedSettings = featureSettings.Select (f => new { Feature = f.ItemSpec, Value = f.GetMetadata ("Value") })
+					.GroupBy (f => f.Feature)
+					.Select (f => f.Last())
+					.ToDictionary (f => f.Feature, f => bool.Parse(f.Value));
+				var actualSettings = driver.Context.FeatureSettings;
+				Assert.Equal (expectedSettings, actualSettings);
+			}
+		}
+
+		[Fact]
+		public void TestInvalidFeatureSettings ()
+		{
+			var task = new MockTask () {
+				FeatureSettings = new ITaskItem [] { new TaskItem ("FeatureName") }
+			};
+			Assert.Throws <ArgumentException> (() => task.CreateDriver ());
+		}
+
 		[Fact]
 		public void TestExtraArgs ()
 		{

@@ -3,6 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
+#if NETCOREAPP
+	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
+#endif
 	[SetupLinkerArgument ("--exclude-feature", "com")]
 	public class UnusedComInterfaceIsRemovedWhenComFeatureExcluded {
 		public static void Main ()

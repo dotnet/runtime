@@ -62,7 +62,7 @@ namespace Mono.Linker.Steps {
 		readonly string _resourceName;
 		readonly AssemblyDefinition _resourceAssembly;
 
-		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation = "<unspecified>")
+		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation)
 		{
 			_document = document;
 			_xmlDocumentLocation = xmlDocumentLocation;
@@ -108,8 +108,10 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
 				return;
+#endif
 
 			if (GetTypePreserve (iterator.Current) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
@@ -232,8 +234,10 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessType (TypeDefinition type, XPathNavigator nav)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (nav))
 				return;
+#endif
 			
 			TypePreserve preserve = GetTypePreserve (nav);
 			if (preserve != TypePreserve.Nothing)
@@ -328,8 +332,10 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessField (TypeDefinition type, XPathNodeIterator iterator)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
 				return;
+#endif
 			
 			string value = GetSignature (iterator.Current);
 			if (!String.IsNullOrEmpty (value))
@@ -394,8 +400,10 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessMethod (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
 				return;
+#endif
 			
 			string value = GetSignature (iterator.Current);
 			if (!String.IsNullOrEmpty (value))
@@ -490,9 +498,11 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessEvent (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
 				return;
-			
+#endif
+
 			string value = GetSignature (iterator.Current);
 			if (!String.IsNullOrEmpty (value))
 				ProcessEventSignature (type, value, required);
@@ -560,9 +570,11 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void ProcessProperty (TypeDefinition type, XPathNodeIterator iterator, bool required)
 		{
+#if !FEATURE_ILLINK
 			if (IsExcluded (iterator.Current))
 				return;
-			
+#endif
+
 			string value = GetSignature (iterator.Current);
 			if (!String.IsNullOrEmpty (value))
 				ProcessPropertySignature (type, value, GetAccessors (iterator.Current), required);
@@ -698,6 +710,7 @@ namespace Mono.Linker.Steps {
 			return nav.GetAttribute (attribute, _ns);
 		}
 		
+#if !FEATURE_ILLINK
 		protected virtual bool IsExcluded (XPathNavigator nav)
 		{
 			var value = GetAttribute (nav, "feature");
@@ -706,7 +719,7 @@ namespace Mono.Linker.Steps {
 
 			return Context.IsFeatureExcluded (value);
 		}
-
+#endif
 
 		public override string ToString ()
 		{

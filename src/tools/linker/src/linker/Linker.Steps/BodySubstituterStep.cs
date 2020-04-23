@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Globalization;
 using System.Xml.XPath;
@@ -9,37 +8,63 @@ namespace Mono.Linker.Steps
 {
 	public class BodySubstituterStep : BaseStep
 	{
+		readonly XPathDocument _document;
+		readonly string _xmlDocumentLocation;
+		readonly string _resourceName;
+		readonly AssemblyDefinition _resourceAssembly;
+
+		public BodySubstituterStep (XPathDocument document, string xmlDocumentLocation)
+		{
+			_document = document;
+			_xmlDocumentLocation = xmlDocumentLocation;
+		}
+
+		public BodySubstituterStep (XPathDocument document, string resourceName, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
+			: this (document, xmlDocumentLocation)
+		{
+			if (string.IsNullOrEmpty (resourceName))
+				throw new ArgumentNullException (nameof (resourceName));
+
+			_resourceName = resourceName;
+			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
+		}
+
 		protected override void Process ()
 		{
-			var files = Context.Substitutions;
-			if (files == null)
-				return;
+			try {
+				ReadSubstitutions (_document);
 
-			foreach (var file in files) {
-				try {
-					ReadSubstitutionFile (GetSubstitutions (file));
-				} catch (Exception ex) when (!(ex is XmlResolutionException)) {
-					throw new XmlResolutionException ($"Failed to process XML substitution '{file}'", ex);
-				}
-
+				if (!string.IsNullOrEmpty (_resourceName) && Context.StripResources)
+					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resourceName);
+			} catch (Exception ex) when (!(ex is XmlResolutionException)) {
+				throw new XmlResolutionException ($"Failed to process XML substitution: '{_xmlDocumentLocation}'", ex);
 			}
 		}
 
-		static XPathDocument GetSubstitutions (string substitutionsFile)
+		bool ShouldProcessSubstitutions (XPathNavigator nav)
 		{
-			using (FileStream fs = File.OpenRead (substitutionsFile)) {
-				return GetSubstitutions (fs);
+			var feature = GetAttribute (nav, "feature");
+			if (string.IsNullOrEmpty (feature))
+				return true;
+
+			var value = GetAttribute (nav, "featurevalue");
+			if (string.IsNullOrEmpty (value)) {
+				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Feature {feature} does not specify a \"featurevalue\" attribute", 1001));
+				return false;
 			}
+
+			if (!bool.TryParse (value, out bool bValue)) {
+				Context.LogMessage(MessageContainer.CreateErrorMessage ($"Unsupported non-boolean feature definition {feature}", 1002));
+				return false;
+			}
+
+			if (Context.FeatureSettings == null || !Context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
+				return false;
+
+			return bValue == featureSetting;
 		}
 
-		static XPathDocument GetSubstitutions (Stream substitutions)
-		{
-			using (StreamReader sr = new StreamReader (substitutions)) {
-				return new XPathDocument (sr);
-			}
-		}
-
-		void ReadSubstitutionFile (XPathDocument document)
+		void ReadSubstitutions (XPathDocument document)
 		{
 			XPathNavigator nav = document.CreateNavigator ();
 
@@ -47,7 +72,8 @@ namespace Mono.Linker.Steps
 			if (!nav.MoveToChild ("linker", ""))
 				return;
 
-			// TODO: Add handling for feature
+			if (!ShouldProcessSubstitutions (nav))
+				return;
 
 			ProcessAssemblies (nav.SelectChildren ("assembly", ""));
 		}
@@ -56,6 +82,9 @@ namespace Mono.Linker.Steps
 		{
 			while (iterator.MoveNext ()) {
 				var name = GetAssemblyName (iterator.Current);
+
+				if (!ShouldProcessSubstitutions (iterator.Current))
+					continue;
 
 				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
 
@@ -78,6 +107,9 @@ namespace Mono.Linker.Steps
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
 
+				if (!ShouldProcessSubstitutions (nav))
+					continue;
+
 				string fullname = GetAttribute (nav, "fullname");
 
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
@@ -96,21 +128,32 @@ namespace Mono.Linker.Steps
 			if (!nav.HasChildren)
 				return;
 
+			if (!ShouldProcessSubstitutions (nav))
+				return;
+
 			XPathNodeIterator methods = nav.SelectChildren ("method", "");
 			if (methods.Count > 0)
 				ProcessMethods (type, methods);
 
 			var fields = nav.SelectChildren ("field", "");
 			if (fields.Count > 0) {
-				while (fields.MoveNext ())
+				while (fields.MoveNext ()) {
+					if (!ShouldProcessSubstitutions (fields.Current))
+						continue;
+
 					ProcessField (type, fields);
+				}
 			}
 		}
 
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
-			while (iterator.MoveNext ())
+			while (iterator.MoveNext ()) {
+				if (!ShouldProcessSubstitutions (iterator.Current))
+					continue;
+
 				ProcessMethod (type, iterator);
+			}
 		}
 
 		void ProcessMethod (TypeDefinition type, XPathNodeIterator iterator)

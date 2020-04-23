@@ -3,6 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW  {
+#if NETCOREAPP
+	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
+#endif
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
 	// Keep framework code that calls EventSource methods like OnEventCommand
 	[SetupLinkerCoreAction ("skip")]

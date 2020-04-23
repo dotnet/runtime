@@ -118,7 +118,7 @@ namespace Mono.Linker {
 
 		public bool StripResources { get; set; }
 
-		public List<string> Substitutions { get; private set; }
+		public Dictionary<string, bool> FeatureSettings { get; private set; }
 
 		public List<string> AttributeDefinitions { get; private set; }
 
@@ -161,8 +161,9 @@ namespace Mono.Linker {
 
 		public IReflectionPatternRecorder ReflectionPatternRecorder { get; set; }
 
+#if !FEATURE_ILLINK
 		public string [] ExcludedFeatures { get; set; }
-
+#endif
 		public CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
@@ -214,17 +215,15 @@ namespace Mono.Linker {
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
 		}
 
-		public void AddSubstitutionFile (string file)
+		public void SetFeatureValue (string feature, bool value)
 		{
-			if (Substitutions == null) {
-				Substitutions = new List<string> { file };
+			Debug.Assert (!String.IsNullOrEmpty (feature));
+			if (FeatureSettings == null) {
+				FeatureSettings = new Dictionary<string, bool> { { feature, value } };
 				return;
 			}
 
-			if (Substitutions.Contains (file))
-				return;
-
-			Substitutions.Add (file);
+			FeatureSettings [feature] = value;
 		}
 
 		public void AddAttributeDefinitionFile (string file)
@@ -437,10 +436,12 @@ namespace Mono.Linker {
 			_resolver.Dispose ();
 		}
 
+#if !FEATURE_ILLINK
 		public bool IsFeatureExcluded (string featureName)
 		{
 			return ExcludedFeatures != null && Array.IndexOf (ExcludedFeatures, featureName) >= 0;
 		}
+#endif
 
 		public bool IsOptimizationEnabled (CodeOptimizations optimization, MemberReference context)
 		{
