@@ -2,11 +2,12 @@
   <PropertyGroup>
     <RunSettingsInputFilePath Condition="'$(RunSettingsInputFilePath)' == ''">$(MSBuildThisFileDirectory).runsettings</RunSettingsInputFilePath>
     <RunSettingsOutputFilePath Condition="'$(RunSettingsOutputFilePath)' == ''">$(OutDir).runsettings</RunSettingsOutputFilePath>
+    <!-- Set RunSettingsFilePath property which is read by VSTest. -->
+    <RunSettingsFilePath Condition="Exists('$(RunSettingsOutputFilePath)')">$(RunSettingsOutputFilePath)</RunSettingsFilePath>
     <PrepareForRunDependsOn>GenerateRunSettingsFile;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Categories -->
     <_testFilter Condition="'$(_withCategories)' != ''">$(_withCategories.Replace(';', '&amp;amp;category='))</_testFilter>
     <_testFilter Condition="'$(_withoutCategories)' != ''">$(_testFilter)$(_withoutCategories.Replace(';', '&amp;amp;category!='))</_testFilter>
     <_testFilter>$(_testFilter.Trim('&amp;amp;'))</_testFilter>
