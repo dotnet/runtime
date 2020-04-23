@@ -15,6 +15,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                }
+
                 AdvanceBuffer(1);
                 PushDataItem(CborMajorType.Array, null);
                 return null;

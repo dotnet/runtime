@@ -94,6 +94,28 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(CborConformanceLevel.Lax, "9fff")]
+        [InlineData(CborConformanceLevel.Strict, "9fff")]
+        internal static void ReadArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            uint? length = reader.ReadStartArray();
+            Assert.Null(length);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9fff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "9fff")]
+        internal static void ReadArray_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
         [InlineData("80", 0)]
         [InlineData("8101", 1)]
         [InlineData("83010203", 3)]

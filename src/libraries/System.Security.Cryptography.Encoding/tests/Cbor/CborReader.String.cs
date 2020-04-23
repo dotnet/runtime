@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                }
+
                 return ReadChunkedByteStringConcatenated();
             }
 
@@ -38,6 +43,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                }
+
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
             }
 
@@ -65,6 +75,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                }
+
                 return ReadChunkedTextStringConcatenated();
             }
 
@@ -93,6 +108,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
+                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                {
+                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                }
+
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
             }
 
@@ -125,6 +145,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
+            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException("Indefinite-length items not support under the current conformance level.");
+            }
+
             AdvanceBuffer(1);
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
@@ -144,6 +169,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+            }
+
+            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException("Indefinite-length items not support under the current conformance level.");
             }
 
             AdvanceBuffer(1);
