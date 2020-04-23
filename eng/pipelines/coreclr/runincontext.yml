@@ -35,7 +35,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
-    managedOsxBuild: false
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

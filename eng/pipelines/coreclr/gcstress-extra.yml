@@ -21,7 +21,6 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platformGroup: gcstress
-    managedOsxBuild: false
     jobParameters:
       testGroup: gcstress-extra
 
@@ -32,7 +31,6 @@ jobs:
     platformGroup: gcstress
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    managedOsxBuild: false
     jobParameters:
       testGroup: gcstress-extra
       liveLibrariesBuildConfig: Release
