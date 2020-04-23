@@ -2065,92 +2065,16 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
-        case IF_BI_0A:
-        case IF_BI_0B:
-        case IF_BI_0C:
-        case IF_BI_1A:
-        case IF_BI_1B:
-        case IF_BR_1A:
-        case IF_BR_1B:
-        case IF_LS_1A:
-        case IF_LS_2A:
-        case IF_LS_2B:
-        case IF_LS_2C:
-        case IF_LS_3A:
-        case IF_LS_3B:
-        case IF_LS_3C:
-        case IF_LS_3D:
-        case IF_LS_3E:
-        case IF_DI_1A:
-        case IF_DI_1B:
-        case IF_DI_1C:
-        case IF_DI_1D:
-        case IF_DI_1E:
-        case IF_DI_1F:
-        case IF_DI_2A:
-        case IF_DI_2B:
-        case IF_DI_2C:
-        case IF_DI_2D:
-        case IF_DR_1D:
-        case IF_DR_2A:
-        case IF_DR_2B:
-        case IF_DR_2C:
-        case IF_DR_2D:
-        case IF_DR_2E:
-        case IF_DR_2F:
-        case IF_DR_2G:
-        case IF_DR_2H:
-        case IF_DR_2I:
-        case IF_DR_3A:
-        case IF_DR_3B:
-        case IF_DR_3C:
-        case IF_DR_3D:
-        case IF_DR_3E:
-        case IF_DR_4A:
-        case IF_DV_1A:
-        case IF_DV_1B:
-        case IF_DV_1C:
-        case IF_DV_2A:
-        case IF_DV_2B:
-        case IF_DV_2C:
-        case IF_DV_2D:
-        case IF_DV_2E:
-        case IF_DV_2F:
-        case IF_DV_2G:
-        case IF_DV_2H:
-        case IF_DV_2I:
-        case IF_DV_2J:
-        case IF_DV_2K:
-        case IF_DV_2L:
-        case IF_DV_2M:
-        case IF_DV_2N:
-        case IF_DV_2O:
-        case IF_DV_2P:
-        case IF_DV_2R:
-        case IF_DV_2T:
-        case IF_DV_2U:
-        case IF_DV_3A:
-        case IF_DV_3AI:
-        case IF_DV_3B:
-        case IF_DV_3BI:
-        case IF_DV_3C:
-        case IF_DV_3D:
-        case IF_DV_3DI:
-        case IF_DV_3E:
-        case IF_DV_3F:
-        case IF_DV_3G:
-        case IF_DV_4A:
-        case IF_SN_0A:
-        case IF_SI_0A:
-        case IF_SI_0B:
-
-            index          = 0;
-            encoding_found = true;
-            break;
-
         default:
-
-            encoding_found = false;
+            if (fmt == insFmt)
+            {
+                encoding_found = true;
+                index          = 0;
+            }
+            else
+            {
+                encoding_found = false;
+            }
             break;
     }
 
