@@ -218,10 +218,10 @@
 
 .class public auto ansi beforefieldinit DerivedTestType<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    
   .method public hidebysig virtual instance object MyFunc(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "object DerivedTestType.MyFunc()"
     stind.ref
@@ -231,6 +231,8 @@
 
   .method public hidebysig virtual instance class B MyFunc(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "B DerivedTestType.MyFunc()"
     stind.ref
@@ -240,6 +242,8 @@
   
   .method public hidebysig virtual instance class B GenToNonGen(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "B DerivedTestType.GenToNonGen()"
     stind.ref
@@ -249,6 +253,8 @@
 
   .method public hidebysig virtual instance class B NonGenThroughGenFunc(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "B DerivedTestType.NonGenThroughGenFunc()"
     stind.ref
@@ -258,6 +264,8 @@
 
   .method public hidebysig virtual instance class GenRetType<int32,object> MyGenFunc(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "GenRetType<int32,object> DerivedTestType.MyGenFunc()"
     stind.ref
@@ -267,6 +275,8 @@
   
   .method public hidebysig virtual instance class GenRetType<!U, class Dictionary<string,!V>> MyGenFunc(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "GenRetType<!U, class Dictionary<string,!V>> DerivedTestType.MyGenFunc()"
     stind.ref
@@ -276,6 +286,8 @@
 
   .method public hidebysig virtual instance class GenRetType<!U,!V> TestNonGenericDerived(string& res) 
   {
+    // Attribute ignored since this is not a MethodImpl
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     ldarg.1
     ldstr "GenRetType<!U,!V> DerivedTestType.TestNonGenericDerived()"
     stind.ref

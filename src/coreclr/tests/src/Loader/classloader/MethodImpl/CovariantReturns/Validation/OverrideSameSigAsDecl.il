@@ -218,10 +218,9 @@
 
 .class public auto ansi beforefieldinit Invalid1<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    
   .method public hidebysig newslot virtual instance class B NonGenThroughGenOverride_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc(string& res)
     ldnull
     ret
@@ -238,10 +237,9 @@
 
 .class public auto ansi beforefieldinit Invalid2<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-
   .method public hidebysig newslot virtual instance class B GenToNonGenOverride_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
     ldnull
     ret
@@ -258,10 +256,9 @@
 
 .class public auto ansi beforefieldinit Invalid3<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-
   .method public hidebysig newslot virtual instance class GenRetType<int32,object> NewGenFunc1_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<int32,object> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldnull
     ret
@@ -278,10 +275,9 @@
 
 .class public auto ansi beforefieldinit Invalid4<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-
   .method public hidebysig newslot virtual instance class GenRetType<!U, class Dictionary<string,!V>> NewGenFunc2_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldnull
     ret
@@ -298,10 +294,9 @@
 
 .class public auto ansi beforefieldinit Invalid5<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-
   .method public hidebysig newslot virtual instance object NewFunc1_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
     ldnull
     ret
@@ -318,10 +313,9 @@
 
 .class public auto ansi beforefieldinit Invalid6<U,V> extends class GenTestType<!U,!V>
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-
   .method public hidebysig newslot virtual instance class B NewFunc2_Invalid(string& res)
   {
+    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::MyFunc(string& res)
     ldnull
     ret

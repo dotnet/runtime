@@ -239,7 +239,7 @@
 // The following types are overriding base type methods that have already been overridden
 // with covariant return types, but the return type here is not compatible (return type is 
 // a base type of the covariant return type of existing overrides). Validation is only
-// triggered by the presense of the ValidateMethodImplRemainsInEffect attribute, so the 
+// triggered by the presence of the ValidateMethodImplRemainsInEffect attribute, so the 
 // following types should successfully load since they do not have the attribute.
 // ========================================================================================
 .class public auto ansi beforefieldinit IncompatibleButValid1<U,V> extends class GenTestType<!U,!V>

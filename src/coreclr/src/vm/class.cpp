@@ -994,17 +994,20 @@ void ClassLoader::ValidateMethodImplRemainsInEffect(MethodTable* pMT)
     if (pParentMT == NULL)
         RETURN;
 
-    // If the ValidateMethodImplRemainsInEffect attribute does not exist on the type, it will not be validated.
-    BYTE* pVal = NULL;
-    ULONG cbVal = 0;
-    HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::ValidateMethodImplRemainsInEffectAttribute, (const void**)&pVal, &cbVal);
-    if (hr != S_OK)
-        RETURN;
-
     for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
     {
         MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
         MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
+
+        // Validation only applicable to MethodImpls
+        if (!pMD->IsMethodImpl())
+            continue;
+
+        // If the ValidateMethodImplRemainsInEffect attribute does not exist on the method, it will not be validated.
+        BYTE* pVal = NULL;
+        ULONG cbVal = 0;
+        if (pMD->GetCustomAttribute(WellKnownAttribute::ValidateMethodImplRemainsInEffectAttribute, (const void**)&pVal, &cbVal) != S_OK)
+            continue;
 
         DWORD originalIndex = pMD->GetSlot();
         if (originalIndex == i)
