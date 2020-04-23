@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -16,8 +17,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public void Add(ConnectionId connectionId)
         {
-            var list = _connectionIds;
-            foreach (var id in list)
+            var originalValue = Volatile.Read(ref _connectionIds);
+            foreach (var id in originalValue)
             {
                 if (id.Data.AsSpan().StartsWith(connectionId.Data))
                 {
@@ -25,7 +26,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
             }
 
-            _connectionIds = _connectionIds.Add(connectionId);
+            bool success;
+            do
+            {
+                var updated = originalValue.Add(connectionId);
+                var interlockedResult = Interlocked.CompareExchange(ref _connectionIds, updated, originalValue);
+                success = originalValue == interlockedResult;
+                originalValue = interlockedResult;
+            } while (!success);
         }
 
         /// <summary>
@@ -49,7 +57,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public void Remove(ConnectionId connectionId)
         {
-            _connectionIds = _connectionIds.Remove(connectionId);
+            var originalValue = Volatile.Read(ref _connectionIds);
+
+            bool success;
+            do
+            {
+                var updated = originalValue.Remove(connectionId);
+                var interlockedResult = Interlocked.CompareExchange(ref _connectionIds, updated, originalValue);
+                success = originalValue == interlockedResult;
+                originalValue = interlockedResult;
+            } while (!success);
         }
     }
 }

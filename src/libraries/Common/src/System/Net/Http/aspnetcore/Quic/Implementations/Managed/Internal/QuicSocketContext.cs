@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
@@ -56,12 +57,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         return null;
                     }
 
+                    // TODO-RZ: This normally shouldn't race with Detach method (that can only be called from
+                    // other thread for connected connections), but there is very improbable scenario when the connection
+                    // was detached and we received delayed Initial/Handshake packet.
                     connectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
                     _connectionIds.Add(connectionId!);
 
-                    // TODO-RZ: there is a data race with Detach() method
                     connection = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
-                    _connections = _connections.Add(connectionId!, connection);
+                    ImmutableInterlocked.TryAdd(ref _connections, connectionId!, connection);
                 }
                 else
                 {
@@ -124,11 +127,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal override bool DetachConnection(ManagedQuicConnection connection)
         {
-            _connectionIds.Remove(connection.DestinationConnectionId!);
+            _connectionIds.Remove(connection.SourceConnectionId!);
 
             // TODO-RZ: Data race with socket thread
-            _connections = _connections.Remove(connection.DestinationConnectionId!);
-            return _connections.IsEmpty;
+            ImmutableInterlocked.TryRemove(ref _connections, connection.SourceConnectionId!, out _);
+            return _connections.IsEmpty && !_acceptNewConnections;
         }
     }
 
@@ -188,7 +191,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private Task _timeoutTask;
         private long _currentTimeout = long.MaxValue;
 
-        private Task[] _waitingTasks = new Task[3];
+        private Task[] _waitingTasks = new Task[4];
 
         private Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
@@ -267,16 +270,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Task<SocketReceiveFromResult> socketReceiveTask =
                 _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
 
+            var shutdownTcs = new TaskCompletionSource<int>();
+
             _waitingTasks[0] = socketReceiveTask;
             _waitingTasks[1] = _signalTcs.Task;
             _waitingTasks[2] = _timeoutTask;
+            _waitingTasks[3] = shutdownTcs.Task;
+
+            await using var registration = token.Register(() => shutdownTcs.TrySetResult(0));
 
             // TODO-RZ: allow timers for multiple connections on server
             try
             {
-                while (!token.IsCancellationRequested)
+                do
                 {
                     await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
+
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
                     if (socketReceiveTask.IsCompleted)
                     {
@@ -307,6 +320,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         await OnTimeout().ConfigureAwait(false);
                     }
                 }
+                while (true) ;
             }
             catch (Exception e)
             {

@@ -1,5 +1,7 @@
 #nullable enable
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
@@ -62,6 +64,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return Equals((ConnectionId) obj);
         }
 
-        public override int GetHashCode() => Data.GetHashCode();
+        public override int GetHashCode() => ((IStructuralEquatable)Data).GetHashCode(EqualityComparer<byte>.Default);
     }
 }
