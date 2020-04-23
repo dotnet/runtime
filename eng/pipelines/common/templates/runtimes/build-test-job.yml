@@ -51,19 +51,24 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      testPriority: '0'
-    ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      testPriority: '1'
-
     # Compute job name from template parameters
-    ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ parameters.testPriority }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ parameters.testPriority }} Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
-    ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p${{ parameters.testPriority }}_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri${{ parameters.testPriority }} Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
