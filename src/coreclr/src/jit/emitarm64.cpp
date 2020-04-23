@@ -786,6 +786,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
+        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
@@ -860,6 +861,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
             assert(isValidVectorIndex(id->idOpSize(), EA_1BYTE, emitGetInsSC(id)));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            break;
+
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2})
+            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert(elemsize != EA_8BYTE);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
