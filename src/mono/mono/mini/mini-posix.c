@@ -623,7 +623,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	 * nanoseconds).
 	 */
 	do {
-		diff = (gint64) ns_abs - (gint64) clock_get_time_ns ();
+		diff = (gint64) ns_abs - (gint64) mono_clock_get_time_ns (sampling_clock);
 
 		if (diff <= 0)
 			break;
@@ -691,17 +691,17 @@ init:
 		goto init;
 	}
 
-	mono_clock_init (&sampling_clock);
+	mono_clock_init (sampling_clock);
 	clock_init_for_profiler (mode);
 
-	for (guint64 sleep = mono_clock_get_time_ns (&sampling_clock); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
+	for (guint64 sleep = mono_clock_get_time_ns (sampling_clock); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
 		uint32_t freq;
 		MonoProfilerSampleMode new_mode;
 
 		mono_profiler_get_sample_mode (NULL, &new_mode, &freq);
 
 		if (new_mode != mode) {
-			mono_clock_cleanup (&sampling_clock);
+			mono_clock_cleanup (sampling_clock);
 			goto init;
 		}
 
@@ -723,7 +723,7 @@ init:
 		} FOREACH_THREAD_SAFE_END
 	}
 
-	mono_clock_cleanup (&sampling_clock);
+	mono_clock_cleanup (sampling_clock);
 
 done:
 	mono_atomic_store_i32 (&sampling_thread_exiting, 1);

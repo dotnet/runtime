@@ -29,9 +29,17 @@ gint64 mono_100ns_datetime (void);
 gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #endif
 
-void mono_clock_init (void *clk_id);
-void mono_clock_cleanup (void *clk_id);
-guint64 mono_clock_get_time_ns (void *clk_id);
+#if defined(HOST_DARWIN)
+typedef clock_serv_t mono_clock_id_t;
+#elif defined(__linux__)
+typedef clockid_t mono_clock_id_t;
+#else
+typedef void* mono_clock_id_t;
+#endif
+
+void mono_clock_init (mono_clock_id_t clk_id);
+void mono_clock_cleanup (mono_clock_id_t clk_id);
+guint64 mono_clock_get_time_ns (mono_clock_id_t clk_id);
 
 /* Stopwatch class for internal runtime use */
 typedef struct {
