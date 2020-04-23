@@ -320,9 +320,6 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldc_I8).</summary>
         protected void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
-        private void Dup() => _ilg!.Emit(OpCodes.Dup);
-
         /// <summary>A macro for _ilg.Emit(OpCodes.Ret).</summary>
         protected void Ret() => _ilg!.Emit(OpCodes.Ret);
 
@@ -1263,24 +1260,28 @@ namespace System.Text.RegularExpressions
                             Ldc('\n');
                             Ldloc(_runtextposLocal);
                             Call(s_stringIndexOfCharInt);
-                            Dup();
+                            using (RentedLocalBuilder newlinePos = RentInt32Local())
+                            {
+                                Stloc(newlinePos);
 
-                            // if (tmp == -1)
-                            // {
-                            //     runtextpos = runtextend;
-                            //     return false;
-                            // }
-                            Label foundNextLine = DefineLabel();
-                            Ldc(-1);
-                            Bne(foundNextLine);
-                            Pop();
-                            BrFar(returnFalse);
+                                // if (newlinePos == -1)
+                                // {
+                                //     runtextpos = runtextend;
+                                //     return false;
+                                // }
+                                Label foundNextLine = DefineLabel();
+                                Ldloc(newlinePos);
+                                Ldc(-1);
+                                Bne(foundNextLine);
+                                BrFar(returnFalse);
 
-                            // runtextpos = tmp + 1;
-                            MarkLabel(foundNextLine);
-                            Ldc(1);
-                            Add();
-                            Stloc(_runtextposLocal);
+                                // runtextpos = newlinePos + 1;
+                                MarkLabel(foundNextLine);
+                                Ldloc(newlinePos);
+                                Ldc(1);
+                                Add();
+                                Stloc(_runtextposLocal);
+                            }
 
                             MarkLabel(atBeginningOfLine);
                         }
@@ -1682,17 +1683,31 @@ namespace System.Text.RegularExpressions
                             break;
                     }
 
-                    // i = tmp; // or i += tmp if there's a loop
-                    // if (tmp < 0) goto returnFalse;
-                    Dup();
                     if (needLoop)
                     {
-                        Ldloc(iLocal);
-                        Add();
+                        // i += tmp;
+                        // if (tmp < 0) goto returnFalse;
+                        using (RentedLocalBuilder tmp = RentInt32Local())
+                        {
+                            Stloc(tmp);
+                            Ldloc(iLocal);
+                            Ldloc(tmp);
+                            Add();
+                            Stloc(iLocal);
+                            Ldloc(tmp);
+                            Ldc(0);
+                            BltFar(returnFalse);
+                        }
                     }
-                    Stloc(iLocal);
-                    Ldc(0);
-                    BltFar(returnFalse);
+                    else
+                    {
+                        // i = tmp;
+                        // if (i < 0) goto returnFalse;
+                        Stloc(iLocal);
+                        Ldloc(iLocal);
+                        Ldc(0);
+                        BltFar(returnFalse);
+                    }
 
                     // if (i >= textSpan.Length - (_leadingCharClasses.Length - 1)) goto returnFalse;
                     if (_leadingCharClasses.Length > 1)
@@ -1818,11 +1833,11 @@ namespace System.Text.RegularExpressions
             Mvfldloc(s_runtextField, runtextLocal);
             Mvfldloc(s_runtextendField, runtextendLocal);
 
-            // int runtextpos;
-            // int originalruntextpos = runtextpos = this.runtextpos;
+            // int runtextpos = this.runtextpos;
+            // int originalruntextpos = this.runtextpos;
             Ldthisfld(s_runtextposField);
-            Dup();
             Stloc(runtextposLocal);
+            Ldloc(runtextposLocal);
             Stloc(originalruntextposLocal);
 
             // The implementation tries to use const indexes into the span wherever possible, which we can do
@@ -4904,19 +4919,19 @@ namespace System.Text.RegularExpressions
                             Ldloc(_runtextbegLocal!);
                         }
                         Sub();
-                        if (c != int.MaxValue)
-                        {
-                            Label l4 = DefineLabel();
-                            Dup();
-                            Ldc(c);
-                            Blt(l4);
-                            Pop();
-                            Ldc(c);
-                            MarkLabel(l4);
-                        }
                         using (RentedLocalBuilder cLocal = RentInt32Local())
                         {
                             Stloc(cLocal);
+                            if (c != int.MaxValue)
+                            {
+                                Label l4 = DefineLabel();
+                                Ldloc(cLocal);
+                                Ldc(c);
+                                Blt(l4);
+                                Ldc(c);
+                                Stloc(cLocal);
+                                MarkLabel(l4);
+                            }
                             Ldloc(cLocal);
                             Ldc(0);
                             Ble(AdvanceLabel());
