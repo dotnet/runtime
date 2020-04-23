@@ -6,10 +6,4 @@
   <ItemGroup>
     <Compile Include="AssemblyContracts.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
-  </ItemGroup>
 </Project>
