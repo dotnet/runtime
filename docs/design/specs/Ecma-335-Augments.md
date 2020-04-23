@@ -328,7 +328,7 @@ We propose the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is an
 
 ## Module Initializer
 
-All modules may have a module initializer. This method shall be static, a member of the module, take no parameters, return no value, be marked with **rtspecialname** and **specialname**, and be named `.cctor`.
+All modules may have a module initializer. This method shall be a global method, static, take no parameters, return no value, be marked with **rtspecialname** and **specialname**, and be named `.cctor`.
 
 There are no limitations on what code is permitted in a module initializer. Module initializers are permitted to run and call both managed and unmanaged code.
 
