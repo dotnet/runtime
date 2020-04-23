@@ -5938,6 +5938,56 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3H;
             break;
 
+        case INS_sabal:
+        case INS_sabdl:
+        case INS_saddl:
+        case INS_saddw:
+        case INS_smlal:
+        case INS_smlsl:
+        case INS_ssubl:
+        case INS_ssubw:
+        case INS_uabal:
+        case INS_uabdl:
+        case INS_uaddl:
+        case INS_uaddw:
+        case INS_umlal:
+        case INS_umlsl:
+        case INS_usubl:
+        case INS_usubw:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_sabal2:
+        case INS_sabdl2:
+        case INS_saddl2:
+        case INS_saddw2:
+        case INS_smlal2:
+        case INS_smlsl2:
+        case INS_ssubl2:
+        case INS_ssubw2:
+        case INS_umlal2:
+        case INS_umlsl2:
+        case INS_smull2:
+        case INS_uabal2:
+        case INS_uabdl2:
+        case INS_uaddl2:
+        case INS_uaddw2:
+        case INS_usubl2:
+        case INS_umull2:
+        case INS_usubw2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            fmt = IF_DV_3H;
+            break;
+
         default:
             unreached();
             break;
