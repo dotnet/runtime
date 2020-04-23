@@ -881,7 +881,7 @@ INST2(sqadd,   "sqadd",  0, 0, IF_EN2O,   0x5E200C00,  0x0E200C00)
                                    //  sqadd   Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 000011nnnnnddddd   5E20 0C00   Vd,Vn,Vm   (scalar)
                                    //  sqadd   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 000011nnnnnddddd   0E20 0C00   Vd,Vn,Vm   (vector)
 
-INST2(sqsub,   "sqadd",  0, 0, IF_EN2O,   0x5E202C00,  0x0E202C00)
+INST2(sqsub,   "sqsub",  0, 0, IF_EN2O,   0x5E202C00,  0x0E202C00)
                                    // C7.2.299 SQSUB
                                    //  sqsub   Vd,Vn,Vm             DV_3E  01011110XX1mmmmm 001011nnnnnddddd   5E20 2C00   Vd,Vn,Vm   (scalar)
                                    //  sqsub   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 001011nnnnnddddd   0E20 2C00   Vd,Vn,Vm   (vector)
@@ -891,7 +891,7 @@ INST2(uqadd,   "uqadd",  0, 0, IF_EN2O,   0x7E200C00,  0x2E200C00)
                                    //  uqadd   Vd,Vn,Vm             DV_3E  01111110XX1mmmmm 000011nnnnnddddd   7E20 0C00   Vd,Vn,Vm   (scalar)
                                    //  uqadd   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 000011nnnnnddddd   2E20 0C00   Vd,Vn,Vm   (vector)
 
-INST2(uqsub,   "uqadd",  0, 0, IF_EN2O,   0x7E202C00,  0x2E202C00)
+INST2(uqsub,   "uqsub",  0, 0, IF_EN2O,   0x7E202C00,  0x2E202C00)
                                    // C7.2.370 UQSUB
                                    //  uqsub   Vd,Vn,Vm             DV_3E  01111110XX1mmmmm 001011nnnnnddddd   7E20 2C00   Vd,Vn,Vm   (scalar)
                                    //  uqsub   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 001011nnnnnddddd   2E20 2C00   Vd,Vn,Vm   (vector)

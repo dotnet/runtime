@@ -5564,6 +5564,30 @@ void emitter::emitIns_R_R_R(
             }
             break;
 
+        case INS_sqadd:
+        case INS_sqsub:
+        case INS_uqadd:
+        case INS_uqsub:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+
+            if (insOptsAnyArrangement(opt))
+            {
+                // Vector operation
+                assert(isValidArrangement(size, opt));
+                assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
+                fmt = IF_DV_3A;
+            }
+            else
+            {
+                // Scalar operation
+                assert(insOptsNone(opt));
+                assert(isValidVectorElemsize(size));
+                fmt = IF_DV_3E;
+            }
+            break;
+
         case INS_fcmeq:
         case INS_fcmge:
         case INS_fcmgt:
