@@ -279,7 +279,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    // Async operation.  Process the IO and callback on the threadpool.
+                    // Async operation.  Process the IO and callback asynchronously on the threadpool (even if we're already on a pool thread).
                     ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
                 }
             }
