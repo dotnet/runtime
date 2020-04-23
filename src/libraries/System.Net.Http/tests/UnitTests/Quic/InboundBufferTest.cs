@@ -75,7 +75,7 @@ namespace System.Net.Quic.Tests
             Assert.False(task.IsCompleted);
 
             ReceiveBytes(0, 10);
-            int written = await task.AsTask().TimeoutAfter(100);
+            int written = await task.AsTask().TimeoutAfter(5_000);
             Assert.Equal(10, written);
         }
 

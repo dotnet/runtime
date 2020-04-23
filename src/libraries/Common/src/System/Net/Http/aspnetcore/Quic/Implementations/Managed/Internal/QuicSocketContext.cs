@@ -178,22 +178,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
 
-        protected readonly IPEndPoint _listenEndpoint;
-        protected readonly CancellationTokenSource _socketTaskCts;
+        private readonly IPEndPoint _listenEndpoint;
+        private readonly CancellationTokenSource _socketTaskCts;
 
-        protected TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
+        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
 
-        protected Task? _backgroundWorkerTask;
+        private Task? _backgroundWorkerTask;
 
-        protected QuicReader _reader;
-        protected QuicWriter _writer;
+        private readonly QuicReader _reader;
+        private readonly QuicWriter _writer;
 
         private Task _timeoutTask;
         private long _currentTimeout = long.MaxValue;
 
-        private Task[] _waitingTasks = new Task[4];
+        private readonly Task[] _waitingTasks = new Task[4];
 
-        private Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+        private readonly Socket _socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];

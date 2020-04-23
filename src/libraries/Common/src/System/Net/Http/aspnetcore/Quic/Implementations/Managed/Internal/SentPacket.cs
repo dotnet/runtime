@@ -1,13 +1,11 @@
 using System.Collections.Generic;
-using System.Net.Quic.Implementations.Managed.Internal;
-using System.Reflection.Metadata;
 
-namespace System.Net.Quic.Implementations.Managed
+namespace System.Net.Quic.Implementations.Managed.Internal
 {
     /// <summary>
     ///      Contains data about what all was sent in an outbound packet for packet loss recovery purposes.
     /// </summary>
-    internal class SentPacket
+    internal class SentPacket : IPoolableObject
     {
         /// <summary>
         ///     Structure containing data about sent data in Stream frames.
@@ -98,11 +96,13 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Resets the object to it's default state so that it can be reused.
         /// </summary>
-        internal void Reset()
+        public void Reset()
         {
             AckedRanges.Clear();
             SentStreamData.Clear();
             HandshakeDoneSent = false;
+            InFlight = false;
+            AckEliciting = false;
             BytesSent = 0;
         }
     }

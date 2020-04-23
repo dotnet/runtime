@@ -73,14 +73,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             internal SortedList<long, SentPacket> SentPackets { get; } = new SortedList<long, SentPacket>();
 
             /// <summary>
-            ///     List of packets deemed lost.
+            ///     Queue of packets deemed lost.
             /// </summary>
-            internal List<SentPacket> LostPackets { get; } = new List<SentPacket>();
+            internal Queue<SentPacket> LostPackets { get; } = new Queue<SentPacket>();
 
             /// <summary>
-            ///     List of packets newly acked by the peer.
+            ///     Queue of packets newly acked by the peer.
             /// </summary>
-            internal List<SentPacket> AckedPackets { get; } = new List<SentPacket>();
+            internal Queue<SentPacket> AckedPackets { get; } = new Queue<SentPacket>();
 
             /// <summary>
             ///     If PTO timer expired, contains number of remaining probe packets this endpoint should send as a
@@ -287,7 +287,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             pnSpace.SentPackets.Remove(packetNumber);
-            pnSpace.AckedPackets.Add(packet);
+            pnSpace.AckedPackets.Enqueue(packet);
         }
 
         internal void UpdateRtt(long ackDelay)
@@ -436,7 +436,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 {
                     // Mark packet as lost
                     pnSpace.SentPackets.Remove(pn);
-                    pnSpace.LostPackets.Add(packet);
+                    pnSpace.LostPackets.Enqueue(packet);
 
                     if (packet.InFlight)
                     {
@@ -452,16 +452,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // Inform the congestion controller of lost packets.
             CongestionController.OnPacketsLost(lostPacketsForCc, now);
-        }
-
-        internal List<SentPacket> GetAckedPackets(PacketSpace space)
-        {
-            return GetPacketNumberSpace(space).AckedPackets;
-        }
-
-        internal List<SentPacket> GetLostPackets(PacketSpace space)
-        {
-            return GetPacketNumberSpace(space).LostPackets;
         }
     }
 }

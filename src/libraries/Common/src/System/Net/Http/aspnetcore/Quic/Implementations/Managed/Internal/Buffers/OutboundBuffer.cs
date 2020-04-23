@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     {
         private const int PreferredChunkSize = 16 * 1024;
 
-        private const int MaximumHeldChunks = 16;
+        private const int MaximumHeldChunks = 20;
 
         /// <summary>
         ///     Ranges of bytes acked by the peer.

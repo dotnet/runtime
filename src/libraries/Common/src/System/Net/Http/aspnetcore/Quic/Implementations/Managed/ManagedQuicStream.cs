@@ -186,7 +186,10 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override void Flush()
         {
-            FlushAsync(CancellationToken.None).GetAwaiter().GetResult();
+            ThrowIfDisposed();
+            ThrowIfNotWritable();
+
+            OutboundBuffer!.FlushChunk();
         }
 
         internal override Task FlushAsync(CancellationToken cancellationToken)

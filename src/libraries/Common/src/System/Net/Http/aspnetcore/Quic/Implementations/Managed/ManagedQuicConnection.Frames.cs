@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
@@ -273,12 +274,11 @@ namespace System.Net.Quic.Implementations.Managed
             long ackDelay = Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int) _peerTransportParameters.AckDelayExponent));
             Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, _tls.IsHandshakeComplete);
 
-            var ackedPackets = Recovery.GetAckedPackets(space);
-            foreach (SentPacket packet in ackedPackets)
+            var ackedPackets = Recovery.GetPacketNumberSpace(space).AckedPackets;
+            while (ackedPackets.TryDequeue(out var packet))
             {
                 OnPacketAcked(packet, pnSpace);
             }
-            ackedPackets.Clear();
 
             return ProcessPacketResult.Ok;
         }
@@ -561,6 +561,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
             pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
+            _sentPacketPool.Return(packet);
         }
     }
 }

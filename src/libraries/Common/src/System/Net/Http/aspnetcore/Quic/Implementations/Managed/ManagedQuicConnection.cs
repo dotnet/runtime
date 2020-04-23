@@ -1,6 +1,5 @@
 #nullable enable
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
@@ -19,6 +18,8 @@ namespace System.Net.Quic.Implementations.Managed
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
         private readonly ResettableCompletionSource<int> _connectTcs = new ResettableCompletionSource<int>();
+
+        private readonly ObjectPool<SentPacket> _sentPacketPool = new ObjectPool<SentPacket>(128);
 
         private readonly QuicClientConnectionOptions? _clientOpts;
 
@@ -586,9 +587,8 @@ namespace System.Net.Quic.Implementations.Managed
         internal void SendData(QuicWriter writer, out IPEndPoint? receiver, long now)
         {
             receiver = _remoteEndpoint;
-            // TODO-RZ: pool SentPacket, SendContext and QuicWriter instances
 
-            var context = new SendContext(now);
+            var context = new SendContext(now, _sentPacketPool.Rent());
 
             var level = GetWriteLevel();
             var origMemory = writer.Buffer;
@@ -616,7 +616,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (nextLevel <= level)
                     break;
 
-                context.SentPacket = new SentPacket {TimeSent = context.Timestamp};
+                context.SentPacket = _sentPacketPool.Rent();
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
@@ -670,7 +670,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void ProcessLostPackets(PacketNumberSpace pnSpace, RecoveryController.PacketNumberSpace recoverySpace)
         {
-            foreach (var lostPacket in recoverySpace.LostPackets)
+            var lostPackets = recoverySpace.LostPackets;
+            while (lostPackets.TryDequeue(out var lostPacket))
             {
                 if (lostPacket.AckEliciting)
                 {
@@ -704,9 +705,8 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // acked ranges are deleted only when the packet was acked, so no action needed here
+                _sentPacketPool.Return(lostPacket);
             }
-
-            recoverySpace.LostPackets.Clear();
         }
 
         public override void Dispose()
@@ -790,15 +790,16 @@ namespace System.Net.Quic.Implementations.Managed
 
         private sealed class SendContext : ContextBase
         {
-            public SendContext(long now)
+            public SendContext(long now, SentPacket sentPacket)
                 : base(now)
             {
+                SentPacket = sentPacket;
             }
 
             /// <summary>
             ///     Data about next packet that is to be sent.
             /// </summary>
-            internal SentPacket SentPacket { get; set; } = new SentPacket();
+            internal SentPacket SentPacket { get; set; }
         }
 
         internal enum ProcessPacketResult

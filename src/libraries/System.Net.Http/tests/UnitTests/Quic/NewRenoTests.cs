@@ -1,4 +1,5 @@
 using System.Net.Quic.Implementations.Managed;
+using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using Xunit;
 

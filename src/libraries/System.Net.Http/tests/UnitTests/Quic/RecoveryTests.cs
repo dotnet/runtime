@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
@@ -56,7 +57,7 @@ namespace System.Net.Quic.Tests
             // simulate receiving ack frame some time later
             ReceiveAck(Now + 2 * RecoveryController.InitialRtt, PacketSpace.Initial, Recovery.MaxAckDelay, 1..1);
 
-            Assert.Single(Recovery.GetAckedPackets(PacketSpace.Initial));
+            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).AckedPackets);
         }
 
         [Fact]
@@ -98,8 +99,8 @@ namespace System.Net.Quic.Tests
 
             // no more packets in-flight => no timer
             // Assert.Equal(long.MaxValue, Recovery.LossRecoveryTimer);
-            Assert.Single(Recovery.GetLostPackets(PacketSpace.Initial));
-            Assert.Single(Recovery.GetAckedPackets(PacketSpace.Initial));
+            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
+            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).AckedPackets);
         }
 
         [Fact]
@@ -117,7 +118,7 @@ namespace System.Net.Quic.Tests
             ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, count..count);
 
             // only the first packet should be deemed lost
-            Assert.Single(Recovery.GetLostPackets(PacketSpace.Initial));
+            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
             // but timer should be armed for the other packets.
             Assert.NotEqual(long.MaxValue, Recovery.LossRecoveryTimer);
         }
@@ -138,7 +139,7 @@ namespace System.Net.Quic.Tests
             Recovery.OnLossDetectionTimeout(handshakeComplete, Now);
 
             // now the first should be lost
-            Assert.Single(Recovery.GetLostPackets(PacketSpace.Initial));
+            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
         }
     }
 }
