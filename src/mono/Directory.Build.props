@@ -42,7 +42,7 @@
     <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
     <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsWASM Condition="'$(TargetOS)' == 'WebAssembly'">true</TargetsWASM>
+    <TargetsWASM Condition="'$(TargetOS)' == 'Browser'">true</TargetsWASM>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsWASM)' == 'true'">true</TargetsUnix>
   </PropertyGroup>

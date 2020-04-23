@@ -83,6 +83,7 @@ stages:
       - Linux_arm
       - Linux_arm64
       - Linux_musl_x64
+      - Browser_wasm
       # - Linux_musl_arm64
       - Windows_NT_x64
       # - Windows_NT_x86
@@ -131,6 +132,7 @@ stages:
       - iOS_x64
       # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
+      - Browser_wasm
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release

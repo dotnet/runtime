@@ -246,7 +246,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
-    - WebAssembly_wasm
+    - Browser_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -283,7 +283,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
-    - WebAssembly_wasm
+    - Browser_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -412,7 +412,7 @@ jobs:
     - Android_arm64
     - tvOS_x64
     - iOS_arm64
-    - WebAssembly_wasm
+    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: debug
 

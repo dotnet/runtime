@@ -160,14 +160,14 @@ jobs:
 
 # WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: WebAssembly
+      osGroup: Browser
       archType: wasm
-      platform: WebAssembly_wasm
+      platform: Browser_wasm
       container:
         image: ubuntu-18.04-webassembly-20200409132031-f70ea41
         registry: mcr
