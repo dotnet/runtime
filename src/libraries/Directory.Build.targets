@@ -34,7 +34,6 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true' and '$(IsPartialFacadeAssemblyOnNetfx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true' and '$(OmitResourcesOnNetfx)' == 'true'">true</OmitResources>
   </PropertyGroup>
 
