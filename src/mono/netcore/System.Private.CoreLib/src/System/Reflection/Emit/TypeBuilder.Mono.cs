@@ -974,7 +974,7 @@ namespace System.Reflection.Emit
         {
             if (ctors == null)
                 return Array.Empty<ConstructorInfo>();
-            List<ConstructorBuilder> result = new List<ConstructorBuilder>();
+            List<ConstructorInfo> result = new List<ConstructorInfo>();
             bool match;
             MethodAttributes mattrs;
 
@@ -1234,7 +1234,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException();
 
             bool match;
-            List<TypeBuilder> result = new List<TypeBuilder>();
+            List<Type> result = new List<Type>();
 
             if (subtypes == null)
                 return EmptyTypes;
