@@ -929,7 +929,6 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DR_3C: // DR_3C   X..........mmmmm xxxsssnnnnnddddd      Rd Rn Rm ext(Rm) LSL imm(0-4)
         case IF_DR_3D: // DR_3D   X..........mmmmm cccc..nnnnnddddd      Rd Rn Rm cond
         case IF_DR_3E: // DR_3E   X........X.mmmmm ssssssnnnnnddddd      Rd Rn Rm imm(0-63)
-        case IF_DV_3F: // DV_3F   ...........mmmmm ......nnnnnddddd      Vd Vn Vm (vector) - Vd both source and dest
 
         case IF_DR_4A: // DR_4A   X..........mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra
 
@@ -964,7 +963,12 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3D:  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
         case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
         case IF_DV_3E:  // DV_3E   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+        case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+        case IF_DV_3H:  // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                        // subhn{2})
+        case IF_DV_3HI: // DV_3HI ........XXLMmmmm ....H.nnnnnddddd       Vd Vn Vm[] (smlal{2}, smlsl{2}, smull{2},
+                        // umlal{2}, umlsl{2}, umull{2} vector by elem)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
