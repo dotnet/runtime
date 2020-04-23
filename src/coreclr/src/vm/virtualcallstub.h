@@ -511,7 +511,7 @@ private:
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
                                        PCODE addrOfPatcher,
                                        size_t dispatchToken
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
                                        , size_t stackArgumentsSize
 #endif
                                        );

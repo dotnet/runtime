@@ -266,8 +266,10 @@ struct ResolveStub
     inline size_t cacheAddress()            { LIMITED_METHOD_CONTRACT; return _cacheAddress;   }
     inline size_t token()                   { LIMITED_METHOD_CONTRACT; return _token;          }
     inline size_t size()                    { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
+#ifndef UNIX_X86_ABI
     inline static size_t offsetOfThisDeref(){ LIMITED_METHOD_CONTRACT; return offsetof(ResolveStub, part1) - offsetof(ResolveStub, _resolveEntryPoint); }
     inline size_t stackArgumentsSize()      { LIMITED_METHOD_CONTRACT; return _stackArgumentsSize; }
+#endif
 
 private:
     friend struct ResolveHolder;
@@ -331,7 +333,9 @@ private:
     DISPL _backpatcherDispl;        // xx xx xx xx          backpatcherWorker  == BackPatchWorkerAsmStub
     BYTE  part11 [1];               // eb           jmp
     BYTE toResolveStub;             // xx                   resolveStub, i.e. go back to _resolveEntryPoint
+#ifndef UNIX_X86_ABI
     size_t _stackArgumentsSize;     // xx xx xx xx
+#endif
 };
 
 /* ResolveHolders are the containers for ResolveStubs,  They provide
@@ -948,7 +952,9 @@ void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._tokenPush          = dispatchToken;
     _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
     _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &_stub._backpatcherDispl   + sizeof(DISPL));
+#ifndef UNIX_X86_ABI
     _stub._stackArgumentsSize = stackArgumentsSize;
+#endif
 }
 
 ResolveHolder* ResolveHolder::FromFailEntry(PCODE failEntry)
