@@ -3,9 +3,14 @@ setlocal
 set TESTDIR=%~dp0\..\..\..\..\..\..\artifacts\tests\coreclr\Windows_NT.x64.Debug\readytorun\crossboundarylayout\crossboundarytest\crossboundarytest
 set TESTBATCHROOT=%~dp0
 
+call :testCompositeScenarios
 call :testCG2SingleInputBubbleAll
+call :testCG2All
+call :testCG1All
 
 goto done
+
+:testCompositeScenarios
 
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% all a b crossboundarytest d
 
@@ -17,9 +22,7 @@ call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% a_crossboun
 
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% a_b_crossboundarytest a b crossboundarytest
 
-call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_A a CG2Single
-
-call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_ABubble a CG2SingleInputBubble
+goto done
 
 :testCG1All
 

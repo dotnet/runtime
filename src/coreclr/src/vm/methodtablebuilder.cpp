@@ -11238,9 +11238,16 @@ bool ModuleInMatchingVersionBubble(Module *pModule, Module *pSecondModule)
     }
     else
 #else
-    if (!pModule->IsInSameVersionBubble(pSecondModule))
     {
-        return false;
+        if (!pModule->GetFile()->IsILImageReadyToRun())
+        {
+            // Non-R2R modules claim to be in the same version bubble as ALL other modules
+            return true;
+        }
+        if (!pModule->IsInSameVersionBubble(pSecondModule))
+        {
+            return false;
+        }
     }
 #endif
     return true;
