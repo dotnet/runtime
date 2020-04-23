@@ -30,6 +30,7 @@ gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #endif
 
 #if defined(HOST_DARWIN)
+#include <mach/clock.h>
 typedef clock_serv_t mono_clock_id_t;
 #elif defined(__linux__)
 typedef clockid_t mono_clock_id_t;
