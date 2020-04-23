@@ -34,13 +34,13 @@
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm'">arm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm64'">arm64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Browser'">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
          the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly' or '$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(TargetOS)' == 'Browser' or '$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
@@ -94,7 +94,7 @@
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(TargetOS)' == 'Windows_NT'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
-    <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
+    <_portableOS Condition="'$(RuntimeOS)' == 'Browser'">browser</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'ios'">ios</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'tvos'">tvos</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'android'">android</_portableOS>
@@ -110,9 +110,9 @@
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_buildingInOSX>$([MSBuild]::IsOSPlatform('OSX'))</_buildingInOSX>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'browser' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'browser' and '$(TargetOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'browser' and '$(TargetOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'android' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
