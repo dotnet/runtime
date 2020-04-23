@@ -16,17 +16,17 @@
   <Target Name="GenerateRunSettingsFile">
     <PropertyGroup>
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$TESTCASEFILTER$$', '$(_testFilter)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DEVPATH$$', '$(TestHostRootPath)'))</RunSettingsFileContent>
-      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
+      <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)')
+                                                      .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
+                                                      .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')
+                                                      .Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)')
+                                                      .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
+                                                      .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
+                                                      .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
+                                                      .Replace('$$DEVPATH$$', '$(TestHostRootPath)')
+                                                      .Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(RunSettingsOutputFilePath)"
