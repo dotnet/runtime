@@ -186,5 +186,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteStartMap(definiteLength: 0);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void WriteArray_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArrayIndefiniteLength());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        [InlineData(CborConformanceLevel.Strict)]
+        internal static void WriteArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            writer.WriteStartArrayIndefiniteLength();
+        }
     }
 }

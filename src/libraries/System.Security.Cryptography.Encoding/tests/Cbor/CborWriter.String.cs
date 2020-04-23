@@ -44,6 +44,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartByteStringIndefiniteLength()
         {
+            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
+            }
+
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
@@ -60,6 +65,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartTextStringIndefiniteLength()
         {
+            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
+            }
+
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);

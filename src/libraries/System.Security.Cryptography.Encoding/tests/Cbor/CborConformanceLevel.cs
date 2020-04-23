@@ -25,14 +25,111 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        public static bool RequiresUniqueKeys(CborConformanceLevel level)
+        public static bool RequiresMinimalIntegerRepresentation(CborConformanceLevel conformanceLevel)
         {
-            return level != CborConformanceLevel.Lax;
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                case CborConformanceLevel.Strict:
+                    return false;
+
+                case CborConformanceLevel.Rfc7049Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
         }
 
-        public static bool RequiresSortedKeys(CborConformanceLevel level)
+        public static bool RequiresPreservedFloatRepresentation(CborConformanceLevel conformanceLevel)
         {
-            switch (level)
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.Rfc7049Canonical:
+                    return false;
+
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static bool RequiresDefiniteLengthItems(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                case CborConformanceLevel.Strict:
+                    return false;
+
+                case CborConformanceLevel.Rfc7049Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static bool RequiresSkipSemanticValidation(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Strict:
+                    return true;
+
+                case CborConformanceLevel.Lax:
+                case CborConformanceLevel.Rfc7049Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return false;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static bool AllowsTags(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.Rfc7049Canonical:
+                    return true;
+
+                case CborConformanceLevel.Ctap2Canonical:
+                    return false;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static bool RequiresUniqueKeys(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
+            {
+                case CborConformanceLevel.Lax:
+                    return false;
+
+                case CborConformanceLevel.Strict:
+                case CborConformanceLevel.Rfc7049Canonical:
+                case CborConformanceLevel.Ctap2Canonical:
+                    return true;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
+            };
+        }
+
+        public static bool RequiresSortedKeys(CborConformanceLevel conformanceLevel)
+        {
+            switch (conformanceLevel)
             {
                 case CborConformanceLevel.Strict:
                 case CborConformanceLevel.Lax:
@@ -43,7 +140,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return true;
 
                 default:
-                    return false;
+                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
             };
         }
 

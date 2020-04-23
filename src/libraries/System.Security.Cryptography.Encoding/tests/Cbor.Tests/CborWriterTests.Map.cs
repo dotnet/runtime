@@ -90,11 +90,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3010102020303")]
-        // indefinite length string payload
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a561620002006161007f616360ff000100")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a561620002006161007f616360ff000100")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162007f616360ff00")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162007f616360ff00")]
+        // nested array payload
+        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5010002006161006162008261636000")]
         // CBOR sorting rules do not match canonical string sorting
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
@@ -129,49 +129,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "bf030302020101ff")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "bf030302020101ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "bf010102020303ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "bf010102020303ff")]
-        // indefinite length string payload
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "bf61620002006161007f616360ff000100ff")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "bf61620002006161007f616360ff000100ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "bf010002006161006162007f616360ff00ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "b", 0, 2, 0, "a", 0, new string[] { "c", "" }, 0, 1, 0 }, "bf010002006161006162007f616360ff00ff")]
-        // CBOR sorting rules do not match canonical string sorting
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "aa", 0, "z", 0 }, "bf62616100617a00ff")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "bf62616100617a00ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "aa", 0, "z", 0 }, "bf617a0062616100ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "aa", 0, "z", 0 }, "bf617a0062616100ff")]
-        // Test case distinguishing between RFC7049 and CTAP2 sorting rules
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, "", 0, 255, 0 }, "bf600018ff00ff")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "bf600018ff00ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "", 0, 255, 0 }, "bf600018ff00ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "", 0, 255, 0 }, "bf18ff006000ff")]
-        internal static void WriteMap_SimpleValues_IndefiniteLength_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
-        {
-            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(level);
-            Helpers.WriteValue(writer, value, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.ToArray();
-            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "bf2000bf030302020101ff0061610019010000ff")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "bf2000bf030302020101ff0061610019010000ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "bf200061610019010000bf010102020303ff00ff")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "bf190100002000616100bf010102020303ff00ff")]
-        internal static void WriteMap_NestedValues_IndefiniteLength_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
-        {
-            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(level);
-            Helpers.WriteValue(writer, value, useDefiniteLengthCollections: false);
-            byte[] actualEncoding = writer.ToArray();
-            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
-        }
-
-        [Theory]
         [InlineData(new object[] { Map, "a", 1, "a", 2 }, "a2616101616102")]
         public static void WriteMap_DuplicateKeys_ShouldSucceed(object[] values, string expectedHexEncoding)
         {
@@ -189,9 +146,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborConformanceLevel.Strict, "foobar")]
         [InlineData(CborConformanceLevel.Rfc7049Canonical, "foobar")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { new string[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new string[] { "x", "y" } })]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new string[] { "x", "y" } })]
+        [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
         internal static void WriteMap_DuplicateKeys_StrictConformance_ShouldFail(CborConformanceLevel level, object dupeKey)
         {
             using var writer = new CborWriter(level);
@@ -341,6 +298,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             writer.WriteStartArray(definiteLength: 0);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void WriteMap_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMapIndefiniteLength());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        [InlineData(CborConformanceLevel.Strict)]
+        internal static void WriteMap_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            writer.WriteStartMapIndefiniteLength();
         }
     }
 }

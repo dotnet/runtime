@@ -134,5 +134,41 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteStartByteStringIndefiniteLength();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void WriteTextString_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartTextStringIndefiniteLength());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        [InlineData(CborConformanceLevel.Strict)]
+        internal static void WriteTextString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            writer.WriteStartTextStringIndefiniteLength();
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void WriteByteString_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartByteStringIndefiniteLength());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        [InlineData(CborConformanceLevel.Strict)]
+        internal static void WriteByteString_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
+        {
+            using var writer = new CborWriter(level);
+            writer.WriteStartByteStringIndefiniteLength();
+        }
     }
 }
