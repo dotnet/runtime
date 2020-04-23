@@ -5445,6 +5445,30 @@ void emitter::emitIns_R_R_R(
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_mul:
+        case INS_smull:
+        case INS_umull:
+            if (insOptsAnyArrangement(opt))
+            {
+                // ASIMD instruction
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(isValidArrangement(size, opt));
+                assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+                if (ins == INS_mul)
+                {
+                    fmt = IF_DV_3A;
+                }
+                else
+                {
+                    fmt = IF_DV_3H;
+                }
+                break;
+            }
+            // Base instruction
+            __fallthrough;
+
         case INS_lsl:
         case INS_lsr:
         case INS_asr:
@@ -5456,10 +5480,8 @@ void emitter::emitIns_R_R_R(
         case INS_udiv:
         case INS_sdiv:
         case INS_mneg:
-        case INS_smull:
         case INS_smnegl:
         case INS_smulh:
-        case INS_umull:
         case INS_umnegl:
         case INS_umulh:
         case INS_lslv:
@@ -5482,22 +5504,8 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DR_3A;
             break;
 
-        case INS_mul:
-            if (insOptsNone(opt))
-            {
-                // general register
-                assert(isValidGeneralDatasize(size));
-                assert(isGeneralRegister(reg1));
-                assert(isGeneralRegister(reg2));
-                assert(isGeneralRegister(reg3));
-                fmt = IF_DR_3A;
-                break;
-            }
-            __fallthrough;
-
         case INS_mla:
         case INS_mls:
-        case INS_pmul:
             assert(insOptsAnyArrangement(opt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -5986,6 +5994,15 @@ void emitter::emitIns_R_R_R(
             assert(size == EA_16BYTE);
             assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
             fmt = IF_DV_3H;
+            break;
+
+        case INS_pmul:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidArrangement(size, opt));
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
+            fmt = IF_DV_3A;
             break;
 
         case INS_pmull:
