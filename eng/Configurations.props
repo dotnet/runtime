@@ -22,6 +22,7 @@
     <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
+    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->

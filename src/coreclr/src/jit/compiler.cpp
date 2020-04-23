@@ -1825,6 +1825,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
 
+    compSuppressedZeroInit = false;
+
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 

@@ -16291,9 +16291,9 @@ void gc_heap::gc1()
             int limit = settings.condemned_generation;
             if (limit == max_generation)
             {
-                limit = total_generation_count;
+                limit = total_generation_count-1;
             }
-            for (int gen = 0; gen < limit; gen++)
+            for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
 

@@ -84,7 +84,7 @@ internal class Program
 
     public static bool CompileWithSeed(int seed, string coreRootPath, string compilationInputFolder, string outDir)
     {
-        string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", "ReadyToRun.SuperIlc.dll");
+        string superIlcPath = Path.Combine(coreRootPath, "R2RTest", "R2RTest.dll");
         string coreRunPath = Path.Combine(coreRootPath, OSExeSuffix("corerun"));
 
         Console.WriteLine($"================================== Compiling with seed {seed} ==================================");

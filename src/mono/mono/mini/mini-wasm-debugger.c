@@ -41,21 +41,16 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
 extern void mono_wasm_fire_bp (void);
-extern void mono_wasm_add_bool_var (gint8);
-extern void mono_wasm_add_char_var (double);
-extern void mono_wasm_add_number_var (double);
-extern void mono_wasm_add_string_var (const char*);
-extern void mono_wasm_add_getter_var (const char*);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
 extern void mono_wasm_add_value_type_unexpanded_var (const char*, const char*);
 extern void mono_wasm_begin_value_type_var (const char*, const char*);
 extern void mono_wasm_end_value_type_var (void);
 extern void mono_wasm_add_enum_var (const char*, const char*, guint64);
-extern void mono_wasm_add_func_var (const char*, guint64);
-extern void mono_wasm_add_array_var (const char*, guint64);
+extern void mono_wasm_add_func_var (const char*, const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
 extern void mono_wasm_set_is_async_method (guint64);
+extern void mono_wasm_add_typed_value (const char *type, const char *str_value, int int_value);
 
 G_END_DECLS
 
@@ -293,7 +288,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	compute_frames ();
 	memset (ss_args, 0, sizeof (*ss_args));
 
-	//BIG WTF, should not happen maybe should assert?
+	// This shouldn't happen - maybe should assert here ?
 	if (frames->len == 0) {
 		DEBUG_PRINTF (1, "SINGLE STEPPING FOUND NO FRAMES");
 		return DBG_NOT_SUSPENDED;
@@ -525,7 +520,7 @@ mono_wasm_breakpoint_hit (void)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_current_bp_id (void)
 {
-	DEBUG_PRINTF (1, "COMPUTING breapoint ID\n");
+	DEBUG_PRINTF (2, "COMPUTING breakpoint ID\n");
 	//FIXME handle compiled case
 
 	/* Interpreter */
@@ -706,6 +701,28 @@ typedef struct {
 	int *pos;
 } FrameDescData;
 
+/*
+ * this returns a string formatted like
+ *
+ *  <ret_type>:[<comma separated list of arg types>]:<method name>
+ *
+ *  .. which is consumed by `mono_wasm_add_func_var`. It is used for
+ *  generating this for the delegate, and it's target.
+ */
+static char*
+mono_method_to_desc_for_js (MonoMethod *method, gboolean include_namespace)
+{
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	char *ret_desc = mono_type_full_name (sig->ret);
+	char *args_desc = mono_signature_get_desc (sig, include_namespace);
+
+	char *sig_desc = g_strdup_printf ("%s:%s:%s", ret_desc, args_desc, method->name);
+
+	g_free (ret_desc);
+	g_free (args_desc);
+	return sig_desc;
+}
+
 static guint64
 read_enum_value (const char *mem, int type)
 {
@@ -747,51 +764,64 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 	ERROR_DECL (error);
 	switch (type->type) {
 		case MONO_TYPE_BOOLEAN:
-			mono_wasm_add_bool_var (*(gint8*)addr);
+			mono_wasm_add_typed_value ("bool", NULL, *(gint8*)addr);
 			break;
 		case MONO_TYPE_I1:
-			mono_wasm_add_number_var (*(gint8*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(gint8*)addr);
 			break;
 		case MONO_TYPE_U1:
-			mono_wasm_add_number_var (*(guint8*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(guint8*)addr);
 			break;
 		case MONO_TYPE_CHAR:
-			mono_wasm_add_char_var (*(guint16*)addr);
+			mono_wasm_add_typed_value ("char", NULL, *(guint16*)addr);
 			break;
 		case MONO_TYPE_U2:
-			mono_wasm_add_number_var (*(guint16*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(guint16*)addr);
 			break;
 		case MONO_TYPE_I2:
-			mono_wasm_add_number_var (*(gint16*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(gint16*)addr);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_I:
-			mono_wasm_add_number_var (*(gint32*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(gint32*)addr);
 			break;
 		case MONO_TYPE_U4:
 		case MONO_TYPE_U:
-			mono_wasm_add_number_var (*(guint32*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(guint32*)addr);
 			break;
 		case MONO_TYPE_I8:
-			mono_wasm_add_number_var (*(gint64*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(gint64*)addr);
 			break;
 		case MONO_TYPE_U8:
-			mono_wasm_add_number_var (*(guint64*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(guint64*)addr);
 			break;
 		case MONO_TYPE_R4:
-			mono_wasm_add_number_var (*(float*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(float*)addr);
 			break;
 		case MONO_TYPE_R8:
-			mono_wasm_add_number_var (*(double*)addr);
+			mono_wasm_add_typed_value ("number", NULL, *(double*)addr);
 			break;
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR: {
+			char *class_name = mono_type_full_name (type);
+			const void *val = *(const void **)addr;
+			char *val_str = g_strdup_printf ("(%s) %p", class_name, val);
+
+			mono_wasm_add_typed_value ("pointer", val_str, (guint32)val);
+
+			g_free (val_str);
+			g_free (class_name);
+			break;
+		}
+
 		case MONO_TYPE_STRING: {
 			MonoString *str_obj = *(MonoString **)addr;
 			if (!str_obj) {
-				mono_wasm_add_string_var (NULL);
+				mono_wasm_add_typed_value ("string", NULL, 0);
 			} else {
 				char *str = mono_string_to_utf8_checked_internal (str_obj, error);
 				mono_error_assert_ok (error); /* FIXME report error */
-				mono_wasm_add_string_var (str);
+				mono_wasm_add_typed_value ("string", str, 0);
 				g_free (str);
 			}
 			break;
@@ -814,10 +844,30 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 			char *class_name = mono_type_full_name (type);
 			int obj_id = get_object_id (obj);
 
-			if (type->type == MONO_TYPE_SZARRAY || type->type == MONO_TYPE_ARRAY) {
-				mono_wasm_add_array_var (class_name, obj_id);
-			} else if (m_class_is_delegate (klass)) {
-				mono_wasm_add_func_var (class_name, obj_id);
+			if (type-> type == MONO_TYPE_ARRAY || type->type == MONO_TYPE_SZARRAY) {
+				MonoArray *array = (MonoArray *)obj;
+				EM_ASM ({
+					MONO.mono_wasm_add_typed_value ('array', $0, { objectId: $1, length: $2 });
+				}, class_name, obj_id, mono_array_length_internal (array));
+			} else if (m_class_is_delegate (klass) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (type->data.generic_class->container_class))) {
+				MonoMethod *method;
+
+				if (type->type == MONO_TYPE_GENERICINST)
+					klass = type->data.generic_class->container_class;
+
+				method = mono_get_delegate_invoke_internal (klass);
+				if (!method) {
+					DEBUG_PRINTF (1, "Could not get a method for the delegate for %s\n", class_name);
+					break;
+				}
+
+				MonoMethod *tm = ((MonoDelegate *)obj)->method;
+				char *tm_desc = NULL;
+				if (tm)
+					tm_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+				mono_wasm_add_func_var (class_name, tm_desc, obj_id);
+				g_free (tm_desc);
 			} else {
 				char *to_string_val = get_to_string_description (class_name, klass, addr);
 				mono_wasm_add_obj_var (class_name, to_string_val, obj_id);
@@ -884,7 +934,7 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 		default: {
 			char *type_name = mono_type_full_name (type);
 			char *msg = g_strdup_printf("can't handle type %s [%p, %x]", type_name, type, type->type);
-			mono_wasm_add_string_var (msg);
+			mono_wasm_add_typed_value ("string", msg, 0);
 			g_free (msg);
 			g_free (type_name);
 		}
@@ -967,7 +1017,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 			if (!getters_allowed) {
 				// not allowed to call the getter here
 				char *ret_class_name = mono_class_full_name (mono_class_from_mono_type_internal (sig->ret));
-				mono_wasm_add_getter_var (ret_class_name);
+				mono_wasm_add_typed_value ("getter", ret_class_name, 0);
 				g_free (ret_class_name);
 
 				continue;
@@ -975,7 +1025,7 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 
 			if (is_valuetype && mono_class_from_mono_type_internal (sig->ret) == klass) {
 				// Property of the same valuetype, avoid endlessly recursion!
-				mono_wasm_add_getter_var (klass_name);
+				mono_wasm_add_typed_value ("getter", klass_name, 0);
 				continue;
 			}
 
@@ -991,6 +1041,28 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 		}
 		pnum ++;
 	}
+}
+
+/*
+ * We return a `Target` property only for now.
+ * In future, we could add a `MethodInfo` too.
+ */
+static gboolean
+describe_delegate_properties (MonoObject *obj)
+{
+	MonoClass *klass = mono_object_class(obj);
+	if (!m_class_is_delegate (klass))
+		return FALSE;
+
+	// Target, like in VS - what is this field supposed to be, anyway??
+	MonoMethod *tm = ((MonoDelegate *)obj)->method;
+	char * sig_desc = mono_method_to_desc_for_js (tm, FALSE);
+
+	mono_wasm_add_properties_var ("Target", -1);
+	mono_wasm_add_func_var (NULL, sig_desc, -1);
+
+	g_free (sig_desc);
+	return TRUE;
 }
 
 static gboolean
@@ -1009,7 +1081,13 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis, gboolea
 		return FALSE;
 	}
 
-	describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, expandValueType);
+	if (m_class_is_delegate (mono_object_class (obj))) {
+		// delegates get the same id format as regular objects
+		describe_delegate_properties (obj);
+	} else {
+		describe_object_properties_for_klass (obj, obj->vtable->klass, isAsyncLocalThis, expandValueType);
+	}
+
 	return TRUE;
 }
 

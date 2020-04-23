@@ -333,7 +333,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_cmpgt_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(6)
+        ///   CMPPD xmm, xmm/m128, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
@@ -351,13 +351,13 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpgt_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(6)
+        ///   CMPSD xmm, xmm/m64, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_cmpge_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(5)
+        ///   CMPPD xmm, xmm/m128, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
@@ -375,7 +375,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpge_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(5)
+        ///   CMPSD xmm, xmm/m64, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
@@ -468,25 +468,25 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_cmpngt_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(2)
+        ///   CMPPD xmm, xmm/m128, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<double> CompareNotGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_cmpngt_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(2)
+        ///   CMPSD xmm, xmm/m64, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarNotGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_cmpnge_pd (__m128d a,  __m128d b)
-        ///   CMPPD xmm, xmm/m128, imm8(1)
+        ///   CMPPD xmm, xmm/m128, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<double> CompareNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_cmpnge_sd (__m128d a,  __m128d b)
-        ///   CMPSD xmm, xmm/m64, imm8(1)
+        ///   CMPSD xmm, xmm/m64, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<double> CompareScalarNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 

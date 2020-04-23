@@ -1101,6 +1101,9 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		case STACK_I8:
 			ins->opcode = OP_LCONV_TO_R_UN; 
 			break;
+		case STACK_R4:
+			ins->opcode = OP_RCONV_TO_R8;
+			break;
 		case STACK_R8:
 			ins->opcode = OP_FMOVE;
 			break;
@@ -8430,8 +8433,13 @@ calli_end:
 		case MONO_CEE_CONV_OVF_I1:
 		case MONO_CEE_CONV_OVF_I2:
 		case MONO_CEE_CONV_OVF_I:
-		case MONO_CEE_CONV_OVF_U:
+		case MONO_CEE_CONV_OVF_I1_UN:
+		case MONO_CEE_CONV_OVF_I2_UN:
+		case MONO_CEE_CONV_OVF_I4_UN:
+		case MONO_CEE_CONV_OVF_I8_UN:
+		case MONO_CEE_CONV_OVF_I_UN:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
+				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_I8);
 				ADD_UNOP (il_op);
 			} else {
@@ -8441,23 +8449,20 @@ calli_end:
 		case MONO_CEE_CONV_OVF_U1:
 		case MONO_CEE_CONV_OVF_U2:
 		case MONO_CEE_CONV_OVF_U4:
+		case MONO_CEE_CONV_OVF_U:
+		case MONO_CEE_CONV_OVF_U1_UN:
+		case MONO_CEE_CONV_OVF_U2_UN:
+		case MONO_CEE_CONV_OVF_U4_UN:
+		case MONO_CEE_CONV_OVF_U8_UN:
+		case MONO_CEE_CONV_OVF_U_UN:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
+				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_U8);
 				ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}
 			break;
-		case MONO_CEE_CONV_OVF_I1_UN:
-		case MONO_CEE_CONV_OVF_I2_UN:
-		case MONO_CEE_CONV_OVF_I4_UN:
-		case MONO_CEE_CONV_OVF_I8_UN:
-		case MONO_CEE_CONV_OVF_U1_UN:
-		case MONO_CEE_CONV_OVF_U2_UN:
-		case MONO_CEE_CONV_OVF_U4_UN:
-		case MONO_CEE_CONV_OVF_U8_UN:
-		case MONO_CEE_CONV_OVF_I_UN:
-		case MONO_CEE_CONV_OVF_U_UN:
 		case MONO_CEE_CONV_U2:
 		case MONO_CEE_CONV_U1:
 		case MONO_CEE_CONV_I:
@@ -8723,9 +8728,10 @@ calli_end:
 				*sp = emit_get_rgctx_method (cfg, context_used,
 											 cmethod, MONO_RGCTX_INFO_METHOD);
 				MonoJitICallId function = MONO_JIT_ICALL_ZeroIsReserved;
+				int rank = m_class_get_rank (cmethod->klass);
 				int n = fsig->param_count;
 				/* Optimize the common cases, use ctor using length for each rank (no lbound). */
-				if (n == m_class_get_rank (cmethod->klass)) {
+				if (n == rank) {
 					switch (n) {
 					case 1: function = MONO_JIT_ICALL_mono_array_new_1;
 						break;
@@ -8740,8 +8746,8 @@ calli_end:
 					}
 				}
 
-				/* Instancing jagged arrays should not end up here since ctor (int32, int32) for an array with rank 1 represent lenght and lbound. */
-				g_assert (!(m_class_get_rank (cmethod->klass) == 1 && fsig->param_count == 2 && m_class_get_rank (m_class_get_element_class (cmethod->klass))));
+				/* Instancing jagged arrays should not end up here since ctor (int32, int32) for an array with rank 1 represents length and lbound. */
+				g_assert (!(rank == 1 && fsig->param_count == 2 && m_class_get_rank (m_class_get_element_class (cmethod->klass))));
 
 				/* Regular case, rank > 4 or legnth, lbound specified per rank. */
 				if (function == MONO_JIT_ICALL_ZeroIsReserved) {
@@ -8754,9 +8760,25 @@ calli_end:
 					}
 					array_new_localalloc_ins->inst_imm = MAX (array_new_localalloc_ins->inst_imm, n * sizeof (target_mgreg_t));
 					int dreg = array_new_localalloc_ins->dreg;
-					for (int i = 0; i < n; ++i) {
-						NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, dreg, i * sizeof (target_mgreg_t), sp [i + 1]->dreg);
-						MONO_ADD_INS (cfg->cbb, ins);
+					if (2 * rank == n) {
+						/* [lbound, length, lbound, length, ...]
+						 * mono_array_new_n_icall expects a non-interleaved list of
+						 * lbounds and lengths, so deinterleave here.
+						 */
+						for (int l = 0; l < 2; ++l) {
+							int src = l;
+							int dst = l * rank;
+							for (int r = 0; r < rank; ++r, src += 2, ++dst) {
+								NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, dreg, dst * sizeof (target_mgreg_t), sp [src + 1]->dreg);
+								MONO_ADD_INS (cfg->cbb, ins);
+							}
+						}
+					} else {
+						/* [length, length, length, ...] */
+						for (int i = 0; i < n; ++i) {
+							NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, dreg, i * sizeof (target_mgreg_t), sp [i + 1]->dreg);
+							MONO_ADD_INS (cfg->cbb, ins);
+						}
 					}
 					EMIT_NEW_ICONST (cfg, ins, n);
 					sp [1] = ins;
@@ -11053,7 +11075,7 @@ mono_ldptr:
 						ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
 					if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
-						/*LAME IMPL: We must not add a null check for virtual invoke delegates.*/
+						/*BAD IMPL: We must not add a null check for virtual invoke delegates.*/
 						if (mono_method_signature_internal (invoke)->param_count == mono_method_signature_internal (cmethod)->param_count) {
 							MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, target_ins->dreg, 0);
 							MONO_EMIT_NEW_COND_EXC (cfg, EQ, "ArgumentException");

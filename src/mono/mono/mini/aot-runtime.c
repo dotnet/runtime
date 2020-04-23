@@ -126,6 +126,7 @@ struct MonoAotModule {
 	guint8 *plt_end;
 	guint8 *blob;
 	gpointer weak_field_indexes;
+	guint8 *method_flags_table;
 	/* Maps method indexes to their code */
 	gpointer *methods;
 	/* Sorted array of method addresses */
@@ -2377,6 +2378,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->got_info_offsets = (guint32*)amodule->tables [MONO_AOT_TABLE_GOT_INFO_OFFSETS];
 		amodule->llvm_got_info_offsets = (guint32*)amodule->tables [MONO_AOT_TABLE_LLVM_GOT_INFO_OFFSETS];
 		amodule->weak_field_indexes = (guint32*)amodule->tables [MONO_AOT_TABLE_WEAK_FIELD_INDEXES];
+		amodule->method_flags_table = (guint8*)amodule->tables [MONO_AOT_TABLE_METHOD_FLAGS_TABLE];
 	} else {
 		amodule->blob = (guint8*)info->blob;
 		amodule->method_info_offsets = (guint32 *)info->method_info_offsets;
@@ -2388,6 +2390,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->got_info_offsets = (guint32*)info->got_info_offsets;
 		amodule->llvm_got_info_offsets = (guint32*)info->llvm_got_info_offsets;
 		amodule->weak_field_indexes = (guint32*)info->weak_field_indexes;
+		amodule->method_flags_table = (guint8*)info->method_flags_table;
 	}
 	amodule->unbox_trampolines = (guint32 *)info->unbox_trampolines;
 	amodule->unbox_trampolines_end = (guint32 *)info->unbox_trampolines_end;
@@ -4348,7 +4351,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	}
 
 	if (mono_llvm_only) {
-		guint8 flags = amodule->info.method_flags_table [method_index];
+		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
 		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
 			mono_aot_lock ();
@@ -4633,7 +4636,7 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 	p += 4;
 
 	code = (guint8 *)amodule->methods [method_index];
-	guint8 flags = amodule->info.method_flags_table [method_index];
+	guint8 flags = amodule->method_flags_table [method_index];
 
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
 		klass_to_run_ctor = decode_klass_ref (amodule, p, &p, error);

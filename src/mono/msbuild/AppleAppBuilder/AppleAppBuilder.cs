@@ -34,7 +34,7 @@ public class AppleAppBuilderTask : Task
     /// Path to Mono public headers (*.h)
     /// </summary>
     [Required]
-    public string MonoInclude { get; set; } = ""!;
+    public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
@@ -97,6 +97,18 @@ public class AppleAppBuilderTask : Task
     public bool UseConsoleUITemplate { get; set; }
 
     /// <summary>
+    /// Use LLVM for FullAOT
+    /// The cross-compiler must be built with LLVM support
+    /// </summary>
+    public bool UseLlvm { get; set; }
+
+    /// <summary>
+    /// Path to LLVM binaries (opt and llc)
+    /// It's required if UseLlvm is set
+    /// </summary>
+    public string? LlvmPath { get; set; }
+
+    /// <summary>
     /// Path to *.app bundle
     /// </summary>
     [Output]
@@ -122,8 +134,16 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
-        // escape spaces
-        ProjectName = ProjectName.Replace(" ", "-");
+        if (ProjectName.Contains(" "))
+        {
+            throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
+        }
+
+        if (UseLlvm && !string.IsNullOrEmpty(LlvmPath))
+        {
+            // otherwise we might accidentally use some random llc/opt from PATH (installed with clang)
+            throw new ArgumentException($"LlvmPath shoun't be empty when UseLlvm is set");
+        }
 
         string[] excludes = new string[0];
         if (ExcludeFromAppDir != null)
@@ -152,7 +172,7 @@ public class AppleAppBuilderTask : Task
 
             AotCompiler.PrecompileLibraries(CrossCompiler, Arch, !DisableParallelAot, binDir, libsToAot,
                 new Dictionary<string, string> { {"MONO_PATH", AppDir} },
-                Optimized);
+                Optimized, UseLlvm, LlvmPath);
         }
 
         // generate modules.m
@@ -163,7 +183,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, 
-                AppDir, binDir, MonoInclude, UseConsoleUITemplate, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -179,7 +199,6 @@ public class AppleAppBuilderTask : Task
                         Arch, Optimized, DevTeamProvisioning);
                 }
             }
-            Utils.LogInfo($"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         }
 
         return true;
