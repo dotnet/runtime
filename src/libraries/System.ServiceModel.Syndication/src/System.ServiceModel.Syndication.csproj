@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <IsPartialFacadeAssemblyOnNetfx>true</IsPartialFacadeAssemblyOnNetfx>
-    <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
+    <OmitResourcesOnNetfx>true</OmitResourcesOnNetfx>
     <TargetFrameworks>netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
