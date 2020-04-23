@@ -1569,6 +1569,14 @@ INST1(sadalp,  "sadalp", 0, 0, IF_DV_2T,  0x0E206800)
                                    // C7.2.221 SADALP
                                    //  sadalp  Vd,Vn                DV_2T  0Q001110XX100000 011010nnnnnddddd   0E20 6800   Vd,Vn    (vector)
 
+INST1(shadd,   "shadd", 0, 0,  IF_DV_3A,  0x0E200400)
+                                   // C7.2.246 SHADD
+                                   //  shadd  Vd,Vn,Vm              DV_3A  0Q001110XX1mmmmm 000001nnnnnddddd   0E20 0400   Vd,Vn,Vm (vector)
+
+INST1(shsub,   "shsub", 0, 0,  IF_DV_3A,  0x0E202400)
+                                   // C7.2.250 SHSUB
+                                   //  shsub  Vd,Vn,Vm              DV_3A  0Q001110XX1mmmmm 001001nnnnnddddd   0E20 2400   Vd,Vn,Vm (vector)
+
 INST1(subhn,   "subhn", 0, 0,  IF_DV_3H,  0x0E206000)
                                    // C7.2.327 SUBHN, SUBHN2
                                    //  subhn   Vd,Vn,Vm             DV_3H  00001110XX1mmmmm 011000nnnnnddddd   0E20 6000   Vd,Vn,Vm (vector)
@@ -1596,6 +1604,14 @@ INST1(uabdl2,  "uabdl2", 0, 0, IF_DV_3H,  0x6E207000)
 INST1(uadalp,  "uadalp", 0, 0, IF_DV_2T, 0x2E206800)
                                    // C7.2.338 UADALP
                                    //  uadalp  Vd,Vn                DV_2T  0Q101110XX100000 011010nnnnnddddd   2E20 6800   Vd,Vn    (vector)
+
+INST1(uhadd,   "uhadd", 0, 0,  IF_DV_3A,  0x2E200400)
+                                   // C7.2.349 UHADD
+                                   //  uhadd  Vd,Vn,Vm              DV_3A  0Q101110XX1mmmmm 000001nnnnnddddd   2E20 0400   Vd,Vn,Vm (vector)
+
+INST1(uhsub,   "uhsub", 0, 0,  IF_DV_3A,  0x2E202400)
+                                   // C7.2.350 UHSUB
+                                   //  uhsub  Vd,Vn,Vm              DV_3A  0Q101110XX1mmmmm 001001nnnnnddddd   2E20 2400   Vd,Vn,Vm (vector)
 
 INST1(shll,    "shll",   0, 0, IF_DV_2M,  0x2F00A400)
                                    //  shll    Vd,Vn,imm            DV_2M  0Q101110XX100001 001110nnnnnddddd   2E21 3800   Vd,Vn, {8/16/32}
