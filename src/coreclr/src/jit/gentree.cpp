@@ -11351,8 +11351,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (tree->AsField()->gtFldObj && !topOnly)
             {
-                gtDispVN(tree);
-                printf("\n");
                 gtDispChild(tree->AsField()->gtFldObj, indentStack, IIArcBottom);
             }
 
