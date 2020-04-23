@@ -859,7 +859,7 @@ static gboolean describe_value(MonoType * type, gpointer addr, gboolean expandVa
 
 				method = mono_get_delegate_invoke_internal (klass);
 				if (!method) {
-					DEBUG_PRINTF (1, "Could not get a method for the delegate for %s\n", class_name);
+					DEBUG_PRINTF (2, "Could not get a method for the delegate for %s\n", class_name);
 					break;
 				}
 
