@@ -23,7 +23,6 @@ struct probe_paths_t
     pal::string_t native;
     pal::string_t resources;
     pal::string_t coreclr;
-    pal::string_t clrjit;
 };
 
 struct deps_resolved_asset_t
