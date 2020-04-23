@@ -1914,7 +1914,11 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         {
                             pResolveHolder = GenerateResolveStub(pResolverFcn,
                                                              pBackPatchFcn,
-                                                             token.To_SIZE_T());
+                                                             token.To_SIZE_T()
+#ifdef TARGET_X86
+                                                             , objectType
+#endif
+                                                             );
 
                             // Add the resolve entrypoint into the cache.
                             //@TODO: Can we store a pointer to the holder rather than the entrypoint?
@@ -2848,7 +2852,11 @@ addrOfPatcher is who to call if the fail piece is being called too often by disp
 */
 ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addrOfResolver,
                                                            PCODE            addrOfPatcher,
-                                                           size_t           dispatchToken)
+                                                           size_t           dispatchToken
+#ifdef TARGET_X86
+                                                           , MethodTable*   pRepresentativeMT
+#endif
+                                                           )
 {
     CONTRACT (ResolveHolder*) {
         THROWS;
@@ -2912,7 +2920,11 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
     holder->Initialize(addrOfResolver, addrOfPatcher,
                        dispatchToken, DispatchCache::HashToken(dispatchToken),
-                       g_resolveCache->GetCacheBaseAddr(), counterAddr);
+                       g_resolveCache->GetCacheBaseAddr(), counterAddr
+#ifdef TARGET_X86
+                       , pRepresentativeMT
+#endif
+                       );
     ClrFlushInstructionCache(holder->stub(), holder->stub()->size());
 
     AddToCollectibleVSDRangeList(holder);

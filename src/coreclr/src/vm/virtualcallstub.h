@@ -510,7 +510,11 @@ private:
 
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
                                        PCODE addrOfPatcher,
-                                       size_t dispatchToken);
+                                       size_t dispatchToken
+#ifdef TARGET_X86
+                                       , MethodTable*     pRepresentativeMT
+#endif
+                                       );
 
     LookupHolder *GenerateLookupStub(PCODE addrOfResolver,
                                      size_t dispatchToken);
