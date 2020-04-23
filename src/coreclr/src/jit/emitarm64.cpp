@@ -5504,30 +5504,11 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DR_3A;
             break;
 
-        case INS_mla:
-        case INS_mls:
-            assert(insOptsAnyArrangement(opt));
-            assert(isVectorRegister(reg1));
-            assert(isVectorRegister(reg2));
-            assert(isVectorRegister(reg3));
-            assert(isValidVectorDatasize(size));
-            assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-            if (ins == INS_pmul)
-            {
-                assert(elemsize == EA_1BYTE); // only supports 8B or 16B
-            }
-            else // INS_mul, INS_mla, INS_mls
-            {
-                assert(elemsize != EA_8BYTE); // can't use 2D or 1D
-            }
-            fmt = IF_DV_3A;
-            break;
-
         case INS_add:
         case INS_sub:
             if (isVectorRegister(reg1))
             {
+                // ASIMD instruction
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
 
@@ -5548,6 +5529,7 @@ void emitter::emitIns_R_R_R(
                 }
                 break;
             }
+            // Base instruction
             __fallthrough;
 
         case INS_adds:
@@ -5568,10 +5550,8 @@ void emitter::emitIns_R_R_R(
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
-                elemsize = optGetElemsize(opt);
-                assert(opt != INS_OPTS_1D); // Reserved encoding
+                assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
                 fmt = IF_DV_3A;
             }
             else
@@ -5635,6 +5615,8 @@ void emitter::emitIns_R_R_R(
             }
             break;
 
+        case INS_mla:
+        case INS_mls:
         case INS_saba:
         case INS_sabd:
         case INS_smax:
@@ -5647,8 +5629,13 @@ void emitter::emitIns_R_R_R(
         case INS_umaxp:
         case INS_umin:
         case INS_uminp:
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
-            __fallthrough;
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // The encoding size = 11, Q = x is reserved
+            fmt = IF_DV_3A;
+            break;
 
         case INS_addp:
         case INS_uzp1:
@@ -5660,13 +5647,8 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsAnyArrangement(opt));
-
-            // Vector operation
-            assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
-            elemsize = optGetElemsize(opt);
-
+            assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = 0 is reserved
             fmt = IF_DV_3A;
             break;
 
