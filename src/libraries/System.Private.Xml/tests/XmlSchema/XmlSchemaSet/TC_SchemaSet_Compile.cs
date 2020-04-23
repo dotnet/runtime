@@ -1111,12 +1111,16 @@ namespace System.Xml.Tests
     </xs:simpleType>
 </xs:schema>
 ";
-            XmlSchemaSet ss = new XmlSchemaSet();
-            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+            using (StringReader srdr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(srdr))
+            {
+                XmlSchemaSet ss = new XmlSchemaSet();
 
-            ss.Compile();
+                ss.Add(null, xmlrdr);
 
-            Assert.True(true);
+                // Assert does not throw (Regression test for issue #34426)
+                ss.Compile();
+            }
         }
     }
 }
