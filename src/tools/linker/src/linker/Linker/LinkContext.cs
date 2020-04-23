@@ -264,8 +264,7 @@ namespace Mono.Linker {
 		{
 			if (File.Exists (name)) {
 				try {
-					AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name, _readerParameters);
-					return _resolver.CacheAssembly (assembly);
+					return _resolver.ResolveFromPath (name, _readerParameters);
 				} catch (Exception e) {
 					throw new AssemblyResolutionException (new AssemblyNameReference (name, new Version ()), e);
 				}
@@ -314,7 +313,7 @@ namespace Mono.Linker {
 			try {
 				var symbolReader = _symbolReaderProvider.GetSymbolReader (
 					assembly.MainModule,
-					assembly.MainModule.FileName);
+					_resolver.GetAssemblyFileName(assembly));
 
 				if (symbolReader == null)
 					return;

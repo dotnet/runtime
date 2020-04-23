@@ -83,6 +83,20 @@ namespace Mono.Linker {
 		}
 #endif
 
+		public string GetAssemblyFileName(AssemblyDefinition assembly)
+		{
+#if FEATURE_ILLINK
+			if (assemblyToPath.TryGetValue(assembly, out string path)) {
+				return path;
+			}
+			else
+#endif
+			{
+				// Must be an assembly that we didn't open through the resolver
+				return assembly.MainModule.FileName;
+			}
+		}
+
 		AssemblyDefinition ResolveFromReferences (AssemblyNameReference name, Collection<string> references, ReaderParameters parameters)
 		{
 			var fileName = name.Name + ".dll";
@@ -97,6 +111,11 @@ namespace Mono.Linker {
 			}
 
 			return null;
+		}
+
+		public AssemblyDefinition ResolveFromPath(string path, ReaderParameters parameters)
+		{
+			return CacheAssembly (GetAssembly (path, parameters));
 		}
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
@@ -133,7 +152,7 @@ namespace Mono.Linker {
 		public virtual AssemblyDefinition CacheAssembly (AssemblyDefinition assembly)
 		{
 			_assemblies [assembly.Name.Name] = assembly;
-			base.AddSearchDirectory (Path.GetDirectoryName (assembly.MainModule.FileName));
+			base.AddSearchDirectory (Path.GetDirectoryName (GetAssemblyFileName(assembly)));
 			return assembly;
 		}
 
@@ -151,6 +170,8 @@ namespace Mono.Linker {
 			_assemblies.Clear ();
 			if (_unresolvedAssemblies != null)
 				_unresolvedAssemblies.Clear ();
+
+			base.Dispose (disposing);
 		}
 	}
 }
