@@ -2854,9 +2854,7 @@ public:
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
-    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree*  array,
-                                                   unsigned* runtimeLookupCount = nullptr,
-                                                   GenTree** handleTree         = nullptr);
+    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array, GenTree** handleTree = nullptr);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
@@ -3129,7 +3127,7 @@ public:
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    unsigned lvaGenericsContextUseCount;
+    bool lvaGenericsContextInUse;
 
     bool lvaKeepAliveAndReportThis(); // Synchronized instance method of a reference type, or
                                       // CORINFO_GENERICS_CTXT_FROM_THIS?
@@ -3692,7 +3690,7 @@ protected:
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
-    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand);
+    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -5755,8 +5753,13 @@ private:
     // static) written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopNestSideEffects(unsigned lnum);
 
+    // Given a loop number 'lnum' mark it and any nested loops as having 'memoryHavoc'
+    void optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc);
+
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
-    void optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
+    // Returns false if we encounter a block that is not marked as being inside a loop.
+    //
+    bool optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
 
     // Hoist the expression "expr" out of loop "lnum".
     void optPerformHoistExpr(GenTree* expr, unsigned lnum);
@@ -6056,6 +6059,7 @@ protected:
     bool optLoopContains(unsigned l1, unsigned l2);
 
     // Requires "loopInd" to be a valid index into the loop table.
+
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
     // loop nested in "loopInd" that shares the same head as "loopInd".
@@ -6077,6 +6081,9 @@ protected:
     // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
     // of "from".)  Copies the jump destination from "from" to "to".
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
+
+    // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+    bool optIsLoopEntry(BasicBlock* block);
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
     unsigned optLoopDepth(unsigned lnum)

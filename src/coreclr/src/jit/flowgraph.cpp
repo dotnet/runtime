@@ -3464,8 +3464,12 @@ void Compiler::fgMarkGCPollBlocks()
         bool blockNeedsPoll = false;
         switch (block->bbJumpKind)
         {
-            case BBJ_COND:
             case BBJ_ALWAYS:
+                if (block->isBBCallAlwaysPairTail())
+                {
+                    break;
+                }
+            case BBJ_COND:
                 blockNeedsPoll = (block->bbJumpDest->bbNum <= block->bbNum);
                 break;
 
@@ -3527,6 +3531,8 @@ void Compiler::fgCreateGCPolls()
     if (verbose)
     {
         printf("*************** In fgCreateGCPolls() for %s\n", info.compFullName);
+        fgDispBasicBlocks(false);
+        printf("\n");
     }
 #endif // DEBUG
 
@@ -3792,7 +3798,15 @@ void Compiler::fgCreateGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
+        fgUpdateChangedFlowGraph();
     }
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** After fgCreateGCPolls()\n");
+        fgDispBasicBlocks(true);
+    }
+#endif // DEBUG
 }
 
 /*****************************************************************************
@@ -3833,19 +3847,21 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         assert(containsStmt);
     }
 #endif
+    // Create the GC_CALL node
+    GenTree* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
+    call          = fgMorphCall(call->AsCall());
+    gtSetEvalOrder(call);
 
-    if (GCPOLL_CALL == pollType)
+    if (pollType == GCPOLL_CALL)
     {
         createdPollBlocks = false;
-        GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-        GenTree*     temp = fgMorphCall(call);
 
         if (stmt != nullptr)
         {
             // The GC_POLL should be inserted relative to the supplied statement. The safer
             // location for the insertion is prior to the current statement since the supplied
             // statement could be a GT_JTRUE (see fgNewStmtNearEnd() for more details).
-            Statement* newStmt = gtNewStmt(temp);
+            Statement* newStmt = gtNewStmt(call);
 
             // Set the GC_POLL statement to have the same IL offset at the subsequent one.
             newStmt->SetILOffsetX(stmt->GetILOffsetX());
@@ -3854,11 +3870,11 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         else if (block->bbJumpKind == BBJ_ALWAYS)
         {
             // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
-            fgNewStmtAtEnd(block, temp);
+            fgNewStmtAtEnd(block, call);
         }
         else
         {
-            Statement* newStmt = fgNewStmtNearEnd(block, temp);
+            Statement* newStmt = fgNewStmtNearEnd(block, call);
             // For DDB156656, we need to associate the GC Poll with the IL offset (and therefore sequence
             // point) of the tree before which we inserted the poll.  One example of when this is a
             // problem:
@@ -3895,8 +3911,9 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         }
 #endif // DEBUG
     }
-    else
+    else // GCPOLL_INLINE
     {
+        assert(pollType == GCPOLL_INLINE);
         createdPollBlocks = true;
         // if we're doing GCPOLL_INLINE, then:
         //  1) Create two new blocks: Poll and Bottom.  The original block is called Top.
@@ -3904,33 +3921,55 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock* top         = block;
-        BasicBlock* poll        = fgNewBBafter(BBJ_NONE, top, true);
-        BasicBlock* bottom      = fgNewBBafter(top->bbJumpKind, poll, true);
-        BBjumpKinds oldJumpKind = top->bbJumpKind;
+        BasicBlock*   top                = block;
+        BasicBlock*   topFallThrough     = nullptr;
+        unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
+
+        if (top->bbJumpKind == BBJ_COND)
+        {
+            topFallThrough     = top->bbNext;
+            lpIndexFallThrough = topFallThrough->bbNatLoopNum;
+        }
+
+        BasicBlock*   poll        = fgNewBBafter(BBJ_NONE, top, true);
+        BasicBlock*   bottom      = fgNewBBafter(top->bbJumpKind, poll, true);
+        BBjumpKinds   oldJumpKind = top->bbJumpKind;
+        unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
         const unsigned __int64 originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
-        // Unlike Fei's inliner from puclr, I'm allowed to split loops.
-        // And we keep a few other flags...
+        // We are allowed to split loops and we need to keep a few other flags...
+        //
         noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1))) == 0);
         top->bbFlags = originalFlags & (~BBF_SPLIT_LOST | BBF_GC_SAFE_POINT);
         bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
-        //  9) Mark Poll as rarely run.
+        // Mark Poll as rarely run.
         poll->bbSetRunRarely();
+        poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        //  5) Bottom gets all the outgoing edges and inherited flags of Original.
-        bottom->bbJumpDest = top->bbJumpDest;
+        // Bottom gets all the outgoing edges and inherited flags of Original.
+        bottom->bbJumpDest   = top->bbJumpDest;
+        bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
+        if (lpIndex != BasicBlock::NOT_IN_LOOP)
+        {
+            // Set the new lpBottom in the natural loop table
+            optLoopTable[lpIndex].lpBottom = bottom;
+        }
 
-        //  2) Add a GC_CALL node to Poll.
-        GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
+        if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
+        {
+            // Set the new lpHead in the natural loop table
+            optLoopTable[lpIndexFallThrough].lpHead = bottom;
+        }
+
+        // Add the GC_CALL node to Poll.
         fgNewStmtAtEnd(poll, call);
 
-        //  3) Remove the last statement from Top and add it to Bottom.
+        // Remove the last statement from Top and add it to Bottom.
         if (oldJumpKind != BBJ_ALWAYS)
         {
             // if I'm always jumping to the target, then this is not a condition that needs moving.
@@ -3945,9 +3984,15 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
         // for BBJ_ALWAYS blocks, bottom is an empty block.
 
-        //  4) Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
-        //  false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
-        //  now a jump target
+        // Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
+        // false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
+        // now a jump target
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef ENABLE_FAST_GCPOLL_HELPER
+        // Prefer the fast gc poll helepr over the double indirection
+        noway_assert(pAddrOfCaptureThreadGlobal == nullptr);
+#endif
 
         GenTree* value; // The value of g_TrapReturningThreads
         if (pAddrOfCaptureThreadGlobal != nullptr)
@@ -3974,18 +4019,28 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
         trapRelop->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
+        gtSetEvalOrder(trapCheck);
         fgNewStmtAtEnd(top, trapCheck);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Adding trapCheck in " FMT_BB "\n", top->bbNum);
+            gtDispTree(trapCheck);
+        }
+#endif
+
         top->bbJumpDest = bottom;
         top->bbJumpKind = BBJ_COND;
         bottom->bbFlags |= BBF_JMP_TARGET;
 
-        //  7) Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
+        // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
         fgAddRefPred(poll, top);
 
-        //  8) Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom (1 for
-        //      jumps, 2 for conditional branches, N for switches).
+        // Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom
+        // (1 for unconditional branches, 2 for conditional branches, N for switches).
         switch (oldJumpKind)
         {
             case BBJ_NONE:
@@ -4031,6 +4086,9 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
             gtDispBlockStmts(poll);
             printf(" bottom block is " FMT_BB "\n", bottom->bbNum);
             gtDispBlockStmts(bottom);
+
+            printf("\nAfter this change in fgCreateGCPoll the BB graph is:");
+            fgDispBasicBlocks(false);
         }
 #endif // DEBUG
     }
@@ -7795,17 +7853,25 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
         return;
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("no guaranteed callsite exits, marking method as fully interruptible\n");
-    }
-#endif
-
     // only enable fully interruptible code for if we're hijacking.
     if (GCPOLL_NONE == opts.compGCPollType)
     {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("no guaranteed callsite exits, marking method as fully interruptible\n");
+        }
+#endif
         SetInterruptible(true);
+    }
+    else
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("no guaranteed callsite exits, but we are using GC Poll calls\n");
+        }
+#endif
     }
 }
 
@@ -7833,7 +7899,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
-        lvaGenericsContextUseCount++;
+        lvaGenericsContextInUse = true;
 
         switch (kind.runtimeLookupKind)
         {
@@ -7847,6 +7913,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the class handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 break;
             }
 
@@ -7854,6 +7921,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the method handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
                 tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewCallArgs(tree));
@@ -10155,6 +10223,12 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
+    // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
+    if (optIsLoopEntry(block))
+    {
+        return false;
+    }
+
 #if defined(TARGET_ARM)
     // We can't compact a finally target block, as we need to generate special code for such blocks during code
     // generation
@@ -11396,10 +11470,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     {
                         fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
                     }
+                    // Record the loop number in the new block
+                    jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
 
                     // When adding a new jmpBlk we will set the bbWeight and bbFlags
                     //
-                    if (fgHaveValidEdgeWeights)
+                    if (fgHaveValidEdgeWeights && fgHaveProfileData())
                     {
                         noway_assert(fgComputePredsDone);
 
@@ -11418,7 +11494,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                         BasicBlock::weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
                         BasicBlock::weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
-
                         //
                         // If the [min/max] values for our edge weight is within the slop factor
                         //  then we will set the BBF_PROF_WEIGHT flag for the block
@@ -23730,38 +23805,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
-    // If this inlinee was passed a runtime lookup generic context and
-    // ignores it, we can decrement the "generic context was used" ref
-    // count, because we created a new lookup tree and incremented the
-    // count when we imported the type parameter argument to pass to
-    // the inlinee. See corresponding logic in impImportCall that
-    // checks the sig for CORINFO_CALLCONV_PARAMTYPE.
-    //
-    // Does this method require a context (type) parameter?
-    if ((inlineInfo->inlineCandidateInfo->methInfo.args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
-    {
-        // Did the computation of that parameter require the
-        // caller to perform a runtime lookup?
-        if (inlineInfo->inlineCandidateInfo->exactContextNeedsRuntimeLookup)
-        {
-            // Fetch the temp for the generic context as it would
-            // appear in the inlinee's body.
-            const unsigned typeCtxtArg = inlineInfo->typeContextArg;
-            const unsigned tmpNum      = inlineInfo->lclTmpNum[typeCtxtArg];
-
-            // Was it used in the inline body?
-            if (tmpNum == BAD_VAR_NUM)
-            {
-                // No -- so the associated runtime lookup is not needed
-                // and also no longer provides evidence that the generic
-                // context should be kept alive.
-                JITDUMP("Inlinee ignores runtime lookup generics context\n");
-                assert(lvaGenericsContextUseCount > 0);
-                lvaGenericsContextUseCount--;
-            }
-        }
-    }
-
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
     {
