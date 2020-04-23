@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -34,23 +33,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return false;
 
                 case CborConformanceLevel.Rfc7049Canonical:
-                case CborConformanceLevel.Ctap2Canonical:
-                    return true;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
-            };
-        }
-
-        public static bool RequiresPreservedFloatRepresentation(CborConformanceLevel conformanceLevel)
-        {
-            switch (conformanceLevel)
-            {
-                case CborConformanceLevel.Lax:
-                case CborConformanceLevel.Strict:
-                case CborConformanceLevel.Rfc7049Canonical:
-                    return false;
-
                 case CborConformanceLevel.Ctap2Canonical:
                     return true;
 
