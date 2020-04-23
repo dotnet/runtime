@@ -757,8 +757,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
                        // umaxv, uminv)
             assert(isValidVectorDatasize(id->idOpSize()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert((elemsize != EA_8BYTE) && (id->idInsOpt() != INS_OPTS_2S)); // can't use 2D or 1D or 2S
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -12234,9 +12232,17 @@ void emitter::emitDispIns(
         case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
         case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
                        // umaxv, uminv)
-            elemsize = optGetElemsize(id->idInsOpt());
-            emitDispReg(id->idReg1(), elemsize, true);
-            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            if ((ins == INS_sadalp) || (ins == INS_saddlp) || (ins == INS_uadalp) || (ins == INS_uaddlp))
+            {
+                emitDispVectorReg(id->idReg1(), optWidenDstArrangement(id->idInsOpt()), true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
+            else
+            {
+                elemsize = optGetElemsize(id->idInsOpt());
+                emitDispReg(id->idReg1(), elemsize, true);
+                emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
             break;
 
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
