@@ -242,6 +242,7 @@ namespace CoreXml.Test.XLinq
         {
             _isAsync = async;
         }
+
         public override void Flush()
         {
             Assert.False(_isAsync, "Sync operation not allowed");

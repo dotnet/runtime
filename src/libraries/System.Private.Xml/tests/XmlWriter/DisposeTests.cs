@@ -137,7 +137,6 @@ namespace System.Xml.Tests
                 await writer.WriteEndElementAsync();
                 await writer.WriteEndElementAsync();
             }
-            
         }
 
         [Fact]
@@ -180,7 +179,6 @@ namespace System.Xml.Tests
                 Assert.Equal(Encoding.UTF8.GetString(stream1.GetBuffer()), Encoding.UTF8.GetString(stream2.GetBuffer()));
                 Assert.Equal(Encoding.UTF8.GetString(stream2.GetBuffer()), Encoding.UTF8.GetString(stream3.GetBuffer()));
             }
-
         }
 
         [Fact]
@@ -233,8 +231,8 @@ namespace System.Xml.Tests
             public override void Flush()
             {
                 Assert.True(false, "Sync operation not allowed");
-                base.Flush();
             }
+
             public override Task FlushAsync()
             {
                 return Task.CompletedTask;
