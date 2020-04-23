@@ -1094,6 +1094,7 @@ namespace System.Xml.Tests
         #endregion
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void TotalDigitsParseValue_Succeeds()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
