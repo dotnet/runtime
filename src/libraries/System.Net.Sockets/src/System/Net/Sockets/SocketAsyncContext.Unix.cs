@@ -264,7 +264,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            public void Dispatch(bool inlineAsync)
+            public void Dispatch(bool processAsyncOperationSynchronously)
             {
                 ManualResetEventSlim? e = Event;
                 if (e != null)
@@ -272,13 +272,14 @@ namespace System.Net.Sockets
                     // Sync operation.  Signal waiting thread to continue processing.
                     e.Set();
                 }
-                else if (inlineAsync)
+                else if (processAsyncOperationSynchronously)
                 {
+                    // Async operation.  Process the IO and callback on the current thread synchronously as requested.
                     ((IThreadPoolWorkItem)this).Execute();
                 }
                 else
                 {
-                    // Async operation.  Process the IO on the threadpool.
+                    // Async operation.  Process the IO and callback on the threadpool.
                     ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
                 }
             }
@@ -1001,7 +1002,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                nextOp?.Dispatch(inlineAsync: false);
+                nextOp?.Dispatch(processAsyncOperationSynchronously: false);
 
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
             }
@@ -1080,7 +1081,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                nextOp?.Dispatch(inlineAsync: false);
+                nextOp?.Dispatch(processAsyncOperationSynchronously: false);
             }
 
             // Called when the socket is closed.
@@ -1957,14 +1958,19 @@ namespace System.Net.Sockets
                 (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.HandleEvent(this) : null;
             AsyncOperation? sendOperation =
                 (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.HandleEvent(this) : null;
+
+            // This method is called from a thread pool thread. When we have only one operation to process, process it
+            // synchronously to avoid an extra thread pool work item. When we have two operations to process, processing both
+            // synchronously may delay the second operation, so schedule one onto the thread pool and process the other
+            // synchronously. There might be better ways of doing this.
             if (sendOperation == null)
             {
-                receiveOperation?.Dispatch(inlineAsync: true);
+                receiveOperation?.Dispatch(processAsyncOperationSynchronously: true);
             }
             else
             {
-                receiveOperation?.Dispatch(inlineAsync: false);
-                sendOperation.Dispatch(inlineAsync: true);
+                receiveOperation?.Dispatch(processAsyncOperationSynchronously: false);
+                sendOperation.Dispatch(processAsyncOperationSynchronously: true);
             }
         }
 
