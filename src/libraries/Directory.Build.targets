@@ -142,7 +142,6 @@
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
-  <Import Project="$(RepositoryEngineeringDir)testing\launchSettings.targets" Condition="'$(EnableLaunchSettings)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 

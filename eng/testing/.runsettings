@@ -35,6 +35,11 @@
           <LogFileName>testResults.html</LogFileName>
         </Configuration>
       </Logger>
+      <Logger friendlyName="console">
+        <Configuration>
+          <Verbosity>Minimal</Verbosity>
+        </Configuration>
+      </Logger>
     </Loggers>
   </LoggerRunSettings>
   <DataCollectionRunSettings>

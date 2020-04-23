@@ -38,7 +38,7 @@
           Condition="'$(VSTestCollect)' == 'XPlat code coverage' and '$(SkipCoverageReport)' != 'true'"
           AfterTargets="VSTest">
     <ItemGroup Condition="'$(CoverageReportInputPath)' == ''">
-      <CoverageOutputFile Include="$(RunWorkingDirectory)*\coverage.opencover.xml" />
+      <CoverageOutputFile Include="$(OutDir)*\coverage.opencover.xml" />
     </ItemGroup>
 
     <PropertyGroup>

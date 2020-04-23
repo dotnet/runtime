@@ -324,7 +324,6 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <EnableTestSupport>true</EnableTestSupport>
     <EnableCoverageSupport>true</EnableCoverageSupport>
-    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">true</EnableLaunchSettings>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

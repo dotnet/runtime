@@ -1,7 +1,5 @@
 <Project>
   <PropertyGroup>
-    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
-
     <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
@@ -37,13 +35,11 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunArguments Condition="'$(TargetOS)' == 'Windows_NT'">$(RunArguments) %RSP_FILE%</RunArguments>
-      <RunArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(RunArguments) $RSP_FILE</RunArguments>
+      <RunScriptCommand Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
 
-      <!-- Escape arguments with user inputs. -->
-      <RunArguments>$([MSBuild]::Escape('$(RunArguments)'))</RunArguments>
-
-      <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(RunCommand) $(RunArguments)</RunScriptCommand>
+      <!-- Escape potential user input. -->
+      <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
     </PropertyGroup>
 
     <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
@@ -92,7 +88,7 @@
     </Exec>
 
     <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
-      <TestResultsPath>$(RunWorkingDirectory)$(TestResultsName)</TestResultsPath>
+      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
       <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
