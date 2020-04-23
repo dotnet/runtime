@@ -2,19 +2,21 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.TestFramework {
+namespace Mono.Linker.Tests.Cases.TestFramework
+{
 	[SetupCompileBefore ("library.dll",
-		new [] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new [] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" })]
-	
+		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
+		resources: new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" })]
+
 	// Compile the same assembly again with another resource to get coverage on SetupCompileAfter
 	[SetupCompileAfter ("library.dll",
-		new [] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new [] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" })]
-	
+		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
+		resources: new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" })]
+
 	[KeptResourceInAssembly ("library.dll", "CanCompileReferencesWithResources_Lib1.txt")]
 	[KeptResourceInAssembly ("library.dll", "CanCompileReferencesWithResources_Lib1.log")]
-	public class CanCompileReferencesWithResources {
+	public class CanCompileReferencesWithResources
+	{
 		public static void Main ()
 		{
 			// Use something so that reference isn't removed at compile time

@@ -1,11 +1,13 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	/// <summary>
 	/// Verifies that an embedded resource was removed from an assembly
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-	public class RemovedResourceInAssemblyAttribute : BaseInAssemblyAttribute {
+	public class RemovedResourceInAssemblyAttribute : BaseInAssemblyAttribute
+	{
 		public RemovedResourceInAssemblyAttribute (string assemblyFileName, string resourceName)
 		{
 			if (string.IsNullOrEmpty (assemblyFileName))

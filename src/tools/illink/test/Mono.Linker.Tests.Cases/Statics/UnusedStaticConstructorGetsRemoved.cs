@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Statics {
-	class UnusedStaticConstructorGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Statics
+{
+	class UnusedStaticConstructorGetsRemoved
+	{
 		public static void Main ()
 		{
 		}
@@ -11,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Statics {
 			new B ();
 		}
 
-		class B {
+		class B
+		{
 			static B ()
 			{
 			}

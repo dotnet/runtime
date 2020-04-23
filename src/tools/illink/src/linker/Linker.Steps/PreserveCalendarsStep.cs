@@ -1,7 +1,9 @@
 ﻿using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
-	public class PreserveCalendarsStep : IStep {
+namespace Mono.Linker.Steps
+{
+	public class PreserveCalendarsStep : IStep
+	{
 		readonly I18nAssemblies I18n;
 		LinkContext context;
 

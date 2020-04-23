@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor {
-	public class ExplicitInterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsed {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
+{
+	public class ExplicitInterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsed
+	{
 		public static void Main ()
 		{
 			IUsedInterface p = new UsedClass ();
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		}
 
 		[Kept]
-		interface IUsedInterface {
+		interface IUsedInterface
+		{
 			[Kept]
 			void Foo ();
 		}
@@ -18,7 +21,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IUsedInterface))]
-		class UsedClass : IUsedInterface {
+		class UsedClass : IUsedInterface
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -26,7 +30,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		}
 
 		[Kept]
-		class StaticMethodOnlyUsed : IUsedInterface {
+		class StaticMethodOnlyUsed : IUsedInterface
+		{
 			void IUsedInterface.Foo ()
 			{
 			}

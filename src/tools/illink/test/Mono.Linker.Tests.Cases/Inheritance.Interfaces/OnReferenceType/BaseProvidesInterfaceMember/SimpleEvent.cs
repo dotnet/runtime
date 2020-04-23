@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
 	[KeptDelegateCacheField ("0")]
-	public class SimpleEvent {
-		public static void Main()
+	public class SimpleEvent
+	{
+		public static void Main ()
 		{
 			IFoo f = new FooWithBase ();
 			f.Foo += EventMethod;
@@ -23,7 +25,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		delegate void CustomDelegate ();
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
@@ -32,7 +35,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class BaseFoo {
+		class BaseFoo
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptEventAddMethod]
@@ -44,7 +48,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo))]
 		[KeptInterface (typeof (IFoo))]
-		class FooWithBase : BaseFoo, IFoo {
+		class FooWithBase : BaseFoo, IFoo
+		{
 		}
 	}
 }

@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded {
-	public class ParameterRefAndLocal {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded
+{
+	public class ParameterRefAndLocal
+	{
 		public static void Main ()
 		{
 			Foo f = null;
@@ -16,14 +18,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Method ();
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		class Foo : IFoo {
+		class Foo : IFoo
+		{
 			[Kept]
 			public void Method ()
 			{

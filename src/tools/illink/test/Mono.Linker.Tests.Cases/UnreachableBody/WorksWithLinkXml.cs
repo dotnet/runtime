@@ -1,15 +1,18 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class WorksWithLinkXml {
-		public static void Main()
+	public class WorksWithLinkXml
+	{
+		public static void Main ()
 		{
 		}
 
 		[Kept]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public void InstanceMethod ()

@@ -1,9 +1,11 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
+namespace Mono.Linker.Tests.Cases.Basic
+{
 	[KeptDelegateCacheField ("0")]
-	class UsedEventOnInterfaceIsKept {
+	class UsedEventOnInterfaceIsKept
+	{
 		static void Main ()
 		{
 			IFoo bar = new Bar ();
@@ -18,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
@@ -27,7 +30,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class Bar : IFoo {
+		class Bar : IFoo
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptEventAddMethod]
@@ -37,7 +41,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class Jar : IFoo {
+		class Jar : IFoo
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptEventAddMethod]

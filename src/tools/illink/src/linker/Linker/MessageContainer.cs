@@ -101,9 +101,8 @@ namespace Mono.Linker
 
 				if (!string.IsNullOrEmpty (Text))
 					sb.Append (": ").Append (Text);
-			}
-			else {
-				sb.Append (" " ).Append (Text);
+			} else {
+				sb.Append (" ").Append (Text);
 			}
 
 			// Expected output $"{Origin}: {SubCategory}{Category} IL{Code}: {Text}");

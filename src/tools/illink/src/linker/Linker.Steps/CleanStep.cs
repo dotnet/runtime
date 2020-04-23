@@ -28,9 +28,11 @@
 
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class CleanStep : BaseStep {
+	public class CleanStep : BaseStep
+	{
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
@@ -69,7 +71,7 @@ namespace Mono.Linker.Steps {
 			var events = type.Events;
 
 			for (int i = 0; i < events.Count; i++) {
-				var evt = events [i];
+				var evt = events[i];
 				evt.AddMethod = CheckMethod (type, evt.AddMethod);
 				evt.InvokeMethod = CheckMethod (type, evt.InvokeMethod);
 				evt.RemoveMethod = CheckMethod (type, evt.RemoveMethod);
@@ -89,7 +91,7 @@ namespace Mono.Linker.Steps {
 			var properties = type.Properties;
 
 			for (int i = 0; i < properties.Count; i++) {
-				var prop = properties [i];
+				var prop = properties[i];
 				prop.GetMethod = CheckMethod (type, prop.GetMethod);
 				prop.SetMethod = CheckMethod (type, prop.SetMethod);
 

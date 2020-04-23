@@ -3,10 +3,11 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Symbols {
+namespace Mono.Linker.Tests.Cases.Symbols
+{
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
-	[SetupLinkerLinkSymbols( "true")]
+	[SetupLinkerLinkSymbols ("true")]
 
 #if WIN32
 	[KeptSymbols ("LibraryWithPdb.dll")]
@@ -15,11 +16,12 @@ namespace Mono.Linker.Tests.Cases.Symbols {
 #endif
 	[KeptMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "SomeMethod()")]
 	[RemovedMemberInAssembly ("LibraryWithPdb.dll", typeof (LibraryWithPdb), "NotUsed()")]
-	class ReferenceWithPdbAndSymbolLinkingEnabled {
+	class ReferenceWithPdbAndSymbolLinkingEnabled
+	{
 		static void Main ()
 		{
 			// Use some stuff so that we can verify that the linker output correct results
-			SomeMethod();
+			SomeMethod ();
 			LibraryWithPdb.SomeMethod ();
 		}
 

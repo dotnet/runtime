@@ -1,18 +1,22 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass5 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	class ClassImplemtingInterfaceMethodsThroughBaseClass5
+	{
 		public static void Main ()
 		{
 			new A ();
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 			void Foo ();
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			public void Foo ()
 			{
 			}
@@ -20,7 +24,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		class A : B, IFoo {
+		class A : B, IFoo
+		{
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}
 	}

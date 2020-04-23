@@ -25,8 +25,9 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-	class LinkingOfCoreLibrariesRemovesUnusedMethods {
-		public static void Main()
+	class LinkingOfCoreLibrariesRemovesUnusedMethods
+	{
+		public static void Main ()
 		{
 			Stack stack = new Stack (2);
 			stack.Push (1);

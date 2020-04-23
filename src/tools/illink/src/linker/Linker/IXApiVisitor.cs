@@ -30,9 +30,11 @@ using System.Xml.XPath;
 
 using Mono.Cecil;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public interface IXApiVisitor {
+	public interface IXApiVisitor
+	{
 
 		void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly);
 		void OnAttribute (XPathNavigator nav);

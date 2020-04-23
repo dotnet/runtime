@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
-	class VirtualMethodGetsPerservedIfBaseMethodGetsInvoked {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
+{
+	class VirtualMethodGetsPerservedIfBaseMethodGetsInvoked
+	{
 		public static void Main ()
 		{
 			new A ();
@@ -9,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 		}
 
 		[KeptMember (".ctor()")]
-		class B {
+		class B
+		{
 			[Kept]
 			public virtual void Foo ()
 			{
@@ -18,7 +21,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		class A : B {
+		class A : B
+		{
 			[Kept]
 			public override void Foo ()
 			{

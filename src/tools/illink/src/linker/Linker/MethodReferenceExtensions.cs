@@ -19,9 +19,9 @@ namespace Mono.Linker
 		public static TypeReference GetParameterType (this MethodReference method, int parameterIndex)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
-				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters [parameterIndex].ParameterType);
+				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType);
 
-			return method.Parameters [parameterIndex].ParameterType;
+			return method.Parameters[parameterIndex].ParameterType;
 		}
 
 		public static bool IsDeclaredOnType (this MethodReference method, string namespaceName, string typeName)
@@ -31,7 +31,7 @@ namespace Mono.Linker
 
 		public static bool HasParameterOfType (this MethodReference method, int parameterIndex, string namespaceName, string typeName)
 		{
-			return method.Parameters.Count > parameterIndex && method.Parameters [parameterIndex].ParameterType.IsTypeOf (namespaceName, typeName);
+			return method.Parameters.Count > parameterIndex && method.Parameters[parameterIndex].ParameterType.IsTypeOf (namespaceName, typeName);
 		}
 	}
 }

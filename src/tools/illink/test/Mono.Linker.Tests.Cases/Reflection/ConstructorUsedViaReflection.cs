@@ -19,40 +19,40 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[RecognizedReflectionAccessPattern (
-					   typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (Type []) },
-					   typeof (IntegerParameterConstructor), ".ctor", new Type [0])]
+					   typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
+					   typeof (IntegerParameterConstructor), ".ctor", new Type[0])]
 		[Kept]
 		static void TestWithIntegerParameter ()
 		{
-			var constructor = typeof (IntegerParameterConstructor).GetConstructor (new Type [] { typeof (int) });
-			constructor.Invoke (null, new object [] { });
+			var constructor = typeof (IntegerParameterConstructor).GetConstructor (new Type[] { typeof (int) });
+			constructor.Invoke (null, new object[] { });
 		}
 
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
-			typeof (OnlyUsedViaReflection), ".ctor", new Type [0])]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (OnlyUsedViaReflection), ".ctor", new Type[0])]
 		[Kept]
 		static void TestWithBindingFlags ()
 		{
-			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type [] { }, new ParameterModifier [] { });
-			constructor.Invoke (null, new object [] { });
+			var constructor = typeof (OnlyUsedViaReflection).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type[] { }, new ParameterModifier[] { });
+			constructor.Invoke (null, new object[] { });
 		}
 
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type []), typeof (ParameterModifier []) },
-			typeof (CallingConventionConstructor), ".ctor", new Type [0])]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (CallingConventionConstructor), ".ctor", new Type[0])]
 		[Kept]
 		static void TestWithCallingConvention ()
 		{
-			var constructor = typeof (CallingConventionConstructor).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), CallingConventions.HasThis, new Type [] { }, new ParameterModifier [] { });
-			constructor.Invoke (null, new object [] { });
+			var constructor = typeof (CallingConventionConstructor).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), CallingConventions.HasThis, new Type[] { }, new ParameterModifier[] { });
+			constructor.Invoke (null, new object[] { });
 		}
 
 		[Kept]
 		static void TestNullType ()
 		{
 			Type type = null;
-			var constructor = type.GetConstructor (new Type [] { });
+			var constructor = type.GetConstructor (new Type[] { });
 		}
 
 		[Kept]
@@ -62,21 +62,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (Type []) })]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) })]
 		[Kept]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
-			var constructor = type.GetConstructor (new Type [] { });
+			var constructor = type.GetConstructor (new Type[] { });
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
-			typeof (IfConstructor), ".ctor", new Type [0])]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (IfConstructor), ".ctor", new Type[0])]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type [] { typeof (BindingFlags), typeof (Binder), typeof (Type []), typeof (ParameterModifier []) },
-			typeof (ElseConstructor), ".ctor", new Type [0])]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (ElseConstructor), ".ctor", new Type[0])]
 		static void TestIfElse (bool decision)
 		{
 			Type myType;
@@ -85,8 +85,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			} else {
 				myType = typeof (ElseConstructor);
 			}
-			var constructor = myType.GetConstructor (BindingFlags.Public, null, new Type [] { }, null);
-			constructor.Invoke (null, new object [] { });
+			var constructor = myType.GetConstructor (BindingFlags.Public, null, new Type[] { }, null);
+			constructor.Invoke (null, new object[] { });
 		}
 
 		[Kept]

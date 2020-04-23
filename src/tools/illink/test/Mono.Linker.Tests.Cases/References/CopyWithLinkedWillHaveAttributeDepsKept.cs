@@ -3,10 +3,11 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.References.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.References {
+namespace Mono.Linker.Tests.Cases.References
+{
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[SetupLinkerAction ("copy", "test")]
-	[SetupCompileBefore ("linked.dll", new [] {typeof (WithLinked_Attrs)})]
+	[SetupCompileBefore ("linked.dll", new[] { typeof (WithLinked_Attrs) })]
 
 	[KeptMember (".ctor()")]
 	[KeptMemberInAssembly ("linked.dll", typeof (WithLinked_Attrs.TypeAttribute), ".ctor()")]
@@ -17,7 +18,8 @@ namespace Mono.Linker.Tests.Cases.References {
 	[KeptMemberInAssembly ("linked.dll", typeof (WithLinked_Attrs.ParameterAttribute), ".ctor()")]
 	[KeptTypeInAssembly ("linked.dll", typeof (WithLinked_Attrs.FooEnum))]
 	[KeptTypeInAssembly ("linked.dll", typeof (WithLinked_Attrs.MethodWithEnumValueAttribute))]
-	public class CopyWithLinkedWillHaveAttributeDepsKept {
+	public class CopyWithLinkedWillHaveAttributeDepsKept
+	{
 		public static void Main ()
 		{
 		}
@@ -26,7 +28,8 @@ namespace Mono.Linker.Tests.Cases.References {
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (WithLinked_Attrs.TypeAttribute))]
 		[WithLinked_Attrs.Type]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (WithLinked_Attrs.FieldAttribute))]
 			[WithLinked_Attrs.Field]
@@ -36,8 +39,7 @@ namespace Mono.Linker.Tests.Cases.References {
 			[KeptBackingField]
 			[KeptAttributeAttribute (typeof (WithLinked_Attrs.PropertyAttribute))]
 			[WithLinked_Attrs.Property]
-			private static int Property
-			{
+			private static int Property {
 				[Kept]
 				get;
 				[Kept]
@@ -58,16 +60,16 @@ namespace Mono.Linker.Tests.Cases.References {
 			static void Method ()
 			{
 			}
-			
+
 			[Kept]
-			[KeptAttributeAttribute (typeof(WithLinked_Attrs.MethodWithEnumValueAttribute))]
+			[KeptAttributeAttribute (typeof (WithLinked_Attrs.MethodWithEnumValueAttribute))]
 			[WithLinked_Attrs.MethodWithEnumValue (WithLinked_Attrs.FooEnum.Three, typeof (WithLinked_Attrs))]
 			static void MethodWithEnum ()
 			{
 			}
-			
+
 			[Kept]
-			static void MethodWithParameter([KeptAttributeAttribute (typeof (WithLinked_Attrs.ParameterAttribute))] [WithLinked_Attrs.Parameter] int arg)
+			static void MethodWithParameter ([KeptAttributeAttribute (typeof (WithLinked_Attrs.ParameterAttribute))] [WithLinked_Attrs.Parameter] int arg)
 			{
 			}
 		}

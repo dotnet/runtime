@@ -12,14 +12,16 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessedAndKept.xml", "test.xml")]
 	[SkipPeVerify]
 	[KeptResource ("test.xml")]
-	public class EmbeddedLinkXmlFileIsProcessedAndKept {
+	public class EmbeddedLinkXmlFileIsProcessedAndKept
+	{
 		public static void Main ()
 		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		public class Unused {
+		public class Unused
+		{
 		}
 	}
 }

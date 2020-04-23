@@ -2,9 +2,11 @@ using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Substitutions {
+namespace Mono.Linker.Tests.Cases.Substitutions
+{
 	[SetupLinkerSubstitutionFile ("StubBody.xml")]
-	public class StubBody {
+	public class StubBody
+	{
 		public static void Main ()
 		{
 			new StubBody ();
@@ -25,9 +27,10 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 			TestMethod_13 ();
 		}
 
-		struct NestedType {
+		struct NestedType
+		{
 			[Kept]
-			[ExpectedInstructionSequence (new [] {
+			[ExpectedInstructionSequence (new[] {
 				"ret",
 			})]
 			public NestedType (int arg)
@@ -37,7 +40,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldarg.0",
 				"call",
 				"ret",
@@ -48,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldnull",
 				"ret",
 			})]
@@ -58,7 +61,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.0",
 				"ret",
 			})]
@@ -68,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.0",
 				"ret",
 			})]
@@ -78,7 +81,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldloca.s",
 				"initobj",
 				"ldloc.0",
@@ -91,7 +94,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.0",
 				"ret",
 			})]
@@ -101,7 +104,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ret",
 			})]
 		static void TestMethod_6 ()
@@ -110,7 +113,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.r8",
 				"ret",
 			})]
@@ -122,7 +125,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldloca.s",
 				"initobj",
 				"ldloc.0",
@@ -135,7 +138,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.r4",
 				"ret",
 			})]
@@ -147,7 +150,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i8",
 				"ret",
 			})]
@@ -157,17 +160,17 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldnull",
 				"ret",
 			})]
-		static long [] TestMethod_11 ()
+		static long[] TestMethod_11 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldnull",
 				"ret",
 			})]
@@ -177,7 +180,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldnull",
 				"ret",
 			})]

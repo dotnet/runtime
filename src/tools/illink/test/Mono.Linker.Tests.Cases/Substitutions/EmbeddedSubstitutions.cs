@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldstr",
 			"newobj",
 			"throw"

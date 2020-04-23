@@ -30,14 +30,14 @@ namespace ILLink.Tasks
 		[Output]
 		public ITaskItem[] RemovedAssemblies { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
 			var keptAssemblyNames = new HashSet<string> (
-				KeptAssemblies.Select(i => Path.GetFileName(i.ItemSpec))
+				KeptAssemblies.Select (i => Path.GetFileName (i.ItemSpec))
 			);
-			RemovedAssemblies = InputAssemblies.Where(i =>
-				!keptAssemblyNames.Contains(Path.GetFileName(i.ItemSpec))
-			).ToArray();
+			RemovedAssemblies = InputAssemblies.Where (i =>
+				 !keptAssemblyNames.Contains (Path.GetFileName (i.ItemSpec))
+			).ToArray ();
 			return true;
 		}
 	}

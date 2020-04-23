@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded {
-	public class ReturnValueDowncastedToInterface {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded
+{
+	public class ReturnValueDowncastedToInterface
+	{
 		public static void Main ()
 		{
 			UseAnIFoo (GetAFoo ());
@@ -20,11 +22,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		class Foo : IFoo {
+		class Foo : IFoo
+		{
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 		}
 	}
 }

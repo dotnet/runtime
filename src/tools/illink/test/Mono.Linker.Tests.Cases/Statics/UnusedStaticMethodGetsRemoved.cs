@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Statics {
-	public class UnusedStaticMethodGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Statics
+{
+	public class UnusedStaticMethodGetsRemoved
+	{
 		public static void Main ()
 		{
 			A.UsedMethod ();
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Statics {
 	}
 
 	[Kept]
-	class A {
+	class A
+	{
 		[Kept]
 		public static void UsedMethod ()
 		{

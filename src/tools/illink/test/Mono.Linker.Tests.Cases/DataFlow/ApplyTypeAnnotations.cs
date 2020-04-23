@@ -104,9 +104,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		private static void RequireCombination (
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers(
-				DynamicallyAccessedMemberKinds.DefaultConstructor | 
-				DynamicallyAccessedMemberKinds.PublicFields | 
-				DynamicallyAccessedMemberKinds.PublicMethods | 
+				DynamicallyAccessedMemberKinds.DefaultConstructor |
+				DynamicallyAccessedMemberKinds.PublicFields |
+				DynamicallyAccessedMemberKinds.PublicMethods |
 				DynamicallyAccessedMemberKinds.PublicProperties)]
 			Type type)
 		{

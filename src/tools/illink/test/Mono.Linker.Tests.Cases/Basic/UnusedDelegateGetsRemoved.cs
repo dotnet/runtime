@@ -1,7 +1,9 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class UnusedDelegateGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class UnusedDelegateGetsRemoved
+	{
 		static void Main ()
 		{
 		}

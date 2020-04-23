@@ -54,7 +54,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (!bool.TryParse (value, out bool bValue)) {
-				Context.LogMessage(MessageContainer.CreateErrorMessage ($"Unsupported non-boolean feature definition {feature}", 1002));
+				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Unsupported non-boolean feature definition {feature}", 1002));
 				return false;
 			}
 
@@ -277,7 +277,7 @@ namespace Mono.Linker.Steps
 				if (!uint.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint uresult))
 					break;
 
-				result = (int)uresult;
+				result = (int) uresult;
 				return true;
 
 			case MetadataType.Double:
@@ -305,7 +305,7 @@ namespace Mono.Linker.Steps
 				if (!ulong.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong ulresult))
 					break;
 
-				result = (long)ulresult;
+				result = (long) ulresult;
 				return true;
 
 			case MetadataType.Char:

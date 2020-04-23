@@ -3,7 +3,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.TypeForwarding {
+namespace Mono.Linker.Tests.Cases.TypeForwarding
+{
 	[KeepTypeForwarderOnlyAssemblies ("true")]
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 	// Add another assembly in that uses the forwarder just to make things a little more complex
@@ -16,7 +17,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding {
 	[KeptAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Library.dll", typeof (LibraryUsingForwarder), "GetValueFromOtherAssembly()")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
-	public class TypeForwarderOnlyAssembliesKept {
+	public class TypeForwarderOnlyAssembliesKept
+	{
 		public static void Main ()
 		{
 			Console.WriteLine (new ImplementationLibrary ().GetSomeValue ());

@@ -6,8 +6,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies
 	public class PreserveDependencyInCopyAssembly
 	{
 		[PreserveDependency ("ExtraMethod1")]
-		public PreserveDependencyInCopyAssembly()
-		{				
+		public PreserveDependencyInCopyAssembly ()
+		{
 		}
 
 		static void ExtraMethod1 ()

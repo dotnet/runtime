@@ -2,8 +2,10 @@
 using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Interop.InternalCalls.Com {
-	class DefaultConstructorOfReturnTypeIsRemoved {
+namespace Mono.Linker.Tests.Cases.Interop.InternalCalls.Com
+{
+	class DefaultConstructorOfReturnTypeIsRemoved
+	{
 		public static void Main ()
 		{
 			var a = SomeMethod ();
@@ -13,7 +15,8 @@ namespace Mono.Linker.Tests.Cases.Interop.InternalCalls.Com {
 		[KeptAttributeAttribute (typeof (GuidAttribute))]
 		[ComImport]
 		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
-		class A {
+		class A
+		{
 		}
 
 		[Kept]

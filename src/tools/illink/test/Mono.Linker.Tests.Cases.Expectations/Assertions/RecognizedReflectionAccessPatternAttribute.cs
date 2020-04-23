@@ -31,8 +31,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (accessedItemName));
 		}
 
-		public RecognizedReflectionAccessPatternAttribute (Type reflectionMethodType, string reflectionMethodName, Type [] reflectionMethodParameters,
-			Type accessedItemType, string accessedItemName, string [] accessedItemParameters = null)
+		public RecognizedReflectionAccessPatternAttribute (Type reflectionMethodType, string reflectionMethodName, Type[] reflectionMethodParameters,
+			Type accessedItemType, string accessedItemName, string[] accessedItemParameters = null)
 		{
 			if (reflectionMethodType == null)
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (reflectionMethodType));

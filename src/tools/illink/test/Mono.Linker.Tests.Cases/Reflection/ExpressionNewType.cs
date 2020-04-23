@@ -27,22 +27,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		#region RecognizedReflectionAccessPatterns
 		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) }, typeof (A), ".ctor", new Type [0])]
+			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (A), ".ctor", new Type[0])]
 		[RecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) }, typeof (B), ".ctor", new Type [0])]
+			typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) }, typeof (B), ".ctor", new Type[0])]
 		[Kept]
 		static void Branch_SystemTypeValueNode (int i)
 		{
-			Type T = (Type)null;
+			Type T = (Type) null;
 			switch (i) {
-				case 0:
-					T = typeof (A);
-					break;
-				case 1:
-					T = typeof (B);
-					break;
-				default:
-					break;
+			case 0:
+				T = typeof (A);
+				break;
+			case 1:
+				T = typeof (B);
+				break;
+			default:
+				break;
 			}
 
 			Expression.New (T);
@@ -50,15 +50,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		#endregion
 
 		#region UnrecognizedReflectionAccessPatterns
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) })]
 		[Kept]
 		static void Branch_MethodParameterValueNode (Type T)
 		{
 			Expression.New (T);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type[] { typeof (Type) })]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{

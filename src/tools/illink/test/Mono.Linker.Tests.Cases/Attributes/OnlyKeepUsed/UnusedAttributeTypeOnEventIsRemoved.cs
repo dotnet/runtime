@@ -2,10 +2,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
+{
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[KeptDelegateCacheField ("0")]
-	class UnusedAttributeTypeOnEventIsRemoved {
+	class UnusedAttributeTypeOnEventIsRemoved
+	{
 		static void Main ()
 		{
 			var tmp = new Bar ();
@@ -19,7 +21,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Bar {
+		class Bar
+		{
 			[Foo]
 			[Kept]
 			[KeptEventAddMethod]
@@ -27,7 +30,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 			public event EventHandler<EventArgs> Something { [Foo] add { } [Foo] remove { } }
 		}
 
-		class FooAttribute : Attribute {
+		class FooAttribute : Attribute
+		{
 		}
 	}
 }

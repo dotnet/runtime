@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 		[KeptBaseType (typeof (TypeConverter))]
 		class Custom1 : TypeConverter
 		{
-			[Kept]			
+			[Kept]
 			public Custom1 (Type type)
 			{
 			}
@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 
 	[Reference ("System.dll")]
 	public class CustomTypeConvertor
-	{		
+	{
 		public static void Main ()
 		{
 			var tc1 = TypeDescriptor.GetConverter (typeof (CustomDataType));

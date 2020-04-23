@@ -3,7 +3,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.TestFramework {
+namespace Mono.Linker.Tests.Cases.TestFramework
+{
 #if NETCOREAPP
 	[IgnoreTestCase ("Don't try to compile with mcs on .NET Core.")]
 #endif
@@ -20,7 +21,8 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 
 	[KeptResource ("CanCompileTestCaseWithMcs.txt")]
 	[KeptMemberInAssembly ("library.dll", typeof (CanCompileTestCaseWithMcs_Lib), "Used()")]
-	class CanCompileTestCaseWithMcs {
+	class CanCompileTestCaseWithMcs
+	{
 		static void Main ()
 		{
 #if VERIFY_DEFINE_WORKS

@@ -5,28 +5,28 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CodegenAnnotation
 {
-	[SetupLinkerArgument("--explicit-reflection")]
+	[SetupLinkerArgument ("--explicit-reflection")]
 	public class ReflectionBlockedTest
 	{
 		[KeptAttributeAttribute ("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
-		public static void Main()
+		public static void Main ()
 		{
-			var obj = new A();
-			var method = typeof(A).GetMethod("FooPrivRefl", BindingFlags.NonPublic);
+			var obj = new A ();
+			var method = typeof (A).GetMethod ("FooPrivRefl", BindingFlags.NonPublic);
 			method.Invoke (obj, new object[] { });
 
 			obj.FooPub ();
 
-			var obj2 = new All();
+			var obj2 = new All ();
 			obj2.FooPub ();
 		}
 
 		[Kept]
-		[KeptAttributeAttribute("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
+		[KeptAttributeAttribute ("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
 		public class All
 		{
 			[Kept]
-			private int FooPrivSpecializable()
+			private int FooPrivSpecializable ()
 			{
 				return 42;
 			}
@@ -34,11 +34,11 @@ namespace Mono.Linker.Tests.Cases.CodegenAnnotation
 			[Kept]
 			public int FooPub ()
 			{
-				return FooPrivSpecializable();
+				return FooPrivSpecializable ();
 			}
 
 			[Kept]
-			public All()
+			public All ()
 			{
 			}
 		}
@@ -47,10 +47,9 @@ namespace Mono.Linker.Tests.Cases.CodegenAnnotation
 		public class A
 		{
 			[Kept]
-			private int Field
-			{
+			private int Field {
 				[Kept]
-				[KeptAttributeAttribute("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
+				[KeptAttributeAttribute ("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
 				get {
 					return 42;
 				}
@@ -58,20 +57,20 @@ namespace Mono.Linker.Tests.Cases.CodegenAnnotation
 
 			[Kept]
 			[KeptAttributeAttribute ("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
-			public int FooPub()
+			public int FooPub ()
 			{
-				return FooPrivSpecializable();
+				return FooPrivSpecializable ();
 			}
 
 			[Kept]
-			private int FooPrivRefl()
+			private int FooPrivRefl ()
 			{
 				return this.Field;
 			}
 
 			[Kept]
-			[KeptAttributeAttribute("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
-			private int FooPrivSpecializable()
+			[KeptAttributeAttribute ("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")]
+			private int FooPrivSpecializable ()
 			{
 				return 42;
 			}

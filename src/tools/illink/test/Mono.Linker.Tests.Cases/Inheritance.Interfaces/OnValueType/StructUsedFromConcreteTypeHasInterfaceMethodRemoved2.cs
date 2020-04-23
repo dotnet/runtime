@@ -1,19 +1,22 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
-	public class StructUsedFromConcreteTypeHasInterfaceMethodRemoved2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
+{
+	public class StructUsedFromConcreteTypeHasInterfaceMethodRemoved2
+	{
 		public static void Main ()
 		{
 			A a = new A ();
 			a.Foo ();
-			
+
 			// If IFoo is marked for any reason then all of a sudden we do need to keep IFoo on A
 			var tmp = typeof (IFoo).ToString ();
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		struct A : IFoo {
+		struct A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -21,7 +24,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
 		}
 
 		[Kept]
-		public interface IFoo {
+		public interface IFoo
+		{
 			void Foo ();
 		}
 	}

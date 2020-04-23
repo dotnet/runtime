@@ -12,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 		{
 		}
 
-		class TypeThatIsUsedViaReflection {
+		class TypeThatIsUsedViaReflection
+		{
 		}
 	}
 }

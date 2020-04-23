@@ -1,6 +1,9 @@
-namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.Dependencies {
-	public class TypeWithBaseInCopiedAssembly3_Base {
-		public abstract class Base {
+namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.Dependencies
+{
+	public class TypeWithBaseInCopiedAssembly3_Base
+	{
+		public abstract class Base
+		{
 			public abstract void Method ();
 		}
 	}

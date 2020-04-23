@@ -28,9 +28,11 @@
 
 using System.Collections.Generic;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public abstract class ResolveStep : BaseStep {
+	public abstract class ResolveStep : BaseStep
+	{
 
 		readonly List<string> _unResolved;
 
@@ -39,12 +41,11 @@ namespace Mono.Linker.Steps {
 			_unResolved = new List<string> ();
 		}
 
-		public bool AllMarkerResolved
-		{
+		public bool AllMarkerResolved {
 			get { return _unResolved.Count == 0; }
 		}
 
-		public string [] GetUnresolvedMarkers ()
+		public string[] GetUnresolvedMarkers ()
 		{
 			return _unResolved.ToArray ();
 		}

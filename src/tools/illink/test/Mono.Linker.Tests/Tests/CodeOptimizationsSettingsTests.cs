@@ -4,7 +4,7 @@ namespace Mono.Linker.Tests
 {
 	[TestFixture]
 	public class CodeOptimizationsSettingsTests
-    {
+	{
 		[Test]
 		public void GlobalSettingsOnly ()
 		{

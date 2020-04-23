@@ -37,9 +37,9 @@ namespace ILLink.Tests
 		/// </summary>
 		public static string TestBin { get; private set; }
 
-		static TestContext()
+		static TestContext ()
 		{
-			SetupDefaultContext();
+			SetupDefaultContext ();
 		}
 
 		/// <summary>
@@ -50,11 +50,11 @@ namespace ILLink.Tests
 		///   one version of the package is present, and uses it to
 		///   unambiguously determine which package to use in the tests.
 		/// </summary>
-		public static void SetupDefaultContext()
+		public static void SetupDefaultContext ()
 		{
 			// test working directory is test project's <baseoutputpath>/<config>/<tfm>
-			var testBin = Path.Combine(Environment.CurrentDirectory, "..", "..");
-			var repoRoot = Path.GetFullPath(Path.Combine(testBin, "..", "..", ".."));
+			var testBin = Path.Combine (Environment.CurrentDirectory, "..", "..");
+			var repoRoot = Path.GetFullPath (Path.Combine (testBin, "..", "..", ".."));
 
 			// We want to build and link integration projects in the
 			// release configuration.
@@ -68,33 +68,32 @@ namespace ILLink.Tests
 #endif
 
 			// Locate tasks assembly
-			var tasksAssembly = Path.Combine(repoRoot, "artifacts", "bin", "ILLink.Tasks", illinkConfiguration, "netcoreapp3.0", "ILLink.Tasks.dll");
-			if (!File.Exists(tasksAssembly)) {
-				throw new Exception("ILLink.Tasks not found at " + tasksAssembly);
+			var tasksAssembly = Path.Combine (repoRoot, "artifacts", "bin", "ILLink.Tasks", illinkConfiguration, "netcoreapp3.0", "ILLink.Tasks.dll");
+			if (!File.Exists (tasksAssembly)) {
+				throw new Exception ("ILLink.Tasks not found at " + tasksAssembly);
 			}
 
 
 			// Locate dotnet host
-			var dotnetDir = Path.Combine(repoRoot, ".dotnet");
-			var dotnetToolName = Directory.GetFiles(dotnetDir)
-				.Select(p => Path.GetFileName(p))
-				.Where(p => p.StartsWith("dotnet"))
-				.Where(p => {
-					var ext = Path.GetExtension(p);
+			var dotnetDir = Path.Combine (repoRoot, ".dotnet");
+			var dotnetToolName = Directory.GetFiles (dotnetDir)
+				.Select (p => Path.GetFileName (p))
+				.Where (p => p.StartsWith ("dotnet"))
+				.Where (p => {
+					var ext = Path.GetExtension (p);
 					return ext == "" || ext == ".exe";
 				})
-				.Single();
-			var dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
+				.Single ();
+			var dotnetToolPath = Path.Combine (dotnetDir, dotnetToolName);
 
 			// Initialize static members
 			TasksAssemblyPath = tasksAssembly;
 			DotnetToolPath = dotnetToolPath;
 			// This sets the RID to the RID of the currently-executing system.
-			RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier();
+			RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier ();
 			// workaround: the osx.10.13-x64 RID doesn't exist yet.
 			// see https://github.com/NuGet/Home/issues/5862
-			if (RuntimeIdentifier == "osx.10.14-x64")
-			{
+			if (RuntimeIdentifier == "osx.10.14-x64") {
 				RuntimeIdentifier = "osx.10.13-x64";
 			}
 		}

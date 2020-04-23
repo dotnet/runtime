@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	public class InstantiatedTypeWithOverridesFromObject {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	public class InstantiatedTypeWithOverridesFromObject
+	{
 		public static void Main ()
 		{
 			var f = new Foo ();
@@ -9,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			~Foo ()
 			{

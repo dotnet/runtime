@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[RemovedAssemblyReference ("Forwarder.dll", "Unused")]
 	class UsedAndUnusedForwarderWithAssemblyCopy
 	{
-		static void Main()
+		static void Main ()
 		{
 			new ImplementationLibrary ().GetSomeValue ();
 		}

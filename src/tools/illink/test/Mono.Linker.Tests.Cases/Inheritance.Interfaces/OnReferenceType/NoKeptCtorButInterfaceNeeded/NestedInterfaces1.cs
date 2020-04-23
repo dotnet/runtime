@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded {
-	public class NestedInterfaces1 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtorButInterfaceNeeded
+{
+	public class NestedInterfaces1
+	{
 		public static void Main ()
 		{
 			MarkBase1AndBase3 (null, null);
@@ -20,12 +22,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		}
 
 		[Kept]
-		interface IBase {
+		interface IBase
+		{
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IBase))]
-		interface IBase2 : IBase {
+		interface IBase2 : IBase
+		{
 			[Kept]
 			void Method ();
 		}
@@ -33,7 +37,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		[Kept]
 		[KeptInterface (typeof (IBase2))]
 		[KeptInterface (typeof (IBase))]
-		interface IBase3 : IBase2 {
+		interface IBase3 : IBase2
+		{
 		}
 
 		/// <summary>
@@ -42,7 +47,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		[Kept]
 		[KeptInterface (typeof (IBase3))]
 		[KeptInterface (typeof (IBase))]
-		class Foo : IBase3 {
+		class Foo : IBase3
+		{
 			[Kept]
 			public void Method ()
 			{

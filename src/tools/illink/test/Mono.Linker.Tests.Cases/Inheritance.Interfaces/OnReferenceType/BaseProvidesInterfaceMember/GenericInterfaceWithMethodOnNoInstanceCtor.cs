@@ -1,12 +1,14 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
-	public class GenericInterfaceWithMethodOnNoInstanceCtor {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
+	public class GenericInterfaceWithMethodOnNoInstanceCtor
+	{
 		public static void Main ()
 		{
-			IFoo<object> f = new OtherWithFoo();
+			IFoo<object> f = new OtherWithFoo ();
 			f.Method (null);
-			UsedToMarkTypeOnly(null);
+			UsedToMarkTypeOnly (null);
 		}
 
 		[Kept]
@@ -15,13 +17,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		}
 
 		[Kept]
-		interface IFoo<T> {
+		interface IFoo<T>
+		{
 			[Kept]
 			void Method (T arg);
 		}
 
 		[Kept]
-		class BaseFoo {
+		class BaseFoo
+		{
 			[Kept]
 			public void Method (object arg)
 			{
@@ -31,13 +35,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[Kept]
 		[KeptBaseType (typeof (BaseFoo))]
 		[KeptInterface (typeof (IFoo<object>))]
-		class FooWithBase : BaseFoo, IFoo<object> {
+		class FooWithBase : BaseFoo, IFoo<object>
+		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo<object>))]
-		class OtherWithFoo : IFoo<object> {
+		class OtherWithFoo : IFoo<object>
+		{
 			[Kept]
 			public void Method (object arg)
 			{

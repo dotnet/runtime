@@ -2,19 +2,22 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.Debugger {
+namespace Mono.Linker.Tests.Cases.Attributes.Debugger
+{
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-	public class DebuggerDisplayAttributeOnTypeThatIsNotUsed {
+	public class DebuggerDisplayAttributeOnTypeThatIsNotUsed
+	{
 		public static void Main ()
 		{
 		}
 
 		[DebuggerDisplay ("{Property}")]
-		class Foo {
+		class Foo
+		{
 			public int Property { get; set; }
 		}
 	}

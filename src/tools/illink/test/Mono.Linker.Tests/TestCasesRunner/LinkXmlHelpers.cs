@@ -2,8 +2,10 @@
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public static class LinkXmlHelpers {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public static class LinkXmlHelpers
+	{
 		public static void WriteXmlFileToPreserveEntryPoint (NPath targetProgram, NPath xmlFile)
 		{
 			using (var assembly = AssemblyDefinition.ReadAssembly (targetProgram.ToString ())) {

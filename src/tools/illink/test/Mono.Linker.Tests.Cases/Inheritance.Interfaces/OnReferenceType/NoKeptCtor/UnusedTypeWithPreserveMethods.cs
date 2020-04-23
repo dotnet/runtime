@@ -1,22 +1,27 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor {
-	public class UnusedTypeWithPreserveMethods {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
+{
+	public class UnusedTypeWithPreserveMethods
+	{
 		public static void Main ()
 		{
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 			void Foo ();
 		}
 
-		interface IBar {
+		interface IBar
+		{
 			void Bar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class A : IBar, IFoo {
+		class A : IBar, IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{

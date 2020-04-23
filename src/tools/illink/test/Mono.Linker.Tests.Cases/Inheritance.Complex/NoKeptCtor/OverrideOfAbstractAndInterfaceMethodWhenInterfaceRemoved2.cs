@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Complex.NoKeptCtor {
-	public class OverrideOfAbstractAndInterfaceMethodWhenInterfaceRemoved2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Complex.NoKeptCtor
+{
+	public class OverrideOfAbstractAndInterfaceMethodWhenInterfaceRemoved2
+	{
 		public static void Main ()
 		{
 			Foo b = null;
@@ -16,25 +18,27 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Complex.NoKeptCtor {
 		}
 
 		[Kept]
-		static void HelperToMarkIBar()
+		static void HelperToMarkIBar ()
 		{
-			GetAnIBar().Method();
+			GetAnIBar ().Method ();
 		}
 
 		[Kept]
-		static IBar GetAnIBar()
+		static IBar GetAnIBar ()
 		{
 			return null;
 		}
 
 		[Kept]
-		abstract class Base {
+		abstract class Base
+		{
 			public abstract void Method ();
 		}
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Foo : Base, IBar {
+		class Foo : Base, IBar
+		{
 			public override void Method ()
 			{
 				UsedByOverride ();
@@ -46,7 +50,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Complex.NoKeptCtor {
 		}
 
 		[Kept]
-		interface IBar {
+		interface IBar
+		{
 			[Kept]
 			void Method ();
 		}

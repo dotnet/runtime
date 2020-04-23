@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Basic
 		public static void Main ()
 		{
 			A<int> a = new A<int> ();
-			var t = typeof (I<>).ToString();
+			var t = typeof (I<>).ToString ();
 		}
 
 		[Kept]

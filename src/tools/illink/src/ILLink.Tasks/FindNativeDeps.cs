@@ -17,13 +17,13 @@ namespace ILLink.Tasks
 		///   dependencies.
 		/// </summary>
 		[Required]
-		public ITaskItem [] ManagedAssemblyPaths { get; set; }
+		public ITaskItem[] ManagedAssemblyPaths { get; set; }
 
 		/// <summary>
 		///   The set of native dependencies to keep even if they
 		///   aren't found to be referenced by a managed assembly.
 		/// </summary>
-		public ITaskItem [] NativeDepsToKeep { get; set; }
+		public ITaskItem[] NativeDepsToKeep { get; set; }
 
 		/// <summary>
 		///   The paths to the available native dependencies. We
@@ -31,7 +31,7 @@ namespace ILLink.Tasks
 		///   native files.
 		/// </summary>
 		[Required]
-		public ITaskItem [] NativeDepsPaths { get; set; }
+		public ITaskItem[] NativeDepsPaths { get; set; }
 
 		/// <summary>
 		///   The set of native dependencies to keep, including those
@@ -40,7 +40,7 @@ namespace ILLink.Tasks
 		///   input NativeDepsToKeep.
 		/// </summary>
 		[Output]
-		public ITaskItem [] KeptNativeDepsPaths { get; set; }
+		public ITaskItem[] KeptNativeDepsPaths { get; set; }
 
 		public override bool Execute ()
 		{
@@ -53,14 +53,14 @@ namespace ILLink.Tasks
 
 			var managedAssemblies = ManagedAssemblyPaths.Select (i => i.ItemSpec).ToArray ();
 			foreach (string managedAssembly in managedAssemblies) {
-				using (var peReader = new PEReader(new FileStream (managedAssembly, FileMode.Open, FileAccess.Read, FileShare.Read))) {
+				using (var peReader = new PEReader (new FileStream (managedAssembly, FileMode.Open, FileAccess.Read, FileShare.Read))) {
 					if (peReader.HasMetadata) {
 						var reader = peReader.GetMetadataReader ();
 						for (int i = 1, count = reader.GetTableRowCount (TableIndex.ModuleRef); i <= count; i++) {
 							var moduleRef = reader.GetModuleReference (MetadataTokens.ModuleReferenceHandle (i));
 							var moduleName = reader.GetString (moduleRef.Name);
 
-							var moduleRefCandidates = new [] { moduleName, moduleName + ".dll", moduleName + ".so", moduleName + ".dylib" };
+							var moduleRefCandidates = new[] { moduleName, moduleName + ".dll", moduleName + ".so", moduleName + ".dylib" };
 
 							bool foundModuleRef = false;
 							foreach (string moduleRefCandidate in moduleRefCandidates) {
@@ -71,7 +71,7 @@ namespace ILLink.Tasks
 							}
 
 							if (!foundModuleRef)
-								Log.LogMessage("unsatisfied DLLImport: " + managedAssembly + " -> " + moduleName);
+								Log.LogMessage ("unsatisfied DLLImport: " + managedAssembly + " -> " + moduleName);
 						}
 					}
 				}

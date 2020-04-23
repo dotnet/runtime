@@ -1,9 +1,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class OverrideOfAbstractAndInterfaceMethodCalledFromLocal2 {
+	public class OverrideOfAbstractAndInterfaceMethodCalledFromLocal2
+	{
 		public static void Main ()
 		{
 			Foo f = HelperToMarkFooAndRequireBase ();
@@ -25,7 +27,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		}
 
 		[Kept]
-		abstract class Base {
+		abstract class Base
+		{
 			[Kept] // FIXME : Technically this can be removed
 			public abstract void Method ();
 		}
@@ -33,7 +36,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		[Kept]
 		[KeptBaseType (typeof (Base))]
 		[KeptInterface (typeof (IBar))]
-		class Foo : Base, IBar {
+		class Foo : Base, IBar
+		{
 			[Kept]
 			[ExpectBodyModified]
 			public override void Method ()
@@ -47,9 +51,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		}
 
 		[Kept]
-		interface IBar {
+		interface IBar
+		{
 			[Kept]
-			void Method();
+			void Method ();
 		}
 	}
 }

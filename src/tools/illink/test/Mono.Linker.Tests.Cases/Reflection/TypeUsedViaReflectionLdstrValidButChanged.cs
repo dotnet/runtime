@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
-	public class TypeUsedViaReflectionLdstrValidButChanged {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
+	public class TypeUsedViaReflectionLdstrValidButChanged
+	{
 		public static void Main ()
 		{
 			var replace = "Mono.Linker";

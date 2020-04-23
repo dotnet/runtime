@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[SkipKeptItemsValidation]
 	public class MethodReturnParameterDataFlow
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			var instance = new MethodReturnParameterDataFlow ();
 
@@ -50,20 +50,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type constructorsType)
 		{
 			switch (GetHashCode ()) {
-				case 1:
-					return defaultConstructorType;
-				case 2:
-					return publicConstructorsType;
-				case 3:
-					return constructorsType;
-				case 4:
-					return typeof (TestType);
-				default:
-					return null;
+			case 1:
+				return defaultConstructorType;
+			case 2:
+				return publicConstructorsType;
+			case 3:
+				return constructorsType;
+			case 4:
+				return typeof (TestType);
+			default:
+				return null;
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnDefaultConstructorFromUnknownType), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnDefaultConstructorFromUnknownType), new Type[] { typeof (Type) })]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		private Type ReturnDefaultConstructorFromUnknownType (Type unknownType)
 		{
@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// Validate error message when insufficiently annotated value is returned from a method
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnPublicConstructorsFailure), new Type [] { typeof (Type) },
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnPublicConstructorsFailure), new Type[] { typeof (Type) },
 			"The parameter 'defaultConstructorType' of method 'System.Type Mono.Linker.Tests.Cases.DataFlow.MethodReturnParameterDataFlow::ReturnPublicConstructorsFailure(System.Type)' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is " +
 			"passed into the return value of method 'System.Type Mono.Linker.Tests.Cases.DataFlow.MethodReturnParameterDataFlow::ReturnPublicConstructorsFailure(System.Type)' " +
@@ -99,7 +99,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return defaultConstructorType;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnConstructorsFailure), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) })]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 		private Type ReturnConstructorsFailure (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
@@ -108,9 +108,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return publicConstructorsType;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
-		private void PropagateReturnDefaultConstructor()
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
+		private void PropagateReturnDefaultConstructor ()
 		{
 			Type t = ReturnDefaultConstructor (typeof (TestType), typeof (TestType), typeof (TestType));
 			RequireDefaultConstructor (t);
@@ -119,8 +119,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (t);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void PropagateReturnDefaultConstructorFromConstant ()
 		{
 			Type t = ReturnDefaultConstructorFromConstant ();

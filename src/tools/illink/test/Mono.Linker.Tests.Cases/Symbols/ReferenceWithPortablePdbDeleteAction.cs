@@ -2,13 +2,15 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Symbols {
+namespace Mono.Linker.Tests.Cases.Symbols
+{
 	[SetupCompileBefore ("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: "/debug:portable", compilerToUse: "csc")]
 	[SetupLinkerLinkSymbols ("false")]
 
 	[RemovedAssembly ("LibraryWithPortablePdbSymbols.dll")]
 	[RemovedSymbols ("LibraryWithPortablePdbSymbols.dll")]
-	public class ReferenceWithPortablePdbDeleteAction {
+	public class ReferenceWithPortablePdbDeleteAction
+	{
 		static void Main ()
 		{
 		}

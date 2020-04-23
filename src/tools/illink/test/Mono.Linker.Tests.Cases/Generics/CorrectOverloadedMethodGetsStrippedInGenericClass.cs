@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Generics {
-	class CorrectOverloadedMethodGetsStrippedInGenericClass {
+namespace Mono.Linker.Tests.Cases.Generics
+{
+	class CorrectOverloadedMethodGetsStrippedInGenericClass
+	{
 		public static void Main ()
 		{
 			// Call overloaded method through the abstract base class
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Generics {
 		}
 
 		[KeptMember (".ctor()")]
-		public abstract class GenericClassWithTwoOverloadedAbstractMethods<T> {
+		public abstract class GenericClassWithTwoOverloadedAbstractMethods<T>
+		{
 			public abstract string OverloadedMethod (T thing); // Don't call this one, it should be stripped
 
 			[Kept]
@@ -19,7 +22,8 @@ namespace Mono.Linker.Tests.Cases.Generics {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (GenericClassWithTwoOverloadedAbstractMethods<System.Single>))]
-		public class SpecializedClassWithTwoOverloadedVirtualMethods : GenericClassWithTwoOverloadedAbstractMethods<float> {
+		public class SpecializedClassWithTwoOverloadedVirtualMethods : GenericClassWithTwoOverloadedAbstractMethods<float>
+		{
 			// Don't call this one, it should be stripped
 			public override string OverloadedMethod (float thing)
 			{

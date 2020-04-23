@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class ClassImplementingInterfaceMethodsNested {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	public class ClassImplementingInterfaceMethodsNested
+	{
 		public static void Main ()
 		{
 			IFoo i = new A ();
@@ -9,19 +11,22 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
 
-		interface IBar : IFoo {
+		interface IBar : IFoo
+		{
 			void Bar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class A : IBar {
+		class A : IBar
+		{
 			[Kept]
 			public void Foo ()
 			{

@@ -33,65 +33,65 @@ namespace ILLink.Tests
 			CommandHelper = new CommandHelper (logger);
 		}
 
-		protected void AddNuGetConfig(string projectRoot)
+		protected void AddNuGetConfig (string projectRoot)
 		{
-			var nugetConfig = Path.Combine(projectRoot, "NuGet.config");
-			var xdoc = new XDocument();
-			var configuration = new XElement("configuration");
-			var packageSources = new XElement("packageSources");
-			packageSources.Add(new XElement("add",
-						new XAttribute("key", "dotnet-core"),
-						new XAttribute("value", "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json")));
+			var nugetConfig = Path.Combine (projectRoot, "NuGet.config");
+			var xdoc = new XDocument ();
+			var configuration = new XElement ("configuration");
+			var packageSources = new XElement ("packageSources");
+			packageSources.Add (new XElement ("add",
+						new XAttribute ("key", "dotnet-core"),
+						new XAttribute ("value", "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json")));
 
-			configuration.Add(packageSources);
-			xdoc.Add(configuration);
+			configuration.Add (packageSources);
+			xdoc.Add (configuration);
 
-			using (var fs = new FileStream(nugetConfig, FileMode.Create)) {
-				xdoc.Save(fs);
+			using (var fs = new FileStream (nugetConfig, FileMode.Create)) {
+				xdoc.Save (fs);
 			}
 		}
 
-		protected void AddLinkerReference(string csproj)
+		protected void AddLinkerReference (string csproj)
 		{
-			var xdoc = XDocument.Load(csproj);
-			var ns = xdoc.Root.GetDefaultNamespace();
+			var xdoc = XDocument.Load (csproj);
+			var ns = xdoc.Root.GetDefaultNamespace ();
 
-			foreach (var el in xdoc.Root.Elements(ns + "PropertyGroup")) {
-				el.Add(new XElement(ns + "ILLinkTasksAssembly", TestContext.TasksAssemblyPath));
+			foreach (var el in xdoc.Root.Elements (ns + "PropertyGroup")) {
+				el.Add (new XElement (ns + "ILLinkTasksAssembly", TestContext.TasksAssemblyPath));
 				break;
 			}
 
 			// Workaround to avoid passing an argument that was removed (-l).
 			// This can be removed once we update to a recent SDK that does not pass this argument.
-			xdoc.Root.Add (new XElement(ns + "Target",
-				new XAttribute("Name", "_FixILLinkDefaults"),
-				new XAttribute("AfterTargets", "_SetILLinkDefaults"),
-				new XElement(ns + "PropertyGroup",
-					new XElement(ns + "_ExtraTrimmerArgs",
+			xdoc.Root.Add (new XElement (ns + "Target",
+				new XAttribute ("Name", "_FixILLinkDefaults"),
+				new XAttribute ("AfterTargets", "_SetILLinkDefaults"),
+				new XElement (ns + "PropertyGroup",
+					new XElement (ns + "_ExtraTrimmerArgs",
 					"--skip-unresolved true -c copyused -u copyused"))));
 
-			using (var fs = new FileStream(csproj, FileMode.Create)) {
-				xdoc.Save(fs);
+			using (var fs = new FileStream (csproj, FileMode.Create)) {
+				xdoc.Save (fs);
 			}
 		}
 
-		protected string CreateTestFolder(string projectName)
+		protected string CreateTestFolder (string projectName)
 		{
-			string tempFolder = Path.GetFullPath(Path.Combine("tests-temp", projectName));
-			Directory.CreateDirectory(tempFolder);
+			string tempFolder = Path.GetFullPath (Path.Combine ("tests-temp", projectName));
+			Directory.CreateDirectory (tempFolder);
 
 			// write empty Directory.Build.props and Directory.Build.targets to disable accidental import of arcade from repo root
-			File.WriteAllText(Path.Combine(tempFolder, "Directory.Build.props"), "<Project></Project>");
-			File.WriteAllText(Path.Combine(tempFolder, "Directory.Build.targets"), "<Project></Project>");
+			File.WriteAllText (Path.Combine (tempFolder, "Directory.Build.props"), "<Project></Project>");
+			File.WriteAllText (Path.Combine (tempFolder, "Directory.Build.targets"), "<Project></Project>");
 
-			return Path.Combine(tempFolder, projectName);
+			return Path.Combine (tempFolder, projectName);
 		}
 
-		protected void WriteEmbeddedResource(string resourceName, string destination)
+		protected void WriteEmbeddedResource (string resourceName, string destination)
 		{
-			var assembly = Assembly.GetExecutingAssembly();
-			var resourceStream = assembly.GetManifestResourceStream(resourceName);
-			resourceStream.CopyTo(File.Create(destination));
+			var assembly = Assembly.GetExecutingAssembly ();
+			var resourceStream = assembly.GetManifestResourceStream (resourceName);
+			resourceStream.CopyTo (File.Create (destination));
 		}
 	}
 
@@ -103,10 +103,10 @@ namespace ILLink.Tests
 		private readonly TestLogger logger;
 		protected readonly CommandHelper CommandHelper;
 
-		public IntegrationTestBase(ITestOutputHelper output)
+		public IntegrationTestBase (ITestOutputHelper output)
 		{
-			logger = new TestLogger(output);
-			CommandHelper = new CommandHelper(logger);
+			logger = new TestLogger (output);
+			CommandHelper = new CommandHelper (logger);
 		}
 
 		private void LogMessage (string message)
@@ -123,17 +123,17 @@ namespace ILLink.Tests
 		///   host for self-contained publish, or the dll containing
 		///   the entry point.
 		/// </summary>
-		public string BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null, bool selfContained = false)
+		public string BuildAndLink (string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null, bool selfContained = false)
 		{
-			string demoRoot = Path.GetDirectoryName(csproj);
+			string demoRoot = Path.GetDirectoryName (csproj);
 
 			string publishArgs = $"publish -c {TestContext.Configuration} /v:n /p:PublishTrimmed=true";
 			if (selfContained) {
 				publishArgs += $" -r {TestContext.RuntimeIdentifier}";
 			}
 			string rootFilesStr;
-			if (rootFiles != null && rootFiles.Any()) {
-				rootFilesStr = String.Join(";", rootFiles);
+			if (rootFiles != null && rootFiles.Any ()) {
+				rootFilesStr = String.Join (";", rootFiles);
 				publishArgs += $" /p:LinkerRootDescriptors={rootFilesStr}";
 			}
 			if (extraPublishArgs != null) {
@@ -141,48 +141,48 @@ namespace ILLink.Tests
 					publishArgs += $" /p:{item.Key}={item.Value}";
 				}
 			}
-			int ret = CommandHelper.Dotnet(publishArgs, demoRoot);
+			int ret = CommandHelper.Dotnet (publishArgs, demoRoot);
 
 			if (ret != 0) {
-				LogMessage("publish failed, returning " + ret);
-				Assert.True(false);
+				LogMessage ("publish failed, returning " + ret);
+				Assert.True (false);
 			}
 
 			// detect the target framework for which the app was published
-			string tfmDir = Path.Combine(demoRoot, "bin", TestContext.Configuration);
-			string tfm = Directory.GetDirectories(tfmDir).Select(p => Path.GetFileName(p)).Single();
-			string builtApp = Path.Combine(tfmDir, tfm);
+			string tfmDir = Path.Combine (demoRoot, "bin", TestContext.Configuration);
+			string tfm = Directory.GetDirectories (tfmDir).Select (p => Path.GetFileName (p)).Single ();
+			string builtApp = Path.Combine (tfmDir, tfm);
 			if (selfContained) {
-				builtApp = Path.Combine(builtApp, TestContext.RuntimeIdentifier);
+				builtApp = Path.Combine (builtApp, TestContext.RuntimeIdentifier);
 			}
-			builtApp = Path.Combine(builtApp, "publish",
-				Path.GetFileNameWithoutExtension(csproj));
+			builtApp = Path.Combine (builtApp, "publish",
+				Path.GetFileNameWithoutExtension (csproj));
 			if (selfContained) {
-				if (TestContext.RuntimeIdentifier.Contains("win")) {
+				if (TestContext.RuntimeIdentifier.Contains ("win")) {
 					builtApp += ".exe";
 				}
 			} else {
 				builtApp += ".dll";
 			}
-			Assert.True(File.Exists(builtApp));
+			Assert.True (File.Exists (builtApp));
 			return builtApp;
 		}
 
-		public int RunApp(string target, out string processOutput, int timeout = Int32.MaxValue,
+		public int RunApp (string target, out string processOutput, int timeout = Int32.MaxValue,
 			string terminatingOutput = null, bool selfContained = false)
 		{
-			Assert.True(File.Exists(target));
+			Assert.True (File.Exists (target));
 			int ret;
 			if (selfContained) {
-				ret = CommandHelper.RunCommand(
+				ret = CommandHelper.RunCommand (
 					target, null,
-					Directory.GetParent(target).FullName,
+					Directory.GetParent (target).FullName,
 					null, out processOutput, timeout, terminatingOutput);
 			} else {
-				ret = CommandHelper.RunCommand(
-					Path.GetFullPath(TestContext.DotnetToolPath),
-					Path.GetFullPath(target),
-					Directory.GetParent(target).FullName,
+				ret = CommandHelper.RunCommand (
+					Path.GetFullPath (TestContext.DotnetToolPath),
+					Path.GetFullPath (target),
+					Directory.GetParent (target).FullName,
 					null, out processOutput, timeout, terminatingOutput);
 			}
 			return ret;

@@ -1,10 +1,12 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
+namespace Mono.Linker.Tests.Cases.Basic
+{
 	[KeptDelegateCacheField ("0")]
 	[KeptDelegateCacheField ("1")]
-	class UsedEventIsKept {
+	class UsedEventIsKept
+	{
 		public static void Main ()
 		{
 			var tmp = new Foo ();
@@ -20,9 +22,10 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[KeptMember (".ctor()")]
-		public class Foo {
+		public class Foo
+		{
 			[Kept]
-			[KeptBaseType (typeof(MulticastDelegate))]
+			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
 			[KeptMember ("Invoke()")]
 			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]

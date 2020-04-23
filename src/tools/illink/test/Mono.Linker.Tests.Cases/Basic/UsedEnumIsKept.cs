@@ -2,8 +2,10 @@
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class UsedEnumIsKept {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class UsedEnumIsKept
+	{
 		static void Main ()
 		{
 			// Use all of the values in case we implement a feature in the future that removes unused values
@@ -24,8 +26,9 @@ namespace Mono.Linker.Tests.Cases.Basic {
 
 		[Kept]
 		[KeptMember ("value__")]
-		[KeptBaseType (typeof(Enum))]
-		enum Used {
+		[KeptBaseType (typeof (Enum))]
+		enum Used
+		{
 			[Kept]
 			One,
 

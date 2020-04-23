@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectBodyModified]
-		[ExpectedLocalsSequence (new string [0])]
+		[ExpectedLocalsSequence (new string[0])]
 		static void Test_1 ()
 		{
 			if (!AlwaysTrue) {
@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectBodyModified]
-		[ExpectedLocalsSequence (new string [] { "System.Object", "System.Int32" })]
+		[ExpectedLocalsSequence (new string[] { "System.Object", "System.Int32" })]
 		static int Test_2 (int arg)
 		{
 			if (!AlwaysTrue) {
@@ -47,7 +47,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectBodyModified]
-		[ExpectedLocalsSequence (new string [] { "System.Int32", "System.DateTime", "System.DateTimeOffset", "System.DateTimeOffset" })]
+		[ExpectedLocalsSequence (new string[] { "System.Int32", "System.DateTime", "System.DateTimeOffset", "System.DateTimeOffset" })]
 		static int Test_3 ()
 		{
 			var b = 3;

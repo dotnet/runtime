@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[KeptMemberInAssembly ("Library.dll", typeof (LibraryUsingForwarder), "GetValueFromOtherAssembly()")]
 	class UsedForwarderIsRemovedWhenLink
 	{
-		static void Main()
+		static void Main ()
 		{
 			Console.WriteLine (new ImplementationLibrary ().GetSomeValue ());
 			Console.WriteLine (new LibraryUsingForwarder ().GetValueFromOtherAssembly ());

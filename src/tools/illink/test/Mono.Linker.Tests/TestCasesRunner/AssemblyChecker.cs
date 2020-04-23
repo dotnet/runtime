@@ -8,13 +8,15 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public class AssemblyChecker {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public class AssemblyChecker
+	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 
 		HashSet<string> linkedMembers;
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
-		readonly HashSet<string> verifiedEventMethods = new HashSet<string>();
+		readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
@@ -75,7 +77,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
 				return;
-			
+
 			ModuleDefinition linkedModule = linked?.Module;
 
 			//
@@ -100,7 +102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (original.HasAttribute (nameof (CreatedMemberAttribute))) {
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
-					var newName = original.FullName + "::" + attr.ConstructorArguments [0].Value.ToString ();
+					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
 					Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
 				}
@@ -178,9 +180,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (expectedInterfaces.Count == 0) {
 				Assert.IsFalse (linked.HasInterfaces, $"Type `{src}' has unexpected interfaces");
 			} else {
-				foreach (var iface in linked.Interfaces) { 
-					if (!expectedInterfaces.Remove(iface.InterfaceType.FullName)) {
-						Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.Resolve().FullName), $"Type `{src}' interface `{iface.InterfaceType.Resolve().FullName}' should have been removed");
+				foreach (var iface in linked.Interfaces) {
+					if (!expectedInterfaces.Remove (iface.InterfaceType.FullName)) {
+						Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.Resolve ().FullName), $"Type `{src}' interface `{iface.InterfaceType.Resolve ().FullName}' should have been removed");
 					}
 				}
 
@@ -191,19 +193,19 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		static string FormatBaseOrInterfaceAttributeValue (CustomAttribute attr)
 		{
 			if (attr.ConstructorArguments.Count == 1)
-				return attr.ConstructorArguments [0].Value.ToString ();
-			
+				return attr.ConstructorArguments[0].Value.ToString ();
+
 			StringBuilder builder = new StringBuilder ();
-			builder.Append (attr.ConstructorArguments [0].Value);
+			builder.Append (attr.ConstructorArguments[0].Value);
 			builder.Append ("<");
 			bool separator = false;
-			foreach (var caa in (CustomAttributeArgument [])attr.ConstructorArguments [1].Value) {
+			foreach (var caa in (CustomAttributeArgument[]) attr.ConstructorArguments[1].Value) {
 				if (separator)
 					builder.Append (",");
 				else
 					separator = true;
 
-				var arg = (CustomAttributeArgument)caa.Value;
+				var arg = (CustomAttributeArgument) caa.Value;
 				builder.Append (arg.Value);
 			}
 
@@ -315,7 +317,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (keptBackingFieldAttribute == null)
 				return;
 
-			var backingFieldName = src.MetadataToken.TokenType == TokenType.Property 
+			var backingFieldName = src.MetadataToken.TokenType == TokenType.Property
 				? $"<{src.Name}>k__BackingField" : src.Name;
 			var srcField = src.DeclaringType.Fields.FirstOrDefault (f => f.Name == backingFieldName);
 
@@ -344,7 +346,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
-			VerifyCustomAttributes(src.MethodReturnType, linked.MethodReturnType);
+			VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
@@ -360,7 +362,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyInstructions (src, linked);
 			VerifyLocals (src, linked);
 		}
-		
+
 		protected static void VerifyInstructions (MethodDefinition src, MethodDefinition linked)
 		{
 			VerifyBodyProperties (
@@ -369,10 +371,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				nameof (ExpectedInstructionSequenceAttribute),
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
-				m => m.Body.Instructions.Select (ins => ins.OpCode.ToString ().ToLower()).ToArray (),
+				m => m.Body.Instructions.Select (ins => ins.OpCode.ToString ().ToLower ()).ToArray (),
 				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
 		}
-		
+
 		static void VerifyExceptionHandlers (MethodDefinition src, MethodDefinition linked)
 		{
 			VerifyBodyProperties (
@@ -399,8 +401,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected static void VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
 			string propertyDescription,
-			Func<MethodDefinition, string []> valueCollector,
-			Func<CustomAttribute, string []> getExpectFromSequenceAttribute)
+			Func<MethodDefinition, string[]> valueCollector,
+			Func<CustomAttribute, string[]> getExpectFromSequenceAttribute)
 		{
 			var expectedSequenceAttribute = src.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == sequenceAttributeName);
 			var linkedValues = valueCollector (linked);
@@ -412,13 +414,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					Is.Not.EquivalentTo (srcValues),
 					$"Expected method `{src} to have {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
 			} else if (expectedSequenceAttribute != null) {
-				var expected = getExpectFromSequenceAttribute(expectedSequenceAttribute).ToArray();
-				Assert.That(
+				var expected = getExpectFromSequenceAttribute (expectedSequenceAttribute).ToArray ();
+				Assert.That (
 					linkedValues,
 					Is.EquivalentTo (expected),
 					$"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}");
 			} else {
-				Assert.That(
+				Assert.That (
 					linkedValues,
 					Is.EquivalentTo (srcValues),
 					$"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
@@ -455,7 +457,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			if (fileNameOrAssemblyName.EndsWith (".dll") || fileNameOrAssemblyName.EndsWith (".exe") || fileNameOrAssemblyName.EndsWith (".winmd"))
 				return System.IO.Path.GetFileNameWithoutExtension (fileNameOrAssemblyName);
-			
+
 			// It must already be just the assembly name
 			return fileNameOrAssemblyName;
 		}
@@ -470,31 +472,31 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)
 		{
-			var expected = (MethodAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			var expected = (MethodAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 			Assert.AreEqual (expected, linked.Attributes, $"Method `{src}' pseudo attributes did not match expected");
 		}
 
 		protected virtual void VerifyPseudoAttributes (TypeDefinition src, TypeDefinition linked)
 		{
-			var expected = (TypeAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			var expected = (TypeAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 			Assert.AreEqual (expected, linked.Attributes, $"Type `{src}' pseudo attributes did not match expected");
 		}
 
 		protected virtual void VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
 		{
-			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 			Assert.AreEqual (expected, linked.Attributes, $"Field `{src}' pseudo attributes did not match expected");
 		}
 
 		protected virtual void VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
 		{
-			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 			Assert.AreEqual (expected, linked.Attributes, $"Property `{src}' pseudo attributes did not match expected");
 		}
 
 		protected virtual void VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
 		{
-			var expected = (EventAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			var expected = (EventAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 			Assert.AreEqual (expected, linked.Attributes, $"Event `{src}' pseudo attributes did not match expected");
 		}
 
@@ -527,25 +529,25 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			if (expectedIndicies.Length == 0 && !expectKeptAll)
 				return;
-			
+
 			if (!src.HasBody)
 				Assert.Fail ($"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
 
 			var srcImplementationDetails = src.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
-			
+
 			if (srcImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
 
 			var linkedImplementationDetails = linked.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
-			
+
 			if (linkedImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
-			
+
 			var possibleInitializerFields = src.Body.Instructions
 				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
-				.Select (ins => ((FieldReference)ins.Operand).Resolve ())
+				.Select (ins => ((FieldReference) ins.Operand).Resolve ())
 				.ToArray ();
-			
+
 			if (possibleInitializerFields.Length == 0)
 				Assert.Fail ($"`{src}` does not make use of any initializers");
 
@@ -557,7 +559,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			} else {
 				foreach (var index in expectedIndicies) {
 					if (index < 0 || index > possibleInitializerFields.Length)
-						Assert.Fail($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndicies.Length}");
+						Assert.Fail ($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndicies.Length}");
 
 					var srcField = possibleInitializerFields[index];
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.Name == srcField.Name);
@@ -580,8 +582,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		static bool IsLdtokenOnPrivateImplementationDetails (TypeDefinition privateImplementationDetails, Instruction instruction)
 		{
-			if (instruction.OpCode.Code == Code.Ldtoken && instruction.Operand is FieldReference field)
-			{
+			if (instruction.OpCode.Code == Code.Ldtoken && instruction.Operand is FieldReference field) {
 				return field.DeclaringType.Resolve () == privateImplementationDetails;
 			}
 
@@ -597,14 +598,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// Some versions of csc name it `<fieldname>e__FixedBuffer0`
 			// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
 			if (original is TypeDefinition srcDefinition && srcDefinition.Name.Contains ("__FixedBuffer")) {
-				var name = srcDefinition.Name.Substring (1, srcDefinition.Name.IndexOf('>') - 1);
+				var name = srcDefinition.Name.Substring (1, srcDefinition.Name.IndexOf ('>') - 1);
 				var fixedField = srcDefinition.DeclaringType.Fields.FirstOrDefault (f => f.Name == name);
 				if (fixedField == null)
 					Assert.Fail ($"Could not locate original fixed field for {srcDefinition}");
 
 				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
 					yield return additionalExpectedAttributesFromFixedField.ToString ();
-				
+
 			}
 		}
 
@@ -617,22 +618,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			foreach (var attr in linked.CustomAttributes) {
 				switch (attr.AttributeType.FullName) {
-					case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
-					case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
-						continue;
+				case "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute":
+				case "System.Runtime.CompilerServices.CompilerGeneratedAttribute":
+					continue;
 
-					// When mcs is used to compile the test cases, backing fields end up with this attribute on them
-					case "System.Diagnostics.DebuggerBrowsableAttribute":
-						continue;
+				// When mcs is used to compile the test cases, backing fields end up with this attribute on them
+				case "System.Diagnostics.DebuggerBrowsableAttribute":
+					continue;
 
-					// When compiling with roslyn, assemblies get the DebuggableAttribute by default.
-					case "System.Diagnostics.DebuggableAttribute":
-						continue;
+				// When compiling with roslyn, assemblies get the DebuggableAttribute by default.
+				case "System.Diagnostics.DebuggableAttribute":
+					continue;
 
-					case "System.Runtime.CompilerServices.CompilationRelaxationsAttribute":
-						if (linked is AssemblyDefinition)
-							continue;
-						break;
+				case "System.Runtime.CompilerServices.CompilationRelaxationsAttribute":
+					if (linked is AssemblyDefinition)
+						continue;
+					break;
 				}
 
 				yield return attr.AttributeType.FullName;
@@ -661,19 +662,19 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault (t => t.Name == originalCompilerGeneratedBufferType.Name);
 				if (linkedCompilerGeneratedBufferType == null)
 					Assert.Fail ($"Missing expected type {originalCompilerGeneratedBufferType}");
-				
+
 				// Have to verify the field before the type
 				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault (f => f.Name == "FixedElementField");
 				if (originalElementField == null)
 					Assert.Fail ($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
-				
+
 				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault (l => l.Name == originalElementField.Name);
 				VerifyFieldKept (originalElementField, linkedField);
 				verifiedGeneratedFields.Add (originalElementField.FullName);
 				linkedMembers.Remove (originalElementField.FullName);
-				
-				VerifyTypeDefinitionKept(originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
-				verifiedGeneratedTypes.Add(originalCompilerGeneratedBufferType.FullName);
+
+				VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
+				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
 			}
 		}
 
@@ -703,7 +704,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (src.HasGenericParameters) {
 				for (int i = 0; i < src.GenericParameters.Count; ++i) {
 					// TODO: Verify constraints
-					VerifyCustomAttributes (src.GenericParameters [i], linked.GenericParameters [i]);
+					VerifyCustomAttributes (src.GenericParameters[i], linked.GenericParameters[i]);
 				}
 			}
 		}
@@ -713,7 +714,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Assert.AreEqual (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {
 				for (int i = 0; i < src.Parameters.Count; ++i) {
-					VerifyCustomAttributes (src.Parameters [i], linked.Parameters [i]);
+					VerifyCustomAttributes (src.Parameters[i], linked.Parameters[i]);
 				}
 			}
 		}
@@ -729,7 +730,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (member.HasAttribute (nameof (KeptAttribute)))
 				return true;
 
-			ICustomAttributeProvider cap = (ICustomAttributeProvider)member.DeclaringType;
+			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
 			if (cap == null)
 				return false;
 
@@ -741,30 +742,30 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var removals = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (RemovedPseudoAttributeAttribute)).ToArray ();
 			var adds = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (AddedPseudoAttributeAttribute)).ToArray ();
 
-			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments [0].Value)) |
-				adds.Aggregate ((uint)0, (acum, item) => acum | (uint) item.ConstructorArguments [0].Value);
+			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments[0].Value)) |
+				adds.Aggregate ((uint) 0, (acum, item) => acum | (uint) item.ConstructorArguments[0].Value);
 		}
 
 		protected static IEnumerable<T> GetCustomAttributeCtorValues<T> (ICustomAttributeProvider provider, string attributeName) where T : class
 		{
 			return provider.CustomAttributes.
 							Where (w => w.AttributeType.Name == attributeName && w.Constructor.Parameters.Count == 1).
-							Select (l => l.ConstructorArguments [0].Value as T);
+							Select (l => l.ConstructorArguments[0].Value as T);
 		}
-		
+
 		protected static IEnumerable<string> GetStringOrTypeArrayAttributeValue (CustomAttribute attribute)
 		{
-			foreach (var arg in ((CustomAttributeArgument[]) attribute.ConstructorArguments [0].Value)) {
+			foreach (var arg in ((CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value)) {
 				if (arg.Value is TypeReference tRef)
 					yield return tRef.ToString ();
 				else
 					yield return (string) arg.Value;
 			}
 		}
-		
+
 		protected static IEnumerable<string> GetStringArrayAttributeValue (CustomAttribute attribute)
 		{
-			return ((CustomAttributeArgument[]) attribute.ConstructorArguments [0].Value)?.Select (arg => arg.Value.ToString ());
+			return ((CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value)?.Select (arg => arg.Value.ToString ());
 		}
 	}
 }

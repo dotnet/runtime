@@ -6,7 +6,7 @@ namespace CustomStep
 {
 	public class CustomStepUser : IStep
 	{
-		public void Process(LinkContext context)
+		public void Process (LinkContext context)
 		{
 			if (context.TryGetCustomData ("NewKey", out var value))
 				context.LogMessage ("Custom step added with custom data of " + value);

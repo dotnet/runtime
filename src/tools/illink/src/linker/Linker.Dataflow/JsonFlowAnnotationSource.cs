@@ -15,11 +15,11 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class JsonFlowAnnotationSource : IFlowAnnotationSource
 	{
-		readonly Dictionary<MethodDefinition, AnnotatedMethod> _methods = new Dictionary<MethodDefinition, AnnotatedMethod>();
-		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds>();
+		readonly Dictionary<MethodDefinition, AnnotatedMethod> _methods = new Dictionary<MethodDefinition, AnnotatedMethod> ();
+		readonly Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds> _properties = new Dictionary<PropertyDefinition, DynamicallyAccessedMemberKinds> ();
 		readonly Dictionary<FieldDefinition, DynamicallyAccessedMemberKinds> _fields = new Dictionary<FieldDefinition, DynamicallyAccessedMemberKinds> ();
 
-		public JsonFlowAnnotationSource(LinkContext context, string jsonFile)
+		public JsonFlowAnnotationSource (LinkContext context, string jsonFile)
 		{
 			Initialize (context, jsonFile);
 		}
@@ -31,8 +31,8 @@ namespace Mono.Linker.Dataflow
 
 		public DynamicallyAccessedMemberKinds GetParameterAnnotation (MethodDefinition method, int index)
 		{
-			if (_methods.TryGetValue(method, out var ann) && ann.ParameterAnnotations != null) {
-				string paramName = method.Parameters [index].Name;
+			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
+				string paramName = method.Parameters[index].Name;
 
 				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations)
 					if (ParamName == paramName)
@@ -64,21 +64,21 @@ namespace Mono.Linker.Dataflow
 			return 0;
 		}
 
-		static DynamicallyAccessedMemberKinds ParseKinds(JsonElement attributes)
+		static DynamicallyAccessedMemberKinds ParseKinds (JsonElement attributes)
 		{
 			foreach (var attribute in attributes.EnumerateObject ()) {
 				if (attribute.Name == "System.Runtime.CompilerServices.DynamicallyAccessedMembers") {
 					string value = attribute.Value.GetString ();
-					
+
 					// Enum.Parse accepts a comma as a separator for Flags
-					return (DynamicallyAccessedMemberKinds)Enum.Parse (typeof (DynamicallyAccessedMemberKinds), value);
+					return (DynamicallyAccessedMemberKinds) Enum.Parse (typeof (DynamicallyAccessedMemberKinds), value);
 				}
 			}
 
 			return 0;
 		}
 
-		private void Initialize(LinkContext context, string jsonFile)
+		private void Initialize (LinkContext context, string jsonFile)
 		{
 			// Need "using" because JsonDocument won't close this as part of Dispose().
 			using FileStream jsonFileStream = File.OpenRead (jsonFile);
@@ -116,11 +116,11 @@ namespace Mono.Linker.Dataflow
 							// Technically, '(' is a valid character in both method and field names,
 							// but the existing PreserveDependencyAttribute parser has a limitation in supporting
 							// that anyway, so we will use '(' to distinguish methods from fields/properties.
-							if (memberName.Contains("(")) {
+							if (memberName.Contains ("(")) {
 								// This is a method
 
 								// Parser uses same format as PreserveDependencyAttribute
-								string [] signature = null;
+								string[] signature = null;
 								memberName = memberName.Replace (" ", "");
 								var sign_start = memberName.IndexOf ('(');
 								var sign_end = memberName.LastIndexOf (')');
@@ -141,7 +141,7 @@ namespace Mono.Linker.Dataflow
 
 										bool sigMatch = true;
 										for (int i = 0; i < candidate.Parameters.Count; i++) {
-											if (candidate.Parameters [i].ParameterType.FullName != signature [i].ToCecilName ()) {
+											if (candidate.Parameters[i].ParameterType.FullName != signature[i].ToCecilName ()) {
 												sigMatch = false;
 												break;
 											}
@@ -176,7 +176,7 @@ namespace Mono.Linker.Dataflow
 								}
 
 								if (returnAnnotation != 0 || parameterAnnotations.Count > 0)
-									_methods [method] = new AnnotatedMethod (returnAnnotation, parameterAnnotations.ToArray ());
+									_methods[method] = new AnnotatedMethod (returnAnnotation, parameterAnnotations.ToArray ());
 							} else {
 								// This is a field or property
 								FieldDefinition field = null;
@@ -193,7 +193,7 @@ namespace Mono.Linker.Dataflow
 									DynamicallyAccessedMemberKinds fieldAnnotation = ParseKinds (member.Value);
 
 									if (fieldAnnotation != 0)
-										_fields [field] = fieldAnnotation;
+										_fields[field] = fieldAnnotation;
 									continue;
 								}
 
@@ -211,7 +211,7 @@ namespace Mono.Linker.Dataflow
 									DynamicallyAccessedMemberKinds propertyAnnotation = ParseKinds (member.Value);
 
 									if (propertyAnnotation != 0)
-										_properties [property] = propertyAnnotation;
+										_properties[property] = propertyAnnotation;
 								}
 
 								if (field == null && property == null) {
@@ -227,10 +227,10 @@ namespace Mono.Linker.Dataflow
 		private struct AnnotatedMethod
 		{
 			public readonly DynamicallyAccessedMemberKinds ReturnAnnotation;
-			public readonly (string ParamName, DynamicallyAccessedMemberKinds Annotation) [] ParameterAnnotations;
+			public readonly (string ParamName, DynamicallyAccessedMemberKinds Annotation)[] ParameterAnnotations;
 
 			public AnnotatedMethod (DynamicallyAccessedMemberKinds returnAnnotation,
-				(string ParamName, DynamicallyAccessedMemberKinds Annotation) [] paramAnnotations)
+				(string ParamName, DynamicallyAccessedMemberKinds Annotation)[] paramAnnotations)
 				=> (ReturnAnnotation, ParameterAnnotations) = (returnAnnotation, paramAnnotations);
 		}
 	}

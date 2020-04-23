@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				goto End;
 			t = typeof (BranchMergeGotoType2);
 
-			End:
+		End:
 			RequireFields (t); // keeps fields for both types
 		}
 
@@ -129,7 +129,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				goto End;
 			t = typeof (BranchGotoType2);
 			RequireFields (t);
-			End:
+		End:
 			return;
 		}
 

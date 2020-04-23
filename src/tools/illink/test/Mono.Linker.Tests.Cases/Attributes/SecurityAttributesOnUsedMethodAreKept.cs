@@ -3,9 +3,11 @@ using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes {
+namespace Mono.Linker.Tests.Cases.Attributes
+{
 	[SetupLinkerArgument ("--strip-security", "false")]
-	class SecurityAttributesOnUsedMethodAreKept {
+	class SecurityAttributesOnUsedMethodAreKept
+	{
 		static void Main ()
 		{
 			new Foo ().Method ();
@@ -13,7 +15,8 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[SecurityPermission (SecurityAction.LinkDemand)]
 			[Kept]
 			[KeptSecurity (typeof (SecurityPermissionAttribute))]

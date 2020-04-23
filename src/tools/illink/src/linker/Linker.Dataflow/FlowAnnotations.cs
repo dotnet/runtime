@@ -14,7 +14,7 @@ namespace Mono.Linker.Dataflow
 	class FlowAnnotations
 	{
 		readonly IFlowAnnotationSource _source;
-		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations>();
+		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
 
 		public FlowAnnotations (IFlowAnnotationSource annotationSource)
 		{
@@ -39,7 +39,7 @@ namespace Mono.Linker.Dataflow
 		public DynamicallyAccessedMemberKinds GetParameterAnnotation (MethodDefinition method, int parameterIndex)
 		{
 			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) && annotation.ParameterAnnotations != null) {
-				return annotation.ParameterAnnotations [parameterIndex];
+				return annotation.ParameterAnnotations[parameterIndex];
 			}
 
 			return 0;
@@ -63,9 +63,9 @@ namespace Mono.Linker.Dataflow
 			return 0;
 		}
 
-		private TypeAnnotations GetAnnotations(TypeDefinition type)
+		private TypeAnnotations GetAnnotations (TypeDefinition type)
 		{
-			if (!_annotations.TryGetValue(type, out TypeAnnotations value)) {
+			if (!_annotations.TryGetValue (type, out TypeAnnotations value)) {
 				value = BuildTypeAnnotations (type);
 				_annotations.Add (type, value);
 			}
@@ -97,7 +97,7 @@ namespace Mono.Linker.Dataflow
 			// Next go over all methods with an explicit annotation
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
-					DynamicallyAccessedMemberKinds [] paramAnnotations = null;
+					DynamicallyAccessedMemberKinds[] paramAnnotations = null;
 
 					// We convert indices from metadata space to IL space here.
 					// IL space assigns index 0 to the `this` parameter on instance methods.
@@ -107,17 +107,16 @@ namespace Mono.Linker.Dataflow
 						if (IsTypeInterestingForDataflow (method.DeclaringType)) {
 							DynamicallyAccessedMemberKinds ta = _source.GetThisParameterAnnotation (method);
 							if (ta != 0) {
-								paramAnnotations = new DynamicallyAccessedMemberKinds [method.Parameters.Count + offset];
-								paramAnnotations [0] = ta;
+								paramAnnotations = new DynamicallyAccessedMemberKinds[method.Parameters.Count + offset];
+								paramAnnotations[0] = ta;
 							}
 						}
-					}
-					else {
+					} else {
 						offset = 0;
 					}
 
-					for (int i = 0; i < method.Parameters.Count; i++) {						
-						if (!IsTypeInterestingForDataflow (method.Parameters [i].ParameterType)) {
+					for (int i = 0; i < method.Parameters.Count; i++) {
+						if (!IsTypeInterestingForDataflow (method.Parameters[i].ParameterType)) {
 							continue;
 						}
 
@@ -127,12 +126,12 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (paramAnnotations == null) {
-							paramAnnotations = new DynamicallyAccessedMemberKinds [method.Parameters.Count + offset];
+							paramAnnotations = new DynamicallyAccessedMemberKinds[method.Parameters.Count + offset];
 						}
-						paramAnnotations [i + offset] = pa;
+						paramAnnotations[i + offset] = pa;
 					}
 
-					DynamicallyAccessedMemberKinds returnAnnotation = IsTypeInterestingForDataflow(method.ReturnType) ?
+					DynamicallyAccessedMemberKinds returnAnnotation = IsTypeInterestingForDataflow (method.ReturnType) ?
 						_source.GetReturnParameterAnnotation (method) : 0;
 					if (returnAnnotation != 0 || paramAnnotations != null) {
 						annotatedMethods.Add (new MethodAnnotations (method, paramAnnotations, returnAnnotation));
@@ -156,7 +155,7 @@ namespace Mono.Linker.Dataflow
 
 			if (type.HasProperties) {
 				foreach (PropertyDefinition property in type.Properties) {
-					
+
 					if (!IsTypeInterestingForDataflow (property.PropertyType)) {
 						continue;
 					}
@@ -182,8 +181,8 @@ namespace Mono.Linker.Dataflow
 						} else {
 							int offset = setMethod.HasImplicitThis () ? 1 : 0;
 							if (setMethod.Parameters.Count > 0) {
-								DynamicallyAccessedMemberKinds [] paramAnnotations = new DynamicallyAccessedMemberKinds [setMethod.Parameters.Count + offset];
-								paramAnnotations [offset] = annotation;
+								DynamicallyAccessedMemberKinds[] paramAnnotations = new DynamicallyAccessedMemberKinds[setMethod.Parameters.Count + offset];
+								paramAnnotations[offset] = annotation;
 								annotatedMethods.Add (new MethodAnnotations (setMethod, paramAnnotations, 0));
 							}
 						}
@@ -226,7 +225,7 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			return new TypeAnnotations (annotatedMethods.ToArray(), annotatedFields.ToArray());
+			return new TypeAnnotations (annotatedMethods.ToArray (), annotatedFields.ToArray ());
 		}
 
 		private bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
@@ -239,20 +238,20 @@ namespace Mono.Linker.Dataflow
 
 			foreach (Instruction instruction in body.Instructions) {
 				switch (instruction.OpCode.Code) {
-					case Code.Ldsfld when !write:
-					case Code.Ldfld when !write:
-					case Code.Stsfld when write:
-					case Code.Stfld when write:
+				case Code.Ldsfld when !write:
+				case Code.Ldfld when !write:
+				case Code.Stsfld when write:
+				case Code.Stfld when write:
 
-						if (foundReference != null) {
-							// This writes/reads multiple fields - can't guess which one is the backing store.
-							// Return failure.
-							found = null;
-							return false;
-						}
+					if (foundReference != null) {
+						// This writes/reads multiple fields - can't guess which one is the backing store.
+						// Return failure.
+						found = null;
+						return false;
+					}
 
-						foundReference = (FieldReference)instruction.Operand;
-						break;
+					foundReference = (FieldReference) instruction.Operand;
+					break;
 				}
 			}
 
@@ -273,7 +272,7 @@ namespace Mono.Linker.Dataflow
 
 			if (found.DeclaringType != body.Method.DeclaringType ||
 				found.IsStatic != body.Method.IsStatic ||
-				!found.IsCompilerGenerated()) {
+				!found.IsCompilerGenerated ()) {
 				// A couple heuristics to make sure we got the right field.
 				// Return failure.
 				found = null;
@@ -283,7 +282,7 @@ namespace Mono.Linker.Dataflow
 			return true;
 		}
 
-		private static bool IsTypeInterestingForDataflow(TypeReference typeReference)
+		private static bool IsTypeInterestingForDataflow (TypeReference typeReference)
 		{
 			// We will accept any System.Type* as interesting to enable testing
 			// It's necessary to be able to implement a custom "Type" type in tests to validate
@@ -295,13 +294,13 @@ namespace Mono.Linker.Dataflow
 
 		readonly struct TypeAnnotations
 		{
-			readonly MethodAnnotations [] _annotatedMethods;
-			readonly FieldAnnotation [] _annotatedFields;
+			readonly MethodAnnotations[] _annotatedMethods;
+			readonly FieldAnnotation[] _annotatedFields;
 
-			public TypeAnnotations (MethodAnnotations [] annotatedMethods, FieldAnnotation [] annotatedFields)
+			public TypeAnnotations (MethodAnnotations[] annotatedMethods, FieldAnnotation[] annotatedFields)
 				=> (_annotatedMethods, _annotatedFields) = (annotatedMethods, annotatedFields);
 
-			public bool TryGetAnnotation(MethodDefinition method, out MethodAnnotations annotations)
+			public bool TryGetAnnotation (MethodDefinition method, out MethodAnnotations annotations)
 			{
 				annotations = default;
 
@@ -341,10 +340,10 @@ namespace Mono.Linker.Dataflow
 		readonly struct MethodAnnotations
 		{
 			public readonly MethodDefinition Method;
-			public readonly DynamicallyAccessedMemberKinds [] ParameterAnnotations;
+			public readonly DynamicallyAccessedMemberKinds[] ParameterAnnotations;
 			public readonly DynamicallyAccessedMemberKinds ReturnParameterAnnotation;
 
-			public MethodAnnotations (MethodDefinition method, DynamicallyAccessedMemberKinds [] paramAnnotations, DynamicallyAccessedMemberKinds returnParamAnnotations)
+			public MethodAnnotations (MethodDefinition method, DynamicallyAccessedMemberKinds[] paramAnnotations, DynamicallyAccessedMemberKinds returnParamAnnotations)
 				=> (Method, ParameterAnnotations, ReturnParameterAnnotation) = (method, paramAnnotations, returnParamAnnotations);
 		}
 

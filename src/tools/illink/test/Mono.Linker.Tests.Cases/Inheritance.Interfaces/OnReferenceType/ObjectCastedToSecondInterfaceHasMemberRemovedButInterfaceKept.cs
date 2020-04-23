@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class ObjectCastedToSecondInterfaceHasMemberRemovedButInterfaceKept {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	public class ObjectCastedToSecondInterfaceHasMemberRemovedButInterfaceKept
+	{
 		public static void Main ()
 		{
 			IFoo i = new A ();
@@ -10,13 +12,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
-		
+
 		[Kept]
-		interface IBar {
+		interface IBar
+		{
 			void Bar ();
 		}
 
@@ -24,7 +28,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
 		[KeptInterface (typeof (IBar))]
-		class A : IBar, IFoo {
+		class A : IBar, IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{

@@ -6,7 +6,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
 {
 	[StructLayout (LayoutKind.Auto)]
 	[KeptMember (".ctor()")]
-	class AutoClassData {
+	class AutoClassData
+	{
 		public int never_used;
 		[Kept]
 		public int used;

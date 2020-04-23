@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 {
 	public class CoreLibEmulator
 	{
-		public static void Test()
+		public static void Test ()
 		{
 #if INCLUDE_CORELIB_IMPL
 			Type t = new Type();

@@ -2,9 +2,11 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Inheritance.Interfaces.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	[SetupCompileBefore("library.dll", new []{"../Dependencies/InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.cs"})]
-	public class InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	[SetupCompileBefore ("library.dll", new[] { "../Dependencies/InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.cs" })]
+	public class InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed
+	{
 		public static void Main ()
 		{
 			Helper (null);
@@ -17,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		[KeptInterface (typeof(InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.IFoo))]
+		[KeptInterface (typeof (InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.IFoo))]
 		interface IBar : InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.IFoo
 		{
 		}

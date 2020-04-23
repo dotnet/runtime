@@ -2,7 +2,8 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	class ClassUsedFromInterfaceHasInterfaceMethodKept {
+	class ClassUsedFromInterfaceHasInterfaceMethodKept
+	{
 		public static void Main ()
 		{
 			IFoo a = new A ();
@@ -12,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class A : IFoo {
+		class A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -20,7 +22,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 		}
 
 		[Kept]
-		public interface IFoo {
+		public interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}

@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval {
-	public class OverrideThatAlsoFulfilsInterface {
+namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval
+{
+	public class OverrideThatAlsoFulfilsInterface
+	{
 		public static void Main ()
 		{
 			Base b = HelperToMarkFooAndRequireBase ();
@@ -25,7 +27,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		}
 
 		[Kept]
-		class Base {
+		class Base
+		{
 			[Kept]
 			public virtual void Method ()
 			{
@@ -33,7 +36,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Method ();
 		}
@@ -41,7 +45,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class Bar : IFoo {
+		class Bar : IFoo
+		{
 			[Kept]
 			public void Method ()
 			{
@@ -50,7 +55,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 
 		[Kept]
 		[KeptBaseType (typeof (Base))]
-		class Foo : Base, IFoo {
+		class Foo : Base, IFoo
+		{
 			public override void Method ()
 			{
 			}

@@ -27,14 +27,14 @@ namespace ILLink.Tasks
 		///   Maps to '-reference', and possibly '-p', '--enable-opt', '--disable-opt'
 		/// </summary>
 		[Required]
-		public ITaskItem [] AssemblyPaths { get; set; }
+		public ITaskItem[] AssemblyPaths { get; set; }
 
 		/// <summary>
 		///    Paths to assembly files that are reference assemblies,
 		///    representing the surface area for compilation.
 		///    Maps to '-reference', with action set to 'skip' via '-p'.
 		/// </summary>
-		public ITaskItem [] ReferenceAssemblyPaths { get; set; }
+		public ITaskItem[] ReferenceAssemblyPaths { get; set; }
 
 		/// <summary>
 		///   The names of the assemblies to root. This should contain
@@ -47,7 +47,7 @@ namespace ILLink.Tasks
 		///   files, or pass extra arguments for illink.
 		/// </summary>
 		[Required]
-		public ITaskItem [] RootAssemblyNames { get; set; }
+		public ITaskItem[] RootAssemblyNames { get; set; }
 
 		/// <summary>
 		///   The directory in which to place linked assemblies.
@@ -62,7 +62,7 @@ namespace ILLink.Tasks
 		///   documentation for details about the format.
 		///   Maps to '-x'.
 		/// </summary>
-		public ITaskItem [] RootDescriptorFiles { get; set; }
+		public ITaskItem[] RootDescriptorFiles { get; set; }
 
 		/// <summary>
 		///   Boolean specifying whether to enable beforefieldinit optimization globally.
@@ -112,7 +112,7 @@ namespace ILLink.Tasks
 		///   the feature setting.
 		///   Maps to '--feature'.
 		/// </summary>
-		public ITaskItem [] FeatureSettings { get; set; }
+		public ITaskItem[] FeatureSettings { get; set; }
 
 		/// <summary>
 		///   Boolean specifying whether to enable sealer optimization globally.
@@ -121,7 +121,7 @@ namespace ILLink.Tasks
 		public bool Sealer { set => _sealer = value; }
 		bool? _sealer;
 
-		static readonly string [] _optimizationNames = new string [] {
+		static readonly string[] _optimizationNames = new string[] {
 			"BeforeFieldInit",
 			"OverrideRemoval",
 			"UnreachableBodies",
@@ -173,16 +173,14 @@ namespace ILLink.Tasks
 		///   It is an error to specify both BeforeStep and AfterStep.
 		///   Maps to '--custom-step'.
 		/// </summary>
-		public ITaskItem [] CustomSteps { get; set; }
+		public ITaskItem[] CustomSteps { get; set; }
 
 		private readonly static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
 		private string _dotnetPath;
 
-		private string DotNetPath
-		{
-			get
-			{
+		private string DotNetPath {
+			get {
 				if (!String.IsNullOrEmpty (_dotnetPath))
 					return _dotnetPath;
 
@@ -196,7 +194,7 @@ namespace ILLink.Tasks
 
 
 		/// ToolTask implementation
-		
+
 		protected override MessageImportance StandardErrorLoggingImportance => MessageImportance.High;
 
 		protected override string ToolName => Path.GetFileName (DotNetPath);
@@ -220,7 +218,7 @@ namespace ILLink.Tasks
 
 		private static string Quote (string path)
 		{
-			return $"\"{path.TrimEnd('\\')}\"";
+			return $"\"{path.TrimEnd ('\\')}\"";
 		}
 
 		protected override string GenerateCommandLineCommands ()
@@ -341,9 +339,9 @@ namespace ILLink.Tasks
 				foreach (var featureSetting in FeatureSettings) {
 					var feature = featureSetting.ItemSpec;
 					var featureValue = featureSetting.GetMetadata ("Value");
-					if (String.IsNullOrEmpty(featureValue))
+					if (String.IsNullOrEmpty (featureValue))
 						throw new ArgumentException ("feature settings require \"Value\" metadata");
-					args.Append ("--feature ").Append (feature).Append(" ").AppendLine (featureValue);
+					args.Append ("--feature ").Append (feature).Append (" ").AppendLine (featureValue);
 				}
 			}
 

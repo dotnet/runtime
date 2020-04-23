@@ -3,7 +3,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.TestFramework {
+namespace Mono.Linker.Tests.Cases.TestFramework
+{
 	[SetupCSharpCompilerToUse ("csc")]
 
 	// Use all of the compiler setup attributes so that we can verify they all work
@@ -13,11 +14,12 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 	[Define ("VERIFY_DEFINE_WORKS")]
 	[Reference ("System.dll")]
 
-	[SetupCompileBefore ("library.dll", new [] { "Dependencies/CanCompileTestCaseWithCsc_Lib.cs" }, compilerToUse: "csc")]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/CanCompileTestCaseWithCsc_Lib.cs" }, compilerToUse: "csc")]
 
 	[KeptResource ("CanCompileTestCaseWithCsc.txt")]
 	[KeptMemberInAssembly ("library.dll", typeof (CanCompileTestCaseWithCsc_Lib), "Used()")]
-	class CanCompileTestCaseWithCsc {
+	class CanCompileTestCaseWithCsc
+	{
 		static void Main ()
 		{
 #if VERIFY_DEFINE_WORKS

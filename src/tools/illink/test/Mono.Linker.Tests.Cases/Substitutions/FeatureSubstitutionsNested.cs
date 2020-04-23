@@ -14,47 +14,52 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupLinkerArgument ("--feature", "FieldCondition", "true")]
 	public class FeatureSubstitutionsNested
 	{
-		public static void Main () {
+		public static void Main ()
+		{
 			GlobalConditionMethod ();
 			AssemblyConditionMethod ();
 			TypeConditionMethod ();
 			MethodConditionMethod ();
 			_ = FieldConditionField;
 		}
-		
+
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.1",
 			"ret",
 		})]
-		static bool GlobalConditionMethod () {
+		static bool GlobalConditionMethod ()
+		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.0",
 			"ret",
 		})]
-		static bool AssemblyConditionMethod () {
+		static bool AssemblyConditionMethod ()
+		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.1",
 			"ret",
 		})]
-		static bool TypeConditionMethod () {
+		static bool TypeConditionMethod ()
+		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.0",
 			"ret",
 		})]
-		static bool MethodConditionMethod () {
+		static bool MethodConditionMethod ()
+		{
 			throw new NotImplementedException ();
 		}
 
@@ -62,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		static readonly bool FieldConditionField;
 
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"nop",
 			"ldc.i4.1",
 			"stsfld",

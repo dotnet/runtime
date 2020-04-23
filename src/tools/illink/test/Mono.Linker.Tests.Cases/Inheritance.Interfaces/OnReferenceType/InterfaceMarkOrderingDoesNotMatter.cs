@@ -1,18 +1,20 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class InterfaceMarkOrderingDoesNotMatter {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	public class InterfaceMarkOrderingDoesNotMatter
+	{
 		public static void Main ()
 		{
 			CauseAToBeMarked ().AMethod ();
 			CauseZToBeMarked ().ZMethod ();
-			
+
 			MMarked m = new MMarked ();
 
 			B b = m;
 			Y y = m;
 			Nested.F f = m;
-			
+
 			b.BMethod ();
 			y.YMethod ();
 			f.FMethod ();
@@ -23,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		{
 			return null;
 		}
-		
+
 		[Kept]
 		static Z CauseZToBeMarked ()
 		{
@@ -31,19 +33,22 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		interface A {
+		interface A
+		{
 			[Kept]
 			void AMethod ();
 		}
 
 		[Kept]
-		interface Z {
+		interface Z
+		{
 			[Kept]
 			void ZMethod ();
 		}
-		
+
 		[Kept]
-		interface C {
+		interface C
+		{
 			[Kept]
 			void CMethod ();
 		}
@@ -58,9 +63,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		[KeptInterface (typeof (Y))]
 		[KeptInterface (typeof (Z))]
 		[KeptInterface (typeof (E))]
-		class MMarked : A, B, Y, Z, C, D, Nested.F, E {
+		class MMarked : A, B, Y, Z, C, D, Nested.F, E
+		{
 			[Kept]
-			public void AMethod()
+			public void AMethod ()
 			{
 			}
 
@@ -101,34 +107,40 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		public static class Nested {
+		public static class Nested
+		{
 			[Kept]
-			public interface F {
+			public interface F
+			{
 				[Kept]
 				void FMethod ();
 			}
 		}
 
 		[Kept]
-		interface B {
+		interface B
+		{
 			[Kept]
 			void BMethod ();
 		}
 
 		[Kept]
-		interface Y {
+		interface Y
+		{
 			[Kept]
 			void YMethod ();
 		}
 
 		[Kept]
-		interface D {
+		interface D
+		{
 			[Kept]
 			void DMethod ();
 		}
 
 		[Kept]
-		interface E {
+		interface E
+		{
 			[Kept]
 			void EMethod ();
 		}

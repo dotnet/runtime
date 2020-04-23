@@ -3,22 +3,24 @@ using Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.PreserveDependencies {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies
+{
 	/// <summary>
 	/// This test is here to ensure that link xml embedded in an assembly used by a [PreserveDependency] is not processed if the dependency is not used
 	/// </summary>
 	[IncludeBlacklistStep (true)]
-	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
+	[SetupCompileBefore ("base.dll", new[] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore (
 		"PreserveDependencyMethodInNonReferencedAssemblyLibrary.dll",
-		new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" },
-		references: new [] { "base.dll" },
-		resources: new [] {"Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml"},
+		new[] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" },
+		references: new[] { "base.dll" },
+		resources: new[] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" },
 		addAsReference: false)]
 	[KeptAssembly ("base.dll")]
 	[RemovedAssembly ("PreserveDependencyMethodInNonReferencedAssemblyLibrary.dll")]
-	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml {
+	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml
+	{
 		public static void Main ()
 		{
 			var obj = new Foo ();
@@ -33,7 +35,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (PreserveDependencyMethodInNonReferencedAssemblyBase))]
-		class Foo : PreserveDependencyMethodInNonReferencedAssemblyBase {
+		class Foo : PreserveDependencyMethodInNonReferencedAssemblyBase
+		{
 			[Kept]
 			public override string Method ()
 			{

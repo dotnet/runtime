@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class InterfaceUsedOnlyAsConstraintIsKept {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
+{
+	public class InterfaceUsedOnlyAsConstraintIsKept
+	{
 		public static void Main ()
 		{
 			var a = new A ();
@@ -14,14 +16,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			void Foo ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class A : IFoo {
+		class A : IFoo
+		{
 			public void Foo ()
 			{
 			}

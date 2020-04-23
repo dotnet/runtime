@@ -137,7 +137,8 @@ namespace Mono.Linker.Steps
 
 		static void MarkType (LinkContext context, TypeDefinition type, RootVisibility rootVisibility)
 		{
-			bool markType = rootVisibility switch {
+			bool markType = rootVisibility switch
+			{
 				RootVisibility.PublicAndFamilyAndAssembly => !type.IsNestedPrivate,
 				RootVisibility.PublicAndFamily => type.IsPublic || type.IsNestedPublic || type.IsNestedFamily || type.IsNestedFamilyOrAssembly,
 				_ => true
@@ -171,7 +172,8 @@ namespace Mono.Linker.Steps
 		static void MarkFields (LinkContext context, Collection<FieldDefinition> fields, RootVisibility rootVisibility)
 		{
 			foreach (FieldDefinition field in fields) {
-				bool markField = rootVisibility switch {
+				bool markField = rootVisibility switch
+				{
 					RootVisibility.PublicAndFamily => field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly,
 					RootVisibility.PublicAndFamilyAndAssembly => field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly || field.IsAssembly || field.IsFamilyAndAssembly,
 					_ => true
@@ -190,7 +192,8 @@ namespace Mono.Linker.Steps
 
 		static void MarkMethod (LinkContext context, MethodDefinition method, MethodAction action, RootVisibility rootVisibility)
 		{
-			bool markMethod = rootVisibility switch {
+			bool markMethod = rootVisibility switch
+			{
 				RootVisibility.PublicAndFamily => method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly,
 				RootVisibility.PublicAndFamilyAndAssembly => method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly || method.IsAssembly || method.IsFamilyAndAssembly,
 				_ => true

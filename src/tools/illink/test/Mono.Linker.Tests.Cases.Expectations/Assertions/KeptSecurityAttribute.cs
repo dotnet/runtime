@@ -1,8 +1,10 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-	public class KeptSecurityAttribute : KeptAttribute {
+	public class KeptSecurityAttribute : KeptAttribute
+	{
 		public KeptSecurityAttribute (string attributeName)
 		{
 			if (string.IsNullOrEmpty (attributeName))

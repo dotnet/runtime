@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupLinkerSubstitutionFile ("StubBodyInvalidSyntax.xml")]
 	public class StubBodyInvalidSyntax
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			new StubBodyInvalidSyntax ();
 
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		public StubBodyInvalidSyntax()
+		public StubBodyInvalidSyntax ()
 		{
 			throw new NotImplementedException ();
 		}
@@ -56,19 +56,19 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		static bool TestMethod_5()
+		static bool TestMethod_5 ()
 		{
 			return true;
 		}
 
 		[Kept]
-		static void TestMethod_6()
+		static void TestMethod_6 ()
 		{
 			TestMethod_5 ();
 		}
 
 		[Kept]
-		static double TestMethod_7()
+		static double TestMethod_7 ()
 		{
 			throw new NotImplementedException ();
 		}
@@ -80,25 +80,25 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		}
 
 		[Kept]
-		static float TestMethod_9()
+		static float TestMethod_9 ()
 		{
 			throw new NotImplementedException ();
 		}
 
 		[Kept]
-		static ulong TestMethod_10()
+		static ulong TestMethod_10 ()
 		{
 			throw new NotImplementedException ();
-		}			
+		}
 
 		[Kept]
-		static long[] TestMethod_11()
+		static long[] TestMethod_11 ()
 		{
 			throw new NotImplementedException ();
-		}			
+		}
 
 		[Kept]
-		static object TestMethod_12()
+		static object TestMethod_12 ()
 		{
 			throw new NotImplementedException ();
 		}

@@ -1,8 +1,10 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Struct | AttributeTargets.Enum, AllowMultiple = true, Inherited = false)]
-	public sealed class KeptMemberAttribute : KeptAttribute {
+	public sealed class KeptMemberAttribute : KeptAttribute
+	{
 
 		public KeptMemberAttribute (string name)
 		{

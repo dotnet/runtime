@@ -1,11 +1,13 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	/// <summary>
 	/// Verifies that an assembly does not exist in the output directory
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
-	public class RemovedAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
+	public class RemovedAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute
+	{
 
 		public RemovedAssemblyAttribute (string fileName)
 		{

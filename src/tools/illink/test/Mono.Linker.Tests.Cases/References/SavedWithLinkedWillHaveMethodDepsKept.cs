@@ -2,17 +2,19 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.References.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.References {
-	[SetupCSharpCompilerToUse("csc")]
-	[SetupLinkerAction("save", "test")]
-	[SetupCompileBefore("linked.dll", new [] {typeof (WithLinked_Methods)})]
+namespace Mono.Linker.Tests.Cases.References
+{
+	[SetupCSharpCompilerToUse ("csc")]
+	[SetupLinkerAction ("save", "test")]
+	[SetupCompileBefore ("linked.dll", new[] { typeof (WithLinked_Methods) })]
 
-	[KeptMember(".ctor()")]
+	[KeptMember (".ctor()")]
 	[KeptMemberInAssembly ("linked.dll", typeof (WithLinked_Methods), nameof (WithLinked_Methods.UsedByPublic) + "()")]
 	[KeptMemberInAssembly ("linked.dll", typeof (WithLinked_Methods), nameof (WithLinked_Methods.UsedByInternal) + "()")]
 	[KeptMemberInAssembly ("linked.dll", typeof (WithLinked_Methods), nameof (WithLinked_Methods.UsedByPrivate) + "()")]
-	public class SavedWithLinkedWillHaveMethodDepsKept {
-		public static void Main()
+	public class SavedWithLinkedWillHaveMethodDepsKept
+	{
+		public static void Main ()
 		{
 		}
 
@@ -27,9 +29,9 @@ namespace Mono.Linker.Tests.Cases.References {
 		{
 			WithLinked_Methods.UsedByInternal ();
 		}
-		
+
 		[Kept]
-		static void UnusedPrivate()
+		static void UnusedPrivate ()
 		{
 			WithLinked_Methods.UsedByPrivate ();
 		}

@@ -1,12 +1,15 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Basic {
-	class UnusedEnumGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Basic
+{
+	class UnusedEnumGetsRemoved
+	{
 		static void Main ()
 		{
 		}
 
-		enum Unused {
+		enum Unused
+		{
 			One,
 			Two,
 			Three

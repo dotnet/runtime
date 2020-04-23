@@ -1,7 +1,9 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
-	class HarderToDetectUnusedVirtualMethodGetsRemoved {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
+{
+	class HarderToDetectUnusedVirtualMethodGetsRemoved
+	{
 		public static void Main ()
 		{
 			new Base ().Call ();
@@ -14,14 +16,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Base {
+		class Base
+		{
 			[Kept]
 			public virtual void Call ()
 			{
 			}
 		}
 
-		class B : Base {
+		class B : Base
+		{
 			public override void Call ()
 			{
 			}

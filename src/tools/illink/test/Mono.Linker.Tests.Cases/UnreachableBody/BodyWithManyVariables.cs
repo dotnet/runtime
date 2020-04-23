@@ -1,10 +1,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
-	public class BodyWithManyVariables {
-		public static void Main()
+	public class BodyWithManyVariables
+	{
+		public static void Main ()
 		{
 			UsedToMarkMethod (null);
 		}
@@ -16,7 +18,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		}
 
 		[Kept]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			[ExpectBodyModified]
 			[ExpectLocalsModified]
@@ -37,37 +40,43 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 			}
 		}
 
-		class Bar1 {
+		class Bar1
+		{
 			public void Method ()
 			{
 			}
 		}
 
-		class Bar2 {
-			public void Method ()
-			{
-			}
-		}
-		
-		class Bar3 {
+		class Bar2
+		{
 			public void Method ()
 			{
 			}
 		}
 
-		class Bar4 {
-			public void Method ()
-			{
-			}
-		}
-		
-		class Bar5 {
+		class Bar3
+		{
 			public void Method ()
 			{
 			}
 		}
 
-		class Bar6 {
+		class Bar4
+		{
+			public void Method ()
+			{
+			}
+		}
+
+		class Bar5
+		{
+			public void Method ()
+			{
+			}
+		}
+
+		class Bar6
+		{
 			public void Method ()
 			{
 			}

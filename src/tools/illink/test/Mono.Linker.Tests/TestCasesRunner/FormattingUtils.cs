@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
-	public static class FormattingUtils {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
+	public static class FormattingUtils
+	{
 		public static string FormatSequenceCompareFailureMessage (IEnumerable<string> actual, IEnumerable<string> expected)
 		{
 			var builder = new StringBuilder ();
@@ -16,7 +18,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			builder.AppendLine ($"Actual/Linked (Total : {actual.Count ()})");
 			builder.AppendLine ("---------------");
 			// Format in a quoted array form for easier copying into a expected sequence attribute
-			builder.AppendLine (actual.Select(c => $"\"{c}\",").AggregateWithNewLine ());
+			builder.AppendLine (actual.Select (c => $"\"{c}\",").AggregateWithNewLine ());
 			builder.AppendLine ("---------------");
 			return builder.ToString ();
 		}
@@ -28,21 +30,21 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			builder.AppendLine ($"Expected (Total : {expected.Count ()})");
 			builder.AppendLine ("---------------");
 			// Format in a quoted array form for easier copying into a expected sequence attribute
-			builder.AppendLine (expected.Select(c => $"\"{c}\",").AggregateWithNewLine ());
+			builder.AppendLine (expected.Select (c => $"\"{c}\",").AggregateWithNewLine ());
 			builder.AppendLine ("---------------");
 			builder.AppendLine ($"Actual/Linked (Total : {actual.Count ()})");
 			builder.AppendLine ("---------------");
 			// Format in a quoted array form for easier copying into a expected sequence attribute
-			builder.AppendLine (actual.Select(c => $"\"{c}\",").AggregateWithNewLine ());
+			builder.AppendLine (actual.Select (c => $"\"{c}\",").AggregateWithNewLine ());
 			builder.AppendLine ("---------------");
-			builder.AppendLine ($"Original (Total : {original.Count()})");
+			builder.AppendLine ($"Original (Total : {original.Count ()})");
 			builder.AppendLine ("---------------");
 			// Format in a quoted array form for easier copying into a expected sequence attribute
-			builder.AppendLine (original.Select(c => $"\"{c}\",").AggregateWithNewLine ());
+			builder.AppendLine (original.Select (c => $"\"{c}\",").AggregateWithNewLine ());
 			builder.AppendLine ("---------------");
 			return builder.ToString ();
 		}
-		
+
 		private static string AggregateWithNewLine (this IEnumerable<string> elements)
 		{
 			return elements.AggregateWith (System.Environment.NewLine);

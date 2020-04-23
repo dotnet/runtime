@@ -1,10 +1,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.UnreachableBody {
+namespace Mono.Linker.Tests.Cases.UnreachableBody
+{
 	[SetupLinkerArgument ("--disable-opt", "unreachablebodies")]
-	public class CanDisableLazyBodyMarking {
-		public static void Main()
+	public class CanDisableLazyBodyMarking
+	{
+		public static void Main ()
 		{
 			UsedToMarkMethod (null);
 		}
@@ -16,7 +18,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 		}
 
 		[Kept]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			public void Method ()
 			{

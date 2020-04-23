@@ -32,12 +32,14 @@ using System.IO;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
 #if FEATURE_ILLINK
 	public class AssemblyResolver : DirectoryAssemblyResolver {
 #else
-	public class AssemblyResolver : BaseAssemblyResolver {
+	public class AssemblyResolver : BaseAssemblyResolver
+	{
 #endif
 
 		readonly Dictionary<string, AssemblyDefinition> _assemblies;
@@ -83,7 +85,7 @@ namespace Mono.Linker {
 		}
 #endif
 
-		public string GetAssemblyFileName(AssemblyDefinition assembly)
+		public string GetAssemblyFileName (AssemblyDefinition assembly)
 		{
 #if FEATURE_ILLINK
 			if (assemblyToPath.TryGetValue(assembly, out string path)) {
@@ -113,7 +115,7 @@ namespace Mono.Linker {
 			return null;
 		}
 
-		public AssemblyDefinition ResolveFromPath(string path, ReaderParameters parameters)
+		public AssemblyDefinition ResolveFromPath (string path, ReaderParameters parameters)
 		{
 			return CacheAssembly (GetAssembly (path, parameters));
 		}
@@ -135,7 +137,7 @@ namespace Mono.Linker {
 					if (asm == null)
 						asm = base.Resolve (name, parameters);
 
-					_assemblies [name.Name] = asm;
+					_assemblies[name.Name] = asm;
 				} catch (AssemblyResolutionException) {
 					if (!_ignoreUnresolved)
 						throw;
@@ -151,8 +153,8 @@ namespace Mono.Linker {
 
 		public virtual AssemblyDefinition CacheAssembly (AssemblyDefinition assembly)
 		{
-			_assemblies [assembly.Name.Name] = assembly;
-			base.AddSearchDirectory (Path.GetDirectoryName (GetAssemblyFileName(assembly)));
+			_assemblies[assembly.Name.Name] = assembly;
+			base.AddSearchDirectory (Path.GetDirectoryName (GetAssemblyFileName (assembly)));
 			return assembly;
 		}
 

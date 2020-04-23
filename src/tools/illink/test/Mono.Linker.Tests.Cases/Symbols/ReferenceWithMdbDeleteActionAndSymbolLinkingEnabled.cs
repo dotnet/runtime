@@ -2,14 +2,16 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Symbols {
+namespace Mono.Linker.Tests.Cases.Symbols
+{
 	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 	[SetupLinkerLinkSymbols ("true")]
 
 	[RemovedAssembly ("LibraryWithMdb.dll")]
 	[RemovedSymbols ("LibraryWithMdb.dll")]
-	public class ReferenceWithMdbDeleteActionAndSymbolLinkingEnabled {
+	public class ReferenceWithMdbDeleteActionAndSymbolLinkingEnabled
+	{
 		static void Main ()
 		{
 		}

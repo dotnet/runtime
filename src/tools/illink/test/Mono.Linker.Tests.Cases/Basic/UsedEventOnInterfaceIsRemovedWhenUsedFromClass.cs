@@ -1,9 +1,11 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Basic {
+namespace Mono.Linker.Tests.Cases.Basic
+{
 	[KeptDelegateCacheField ("0")]
-	class UsedEventOnInterfaceIsRemovedWhenUsedFromClass {
+	class UsedEventOnInterfaceIsRemovedWhenUsedFromClass
+	{
 		static void Main ()
 		{
 			var bar = new Bar ();
@@ -17,12 +19,14 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		{
 		}
 
-		interface IFoo {
+		interface IFoo
+		{
 			event EventHandler Ping;
 		}
 
 		[KeptMember (".ctor()")]
-		class Bar : IFoo {
+		class Bar : IFoo
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptEventAddMethod]
@@ -31,7 +35,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[KeptMember (".ctor()")]
-		class Jar : IFoo {
+		class Jar : IFoo
+		{
 			public event EventHandler Ping;
 		}
 	}

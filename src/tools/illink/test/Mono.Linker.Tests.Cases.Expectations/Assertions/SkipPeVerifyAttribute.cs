@@ -1,6 +1,7 @@
 using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 
 	public enum SkipPeVerifyForToolchian
 	{

@@ -1,7 +1,8 @@
 using System;
 using System.Reflection;
 
-namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies {
+namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
+{
 	public class ImplementationLibrary3A
 	{
 	}

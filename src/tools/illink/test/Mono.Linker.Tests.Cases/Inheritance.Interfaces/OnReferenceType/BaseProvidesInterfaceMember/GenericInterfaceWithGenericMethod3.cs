@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
-	public class GenericInterfaceWithGenericMethod3 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
+{
+	public class GenericInterfaceWithGenericMethod3
+	{
 		public static void Main ()
 		{
 			IFoo<object> f = new FooWithBase ();
@@ -9,14 +11,16 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		}
 
 		[Kept]
-		interface IFoo<TType> {
+		interface IFoo<TType>
+		{
 			[Kept]
 			void Method<TMethod> (TType arg, TMethod arg2);
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class BaseFoo {
+		class BaseFoo
+		{
 			[Kept]
 			public void Method<TMethod> (object arg, TMethod arg2)
 			{
@@ -27,7 +31,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo))]
 		[KeptInterface (typeof (IFoo<object>))]
-		class FooWithBase : BaseFoo, IFoo<object> {
+		class FooWithBase : BaseFoo, IFoo<object>
+		{
 		}
 	}
 }

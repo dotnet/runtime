@@ -37,13 +37,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestBackwardsEdgeLoop ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -56,18 +56,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				goto End;
 			str = GetWithFields ();
 
-			End:
+		End:
 			RequireFields (str); // warns for GetWithMethods
 			RequireMethods (str); // warns for GetWithFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -83,13 +83,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireMethods (str); // warns for GetWithFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -109,19 +109,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static int _switchOnField;
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
 			"which requires dynamically accessed member kinds `Methods`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithPublicMethods()' " +
 			"with dynamically accessed member kinds 'PublicMethods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
 			"which requires dynamically accessed member kinds `Methods`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Methods'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithConstructors()' " +
 			"with dynamically accessed member kinds 'Constructors' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -147,13 +147,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireMethods (str); // warns for GetWithFields, GetWithPublicMethods, and GetWithConstructors
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -173,13 +173,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireMethods (str); // warns for GetWithFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -198,13 +198,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireMethods (str); // warns for GetWithFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithMethods()' " +
 			"with dynamically accessed member kinds 'Methods' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireFields(System.String)' " +
 			"which requires dynamically accessed member kinds `Fields`. " +
 			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'Fields'.")]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) },
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) },
 			"The return value of method 'System.String Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::GetWithFields()' " +
 			"with dynamically accessed member kinds 'Fields' " +
 			"is passed into the parameter 'type' of method 'System.Void Mono.Linker.Tests.Cases.DataFlow.LocalDataFlow::RequireMethods(System.String)' " +
@@ -224,7 +224,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireMethods (str); // warns for GetWithFields
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchGoto ()
 		{
 			string str = GetWithMethods ();
@@ -232,11 +232,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				goto End;
 			str = GetWithFields ();
 			RequireFields (str); // produces a warning
-			End:
+		End:
 			return;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchIf ()
 		{
 			string str = GetWithMethods ();
@@ -246,7 +246,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchIfElse ()
 		{
 			string str;
@@ -261,11 +261,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireMethods), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequirePublicMethods), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type[] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireConstructors), new Type[] { typeof (string) })]
 		public static void TestBranchSwitch ()
 		{
 			string str = null;
@@ -289,7 +289,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchTry ()
 		{
 			string str = GetWithMethods ();
@@ -303,7 +303,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchCatch ()
 		{
 			string str = GetWithMethods ();
@@ -316,7 +316,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type [] { typeof (string) })]
+		[UnrecognizedReflectionAccessPattern (typeof (LocalDataFlow), nameof (RequireFields), new Type[] { typeof (string) })]
 		public static void TestBranchFinally ()
 		{
 			string str = GetWithMethods ();
@@ -349,11 +349,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			string str = null;
 			goto ForwardTarget;
-			BackwardTarget:
+		BackwardTarget:
 			RequireMethods (str); // should warn for the value that comes from GetWithFields, but it doesn't.
 			return;
 
-			ForwardTarget:
+		ForwardTarget:
 			str = GetWithFields ();
 			goto BackwardTarget;
 		}
@@ -381,23 +381,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Fields)]
-		public static string GetWithFields () {
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Fields)]
+		public static string GetWithFields ()
+		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Methods)]
-		public static string GetWithMethods () {
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Methods)]
+		public static string GetWithMethods ()
+		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicMethods)]
-		public static string GetWithPublicMethods () {
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
+		public static string GetWithPublicMethods ()
+		{
 			return null;
 		}
 
-		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
-		public static string GetWithConstructors () {
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+		public static string GetWithConstructors ()
+		{
 			return null;
 		}
 	}

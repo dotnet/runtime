@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNonKeptStaticConstructor ()
 		{
-			var a = new NonKeptStaticConstructorClass();
+			var a = new NonKeptStaticConstructorClass ();
 		}
 
 		[Kept]
@@ -47,9 +47,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
-			"A value from unknown source is passed into the parameter 'type' of method "+
-			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. "+
+		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type[] { typeof (RuntimeTypeHandle) },
+			"A value from unknown source is passed into the parameter 'type' of method " +
+			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. " +
 			"It's not possible to guarantee availability of the target static constructor.")]
 
 		static void TestDataFlowType ()
@@ -60,9 +60,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[RecognizedReflectionAccessPattern]
-		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type [] { typeof (RuntimeTypeHandle) },
-			"A value from unknown source is passed into the parameter 'type' of method "+
-			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. "+
+		[UnrecognizedReflectionAccessPattern (typeof (RuntimeHelpers), nameof (RuntimeHelpers.RunClassConstructor), new Type[] { typeof (RuntimeTypeHandle) },
+			"A value from unknown source is passed into the parameter 'type' of method " +
+			"'System.Void System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor(System.RuntimeTypeHandle)'. " +
 			"It's not possible to guarantee availability of the target static constructor.")]
 
 		static void TestIfElseUsingRuntimeTypeHandle (int i)
@@ -85,10 +85,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Type myType;
 			if (i == 1) {
 				myType = typeof (IfClass2);
-			}else if (i==2) {
+			} else if (i == 2) {
 				myType = null;
-			} 
-			else {
+			} else {
 				myType = typeof (ElseClass2);
 			}
 			RuntimeHelpers.RunClassConstructor (myType.TypeHandle);

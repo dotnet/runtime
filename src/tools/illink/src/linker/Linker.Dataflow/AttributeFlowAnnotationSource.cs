@@ -16,7 +16,7 @@ namespace Mono.Linker.Dataflow
 
 		public DynamicallyAccessedMemberKinds GetParameterAnnotation (MethodDefinition method, int index)
 		{
-			return Get (method.Parameters [index]);
+			return Get (method.Parameters[index]);
 		}
 
 		public DynamicallyAccessedMemberKinds GetPropertyAnnotation (PropertyDefinition property)
@@ -46,7 +46,7 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (IsDynamicallyAccessedMembersAttribute (attribute));
 
 			if (attribute.HasConstructorArguments) {
-				return (DynamicallyAccessedMemberKinds)(int)attribute.ConstructorArguments [0].Value;
+				return (DynamicallyAccessedMemberKinds) (int) attribute.ConstructorArguments[0].Value;
 			}
 
 			return 0;

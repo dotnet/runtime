@@ -2,10 +2,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
+{
 
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
-	class UsedAttributeTypeOnTypeIsKept {
+	class UsedAttributeTypeOnTypeIsKept
+	{
 		static void Main ()
 		{
 			var tmp = new Bar ();
@@ -16,13 +18,15 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (FooAttribute))]
 		[Foo]
-		class Bar {
+		class Bar
+		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (Attribute))]
-		class FooAttribute : Attribute {
+		class FooAttribute : Attribute
+		{
 		}
 	}
 }

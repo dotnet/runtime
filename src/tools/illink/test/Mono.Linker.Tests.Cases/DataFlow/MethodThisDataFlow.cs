@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropagateToThisWithSetters ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (TypeTest.RequireThisMethods), new Type [] { },
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (TypeTest.RequireThisMethods), new Type[] { },
 			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
 			"with dynamically accessed member kinds 'PublicMethods' " +
 			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::RequireThisMethods()' " +
@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetWithMethods ().RequireThisMethods ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "get_" + nameof (TypeTest.PropertyRequireThisMethods), new Type [] { },
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "get_" + nameof (TypeTest.PropertyRequireThisMethods), new Type[] { },
  			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
  			"with dynamically accessed member kinds 'PublicMethods' " +
  			"is passed into the implicit 'this' parameter of method 'System.Object System.TypeTest::get_PropertyRequireThisMethods()' " +
@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_ = GetWithMethods ().PropertyRequireThisMethods;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "set_" + nameof (TypeTest.PropertyRequireThisMethods), new Type [] { typeof(Object) },
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), "set_" + nameof (TypeTest.PropertyRequireThisMethods), new Type[] { typeof (Object) },
  			"The return value of method 'System.TypeTest Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow::GetWithPublicMethods()' " +
  			"with dynamically accessed member kinds 'PublicMethods' " +
  			"is passed into the implicit 'this' parameter of method 'System.Void System.TypeTest::set_PropertyRequireThisMethods(System.Object)' " +
@@ -85,7 +85,7 @@ namespace System
 	class TypeTest : Type
 	{
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicMethods)]
-		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (RequireMethods), new Type [] { typeof (Type) },
+		[UnrecognizedReflectionAccessPattern (typeof (TypeTest), nameof (RequireMethods), new Type[] { typeof (Type) },
 			"The implicit 'this' parameter of method 'System.Void System.TypeTest::RequireThisPublicMethods()' " +
 			"with dynamically accessed member kinds 'PublicMethods' " +
 			"is passed into the parameter 'type' of method 'System.Void System.TypeTest::RequireMethods(System.Type)' " +
@@ -157,17 +157,17 @@ namespace System
 
 		public override string Name => throw new NotImplementedException ();
 
-		public override ConstructorInfo [] GetConstructors (BindingFlags bindingAttr)
+		public override ConstructorInfo[] GetConstructors (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override object [] GetCustomAttributes (bool inherit)
+		public override object[] GetCustomAttributes (bool inherit)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override object [] GetCustomAttributes (Type attributeType, bool inherit)
+		public override object[] GetCustomAttributes (Type attributeType, bool inherit)
 		{
 			throw new NotImplementedException ();
 		}
@@ -182,7 +182,7 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		public override EventInfo [] GetEvents (BindingFlags bindingAttr)
+		public override EventInfo[] GetEvents (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
@@ -192,7 +192,7 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		public override FieldInfo [] GetFields (BindingFlags bindingAttr)
+		public override FieldInfo[] GetFields (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
@@ -202,17 +202,17 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		public override Type [] GetInterfaces ()
+		public override Type[] GetInterfaces ()
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override MemberInfo [] GetMembers (BindingFlags bindingAttr)
+		public override MemberInfo[] GetMembers (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override MethodInfo [] GetMethods (BindingFlags bindingAttr)
+		public override MethodInfo[] GetMethods (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
@@ -222,17 +222,17 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		public override Type [] GetNestedTypes (BindingFlags bindingAttr)
+		public override Type[] GetNestedTypes (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override PropertyInfo [] GetProperties (BindingFlags bindingAttr)
+		public override PropertyInfo[] GetProperties (BindingFlags bindingAttr)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public override object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object [] args, ParameterModifier [] modifiers, CultureInfo culture, string [] namedParameters)
+		public override object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
 		{
 			throw new NotImplementedException ();
 		}
@@ -247,17 +247,17 @@ namespace System
 			throw new NotImplementedException ();
 		}
 
-		protected override ConstructorInfo GetConstructorImpl (BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type [] types, ParameterModifier [] modifiers)
+		protected override ConstructorInfo GetConstructorImpl (BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
 		}
 
-		protected override MethodInfo GetMethodImpl (string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type [] types, ParameterModifier [] modifiers)
+		protected override MethodInfo GetMethodImpl (string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
 		}
 
-		protected override PropertyInfo GetPropertyImpl (string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type [] types, ParameterModifier [] modifiers)
+		protected override PropertyInfo GetPropertyImpl (string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
 		{
 			throw new NotImplementedException ();
 		}

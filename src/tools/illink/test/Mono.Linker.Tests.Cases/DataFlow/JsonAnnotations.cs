@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[SetupLinkerAttributeDefinitionsFile ("JsonAnnotations.json")]
 	class JsonAnnotations
 	{
-		public static void Main()
+		public static void Main ()
 		{
 			var instance = new JsonAnnotations ();
 
@@ -29,8 +29,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		Type PropertyWithDefaultConstructor { get; set; }
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceField ()
 		{
 			RequireDefaultConstructor (_typeWithDefaultConstructor);
@@ -38,7 +38,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireConstructors (_typeWithDefaultConstructor);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		private void TwoAnnotatedParameters (
 			Type type,
 			Type type2)
@@ -49,15 +49,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type2);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (ReturnConstructorsFailure), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (ReturnConstructorsFailure), new Type[] { typeof (Type) })]
 		private Type ReturnConstructorsFailure (
 			Type defaultConstructorType)
 		{
 			return defaultConstructorType;
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type [] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (JsonAnnotations), nameof (RequireConstructors), new Type[] { typeof (Type) })]
 		private void ReadFromInstanceProperty ()
 		{
 			RequireDefaultConstructor (PropertyWithDefaultConstructor);

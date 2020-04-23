@@ -2,9 +2,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.TestFramework {
+namespace Mono.Linker.Tests.Cases.TestFramework
+{
 	[SetupCompileArgument ("/debug:pdbonly")]
-	class CanCompileTestCaseWithDebugPdbs {
+	class CanCompileTestCaseWithDebugPdbs
+	{
 		static void Main ()
 		{
 			new Foo ().Method ();
@@ -12,7 +14,8 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Foo {
+		class Foo
+		{
 			[Kept]
 			public void Method ()
 			{

@@ -2,7 +2,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Resources {
+namespace Mono.Linker.Tests.Cases.Resources
+{
 	[SetupLinkerCoreAction ("link")]
 	[IncludeBlacklistStep (false)]
 
@@ -10,12 +11,14 @@ namespace Mono.Linker.Tests.Cases.Resources {
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml", "test.xml")]
 	[SkipPeVerify]
 	[KeptResource ("test.xml")]
-	public class EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled {
+	public class EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled
+	{
 		public static void Main ()
 		{
 		}
 
-		public class Unused {
+		public class Unused
+		{
 		}
 	}
 }

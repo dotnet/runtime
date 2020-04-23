@@ -12,7 +12,7 @@ namespace Mono.Linker.Dataflow
 	{
 		private readonly List<IFlowAnnotationSource> _sources;
 
-		public AggregateFlowAnnotationSource(IEnumerable<IFlowAnnotationSource> sources)
+		public AggregateFlowAnnotationSource (IEnumerable<IFlowAnnotationSource> sources)
 		{
 			_sources = new List<IFlowAnnotationSource> (sources);
 		}

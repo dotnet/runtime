@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public interface IStep {
+	public interface IStep
+	{
 		void Process (LinkContext context);
 	}
 }

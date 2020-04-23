@@ -72,7 +72,7 @@ namespace Mono.Linker
 
 				var elementType = genericInstanceProvider.ElementType.Resolve ();
 				var parameter = elementType.GenericParameters.Single (p => p == genericParameter);
-				return genericInstanceProvider.GenericArguments [parameter.Position];
+				return genericInstanceProvider.GenericArguments[parameter.Position];
 			}
 
 			if (typeToInflate is FunctionPointerType functionPointerType) {
@@ -81,7 +81,7 @@ namespace Mono.Linker
 				};
 
 				for (int i = 0; i < functionPointerType.Parameters.Count; i++) {
-					var inflatedParameterType = InflateGenericType(genericInstanceProvider, functionPointerType.Parameters [i].ParameterType);
+					var inflatedParameterType = InflateGenericType (genericInstanceProvider, functionPointerType.Parameters[i].ParameterType);
 					result.Parameters.Add (new ParameterDefinition (inflatedParameterType));
 				}
 
@@ -143,7 +143,7 @@ namespace Mono.Linker
 			var result = new GenericInstanceType (type.ElementType);
 
 			for (var i = 0; i < type.GenericArguments.Count; ++i) {
-				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments [i]));
+				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments[i]));
 			}
 
 			return result;
@@ -174,7 +174,7 @@ namespace Mono.Linker
 			};
 
 			foreach (var parameter in methodDef.Parameters)
-				method.Parameters.Add (new ParameterDefinition(parameter.Name, parameter.Attributes, parameter.ParameterType));
+				method.Parameters.Add (new ParameterDefinition (parameter.Name, parameter.Attributes, parameter.ParameterType));
 
 			foreach (var gp in methodDef.GenericParameters)
 				method.GenericParameters.Add (new GenericParameter (gp.Name, method));
@@ -200,7 +200,7 @@ namespace Mono.Linker
 
 			return false;
 		}
-		
+
 		public static MethodReference GetDefaultInstanceConstructor (this TypeReference type)
 		{
 			foreach (var m in type.GetMethods ()) {

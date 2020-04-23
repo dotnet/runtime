@@ -4,29 +4,36 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[KeptMember (".ctor()")]
-	class CanPreserveTypesUsingRegex {
-		public static void Main () {
+	class CanPreserveTypesUsingRegex
+	{
+		public static void Main ()
+		{
 		}
 
 		[Kept]
-		void UnusedHelper () {
+		void UnusedHelper ()
+		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Bar {
+		class Bar
+		{
 		}
 	}
 }
 
-namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace {
+namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace
+{
 	[Kept]
 	[KeptMember (".ctor()")]
-	class Type1 {
+	class Type1
+	{
 	}
 
 	[Kept]
 	[KeptMember (".ctor()")]
-	class Type2 {
+	class Type2
+	{
 	}
 }

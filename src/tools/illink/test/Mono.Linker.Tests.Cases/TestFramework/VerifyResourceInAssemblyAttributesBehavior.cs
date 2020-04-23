@@ -2,7 +2,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.TestFramework {
+namespace Mono.Linker.Tests.Cases.TestFramework
+{
 	[SetupCompileResource ("Dependencies/VerifyResourceInAssemblyAttributesBehavior.txt")]
 	[KeptResource ("VerifyResourceInAssemblyAttributesBehavior.txt")]
 	// These are technically redundant, but the goal of this test is to verify the attributes are working which we can do
@@ -10,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 	// supporting assemblies
 	[KeptResourceInAssembly ("test.exe", "VerifyResourceInAssemblyAttributesBehavior.txt")]
 	[RemovedResourceInAssembly ("test.exe", "NeverExistedResource.txt")]
-	public class VerifyResourceInAssemblyAttributesBehavior {
+	public class VerifyResourceInAssemblyAttributesBehavior
+	{
 		public static void Main ()
 		{
 		}

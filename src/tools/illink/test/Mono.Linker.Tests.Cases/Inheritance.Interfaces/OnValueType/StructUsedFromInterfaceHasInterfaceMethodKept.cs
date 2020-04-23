@@ -2,7 +2,8 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 {
-	class StructUsedFromInterfaceHasInterfaceMethodKept {
+	class StructUsedFromInterfaceHasInterfaceMethodKept
+	{
 		public static void Main ()
 		{
 			IFoo a = new A ();
@@ -11,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
-		struct A : IFoo {
+		struct A : IFoo
+		{
 			[Kept]
 			public void Foo ()
 			{
@@ -19,7 +21,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 		}
 
 		[Kept]
-		public interface IFoo {
+		public interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}

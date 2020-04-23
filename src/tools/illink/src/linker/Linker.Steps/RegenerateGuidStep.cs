@@ -30,9 +30,11 @@ using System;
 
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class RegenerateGuidStep : BaseStep {
+	public class RegenerateGuidStep : BaseStep
+	{
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{

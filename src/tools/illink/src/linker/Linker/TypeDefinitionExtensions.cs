@@ -2,8 +2,10 @@
 using System;
 using Mono.Cecil;
 
-namespace Mono.Linker {
-	public static class TypeDefinitionExtensions {
+namespace Mono.Linker
+{
+	public static class TypeDefinitionExtensions
+	{
 		public static bool HasInterface (this TypeDefinition type, TypeDefinition interfaceType, out InterfaceImplementation implementation)
 		{
 			implementation = null;
@@ -29,8 +31,8 @@ namespace Mono.Linker {
 			}
 
 			throw new MissingFieldException ($"Enum type '{enumType.FullName}' is missing 'value__' field");
-    }
-    
+		}
+
 		public static bool IsMulticastDelegate (this TypeDefinition td)
 		{
 			return td.BaseType?.Name == "MulticastDelegate" && td.BaseType.Namespace == "System";

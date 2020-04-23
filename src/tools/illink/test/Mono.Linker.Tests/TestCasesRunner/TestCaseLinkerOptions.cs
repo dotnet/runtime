@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Mono.Linker.Tests.TestCasesRunner {
+namespace Mono.Linker.Tests.TestCasesRunner
+{
 	public class TestCaseLinkerOptions
 	{
 		public string CoreAssembliesAction;

@@ -1,10 +1,12 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
+namespace Mono.Linker.Tests.Cases.Expectations.Assertions
+{
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
-	public class RemovedMemberInAssemblyAttribute : BaseInAssemblyAttribute {
+	public class RemovedMemberInAssemblyAttribute : BaseInAssemblyAttribute
+	{
 
-		public RemovedMemberInAssemblyAttribute (string assemblyFileName, Type type, params string [] memberNames)
+		public RemovedMemberInAssemblyAttribute (string assemblyFileName, Type type, params string[] memberNames)
 		{
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentNullException (nameof (assemblyFileName));
@@ -14,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 				throw new ArgumentNullException (nameof (memberNames));
 		}
 
-		public RemovedMemberInAssemblyAttribute (string assemblyFileName, string typeName, params string [] memberNames)
+		public RemovedMemberInAssemblyAttribute (string assemblyFileName, string typeName, params string[] memberNames)
 		{
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentNullException (nameof (assemblyFileName));

@@ -12,9 +12,10 @@ namespace Mono.Linker.Tests.Cases.Attributes
 {
 	[SkipPeVerify]
 	[Define ("REFERENCE_INCLUDED")]
-	[SetupCompileBefore ("library.dll", new [] { "Dependencies/AttributeDefinedInReference.cs" })]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AttributeDefinedInReference.cs" })]
 	[SetupLinkerAction ("skip", "library")]
-	class AttributeOnAssemblyIsKeptIfDeclarationIsSkipped {
+	class AttributeOnAssemblyIsKeptIfDeclarationIsSkipped
+	{
 		static void Main ()
 		{
 		}

@@ -3,9 +3,11 @@ using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Reflection {
+namespace Mono.Linker.Tests.Cases.Reflection
+{
 	[SetupCSharpCompilerToUse ("csc")]
-	public class FieldUsedViaReflection {
+	public class FieldUsedViaReflection
+	{
 		public static void Main ()
 		{
 			TestByName ();
@@ -22,8 +24,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
-			typeof (FieldUsedViaReflection), nameof (FieldUsedViaReflection.field), (Type [])null)]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
+			typeof (FieldUsedViaReflection), nameof (FieldUsedViaReflection.field), (Type[]) null)]
 		static void TestByName ()
 		{
 			var field = typeof (FieldUsedViaReflection).GetField ("field");
@@ -32,8 +34,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string), typeof(BindingFlags) },
-			typeof (Foo), nameof (Foo.field), (Type [])null)]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (Foo), nameof (Foo.field), (Type[]) null)]
 		static void TestNameBindingFlags ()
 		{
 			var field = typeof (Foo).GetField ("field", BindingFlags.Static);
@@ -78,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) })]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) })]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -87,11 +89,11 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string)},
-			typeof (IfClass), nameof (IfClass.ifField), (Type [])null)]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
+			typeof (IfClass), nameof (IfClass.ifField), (Type[]) null)]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
-			typeof (ElseClass), nameof (ElseClass.elseField), (Type [])null)]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
+			typeof (ElseClass), nameof (ElseClass.elseField), (Type[]) null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -111,19 +113,19 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetField), new Type [] { typeof (string) },
-			typeof (BaseClass), nameof (BaseClass.publicFieldOnBase), (Type [])null)]
+			typeof (Type), nameof (Type.GetField), new Type[] { typeof (string) },
+			typeof (BaseClass), nameof (BaseClass.publicFieldOnBase), (Type[]) null)]
 		static void TestFieldInBaseType ()
 		{
-			var protectedField = typeof(DerivedClass).GetField ("protectedFieldOnBase");
-			var publicField = typeof(DerivedClass).GetField ("publicFieldOnBase");
+			var protectedField = typeof (DerivedClass).GetField ("protectedFieldOnBase");
+			var publicField = typeof (DerivedClass).GetField ("publicFieldOnBase");
 		}
 
 		[Kept]
 		static int field;
 
 		[Kept]
-		private class Foo 
+		private class Foo
 		{
 			[Kept]
 			public static int field;

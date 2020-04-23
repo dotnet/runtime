@@ -2,9 +2,11 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
+{
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
-	class AttributeUsedByAttributeIsKept {
+	class AttributeUsedByAttributeIsKept
+	{
 		static void Main ()
 		{
 			var jar = new Jar ();
@@ -17,22 +19,24 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 		[NotUsed]
 		[Kept]
 		[KeptMember (".ctor()")]
-		[KeptAttributeAttribute (typeof(FooAttribute))]
-		[KeptAttributeAttribute (typeof(BarAttribute))]
-		[KeptAttributeAttribute (typeof(KarAttribute))]
-		class Jar {
+		[KeptAttributeAttribute (typeof (FooAttribute))]
+		[KeptAttributeAttribute (typeof (BarAttribute))]
+		[KeptAttributeAttribute (typeof (KarAttribute))]
+		class Jar
+		{
 			[Kept]
 			public void SomeMethod ()
 			{
-				var attr = typeof (Jar).GetCustomAttributes (typeof (FooAttribute), false) [0];
+				var attr = typeof (Jar).GetCustomAttributes (typeof (FooAttribute), false)[0];
 				var asFooAttr = (FooAttribute) attr;
 				asFooAttr.MethodWeWillCall ();
 			}
 		}
 
 		[Kept]
-		[KeptBaseType (typeof(Attribute))]
-		class FooAttribute : Attribute {
+		[KeptBaseType (typeof (Attribute))]
+		class FooAttribute : Attribute
+		{
 			[Kept]
 			public FooAttribute ()
 			{
@@ -56,8 +60,9 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 		}
 
 		[Kept]
-		[KeptBaseType (typeof(Attribute))]
-		class BarAttribute : Attribute {
+		[KeptBaseType (typeof (Attribute))]
+		class BarAttribute : Attribute
+		{
 			[Kept]
 			public BarAttribute ()
 			{
@@ -69,7 +74,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 
 		[Kept]
 		[KeptBaseType (typeof (Attribute))]
-		class KarAttribute : Attribute {
+		class KarAttribute : Attribute
+		{
 			[Kept]
 			public KarAttribute ()
 			{
@@ -77,11 +83,13 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 			}
 		}
 
-		class NotUsedAttribute : Attribute {
+		class NotUsedAttribute : Attribute
+		{
 		}
 
 		[Kept]
-		static class MethodsUsedFromLateMarking {
+		static class MethodsUsedFromLateMarking
+		{
 			[Kept]
 			public static void Method1 ()
 			{

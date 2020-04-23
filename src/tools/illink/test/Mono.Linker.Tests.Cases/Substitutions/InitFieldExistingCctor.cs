@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	public class InitFieldExistingCctor
 	{
 		[Kept]
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 				"ldc.i4.s",
 				"pop",
 				"ldc.i4",
@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		static readonly int IntValue;
 
-		public static void Main()
+		public static void Main ()
 		{
 			TestField_1 ();
 		}

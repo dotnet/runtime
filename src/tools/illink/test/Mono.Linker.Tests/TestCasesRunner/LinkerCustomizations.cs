@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public event Action<LinkContext> CustomizeContext;
 
-		public void CustomizeLinkContext(LinkContext context)
+		public void CustomizeLinkContext (LinkContext context)
 		{
 			CustomizeContext?.Invoke (context);
 		}

@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Attributes {
-	class AttributeOnUsedPropertyIsKept {
+namespace Mono.Linker.Tests.Cases.Attributes
+{
+	class AttributeOnUsedPropertyIsKept
+	{
 		public static void Main ()
 		{
 			var val = new A ().Field;
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 
 		[KeptMember (".ctor()")]
 		[KeptMember ("get_Field()")]
-		class A {
+		class A
+		{
 			[Kept]
 			[KeptBackingField]
 			[KeptAttributeAttribute (typeof (FooAttribute))]
@@ -21,7 +24,8 @@ namespace Mono.Linker.Tests.Cases.Attributes {
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (System.Attribute))]
-		class FooAttribute : Attribute {
+		class FooAttribute : Attribute
+		{
 		}
 	}
 }

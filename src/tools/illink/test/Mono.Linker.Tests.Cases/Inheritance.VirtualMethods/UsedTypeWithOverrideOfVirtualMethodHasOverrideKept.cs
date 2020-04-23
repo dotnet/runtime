@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
-	public class UsedTypeWithOverrideOfVirtualMethodHasOverrideKept {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
+{
+	public class UsedTypeWithOverrideOfVirtualMethodHasOverrideKept
+	{
 		public static void Main ()
 		{
 			new B ();
@@ -10,7 +12,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 		}
 
 		[KeptMember (".ctor()")]
-		class Base {
+		class Base
+		{
 			[Kept]
 			public virtual void Call ()
 			{
@@ -19,7 +22,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (Base))]
-		class B : Base {
+		class B : Base
+		{
 			[Kept]
 			public override void Call ()
 			{

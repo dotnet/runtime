@@ -1,8 +1,10 @@
 ﻿using System;
 
-namespace Mono.Linker.Tests.Cases.Expectations.Metadata {
+namespace Mono.Linker.Tests.Cases.Expectations.Metadata
+{
 	[AttributeUsage (AttributeTargets.Class)]
-	public class SetupLinkerLinkSymbolsAttribute : BaseMetadataAttribute {
+	public class SetupLinkerLinkSymbolsAttribute : BaseMetadataAttribute
+	{
 		public SetupLinkerLinkSymbolsAttribute (string value)
 		{
 			if (string.IsNullOrEmpty (value))

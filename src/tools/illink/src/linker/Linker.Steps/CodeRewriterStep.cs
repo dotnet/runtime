@@ -4,7 +4,8 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 	public class CodeRewriterStep : BaseStep
 	{
 		AssemblyDefinition assembly;
@@ -59,11 +60,11 @@ namespace Mono.Linker.Steps {
 				processor = cctor.Body.GetILProcessor ();
 
 				for (int i = 0; i < body.Instructions.Count; ++i) {
-					var instr = body.Instructions [i];
+					var instr = body.Instructions[i];
 					if (instr.OpCode.Code != Code.Stsfld)
 						continue;
 
-					var field = (FieldReference)instr.Operand;
+					var field = (FieldReference) instr.Operand;
 					if (!Annotations.HasSubstitutedInit (field.Resolve ()))
 						continue;
 
@@ -105,7 +106,7 @@ namespace Mono.Linker.Steps {
 
 			method.Body = CreateThrowLinkedAwayBody (method);
 
-			method.ClearDebugInformation();
+			method.ClearDebugInformation ();
 		}
 
 		protected virtual void RewriteBodyToStub (MethodDefinition method)
@@ -115,7 +116,7 @@ namespace Mono.Linker.Steps {
 
 			method.Body = CreateStubBody (method);
 
-			method.ClearDebugInformation();
+			method.ClearDebugInformation ();
 		}
 
 		MethodBody CreateThrowLinkedAwayBody (MethodDefinition method)
@@ -152,7 +153,7 @@ namespace Mono.Linker.Steps {
 
 			var il = body.GetILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
-				var base_ctor = method.DeclaringType.BaseType.GetDefaultInstanceConstructor();
+				var base_ctor = method.DeclaringType.BaseType.GetDefaultInstanceConstructor ();
 				if (base_ctor == null)
 					throw new NotSupportedException ($"Cannot replace constructor for '{method.DeclaringType}' when no base default constructor exists");
 

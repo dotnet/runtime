@@ -1,14 +1,17 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.LinkXml {
-	public class UnusedGenericTypeWithPreserveAllHasAllMembersPreserved {
+namespace Mono.Linker.Tests.Cases.LinkXml
+{
+	public class UnusedGenericTypeWithPreserveAllHasAllMembersPreserved
+	{
 		public static void Main ()
 		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Unused<T1, T2, T3> {
+		class Unused<T1, T2, T3>
+		{
 			[Kept]
 			public int Field1;
 
@@ -29,7 +32,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 
 			[Kept]
 			[KeptBackingField]
-			public string Property1 { [Kept] get; [Kept] set;}
+			public string Property1 { [Kept] get; [Kept] set; }
 
 			[Kept]
 			[KeptBackingField]

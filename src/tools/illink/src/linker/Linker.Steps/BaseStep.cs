@@ -28,9 +28,11 @@
 
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public abstract class BaseStep : IStep {
+	public abstract class BaseStep : IStep
+	{
 
 		private LinkContext _context;
 

@@ -2,10 +2,12 @@
 using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Attributes.StructLayout {
+namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
+{
 	[StructLayout (LayoutKind.Explicit)]
 	[KeptMember (".ctor()")]
-	class ExplicitClassData {
+	class ExplicitClassData
+	{
 		[FieldOffset (0)]
 		[Kept] // the linker could remove this
 		public int never_used;

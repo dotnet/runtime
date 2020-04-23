@@ -1,5 +1,7 @@
-namespace Mono.Linker.Tests.Cases.Symbols.Dependencies {
-	public class LibraryWithMdb {
+namespace Mono.Linker.Tests.Cases.Symbols.Dependencies
+{
+	public class LibraryWithMdb
+	{
 		public static void SomeMethod ()
 		{
 		}

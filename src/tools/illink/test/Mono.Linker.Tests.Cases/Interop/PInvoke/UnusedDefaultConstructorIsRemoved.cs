@@ -1,15 +1,18 @@
 ﻿using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Interop.PInvoke {
-	class UnusedDefaultConstructorIsRemoved {
+namespace Mono.Linker.Tests.Cases.Interop.PInvoke
+{
+	class UnusedDefaultConstructorIsRemoved
+	{
 		public static void Main ()
 		{
 			var a = new A (1);
 			SomeMethod (a);
 		}
 
-		class A {
+		class A
+		{
 			public A ()
 			{
 			}

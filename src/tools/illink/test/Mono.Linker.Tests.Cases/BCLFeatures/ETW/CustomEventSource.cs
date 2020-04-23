@@ -2,8 +2,10 @@
 using System.Diagnostics.Tracing;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
-	public class CustomEventSource {
+namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
+{
+	public class CustomEventSource
+	{
 		public static void Main ()
 		{
 			var b = MyCompanyEventSource.Log.IsEnabled ();
@@ -20,19 +22,19 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	class MyCompanyEventSource : EventSource
 	{
 		[Kept]
-		public class Keywords 
+		public class Keywords
 		{
 			[Kept]
-			public const EventKeywords Page = (EventKeywords)1;
+			public const EventKeywords Page = (EventKeywords) 1;
 
 			public int Unused;
 		}
 
 		[Kept]
-		public class Tasks 
+		public class Tasks
 		{
 			[Kept]
-			public const EventTask Page = (EventTask)1;
+			public const EventTask Page = (EventTask) 1;
 
 			public int Unused;
 		}

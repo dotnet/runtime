@@ -35,12 +35,15 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.PE;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class OutputStep : BaseStep {
+	public class OutputStep : BaseStep
+	{
 		private static Dictionary<UInt16, TargetArchitecture> architectureMap;
 
-		private enum NativeOSOverride {
+		private enum NativeOSOverride
+		{
 			Apple = 0x4644,
 			FreeBSD = 0xadc4,
 			Linux = 0x7b79,
@@ -50,7 +53,8 @@ namespace Mono.Linker.Steps {
 
 		readonly List<string> assembliesWritten;
 
-		public OutputStep () {
+		public OutputStep ()
+		{
 			assembliesWritten = new List<string> ();
 		}
 
@@ -61,7 +65,7 @@ namespace Mono.Linker.Steps {
 				foreach (var os in Enum.GetValues (typeof (NativeOSOverride))) {
 					ushort osVal = (ushort) (NativeOSOverride) os;
 					foreach (var arch in Enum.GetValues (typeof (TargetArchitecture))) {
-						ushort archVal = (ushort) (TargetArchitecture)arch;
+						ushort archVal = (ushort) (TargetArchitecture) arch;
 						architectureMap.Add ((ushort) (archVal ^ osVal), (TargetArchitecture) arch);
 					}
 				}
@@ -163,7 +167,7 @@ namespace Mono.Linker.Steps {
 		{
 			if (Context.PInvokesListFile == null)
 				return;
-			
+
 			using (var fs = File.Open (Path.Combine (Context.OutputDirectory, Context.PInvokesListFile), FileMode.Create)) {
 				Context.PInvokes.Distinct ();
 				Context.PInvokes.Sort ();
@@ -172,7 +176,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected virtual void DeleteAssembly(AssemblyDefinition assembly, string directory)
+		protected virtual void DeleteAssembly (AssemblyDefinition assembly, string directory)
 		{
 			var target = GetAssemblyFileName (assembly, directory);
 			if (File.Exists (target)) {
@@ -292,7 +296,8 @@ namespace Mono.Linker.Steps {
 				CopyFileAndRemoveReadOnly (pdb, Path.ChangeExtension (target, "pdb"));
 		}
 
-		static void CopyFileAndRemoveReadOnly (string src, string dest) {
+		static void CopyFileAndRemoveReadOnly (string src, string dest)
+		{
 			File.Copy (src, dest, true);
 
 			System.IO.FileAttributes attrs = File.GetAttributes (dest);

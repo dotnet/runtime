@@ -28,10 +28,12 @@
 
 using System;
 
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
 	[Flags]
-	public enum I18nAssemblies {
+	public enum I18nAssemblies
+	{
 
 		None = 0,
 

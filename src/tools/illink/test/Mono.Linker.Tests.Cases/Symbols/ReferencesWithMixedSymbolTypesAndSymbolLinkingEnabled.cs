@@ -3,7 +3,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Symbols {
+namespace Mono.Linker.Tests.Cases.Symbols
+{
 #if !NETCOREAPP
 	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
@@ -49,7 +50,8 @@ namespace Mono.Linker.Tests.Cases.Symbols {
 
 	[KeptMemberInAssembly ("LibraryWithPortablePdbSymbols.dll", typeof (LibraryWithPortablePdbSymbols), "SomeMethod()")]
 	[RemovedMemberInAssembly ("LibraryWithPortablePdbSymbols.dll", typeof (LibraryWithPortablePdbSymbols), "NotUsed()")]
-	public class ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled {
+	public class ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled
+	{
 		static void Main ()
 		{
 			// Use some stuff so that we can verify that the linker output correct results

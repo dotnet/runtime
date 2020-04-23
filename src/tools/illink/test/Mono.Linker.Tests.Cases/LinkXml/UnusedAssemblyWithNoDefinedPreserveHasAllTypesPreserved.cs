@@ -1,15 +1,18 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.LinkXml {
+namespace Mono.Linker.Tests.Cases.LinkXml
+{
 	[KeptMember (".ctor()")]
-	public class UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved {
+	public class UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved
+	{
 		public static void Main ()
 		{
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		class Unused {
+		class Unused
+		{
 		}
 	}
 }

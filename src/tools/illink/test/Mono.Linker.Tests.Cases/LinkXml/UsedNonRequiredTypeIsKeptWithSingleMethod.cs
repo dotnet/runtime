@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.LinkXml {
-	class UsedNonRequiredTypeIsKeptWithSingleMethod {
+namespace Mono.Linker.Tests.Cases.LinkXml
+{
+	class UsedNonRequiredTypeIsKeptWithSingleMethod
+	{
 		public static void Main ()
 		{
 			var t = typeof (Unused);

@@ -10,13 +10,15 @@ using Mono.Cecil;
 using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class AddBypassNGenStep : BaseStep{
+	public class AddBypassNGenStep : BaseStep
+	{
 
 		AssemblyDefinition coreLibAssembly;
 		CustomAttribute bypassNGenAttribute;
-		
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) == AssemblyAction.AddBypassNGen) {
@@ -52,7 +54,7 @@ namespace Mono.Linker.Steps {
 		void ProcessNestedTypes (TypeDefinition type)
 		{
 			for (int i = 0; i < type.NestedTypes.Count; i++) {
-				var nested = type.NestedTypes [i];
+				var nested = type.NestedTypes[i];
 				ProcessType (nested);
 			}
 		}
@@ -99,8 +101,7 @@ namespace Mono.Linker.Steps {
 				instructions.Add (Instruction.Create (OpCodes.Ret));
 
 				bypassNGenAttributeDef.Methods.Add (bypassNGenAttributeDefaultConstructor);
-			}
-			else {
+			} else {
 				foreach (MethodDefinition method in bypassNGenAttributeDef.Methods) {
 					if (method.IsConstructor && !method.IsStatic && !method.HasParameters) {
 						bypassNGenAttributeDefaultConstructor = method;

@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses {
-	public class UsedOverrideOfAbstractMethodIsKept {
+namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses
+{
+	public class UsedOverrideOfAbstractMethodIsKept
+	{
 		public static void Main ()
 		{
 			var tmp = new B ();
@@ -9,7 +11,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses {
 		}
 
 		[KeptMember (".ctor()")]
-		abstract class Base {
+		abstract class Base
+		{
 			[Kept]
 			public abstract void Call ();
 		}
@@ -17,7 +20,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses {
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (Base))]
-		class B : Base {
+		class B : Base
+		{
 			[Kept]
 			public override void Call ()
 			{

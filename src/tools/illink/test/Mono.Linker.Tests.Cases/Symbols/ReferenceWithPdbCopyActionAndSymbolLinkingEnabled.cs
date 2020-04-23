@@ -2,7 +2,8 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Symbols {
+namespace Mono.Linker.Tests.Cases.Symbols
+{
 #if NETCOREAPP && !WIN32
 	// .NET Core type forwarders cause the assembly action to be
 	// changed from "copy" to "save" (to remove references to removed
@@ -16,7 +17,8 @@ namespace Mono.Linker.Tests.Cases.Symbols {
 	[SetupLinkerAction ("copy", "LibraryWithPdb")]
 
 	[KeptSymbols ("LibraryWithPdb.dll")]
-	public class ReferenceWithPdbCopyActionAndSymbolLinkingEnabled {
+	public class ReferenceWithPdbCopyActionAndSymbolLinkingEnabled
+	{
 		static void Main ()
 		{
 			LibraryWithPdb.SomeMethod ();

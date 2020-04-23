@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
-	public class UnusedExplicitInterfaceHasMethodPreservedViaXml {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
+{
+	public class UnusedExplicitInterfaceHasMethodPreservedViaXml
+	{
 		public static void Main ()
 		{
 			IFoo i = new A ();
@@ -9,13 +11,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
 		}
 
 		[Kept]
-		interface IFoo {
+		interface IFoo
+		{
 			[Kept]
 			void Foo ();
 		}
 
 		[Kept]
-		interface IBar {
+		interface IBar
+		{
 			[Kept]
 			void Bar ();
 		}
@@ -24,7 +28,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
 		[KeptInterface (typeof (IBar))]
-		struct A : IBar, IFoo {
+		struct A : IBar, IFoo
+		{
 			[Kept]
 			void IFoo.Foo ()
 			{

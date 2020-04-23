@@ -20,27 +20,27 @@ namespace ILLink.Tasks
 		[Required]
 		public ITaskItem RootDescriptorFilePath { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
-			var roots = new XElement("linker");
+			var roots = new XElement ("linker");
 			foreach (var assemblyItem in AssemblyNames) {
 				var assemblyName = assemblyItem.ItemSpec;
-				roots.Add(new XElement("assembly",
-						new XAttribute("fullname", assemblyName),
-						new XElement("type",
-							new XAttribute("fullname", "*"),
-							new XAttribute("required", "true"))));
+				roots.Add (new XElement ("assembly",
+						new XAttribute ("fullname", assemblyName),
+						new XElement ("type",
+							new XAttribute ("fullname", "*"),
+							new XAttribute ("required", "true"))));
 			}
 
-			var xdoc = new XDocument(roots);
+			var xdoc = new XDocument (roots);
 
 			XmlWriterSettings xws = new XmlWriterSettings {
 				Indent = true,
 				OmitXmlDeclaration = true
 			};
 
-			using (XmlWriter xw = XmlWriter.Create(RootDescriptorFilePath.ItemSpec, xws)) {
-				xdoc.Save(xw);
+			using (XmlWriter xw = XmlWriter.Create (RootDescriptorFilePath.ItemSpec, xws)) {
+				xdoc.Save (xw);
 			}
 
 			return true;

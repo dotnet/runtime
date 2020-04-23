@@ -13,6 +13,6 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 
 		[Kept]
 		[KeptBackingField]
-		public static int Prop { get; [Kept] set; }		
+		public static int Prop { get; [Kept] set; }
 	}
 }
