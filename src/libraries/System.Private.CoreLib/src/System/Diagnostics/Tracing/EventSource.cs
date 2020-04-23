@@ -1371,28 +1371,29 @@ namespace System.Diagnostics.Tracing
             int dataCount,
             IntPtr data)
         {
+#if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
+            bool allAreNull = true;
 #if FEATURE_MANAGED_ETW
-            if (m_etwProvider == null)
+            allAreNull &= (m_etwProvider == null);
+            if (m_etwProvider != null
+                && !m_etwProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
             {
                 ThrowEventSourceException(eventName);
-            }
-            else
-            {
-                if (!m_etwProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
-                    ThrowEventSourceException(eventName);
             }
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
-            if (m_eventPipeProvider == null)
+            allAreNull &= (m_eventPipeProvider == null);
+            if (m_eventPipeProvider != null
+                && !m_eventPipeProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
             {
                 ThrowEventSourceException(eventName);
             }
-            else
-            {
-                if (!m_eventPipeProvider.WriteEventRaw(ref eventDescriptor, eventHandle, activityID, relatedActivityID, dataCount, data))
-                    ThrowEventSourceException(eventName);
-            }
 #endif // FEATURE_PERFTRACING
+            if (allAreNull)
+            {
+                ThrowEventSourceException(eventName);
+            }
+#endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
         // FrameworkEventSource is on the startup path for the framework, so we have this internal overload that it can use
@@ -2150,47 +2151,67 @@ namespace System.Diagnostics.Tracing
 
         private unsafe void WriteEventString(EventLevel level, long keywords, string msgString)
         {
+#if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
 #if FEATURE_MANAGED_ETW
-            if (m_etwProvider != null)
+            if (m_etwProvider == null)
             {
-                const string EventName = "EventSourceMessage";
-                if (SelfDescribingEvents)
-                {
-                    EventSourceOptions opt = new EventSourceOptions
-                    {
-                        Keywords = (EventKeywords)unchecked(keywords),
-                        Level = level
-                    };
-                    var msg = new { message = msgString };
-                    var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { msg.GetType() });
-                    WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msg);
-                }
-                else
-                {
-                    // We want the name of the provider to show up so if we don't have a manifest we create
-                    // on that at least has the provider name (I don't define any events).
-                    if (m_rawManifest == null && m_outOfBandMessageCount == 1)
-                    {
-                        ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
-                        manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
-                        manifestBuilder.AddEventParameter(typeof(string), "message");
-                        manifestBuilder.EndEvent();
-                        SendManifest(manifestBuilder.CreateManifest());
-                    }
-
-                    // We use this low level routine to bypass the enabled checking, since the eventSource itself is only partially inited.
-                    fixed (char* msgStringPtr = msgString)
-                    {
-                        EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
-                        EventProvider.EventData data = default;
-                        data.Ptr = (ulong)msgStringPtr;
-                        data.Size = (uint)(2 * (msgString.Length + 1));
-                        data.Reserved = 0;
-                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
-                    }
-                }
+                return;
             }
 #endif // FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
+            if (m_eventPipeProvider == null)
+            {
+                return;
+            }
+#endif // FEATURE_PERFTRACING
+            const string EventName = "EventSourceMessage";
+            if (SelfDescribingEvents)
+            {
+                EventSourceOptions opt = new EventSourceOptions
+                {
+                    Keywords = (EventKeywords)unchecked(keywords),
+                    Level = level
+                };
+                var msg = new { message = msgString };
+                var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { msg.GetType() });
+                WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msg);
+            }
+            else
+            {
+                // We want the name of the provider to show up so if we don't have a manifest we create
+                // on that at least has the provider name (I don't define any events).
+                if (m_rawManifest == null && m_outOfBandMessageCount == 1)
+                {
+                    ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
+                    manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
+                    manifestBuilder.AddEventParameter(typeof(string), "message");
+                    manifestBuilder.EndEvent();
+                    SendManifest(manifestBuilder.CreateManifest());
+                }
+
+                // We use this low level routine to bypass the enabled checking, since the eventSource itself is only partially inited.
+                fixed (char* msgStringPtr = msgString)
+                {
+                    EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
+                    EventProvider.EventData data = default;
+                    data.Ptr = (ulong)msgStringPtr;
+                    data.Size = (uint)(2 * (msgString.Length + 1));
+                    data.Reserved = 0;
+#if FEATURE_MANAGED_ETW
+                    if (m_etwProvider != null)
+                    {
+                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
+                    }
+#endif // FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
+                    if (m_eventPipeProvider != null)
+                    {
+                        m_eventPipeProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
+                    }
+#endif // FEATURE_PERFTRACING
+                }
+            }
+#endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
         /// <summary>
