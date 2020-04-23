@@ -10694,6 +10694,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_DV_3H: // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (addhn{2}, raddhn{2}, rsubhn{2},
+                       // subhn{2})
+            code     = emitInsCode(ins, fmt);
+            elemsize = optGetElemsize(id->idInsOpt());
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_3HI: // DV_3HI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (smlal{2}, umlal{2} by element)
+            code     = emitInsCode(ins, fmt);
+            imm      = emitGetInsSC(id);
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            code |= insEncodeElemsize(elemsize);            // XX
+            code |= insEncodeVectorIndexLMH(elemsize, imm); // LM H
+            code |= insEncodeReg_Vd(id->idReg1());          // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());          // nnnnn
+            code |= insEncodeReg_Vm(id->idReg3());          // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             code     = emitInsCode(ins, fmt);
             elemsize = id->idOpSize();
