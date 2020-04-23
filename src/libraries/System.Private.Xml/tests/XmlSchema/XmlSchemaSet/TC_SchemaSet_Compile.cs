@@ -1138,31 +1138,36 @@ namespace System.Xml.Tests
 <xs:schema elementFormDefault='qualified'
             xmlns:xs='http://www.w3.org/2001/XMLSchema'>
     <xs:simpleType name='baseType'>
-        <xs:restriction base='xs:normalizedString'>
-            <xs:whitespace value='collapse'/>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='collapse'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='preserve'/>
         </xs:restriction>
     </xs:simpleType>
 </xs:schema>
 "
-                    }//,
-//                    new object[]
-//                    {
-//@"<?xml version='1.0' encoding='utf-8'?>
-//<xs:schema elementFormDefault='qualified'
-//            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
-//    <xs:simpleType name='baseType'>
-//        <xs:restriction base='string'>
-//            <xs:whitespace value='collapse'/>
-//        </xs:restriction>
-//    </xs:simpleType>
-//    <xs:simpleType name='restrictedType'>
-//        <xs:restriction base='baseType'>
-//            <xs:whitespace value='preserve'/>
-//        </xs:restriction>
-//    </xs:simpleType>
-//</xs:schema>
-//"
-//                    }
+                    },
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='collapse'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='replace'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
                 };
             }
         }
