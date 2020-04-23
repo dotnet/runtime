@@ -13171,6 +13171,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
+                case INS_smaddl:
+                case INS_smsubl:
+                case INS_smnegl:
+                case INS_umaddl:
+                case INS_umsubl:
+                case INS_umnegl:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
@@ -14156,6 +14166,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_cmgt:
                 case INS_cmhi:
                 case INS_cmhs:
+                case INS_shadd:
+                case INS_shsub:
+                case INS_srhadd:
                 case INS_smax:
                 case INS_smaxp:
                 case INS_smin:
@@ -14164,6 +14177,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_umaxp:
                 case INS_umin:
                 case INS_uminp:
+                case INS_uhadd:
+                case INS_uhsub:
+                case INS_urhadd:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:
@@ -14190,7 +14206,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
+                case INS_sqadd:
+                case INS_sqsub:
                 case INS_uabd:
+                case INS_uqadd:
+                case INS_uqsub:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
@@ -14375,6 +14395,80 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
+        case IF_DV_3H:  // addhn{2}, raddhn{2}, rsubhn{2}, sabal{2}, sabdl{2}, saddl{2}, saddw{2}, ssubl{2}, ssubw{2}
+        case IF_DV_3HI: // subhn{2}, uabal{2}, uabdl{2}, uaddl{2}, uaddw{2}, usubl{2}, usubw{2}
+            switch (ins)
+            {
+                case INS_addhn:
+                case INS_addhn2:
+                case INS_sabdl:
+                case INS_sabdl2:
+                case INS_saddl:
+                case INS_saddl2:
+                case INS_saddw:
+                case INS_saddw2:
+                case INS_ssubl:
+                case INS_ssubl2:
+                case INS_ssubw:
+                case INS_ssubw2:
+                case INS_subhn:
+                case INS_subhn2:
+                case INS_uabdl:
+                case INS_uabdl2:
+                case INS_uaddl:
+                case INS_uaddl2:
+                case INS_uaddw:
+                case INS_uaddw2:
+                case INS_usubl:
+                case INS_usubl2:
+                case INS_usubw:
+                case INS_usubw2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_raddhn:
+                case INS_raddhn2:
+                case INS_rsubhn:
+                case INS_rsubhn2:
+                case INS_sabal:
+                case INS_sabal2:
+                case INS_uabal:
+                case INS_uabal2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_smlal:
+                case INS_smlal2:
+                case INS_smlsl:
+                case INS_smlsl2:
+                case INS_smull:
+                case INS_smull2:
+                case INS_umlal:
+                case INS_umlal2:
+                case INS_umlsl:
+                case INS_umlsl2:
+                case INS_umull:
+                case INS_umull2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_pmull:
+                case INS_pmull2:
+                    assert((id->idInsOpt() == INS_OPTS_8B) || (id->idInsOpt() == INS_OPTS_16B));
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
         case IF_SI_0A: // brk   imm16
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -14398,6 +14492,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sha256su1:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_sadalp:
+                case INS_uadalp:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_saddlp:
+                case INS_uaddlp:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
 
                 default:
