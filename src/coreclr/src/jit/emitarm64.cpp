@@ -5619,16 +5619,22 @@ void emitter::emitIns_R_R_R(
         case INS_mls:
         case INS_saba:
         case INS_sabd:
+        case INS_shadd:
+        case INS_shsub:
         case INS_smax:
         case INS_smaxp:
         case INS_smin:
         case INS_sminp:
+        case INS_srhadd:
         case INS_uaba:
         case INS_uabd:
+        case INS_uhadd:
+        case INS_uhsub:
         case INS_umax:
         case INS_umaxp:
         case INS_umin:
         case INS_uminp:
+        case INS_urhadd:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
