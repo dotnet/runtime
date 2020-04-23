@@ -5988,6 +5988,24 @@ void emitter::emitIns_R_R_R(
             fmt = IF_DV_3H;
             break;
 
+        case INS_pmull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert(opt == INS_OPTS_8B);
+            fmt = IF_DV_3H;
+            break;
+
+        case INS_pmull2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert(opt == INS_OPTS_16B);
+            fmt = IF_DV_3H;
+            break;
+
         default:
             unreached();
             break;
