@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
@@ -98,6 +98,9 @@
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
