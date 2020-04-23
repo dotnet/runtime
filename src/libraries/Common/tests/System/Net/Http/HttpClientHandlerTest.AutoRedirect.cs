@@ -70,6 +70,17 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static IEnumerable<object[]> RedirectStatusCodesAsync()
+        {
+            foreach (bool value in AsyncBoolValues)
+            {
+                yield return new object[] { value, 300 };
+                yield return new object[] { value, 301 };
+                yield return new object[] { value, 302 };
+                yield return new object[] { value, 303 };
+            }
+        }
+
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
@@ -145,15 +156,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true, 300)]
-        [InlineData(true, 301)]
-        [InlineData(true, 302)]
-        [InlineData(true, 303)]
-        [InlineData(false, 300)]
-        [InlineData(false, 301)]
-        [InlineData(false, 302)]
-        [InlineData(false, 303)]
+        [Theory, MemberData(nameof(RedirectStatusCodesAsync))]
         public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(bool async, int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();

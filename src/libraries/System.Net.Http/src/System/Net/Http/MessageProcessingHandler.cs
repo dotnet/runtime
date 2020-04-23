@@ -37,9 +37,9 @@ namespace System.Net.Http
             }
 
             // Since most of the SendAsync code is just Task handling, there's no reason to share the code.
-            HttpRequestMessage newRequestMessage = ProcessRequest(request, default);
+            HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
             HttpResponseMessage response = base.Send(newRequestMessage, cancellationToken);
-            HttpResponseMessage newResponseMessage = ProcessResponse(response, default);
+            HttpResponseMessage newResponseMessage = ProcessResponse(response, cancellationToken);
             return newResponseMessage;
         }
 

@@ -1375,7 +1375,7 @@ namespace System.Net.Http
                     }
 
                     // Sync-over-async.  See comment on Http2Connection.SendAsync.
-                    http2Stream.SendDataAsync(new ReadOnlyMemory<byte>(buffer, offset, count), default).AsTask().GetAwaiter().GetResult();
+                    http2Stream.SendDataAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken: default).AsTask().GetAwaiter().GetResult();
                 }
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

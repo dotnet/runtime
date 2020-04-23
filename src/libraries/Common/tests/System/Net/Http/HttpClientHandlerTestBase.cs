@@ -158,9 +158,9 @@ namespace System.Net.Http.Functional.Tests
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
                 return Task.Run(() => client.Send(request, completionOption, cancellationToken));
 #else
-                // Do just async for framework, since it'll never have the sync API and
-                // it shouldn't even be called due to AsyncBoolValues returning only true.
-                return client.SendAsync(request, completionOption, cancellationToken);
+                // Framework won't ever have the sync API.
+                // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
+                Debug.Assert(async);
 #endif
             }
         }

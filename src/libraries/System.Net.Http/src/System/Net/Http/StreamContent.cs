@@ -55,7 +55,10 @@ namespace System.Net.Http
 
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             PrepareContent();
 

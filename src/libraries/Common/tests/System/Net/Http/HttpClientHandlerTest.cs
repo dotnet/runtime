@@ -1943,7 +1943,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Interim1xxStatusCode()
         {
-            foreach (var async in BoolValues)
+            foreach (var async in AsyncBoolValues)
             {
                 yield return new object[] {async, (HttpStatusCode)100}; // 100 Continue.
                 // 101 SwitchingProtocols will be treated as a final status code.

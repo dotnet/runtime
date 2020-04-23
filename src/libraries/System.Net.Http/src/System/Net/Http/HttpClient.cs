@@ -447,12 +447,12 @@ namespace System.Net.Http
 
         public HttpResponseMessage Send(HttpRequestMessage request)
         {
-            return Send(request, defaultCompletionOption, default);
+            return Send(request, defaultCompletionOption, cancellationToken: default);
         }
 
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption)
         {
-            return Send(request, completionOption, default);
+            return Send(request, completionOption, cancellationToken: default);
         }
 
         public override HttpResponseMessage Send(HttpRequestMessage request,
