@@ -6211,6 +6211,38 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_DV_3G;
             break;
 
+        case INS_smlal:
+        case INS_smlsl:
+        case INS_smull:
+        case INS_umlal:
+        case INS_umlsl:
+        case INS_umull:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_8BYTE);
+            assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+            elemsize = optGetElemsize(opt);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            fmt = IF_DV_3HI;
+            break;
+
+        case INS_smlal2:
+        case INS_smlsl2:
+        case INS_smull2:
+        case INS_umlal2:
+        case INS_umlsl2:
+        case INS_umull2:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(size == EA_16BYTE);
+            assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+            elemsize = optGetElemsize(opt);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            fmt = IF_DV_3HI;
+            break;
+
         default:
             unreached();
             break;
