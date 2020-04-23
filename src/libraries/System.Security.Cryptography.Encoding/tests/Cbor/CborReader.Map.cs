@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -129,7 +128,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (!previousKeys.Add(currentKeyRange))
             {
-                throw new FormatException("CBOR map contain duplicate keys.");
+                throw new FormatException("CBOR map contains duplicate keys.");
             }
         }
 
@@ -149,7 +148,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _originalBuffer.Span.Slice(range.offset, range.length);
         }
 
-        private class KeyEncodingComparer : IComparer<(int, int)>
+        private class KeyEncodingComparer : IComparer<(int offset, int length)>
         {
             private readonly CborReader _reader;
 
@@ -158,7 +157,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _reader = reader;
             }
 
-            public int Compare((int, int) x, (int, int) y)
+            public int Compare((int offset, int length) x, (int offset, int length) y)
             {
                 return CborConformanceLevelHelpers.CompareEncodings(_reader.GetKeyEncoding(x), _reader.GetKeyEncoding(y), _reader.ConformanceLevel);
             }

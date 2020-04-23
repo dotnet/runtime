@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             // copy sorted ranges to temporary buffer
             Span<byte> s = tmpSpan;
-            foreach((int, int, int) range in _keyValueEncodingRanges)
+            foreach((int offset, int keyLength, int valueLength) range in _keyValueEncodingRanges)
             {
                 ReadOnlySpan<byte> kvEnc = GetKeyValueEncoding(range);
                 kvEnc.CopyTo(s);
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _buffer.AsSpan(keyValueRange.offset, keyValueRange.keyValueLength);
         }
 
-        private class KeyEncodingComparer : IComparer<(int, int, int)>
+        private class KeyEncodingComparer : IComparer<(int offset, int keyLength, int keyValueLength)>
         {
             private readonly CborWriter _writer;
 
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _writer = writer;
             }
 
-            public int Compare((int, int, int) x, (int, int, int) y)
+            public int Compare((int offset, int keyLength, int keyValueLength) x, (int offset, int keyLength, int keyValueLength) y)
             {
                 return CborConformanceLevelHelpers.CompareEncodings(_writer.GetKeyEncoding(x), _writer.GetKeyEncoding(y), _writer.ConformanceLevel);
             }
