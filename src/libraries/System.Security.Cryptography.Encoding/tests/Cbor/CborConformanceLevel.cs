@@ -115,8 +115,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (level)
             {
-                // Strict mode only concerns itself with uniqueness, not sorting
-                // so any total order for buffers should do.
+                // Strict mode only concerns itself with uniqueness, not sorting.
+                // Any total order for buffers should do.
                 case CborConformanceLevel.Strict:
                 case CborConformanceLevel.Rfc7049Canonical:
                     // Implements key sorting according to

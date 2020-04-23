@@ -274,8 +274,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void PushDataItem(CborMajorType type, uint? expectedNestedItems)
         {
+            var frame = new StackFrame(
+                type: type,
+                frameOffset: _frameOffset,
+                remainingDataItems: _remainingDataItems,
+                currentKeyOffset: _currentKeyOffset,
+                currentItemIsKey: _curentItemIsKey,
+                previousKeyRange: _previousKeyRange,
+                previousKeyRanges: _previousKeyRanges
+            );
+
             _nestedDataItems ??= new Stack<StackFrame>();
-            _nestedDataItems.Push(CaptureCurrentStateAsFrame(type));
+            _nestedDataItems.Push(frame);
 
             _remainingDataItems = checked((uint?)expectedNestedItems);
             _frameOffset = _bytesRead;
@@ -311,7 +321,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             _nestedDataItems.Pop();
-            RestoreStateFromFrame(in frame);
+
+            _frameOffset = frame.FrameOffset;
+            _remainingDataItems = frame.RemainingDataItems;
+            _currentKeyOffset = frame.CurrentKeyOffset;
+            _curentItemIsKey = frame.CurrentItemIsKey;
+            _previousKeyRange = frame.PreviousKeyRange;
+            _previousKeyRanges = frame.PreviousKeyRanges;
             // Popping items from the stack can change the reader state
             // without necessarily needing to advance the buffer
             // (e.g. we're at the end of a definite-length collection).
@@ -405,67 +421,61 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             public SortedSet<(int offset, int length)>? PreviousKeyRanges { get; }
         }
 
-        private StackFrame CaptureCurrentStateAsFrame(CborMajorType type)
-        {
-            return new StackFrame(
-                type: type,
-                frameOffset: _frameOffset,
-                remainingDataItems: _remainingDataItems,
-                currentKeyOffset: _currentKeyOffset,
-                currentItemIsKey: _curentItemIsKey,
-                previousKeyRange: _previousKeyRange,
-                previousKeyRanges: _previousKeyRanges
-            );
-        }
-
-        private void RestoreStateFromFrame(in StackFrame frame)
-        {
-            _frameOffset = frame.FrameOffset;
-            _remainingDataItems = frame.RemainingDataItems;
-            _currentKeyOffset = frame.CurrentKeyOffset;
-            _curentItemIsKey = frame.CurrentItemIsKey;
-            _previousKeyRange = frame.PreviousKeyRange;
-            _previousKeyRanges = frame.PreviousKeyRanges;
-        }
-
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
         // NB checkpoints do not contain stack information, so we can only roll back provided that the
         // reader is within the original context in which the checkpoint was created
         private readonly struct Checkpoint
         {
-            public Checkpoint(int bytesRead, int stackDepth, in StackFrame frame)
+            public Checkpoint(int bytesRead, int stackDepth, int frameOffset, uint? remainingDataItems,
+                              int? currentKeyOffset, bool currentItemIsKey, (int offset, int length)? previousKeyRange,
+                              SortedSet<(int offset, int length)>? previousKeyRanges)
             {
-                _bytesRead = bytesRead;
-                _stackDepth = stackDepth;
-                _frame = frame;
+                BytesRead = bytesRead;
+                StackDepth = stackDepth;
+                FrameOffset = frameOffset;
+                RemainingDataItems = remainingDataItems;
+
+                CurrentKeyOffset = currentKeyOffset;
+                CurrentItemIsKey = currentItemIsKey;
+                PreviousKeyRange = previousKeyRange;
+                PreviousKeyRanges = previousKeyRanges;
             }
 
-            public readonly int _bytesRead;
-            public readonly int _stackDepth;
-            public readonly StackFrame _frame;
+            public int BytesRead { get; }
+            public int StackDepth { get; }
+            public int FrameOffset { get; }
+            public uint? RemainingDataItems { get; }
+
+            public int? CurrentKeyOffset { get; }
+            public bool CurrentItemIsKey { get; }
+            public (int offset, int length)? PreviousKeyRange { get; }
+            public SortedSet<(int offset, int length)>? PreviousKeyRanges { get; }
         }
 
         private Checkpoint CreateCheckpoint()
         {
-            StackFrame frame = CaptureCurrentStateAsFrame((CborMajorType)8);
-
             return new Checkpoint(
                 bytesRead: _bytesRead,
                 stackDepth: _nestedDataItems?.Count ?? 0,
-                frame: in frame);
+                frameOffset: _frameOffset,
+                remainingDataItems: _remainingDataItems,
+                currentKeyOffset: _currentKeyOffset,
+                currentItemIsKey: _curentItemIsKey,
+                previousKeyRange: _previousKeyRange,
+                previousKeyRanges: _previousKeyRanges);
         }
 
         private void RestoreCheckpoint(in Checkpoint checkpoint)
         {
             if (_nestedDataItems != null)
             {
-                int stackOffset = _nestedDataItems.Count - checkpoint._stackDepth;
+                int stackOffset = _nestedDataItems.Count - checkpoint.StackDepth;
 
                 Debug.Assert(stackOffset >= 0, "Attempting to restore checkpoint outside of its original context.");
                 Debug.Assert(
                     (stackOffset == 0) ?
-                    _frameOffset == checkpoint._frame.FrameOffset :
-                    _nestedDataItems.Skip(stackOffset - 1).FirstOrDefault().FrameOffset == checkpoint._frame.FrameOffset,
+                    _frameOffset == checkpoint.FrameOffset :
+                    _nestedDataItems.Skip(stackOffset - 1).FirstOrDefault().FrameOffset == checkpoint.FrameOffset,
                     "Attempting to restore checkpoint outside of its original context.");
 
                 // pop any nested data items introduced after the checkpoint
@@ -475,9 +485,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
             }
 
-            _bytesRead = checkpoint._bytesRead;
-            _buffer = _originalBuffer.Slice(checkpoint._bytesRead);
-            RestoreStateFromFrame(in checkpoint._frame);
+            _buffer = _originalBuffer.Slice(checkpoint.BytesRead);
+            _bytesRead = checkpoint.BytesRead;
+            _frameOffset = checkpoint.FrameOffset;
+            _remainingDataItems = checkpoint.RemainingDataItems;
+            _currentKeyOffset = checkpoint.CurrentKeyOffset;
+            _curentItemIsKey = checkpoint.CurrentItemIsKey;
+            _previousKeyRange = checkpoint.PreviousKeyRange;
+            _previousKeyRanges = checkpoint.PreviousKeyRanges;
 
             // invalidate the state cache
             _cachedState = CborReaderState.Unknown;
