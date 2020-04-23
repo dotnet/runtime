@@ -1196,5 +1196,59 @@ namespace System.Xml.Tests
             Assert.Contains("replace", ex.Message);
         }
         #endregion
+
+        #region tests causing XmlSchemaException with Sch_WhiteSpaceRestriction2
+        public static IEnumerable<object[]> WhiteSpaceRestriction2_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='baseType'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='replace'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='restrictedType'>
+        <xs:restriction base='baseType'>
+            <xs:whiteSpace value='preserve'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WhiteSpaceRestriction2_Throws_TestData))]
+        public void WhiteSpaceRestriction2_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            using (StringReader sr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(sr))
+            {
+                ss.Add(null, xmlrdr);
+            }
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            // Issue 30218: invalid formatters
+            // TODO remove once invalid formatter is removed from Sch_WhiteSpaceRestriction1.
+            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+            Assert.Contains("whiteSpace", ex.Message);
+            Assert.DoesNotContain("collapse", ex.Message);
+            Assert.Contains("preserve", ex.Message);
+            Assert.Contains("replace", ex.Message);
+        }
+        #endregion
     }
 }
