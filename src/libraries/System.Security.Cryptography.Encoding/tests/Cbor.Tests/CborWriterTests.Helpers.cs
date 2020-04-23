@@ -5,6 +5,7 @@
 #nullable enable
 
 using System.Linq;
+using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
@@ -32,6 +33,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                        values[1] is string;
             }
 
+            public static bool IsTaggedValueRepresentation(object[] values)
+            {
+                return values.Length == 2 && values[0] is CborTag;
+            }
+
             public static void WriteValue(CborWriter writer, object value, bool useDefiniteLengthCollections = true)
             {
                 switch (value)
@@ -43,7 +49,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case ulong i: writer.WriteUInt64(i); break;
                     case float f: writer.WriteSingle(f); break;
                     case double d: writer.WriteDouble(d); break;
+                    case decimal d: writer.WriteDecimal(d); break;
                     case string s: writer.WriteTextString(s); break;
+                    case BigInteger i: writer.WriteBigInteger(i); break;
+                    case DateTimeOffset d: writer.WriteDateTimeOffset(d); break;
                     case byte[] b: writer.WriteByteString(b); break;
                     case byte[][] chunks: WriteChunkedByteString(writer, chunks); break;
                     case string[] chunks: WriteChunkedTextString(writer, chunks); break;
@@ -51,6 +60,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case object[] nested when IsEncodedValueRepresentation(nested):
                         byte[] encodedValue = ((string)nested[1]).HexToByteArray();
                         writer.WriteEncodedValue(encodedValue);
+                        break;
+
+                    case object[] nested when IsTaggedValueRepresentation(nested):
+                        writer.WriteTag((CborTag)nested[0]);
+                        WriteValue(writer, nested[1]);
                         break;
 
                     case object[] nested: WriteArray(writer, nested, useDefiniteLengthCollections); break;

@@ -4,6 +4,9 @@
 
 #nullable enable
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
 using Xunit;
@@ -175,5 +178,40 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = writer.ToArray();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
+
+        [Theory]
+        [MemberData(nameof(UnsupportedConformanceTaggedValues))]
+        internal static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
+        {
+            using var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, value));
+            Assert.Equal(0, writer.BytesWritten);
+        }
+
+        public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        [Theory]
+        [MemberData(nameof(SupportedConformanceTaggedValues))]
+        internal static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
+        {
+            using var writer = new CborWriter(level);
+            Helpers.WriteValue(writer, value);
+        }
+
+        public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Rfc7049Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        private static object[] TaggedValues =>
+            new object[]
+            {
+                new object[] { CborTag.MimeMessage, 42 },
+                42m,
+                DateTimeOffset.UnixEpoch,
+            };
     }
 }
