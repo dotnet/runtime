@@ -1,5 +1,4 @@
-<Project InitialTargets="SetupCoverageFilter">
-
+<Project>
   <Target Name="SetupCoverageFilter">
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
@@ -35,7 +34,7 @@
   </Target>
 
   <Target Name="GenerateCoverageReport"
-          Condition="'$(VSTestCollect)' == 'XPlat code coverage' and '$(SkipCoverageReport)' != 'true'"
+          Condition="'$(Coverage)' == 'true' and '$(SkipCoverageReport)' != 'true'"
           AfterTargets="VSTest">
     <ItemGroup Condition="'$(CoverageReportInputPath)' == ''">
       <CoverageOutputFile Include="$(OutDir)*\coverage.opencover.xml" />
@@ -51,5 +50,4 @@
 
     <Exec Command="$(CoverageReportCommand)" />
   </Target>
-
 </Project>
