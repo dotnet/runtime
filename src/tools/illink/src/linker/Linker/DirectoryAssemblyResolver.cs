@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using Mono.Collections.Generic;
 using Mono.Cecil;
 
@@ -14,6 +15,10 @@ namespace Mono.Linker {
 	public abstract class DirectoryAssemblyResolver : IAssemblyResolver {
 
 		readonly Collection<string> directories;
+
+		protected readonly Dictionary<AssemblyDefinition, string> assemblyToPath = new Dictionary<AssemblyDefinition, string> ();
+
+		readonly List<MemoryMappedViewStream> viewStreams = new List<MemoryMappedViewStream> ();
 
 		public void AddSearchDirectory (string directory)
 		{
@@ -40,7 +45,28 @@ namespace Mono.Linker {
 			if (parameters.AssemblyResolver == null)
 				parameters.AssemblyResolver = this;
 
-			return ModuleDefinition.ReadModule (file, parameters).Assembly;
+			MemoryMappedViewStream viewStream = null;
+			try {
+				// Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+				using var fileStream = new FileStream (file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+				using var mappedFile = MemoryMappedFile.CreateFromFile (
+					fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+				viewStream = mappedFile.CreateViewStream (0, 0, MemoryMappedFileAccess.Read);
+
+				AssemblyDefinition result = ModuleDefinition.ReadModule (viewStream, parameters).Assembly;
+
+				assemblyToPath.Add (result, file);
+
+				viewStreams.Add (viewStream);
+
+				// We transferred the ownership of the viewStream to the collection.
+				viewStream = null;
+
+				return result;
+			} finally {
+				if (viewStream != null)
+					viewStream.Dispose ();
+			}
 		}
 
 		public virtual AssemblyDefinition Resolve (AssemblyNameReference name)
@@ -89,6 +115,13 @@ namespace Mono.Linker {
 
 		protected virtual void Dispose (bool disposing)
 		{
+			if (disposing) {
+				foreach (var viewStream in viewStreams) {
+					viewStream.Dispose ();
+				}
+
+				viewStreams.Clear ();
+			}
 		}
 	}
 }
