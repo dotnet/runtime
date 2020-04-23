@@ -1,7 +1,7 @@
 MONO_CONFIG=Debug
 MONO_ARCH=arm64
 DOTNET := ../../../../.././dotnet.sh
-USE_LLVM=False
+USE_LLVM=True
 
 # usage example:
 # 'make all MONO_ARCH=x64 MONO_CONFIG=Release' to build the app for simulator
