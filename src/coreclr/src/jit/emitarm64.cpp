@@ -3328,6 +3328,48 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 }
 
+//  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
+//  arrangement
+//  asserts and returns INS_OPTS_NONE if an invalid 'srcArrangement' value is passed
+//
+/*static*/ insOpts emitter::optWidenDstArrangement(insOpts srcArrangement)
+{
+    insOpts dstArrangement = INS_OPTS_NONE;
+
+    switch (srcArrangement)
+    {
+        case INS_OPTS_8B:
+            dstArrangement = INS_OPTS_4H;
+            break;
+
+        case INS_OPTS_16B:
+            dstArrangement = INS_OPTS_8H;
+            break;
+
+        case INS_OPTS_4H:
+            dstArrangement = INS_OPTS_2S;
+            break;
+
+        case INS_OPTS_8H:
+            dstArrangement = INS_OPTS_4S;
+            break;
+
+        case INS_OPTS_2S:
+            dstArrangement = INS_OPTS_1D;
+            break;
+
+        case INS_OPTS_4S:
+            dstArrangement = INS_OPTS_2D;
+            break;
+
+        default:
+            assert(!" invalid 'srcArrangement' value");
+            break;
+    }
+
+    return dstArrangement;
+}
+
 //  For the given 'conversion' returns the 'dstsize' specified by the conversion option
 /*static*/ emitAttr emitter::optGetDstsize(insOpts conversion)
 {
