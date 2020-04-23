@@ -523,6 +523,9 @@
   <data name="Arg_MustBeInt64" xml:space="preserve">
     <value>Object must be of type Int64.</value>
   </data>
+  <data name="Arg_MustBeIntPtr" xml:space="preserve">
+    <value>Object must be of type IntPtr.</value>
+  </data>
   <data name="Arg_MustBeInterface" xml:space="preserve">
     <value>Type passed must be an interface.</value>
   </data>
@@ -561,6 +564,9 @@
   </data>
   <data name="Arg_MustBeUInt64" xml:space="preserve">
     <value>Object must be of type UInt64.</value>
+  </data>
+  <data name="Arg_MustBeUIntPtr" xml:space="preserve">
+    <value>Object must be of type UIntPtr.</value>
   </data>
   <data name="Arg_MustBeVersion" xml:space="preserve">
     <value>Object must be of type Version.</value>
