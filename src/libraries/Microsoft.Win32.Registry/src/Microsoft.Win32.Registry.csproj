@@ -4,7 +4,7 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and $(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT;netstandard2.0-Windows_NT;netstandard2.0-Unix;netstandard2.0;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
