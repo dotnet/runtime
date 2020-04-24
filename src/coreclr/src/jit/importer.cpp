@@ -8261,7 +8261,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (!(mflags & CORINFO_FLG_STATIC) && !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
     {
         GenTree* obj;
 
