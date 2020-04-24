@@ -115,12 +115,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Lax, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a42000a30303020201010061610019010000")]
-        [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a42000a30303020201010061610019010000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a4200061610019010000a301010202030300")]
-        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 }, "a4190100002000616100a301010202030300")]
-        internal static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(CborConformanceLevel level, object value, string expectedHexEncoding)
+        [InlineData("a42000a30303020201010061610019010000", CborConformanceLevel.Lax)]
+        [InlineData("a42000a30303020201010061610019010000", CborConformanceLevel.Strict)]
+        [InlineData("a4200061610019010000a301010202030300", CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData("a4190100002000616100a301010202030300", CborConformanceLevel.Ctap2Canonical)]
+        internal static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(string expectedHexEncoding, CborConformanceLevel level)
         {
+            object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 };
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);
