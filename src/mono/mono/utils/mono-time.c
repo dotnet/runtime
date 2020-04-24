@@ -238,12 +238,12 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 #if defined(HOST_DARWIN)
 
 void
-mono_clock_init (mono_clock_id_t clk_id)
+mono_clock_init (mono_clock_id_t *clk_id)
 {
 	kern_return_t ret;
 
 	do {
-		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &clk_id);
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, clk_id);
 	} while (ret == KERN_ABORTED);
 
 	if (ret != KERN_SUCCESS)
@@ -282,7 +282,7 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 #elif defined(__linux__)
 
 void
-mono_clock_init (mono_clock_id_t clk_id)
+mono_clock_init (mono_clock_id_t *clk_id)
 {	
 }
 
@@ -305,7 +305,7 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 #else
 
 void
-mono_clock_init (mono_clock_id_t clk_id)
+mono_clock_init (mono_clock_id_t *clk_id)
 {
 	// TODO: need to implement this function for PC
 	g_assert_not_reached ();

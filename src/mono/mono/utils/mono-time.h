@@ -39,7 +39,7 @@ typedef clockid_t mono_clock_id_t;
 typedef void* mono_clock_id_t;
 #endif
 
-void mono_clock_init (mono_clock_id_t clk_id);
+void mono_clock_init (mono_clock_id_t *clk_id);
 void mono_clock_cleanup (mono_clock_id_t clk_id);
 guint64 mono_clock_get_time_ns (mono_clock_id_t clk_id);
 
