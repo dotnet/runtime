@@ -5755,6 +5755,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> MultiplyWideningLower(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x8_t vmlal_u8 (uint16x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLAL.U8 Qd, Dn, Dm
+        ///   A64: UMLAL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningLowerAndAdd(Vector128<ushort> addend, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlal_s16 (int32x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLAL.S16 Qd, Dn, Dm
+        ///   A64: SMLAL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlal_s32 (int64x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLAL.S32 Qd, Dn, Dm
+        ///   A64: SMLAL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> MultiplyWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlal_s8 (int16x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLAL.S8 Qd, Dn, Dm
+        ///   A64: SMLAL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningLowerAndAdd(Vector128<short> addend, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlal_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLAL.U16 Qd, Dn, Dm
+        ///   A64: UMLAL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlal_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLAL.U32 Qd, Dn, Dm
+        ///   A64: UMLAL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
         ///   A32: VNEG.S16 Dd, Dm
         ///   A64: NEG Vd.4H, Vn.4H
