@@ -341,6 +341,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> AddPairwiseScalar(Vector128<ulong> value) => AddPairwiseScalar(value);
 
             /// <summary>
+            /// uint8_t vqaddb_u8 (uint8_t a, uint8_t b)
+            ///   A64: UQADD Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<byte> AddSaturateScalar(Vector64<byte> left, Vector64<byte> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
+            /// int16_t vqaddh_s16 (int16_t a, int16_t b)
+            ///   A64: SQADD Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> AddSaturateScalar(Vector64<short> left, Vector64<short> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
+            /// int32_t vqadds_s32 (int32_t a, int32_t b)
+            ///   A64: SQADD Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> AddSaturateScalar(Vector64<int> left, Vector64<int> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
+            /// int8_t vqaddb_s8 (int8_t a, int8_t b)
+            ///   A64: SQADD Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<sbyte> AddSaturateScalar(Vector64<sbyte> left, Vector64<sbyte> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
+            /// uint16_t vqaddh_u16 (uint16_t a, uint16_t b)
+            ///   A64: UQADD Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<ushort> AddSaturateScalar(Vector64<ushort> left, Vector64<ushort> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vqadds_u32 (uint32_t a, uint32_t b)
+            ///   A64: UQADD Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<uint> AddSaturateScalar(Vector64<uint> left, Vector64<uint> right) => AddSaturateScalar(left, right);
+
+            /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FCMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
