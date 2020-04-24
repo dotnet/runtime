@@ -2194,6 +2194,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> AbsoluteDifferenceAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x8_t vabdl_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VABDL.U8 Qd, Dn, Dm
+        ///   A64: UABDL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceWideningLower(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vabdl_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VABDL.S16 Qd, Dn, Dm
+        ///   A64: SABDL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceWideningLower(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vabdl_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VABDL.S32 Qd, Dn, Dm
+        ///   A64: SABDL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> AbsoluteDifferenceWideningLower(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vabdl_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VABDL.S8 Qd, Dn, Dm
+        ///   A64: SABDL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceWideningLower(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vabdl_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VABDL.U16 Qd, Dn, Dm
+        ///   A64: UABDL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceWideningLower(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vabdl_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VABDL.U32 Qd, Dn, Dm
+        ///   A64: UABDL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> AbsoluteDifferenceWideningLower(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VADD.I8 Dd, Dn, Dm
         ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
