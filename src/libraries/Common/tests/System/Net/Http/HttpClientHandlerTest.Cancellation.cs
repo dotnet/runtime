@@ -27,7 +27,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         [ConditionalTheory]
-        [MemberData(nameof(TwoBoolsAndCancellationMode))]
+        [MemberData(nameof(AsyncAndBoolAndCancellationMode))]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool async, bool chunkedTransfer, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
@@ -59,7 +59,7 @@ namespace System.Net.Http.Functional.Tests
                         req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
-                        Task<HttpResponseMessage> resp = client.Send(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                        Task<HttpResponseMessage> resp = client.SendAsync(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         waitToSend.SetResult(true);
                         await Task.WhenAny(contentSending.Task, resp);
                         if (!resp.IsCompleted)
@@ -84,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(TwoBoolsAndCancellationMode))]
+        [MemberData(nameof(AsyncAndBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool async, bool connectionClose, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && connectionClose)
@@ -124,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.Send(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         await partialResponseHeadersSent.Task;
                         Cancel(mode, client, cts);
                         await getResponse;
@@ -141,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/25760")]
-        [MemberData(nameof(ThreeBoolsAndCancellationMode))]
+        [MemberData(nameof(AsyncAndTwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool async, bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
@@ -180,7 +180,7 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.Send(async, req, HttpCompletionOption.ResponseContentRead, cts.Token);
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(async, req, HttpCompletionOption.ResponseContentRead, cts.Token);
                         await responseHeadersSent.Task;
                         await Task.Delay(1); // make it more likely that client will have started processing response body
                         Cancel(mode, client, cts);
@@ -197,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(FourBools))]
+        [MemberData(nameof(AsyncAndThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool async, bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
@@ -238,7 +238,7 @@ namespace System.Net.Http.Functional.Tests
 
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
-                    Task<HttpResponseMessage> getResponse = client.Send(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(async, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
                         HttpResponseMessage resp = await getResponse;
@@ -599,20 +599,20 @@ namespace System.Net.Http.Functional.Tests
             DisposeHttpClient = 0x4
         }
 
-        public static IEnumerable<object[]> TwoBoolsAndCancellationMode() =>
+        public static IEnumerable<object[]> AsyncAndBoolAndCancellationMode() =>
             from async in AsyncBoolValues
             from second in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { async, second, mode };
 
-        public static IEnumerable<object[]> ThreeBoolsAndCancellationMode() =>
+        public static IEnumerable<object[]> AsyncAndTwoBoolsAndCancellationMode() =>
             from async in AsyncBoolValues
             from second in BoolValues
             from third in BoolValues
             from mode in new[] { CancellationMode.Token, CancellationMode.CancelPendingRequests, CancellationMode.DisposeHttpClient, CancellationMode.Token | CancellationMode.CancelPendingRequests }
             select new object[] { async, second, third, mode };
 
-        public static IEnumerable<object[]> FourBools() =>
+        public static IEnumerable<object[]> AsyncAndThreeBools() =>
             from async in AsyncBoolValues
             from second in BoolValues
             from third in BoolValues

@@ -9,7 +9,7 @@ namespace System.Net.Http
         protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            ValueTask<HttpResponseMessage> sendTask = SendAsync(request, false, cancellationToken);
+            ValueTask<HttpResponseMessage> sendTask = SendAsync(request, async:false, cancellationToken);
             // At least for HTTP 1.1 we must support fully sync Send
             Debug.Assert(request.Version.Major >= 2 || sendTask.IsCompleted);
             return sendTask.IsCompleted ? sendTask.GetAwaiter().GetResult() : sendTask.AsTask().GetAwaiter().GetResult();
@@ -17,7 +17,7 @@ namespace System.Net.Http
 
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken) =>
-            SendAsync(request, true, cancellationToken).AsTask();
+            SendAsync(request, async: true, cancellationToken).AsTask();
 
         internal abstract ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async,
             CancellationToken cancellationToken);

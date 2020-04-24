@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -80,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
             };
 
-        public static IEnumerable<object[]> Async() => AsyncBoolValues.Select(b => new object[] { b });
+        public static IEnumerable<object[]> AsyncBoolMemberData() => AsyncBoolValues.Select(b => new object[] { b });
 
         // For use by remote server tests
 
@@ -145,7 +146,7 @@ namespace System.Net.Http.Functional.Tests
 
     public static class HttpClientExtensions
     {
-        public static Task<HttpResponseMessage> Send(this HttpClient client, bool async, HttpRequestMessage request, HttpCompletionOption completionOption = default, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> SendAsync(this HttpClient client, bool async, HttpRequestMessage request, HttpCompletionOption completionOption = default, CancellationToken cancellationToken = default)
         {
             if (async)
             {
@@ -160,7 +161,8 @@ namespace System.Net.Http.Functional.Tests
 #else
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
-                Debug.Assert(async);
+                Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
+                return Task.FromResult<HttpResponseMessage>(null);
 #endif
             }
         }

@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task GetAsync_AddCookieHeader_CookieHeaderSent(bool async)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -138,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
                         var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                         requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
-                        await client.Send(async, requestMessage);
+                        await client.SendAsync(async, requestMessage);
                     }
                 },
                 async server =>
@@ -149,7 +149,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent(bool async)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -162,7 +162,7 @@ namespace System.Net.Http.Functional.Tests
                         requestMessage.Headers.Add("Cookie", "B=2");
                         requestMessage.Headers.Add("Cookie", "C=3");
 
-                        await client.Send(async, requestMessage);
+                        await client.SendAsync(async, requestMessage);
                     }
                 },
                 async server =>
@@ -214,7 +214,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent(bool async)
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -227,7 +227,7 @@ namespace System.Net.Http.Functional.Tests
                     var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
-                    Task<HttpResponseMessage> getResponseTask = client.Send(async, requestMessage);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, requestMessage);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -242,7 +242,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent(bool async)
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -256,7 +256,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", "A=1");
                     requestMessage.Headers.Add("Cookie", "B=2");
 
-                    Task<HttpResponseMessage> getResponseTask = client.Send(async, requestMessage);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, requestMessage);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 

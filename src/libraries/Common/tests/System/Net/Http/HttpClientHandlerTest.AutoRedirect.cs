@@ -40,37 +40,27 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> RedirectStatusCodesOldMethodsNewMethods()
+        public static IEnumerable<object[]> AsyncRedirectStatusCodesOldMethodsNewMethods()
         {
             foreach (bool value in AsyncBoolValues)
             {
-                yield return new object[] {value, 300, "GET", "GET"};
-                yield return new object[] {value, 300, "POST", "GET"};
-                yield return new object[] {value, 300, "HEAD", "HEAD"};
+                foreach (int statusCode in new[] { 300, 301, 302, 303 })
+                {
+                    yield return new object[] { value, statusCode, "GET", "GET" };
+                    yield return new object[] { value, statusCode, "POST", "GET" };
+                    yield return new object[] { value, statusCode, "HEAD", "HEAD" };
+                }
 
-                yield return new object[] {value, 301, "GET", "GET"};
-                yield return new object[] {value, 301, "POST", "GET"};
-                yield return new object[] {value, 301, "HEAD", "HEAD"};
-
-                yield return new object[] {value, 302, "GET", "GET"};
-                yield return new object[] {value, 302, "POST", "GET"};
-                yield return new object[] {value, 302, "HEAD", "HEAD"};
-
-                yield return new object[] {value, 303, "GET", "GET"};
-                yield return new object[] {value, 303, "POST", "GET"};
-                yield return new object[] {value, 303, "HEAD", "HEAD"};
-
-                yield return new object[] {value, 307, "GET", "GET"};
-                yield return new object[] {value, 307, "POST", "POST"};
-                yield return new object[] {value, 307, "HEAD", "HEAD"};
-
-                yield return new object[] {value, 308, "GET", "GET"};
-                yield return new object[] {value, 308, "POST", "POST"};
-                yield return new object[] {value, 308, "HEAD", "HEAD"};
+                foreach (int statusCode in new[] {307, 308})
+                {
+                    yield return new object[] {value, statusCode, "GET", "GET"};
+                    yield return new object[] {value, statusCode, "POST", "POST"};
+                    yield return new object[] {value, 307, "HEAD", "HEAD"};
+                }
             }
         }
 
-        public static IEnumerable<object[]> RedirectStatusCodesAsync()
+        public static IEnumerable<object[]> AsyncRedirectStatusCodes()
         {
             foreach (bool value in AsyncBoolValues)
             {
@@ -110,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
+        [Theory, MemberData(nameof(AsyncRedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             bool async, int statusCode, string oldMethod, string newMethod)
         {
@@ -127,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = UseVersion };
 
-                    Task<HttpResponseMessage> getResponseTask = client.Send(async, request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
@@ -156,7 +146,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(RedirectStatusCodesAsync))]
+        [Theory, MemberData(nameof(AsyncRedirectStatusCodes))]
         public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(bool async, int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -168,7 +158,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Content = new StringContent(ExpectedContent);
                     request.Headers.TransferEncodingChunked = true;
 
-                    Task<HttpResponseMessage> getResponseTask = client.Send(async, request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(async, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {

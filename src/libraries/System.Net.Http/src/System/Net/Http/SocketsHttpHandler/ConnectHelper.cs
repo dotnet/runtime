@@ -41,10 +41,9 @@ namespace System.Net.Http
             if (!async)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Socket? socket = null;
+                Socket? socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 try
                 {
-                    socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     socket.NoDelay = true;
                     using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                     {
@@ -53,7 +52,7 @@ namespace System.Net.Http
                 }
                 catch
                 {
-                    socket?.Dispose();
+                    socket.Dispose();
                     throw;
                 }
 

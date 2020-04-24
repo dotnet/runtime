@@ -477,7 +477,7 @@ namespace System.Net.Http
                 ValueTask<int>? t = ConsumeReadAheadTask();
                 if (t != null)
                 {
-                    // Handle the pre-emptive read.  For the asyc==false case, hopefully the read has
+                    // Handle the pre-emptive read.  For the async==false case, hopefully the read has
                     // already completed and this will be a nop, but if it hasn't, we're forced to block
                     // waiting for the async operation to complete.  We will only hit this case for proxied HTTPS
                     // requests that use a pooled connection, as in that case we don't have a Socket we

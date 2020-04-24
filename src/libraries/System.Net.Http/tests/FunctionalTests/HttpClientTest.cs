@@ -326,34 +326,34 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(Async))]
+        [Theory, MemberData(nameof(AsyncBoolMemberData))]
         public async Task Send_NullRequest_ThrowsException(bool async)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(null))))
             {
-                await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.Send(async, null));
+                await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.SendAsync(async, null));
             }
         }
 
-        [Theory, MemberData(nameof(Async))]
+        [Theory, MemberData(nameof(AsyncBoolMemberData))]
         public async Task Send_DuplicateRequest_ThrowsException(bool async)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
             using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
             {
-                (await client.Send(async, request)).Dispose();
-                await Assert.ThrowsAsync<InvalidOperationException>(() => client.Send(async, request));
+                (await client.SendAsync(async, request)).Dispose();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(async, request));
             }
         }
 
-        [Theory, MemberData(nameof(Async))]
+        [Theory, MemberData(nameof(AsyncBoolMemberData))]
         public async Task Send_RequestContentNotDisposed(bool async)
         {
             var content = new ByteArrayContent(new byte[1]);
             using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
             {
-                await client.Send(async, request);
+                await client.SendAsync(async, request);
                 await content.ReadAsStringAsync(); // no exception
             }
         }

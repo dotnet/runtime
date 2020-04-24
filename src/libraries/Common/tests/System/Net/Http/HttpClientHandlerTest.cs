@@ -754,7 +754,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly(bool async)
         {
 #if WINHTTPHANDLER_TEST
@@ -839,7 +839,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-Underscore_Name", "X-Underscore_Name");
                     request.Headers.Add("X-End", "End");
 
-                    (await client.Send(async, request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
+                    (await client.SendAsync(async, request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
                 }
             }, async server =>
             {
@@ -1189,14 +1189,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws(bool async)
         {
             var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = UseVersion };
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
             {
-                HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => c.Send(async, req));
+                HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => c.SendAsync(async, req));
                 Assert.IsType<InvalidOperationException>(error.InnerException);
             }
         }
@@ -1233,7 +1233,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, remoteServer.EchoUri) { Version = remoteServer.HttpVersion };
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                using (HttpResponseMessage response = await client.Send(async, request, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage response = await client.SendAsync(async, request, HttpCompletionOption.ResponseHeadersRead))
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
                     _output.WriteLine(responseContent);
@@ -1862,7 +1862,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> ExpectContinueVersion()
+        public static IEnumerable<object[]> AsyncExpectContinueVersion()
         {
             var versions = new string[] {"1.0", "1.1", "2.0"};
             var expectContinue = new bool?[] {true, false, null};
@@ -1875,7 +1875,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory]
-        [MemberData(nameof(ExpectContinueVersion))]
+        [MemberData(nameof(AsyncExpectContinueVersion))]
         public async Task PostAsync_ExpectContinue_Success(bool async, bool? expectContinue, string version)
         {
             using (HttpClient client = CreateHttpClient())
@@ -1887,7 +1887,7 @@ namespace System.Net.Http.Functional.Tests
                 };
                 req.Headers.ExpectContinue = expectContinue;
 
-                using (HttpResponseMessage response = await client.Send(async, req))
+                using (HttpResponseMessage response = await client.SendAsync(async, req))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1941,7 +1941,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        public static IEnumerable<object[]> Interim1xxStatusCode()
+        public static IEnumerable<object[]> AsyncInterim1xxStatusCode()
         {
             foreach (var async in AsyncBoolValues)
             {
@@ -1956,7 +1956,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(Interim1xxStatusCode))]
+        [MemberData(nameof(AsyncInterim1xxStatusCode))]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(bool async, HttpStatusCode responseStatusCode)
         {
 #if WINHTTPHANDLER_TEST
@@ -1982,7 +1982,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    HttpResponseMessage response = await client.Send(async, initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(async, initialMessage);
 
                     // Verify status code.
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -2026,7 +2026,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(Interim1xxStatusCode))]
+        [MemberData(nameof(AsyncInterim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(bool async, HttpStatusCode responseStatusCode)
         {
 #if WINHTTPHANDLER_TEST
@@ -2046,7 +2046,7 @@ namespace System.Net.Http.Functional.Tests
                     initialMessage.Content = new StringContent(TestString);
                     // No ExpectContinue header.
                     initialMessage.Headers.ExpectContinue = false;
-                    HttpResponseMessage response = await client.Send(async, initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(async, initialMessage);
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     clientFinished.SetResult(true);
@@ -2072,7 +2072,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse(bool async)
         {
 #if WINHTTPHANDLER_TEST
@@ -2091,7 +2091,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    HttpResponseMessage response = await client.Send(async, initialMessage);
+                    HttpResponseMessage response = await client.SendAsync(async, initialMessage);
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     clientFinished.SetResult(true);
@@ -2118,7 +2118,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(Async))]
+        [MemberData(nameof(AsyncBoolMemberData))]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually(bool async)
         {
 #if WINHTTPHANDLER_TEST
@@ -2138,7 +2138,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(RequestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    using (HttpResponseMessage response = await client.Send(async, initialMessage))
+                    using (HttpResponseMessage response = await client.SendAsync(async, initialMessage))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.Equal(ResponseString, await response.Content.ReadAsStringAsync());

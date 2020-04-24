@@ -36,14 +36,14 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, false, cancellationToken);
+            ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, async: false, cancellationToken);
             Debug.Assert(sendTask.IsCompleted);
             return sendTask.GetAwaiter().GetResult();
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken) =>
-            SendAsyncCore(request, true, cancellationToken).AsTask();
+            SendAsyncCore(request, async: true, cancellationToken).AsTask();
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
             CancellationToken cancellationToken)
@@ -71,14 +71,9 @@ namespace System.Net.Http
 
                 try
                 {
-                    if (async)
-                    {
-                        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        return base.Send(request, cancellationToken);
-                    }
+                    return async ?
+                        await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                        base.Send(request, cancellationToken);
                 }
                 finally
                 {
