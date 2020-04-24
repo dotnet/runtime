@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
-    <RunScriptCommand Condition="'$(TargetsNetCoreApp)' == 'true'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileRunArgument) xunit.console.dll</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetsNetCoreApp)' == 'true'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) xunit.console.dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetsNetFx)' == 'true'">xunit.console.exe</RunScriptCommand>
 
     <RunScriptCommand>$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
