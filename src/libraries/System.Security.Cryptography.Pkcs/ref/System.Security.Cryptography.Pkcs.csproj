@@ -7,6 +7,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
+    <!-- Currently the netstandard build is locked to the $(NetFrameworkCurrent) API -->
+    <AssemblyVersion Condition="$(TargetFramework.StartsWith('netstandard'))">4.0.4.0</AssemblyVersion>    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />
