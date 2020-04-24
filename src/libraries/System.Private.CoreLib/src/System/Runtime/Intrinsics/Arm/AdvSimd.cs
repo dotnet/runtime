@@ -5842,6 +5842,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> MultiplyWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector64<uint> right) => MultiplyWideningLowerAndSubtract(minuend, left, right);
 
         /// <summary>
+        /// uint16x8_t vmull_high_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMULL.U8 Qd, Dn+1, Dm+1
+        ///   A64: UMULL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningUpper(Vector128<byte> left, Vector128<byte> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        /// int32x4_t vmull_high_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMULL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningUpper(Vector128<short> left, Vector128<short> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        /// int64x2_t vmull_high_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMULL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> MultiplyWideningUpper(Vector128<int> left, Vector128<int> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        /// int16x8_t vmull_high_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMULL.S8 Qd, Dn+1, Dm+1
+        ///   A64: SMULL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmull_high_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMULL.U16 Qd, Dn+1, Dm+1
+        ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningUpper(Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmull_high_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMULL.U32 Qd, Dn+1, Dm+1
+        ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningUpper(Vector128<uint> left, Vector128<uint> right) => MultiplyWideningUpper(left, right);
+
+        /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
         ///   A32: VNEG.S16 Dd, Dm
         ///   A64: NEG Vd.4H, Vn.4H
