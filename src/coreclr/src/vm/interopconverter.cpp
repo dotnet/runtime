@@ -454,14 +454,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             *pObjOut = ccw->GetObjectRef();
         }
 
-        if (*pObjOut != NULL)
-        {
-            if (!(dwFlags & ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING))
-            {
-                _ASSERTE(false);
-            }
-        }
-        else
+        if (*pObjOut == NULL)
         {
             // Only pass in the class method table to the interface marshaler if
             // it is a COM import (or COM import derived) class or a WinRT delegate.
