@@ -97,6 +97,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_BadComparer(object? comparer)
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
