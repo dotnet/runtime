@@ -399,7 +399,6 @@ jobs:
     - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_x64
-    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -512,7 +511,6 @@ jobs:
     - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_x64
-    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -528,6 +526,7 @@ jobs:
     - iOS_arm64
     - OSX_x64
     - Linux_x64
+    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
