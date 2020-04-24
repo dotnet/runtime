@@ -579,6 +579,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector64<float> CreateScalarUnsafe(float value)
         {
             // This relies on us stripping the "init" flag from the ".locals"

@@ -452,20 +452,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 
             case NI_Vector64_CreateScalarUnsafe:
                 assert(isRMW);
-                assert(targetReg != op1Reg);
 
-                // TODO: Reformat it little bit
-                if (intrin.op1->isContainedIntOrIImmed())
+                if (varTypeIsFloating(intrin.baseType))
                 {
-                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                    if (targetReg != op1Reg)
+                    {
+                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue,
+                                              INS_OPTS_NONE);
+                    }
+                    
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
-                                                INS_OPTS_NONE);
-                }
+                    assert(targetReg != op1Reg);
 
+                    // TODO: Reformat it little bit
+                    if (intrin.op1->isContainedIntOrIImmed())
+                    {
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    INS_OPTS_NONE);
+                    }
+                }
+                
                 break;
 
             default:
