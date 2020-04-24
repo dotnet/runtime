@@ -8,8 +8,6 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Server.Contract;
 
-#pragma warning disable 618 // Must test deprecated features
-
 [ComVisible(true)]
 [Guid(Server.Contract.Guids.EventTesting)]
 [ComSourceInterfaces(typeof(Server.Contract.TestingEvents))]
