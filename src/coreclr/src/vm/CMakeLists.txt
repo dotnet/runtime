@@ -603,7 +603,6 @@ list(APPEND VM_SOURCES_WKS
     stacksampler.cpp
     stdinterfaces.cpp
     stdinterfaces_wrapper.cpp
-    winrthelpers.cpp
 )
 
 list(APPEND VM_HEADERS_WKS
@@ -632,7 +631,6 @@ list(APPEND VM_HEADERS_WKS
     stacksampler.h
     stdinterfaces.h
     stdinterfaces_internal.h
-    winrthelpers.h
 )
 
 list(APPEND VM_SOURCES_DAC

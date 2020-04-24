@@ -238,7 +238,6 @@ if (CLR_CMAKE_TARGET_WIN32)
     ../crossgenroparsetypename.cpp
     ../crossgenroresolvenamespace.cpp
     ../runtimecallablewrapper.cpp
-    ../winrthelpers.cpp
   )
 
   list(APPEND VM_CROSSGEN_HEADERS
@@ -249,7 +248,6 @@ if (CLR_CMAKE_TARGET_WIN32)
     ../comtoclrcall.h
     ../crossgenroresolvenamespace.h
     ../runtimecallablewrapper.h
-    ../winrthelpers.h
   )
 
   list(APPEND VM_CROSSGEN_SOURCES ${VM_CROSSGEN_HEADERS})

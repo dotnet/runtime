@@ -48,7 +48,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderwinrt.h"
-#include "winrthelpers.h"
 #endif
 
 #ifdef CROSSGEN_COMPILE
@@ -296,54 +295,36 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
             PEAssemblyHolder pAssemblyHolder;
-            BOOL isWinRT = FALSE;
 
 #ifdef FEATURE_COMINTEROP
-            isWinRT = spec.IsContentType_WindowsRuntime();
-            if (isWinRT)
+            if (spec.IsContentType_WindowsRuntime())
             {
-                LPCSTR  szNameSpace;
-                LPCSTR  szTypeName;
-                // It does not make sense to pass the file name to recieve fake type name for empty WinMDs, because we would use the name
-                // for binding in next call to BindAssemblySpec which would fail for fake WinRT type name
-                // We will throw/return the error instead and the caller will recognize it and react to it by not creating the ngen image -
-                // see code:Zapper::ComputeDependenciesInCurrentDomain
-                IfFailThrow(::GetFirstWinRTTypeDef(pImage->GetMDImport(), &szNameSpace, &szTypeName, NULL, NULL));
-                spec.SetWindowsRuntimeType(szNameSpace, szTypeName);
+                ThrowHR(COR_E_BADIMAGEFORMAT);
             }
 #endif //FEATURE_COMINTEROP
+            //ExplicitBind
+            CoreBindResult bindResult;
+            spec.SetCodeBase(pImage->GetPath());
+            spec.Bind(
+                pDomain,
+                TRUE,                   // fThrowOnFileNotFound
+                &bindResult,
 
-            // If there is a host binder then use it to bind the assembly.
-            if (isWinRT)
-            {
-                pAssemblyHolder = pDomain->BindAssemblySpec(&spec, TRUE);
-            }
-            else
-            {
-                //ExplicitBind
-                CoreBindResult bindResult;
-                spec.SetCodeBase(pImage->GetPath());
-                spec.Bind(
-                    pDomain,
-                    TRUE,                   // fThrowOnFileNotFound
-                    &bindResult,
+                // fNgenExplicitBind: Generally during NGEN compilation, this is
+                // TRUE, meaning "I am NGEN, and I am doing an explicit bind to the IL
+                // image, so don't infer the NI and try to open it, because I already
+                // have it open". But if we're executing crossgen /CreatePDB, this should
+                // be FALSE so that downstream code doesn't assume we're explicitly
+                // trying to bind to an IL image (we're actually explicitly trying to
+                // open an NI).
+                !fExplicitBindToNativeImage,
 
-                    // fNgenExplicitBind: Generally during NGEN compilation, this is
-                    // TRUE, meaning "I am NGEN, and I am doing an explicit bind to the IL
-                    // image, so don't infer the NI and try to open it, because I already
-                    // have it open". But if we're executing crossgen /CreatePDB, this should
-                    // be FALSE so that downstream code doesn't assume we're explicitly
-                    // trying to bind to an IL image (we're actually explicitly trying to
-                    // open an NI).
-                    !fExplicitBindToNativeImage,
-
-                    // fExplicitBindToNativeImage: Most callers want this FALSE; but crossgen
-                    // /CreatePDB explicitly specifies NI names to open, and cannot assume
-                    // that IL assemblies will be available.
-                    fExplicitBindToNativeImage
-                    );
-                pAssemblyHolder = PEAssembly::Open(&bindResult,FALSE);
-            }
+                // fExplicitBindToNativeImage: Most callers want this FALSE; but crossgen
+                // /CreatePDB explicitly specifies NI names to open, and cannot assume
+                // that IL assemblies will be available.
+                fExplicitBindToNativeImage
+                );
+            pAssemblyHolder = PEAssembly::Open(&bindResult,FALSE);
 
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);

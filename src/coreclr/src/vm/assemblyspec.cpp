@@ -26,7 +26,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderutil.h"
-#include "winrthelpers.h"
 #endif
 
 #include "../binder/inc/bindertracing.h"
@@ -262,15 +261,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 #ifdef FEATURE_COMINTEROP
     if (IsContentType_WindowsRuntime())
     {
-        LPCSTR  szNamespace;
-        LPCSTR  szTypeName;
-        SString ssFakeNameSpaceAllocationBuffer;
-        IfFailThrow(::GetFirstWinRTTypeDef(pImport, &szNamespace, &szTypeName, pFile->GetPath(), &ssFakeNameSpaceAllocationBuffer));
-
-        SetWindowsRuntimeType(szNamespace, szTypeName);
-
-        // pFile is not guaranteed to stay around (it might be unloaded with the AppDomain), we have to copy the type name
-        CloneFields(WINRT_TYPE_NAME_OWNED);
+        ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 #endif //FEATURE_COMINTEROP
 
