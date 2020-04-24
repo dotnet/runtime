@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="$(TargetFramework.StartsWith('net4')">true</OmitResources>
+    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <TargetFrameworks>netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
