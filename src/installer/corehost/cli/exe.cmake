@@ -12,7 +12,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/hostmisc/hostmisc.cmake)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr/static)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES

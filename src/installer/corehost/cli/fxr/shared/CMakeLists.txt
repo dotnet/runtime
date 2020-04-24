@@ -8,7 +8,7 @@ set(DOTNET_PROJECT_NAME "hostfxr")
 
 # Include directories
 include_directories(../../json)
-include_directories(../static)
+include_directories(../../fxr)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
@@ -40,15 +40,15 @@ else(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 set(HEADERS
-    ../static/command_line.h
-    ../static/corehost_init.h
-    ../static/fx_muxer.h
-    ../static/fx_resolver.h
-    ../static/framework_info.h
-    ../static/host_context.h
-    ../static/hostpolicy_resolver.h
-    ../static/sdk_info.h
-    ../static/sdk_resolver.h
+    ../command_line.h
+    ../corehost_init.h
+    ../fx_muxer.h
+    ../fx_resolver.h
+    ../framework_info.h
+    ../host_context.h
+    ../hostpolicy_resolver.h
+    ../sdk_info.h
+    ../sdk_resolver.h
 )
 
 include(../../lib.cmake)
