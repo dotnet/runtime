@@ -1668,20 +1668,20 @@ namespace System.Globalization
         /// Computes a sort key over the specified input.
         /// </summary>
         /// <param name="source">The text over which to compute the sort key.</param>
-        /// <param name="sortKey">The buffer into which to write the resulting sort key.</param>
+        /// <param name="destination">The buffer into which to write the resulting sort key bytes.</param>
         /// <param name="options">The <see cref="CompareOptions"/> used for computing the sort key.</param>
-        /// <returns>The number of bytes written to <paramref name="sortKey"/>.</returns>
+        /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
         /// <remarks>
-        /// Use <see cref="GetSortKeyLength"/> to query the required size of <paramref name="sortKey"/>.
+        /// Use <see cref="GetSortKeyLength"/> to query the required size of <paramref name="destination"/>.
         /// It is acceptable to provide a larger-than-necessary output buffer to this method.
         /// </remarks>
         /// <exception cref="ArgumentException">
-        /// <paramref name="sortKey"/> is too small to contain the resulting sort key;
+        /// <paramref name="destination"/> is too small to contain the resulting sort key;
         /// or <paramref name="options"/> contains an unsupported flag;
         /// or <paramref name="source"/> cannot be processed using the desired <see cref="CompareOptions"/>
         /// under the current <see cref="CompareInfo"/>.
         /// </exception>
-        public int GetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options = CompareOptions.None)
+        public int GetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options = CompareOptions.None)
         {
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
@@ -1690,18 +1690,18 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return InvariantGetSortKey(source, sortKey, options);
+                return InvariantGetSortKey(source, destination, options);
             }
             else
             {
-                return GetSortKeyCore(source, sortKey, options);
+                return GetSortKeyCore(source, destination, options);
             }
         }
 
-        private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options) =>
+        private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
            GlobalizationMode.UseNls ?
-               NlsGetSortKey(source, sortKey, options) :
-               IcuGetSortKey(source, sortKey, options);
+               NlsGetSortKey(source, destination, options) :
+               IcuGetSortKey(source, destination, options);
 
         /// <summary>
         /// Returns the length (in bytes) of the sort key that would be produced from the specified input.

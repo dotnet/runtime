@@ -698,7 +698,7 @@ namespace System.Globalization.Tests
 
             // First, validate that too short a buffer throws
 
-            Assert.Throws<ArgumentException>("sortKey", () => compareInfo.GetSortKey(input, new byte[expectedOutputBytes.Length - 1], options));
+            Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(input, new byte[expectedOutputBytes.Length - 1], options));
 
             // Next, validate that using a properly-sized buffer succeeds
             // We'll use BoundedMemory to check for buffer overruns

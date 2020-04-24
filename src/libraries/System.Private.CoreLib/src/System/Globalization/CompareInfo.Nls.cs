@@ -401,7 +401,7 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private unsafe int NlsGetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
+        private unsafe int NlsGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
@@ -409,11 +409,9 @@ namespace System.Globalization
             // LCMapStringEx doesn't allow cchDest = 0 unless we're trying to query
             // the total number of bytes necessary.
 
-            if (sortKey.IsEmpty)
+            if (destination.IsEmpty)
             {
-                throw new ArgumentException(
-                    paramName: nameof(sortKey),
-                    message: SR.Argument_CannotBeEmptySpan);
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
 #if TARGET_WINDOWS
@@ -445,7 +443,7 @@ namespace System.Globalization
             int actualSortKeyLength;
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
-            fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
+            fixed (byte* pSortKey = &MemoryMarshal.GetReference(destination))
             {
                 Debug.Assert(pSource != null);
                 Debug.Assert(pSortKey != null);
@@ -462,7 +460,12 @@ namespace System.Globalization
                                                                                null, 0,
                                                                                null, null, _sortHandle);
 
-                    if (requiredSortKeyLength <= 0 || requiredSortKeyLength > sortKey.Length)
+                    if (requiredSortKeyLength > destination.Length)
+                    {
+                        ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                    }
+
+                    if (requiredSortKeyLength <= 0)
                     {
                         throw new ArgumentException(SR.Arg_ExternalException);
                     }
@@ -472,7 +475,7 @@ namespace System.Globalization
                 actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                                      flags,
                                                                      pSource, sourceLength,
-                                                                     pSortKey, sortKey.Length,
+                                                                     pSortKey, destination.Length,
                                                                      null, null, _sortHandle);
             }
 
@@ -484,10 +487,17 @@ namespace System.Globalization
                 // to allocate a temporary buffer large enough to hold intermediate state,
                 // or the destination buffer being too small.
 
-                throw new ArgumentException(SR.Arg_ExternalException);
+                if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                {
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
             }
 
-            Debug.Assert(actualSortKeyLength <= sortKey.Length);
+            Debug.Assert(actualSortKeyLength <= destination.Length);
             return actualSortKeyLength;
         }
 

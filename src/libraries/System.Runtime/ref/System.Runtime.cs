@@ -5756,7 +5756,7 @@ namespace System.Globalization
         public int GetHashCode(string source, System.Globalization.CompareOptions options) { throw null; }
         public System.Globalization.SortKey GetSortKey(string source) { throw null; }
         public System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
-        public int GetSortKey(System.ReadOnlySpan<char> source, System.Span<byte> sortKey, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
+        public int GetSortKey(System.ReadOnlySpan<char> source, System.Span<byte> destination, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int GetSortKeyLength(System.ReadOnlySpan<char> source, System.Globalization.CompareOptions options = System.Globalization.CompareOptions.None) { throw null; }
         public int IndexOf(string source, char value) { throw null; }
         public int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }

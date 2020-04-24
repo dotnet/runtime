@@ -393,7 +393,7 @@ namespace System.Globalization.Tests
 
                 // First try with a destination which is too small - should result in an error
 
-                Assert.Throws<ArgumentException>(() => compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedMemory.Span.Slice(1), options));
+                Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedMemory.Span.Slice(1), options));
 
                 // Next, try with a destination which is perfectly sized - should succeed
 

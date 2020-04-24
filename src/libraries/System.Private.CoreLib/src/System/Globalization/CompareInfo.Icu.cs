@@ -750,7 +750,7 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private unsafe int IcuGetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
+        private unsafe int IcuGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -761,16 +761,23 @@ namespace System.Globalization
             int actualSortKeyLength;
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
-            fixed (byte* pDest = &MemoryMarshal.GetReference(sortKey))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
-                actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, sortKey.Length, options);
+                actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
             }
 
             // The check below also handles errors due to negative values / overflow being returned.
 
-            if ((uint)actualSortKeyLength > (uint)sortKey.Length)
+            if ((uint)actualSortKeyLength > (uint)destination.Length)
             {
-                throw new ArgumentException(SR.Arg_ExternalException);
+                if (actualSortKeyLength > destination.Length)
+                {
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
             }
 
             return actualSortKeyLength;

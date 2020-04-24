@@ -270,7 +270,7 @@ namespace System.Globalization
             }
         }
 
-        private int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
+        private int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
         {
             Debug.Assert(GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
@@ -279,20 +279,18 @@ namespace System.Globalization
             // Using unsigned arithmetic below also checks for buffer overflow since the incoming
             // length is always a non-negative signed integer.
 
-            if ((uint)sortKey.Length < (uint)source.Length * sizeof(char))
+            if ((uint)destination.Length < (uint)source.Length * sizeof(char))
             {
-                throw new ArgumentException(
-                    paramName: nameof(sortKey),
-                    message: SR.Arg_BufferTooSmall);
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
             if ((options & CompareOptions.IgnoreCase) == 0)
             {
-                InvariantCreateSortKeyOrdinal(source, sortKey);
+                InvariantCreateSortKeyOrdinal(source, destination);
             }
             else
             {
-                InvariantCreateSortKeyOrdinalIgnoreCase(source, sortKey);
+                InvariantCreateSortKeyOrdinalIgnoreCase(source, destination);
             }
 
             return source.Length * sizeof(char);
