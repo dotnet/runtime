@@ -2622,8 +2622,6 @@ void Thread::BaseWinRTUninitialize()
     _ASSERTE(WinRTSupported());
     _ASSERTE(GetThread() == this);
     _ASSERTE(IsWinRTInitialized());
-
-    RoUninitialize();
 }
 #endif // FEATURE_COMINTEROP
 
@@ -5018,53 +5016,11 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-#ifdef FEATURE_COMINTEROP
-
-    // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
-    // we need to make sure that it is initialized in the same threading mode as we just started COM itself
-    // with (or that we detected COM had already been started with).
-    if (WinRTSupported() && !IsWinRTInitialized())
-    {
-        GCX_PREEMP();
-
-        BOOL isSTA = m_State & TS_InSTA;
-        _ASSERTE(isSTA || (m_State & TS_InMTA));
-
-        HRESULT hrWinRT = RoInitialize(isSTA ? RO_INIT_SINGLETHREADED : RO_INIT_MULTITHREADED);
-
-        if (SUCCEEDED(hrWinRT))
-        {
-            if (hrWinRT == S_OK)
-            {
-                SetThreadStateNC(TSNC_WinRTInitialized);
-            }
-            else
-            {
-                _ASSERTE(hrWinRT == S_FALSE);
-
-                // If the thread has already been initialized, back it out. We may not
-                // always be able to call RoUninitialize on shutdown so if there's
-                // a way to avoid having to, we should take advantage of that.
-                RoUninitialize();
-            }
-        }
-        else if (hrWinRT == E_OUTOFMEMORY)
-        {
-            COMPlusThrowOM();
-        }
-        else
-        {
-            // We don't check for RPC_E_CHANGEDMODE, since we're using the mode that was read in by
-            // initializing COM above.  COM and WinRT need to always be in the same mode, so we should never
-            // see that return code at this point.
-            _ASSERTE(!"Unexpected HRESULT From RoInitialize");
-        }
-    }
+    // TODO: Call RoInitialize to enable WinRT per thread.
 
     // Since we've just called CoInitialize, COM has effectively been started up.
     // To ensure the CLR is aware of this, we need to call EnsureComStarted.
     EnsureComStarted(FALSE);
-#endif // FEATURE_COMINTEROP
 
     return GetApartment();
 }

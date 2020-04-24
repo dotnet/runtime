@@ -45,15 +45,6 @@
 #include "cgensys.h"
 #include "peimagelayout.inl"
 
-
-#ifdef FEATURE_COMINTEROP
-#include "clrprivbinderwinrt.h"
-#endif
-
-#ifdef CROSSGEN_COMPILE
-#include "crossgenroresolvenamespace.h"
-#endif
-
 #ifndef NO_NGENPDB
 #include <cvinfo.h>
 #endif
@@ -6884,102 +6875,43 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         pRefSpec = &spec;
     }
 
-#ifdef FEATURE_COMINTEROP
-    // Only cache ref specs that have a unique identity. This is needed to avoid caching
-    // things like WinRT type specs, which would benefit very little from being cached.
-    if (!pRefSpec->HasUniqueIdentity())
+    _ASSERTE(pRefSpec->HasUniqueIdentity());
+
+    //
+    // See if we've already added the contents of the ref
+    // Else, emit token for the ref
+    //
+
+    if (m_pDependencyRefSpecs->Store(pRefSpec))
+        return S_OK;
+
+    mdAssemblyRef refToken;
+    IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken));
+
+    //
+    // Make a spec for the bound assembly
+    //
+
+    mdAssemblyRef defToken = mdAssemblyRefNil;
+
+    // All dependencies of a shared assembly need to be shared. So for a shared
+    // assembly, we want to remember the missing assembly ref during ngen, so that
+    // we can probe eagerly for the dependency at load time, and make sure that
+    // it is loaded as shared.
+    // In such a case, pFile will be NULL
+    if (pFile)
     {
-        // Successful bind of a reference with a non-unique assembly identity.
-        _ASSERTE(pRefSpec->IsContentType_WindowsRuntime());
+        AssemblySpec assemblySpec;
+        assemblySpec.InitializeSpec(pFile);
 
-        AssemblySpec defSpec;
-        if (pFile != NULL)
-        {
-            defSpec.InitializeSpec(pFile);
-
-            // Windows Runtime Native Image binding depends on details exclusively described by the definition winmd file.
-            // Therefore we can actually drop the existing ref spec here entirely.
-            // Also, Windows Runtime Native Image binding uses the simple name of the ref spec as the
-            // resolution rule for PreBind when finding definition assemblies.
-            // See comment on CLRPrivBinderWinRT::PreBind for further details.
-            pRefSpec = &defSpec;
-        }
-
-        // Unfortunately, we don't have any choice regarding failures (pFile == NULL) because
-        // there is no value to canonicalize on (i.e., a def spec created from a non-NULL
-        // pFile) and so we must cache all non-unique-assembly-id failures.
-        const AssemblySpecDefRefMapEntry * pEntry = m_dependencyDefRefMap.LookupPtr(&defSpec);
-        if (pFile == NULL || pEntry == NULL)
-        {
-            mdAssemblyRef refToken = mdAssemblyRefNil;
-            IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken, TRUE, TRUE));
-
-            mdAssemblyRef defToken = mdAssemblyRefNil;
-            if (pFile != NULL)
-            {
-                IfFailRet(defSpec.EmitToken(m_pEmit, &defToken, TRUE, TRUE));
-
-                NewHolder<AssemblySpec> pNewDefSpec = new AssemblySpec();
-                pNewDefSpec->CopyFrom(&defSpec);
-                pNewDefSpec->CloneFields();
-
-                NewHolder<AssemblySpec> pNewRefSpec = new AssemblySpec();
-                pNewRefSpec->CopyFrom(pRefSpec);
-                pNewRefSpec->CloneFields();
-
-                _ASSERTE(m_dependencyDefRefMap.LookupPtr(pNewDefSpec) == NULL);
-
-                AssemblySpecDefRefMapEntry e;
-                e.m_pDef = pNewDefSpec;
-                e.m_pRef = pNewRefSpec;
-                m_dependencyDefRefMap.Add(e);
-
-                pNewDefSpec.SuppressRelease();
-                pNewRefSpec.SuppressRelease();
-            }
-
-            IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
-        }
+        IfFailRet(assemblySpec.EmitToken(m_pEmit, &defToken));
     }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        //
-        // See if we've already added the contents of the ref
-        // Else, emit token for the ref
-        //
 
-        if (m_pDependencyRefSpecs->Store(pRefSpec))
-            return S_OK;
+    //
+    // Add the entry.  Include the PEFile if we are not doing explicit bindings.
+    //
 
-        mdAssemblyRef refToken;
-        IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken));
-
-        //
-        // Make a spec for the bound assembly
-        //
-
-        mdAssemblyRef defToken = mdAssemblyRefNil;
-
-        // All dependencies of a shared assembly need to be shared. So for a shared
-        // assembly, we want to remember the missing assembly ref during ngen, so that
-        // we can probe eagerly for the dependency at load time, and make sure that
-        // it is loaded as shared.
-        // In such a case, pFile will be NULL
-        if (pFile)
-        {
-            AssemblySpec assemblySpec;
-            assemblySpec.InitializeSpec(pFile);
-
-            IfFailRet(assemblySpec.EmitToken(m_pEmit, &defToken));
-        }
-
-        //
-        // Add the entry.  Include the PEFile if we are not doing explicit bindings.
-        //
-
-        IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
-    }
+    IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
 
     return S_OK;
 }
@@ -7161,44 +7093,6 @@ HRESULT
 HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    // Create the array list on the heap since it will be passed off for the Crossgen RoResolveNamespace mockup to keep for the life of the process
-    StringArrayList *saPaths = new StringArrayList();
-
-    SString strPaths(pwzPlatformWinmdPaths);
-    if (!strPaths.IsEmpty())
-    {
-        for (SString::Iterator i = strPaths.Begin(); i != strPaths.End(); )
-        {
-            // Skip any leading spaces or semicolons
-            if (strPaths.Skip(i, W(';')))
-            {
-                continue;
-            }
-
-            SString::Iterator iEnd = i;     // Where current assembly name ends
-            SString::Iterator iNext;        // Where next assembly name starts
-            if (strPaths.Find(iEnd, W(';')))
-            {
-                iNext = iEnd + 1;
-            }
-            else
-            {
-                iNext = iEnd = strPaths.End();
-            }
-
-            _ASSERTE(i < iEnd);
-            if(i != iEnd)
-            {
-                saPaths->Append(SString(strPaths, i, iEnd));
-            }
-            i = iNext;
-        }
-    }
-    Crossgen::SetFirstPartyWinMDPaths(saPaths);
-#endif // FEATURE_COMINTEROP
-
     return S_OK;
 }
 

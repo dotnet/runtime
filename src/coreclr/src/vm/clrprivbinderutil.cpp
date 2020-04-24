@@ -66,30 +66,4 @@ namespace CLRPrivBinderUtil
 
         return hr;
     }
-
-    //=====================================================================================================================
-    // Destroys list of strings (code:WStringList).
-    void
-    WStringList_Delete(
-        WStringList * pList)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (pList != nullptr)
-        {
-            for (WStringListElem * pElem = pList->RemoveHead(); pElem != nullptr; pElem = pList->RemoveHead())
-            {
-                // Delete the string
-                delete [] pElem->GetValue();
-                delete pElem;
-            }
-
-            delete pList;
-        }
-    }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-///// ----------------------------- Direct calls to VM  -------------------------------------------
-////////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace CLRPrivBinderUtil

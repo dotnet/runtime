@@ -69,8 +69,6 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-#include "clrprivtypecachewinrt.h"
-
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
 
@@ -677,7 +675,6 @@ BaseDomain::BaseDomain()
 
 #ifdef FEATURE_COMINTEROP
     m_pMngStdInterfacesInfo = NULL;
-    m_pWinRtBinder = NULL;
 #endif
     m_FileLoadLock.PreInit();
     m_JITLock.PreInit();
@@ -747,16 +744,6 @@ void BaseDomain::Init()
 #ifdef FEATURE_COMINTEROP
     // Allocate the managed standard interfaces information.
     m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
-
-    {
-        CLRPrivBinderWinRT::NamespaceResolutionKind fNamespaceResolutionKind = CLRPrivBinderWinRT::NamespaceResolutionKind_WindowsAPI;
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DesignerNamespaceResolutionEnabled) != FALSE)
-        {
-            fNamespaceResolutionKind = CLRPrivBinderWinRT::NamespaceResolutionKind_DesignerResolveEvent;
-        }
-        CLRPrivTypeCacheWinRT * pWinRtTypeCache = CLRPrivTypeCacheWinRT::GetOrCreateTypeCache();
-        m_pWinRtBinder = CLRPrivBinderWinRT::GetOrCreateBinder(pWinRtTypeCache, fNamespaceResolutionKind);
-    }
 #endif // FEATURE_COMINTEROP
 
     // Init the COM Interop data hash
@@ -3670,7 +3657,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     }
 
     // Cache result in all cases, since found pFile could be from a different AssemblyRef than pIdentity
-    // Do not cache WindowsRuntime assemblies, they are cached in code:CLRPrivTypeCacheWinRT
     if (pIdentity == NULL)
     {
         AssemblySpec spec;
@@ -4647,72 +4633,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     // available binding hosts.
     if (pSpec->IsContentType_WindowsRuntime())
     {
-        HRESULT hr = S_OK;
-
-        // Get the assembly display name.
-        ReleaseHolder<IAssemblyName> pAssemblyName;
-
-        IfFailThrow(pSpec->CreateFusionName(&pAssemblyName, TRUE, TRUE));
-
-
-        PEAssemblyHolder pAssembly;
-
-        EX_TRY
-        {
-            hr = BindAssemblySpecForHostedBinder(pSpec, pAssemblyName, m_pWinRtBinder, &pAssembly);
-            if (FAILED(hr))
-                goto EndTry2; // Goto end of try block.
-
-            PTR_CLRPrivAssemblyWinRT assem = dac_cast<PTR_CLRPrivAssemblyWinRT>(pAssembly->GetHostAssembly());
-            assem->SetFallbackBinder(pSpec->GetFallbackLoadContextBinderForRequestingAssembly());
-EndTry2:;
-        }
-        // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions
-        // thrown in scenarios where the exception does not escape the method. We cannot get rid of the try/catch block, as
-        // there are cases within some of the clrpriv binder's which throw.
-        // Note: In theory, FileNotFound should always come here as HRESULT, never as exception.
-        EX_CATCH_HRESULT_IF(hr,
-            !fThrowOnFileNotFound && Assembly::FileNotFound(hr))
-
-        if (FAILED(hr) && (fThrowOnFileNotFound || !Assembly::FileNotFound(hr)))
-        {
-            if (Assembly::FileNotFound(hr))
-            {
-                _ASSERTE(fThrowOnFileNotFound);
-                // Uses defaultScope
-                EEFileLoadException::Throw(pSpec, hr);
-            }
-
-            // WinRT type bind failures
-            _ASSERTE(pSpec->IsContentType_WindowsRuntime());
-            if (hr == HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE)) // Returned by RoResolveNamespace when using 3rd party WinRT types in classic process
-            {
-                if (fThrowOnFileNotFound)
-                {   // Throw NotSupportedException (with custom message) wrapped by TypeLoadException to give user type name for diagnostics
-                    // Note: TypeLoadException is equivalent of FileNotFound in WinRT world
-                    EEMessageException ex(kNotSupportedException, IDS_EE_WINRT_THIRDPARTY_NOTSUPPORTED);
-                    EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), &ex);
-                }
-            }
-            else if ((hr == CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT) || // Returned e.g. for WinRT type name without namespace
-                     (hr == COR_E_PLATFORMNOTSUPPORTED)) // Using WinRT on pre-Win8 OS
-            {
-                if (fThrowOnFileNotFound)
-                {   // Throw ArgumentException/PlatformNotSupportedException wrapped by TypeLoadException to give user type name for diagnostics
-                    // Note: TypeLoadException is equivalent of FileNotFound in WinRT world
-                    EEMessageException ex(hr);
-                    EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), &ex);
-                }
-            }
-            else
-            {
-                IfFailThrow(hr);
-            }
-        }
-        _ASSERTE((FAILED(hr) && !fThrowOnFileNotFound) || pAssembly != nullptr);
-
-        bindOperation.SetResult(pAssembly.GetValue());
-        return pAssembly.Extract();
+        EEFileLoadException::Throw(pSpec, COR_E_PLATFORMNOTSUPPORTED);
     }
     else
 #endif // FEATURE_COMINTEROP
@@ -6235,19 +6156,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             {
                 _ASSERTE(pResolvedAssembly != NULL);
 
-#ifdef FEATURE_COMINTEROP
-                // Is the assembly already bound using a binding context that will be incompatible?
-                // An example is attempting to consume an assembly bound to WinRT binder.
-                if (AreSameBinderInstance(pResolvedAssembly, GetAppDomain()->GetWinRtBinder()))
-                {
-                    // It is invalid to return an assembly bound to an incompatible binder
-                    *ppLoadedAssembly = NULL;
-                    SString name;
-                    spec.GetFileOrDisplayName(0, name);
-                    COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT, name);
-                }
-#endif // FEATURE_COMINTEROP
-
                 // Get the ICLRPrivAssembly reference to return back to.
                 *ppLoadedAssembly = clr::SafeAddRef(pResolvedAssembly);
                 hr = S_OK;
@@ -6597,15 +6505,7 @@ void AppDomain::UnPublishHostedAssembly(
 HRESULT AppDomain::SetWinrtApplicationContext(LPCWSTR pwzAppLocalWinMD)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(WinRTSupported());
-    _ASSERTE(m_pWinRtBinder != nullptr);
-
-    _ASSERTE(GetTPABinderContext() != NULL);
-    BINDER_SPACE::ApplicationContext *pApplicationContext = GetTPABinderContext()->GetAppContext();
-    _ASSERTE(pApplicationContext != NULL);
-
-    return m_pWinRtBinder->SetApplicationContext(pApplicationContext, pwzAppLocalWinMD);
+    return E_NOTIMPL;
 }
 
 #endif // FEATURE_COMINTEROP

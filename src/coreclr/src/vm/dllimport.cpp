@@ -5925,18 +5925,6 @@ namespace
             return NULL;
         }
 
-#ifdef FEATURE_COMINTEROP
-        CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
-        if (AreSameBinderInstance(pCurrentBinder, pWinRTBinder))
-        {
-            // We could be here when a non-WinRT assembly load is triggerred by a winmd (e.g. System.Runtime being loaded due to
-            // types being referenced from Windows.Foundation.Winmd) or when dealing with a winmd (which is bound using WinRT binder).
-            //
-            // For this, we should use the standard mechanism to make pinvoke call as well.
-            return NULL;
-        }
-#endif // FEATURE_COMINTEROP
-
         //Step 1: If the assembly was not bound using TPA,
         //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
         //        The custom assembly context a chance to load the unmanaged dll.
@@ -5982,14 +5970,6 @@ namespace
 
         AppDomain *pDomain = GetAppDomain();
         ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-#ifdef FEATURE_COMINTEROP
-        if (AreSameBinderInstance(pCurrentBinder, pDomain->GetWinRtBinder()))
-        {
-            // No ALC associated handle with WinRT Binders.
-            return NULL;
-        }
-#endif // FEATURE_COMINTEROP
 
         // The code here deals with two implementations of ICLRPrivBinder interface:
         //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and

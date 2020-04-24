@@ -1082,24 +1082,7 @@ namespace BINDER_SPACE
 
             if (pIMetaDataAssemblyImport == NULL && pNativePEImage != NULL)
             {
-                // The native image doesn't contain metadata. Currently this is only supported for Windows.ni.winmd.
-                // While loading Windows.winmd, CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage should have passed
-                // in a non-NULL szMDAssemblyPath, where we can load metadata from. If szMDAssemblyPath is NULL,
-                // it indicates that the app is trying to load a non-WinMD assembly named Windows (it's possible
-                // that the app happens to contain an assembly Windows.dll). To handle this case properly, we
-                // return a file-not-found error, so the caller can continues it's search.
-                if (szMDAssemblyPath == NULL)
-                {
-                    IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
-                }
-                else
-                {
-                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE);
-                    IF_FAIL_GO(hr);
-
-                    hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
-                    IF_FAIL_GO(hr);
-                }
+                IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
             }
 
             IF_FAIL_GO(TranslatePEToArchitectureType(dwPAFlags, &PeKind));

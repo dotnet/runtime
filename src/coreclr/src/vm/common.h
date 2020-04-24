@@ -347,10 +347,6 @@ namespace Loader
 #include "codeman.h"
 #include "threads.h"
 #include "clrex.inl"
-#ifdef FEATURE_COMINTEROP
-    #include "windowsruntime.h"
-    #include "windowsstring.h"
-#endif
 #include "loaderallocator.hpp"
 #include "appdomain.hpp"
 #include "appdomain.inl"

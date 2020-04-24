@@ -202,140 +202,6 @@ BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
 #ifdef FEATURE_COMINTEROP
-
-class EventArgsMarshalingInfo
-{
-public:
-    // Constructor.
-    EventArgsMarshalingInfo();
-
-    // Destructor.
-    ~EventArgsMarshalingInfo();
-
-    // EventArgsMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetSystemNCCEventArgsType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemNCCEventArgsType;
-    }
-
-    TypeHandle GetSystemPCEventArgsType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemPCEventArgsType;
-    }
-
-    MethodDesc *GetSystemNCCEventArgsToWinRTNCCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSystemNCCEventArgsToWinRTNCCEventArgsMD;
-    }
-
-    MethodDesc *GetWinRTNCCEventArgsToSystemNCCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTNCCEventArgsToSystemNCCEventArgsMD;
-    }
-
-    MethodDesc *GetSystemPCEventArgsToWinRTPCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSystemPCEventArgsToWinRTPCEventArgsMD;
-    }
-
-    MethodDesc *GetWinRTPCEventArgsToSystemPCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTPCEventArgsToSystemPCEventArgsMD;
-    }
-
-
-private:
-    TypeHandle m_hndSystemNCCEventArgsType;
-    TypeHandle m_hndSystemPCEventArgsType;
-
-    MethodDesc *m_pSystemNCCEventArgsToWinRTNCCEventArgsMD;
-    MethodDesc *m_pWinRTNCCEventArgsToSystemNCCEventArgsMD;
-    MethodDesc *m_pSystemPCEventArgsToWinRTPCEventArgsMD;
-    MethodDesc *m_pWinRTPCEventArgsToSystemPCEventArgsMD;
-};
-
-class UriMarshalingInfo
-{
-public:
-    // Constructor.
-    UriMarshalingInfo();
-
-    // Destructor
-    ~UriMarshalingInfo();
-
-    // UriMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetSystemUriType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemUriType;
-    }
-
-    ABI::Windows::Foundation::IUriRuntimeClassFactory* GetUriFactory()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // For potential COOP->PREEMP->COOP switch
-            MODE_ANY;
-            PRECONDITION(!GetAppDomain()->IsCompilationDomain());
-        }
-        CONTRACTL_END;
-
-        if (m_pUriFactory.Load() == NULL)
-        {
-            GCX_PREEMP();
-
-            SafeComHolderPreemp<ABI::Windows::Foundation::IUriRuntimeClassFactory> pUriFactory;
-
-            // IUriRuntimeClassFactory: 44A9796F-723E-4FDF-A218-033E75B0C084
-            IfFailThrow(clr::winrt::GetActivationFactory(g_WinRTUriClassNameW, (ABI::Windows::Foundation::IUriRuntimeClassFactory **)&pUriFactory));
-            _ASSERTE_MSG(pUriFactory, "Got Null Uri factory!");
-
-            if (InterlockedCompareExchangeT(&m_pUriFactory, (ABI::Windows::Foundation::IUriRuntimeClassFactory *) pUriFactory, NULL) == NULL)
-                pUriFactory.SuppressRelease();
-        }
-
-        return m_pUriFactory;
-    }
-
-    MethodDesc *GetSystemUriCtorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemUriCtorMD;
-    }
-
-    MethodDesc *GetSystemUriOriginalStringMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemUriOriginalStringGetterMD;
-    }
-
-
-private:
-    TypeHandle m_hndSystemUriType;
-
-    MethodDesc* m_SystemUriCtorMD;
-    MethodDesc* m_SystemUriOriginalStringGetterMD;
-
-    VolatilePtr<ABI::Windows::Foundation::IUriRuntimeClassFactory> m_pUriFactory;
-};
-
 class OleColorMarshalingInfo
 {
 public:
@@ -395,8 +261,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
-    UriMarshalingInfo *GetUriMarshalingInfo();
-    EventArgsMarshalingInfo *GetEventArgsMarshalingInfo();
 
 
 #endif // FEATURE_COMINTEROP
@@ -411,8 +275,6 @@ private:
     CMINFOLIST                          m_pCMInfoList;
 #ifdef FEATURE_COMINTEROP
     OleColorMarshalingInfo*             m_pOleColorInfo;
-    UriMarshalingInfo*                  m_pUriInfo;
-    EventArgsMarshalingInfo*            m_pEventArgsInfo;
 #endif // FEATURE_COMINTEROP
     CrstBase*                           m_lock;
 };

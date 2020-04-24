@@ -1159,41 +1159,7 @@ void ThreadDetaching()
 
 HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName, IActivationFactory ** factory)
 {
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    // WinRT activation currently supported in default domain only
-    if (appDomainID != DefaultADID)
-        return HOST_E_INVALIDOPERATION;
-
-    HRESULT hr = S_OK;
-
-    Thread *pThread = GetThread();
-    if (pThread == NULL)
-    {
-        pThread = SetupThreadNoThrow(&hr);
-        if (pThread == NULL)
-        {
-            return hr;
-        }
-    }
-
-    return DllGetActivationFactoryImpl(NULL, wszTypeName, NULL, factory);
-#else
-    return E_NOTIMPL;
-#endif
-}
-
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-
-HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
-                                                      LPCWSTR wszTypeName,
-                                                      LPCWSTR wszCodeBase,
-                                                      IActivationFactory ** factory)
-{
     return E_NOTIMPL;
 }
-
-#endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION
-
 
 #endif // !DACCESS_COMPILE

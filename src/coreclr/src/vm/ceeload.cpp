@@ -4693,24 +4693,6 @@ Module::GetAssemblyIfLoaded(
 #ifdef FEATURE_COMINTEROP
             if (szWinRtNamespace != NULL)
             {
-                _ASSERTE(szWinRtClassName != NULL);
-
-                CLRPrivBinderWinRT * pWinRtBinder = pAppDomainExamine->GetWinRtBinder();
-                if (pWinRtBinder != nullptr)
-                {
-                    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                    pAssembly = pWinRtBinder->FindAssemblyForTypeIfLoaded(
-                        dac_cast<PTR_AppDomain>(pAppDomainExamine),
-                        szWinRtNamespace,
-                        szWinRtClassName);
-                }
-
-                // Never store WinMD AssemblyRefs into the rid map.
-                if (pAssembly != NULL)
-                {
-                    break;
-                }
-
                 // Never attemt to search the assembly spec binding cache for this form of WinRT assembly reference.
                 continue;
             }

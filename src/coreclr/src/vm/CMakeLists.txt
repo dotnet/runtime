@@ -581,8 +581,6 @@ list(APPEND VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     classcompat.cpp
-    clrprivbinderwinrt.cpp
-    clrprivtypecachewinrt.cpp
     comcache.cpp
     comcallablewrapper.cpp
     comconnectionpoints.cpp
@@ -609,8 +607,6 @@ list(APPEND VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     classcompat.h
-    clrprivbinderwinrt.h
-    clrprivtypecachewinrt.h
     comcache.h
     comcallablewrapper.h
     comconnectionpoints.h
@@ -635,16 +631,10 @@ list(APPEND VM_HEADERS_WKS
 
 list(APPEND VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    clrprivbinderwinrt.cpp
-    clrprivtypecachewinrt.cpp
 )
 
 list(APPEND VM_HEADERS_DAC
     ${VM_HEADERS_DAC_AND_WKS_WIN32}
-    # These should not be included for Linux
-    clrprivbinderwinrt.h
-    clrprivtypecachewinrt.h
 )
 
 endif(CLR_CMAKE_TARGET_WIN32)

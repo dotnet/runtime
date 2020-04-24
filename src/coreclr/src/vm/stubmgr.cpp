@@ -1710,25 +1710,6 @@ PCODE ILStubManager::GetWinRTFactoryTarget(ComPlusCallMethodDesc *pCMD)
     }
     CONTRACTL_END;
 
-    MethodTable *pMT = pCMD->GetMethodTable();
-
-    // GetComClassFactory could load types and trigger GC, get class name manually
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> ssClassName;
-    pMT->_GetFullyQualifiedNameForClass(ssClassName);
-
-    IID iid;
-    pCMD->m_pComPlusCallInfo->m_pInterfaceMT->GetGuid(&iid, FALSE, FALSE);
-
-    SafeComHolder<IInspectable> pFactory;
-    {
-        GCX_PREEMP();
-        if (SUCCEEDED(RoGetActivationFactory(WinRtStringRef(ssClassName.GetUnicode(), ssClassName.GetCount()), iid, &pFactory)))
-        {
-            LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pFactory;
-            return (PCODE)lpVtbl[pCMD->m_pComPlusCallInfo->m_cachedComSlot];
-        }
-    }
-
     return NULL;
 }
 #endif // FEATURE_COMINTEROP

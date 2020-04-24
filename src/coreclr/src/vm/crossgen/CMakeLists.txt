@@ -231,22 +231,15 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND VM_CROSSGEN_SOURCES
     ../classcompat.cpp
-    ../clrprivbinderwinrt.cpp
-    ../clrprivtypecachewinrt.cpp
     ../comtoclrcall.cpp
     ../clrtocomcall.cpp
-    ../crossgenroparsetypename.cpp
-    ../crossgenroresolvenamespace.cpp
     ../runtimecallablewrapper.cpp
   )
 
   list(APPEND VM_CROSSGEN_HEADERS
     ../classcompat.h
-    ../clrprivbinderwinrt.h
-    ../clrprivtypecachewinrt.h
     ../clrtocomcall.h
     ../comtoclrcall.h
-    ../crossgenroresolvenamespace.h
     ../runtimecallablewrapper.h
   )
 

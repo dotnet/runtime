@@ -771,32 +771,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         }
     }
 
-#if defined(FEATURE_COMINTEROP)
-    if (!IsContentType_WindowsRuntime() && (pParentAssemblyBinder != NULL))
-    {
-        CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
-        if (AreSameBinderInstance(pWinRTBinder, pParentAssemblyBinder))
-        {
-            // We could be here when a non-WinRT assembly load is triggerred by a winmd (e.g. System.Runtime being loaded due to
-            // types being referenced from Windows.Foundation.Winmd).
-            //
-            // If the AssemblySpec does not correspond to WinRT type but our parent assembly binder is a WinRT binder,
-            // then such an assembly will not be found by the binder.
-            // In such a case, the parent binder should be the fallback binder for the WinRT assembly if one exists.
-            ICLRPrivBinder* pParentWinRTBinder = pParentAssemblyBinder;
-            pParentAssemblyBinder = NULL;
-            ReleaseHolder<ICLRPrivAssemblyID_WinRT> assembly;
-            if (SUCCEEDED(pParentWinRTBinder->QueryInterface<ICLRPrivAssemblyID_WinRT>(&assembly)))
-            {
-                pParentAssemblyBinder = dac_cast<PTR_CLRPrivAssemblyWinRT>(assembly.GetValue())->GetFallbackBinder();
-
-                // The fallback binder should not be a WinRT binder.
-                _ASSERTE(!AreSameBinderInstance(pWinRTBinder, pParentAssemblyBinder));
-            }
-        }
-    }
-#endif // defined(FEATURE_COMINTEROP)
-
     if (!pParentAssemblyBinder)
     {
         // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) or dealing with assemblies

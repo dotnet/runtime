@@ -494,7 +494,6 @@ class ClassLoader
     friend class Assembly;
     friend class Module;
     friend class InstantiatedMethodDesc;
-    friend class CLRPrivTypeCacheWinRT;
 
     // the following two classes are friends because they will call LoadTypeHandleForTypeKey by token directly
     friend class COMDynamicWrite;

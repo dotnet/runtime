@@ -2479,14 +2479,6 @@ AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
         IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
 
         pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-
-#ifdef FEATURE_COMINTEROP
-        // Treat WinRT assemblies (bound using the WinRT binder) as if they were loaded into the TPA ALC
-        if (AreSameBinderInstance(AppDomain::GetCurrentDomain()->GetWinRtBinder(), pOpaqueBinder))
-        {
-            pOpaqueBinder = NULL;
-        }
-#endif
     }
 
     return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();

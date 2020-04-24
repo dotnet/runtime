@@ -35,7 +35,6 @@
 #endif
 
 #ifdef FEATURE_COMINTEROP
-#include "clrprivbinderwinrt.h"
 #include "..\md\winmd\inc\adapter.h"
 #endif // FEATURE_COMINTEROP
 
@@ -973,11 +972,6 @@ public:
 
         return m_pMngStdInterfacesInfo;
     }
-
-    PTR_CLRPrivBinderWinRT GetWinRtBinder()
-    {
-        return m_pWinRtBinder;
-    }
 #endif // FEATURE_COMINTEROP
 #ifdef _DEBUG
     BOOL OwnDomainLocalBlockLock()
@@ -1181,9 +1175,6 @@ protected:
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
-
-    // WinRT binder
-    PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics

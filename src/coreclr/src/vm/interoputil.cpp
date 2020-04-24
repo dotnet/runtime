@@ -4827,97 +4827,9 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
     }
     CONTRACT_END;
 
-    *pfSupportsIReference = false;
-    *pfSupportsIReferenceArray = false;
+    _ASSERTE(!"Getting a class from an IInspectable to create a WinRT RCW is unsupported.");
 
-    HRESULT hr = S_OK;
-
-    SafeComHolder<IInspectable> pInsp = NULL;
-    if (*pfSupportsIInspectable)
-    {
-        // we know that pUnk is an IInspectable
-        pInsp = static_cast<IInspectable *>(pUnk);
-        pInsp.SuppressRelease();
-    }
-    else
-    {
-        hr = SafeQueryInterface(pUnk, IID_IInspectable, (IUnknown **)&pInsp);
-        LogInteropQI(pUnk, IID_IInspectable, hr, "GetClassFromIInspectable: QIing for IInspectable");
-
-        if (SUCCEEDED(hr))
-        {
-            *pfSupportsIInspectable = true;
-        }
-        else
-        {
-            RETURN TypeHandle();
-        }
-    }
-
-    WinRtString winrtClassName;
-    {
-        GCX_PREEMP();
-        if (FAILED(pInsp->GetRuntimeClassName(winrtClassName.Address())))
-        {
-            RETURN TypeHandle();
-        }
-    }
-
-    // Early return if the class name is NULL
-    if (winrtClassName == NULL)
-        RETURN TypeHandle();
-
-    // we have a class name
-    UINT32 cchClassName;
-    LPCWSTR pwszClassName = winrtClassName.GetRawBuffer(&cchClassName);
-    SString ssClassName(SString::Literal, pwszClassName, cchClassName);
-
-
-    // Check a cache to see if this has already been looked up.
-    AppDomain *pDomain = GetAppDomain();
-    UINT vCacheVersion = 0;
-    BYTE bFlags;
-    TypeHandle classTypeHandle = pDomain->LookupTypeByName(ssClassName, &vCacheVersion, &bFlags);
-
-    if (!classTypeHandle.IsNull())
-    {
-        *pfSupportsIReference = ((bFlags & IInspectableQueryResults_SupportsIReference) != 0);
-        *pfSupportsIReferenceArray = ((bFlags & IInspectableQueryResults_SupportsIReferenceArray) != 0);
-    }
-    else
-    {
-        // use a copy of the original class name in case we peel off IReference/IReferenceArray below
-        StackSString ssTmpClassName;
-
-        // Check whether this is a value type, String, or T[] "boxed" in a IReference<T> or IReferenceArray<T>.
-        if (ssClassName.BeginsWith(W("Windows.Foundation.IReference`1<")) && ssClassName.EndsWith(W(">")))
-        {
-            ssTmpClassName.Set(ssClassName);
-            ssTmpClassName.Delete(ssTmpClassName.Begin(), _countof(W("Windows.Foundation.IReference`1<")) - 1);
-            ssTmpClassName.Delete(ssTmpClassName.End() - 1, 1);
-            *pfSupportsIReference = true;
-        }
-        else if (ssClassName.BeginsWith(W("Windows.Foundation.IReferenceArray`1<")) && ssClassName.EndsWith(W(">")))
-        {
-            ssTmpClassName.Set(ssClassName);
-            ssTmpClassName.Delete(ssTmpClassName.Begin(), _countof(W("Windows.Foundation.IReferenceArray`1<")) - 1);
-            ssTmpClassName.Delete(ssTmpClassName.End() - 1, 1);
-            *pfSupportsIReferenceArray = true;
-        }
-
-        if (!classTypeHandle.IsNull())
-        {
-            // cache the (positive) result
-            BYTE bFlags = 0;
-            if (*pfSupportsIReference)
-                bFlags |= IInspectableQueryResults_SupportsIReference;
-            if (*pfSupportsIReferenceArray)
-                bFlags |= IInspectableQueryResults_SupportsIReferenceArray;
-            pDomain->CacheTypeByName(ssClassName, vCacheVersion, classTypeHandle, bFlags);
-        }
-    }
-
-    RETURN classTypeHandle;
+    RETURN TypeHandle();
 }
 
 static void DECLSPEC_NORETURN ThrowTypeLoadExceptionWithInner(MethodTable *pClassMT, LPCWSTR pwzName, HRESULT hr, unsigned resID)
@@ -4953,72 +4865,7 @@ void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable 
     }
     CONTRACTL_END;
 
-    if (!WinRTSupported())
-    {
-        COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_WinRT"));
-    }
-
-    HSTRING hName = GetComClassFactory(pMT)->AsWinRTClassFactory()->GetClassName();
-
-    HRESULT hr;
-    SafeComHolder<IInspectable> pFactory;
-    {
-        GCX_PREEMP();
-        hr = clr::winrt::GetActivationFactory<IInspectable>(hName, &pFactory);
-    }
-
-    // There are a few particular failures that we'd like to map a specific exception type to
-    //   - the factory interface is for a WinRT type which is not registered => TypeLoadException
-    //   - the factory interface is not a factory for the WinRT type => ArgumentException
-    if (hr == REGDB_E_CLASSNOTREG)
-    {
-        ThrowTypeLoadExceptionWithInner(pMT, WindowsGetStringRawBuffer(hName, nullptr), hr, IDS_EE_WINRT_TYPE_NOT_REGISTERED);
-    }
-    else if (hr == E_NOINTERFACE)
-    {
-        LPCWSTR wzTN = WindowsGetStringRawBuffer(hName, nullptr);
-        if (pFactoryIntfMT)
-        {
-            InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> ssFactoryName;
-            pFactoryIntfMT->_GetFullyQualifiedNameForClass(ssFactoryName);
-            EEMessageException ex(hr);
-            EX_THROW_WITH_INNER(EEMessageException, (kArgumentException, IDS_EE_WINRT_NOT_FACTORY_FOR_TYPE, ssFactoryName.GetUnicode(), wzTN), &ex);
-        }
-        else
-        {
-            EEMessageException ex(hr);
-            EX_THROW_WITH_INNER(EEMessageException, (kArgumentException, IDS_EE_WINRT_INVALID_FACTORY_FOR_TYPE, wzTN), &ex);
-        }
-    }
-    else
-    {
-        IfFailThrow(hr);
-    }
-
-    DWORD flags =
-        RCW::CF_SupportsIInspectable |          // Returns a WinRT RCW
-        RCW::CF_DontResolveClass;               // Don't care about the exact type
-
-    flags |= RCW::CF_DetectDCOMProxy;           // Attempt to detect that the factory is a DCOM proxy in order to suppress caching
-
-    if (bNeedUniqueRCW)
-        flags |= RCW::CF_NeedUniqueObject;      // Returns a unique RCW
-
-    COMInterfaceMarshaler marshaler;
-    marshaler.Init(
-        pFactory,
-        g_pBaseCOMObject,                       // Always System.__ComObject
-        pThread,
-        flags
-        );
-
-    if (pCallback)
-        marshaler.SetCallback(pCallback);
-
-    // Find an existing RCW or create a new RCW
-    *prefFactory = marshaler.FindOrCreateObjectRef(pFactory);
-
-    return;
+    COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_WinRT"));
 }
 
 #endif //#ifndef CROSSGEN_COMPILE
