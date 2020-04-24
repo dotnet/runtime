@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.Managed
     {
         internal readonly LinkedListNode<ManagedQuicStream> _flushableListNode;
 
-        private readonly ResettableCompletionSource<int> _shutdownWriteCs = new ResettableCompletionSource<int>();
+        private readonly SingleEventValueTaskSource _shutdownCompleted = new SingleEventValueTaskSource();
 
         private bool _disposed;
 
@@ -49,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
             CancellationToken cancellationToken)
         {
-            await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken);
+            await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
                 OutboundBuffer!.MarkEndOfData();
@@ -63,7 +63,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void NotifyShutdownWriteCompleted()
         {
-            _shutdownWriteCs.Complete(0);
+            _shutdownCompleted.TryComplete();
         }
 
         #region Public API
@@ -131,7 +131,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
             {
-                await WriteAsyncInternal(buffer, false, cancellationToken);
+                await WriteAsyncInternal(buffer, false, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -142,7 +142,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
             {
-                await WriteAsyncInternal(buffer, false, cancellationToken);
+                await WriteAsyncInternal(buffer, false, cancellationToken).ConfigureAwait(false);
             }
 
             OutboundBuffer!.MarkEndOfData();
@@ -160,27 +160,31 @@ namespace System.Net.Quic.Implementations.Managed
 
             for (int i = 0; i < buffers.Span.Length; i++)
             {
-                await WriteAsyncInternal(buffers.Span[i], endStream && i == buffers.Length - 1,cancellationToken);
+                await WriteAsyncInternal(buffers.Span[i], endStream && i == buffers.Length - 1,cancellationToken).ConfigureAwait(false);
             }
         }
 
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
-            Shutdown();
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
-            return _shutdownWriteCs.GetTypelessValueTask();
+            Shutdown();
+            return _shutdownCompleted.GetTask();
         }
 
         internal override void Shutdown()
         {
+            ThrowIfDisposed();
+            // ThrowIfNotWritable();
+
             // TODO-RZ: is this really intened use for this method?
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
                 // ensure that the stream is marked as flushable so that the fin bit is sent even if no more data was written since last time
                 _streamCollection.MarkFlushable(this);
+                _ctx.Ping();
             }
         }
 

@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
 
-        internal long Timestamp = Implementations.Managed.Timestamp.Now;
+        internal long Timestamp = Implementations.Managed.Internal.Timestamp.Now;
 
         internal static ManagedQuicConnection CreateClient(QuicClientConnectionOptions options)
         {

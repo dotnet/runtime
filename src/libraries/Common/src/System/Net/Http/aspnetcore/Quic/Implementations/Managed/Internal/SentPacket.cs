@@ -7,6 +7,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class SentPacket : IPoolableObject
     {
+        internal static readonly Comparer<SentPacket> PacketNumberComparer = Comparer<SentPacket>.Create((l, r) => l.PacketNumber.CompareTo(r.PacketNumber));
+
         /// <summary>
         ///     Structure containing data about sent data in Stream frames.
         /// </summary>

@@ -15,11 +15,25 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed
 {
+    internal enum QuicConnectionState
+    {
+        None,
+        Connected,
+        Draining,
+        Closing,
+        Closed
+    }
+
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
-        private readonly ResettableCompletionSource<int> _connectTcs = new ResettableCompletionSource<int>();
+        // TODO-RZ: connect event is not signalled for server
+        private readonly SingleEventValueTaskSource _connectTcs = new SingleEventValueTaskSource();
+
+        private readonly SingleEventValueTaskSource _closeTcs = new SingleEventValueTaskSource();
 
         private readonly ObjectPool<SentPacket> _sentPacketPool = new ObjectPool<SentPacket>(128);
+
+        private long _lastConnectionCloseSent;
 
         private readonly QuicClientConnectionOptions? _clientOpts;
 
@@ -29,6 +43,22 @@ namespace System.Net.Quic.Implementations.Managed
         };
 
         private RecoveryController Recovery { get; } = new RecoveryController();
+
+        private bool _isDraining;
+        private bool IsClosing => _closingPeriodEnd != null;
+
+        internal long? _closingPeriodEnd = null;
+
+        internal bool IsClosed => _closeTcs.IsSet;
+
+        internal QuicConnectionState GetConnectionState()
+        {
+            if (IsClosed) return QuicConnectionState.Closed;
+            if (_isDraining) return QuicConnectionState.Draining;
+            if (IsClosing) return QuicConnectionState.Closing;
+            if (Connected) return QuicConnectionState.Connected;
+            return QuicConnectionState.None;
+        }
 
         /// <summary>
         ///     QUIC transport parameters used for this endpoint.
@@ -185,17 +215,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <returns>Timestamp in ticks of the next timer or long.MaxValue if no timer is needed.</returns>
         internal long GetNextTimerTimestamp()
         {
-            return Recovery.LossRecoveryTimer;
-        }
+            long timer = Recovery.LossRecoveryTimer;
 
-        /// <summary>
-        ///     Called to process a timeout event.
-        /// </summary>
-        /// <param name="now">Current timestamp</param>
-        /// <returns></returns>
-        internal void OnTimeout(long now)
-        {
-            // TODO-RZ
+            if (_closingPeriodEnd != null)
+                timer = Math.Min(timer, _closingPeriodEnd.Value);
+
+            return timer;
         }
 
         private void DoHandshake()
@@ -242,6 +267,12 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void ReceiveData(QuicReader reader, IPEndPoint sender, long now)
         {
+            if (_closingPeriodEnd != null)
+            {
+                // discard any incoming data
+                return;
+            }
+
             var buffer = reader.Buffer;
             var context = new RecvContext(now);
 
@@ -420,7 +451,9 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 if (!LongPacketHeader.Read(reader, out var header) ||
                     // clients SHOULD ignore fixed bit when receiving version negotiation
-                    !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation)
+                    !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
+                    // packet is not meant for us after all
+                    SourceConnectionId != null && !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data))
                 {
                     return ProcessPacketResult.DropPacket;
                 }
@@ -502,7 +535,12 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: ignore congestion window when sending probe packets
             maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
 
-            // TODO-RZ: respect control flow limits
+            if (maxPacketLength < 50)
+            {
+                // TODO-RZ: better estimate for minimal usable size
+                return false;
+            }
+
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 
@@ -518,11 +556,6 @@ namespace System.Net.Quic.Implementations.Managed
                 writer.Reset(writer.Buffer);
                 return false;
             }
-
-            // remember what we sent in this packet
-            context.SentPacket.PacketNumber = pnSpace.NextPacketNumber;
-            Recovery.OnPacketSent(pnSpace.NextPacketNumber, GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
-            pnSpace.NextPacketNumber++;
 
             if (!_isServer && packetType == PacketType.Initial)
             {
@@ -553,6 +586,14 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, truncatedPn);
+
+            // remember what we sent in this packet
+            context.SentPacket.PacketNumber = pnSpace.NextPacketNumber;
+            context.SentPacket.BytesSent = writer.BytesWritten;
+            context.SentPacket.TimeSent = context.Timestamp;
+
+            Recovery.OnPacketSent(pnSpace.NextPacketNumber, GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
+            pnSpace.NextPacketNumber++;
 
             return true;
         }
@@ -587,6 +628,24 @@ namespace System.Net.Quic.Implementations.Managed
         internal void SendData(QuicWriter writer, out IPEndPoint? receiver, long now)
         {
             receiver = _remoteEndpoint;
+
+            if (now > _closingPeriodEnd)
+            {
+                SignalConnectionClose();
+                return;
+            }
+
+            if (_isDraining)
+            {
+                // While otherwise identical to the closing state, an endpoint in the draining state MUST NOT
+                // send any packets
+                return;
+            }
+
+            if (now >= Recovery.LossRecoveryTimer)
+            {
+                Recovery.OnLossDetectionTimeout(_tls.IsHandshakeComplete, now);
+            }
 
             var context = new SendContext(now, _sentPacketPool.Rent());
 
@@ -665,7 +724,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason, FrameType frameType = FrameType.Padding)
         {
             outboundError = new QuicError(errorCode, reason, frameType);
-            return ProcessPacketResult.ConnectionClose;
+            return ProcessPacketResult.Error;
         }
 
         private void ProcessLostPackets(PacketNumberSpace pnSpace, RecoveryController.PacketNumberSpace recoverySpace)
@@ -673,7 +732,7 @@ namespace System.Net.Quic.Implementations.Managed
             var lostPackets = recoverySpace.LostPackets;
             while (lostPackets.TryDequeue(out var lostPacket))
             {
-                if (lostPacket.AckEliciting)
+                if (lostPacket.AckEliciting || lostPacket.TimeSent == pnSpace.LastAckSent)
                 {
                     pnSpace.AckElicited = true;
                 }
@@ -709,17 +768,24 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        public override void Dispose()
+        internal async ValueTask DisposeAsync()
         {
-            // make sure the background thread no longer touches this connection
-            if (_socketContext.DetachConnection(this))
+            if (_disposed)
             {
-                _socketContext.Dispose();
+                return;
             }
+
+            await CloseAsync((long) TransportErrorCode.NoError).ConfigureAwait(false);
 
             _tls.Dispose();
             _gcHandle.Free();
+
             _disposed = true;
+        }
+
+        public override void Dispose()
+        {
+            DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
@@ -817,7 +883,7 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Packet is valid but violates the protocol, the connection should be closed.
             /// </summary>
-            ConnectionClose
+            Error
         }
 
         #region Public API
@@ -831,35 +897,44 @@ namespace System.Net.Quic.Implementations.Managed
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            ThrowIfError();
 
             if (Connected) return new ValueTask();
-            _socketContext.Start();
             _socketContext.Ping();
+            _socketContext.Start();
 
-            return _connectTcs.GetTypelessValueTask();
+            return _connectTcs.GetTask();
         }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
+            ThrowIfError();
+
             return OpenStream(true);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
+            ThrowIfError();
+
             return OpenStream(false);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
         {
             ThrowIfDisposed();
+            ThrowIfError();
+
             return _peerLimits.MaxStreamsUni;
         }
 
         internal override long GetRemoteAvailableBidirectionalStreamCount()
         {
             ThrowIfDisposed();
+            ThrowIfError();
+
             return _peerLimits.MaxStreamsBidi;
         }
 
@@ -867,13 +942,25 @@ namespace System.Net.Quic.Implementations.Managed
             AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken);
+            // TODO-RZ: finalize when do we throw these exceptions
+            // ThrowIfError();
+
+            return await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol { get; }
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
 
-        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            if (_closeTcs.IsSet) return new ValueTask();
+
+            outboundError = new QuicError((TransportErrorCode) errorCode, null, FrameType.Padding, false);
+            _socketContext.Ping();
+
+            return _closeTcs.GetTask();
+        }
 
         #endregion
 
@@ -884,5 +971,15 @@ namespace System.Net.Quic.Implementations.Managed
                 throw new ObjectDisposedException(nameof(ManagedQuicConnection));
             }
         }
+
+        private void ThrowIfError()
+        {
+            if (inboundError != null)
+            {
+                throw new QuicErrorException(inboundError!);
+            }
+        }
+
+        internal void SignalConnectionClose() => _closeTcs.TryComplete();
     }
 }

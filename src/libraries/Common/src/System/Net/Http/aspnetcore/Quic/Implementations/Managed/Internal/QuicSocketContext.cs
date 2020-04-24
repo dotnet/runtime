@@ -1,180 +1,16 @@
 #nullable enable
 
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Net.Quic.Implementations.Managed.Internal.Headers;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    internal sealed class QuicServerSocketContext : QuicSocketContext
-    {
-        private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
-        private readonly QuicListenerOptions _listenerOptions;
-        private ImmutableDictionary<ConnectionId, ManagedQuicConnection> _connections;
-        private readonly ConnectionIdCollection _connectionIds;
-
-        private bool _acceptNewConnections;
-
-        internal QuicServerSocketContext(IPEndPoint listenEndpoint, QuicListenerOptions listenerOptions,
-            ChannelWriter<ManagedQuicConnection> newConnectionsWriter)
-            : base(listenEndpoint)
-        {
-            _newConnections = newConnectionsWriter;
-            _listenerOptions = listenerOptions;
-
-            _connections = ImmutableDictionary<ConnectionId, ManagedQuicConnection>.Empty;
-            _connectionIds = new ConnectionIdCollection();
-            _acceptNewConnections = true;
-        }
-
-        private ManagedQuicConnection? DispatchPacket(QuicReader reader, IPEndPoint remoteEp)
-        {
-            ManagedQuicConnection? connection;
-
-            // we need to dispatch packets to appropriate connection based on the connection Id, so we need to parse the headers
-            byte first = reader.Peek();
-            if (HeaderHelpers.IsLongHeader(first))
-            {
-                if (!LongPacketHeader.Read(reader, out var header))
-                {
-                    // drop packet
-                    return null;
-                }
-
-                var connectionId = _connectionIds!.Find(header.DestinationConnectionId);
-                if (connectionId == null)
-                {
-                    // new connection attempt
-                    if (!_acceptNewConnections)
-                    {
-                        return null;
-                    }
-
-                    // TODO-RZ: This normally shouldn't race with Detach method (that can only be called from
-                    // other thread for connected connections), but there is very improbable scenario when the connection
-                    // was detached and we received delayed Initial/Handshake packet.
-                    connectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
-                    _connectionIds.Add(connectionId!);
-
-                    connection = new ManagedQuicConnection(_listenerOptions!, this, remoteEp);
-                    ImmutableInterlocked.TryAdd(ref _connections, connectionId!, connection);
-                }
-                else
-                {
-                    connection = _connections[connectionId!];
-                }
-            }
-            else
-            {
-                if (!ShortPacketHeader.Read(reader, _connectionIds!, out var header) ||
-                    !_connections.TryGetValue(header.DestinationConnectionId, out connection))
-                {
-                    // either unknown connection or the connection is connection not associated with this context
-                    // anymore
-                    return null;
-                }
-            }
-
-            reader.Seek(0);
-            bool connected = connection!.Connected;
-            connection.ReceiveData(reader, remoteEp, Timestamp.Now);
-            // TODO-RZ: handle failed connection attempts
-            if (!connected && connection!.Connected)
-            {
-                // new connection established
-                _newConnections!.TryWrite(connection!);
-            }
-
-            return connection;
-        }
-
-        internal void StopAcceptingConnections()
-        {
-            _acceptNewConnections = false;
-        }
-
-        protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
-        {
-            var connection = DispatchPacket(reader, sender);
-            return connection != null ? SendAsync(connection) : Task.CompletedTask;
-        }
-
-        protected override async Task OnSignal()
-        {
-            foreach (var (_, connection) in _connections)
-            {
-                await SendAsync(connection);
-            }
-        }
-
-        protected override async Task OnTimeout()
-        {
-            // TODO-RZ: do timeout only on the one connection which needs it
-            long now = Timestamp.Now;
-            foreach (var (_, connection) in _connections)
-            {
-                connection.OnTimeout(now);
-                await SendAsync(connection);
-            }
-        }
-
-        internal override bool DetachConnection(ManagedQuicConnection connection)
-        {
-            _connectionIds.Remove(connection.SourceConnectionId!);
-
-            // TODO-RZ: Data race with socket thread
-            ImmutableInterlocked.TryRemove(ref _connections, connection.SourceConnectionId!, out _);
-            return _connections.IsEmpty && !_acceptNewConnections;
-        }
-    }
-
-    internal sealed class SingleConnectionSocketContext : QuicSocketContext
-    {
-        private readonly ManagedQuicConnection _connection;
-
-        internal SingleConnectionSocketContext(IPEndPoint listenEndpoint, ManagedQuicConnection connection)
-            : base(listenEndpoint)
-        {
-            _connection = connection;
-        }
-
-        protected override Task OnReceived(QuicReader reader, IPEndPoint sender)
-        {
-            _connection.ReceiveData(reader, sender, Timestamp.Now);
-            return SendAsync(_connection);
-        }
-
-        protected override async Task OnSignal()
-        {
-             await SendAsync(_connection);
-        }
-
-        protected override Task OnTimeout()
-        {
-            _connection.OnTimeout(Timestamp.Now);
-            return SendAsync(_connection);
-        }
-
-        internal override bool DetachConnection(ManagedQuicConnection connection)
-        {
-            Debug.Assert(connection == _connection);
-            // only one connection, so we can stop the background worker
-            Stop();
-            return true;
-        }
-    }
-
     /// <summary>
     ///     Class responsible for serving a socket for QUIC connections.
     /// </summary>
-    internal abstract class QuicSocketContext : IDisposable
+    internal abstract class QuicSocketContext
     {
         private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
 
@@ -209,19 +45,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _writer = new QuicWriter(_sendBuffer);
         }
 
-        public IPEndPoint LocalEndPoint => (IPEndPoint) _socket.LocalEndPoint;
+        public IPEndPoint LocalEndPoint => (IPEndPoint)_socket.LocalEndPoint;
 
         internal void Start()
         {
             Debug.Assert(_backgroundWorkerTask == null);
             _socket.Bind(_listenEndpoint);
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
-        }
-
-        internal void Stop()
-        {
-            _socketTaskCts.Cancel();
-            _backgroundWorkerTask!.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -232,36 +62,80 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _signalTcs.TrySetResult(0);
         }
 
-        protected Task SendAsync(ManagedQuicConnection sender)
+        private async Task UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
-            _writer.Reset(_sendBuffer);
-            sender.SendData(_writer, out var receiver, Timestamp.Now);
-            SetTimeout(sender.GetNextTimerTimestamp());
-            return _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten), SocketFlags.None,
-                receiver);
+            while (true)
+            {
+                _writer.Reset(_sendBuffer);
+                connection.SendData(_writer, out var receiver, Timestamp.Now);
+
+                if (_writer.BytesWritten == 0)
+                {
+                    break;
+                }
+
+                await _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
+                    SocketFlags.None,
+                    receiver).ConfigureAwait(false);
+            }
+
+            var newState = connection.GetConnectionState();
+            if (newState != previousState)
+            {
+                OnConnectionStateChanged(connection, newState);
+            }
         }
 
-        protected void SetTimeout(long timestamp)
+        protected Task UpdateAsync(ManagedQuicConnection connection)
+        {
+            return UpdateAsync(connection, connection.GetConnectionState());
+        }
+
+        protected void UpdateTimeout(long timestamp)
         {
             if (timestamp < _currentTimeout)
             {
-                ClearTimeout();
-                _timeoutTask = Task.Delay((int) Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp)));
-                _waitingTasks[2] = _timeoutTask;
+                int milliseconds = (int)Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp));
+
+                // don't create tasks needlessly
+                // if (milliseconds > 0)
+                {
+                    _timeoutTask = Task.Delay(milliseconds);
+                    _waitingTasks[2] = _timeoutTask;
+                }
+
+                _currentTimeout = timestamp;
             }
         }
 
         protected void ClearTimeout()
         {
             // TODO-RZ: gracefully stop the current timeout task
+            _currentTimeout = long.MaxValue;
             _timeoutTask = _infiniteTimeoutTask;
+            _waitingTasks[2] = _timeoutTask;
         }
 
-        protected abstract Task OnReceived(QuicReader reader, IPEndPoint sender);
+        protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
+
+        private async Task OnReceived(QuicReader reader, IPEndPoint sender)
+        {
+            var connection = FindConnection(reader, sender);
+            if (connection != null)
+            {
+                var previousState = connection.GetConnectionState();
+                reader.Seek(0);
+                connection.ReceiveData(reader, sender, Timestamp.Now);
+                await UpdateAsync(connection, previousState).ConfigureAwait(false);
+                UpdateTimeout(connection.GetNextTimerTimestamp());
+            }
+        }
 
         protected abstract Task OnSignal();
 
         protected abstract Task OnTimeout();
+
+        protected abstract void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
 
         private async Task BackgroundWorker()
         {
@@ -284,7 +158,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 do
                 {
-                    await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
+                    bool immediateTimeout = Timestamp.Now >= _currentTimeout;
+                    if (immediateTimeout)
+                    {
+                        ClearTimeout();
+                        await OnTimeout().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
+                    }
+
 
                     if (token.IsCancellationRequested)
                     {
@@ -313,39 +197,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         _waitingTasks[1] = _signalTcs.Task;
                         await OnSignal().ConfigureAwait(false);
                     }
-
-                    if (_timeoutTask.IsCompleted)
-                    {
-                        _waitingTasks[2] = _infiniteTimeoutTask;
-                        await OnTimeout().ConfigureAwait(false);
-                    }
-                }
-                while (true) ;
+                } while (ShouldContinue);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
+
+            // cleanup everything
+            _socket.Dispose();
         }
+
+        protected abstract bool ShouldContinue { get; }
 
         /// <summary>
         ///     Detaches the given connection from this context, the connection will no longer be updated from the
         ///     thread running at this socket.
         /// </summary>
         /// <param name="connection"></param>
-        /// <returns>
-        ///     Returns true if there are no more connections attached to this context, and the
-        ///     context can be disposed.
-        /// </returns>
-        internal abstract bool DetachConnection(ManagedQuicConnection connection);
-
-        public void Dispose()
-        {
-            Stop();
-            // _socketTaskCts.Dispose();
-            _backgroundWorkerTask?.Dispose();
-            // _timeoutTask.Dispose();
-            _socket.Dispose();
-        }
+        protected abstract void DetachConnection(ManagedQuicConnection connection);
     }
 }

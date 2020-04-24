@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using System.Reflection;
+using System.Threading;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -68,9 +69,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             internal long NextLossTime { get; set; }
 
             /// <summary>
-            ///     All sent packets, for which we are still awaiting acknowledgement.
+            ///     All sent packets, for which we are still awaiting acknowledgement. Ordered by packet number.
             /// </summary>
-            internal SortedList<long, SentPacket> SentPackets { get; } = new SortedList<long, SentPacket>();
+            internal List<SentPacket> SentPackets { get; } = new List<SentPacket>();
 
             /// <summary>
             ///     Queue of packets deemed lost.
@@ -190,7 +191,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal void OnPacketSent(long packetNumber, PacketSpace space, SentPacket packet, bool handshakeComplete)
         {
             var pnSpace = GetPacketNumberSpace(space);
-            pnSpace.SentPackets.Add(packetNumber, packet);
+            pnSpace.SentPackets.Add(packet);
 
             if (packet.InFlight)
             {
@@ -208,17 +209,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal void OnAckReceived(PacketSpace space, ReadOnlySpan<PacketNumberRange> ranges, long ackDelay,
+        internal void OnAckReceived(PacketSpace space, RangeSet ranges, long ackDelay,
             in AckFrame frame, long now, bool isHandshakeComplete)
         {
-            Debug.Assert(!ranges.IsEmpty);
+            Debug.Assert(ranges.Count > 0);
 
             long largestAcked = ranges[^1].End;
             var pnSpace = GetPacketNumberSpace(space);
 
             pnSpace.LargestAckedPacketNumber = Math.Max(pnSpace.LargestAckedPacketNumber, largestAcked);
 
-            bool isLargestAcknowledgedNewlyAcked = pnSpace.SentPackets.TryGetValue(largestAcked, out var largestAckedPacket);
+            SentPacket? largestAckedPacket = null;
+            {
+                int index = pnSpace.SentPackets.BinarySearch(new SentPacket {PacketNumber = largestAcked}, SentPacket.PacketNumberComparer);
+                if ((uint) index < pnSpace.SentPackets.Count)
+                {
+                    largestAckedPacket = pnSpace.SentPackets[index];
+                }
+            }
+
+            bool isLargestAcknowledgedNewlyAcked = largestAckedPacket != null;
             bool newlyAckedIncludeAckEliciting = ProcessNewlyAckedPackets(ranges, pnSpace, now);
 
             if (isLargestAcknowledgedNewlyAcked &&
@@ -243,51 +253,46 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             SetLossDetectionTimer(isHandshakeComplete);
         }
 
-        private bool ProcessNewlyAckedPackets(ReadOnlySpan<PacketNumberRange> ranges, PacketNumberSpace pnSpace,
+        private bool ProcessNewlyAckedPackets(RangeSet ranges, PacketNumberSpace pnSpace,
             long now)
         {
             int rangeIndex = 0;
             bool newlyAckedIncludeAckEliciting = false;
             // TODO-RZ: make this more efficient
-            var pnsInFlight = pnSpace.SentPackets.Keys.ToArray();
-            for (int i = 0; i < pnsInFlight.Length; i++)
+            // var pnsInFlight = pnSpace.SentPackets.Keys.ToArray();
+
+            pnSpace.SentPackets.RemoveAll(packet =>
             {
-                long pn = pnsInFlight[i];
-                while (ranges[rangeIndex].End < pn)
+                long pn = packet.PacketNumber;
+                while (rangeIndex < ranges.Count && ranges[rangeIndex].End < pn)
                 {
                     rangeIndex++;
-                    if (rangeIndex == ranges.Length)
-                    {
-                        // all ranges processed
-                        return newlyAckedIncludeAckEliciting;
-                    }
+                }
+
+                if (rangeIndex == ranges.Count)
+                {
+                    // all ranges processed
+                    return false;
                 }
 
                 Debug.Assert(pn <= ranges[rangeIndex].End);
                 if (pn < ranges[rangeIndex].Start)
                 {
-                    continue;
+                    return false;
                 }
 
-                var packet = pnSpace.SentPackets[pn];
                 newlyAckedIncludeAckEliciting |= packet.AckEliciting;
 
-                OnPacketAcked(pn, packet, pnSpace, now);
-                pnSpace.SentPackets.Remove(pn);
-            }
+                if (packet.InFlight)
+                {
+                    CongestionController.OnPacketAcked(packet, now);
+                }
+
+                pnSpace.AckedPackets.Enqueue(packet);
+                return true;
+            });
 
             return newlyAckedIncludeAckEliciting;
-        }
-
-        private void OnPacketAcked(long packetNumber, SentPacket packet, PacketNumberSpace pnSpace, long now)
-        {
-            if (packet.InFlight)
-            {
-                CongestionController.OnPacketAcked(packet, now);
-            }
-
-            pnSpace.SentPackets.Remove(packetNumber);
-            pnSpace.AckedPackets.Enqueue(packet);
         }
 
         internal void UpdateRtt(long ackDelay)
@@ -342,8 +347,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private void SetLossDetectionTimer(bool isHandshakeComplete)
         {
-            var earliestLossTime = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
+            // cancel previous timer
+            LossRecoveryTimer = long.MaxValue;
 
+            long earliestLossTime = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
             if (earliestLossTime != long.MaxValue)
             {
                 // Time threshold loss detection.
@@ -354,12 +361,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (AckElicitingBytesInFlight == 0 && // no ack-eliciting packets in flight
                 PeerNotAwaitingAddressValidation())
             {
-                // cancel the timer
-                LossRecoveryTimer = long.MaxValue;
+                // no timer set
                 return;
             }
 
+            long lastAckElicitingSent = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
+            if (lastAckElicitingSent != long.MaxValue)
+            {
+                return;
+            }
+
+            LossRecoveryTimer = lastAckElicitingSent + GetProbeTimeoutInterval();
+        }
+
+        /// <summary>
+        ///     Gets currently used PTO interval.
+        /// </summary>
+        internal long GetProbeTimeoutInterval()
+        {
             long timeout;
+
             if (SmoothedRtt == 0)
             {
                 // use a default timeout if there are no RTT measurements
@@ -372,10 +393,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                           MaxAckDelay;
             }
 
-            timeout *= 1 << PtoCount;
-
-            var pnSpace = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
-            LossRecoveryTimer = pnSpace.TimeOfLastAckElicitingPacketSent + timeout;
+            return timeout * (1 << PtoCount);
         }
 
         internal void OnLossDetectionTimeout(bool isHandshakeComplete, long now)
@@ -425,17 +443,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             long lostSendTime = now - lossDelay;
             long largestAcked = pnSpace.LargestAckedPacketNumber;
 
-            // make a copy before iterating because we are going to remove items from the collection
-            foreach ((long pn, var packet) in pnSpace.SentPackets.ToArray())
+            int removed = 0;
+            for (; removed < pnSpace.SentPackets.Count; removed++)
             {
-                if (pn > largestAcked)
-                    continue;
+                var packet = pnSpace.SentPackets[removed];
+
+                if (packet.PacketNumber > largestAcked)
+                {
+                    // this and all following packets are not deemed lost yet
+                    break;
+                }
 
                 if (packet.TimeSent <= lostSendTime ||
-                    largestAcked >= pn + PacketReorderingThreshold)
+                    largestAcked >= packet.PacketNumber + PacketReorderingThreshold)
                 {
                     // Mark packet as lost
-                    pnSpace.SentPackets.Remove(pn);
                     pnSpace.LostPackets.Enqueue(packet);
 
                     if (packet.InFlight)
@@ -446,9 +468,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 else
                 {
                     // set time when the packet should be marked lost
-                    pnSpace.NextLossTime = Math.Min(pnSpace.NextLossTime, packet.TimeSent + lossDelay);
+                    pnSpace.NextLossTime = packet.TimeSent + lossDelay;
+
+                    // we can stop now, since all following packets were sent afterwards.
+                    break;
                 }
             }
+            pnSpace.SentPackets.RemoveRange(0, removed);
 
             // Inform the congestion controller of lost packets.
             CongestionController.OnPacketsLost(lostPacketsForCc, now);

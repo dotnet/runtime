@@ -9,20 +9,6 @@ using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed
 {
-    /// <summary>
-    ///     Helper class for managing timestamps.
-    /// </summary>
-    internal static class Timestamp
-    {
-        public static long Now => Stopwatch.GetTimestamp();
-
-        public static long FromMilliseconds(long milliseconds) => TimeSpan.TicksPerMillisecond * milliseconds;
-        public static long FromMicroseconds(long microseconds) => TimeSpan.TicksPerMillisecond * 1000 * microseconds;
-
-        public static long GetMilliseconds(long timeDiff) => timeDiff / TimeSpan.TicksPerMillisecond;
-        public static long GetMicroseconds(long timeDiff) => timeDiff / (TimeSpan.TicksPerMillisecond * 1000);
-    }
-
     internal partial class ManagedQuicConnection
     {
         private static bool IsAckEliciting(FrameType frameType)
@@ -138,8 +124,8 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.RetireConnectionId => throw new NotImplementedException(),
                     FrameType.PathChallenge => throw new NotImplementedException(),
                     FrameType.PathResponse => throw new NotImplementedException(),
-                    FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader),
-                    FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader),
+                    FrameType.ConnectionCloseQuic => ProcessConnectionClose(reader, context),
+                    FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader, context),
                     FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader),
                     _ when (frameType & FrameType.StreamMask) == frameType => ProcessStreamFrame(reader),
                     _ => CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType)
@@ -149,7 +135,7 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     case ProcessPacketResult.Ok:
                         continue;
-                    case ProcessPacketResult.ConnectionClose when outboundError == null:
+                    case ProcessPacketResult.Error when outboundError == null:
                         outboundError = new QuicError(TransportErrorCode.FrameEncodingError,
                             QuicError.UnableToDeserialize, frameType);
                         break;
@@ -172,10 +158,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(!_isServer); // frame not allowed handled elsewhere
             reader.ReadFrameType();
             _handshakeDoneReceived = true;
-            if (!_isServer)
-            {
-                _connectTcs.Complete(0);
-            }
+            _connectTcs.TryComplete();
 
             return ProcessPacketResult.Ok;
         }
@@ -183,7 +166,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessMaxStreamDataFrame(QuicReader reader)
         {
             if (!MaxStreamDataFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
             if (!StreamHelpers.IsReadable(_isServer, frame.StreamId))
                 // TODO-RZ: check stream state
@@ -196,7 +179,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
         {
             if (!MaxStreamsFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
             if (frame.Bidirectional)
                 _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
@@ -209,40 +192,51 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessMaxDataFrame(QuicReader reader)
         {
             if (!MaxDataFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
             _peerLimits.UpdateMaxData(frame.MaximumData);
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessConnectionClose(QuicReader reader)
+        private ProcessPacketResult ProcessConnectionClose(QuicReader reader, RecvContext context)
         {
             if (!ConnectionCloseFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
-            inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
-                frame.FrameType, frame.IsQuicError);
-            return ProcessPacketResult.ConnectionClose; //TODO-RZ: Draining/closing state management
+            // keep only the first error
+            if (inboundError == null)
+            {
+                inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.ReasonPhrase,
+                    frame.FrameType, frame.IsQuicError);
+
+                StartClosing(context.Timestamp);
+
+                // TODO-RZ: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
+                // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
+                _isDraining = true;
+
+                // this does nothing if
+                _connectTcs.TryCompleteException(new QuicErrorException(inboundError));
+            }
+
+            return ProcessPacketResult.Ok; //TODO-RZ: Draining/closing state management
         }
 
         private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, RecvContext context)
         {
             if (!AckFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
             PacketNumberSpace pnSpace = GetPacketNumberSpace(GetEncryptionLevel(packetType));
 
             if (frame.LargestAcknowledged >= pnSpace.NextPacketNumber || // acking future packet
-                frame.LargestAcknowledged < frame.FirstAckRange)       // acking negative PN
+                frame.LargestAcknowledged < frame.FirstAckRange) // acking negative PN
                 return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.InvalidAckRange, FrameType.Ack);
 
             // TODO-RZ: check ackDelay
-            Span<PacketNumberRange> ranges =
-                stackalloc PacketNumberRange[(int)frame.AckRangeCount + 1];
 
-            // TODO-RZ: it is really unnecessary to have yet another class for ranges
-            ranges[^1] = new PacketNumberRange(
-                frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
+            RangeSet ranges = new RangeSet();
+            ranges.Add(frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
 
             int read = 0;
 
@@ -266,12 +260,13 @@ namespace System.Net.Quic.Implementations.Managed
                         QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
                 }
 
-                ranges[i - 1] = new PacketNumberRange(nextSmallestAcked, nextLargestAcked);
+                ranges.Add(nextSmallestAcked, nextLargestAcked);
                 prevSmallestAcked = nextSmallestAcked;
             }
 
             var space = GetPacketSpace(packetType);
-            long ackDelay = Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int) _peerTransportParameters.AckDelayExponent));
+            long ackDelay =
+                Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int)_peerTransportParameters.AckDelayExponent));
             Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, _tls.IsHandshakeComplete);
 
             var ackedPackets = Recovery.GetPacketNumberSpace(space).AckedPackets;
@@ -285,7 +280,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, RecvContext context)
         {
-            if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
+            if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.Error;
 
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
@@ -317,7 +312,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessStreamFrame(QuicReader reader)
         {
             if (!StreamFrame.Read(reader, out var frame))
-                return ProcessPacketResult.ConnectionClose;
+                return ProcessPacketResult.Error;
 
             bool bidirectional = StreamHelpers.IsBidirectional(frame.StreamId);
             long index = StreamHelpers.GetStreamIndex(frame.StreamId);
@@ -332,7 +327,8 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.Stream);
             }
 
-            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters, _isServer, _socketContext);
+            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters,
+                _isServer, _socketContext);
             if (stream.InboundBuffer == null)
             {
                 // Flow trying to write into receive only stream
@@ -371,11 +367,27 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (outboundError != null)
             {
-                WriteConnectionCloseFrame(writer, outboundError!);
+                if (_closingPeriodEnd == null)
+                {
+                    // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
+                    StartClosing(context.Timestamp);
+
+                }
+
+                if (_lastConnectionCloseSent < context.Timestamp)
+                {
+                    // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
+                    // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
+                    // amount of time before responding.
+                    WriteConnectionCloseFrame(writer, outboundError!);
+                    _lastConnectionCloseSent = context.Timestamp;
+                }
+
                 return;
             }
 
-            if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt && _tls.IsHandshakeComplete)
+            if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
+                _tls.IsHandshakeComplete)
             {
                 writer.WriteFrameType(FrameType.HandshakeDone);
                 // no data
@@ -400,6 +412,14 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
+        private void StartClosing(long now)
+        {
+            // The closing and draining states SHOULD exists for at least three times the current PTO interval
+            // Note: this is to properly discard reordered/delayed packets.
+
+            _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
+        }
+
         private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
         {
             ConnectionCloseFrame.Write(writer,
@@ -420,11 +440,13 @@ namespace System.Net.Quic.Implementations.Managed
 
                 (long offset, long count) = pnSpace.CryptoOutboundStream.GetNextSendableRange();
 
-                count = Math.Min(count, (long) writer.BytesAvailable - minSize);
+                count = Math.Min(count, (long)writer.BytesAvailable - minSize);
                 pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
                 context.SentPacket.SentStreamData.Add(
                     SentPacket.StreamChunkInfo.ForCryptoStream(offset, offset + count - 1));
+                context.SentPacket.AckEliciting = true;
+                context.SentPacket.InFlight = true;
             }
         }
 
@@ -434,18 +456,21 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (ranges.Count == 0)
             {
+                return; // no need for ack now
+            }
+
+            if (!pnSpace.AckElicited && context.Timestamp - pnSpace.LastAckSent <= Recovery.LatestRtt / 2)
+            {
                 return;
             }
 
-            // if (!pnSpace.AckElicited)
-            // {
-                // return; // no need for ack now
-            // }
-            // Debug.Assert(ranges.Count > 0); // implied by AckElicited
+            pnSpace.LastAckSent = context.Timestamp;
+
+            Debug.Assert(ranges.Count > 0); // implied by AckElicited
 
             // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
-                            (int) _localTransportParameters.AckDelayExponent;
+                            (int)_localTransportParameters.AckDelayExponent;
 
             long largest = ranges.GetMax();
             var firstRange = ranges[^1];
@@ -502,9 +527,10 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 (long offset, long count) = buffer.GetNextSendableRange();
-                int overhead = StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));
+                int overhead =
+                    StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));
 
-                count = Math.Min(count,  writer.BytesAvailable - overhead);
+                count = Math.Min(count, writer.BytesAvailable - overhead);
 
                 // if size is known, WrittenBytes is no longer mutable
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
@@ -520,6 +546,8 @@ namespace System.Net.Quic.Implementations.Managed
 
                     context.SentPacket.SentStreamData.Add(
                         new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
+                    context.SentPacket.AckEliciting = true;
+                    context.SentPacket.InFlight = true;
                 }
 
                 if (buffer.IsFlushable)
@@ -551,8 +579,11 @@ namespace System.Net.Quic.Implementations.Managed
 
                     var stream = _streams[data.StreamId];
                     var buffer = stream.OutboundBuffer!;
+                    bool wasFinished = buffer.Finished;
+
                     buffer.OnAck(data.Offset, data.Count, data.Fin);
-                    if (buffer.Finished)
+
+                    if (buffer.Finished && !wasFinished)
                     {
                         stream.NotifyShutdownWriteCompleted();
                     }

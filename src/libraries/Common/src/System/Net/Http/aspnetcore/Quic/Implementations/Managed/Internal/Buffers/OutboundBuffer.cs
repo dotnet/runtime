@@ -128,11 +128,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 return;
             }
 
-            var buffer = await RentBufferAsync(cancellationToken);
+            var buffer = await RentBufferAsync(cancellationToken).ConfigureAwait(false);
             var tmp = _toBeQueuedChunk;
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
 
-            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken);
+            await _toSendChannel.Writer.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
                 if (_toBeQueuedChunk.Length == _toBeQueuedChunk.Buffer!.Length)
                 {
-                    await FlushChunkAsync(cancellationToken);
+                    await FlushChunkAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 buffer = buffer.Slice(toWrite);
@@ -359,7 +359,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private async ValueTask<byte[]> RentBufferAsync(CancellationToken cancellationToken)
         {
-            await _bufferLimitSemaphore.WaitAsync(cancellationToken);
+            await _bufferLimitSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
         }
 

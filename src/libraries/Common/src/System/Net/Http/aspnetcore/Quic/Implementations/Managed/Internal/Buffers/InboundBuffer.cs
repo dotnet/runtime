@@ -160,7 +160,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             if (delivered > 0)
                 return delivered;
 
-            if (await _deliverableChannel.Reader.WaitToReadAsync(token))
+            if (await _deliverableChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
             {
                 return Deliver(destination.Span);
             }

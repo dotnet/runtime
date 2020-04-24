@@ -70,5 +70,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             return QuicPrimitives.EncodePacketNumber(largestAcked, NextPacketNumber);
         }
+
+        /// <summary>
+        ///     Timestamp when last ack frame was sent.
+        /// </summary>
+        internal long LastAckSent { get; set; }
     }
 }
