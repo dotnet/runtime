@@ -34,7 +34,7 @@ initNonPortableDistroRid()
     local rootfsDir="$4"
     local nonPortableBuildID=""
 
-    if [ "$targetOs" = "Linux" ]; then
+    if [ "$targetOs" = "linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -61,7 +61,7 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$targetOs" = "FreeBSD" ]; then
+    if [ "$targetOs" = "freebsd" ]; then
         if (( isPortable == 0 )); then
             # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
             __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
@@ -155,21 +155,21 @@ initDistroRidGlobal()
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$targetOs" = "Linux" ]; then
+            if [ "$targetOs" = "linux" ]; then
                 distroRid="linux-$buildArch"
-            elif [ "$targetOs" = "OSX" ]; then
+            elif [ "$targetOs" = "osx" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$targetOs" = "tvOS" ]; then
+            elif [ "$targetOs" = "tvos" ]; then
                 distroRid="tvos-$buildArch"
-            elif [ "$targetOs" = "iOS" ]; then
+            elif [ "$targetOs" = "ios" ]; then
                 distroRid="ios-$buildArch"
-            elif [ "$targetOs" = "Android" ]; then
+            elif [ "$targetOs" = "android" ]; then
                 distroRid="android-$buildArch"
-            elif [ "$targetOs" = "Browser" ]; then
+            elif [ "$targetOs" = "browser" ]; then
                 distroRid="browser-$buildArch"
-            elif [ "$targetOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "freebsd" ]; then
                 distroRid="freebsd-$buildArch"
-            elif [ "$targetOs" = "SunOS" ]; then
+            elif [ "$targetOs" = "sunos" ]; then
                 distroRid="sunos-$buildArch"
             fi
         fi

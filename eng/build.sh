@@ -107,71 +107,117 @@ while [[ $# > 0 ]]; do
       usage
       exit 0
       ;;
+
      -subset|-s)
       arguments="$arguments /p:Subset=$2"
       shift 2
       ;;
+
      -arch)
-      arch=$2
+      declare -l passedArch=$2
+      case "$passedArch" in
+      x64|x86|arm|armel|arm64|wasm)
+        arch=$passedArch
+        ;;
+      *)
+        echo "Unsupported target architecture '$2'."
+        echo "The allowed values are x86, x64, arm, armel, arm64, and wasm."
+        exit 1
+        ;;
+      esac
       shift 2
       ;;
+
      -configuration|-c)
-      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
-      arguments="$arguments -configuration $val"
+      declare -l passedConfig=$2
+      case "$passedConfig" in
+      debug|release|checked)
+        val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
+        arguments="$arguments -configuration $val"
+        ;;
+      *)
+        echo "Unsupported target configuration '$2'."
+        echo "The allowed values are Debug, Release, and Checked."
+        exit 1
+        ;;
+      esac
       shift 2
       ;;
+
      -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
       arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
+
      -os)
-      os=$2
-      arguments="$arguments /p:TargetOS=$2"
+      declare -l passedOS=$2
+      case "$passedOS" in
+      windows_nt|linux|freebsd|osx|tvos|ios|android|browser)
+        os=$passedOS
+        arguments="$arguments /p:TargetOS=$2"
+        ;;
+      *)
+        echo "Unsupported target OS '$2'."
+        echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, and Browser."
+        exit 1
+        ;;
+      esac
       shift 2
       ;;
+
      -allconfigurations)
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1
       ;;
+
      -testscope)
       arguments="$arguments /p:TestScope=$2"
       shift 2
       ;;
+
      -testnobuild)
       arguments="$arguments /p:TestNoBuild=$2"
       shift 2
       ;;
+
      -coverage)
       arguments="$arguments /p:Coverage=true"
       shift 1
       ;;
+
      -runtimeconfiguration|-rc)
       val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
       arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
+
      -librariesconfiguration|-lc)
       arguments="$arguments /p:LibrariesConfiguration=$2"
       shift 2
       ;;
+
      -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
       shift 1
       ;;
+
      -clang*)
       arguments="$arguments /p:Compiler=$opt"
       shift 1
       ;;
+
      -cmakeargs)
       cmakeargs="${cmakeargs} ${opt} $2"
       shift 2
       ;;
+
      -gcc*)
       arguments="$arguments /p:Compiler=$opt"
       shift 1
       ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
