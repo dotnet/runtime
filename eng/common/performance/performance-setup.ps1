@@ -12,6 +12,7 @@ Param(
     [string] $RunCategories="Libraries Runtime",
     [string] $Csproj="src\benchmarks\micro\MicroBenchmarks.csproj",
     [string] $Kind="micro",
+    [switch] $LLVM, 
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
@@ -75,6 +76,7 @@ if($MonoDotnet -ne "")
     $UsingMono = "true"
     $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
     Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
+    $Configurations += " LLVM=$LLVM"
 }
 
 if ($UseCoreRun) {
