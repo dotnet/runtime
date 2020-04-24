@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 SortedSet<(int offset, int keyLength, int keyValueLength)> ranges = GetKeyValueEncodingRanges();
 
-                (int offset, int keyLength, int valueLength) currentKeyRange =
+                (int offset, int keyLength, int keyValueLength) currentKeyRange =
                     (_currentKeyOffset.Value,
                      _currentValueOffset.Value - _currentKeyOffset.Value,
                      0);
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             // copy sorted ranges to temporary buffer
             Span<byte> s = tmpSpan;
-            foreach((int offset, int keyLength, int valueLength) range in _keyValueEncodingRanges)
+            foreach((int offset, int keyLength, int keyValueLength) range in _keyValueEncodingRanges)
             {
                 ReadOnlySpan<byte> kvEnc = GetKeyValueEncoding(range);
                 kvEnc.CopyTo(s);
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             s_bufferPool.Return(tempBuffer, clearArray: true);
         }
 
-        private ReadOnlySpan<byte> GetKeyEncoding((int offset, int keyLength, int valueLength) keyValueRange)
+        private ReadOnlySpan<byte> GetKeyEncoding((int offset, int keyLength, int keyValueLength) keyValueRange)
         {
             return _buffer.AsSpan(keyValueRange.offset, keyValueRange.keyLength);
         }
