@@ -238,9 +238,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert1);
-                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert2);
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert1);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert2);
 
                 Assert.False(chain.Build(endEntityCert));
                 Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
@@ -273,8 +273,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
 
                 Assert.False(chain.Build(endEntityCert));
                 Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
