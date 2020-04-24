@@ -18,8 +18,6 @@ if (CLR_CMAKE_HOST_WIN32)
     # Delay load libraries required for WinRT as that is not supported on all platforms
     add_link_options("/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll")
     add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-roparameterizediid-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-ro-typeresolution-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
     add_link_options("/DELAYLOAD:version.dll")
@@ -168,7 +166,7 @@ target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
     set(
-        RUNTIME_MODULE_INDEX_FILE 
+        RUNTIME_MODULE_INDEX_FILE
         ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
     )
     add_custom_command(
@@ -178,12 +176,12 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
         COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
     )
     set_source_files_properties(
-        ${RUNTIME_MODULE_INDEX_FILE} 
+        ${RUNTIME_MODULE_INDEX_FILE}
         PROPERTIES GENERATED TRUE
     )
     add_custom_target(
         runtime_module_index_header
-        DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
+        DEPENDS ${RUNTIME_MODULE_INDEX_FILE}
     )
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
