@@ -176,15 +176,15 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    NamedIntrinsic         hwIntrinsic      = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
-    CORINFO_InstructionSet hwIntrinsicIsa   = HWIntrinsicInfo::lookupIsa(hwIntrinsic);
-    bool                   isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
+    NamedIntrinsic hwIntrinsic      = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
+    bool           isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
 
     if ((hwIntrinsic == NI_Illegal) || !varTypeIsSIMD(simdType))
     {
-        assert(!"Unexpected SimdAsHWIntrinsic");
         return nullptr;
     }
+
+    CORINFO_InstructionSet hwIntrinsicIsa = HWIntrinsicInfo::lookupIsa(hwIntrinsic);
 
     if (!compOpportunisticallyDependsOn(hwIntrinsicIsa))
     {
@@ -243,7 +243,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
                                                bool                  mustExpand)
 {
     assert(featureSIMD);
-    assert(SimdAsHWIntrinsicInfo::IsTableDriven(intrinsic));
+    assert(!SimdAsHWIntrinsicInfo::IsTableDriven(intrinsic));
 
     var_types retType  = JITtype2varType(sig->retType);
     var_types baseType = TYP_UNKNOWN;
