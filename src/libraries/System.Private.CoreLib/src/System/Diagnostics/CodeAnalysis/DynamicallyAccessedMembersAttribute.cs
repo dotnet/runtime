@@ -19,7 +19,8 @@ namespace System.Diagnostics.CodeAnalysis
     /// </remarks>
     [AttributeUsage(
         AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter |
-        AttributeTargets.Parameter |AttributeTargets.Property)]
+        AttributeTargets.Parameter | AttributeTargets.Property,
+        Inherited = false)]
     public sealed class DynamicallyAccessedMembersAttribute : Attribute
     {
         /// <summary>

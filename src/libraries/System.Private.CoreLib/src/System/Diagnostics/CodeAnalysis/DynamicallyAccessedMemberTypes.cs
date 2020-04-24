@@ -86,11 +86,6 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>
         /// Specifies all members.
         /// </summary>
-        All = DefaultConstructor | PublicConstructors | NonPublicConstructors |
-            PublicMethods | NonPublicMethods |
-            PublicFields | NonPublicFields |
-            PublicNestedTypes | NonPublicNestedTypes |
-            PublicProperties | NonPublicProperties |
-            PublicEvents | NonPublicEvents
+        All = ~None
     }
 }

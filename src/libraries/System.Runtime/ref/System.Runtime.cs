@@ -5625,7 +5625,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? AssemblyName { get { throw null; } }
         public string? Condition { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
     public sealed class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes memberTypes) { }
@@ -5634,6 +5634,7 @@ namespace System.Diagnostics.CodeAnalysis
     [System.FlagsAttribute]
     public enum DynamicallyAccessedMemberTypes
     {
+        All = -1,
         None = 0,
         DefaultConstructor = 1,
         PublicConstructors = 3,
@@ -5648,7 +5649,6 @@ namespace System.Diagnostics.CodeAnalysis
         NonPublicProperties = 1024,
         PublicEvents = 2048,
         NonPublicEvents = 4096,
-        All = 8191
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute

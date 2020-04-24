@@ -18,7 +18,7 @@ namespace System.Diagnostics.CodeAnalysis
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class
-        /// with the specified member signature.
+        /// with the specified signature of a member on the same type as the consumer.
         /// </summary>
         /// <param name="memberSignature">The signature of the member depended on.</param>
         public DynamicDependencyAttribute(string memberSignature)
@@ -28,7 +28,7 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class
-        /// with the specified member signature and <see cref="System.Type"/>.
+        /// with the specified signature of a member on a <see cref="System.Type"/>.
         /// </summary>
         /// <param name="memberSignature">The signature of the member depended on.</param>
         /// <param name="type">The <see cref="System.Type"/> containing <paramref name="memberSignature"/>.</param>
@@ -40,7 +40,7 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class
-        /// with the specified member signature, type name, and assembly name.
+        /// with the specified signature of a member on a type in an assembly.
         /// </summary>
         /// <param name="memberSignature">The signature of the member depended on.</param>
         /// <param name="typeName">The full name of the type containing the specified member.</param>
@@ -54,7 +54,7 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class
-        /// with the specified member types and <see cref="System.Type"/>.
+        /// with the specified types of members on a <see cref="System.Type"/>.
         /// </summary>
         /// <param name="memberTypes">The types of members depended on.</param>
         /// <param name="type">The <see cref="System.Type"/> containing the specified members.</param>
@@ -66,7 +66,7 @@ namespace System.Diagnostics.CodeAnalysis
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicDependencyAttribute"/> class
-        /// with the specified member types, type name, and assembly name.
+        /// with the specified types of members on a type in an assembly.
         /// </summary>
         /// <param name="memberTypes">The types of members depended on.</param>
         /// <param name="typeName">The full name of the type containing the specified members.</param>
