@@ -264,7 +264,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            public void Dispatch(bool processAsyncOperationSynchronously)
+            public void Dispatch()
             {
                 ManualResetEventSlim? e = Event;
                 if (e != null)
@@ -272,17 +272,22 @@ namespace System.Net.Sockets
                     // Sync operation.  Signal waiting thread to continue processing.
                     e.Set();
                 }
-                else if (processAsyncOperationSynchronously)
-                {
-                    // Async operation.  Process the IO and callback on the current thread synchronously as requested.
-                    ((IThreadPoolWorkItem)this).Execute();
-                }
                 else
                 {
-                    // Async operation.  Process the IO and callback asynchronously on the threadpool (even if we're already on a pool thread).
-                    ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+                    // Async operation.
+                    Schedule();
                 }
             }
+
+            public void Schedule()
+            {
+                Debug.Assert(Event == null);
+
+                // Async operation.  Process the IO on the threadpool.
+                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+            }
+
+            public void Process() => ((IThreadPoolWorkItem)this).Execute();
 
             void IThreadPoolWorkItem.Execute()
             {
@@ -711,6 +716,7 @@ namespace System.Net.Sockets
             // These fields define the queue state.
 
             private QueueState _state;      // See above
+            private bool _isNextOperationSynchronous;
             private int _sequenceNumber;    // This sequence number is updated when we receive an epoll notification.
                                             // It allows us to detect when a new epoll notification has arrived
                                             // since the last time we checked the state of the queue.
@@ -724,6 +730,8 @@ namespace System.Net.Sockets
             private object _queueLock;
 
             private LockToken Lock() => new LockToken(_queueLock);
+
+            public bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
 
             public void Init()
             {
@@ -784,7 +792,12 @@ namespace System.Net.Sockets
                                 // Enqueue the operation.
                                 Debug.Assert(operation.Next == operation, "Expected operation.Next == operation");
 
-                                if (_tail != null)
+                                if (_tail == null)
+                                {
+                                    Debug.Assert(!_isNextOperationSynchronous);
+                                    _isNextOperationSynchronous = operation.Event != null;
+                                }
+                                else
                                 {
                                     operation.Next = _tail.Next;
                                     _tail.Next = operation;
@@ -830,9 +843,9 @@ namespace System.Net.Sockets
                 }
             }
 
-            /// <returns>An operation that should be processed, or null if no further processing is required</returns>
-            public AsyncOperation? HandleEvent(SocketAsyncContext context)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context)
             {
+                AsyncOperation op;
                 using (Lock())
                 {
                     Trace(context, $"Enter");
@@ -848,7 +861,9 @@ namespace System.Net.Sockets
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
                             _state = QueueState.Processing;
-                            return _tail.Next;
+                            op = _tail.Next;
+                            // Break out and release lock
+                            break;
 
                         case QueueState.Processing:
                             Debug.Assert(_tail != null, "State == Processing but queue is empty!");
@@ -865,6 +880,19 @@ namespace System.Net.Sockets
                             Environment.FailFast("unexpected queue state");
                             return null;
                     }
+                }
+
+                ManualResetEventSlim? e = op.Event;
+                if (e != null)
+                {
+                    // Sync operation.  Signal waiting thread to continue processing.
+                    e.Set();
+                    return null;
+                }
+                else
+                {
+                    // Async operation.  The caller will figure out how to process the IO.
+                    return op;
                 }
             }
 
@@ -990,6 +1018,7 @@ namespace System.Net.Sockets
                         {
                             // No more operations to process
                             _tail = null;
+                            _isNextOperationSynchronous = false;
                             _state = QueueState.Ready;
                             _sequenceNumber++;
                             Trace(context, $"Exit (finished queue)");
@@ -998,11 +1027,12 @@ namespace System.Net.Sockets
                         {
                             // Pop current operation and advance to next
                             nextOp = _tail.Next = op.Next;
+                            _isNextOperationSynchronous = nextOp.Event != null;
                         }
                     }
                 }
 
-                nextOp?.Dispatch(processAsyncOperationSynchronously: false);
+                nextOp?.Dispatch();
 
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
             }
@@ -1032,11 +1062,13 @@ namespace System.Net.Sockets
                             {
                                 // No more operations
                                 _tail = null;
+                                _isNextOperationSynchronous = false;
                             }
                             else
                             {
                                 // Pop current operation and advance to next
                                 _tail.Next = op.Next;
+                                _isNextOperationSynchronous = op.Next.Event != null;
                             }
 
                             // We're the first op in the queue.
@@ -1081,7 +1113,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                nextOp?.Dispatch(processAsyncOperationSynchronously: false);
+                nextOp?.Dispatch();
             }
 
             // Called when the socket is closed.
@@ -1111,6 +1143,7 @@ namespace System.Net.Sockets
                     }
 
                     _tail = null;
+                    _isNextOperationSynchronous = false;
 
                     Trace(context, $"Exit");
                 }
@@ -1945,6 +1978,36 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
+        // Called on the epoll thread, speculatively tries to process synchronous events and errors for synchronous events, and
+        // returns any remaining events that remain to be processed. Taking a lock for each operation queue to deterministically
+        // handle synchronous events on the epoll thread seems to significantly reduce throughput in benchmarks.
+        public unsafe Interop.Sys.SocketEvents HandleSyncEventsSpeculatively(Interop.Sys.SocketEvents events)
+        {
+            if ((events & Interop.Sys.SocketEvents.Error) != 0)
+            {
+                // Set the Read and Write flags; the processing for these events
+                // will pick up the error.
+                events ^= Interop.Sys.SocketEvents.Error;
+                events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Read) != 0 &&
+                _receiveQueue.IsNextOperationSynchronous_Speculative &&
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) == null)
+            {
+                events ^= Interop.Sys.SocketEvents.Read;
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Write) != 0 &&
+                _sendQueue.IsNextOperationSynchronous_Speculative &&
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this) == null)
+            {
+                events ^= Interop.Sys.SocketEvents.Write;
+            }
+
+            return events;
+        }
+
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
@@ -1955,9 +2018,9 @@ namespace System.Net.Sockets
             }
 
             AsyncOperation? receiveOperation =
-                (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.HandleEvent(this) : null;
+                (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
             AsyncOperation? sendOperation =
-                (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.HandleEvent(this) : null;
+                (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
 
             // This method is called from a thread pool thread. When we have only one operation to process, process it
             // synchronously to avoid an extra thread pool work item. When we have two operations to process, processing both
@@ -1965,12 +2028,12 @@ namespace System.Net.Sockets
             // synchronously. There might be better ways of doing this.
             if (sendOperation == null)
             {
-                receiveOperation?.Dispatch(processAsyncOperationSynchronously: true);
+                receiveOperation?.Process();
             }
             else
             {
-                receiveOperation?.Dispatch(processAsyncOperationSynchronously: false);
-                sendOperation.Dispatch(processAsyncOperationSynchronously: true);
+                receiveOperation?.Schedule();
+                sendOperation.Process();
             }
         }
 

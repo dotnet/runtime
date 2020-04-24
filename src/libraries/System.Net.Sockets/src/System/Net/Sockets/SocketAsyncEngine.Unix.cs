@@ -321,11 +321,13 @@ namespace System.Net.Sockets
             try
             {
                 bool shutdown = false;
+                Interop.Sys.SocketEvent* buffer = _buffer;
+                ConcurrentDictionary<IntPtr, SocketAsyncContext> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
                 while (!shutdown)
                 {
                     int numEvents = EventBufferCount;
-                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
+                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
                     if (err != Interop.Error.SUCCESS)
                     {
                         throw new InternalException(err);
@@ -337,7 +339,7 @@ namespace System.Net.Sockets
                     bool enqueuedEvent = false;
                     for (int i = 0; i < numEvents; i++)
                     {
-                        IntPtr handle = _buffer[i].Data;
+                        IntPtr handle = buffer[i].Data;
                         if (handle == ShutdownHandle)
                         {
                             shutdown = true;
@@ -345,8 +347,17 @@ namespace System.Net.Sockets
                         else
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            eventQueue.Enqueue(new SocketIOEvent(handle, _buffer[i].Events));
-                            enqueuedEvent = true;
+                            handleToContextMap.TryGetValue(handle, out SocketAsyncContext? context);
+                            if (context != null)
+                            {
+                                Interop.Sys.SocketEvents events = buffer[i].Events;
+                                events = context.HandleSyncEventsSpeculatively(events);
+                                if (events != Interop.Sys.SocketEvents.None)
+                                {
+                                    eventQueue.Enqueue(new SocketIOEvent(context, events));
+                                    enqueuedEvent = true;
+                                }
+                            }
                         }
                     }
 
@@ -384,16 +395,9 @@ namespace System.Net.Sockets
             // the last thread processing events, it must see the event queued by the enqueuer.
             Interlocked.Exchange(ref _eventQueueProcessingRequested, 0);
 
-            ConcurrentDictionary<IntPtr, SocketAsyncContext> handleToContextMap = _handleToContextMap;
             ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
             while (eventQueue.TryDequeue(out SocketIOEvent ev))
             {
-                handleToContextMap.TryGetValue(ev.Handle, out SocketAsyncContext? context);
-                if (context == null)
-                {
-                    continue;
-                }
-
                 // An event was successfully dequeued, and as there may be more events to process, speculatively schedule a work
                 // item to parallelize processing of events. Since this is only for additional parallelization, doing so
                 // speculatively is ok.
@@ -402,7 +406,7 @@ namespace System.Net.Sockets
                     ScheduleToProcessEvents();
                 }
 
-                context.HandleEvents(ev.Events);
+                ev.Context.HandleEvents(ev.Events);
             }
         }
 
@@ -448,12 +452,12 @@ namespace System.Net.Sockets
 
         private readonly struct SocketIOEvent
         {
-            public IntPtr Handle { get; }
+            public SocketAsyncContext Context { get; }
             public Interop.Sys.SocketEvents Events { get; }
 
-            public SocketIOEvent(IntPtr handle, Interop.Sys.SocketEvents events)
+            public SocketIOEvent(SocketAsyncContext context, Interop.Sys.SocketEvents events)
             {
-                Handle = handle;
+                Context = context;
                 Events = events;
             }
         }
