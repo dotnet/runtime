@@ -39,7 +39,7 @@ void Compiler::lvaInit()
     /* We haven't allocated stack variables yet */
     lvaRefCountState = RCS_INVALID;
 
-    lvaGenericsContextUseCount = 0;
+    lvaGenericsContextInUse = false;
 
     lvaTrackedToVarNumSize = 0;
     lvaTrackedToVarNum     = nullptr;
@@ -3606,6 +3606,8 @@ var_types LclVarDsc::lvaArgType()
 //     eligible for assertion prop, single defs, and tracking which blocks
 //     hold uses.
 //
+//     Looks for uses of generic context and sets lvaGenericsContextInUse.
+//
 //     In checked builds:
 //
 //     Verifies that local accesses are consistenly typed.
@@ -3710,6 +3712,17 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     }
 
     /* This must be a local variable reference */
+
+    // See if this is a generics context use.
+    if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+    {
+        assert(tree->OperIs(GT_LCL_VAR));
+        if (!lvaGenericsContextInUse)
+        {
+            JITDUMP("-- generic context in use at [%06u]\n", dspTreeID(tree));
+            lvaGenericsContextInUse = true;
+        }
+    }
 
     assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
     unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
@@ -4009,24 +4022,26 @@ void Compiler::lvaMarkLocalVars()
         return;
     }
 
+    const bool reportParamTypeArg = lvaReportParamTypeArg();
+
+    // Update bookkeeping on the generic context.
+    if (lvaKeepAliveAndReportThis())
+    {
+        lvaGetDesc(0u)->lvImplicitlyReferenced = reportParamTypeArg;
+    }
+    else if (lvaReportParamTypeArg())
+    {
+        // We should have a context arg.
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
+        lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
+    }
+
 #if ASSERTION_PROP
     assert(opts.OptimizationEnabled());
 
     // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
     optAddCopies();
 #endif
-
-    if (lvaKeepAliveAndReportThis())
-    {
-        lvaTable[0].lvImplicitlyReferenced = 1;
-        // This isn't strictly needed as we will make a copy of the param-type-arg
-        // in the prolog. However, this ensures that the LclVarDsc corresponding to
-        // info.compTypeCtxtArg is valid.
-    }
-    else if (lvaReportParamTypeArg())
-    {
-        lvaTable[info.compTypeCtxtArg].lvImplicitlyReferenced = 1;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -4046,7 +4061,10 @@ void Compiler::lvaMarkLocalVars()
 //    In fast-jitting modes where we don't ref count locals, this bypasses
 //    actual counting, and makes all locals implicitly referenced on first
 //    compute. It asserts all locals are implicitly referenced on recompute.
-
+//
+//    When optimizing we also recompute lvaGenericsContextInUse based
+//    on specially flagged LCL_VAR appearances.
+//
 void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
@@ -4141,6 +4159,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         varDsc->lvSingleDef = varDsc->lvIsParam;
     }
 
+    // Remember current state of generic context use, and prepare
+    // to compute new state.
+    const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
+    lvaGenericsContextInUse               = false;
+
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
@@ -4176,6 +4199,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                         {
                             varDsc->incRefCnts(weight, this);
                         }
+
+                        if ((node->gtFlags & GTF_VAR_CONTEXT) != 0)
+                        {
+                            assert(node->OperIs(GT_LCL_VAR));
+                            lvaGenericsContextInUse = true;
+                        }
                         break;
                     }
 
@@ -4188,6 +4217,21 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             lvaMarkLocalVars(block, isRecompute);
         }
+    }
+
+    if (oldLvaGenericsContextInUse && !lvaGenericsContextInUse)
+    {
+        // Context was in use but no longer is. This can happen
+        // if we're able to optimize, so just leave a note.
+        JITDUMP("\n** Generics context no longer in use\n");
+    }
+    else if (lvaGenericsContextInUse && !oldLvaGenericsContextInUse)
+    {
+        // Context was not in use but now is.
+        //
+        // Changing from unused->used should never happen; creation of any new IR
+        // for context use should also be settting lvaGenericsContextInUse.
+        assert(!"unexpected new use of generics context");
     }
 
     JITDUMP("\n*** lvaComputeRefCounts -- implicit counts ***\n");

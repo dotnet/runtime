@@ -117,6 +117,7 @@ if /i "%1" == "targetSpecific"        (set "__BuildNeedTargetArg=/p:CLRTestNeedT
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-excludemonofailures"  (set __Mono=1&set processedArgs=!processedArgs!&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
@@ -504,8 +505,15 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
+if %%__Mono%%==1 (
+  set RuntimeFlavor="mono"
+)
+else (
+  set RuntimeFlavor="coreclr"
+)
+
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%

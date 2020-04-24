@@ -1825,6 +1825,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
 
+    compSuppressedZeroInit = false;
+
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
@@ -4461,9 +4463,16 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
-    // Run an early flow graph simplification pass
+    // Now that we have pred lists, do some flow-related optimizations
+    //
     if (opts.OptimizationEnabled())
     {
+        // Merge common throw blocks
+        //
+        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
+
+        // Run an early flow graph simplification pass
+        //
         auto earlyUpdateFlowGraphPhase = [this]() {
             const bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
@@ -4578,9 +4587,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);

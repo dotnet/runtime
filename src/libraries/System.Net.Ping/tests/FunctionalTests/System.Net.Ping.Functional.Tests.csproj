@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>

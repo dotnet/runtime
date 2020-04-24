@@ -15,6 +15,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Resources\RuntimeResourceSet.cs" Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
     <Compile Include="BinaryReaderExtensions.cs" />
+    <Compile Include="BinaryWriterExtensions.cs" />
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />

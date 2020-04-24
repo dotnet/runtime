@@ -63,7 +63,6 @@ enum class common_property
     FxDepsFile,
     ProbingDirectories,
     FxProductVersion,
-    JitPath,
     StartUpHooks,
     AppPaths,
     AppNIPaths,

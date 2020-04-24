@@ -79,8 +79,6 @@
 #define FALLBACK_HOST_RID _X("linux")
 #endif
 
-#define LIBCLRJIT_NAME MAKE_LIBNAME("clrjit")
-
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 

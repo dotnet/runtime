@@ -130,8 +130,8 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)\..\scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)/../scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
   </Target>
 
   <Target Name="CreateTestEnvFiles">
@@ -175,6 +175,7 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
+    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>

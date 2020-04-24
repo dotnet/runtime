@@ -607,7 +607,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
-                client.Timeout = TimeSpan.FromMilliseconds(1);
+                client.Timeout = TimeSpan.FromMilliseconds(10);
                 Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
                 Assert.All(tasks, task => {
                     OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
