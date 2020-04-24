@@ -3,7 +3,7 @@
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -29,6 +29,16 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Android -->
+  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <Compile Include="System\ConsolePal.Android.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs">
+      <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs">
+      <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows -->
@@ -174,7 +184,7 @@
     </Compile>
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
