@@ -63,12 +63,12 @@ jobs:
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
       ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
-        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}_Lib${{ parameters.liveLibrariesBuildConfig }}'
-        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }} Libraries:${{ parameters.liveLibrariesBuildConfig }}'
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions

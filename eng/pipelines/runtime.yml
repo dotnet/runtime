@@ -386,22 +386,6 @@ jobs:
       liveRuntimeBuildConfig: release
 
 #
-# Build libraries using live CoreLib
-# These are part of the test coreclr generic test build.
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - ${{ if ne(variables['isFullMatrix'], true) }}:
-      - OSX_x64
-    jobParameters:
-      liveRuntimeBuildConfig: release
-      condition: >-
-        eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true)
-
-#
 # Build libraries using Mono CoreLib only
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -600,7 +584,7 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       testBuildPhase: targetGeneric
       condition: >-
         or(
@@ -629,20 +613,6 @@ jobs:
 # CoreCLR Test builds using live libraries debug build
 # Only when CoreCLR is changed
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - ${{ if ne(variables['isFullMatrix'], true) }}:
-      - OSX_x64
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      testBuildPhase: targetGeneric
-      condition: >-
-        eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true)
-
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
