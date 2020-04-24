@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (CborConformanceLevelHelpers.RequiresMinimalIntegerRepresentation(ConformanceLevel))
                 {
-                    throw new FormatException("Non-minimal integer representation  are not permitted under the current conformance level.");
+                    throw new FormatException("Non-minimal integer representations are not permitted under the current conformance level.");
                 }
             }
         }
