@@ -8981,10 +8981,10 @@ CordbProcess::GetVersion(COR_VERSION* pVersion)
     //
     // Because we require a matching version of mscordbi.dll to debug a certain version of the runtime,
     // we can just use constants found in this particular mscordbi.dll to determine the version of the left side.
-    pVersion->dwMajor = CLR_MAJOR_VERSION;
-    pVersion->dwMinor = CLR_MINOR_VERSION;
-    pVersion->dwBuild = CLR_BUILD_VERSION;
-    pVersion->dwSubBuild = CLR_BUILD_VERSION_QFE;
+    pVersion->dwMajor = RuntimeProductMajorVersion;
+    pVersion->dwMinor = RuntimeProductMinorVersion;
+    pVersion->dwBuild = RuntimeProductPatchVersion;
+    pVersion->dwSubBuild = 0;
 
     return S_OK;
 }
