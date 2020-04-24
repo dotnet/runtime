@@ -6878,6 +6878,118 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> Subtract(Vector128<ulong> left, Vector128<ulong> right) => Subtract(left, right);
 
         /// <summary>
+        /// uint8x8_t vqsub_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VQSUB.U8 Dd, Dn, Dm
+        ///   A64: UQSUB Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> SubtractSaturate(Vector64<byte> left, Vector64<byte> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int16x4_t vqsub_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQSUB.S16 Dd, Dn, Dm
+        ///   A64: SQSUB Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> SubtractSaturate(Vector64<short> left, Vector64<short> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int32x2_t vqsub_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQSUB.S32 Dd, Dn, Dm
+        ///   A64: SQSUB Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> SubtractSaturate(Vector64<int> left, Vector64<int> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int8x8_t vqsub_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VQSUB.S8 Dd, Dn, Dm
+        ///   A64: SQSUB Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> SubtractSaturate(Vector64<sbyte> left, Vector64<sbyte> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint16x4_t vqsub_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VQSUB.U16 Dd, Dn, Dm
+        ///   A64: UQSUB Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> SubtractSaturate(Vector64<ushort> left, Vector64<ushort> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint32x2_t vqsub_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VQSUB.U32 Dd, Dn, Dm
+        ///   A64: UQSUB Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> SubtractSaturate(Vector64<uint> left, Vector64<uint> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint8x16_t vqsubq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VQSUB.U8 Qd, Qn, Qm
+        ///   A64: UQSUB Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int16x8_t vqsubq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQSUB.S16 Qd, Qn, Qm
+        ///   A64: SQSUB Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> SubtractSaturate(Vector128<short> left, Vector128<short> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int32x4_t vqsubq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQSUB.S32 Qd, Qn, Qm
+        ///   A64: SQSUB Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> SubtractSaturate(Vector128<int> left, Vector128<int> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int64x2_t vqsubq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VQSUB.S64 Qd, Qn, Qm
+        ///   A64: SQSUB Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<long> SubtractSaturate(Vector128<long> left, Vector128<long> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int8x16_t vqsubq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VQSUB.S8 Qd, Qn, Qm
+        ///   A64: SQSUB Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> SubtractSaturate(Vector128<sbyte> left, Vector128<sbyte> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint16x8_t vqsubq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VQSUB.U16 Qd, Qn, Qm
+        ///   A64: UQSUB Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> SubtractSaturate(Vector128<ushort> left, Vector128<ushort> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint32x4_t vqsubq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VQSUB.U32 Qd, Qn, Qm
+        ///   A64: UQSUB Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> SubtractSaturate(Vector128<uint> left, Vector128<uint> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// uint64x2_t vqsubq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VQSUB.U64 Qd, Qn, Qm
+        ///   A64: UQSUB Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<ulong> SubtractSaturate(Vector128<ulong> left, Vector128<ulong> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        /// int64x1_t vqsub_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VQSUB.S64 Dd, Dn, Dm
+        ///   A64: SQSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> SubtractSaturateScalar(Vector64<long> left, Vector64<long> right) => SubtractSaturateScalar(left, right);
+
+        /// <summary>
+        /// uint64x1_t vqsub_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VQSUB.U64 Dd, Dn, Dm
+        ///   A64: UQSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> SubtractSaturateScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractSaturateScalar(left, right);
+
+        /// <summary>
         /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VSUB.F64 Dd, Dn, Dm
         ///   A64: FSUB Dd, Dn, Dm
