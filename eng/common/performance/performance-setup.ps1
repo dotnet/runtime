@@ -53,6 +53,14 @@ if ($Internal) {
     $HelixSourcePrefix = "official"
 }
 
+if($MonoDotnet -ne "")
+{
+    $UsingMono = "true"
+    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
+    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
+    $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
+}
+
 # FIX ME: This is a workaround until we get this from the actual pipeline
 $CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
@@ -71,14 +79,6 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
-}
-
-if($MonoDotnet -ne "")
-{
-    $UsingMono = "true"
-    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
-    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
-    $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
 }
 
 if ($UseCoreRun) {

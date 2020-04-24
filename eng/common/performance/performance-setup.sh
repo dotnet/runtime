@@ -187,6 +187,13 @@ if [[ "$internal" == true ]]; then
     fi
 fi
 
+if [[ "$mono_dotnet" != "" ]]; then
+    using_mono=true
+    mono_dotnet_path=$payload_directory/dotnet-mono
+    mv $mono_dotnet $mono_dotnet_path
+    configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
+fi
+
 common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
@@ -212,13 +219,6 @@ fi
 if [[ "$use_core_run" = true ]]; then
     new_core_root=$payload_directory/Core_Root
     mv $core_root_directory $new_core_root
-fi
-
-if [[ "$mono_dotnet" != "" ]]; then
-    using_mono=true
-    mono_dotnet_path=$payload_directory/dotnet-mono
-    mv $mono_dotnet $mono_dotnet_path
-    configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
 fi
 
 if [[ "$use_baseline_core_run" = true ]]; then
