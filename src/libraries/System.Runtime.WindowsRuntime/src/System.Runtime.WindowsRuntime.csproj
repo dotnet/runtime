@@ -12,7 +12,7 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard')">
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
   </PropertyGroup>

@@ -7,8 +7,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
-    <PackageTargetFramework Condition="$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>    
-  <PropertyGroup>
+    <PackageTargetFramework Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>    
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.cs" />
