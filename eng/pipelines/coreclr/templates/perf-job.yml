@@ -87,7 +87,7 @@ jobs:
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'))
 
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\5.0.0\\corerun.exe"
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\5.0.0\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'Windows_NT'))
 
