@@ -569,14 +569,12 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
     clrtocomcall.cpp
     rcwwalker.cpp
-    winrttypenameconverter.cpp
 )
 
 set(VM_HEADERS_DAC_AND_WKS_WIN32
     amsi.h
     clrtocomcall.h
     rcwwalker.h
-    winrttypenameconverter.h
 )
 
 list(APPEND VM_SOURCES_WKS

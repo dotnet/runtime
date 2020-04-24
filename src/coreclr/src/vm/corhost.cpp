@@ -38,10 +38,6 @@
 #include "dwreport.h"
 #endif // !TARGET_UNIX
 
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);

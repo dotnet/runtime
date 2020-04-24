@@ -37,7 +37,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderwinrt.h"
 #include "..\md\winmd\inc\adapter.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "appxutil.h"

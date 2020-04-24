@@ -37,7 +37,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #include "comtoclrcall.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "dllimportcallback.h"

@@ -20,7 +20,6 @@ do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
 #define GET_VERSION_USHORT_FROM_INT(x) ((x < 0) || (x > (INT)((USHORT)-1))) ? 0 : static_cast<USHORT>(x)
 
 #ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
 #include "roparameterizediid.h"
 #include <windows.foundation.h>
 

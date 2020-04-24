@@ -18,7 +18,6 @@
 #include "cominterfacemarshaler.h"
 #include "binder.h"
 #include <interoplibinterface.h>
-#include "winrttypenameconverter.h"
 #include "typestring.h"
 
 namespace

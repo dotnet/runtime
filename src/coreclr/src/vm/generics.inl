@@ -15,10 +15,6 @@
 #ifndef GENERICS_INL
 #define GENERICS_INL
 
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif
-
 // Generics helper functions
 namespace Generics
 {

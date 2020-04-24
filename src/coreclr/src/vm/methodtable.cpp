@@ -51,7 +51,6 @@
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "typeequivalencehash.hpp"
@@ -6317,68 +6316,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
     }
     CONTRACTL_END
 
-    if (WinRTTypeNameConverter::IsWinRTPrimitiveType(this))
-        return TRUE;
-
-    // Attributes are not legal
-    MethodTable *pParentMT = GetParentMethodTable();
-    if (pParentMT == MscorlibBinder::GetClass(CLASS__ATTRIBUTE))
-    {
-        return FALSE;
-    }
-
-    if (IsValueType())
-    {
-        // check fields
-        ApproxFieldDescIterator fieldIterator(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
-        for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-        {
-            TypeHandle thField = pFD->GetFieldTypeHandleThrowing(CLASS_LOAD_EXACTPARENTS);
-
-            if (thField.IsTypeDesc())
-                return FALSE;
-
-            MethodTable *pFieldMT = thField.GetMethodTable();
-
-            // the only allowed reference types are System.String and types projected from WinRT value types
-            if (!pFieldMT->IsValueType() && !pFieldMT->IsString())
-            {
-                return FALSE;
-            }
-
-            if (!pFieldMT->IsLegalNonArrayWinRTType())
-                return FALSE;
-        }
-    }
-
-    if (IsInterface() || IsDelegate())
-    {
-        // interfaces, delegates can be generic - check the instantiation
-        if (HasInstantiation())
-        {
-            Instantiation inst = GetInstantiation();
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                // arrays are not allowed as generic arguments
-                if (inst[i].IsArray())
-                    return FALSE;
-
-                if (inst[i].IsTypeDesc())
-                    return FALSE;
-
-                if (!inst[i].AsMethodTable()->IsLegalNonArrayWinRTType())
-                    return FALSE;
-            }
-        }
-    }
-    else
-    {
-        // generic structures and runtime clases are not supported
-        if (HasInstantiation())
-            return FALSE;
-    }
-
-    return TRUE;
+    return FALSE;
 }
 
 //==========================================================================================
@@ -6393,19 +6331,8 @@ MethodTable *MethodTable::GetDefaultWinRTInterface()
     }
     CONTRACTL_END
 
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-        return NULL;
-
-    if (IsInterface())
-        return NULL;
-
-    // System.Runtime.InteropServices.WindowsRuntime.RuntimeClass is weird
-    // It is ProjectedFromWinRT but isn't really a WinRT class
-    if (this == g_pBaseRuntimeClass)
-        return NULL;
-
-    WinRTClassFactory *pFactory = ::GetComClassFactory(this)->AsWinRTClassFactory();
-    return pFactory->GetDefaultInterface();
+    _ASSERT("WinRT is not supported.");
+    return nullptr;
 }
 
 #endif // !DACCESS_COMPILE

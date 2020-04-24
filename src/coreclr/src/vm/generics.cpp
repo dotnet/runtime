@@ -25,9 +25,6 @@
 #include "array.h"
 
 #include "generics.inl"
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif // FEATURE_COMINTEROP
 
 /* static */
 TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)

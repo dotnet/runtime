@@ -33,7 +33,6 @@ class Object;
 #include "comdelegate.h"
 #include "comcache.h"
 #include "notifyexternals.h"
-#include "winrttypenameconverter.h"
 #include "../md/compiler/custattr.h"
 #include "olevariant.h"
 #include "interopconverter.h"

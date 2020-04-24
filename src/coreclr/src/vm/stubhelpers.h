@@ -116,11 +116,6 @@ public:
     static FCDECL2(void,            ArrayTypeCheck,             Object*, PtrArray*);
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    static FCDECL2(StringObject *,              WinRTTypeNameConverter__ConvertToWinRTTypeName,  ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL *pbIsWinRTPrimitive);
-    static FCDECL2(ReflectClassBaseObject *,    WinRTTypeNameConverter__GetTypeFromWinRTTypeName, StringObject *pWinRTTypeNameUNSAFE, CLR_BOOL *pbIsPrimitive);
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
 #endif

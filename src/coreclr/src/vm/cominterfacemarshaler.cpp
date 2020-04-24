@@ -17,7 +17,6 @@
 #include "interopconverter.h"
 #include "notifyexternals.h"
 #include "comdelegate.h"
-#include "winrttypenameconverter.h"
 #include "olecontexthelpers.h"
 
 

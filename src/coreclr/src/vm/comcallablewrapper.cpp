@@ -43,7 +43,6 @@
 #include "caparser.h"
 #include "appdomain.inl"
 #include "rcwwalker.h"
-#include "winrttypenameconverter.h"
 #include "typestring.h"
 
 // The enum that describes the value of the IDispatchImplAttribute custom attribute.

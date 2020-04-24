@@ -47,7 +47,6 @@
 #include "stdinterfaces.h"
 #include "notifyexternals.h"
 #include "typeparse.h"
-#include "winrttypenameconverter.h"
 #include "interoputil.inl"
 #include "typestring.h"
 
@@ -4905,16 +4904,6 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
             ssTmpClassName.Delete(ssTmpClassName.End() - 1, 1);
             *pfSupportsIReferenceArray = true;
         }
-
-        EX_TRY
-        {
-            LPCWSTR pszWinRTTypeName = (ssTmpClassName.IsEmpty() ? ssClassName  : ssTmpClassName);
-            classTypeHandle = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pszWinRTTypeName, /* pLoadBinder */ nullptr, /*pbIsPrimitive = */ nullptr);
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
 
         if (!classTypeHandle.IsNull())
         {

@@ -483,9 +483,6 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("PrepareForAssemblyLoadContextRelease", AssemblyNative::PrepareForAssemblyLoadContextRelease)
     QCFuncElement("LoadFromPath", AssemblyNative::LoadFromPath)
     QCFuncElement("LoadFromStream", AssemblyNative::LoadFromStream)
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    QCFuncElement("LoadTypeForWinRTTypeNameInContextInternal", AssemblyNative::LoadTypeForWinRTTypeNameInContext)
-#endif
 #ifndef TARGET_UNIX
     QCFuncElement("LoadFromInMemoryModuleInternal", AssemblyNative::LoadFromInMemoryModule)
 #endif
@@ -943,11 +940,6 @@ FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("ConvertSpaceToManaged", MngdSafeArrayMarshaler::ConvertSpaceToManaged)
     FCFuncElement("ConvertContentsToManaged", MngdSafeArrayMarshaler::ConvertContentsToManaged)
     FCFuncElement("ClearNative", MngdSafeArrayMarshaler::ClearNative)
-FCFuncEnd()
-
-FCFuncStart(gWinRTTypeNameConverterFuncs)
-    FCFuncElement("ConvertToWinRTTypeName", StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName)
-    FCFuncElement("GetTypeFromWinRTTypeName", StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName)
 FCFuncEnd()
 
 #endif // FEATURE_COMINTEROP

@@ -29,7 +29,6 @@
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"
 #include "dispparammarshaler.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 

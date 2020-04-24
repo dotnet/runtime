@@ -28,7 +28,6 @@
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
 #include "cominterfacemarshaler.h"
-#include "winrttypenameconverter.h"
 #endif
 
 #ifdef VERIFY_HEAP
@@ -666,70 +665,6 @@ FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxi
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
-}
-FCIMPLEND
-
-FCIMPL2(StringObject *, StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName,
-    ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL *pbIsWinRTPrimitive)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-        PRECONDITION(CheckPointer(pbIsWinRTPrimitive));
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) pTypeUNSAFE;
-    STRINGREF refString= NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
-
-    SString strWinRTTypeName;
-    bool bIsPrimitive;
-    if (WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
-        refClass->GetType(),    // thManagedType
-        strWinRTTypeName,       // strWinRTTypeName to append
-        FALSE,                  // for type conversion, not for GetRuntimeClassName
-        &bIsPrimitive
-        ))
-    {
-        *pbIsWinRTPrimitive = bIsPrimitive;
-        refString = AllocateString(strWinRTTypeName);
-    }
-    else
-    {
-        *pbIsWinRTPrimitive = FALSE;
-        refString = NULL;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(refString);
-}
-FCIMPLEND
-
-FCIMPL2(ReflectClassBaseObject *, StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName, StringObject *pWinRTTypeNameUNSAFE, CLR_BOOL *pbIsPrimitive)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pWinRTTypeNameUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refClass = NULL;
-    STRINGREF refString = ObjectToSTRINGREF(pWinRTTypeNameUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
-
-    bool isPrimitive;
-    TypeHandle th = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(refString->GetBuffer(), /* pLoadBinder */ nullptr, &isPrimitive);
-    *pbIsPrimitive = isPrimitive;
-
-    refClass = th.GetManagedClassObject();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (ReflectClassBaseObject *)OBJECTREFToObject(refClass);
 }
 FCIMPLEND
 

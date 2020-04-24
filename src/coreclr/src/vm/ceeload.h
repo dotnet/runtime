@@ -42,10 +42,6 @@
 #include "dataimage.h"
 #endif // FEATURE_PREJIT
 
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
 #endif

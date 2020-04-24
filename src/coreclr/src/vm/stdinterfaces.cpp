@@ -40,7 +40,6 @@
 #include "eecontract.h"
 #include "stdinterfaces_internal.h"
 #include <restrictederrorinfo.h>        // IRestrictedErrorInfo
-#include "winrttypenameconverter.h"
 #include "interoputil.inl"
 
 
@@ -2315,50 +2314,7 @@ HRESULT __stdcall Inspectable_GetRuntimeClassName(IInspectable *pInsp, HSTRING *
     if (className == NULL)
         return E_POINTER;
 
-    HRESULT hr = S_OK;
-    ComCallWrapper *pWrap = MapIUnknownToWrapper(pInsp);
-
-    *className = NULL;
-
-    MethodTable *pMT = pWrap->GetSimpleWrapper()->GetMethodTable();
-    _ASSERTE(pMT != NULL);
-
-    EX_TRY
-    {
-        StackSString strClassName;
-        TypeHandle thManagedType;
-
-        {
-            GCX_COOP();
-            OBJECTREF objref = NULL;
-
-            GCPROTECT_BEGIN(objref);
-            {
-                objref = pWrap->GetObjectRef();
-                thManagedType = objref->GetTypeHandle();
-            }
-            GCPROTECT_END();
-        }
-
-        bool bIsPrimitive = false;
-        if (WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
-            thManagedType,                                  // thManagedType
-            strClassName,                                   // strWinRTTypeName
-            TRUE,                                           // bForGetRuntimeClassName,
-            &bIsPrimitive                                   // pbIsPrimitiveType
-            )
-            && !bIsPrimitive)
-        {
-            hr = WindowsCreateString(strClassName.GetUnicode(), strClassName.GetCount(), className);
-        }
-    }
-    EX_CATCH
-    {
-        hr = GET_EXCEPTION()->GetHR();
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT __stdcall WeakReferenceSource_GetWeakReference (
