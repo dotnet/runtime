@@ -922,6 +922,8 @@ public:
 #define GTF_OVERFLOW                0x10000000 // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                                // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
+#define GTF_DIV_USE_MAGIC           0x80000000 // GT_DIV -- Uses MagicNumber multiplication to compute this division by a constant
+
 #define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
 #define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
@@ -2851,6 +2853,19 @@ struct GenTreeOp : public GenTreeUnOp
     {
         // Unary operators with optional arguments:
         assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+    }
+
+    // returns true if we will use MagicNumber multiplication for this node.
+    bool usesMagicNumberDivision(Compiler* comp);
+
+    // checks if we will use MagicNumber multiplication for this node
+    // then sets the flag GTF_DIV_USE_MAGIC and GTF_DONT_CSE on the constant
+    void checkMagicNumberDivision(Compiler* comp);
+
+    // True if this node is marked as using MagicNumberDivision
+    bool markedMagicNumberDivision() const
+    {
+        return (gtFlags & GTF_DIV_USE_MAGIC) != 0;
     }
 
 #if DEBUGGABLE_GENTREE

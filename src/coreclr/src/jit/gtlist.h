@@ -131,7 +131,7 @@ GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(MULHI            , GenTreeOp          ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
-                                                           // GT_MULHI is used in division by a constant (fgMorphDivByConst). We turn
+                                                           // GT_MULHI is used in division by a constant (see MagicDivide). We turn
                                                            // the div into a MULHI + some adjustments. In codegen, we only use the
                                                            // results of the high register, and we drop the low results.
 

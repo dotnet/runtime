@@ -6674,6 +6674,133 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
     }
 }
 
+//----------------------------------------------------------------------------
+// usesMagicNumberDivision: returns true if rationalize will use MagicNumber
+//                          multiplication for this node.
+//
+// Arguments:
+//    this - A GenTreeOp binary or unary node
+//
+// Return Value:
+//    Return true iff the node is a GT_DIV,GT_UDIV, GT_MOD or GT_UMOD with
+//    an integer constant and we can perform the division operation using
+//    a reciprocal multiply or a shift operation.
+//
+bool GenTreeOp::usesMagicNumberDivision(Compiler* comp)
+{
+    if (!OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD))
+    {
+        return false;
+    }
+#if defined(TARGET_ARM64)
+    if (OperIs(GT_MOD, GT_UMOD))
+    {
+        // MOD, UMOD not supported for ARM64
+        return false;
+    }
+#endif // TARGET_ARM64
+
+    bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
+    GenTree* dividend       = gtGetOp1();
+    GenTree* divisor        = gtGetOp2();
+
+#if !defined(TARGET_64BIT)
+    if (dividend->OperIs(GT_LONG))
+    {
+        return false;
+    }
+#endif
+
+    if (!divisor->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    if (dividend->IsCnsIntOrI())
+    {
+        // We shouldn't see a divmod with constant operands here but if we do then it's likely
+        // because optimizations are disabled or it's a case that's supposed to throw an exception.
+        // Don't optimize this.
+        return false;
+    }
+
+    const var_types divType = TypeGet();
+    assert((divType == TYP_INT) || (divType == TYP_I_IMPL));
+
+    ssize_t divisorValue = static_cast<size_t>(divisor->AsIntCon()->IconValue());
+
+    if (divType == TYP_INT)
+    {
+        // Clear up the upper 32 bits of the value, they may be set to 1 because constants
+        // are treated as signed and stored in ssize_t which is 64 bit in size on 64 bit targets.
+        divisorValue &= UINT32_MAX;
+    }
+
+    if (divisorValue == 0)
+    {
+        // x / 0 and x % 0 can't be optimized because they are required to throw an exception.
+        return false;
+    }
+    else if (isSignedDivide && (divisorValue == -1))
+    {
+        // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
+        return false;
+    }
+    else if (isPow2(divisorValue))
+    {
+        return true;
+    }
+
+    const bool isDiv = OperIs(GT_DIV, GT_UDIV);
+
+    if (isDiv)
+    {
+        if (isSignedDivide)
+        {
+            // If the divisor is the minimum representable integer value then the result is either 0 or 1
+            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // If the divisor is greater or equal than 2^(N - 1) then the result is either 0 or 1
+            if (((divType == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
+                ((divType == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+            {
+                return true;
+            }
+        }
+    }
+
+// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    {
+        // All checks pass we can perform the division operation using a reciprocal multiply.
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+// checks if rationalize will use MagicNumber multiplication for this node
+// and sets the flag GTF_DIV_USE_MAGIC
+void GenTreeOp::checkMagicNumberDivision(Compiler* comp)
+{
+    if (usesMagicNumberDivision(comp))
+    {
+        gtFlags |= GTF_DIV_USE_MAGIC;
+
+        // Now set DONT_CSE on the GT_CNS_INT divisor
+        GenTree* divisor = gtGetOp2();
+        assert(divisor->IsCnsIntOrI());
+        divisor->gtFlags |= GTF_DONT_CSE;
+    }
+}
+
 //
 //------------------------------------------------------------------------
 // gtBlockOpInit: Initializes a BlkOp GenTree
@@ -9894,6 +10021,18 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 if (tree->gtFlags & GTF_MUL_64RSLT)
                 {
                     printf("L");
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
+
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+                if (tree->gtFlags & GTF_DIV_USE_MAGIC)
+                {
+                    printf("M");
                     --msgLength;
                     break;
                 }

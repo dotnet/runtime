@@ -11829,6 +11829,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     {
                         tree = gtFoldExpr(tree);
                     }
+
+                    tree->AsOp()->checkMagicNumberDivision(this);
                     return tree;
                 }
             }
@@ -14537,7 +14539,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                 DEBUG_DESTROY_NODE(tree);
                 return op1;
             }
+            break;
 
+        case GT_UDIV:
+        case GT_UMOD:
+            tree->checkMagicNumberDivision(this);
             break;
 
         case GT_LSH:
@@ -14689,6 +14695,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 #ifdef DEBUG
     sub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
+
+    tree->checkMagicNumberDivision(this);
 
     return sub;
 }
