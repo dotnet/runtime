@@ -4355,6 +4355,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vhadd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VHADD.U8 Dd, Dn, Dm
+        ///   A64: UHADD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> FusedAddHalving(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vhadd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VHADD.S16 Dd, Dn, Dm
+        ///   A64: SHADD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> FusedAddHalving(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vhadd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VHADD.S32 Dd, Dn, Dm
+        ///   A64: SHADD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> FusedAddHalving(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vhadd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VHADD.S8 Dd, Dn, Dm
+        ///   A64: SHADD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> FusedAddHalving(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vhadd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VHADD.U16 Dd, Dn, Dm
+        ///   A64: UHADD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> FusedAddHalving(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vhadd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VHADD.U32 Dd, Dn, Dm
+        ///   A64: UHADD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> FusedAddHalving(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vhaddq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VHADD.U8 Qd, Qn, Qm
+        ///   A64: UHADD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> FusedAddHalving(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vhaddq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VHADD.S16 Qd, Qn, Qm
+        ///   A64: SHADD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> FusedAddHalving(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vhaddq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VHADD.S32 Qd, Qn, Qm
+        ///   A64: SHADD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> FusedAddHalving(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vhaddq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VHADD.S8 Qd, Qn, Qm
+        ///   A64: SHADD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> FusedAddHalving(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vhaddq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VHADD.U16 Qd, Qn, Qm
+        ///   A64: UHADD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> FusedAddHalving(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vhaddq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VHADD.U32 Qd, Qn, Qm
+        ///   A64: UHADD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> FusedAddHalving(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VFMA.F32 Dd, Dn, Dm
         ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
