@@ -2694,6 +2694,118 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> AddPairwiseWideningScalar(Vector64<uint> value) => AddPairwiseWideningScalar(value);
 
         /// <summary>
+        /// uint8x8_t vqadd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VQADD.U8 Dd, Dn, Dm
+        ///   A64: UQADD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AddSaturate(Vector64<byte> left, Vector64<byte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int16x4_t vqadd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VQADD.S16 Dd, Dn, Dm
+        ///   A64: SQADD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AddSaturate(Vector64<short> left, Vector64<short> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int32x2_t vqadd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VQADD.S32 Dd, Dn, Dm
+        ///   A64: SQADD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AddSaturate(Vector64<int> left, Vector64<int> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int8x8_t vqadd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VQADD.S8 Dd, Dn, Dm
+        ///   A64: SQADD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AddSaturate(Vector64<sbyte> left, Vector64<sbyte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint16x4_t vqadd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VQADD.U16 Dd, Dn, Dm
+        ///   A64: UQADD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AddSaturate(Vector64<ushort> left, Vector64<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint32x2_t vqadd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VQADD.U32 Dd, Dn, Dm
+        ///   A64: UQADD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AddSaturate(Vector64<uint> left, Vector64<uint> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint8x16_t vqaddq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VQADD.U8 Qd, Qn, Qm
+        ///   A64: UQADD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int16x8_t vqaddq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VQADD.S16 Qd, Qn, Qm
+        ///   A64: SQADD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> AddSaturate(Vector128<short> left, Vector128<short> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int32x4_t vqaddq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VQADD.S32 Qd, Qn, Qm
+        ///   A64: SQADD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> AddSaturate(Vector128<int> left, Vector128<int> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int64x2_t vqaddq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VQADD.S64 Qd, Qn, Qm
+        ///   A64: SQADD Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<long> AddSaturate(Vector128<long> left, Vector128<long> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int8x16_t vqaddq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VQADD.S8 Qd, Qn, Qm
+        ///   A64: SQADD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> AddSaturate(Vector128<sbyte> left, Vector128<sbyte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint16x8_t vqaddq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VQADD.U16 Qd, Qn, Qm
+        ///   A64: UQADD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint32x4_t vqaddq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VQADD.U32 Qd, Qn, Qm
+        ///   A64: UQADD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> AddSaturate(Vector128<uint> left, Vector128<uint> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// uint64x2_t vqaddq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VQADD.U64 Qd, Qn, Qm
+        ///   A64: UQADD Vd.2D, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<ulong> AddSaturate(Vector128<ulong> left, Vector128<ulong> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// int64x1_t vqadd_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VQADD.S64 Dd, Dn, Dm
+        ///   A64: SQADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> AddSaturateScalar(Vector64<long> left, Vector64<long> right) => AddSaturateScalar(left, right);
+
+        /// <summary>
+        /// uint64x1_t vqadd_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VQADD.U64 Dd, Dn, Dm
+        ///   A64: UQADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> AddSaturateScalar(Vector64<ulong> left, Vector64<ulong> right) => AddSaturateScalar(left, right);
+
+        /// <summary>
         /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VADD.F64 Dd, Dn, Dm
         ///   A64: FADD Dd, Dn, Dm
