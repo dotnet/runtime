@@ -204,162 +204,80 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BasicConstraints_ExceedMaximumPathLength()
         {
-            using (RSA key = RSA.Create())
+            X509Extension[] rootExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: true,
+                    pathLengthConstraint: 1,
+                    critical: true)
+            };
+
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: true,
+                    pathLengthConstraint: 0,
+                    critical: true)
+            };
+
+            TestDataGenerator.MakeTestChain4(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert1,
+                out X509Certificate2 intermediateCert2,
+                out X509Certificate2 rootCert,
+                rootExtensions: rootExtensions,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert1)
+            using (intermediateCert2)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
             {
-                CertificateRequest rootReq = new CertificateRequest(
-                    "CN=Root",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert1);
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert2);
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
 
-                rootReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: true,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 0,
-                        critical: true));
-
-                CertificateRequest intermediateReq = new CertificateRequest(
-                    "CN=Intermediate",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                intermediateReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: true,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 0,
-                        critical: true));
-                
-                CertificateRequest leafReq = new CertificateRequest(
-                    "CN=Leaf",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                leafReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: false,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 0,
-                        critical: true));
-
-                DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
-                DateTimeOffset notAfter = notBefore.AddDays(30);
-
-                X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
-
-                byte[] serial = new byte[8];
-                RandomNumberGenerator.Fill(serial);
-
-                using (X509Certificate2 root = rootReq.Create(rootReq.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Certificate2 intermediate = intermediateReq.Create(root.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Certificate2 leaf = leafReq.Create(intermediate.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Chain chain = new X509Chain())
-                {
-                    chain.ChainPolicy.ExtraStore.Add(root);
-                    chain.ChainPolicy.ExtraStore.Add(intermediate);
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    Assert.False(chain.Build(leaf));
-
-                    bool verifiedIntermediate = false;
-
-                    foreach (X509ChainElement element in chain.ChainElements)
-                    {
-                        if (element.Certificate.Subject == "CN=Intermediate")
-                        {
-                            const X509ChainStatusFlags expectedFlag = X509ChainStatusFlags.InvalidBasicConstraints;
-                            X509ChainStatusFlags intermediateStatus = element.AllStatusFlags();
-                            Assert.True((intermediateStatus & expectedFlag) == expectedFlag, $"Has {expectedFlag} flag");
-                            verifiedIntermediate = true;
-                            break;
-                        }
-                    }
-
-                    Assert.True(verifiedIntermediate, "Verified intermediate certificate");
-                }
+                Assert.False(chain.Build(endEntityCert));
+                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
             }
         }
 
         [Fact]
         public static void BasicConstraints_ViolatesCaFalse()
         {
-            using (RSA key = RSA.Create())
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: false,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true)
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
             {
-                CertificateRequest rootReq = new CertificateRequest(
-                    "CN=Root",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(intermediateCert);
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
 
-                rootReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: true,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 1,
-                        critical: true));
-
-                CertificateRequest intermediateReq = new CertificateRequest(
-                    "CN=Intermediate",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                intermediateReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: false,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 0,
-                        critical: true));
-                
-                CertificateRequest leafReq = new CertificateRequest(
-                    "CN=Leaf",
-                    key,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                leafReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(
-                        certificateAuthority: false,
-                        hasPathLengthConstraint: true,
-                        pathLengthConstraint: 0,
-                        critical: true));
-
-                DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
-                DateTimeOffset notAfter = notBefore.AddDays(30);
-
-                X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
-
-                byte[] serial = new byte[8];
-                RandomNumberGenerator.Fill(serial);
-
-                using (X509Certificate2 root = rootReq.Create(rootReq.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Certificate2 intermediate = intermediateReq.Create(root.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Certificate2 leaf = leafReq.Create(intermediate.SubjectName, generator, notBefore, notAfter, serial))
-                using (X509Chain chain = new X509Chain())
-                {
-                    chain.ChainPolicy.ExtraStore.Add(root);
-                    chain.ChainPolicy.ExtraStore.Add(intermediate);
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    Assert.False(chain.Build(leaf));
-
-                    bool verifiedIntermediate = false;
-
-                    foreach (X509ChainElement element in chain.ChainElements)
-                    {
-                        if (element.Certificate.Subject == "CN=Intermediate")
-                        {
-                            const X509ChainStatusFlags expectedFlag = X509ChainStatusFlags.InvalidBasicConstraints;
-                            X509ChainStatusFlags intermediateStatus = element.AllStatusFlags();
-                            Assert.True((intermediateStatus & expectedFlag) == expectedFlag, $"Has {expectedFlag} flag");
-                            verifiedIntermediate = true;
-                            break;
-                        }
-                    }
-
-                    Assert.True(verifiedIntermediate, "Verified intermediate certificate");
-                }
+                Assert.False(chain.Build(endEntityCert));
+                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
             }
         }
 
