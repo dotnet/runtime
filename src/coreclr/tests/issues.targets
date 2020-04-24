@@ -122,15 +122,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
+            <Issue>Unix does not support tailcall helper</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
             <Issue>https://github.com/dotnet/runtime/issues/12166</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
-            <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -398,9 +398,6 @@
 
     <!-- Windows arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/explicit/coverage/expl_float_1_*/*">
-            <Issue>https://github.com/dotnet/runtime/issues/34170</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/*">
             <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
         </ExcludeList>
@@ -1423,12 +1420,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34380</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgarray2/**">
             <Issue>https://github.com/dotnet/runtime/issues/34378</Issue>

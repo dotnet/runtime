@@ -74,13 +74,13 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'Android') }}:
       - name: osOverride
         value: -os Android
-    - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+    - ${{ if eq(parameters.osGroup, 'Browser') }}:
       - name: EMSDK_PATH
         value: /usr/local/emscripten
       - name: archType
         value: wasm
       - name: osOverride
-        value: '-os WebAssembly'
+        value: '-os Browser'
     - ${{ parameters.variables }}
 
     steps:

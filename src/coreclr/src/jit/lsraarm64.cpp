@@ -982,7 +982,9 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+
 #include "hwintrinsic.h"
+
 //------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //
@@ -994,130 +996,95 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic         intrinsicId = intrinsicTree->gtHWIntrinsicId;
-    var_types              baseType    = intrinsicTree->gtSIMDBaseType;
-    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
-
-    GenTree* op1    = intrinsicTree->gtGetOp1();
-    GenTree* op2    = intrinsicTree->gtGetOp2();
-    GenTree* op3    = nullptr;
-    GenTree* lastOp = nullptr;
+    const HWIntrinsic intrin(intrinsicTree);
 
     int srcCount = 0;
     int dstCount = intrinsicTree->IsValue() ? 1 : 0;
 
-    if (op1 == nullptr)
+    // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
+    // operand and the intrinsic does not have an alternative non-const fallback form.
+    // However, for a case when the operand can take only two possible values - zero and one
+    // the codegen will use cbnz to do conditional branch.
+    bool mayNeedBranchTargetReg = (intrin.category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrin.id) &&
+                                  (HWIntrinsicInfo::lookupImmUpperBound(intrin.id, intrinsicTree->gtSIMDSize,
+                                                                        intrinsicTree->gtSIMDBaseType) != 2);
+
+    if (mayNeedBranchTargetReg)
     {
-        assert(op2 == nullptr);
-        assert(numArgs == 0);
+        bool needBranchTargetReg = false;
+
+        switch (intrin.id)
+        {
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_Insert:
+                needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                break;
+
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_ExtractVector128:
+                needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                break;
+
+            default:
+                unreached();
+        }
+
+        if (needBranchTargetReg)
+        {
+            buildInternalIntRegisterDefForNode(intrinsicTree);
+        }
+    }
+
+    // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
+    // is not allocated the same register as the target.
+    const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+
+    bool tgtPrefOp1 = false;
+
+    // If we have an RMW intrinsic, we want to preference op1Reg to the target if
+    // op1 is not contained.
+    if (isRMW)
+    {
+        tgtPrefOp1 = !intrin.op1->isContained();
+    }
+
+    if (intrinsicTree->OperIsMemoryLoadOrStore())
+    {
+        srcCount += BuildAddrUses(intrin.op1);
+    }
+    else if (tgtPrefOp1)
+    {
+        tgtPrefUse = BuildUse(intrin.op1);
+        srcCount++;
     }
     else
     {
-        if (op1->OperIsList())
-        {
-            assert(op2 == nullptr);
-            assert(numArgs >= 3);
+        srcCount += BuildOperandUses(intrin.op1);
+    }
 
-            GenTreeArgList* argList = op1->AsArgList();
-
-            op1     = argList->Current();
-            argList = argList->Rest();
-
-            op2     = argList->Current();
-            argList = argList->Rest();
-
-            op3 = argList->Current();
-
-            while (argList->Rest() != nullptr)
-            {
-                argList = argList->Rest();
-            }
-
-            lastOp  = argList->Current();
-            argList = argList->Rest();
-
-            assert(argList == nullptr);
-        }
-        else if (op2 != nullptr)
-        {
-            assert(numArgs == 2);
-            lastOp = op2;
-        }
-        else
-        {
-            assert(numArgs == 1);
-            lastOp = op1;
-        }
-
-        assert(lastOp != nullptr);
-
-        if ((category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrinsicId))
-        {
-            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
-            {
-                assert(!lastOp->IsCnsIntOrI());
-
-                // We need two extra reg when lastOp isn't a constant so
-                // the offset into the jump table for the fallback path
-                // can be computed.
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-            }
-        }
-
-        // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
-        // is not allocated the same register as the target.
-        const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
-
-        bool tgtPrefOp1 = false;
-
-        // If we have an RMW intrinsic, we want to preference op1Reg to the target if
-        // op1 is not contained.
+    if (intrin.op2 != nullptr)
+    {
         if (isRMW)
         {
-            tgtPrefOp1 = !op1->isContained();
-        }
+            srcCount += BuildDelayFreeUses(intrin.op2);
 
-        if (intrinsicTree->OperIsMemoryLoadOrStore())
-        {
-            srcCount += BuildAddrUses(op1);
-        }
-        else if (tgtPrefOp1)
-        {
-            tgtPrefUse = BuildUse(op1);
-            srcCount++;
+            if (intrin.op3 != nullptr)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op3);
+            }
         }
         else
         {
-            srcCount += BuildOperandUses(op1);
-        }
+            srcCount += BuildOperandUses(intrin.op2);
 
-        if (op2 != nullptr)
-        {
-            if (isRMW)
+            if (intrin.op3 != nullptr)
             {
-                srcCount += BuildDelayFreeUses(op2);
-
-                if (op3 != nullptr)
-                {
-                    srcCount += BuildDelayFreeUses(op3);
-                }
-            }
-            else
-            {
-                srcCount += BuildOperandUses(op2);
-
-                if (op3 != nullptr)
-                {
-                    srcCount += BuildOperandUses(op3);
-                }
+                srcCount += BuildOperandUses(intrin.op3);
             }
         }
-
-        buildInternalRegisterUses();
     }
+
+    buildInternalRegisterUses();
 
     if (dstCount == 1)
     {

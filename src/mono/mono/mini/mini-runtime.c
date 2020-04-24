@@ -70,6 +70,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-state.h>
+#include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/threadpool.h>
 
@@ -1934,6 +1935,7 @@ static FILE *perf_dump_file;
 static mono_mutex_t perf_dump_mutex;
 static void *perf_dump_mmap_addr = MAP_FAILED;
 static guint32 perf_dump_pid;
+static clockid_t clock_id = CLOCK_MONOTONIC;
 
 enum {
 	JIT_DUMP_MAGIC = 0x4A695444,
@@ -1984,7 +1986,6 @@ typedef struct
 } JitCodeLoadRecord;
 
 static void add_file_header_info (FileHeader *header);
-static guint64 get_time_stamp_ns (void);
 static void add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record);
 
 void
@@ -2025,16 +2026,8 @@ add_file_header_info (FileHeader *header)
 	header->elf_mach = ELF_MACHINE;
 	header->pad1 = 0;
 	header->pid = perf_dump_pid;
-	header->timestamp = get_time_stamp_ns ();
+	header->timestamp = mono_clock_get_time_ns (clock_id);
 	header->flags = 0;
-}
-
-static guint64
-get_time_stamp_ns (void)
-{
-	struct timespec ts;
-	int result = clock_gettime (CLOCK_MONOTONIC, &ts);
-	return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 }
 
 void
@@ -2059,7 +2052,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
 		
-		record.header.timestamp = get_time_stamp_ns ();
+		record.header.timestamp = mono_clock_get_time_ns (clock_id);
 		
 		fwrite (&record, sizeof (record), 1, perf_dump_file);
 		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
@@ -2073,7 +2066,7 @@ static void
 add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
 {
 	record->header.id = JIT_CODE_LOAD;
-	record->header.timestamp = get_time_stamp_ns ();
+	record->header.timestamp = mono_clock_get_time_ns (clock_id);
 	record->pid = perf_dump_pid;
 	record->tid = syscall (SYS_gettid);
 }
