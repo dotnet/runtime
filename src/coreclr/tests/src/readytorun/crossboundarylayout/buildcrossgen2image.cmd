@@ -1,4 +1,3 @@
-@echo off
 setlocal 
 set COMPOSITENAME=
 set COMPILEARG=
@@ -25,9 +24,14 @@ if "%5"=="CG2Single" (
       call :CG1Single
       shift
     ) ELSE (
-      if "%5"=="CG2Composite" (
+      if "%5"=="CG2SingleBubbleADOnly" (
+        call :CG2SingleBubbleADOnly
         shift
-        call :Continue
+      ) ELSE (
+        if "%5"=="CG2Composite" (
+          shift
+          call :Continue
+        )
       )
     )
   )
@@ -55,6 +59,13 @@ goto done
 :CG2SingleInputBubble
 del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
 set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll --inputbubble %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
+echo %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log
+call %BUILDCMD% >> %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
+goto done
+
+:CG2SingleBubbleADOnly
+del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
+set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\d.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll --inputbubble %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
 echo %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log
 call %BUILDCMD% >> %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
 goto done

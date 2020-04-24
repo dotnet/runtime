@@ -6,6 +6,11 @@ using System;
 
 namespace CrossBoundaryLayout
 {
+    public struct ByteStructB
+    {
+        public byte _bsVal;
+    }
+
     public class B_A : A
     {
         public byte _bVal;
@@ -17,6 +22,16 @@ namespace CrossBoundaryLayout
     }
 
     public class B_A_D : AGeneric<ByteStruct>
+    {
+        public byte _bVal;
+    }
+
+    public class B_A_BS : AGeneric<ByteStructB>
+    {
+        public byte _bVal;
+    }
+
+    public class B_A_E : AGeneric<ByteStructE>
     {
         public byte _bVal;
     }
@@ -36,12 +51,32 @@ namespace CrossBoundaryLayout
         public T _bVal;
     }
 
+    public class B_A_BS_Generic<T> : AGeneric<ByteStructB>
+    {
+        public T _bVal;
+    }
+
+    public class B_A_E_Generic<T> : AGeneric<ByteStructE>
+    {
+        public T _bVal;
+    }
+
     public class B_ABoring_byte : ABoringGeneric<byte>
     {
         public byte _bVal;
     }
 
     public class B_ABoring_D : ABoringGeneric<ByteStruct>
+    {
+        public byte _bVal;
+    }
+
+    public class B_ABoring_BS : ABoringGeneric<ByteStructB>
+    {
+        public byte _bVal;
+    }
+
+    public class B_ABoring_E : ABoringGeneric<ByteStructE>
     {
         public byte _bVal;
     }
@@ -193,6 +228,42 @@ namespace CrossBoundaryLayout
                 if (1 != (byte)typeof(B_ABoring_D).GetField("_bVal").GetValue(b11))
                 {
                     ATest.ReportTestFailure("B b11_bVal", b11, ref failure);
+                }
+            }
+
+            {
+                var b12 = (B_A_BS)Activator.CreateInstance(typeof(B_A_BS));
+                b12._bVal = 1;
+                if (1 != (byte)typeof(B_A_BS).GetField("_bVal").GetValue(b12))
+                {
+                    ATest.ReportTestFailure("B b12_bVal", b12, ref failure);
+                }
+            }
+
+            {
+                var b13 = (B_A_E)Activator.CreateInstance(typeof(B_A_E));
+                b13._bVal = 1;
+                if (1 != (byte)typeof(B_A_E).GetField("_bVal").GetValue(b13))
+                {
+                    ATest.ReportTestFailure("B b12_bVal", b13, ref failure);
+                }
+            }
+
+            {
+                var b14 = (B_ABoring_BS)Activator.CreateInstance(typeof(B_ABoring_BS));
+                b14._bVal = 1;
+                if (1 != (byte)typeof(B_ABoring_BS).GetField("_bVal").GetValue(b14))
+                {
+                    ATest.ReportTestFailure("B b12_bVal", b14, ref failure);
+                }
+            }
+
+            {
+                var b15 = (B_ABoring_E)Activator.CreateInstance(typeof(B_ABoring_E));
+                b15._bVal = 1;
+                if (1 != (byte)typeof(B_ABoring_E).GetField("_bVal").GetValue(b15))
+                {
+                    ATest.ReportTestFailure("B b12_bVal", b15, ref failure);
                 }
             }
 
