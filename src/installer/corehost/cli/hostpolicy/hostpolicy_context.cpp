@@ -7,6 +7,8 @@
 #include "deps_resolver.h"
 #include <error_codes.h>
 #include <trace.h>
+#include "bundle/runner.h"
+#include "bundle/file_entry.h"
 
 namespace
 {
@@ -14,6 +16,43 @@ namespace
     {
         trace::error(_X("Duplicate runtime property found: %s"), property_key);
         trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+    }
+
+    // bundle_probe:
+    // Probe the app-bundle for the file 'path' and return its location ('offset', 'size') if found.
+    //
+    // This function is an API exported to the runtime via the BUNDLE_PROBE property.
+    // This function used by the runtime to probe for bundled assemblies
+    // This function assumes that the currently executing app is a single-file bundle.
+    //
+    // bundle_probe recieves its path argument as cha16_t* instead of pal::char_t*, because:
+    // * The host uses Unicode strings on Windows and UTF8 strings on Unix
+    // * The runtime uses Unicode strings on all platforms
+    // * Using a unicode encoded path presents a uniform interface to the runtime
+    //   and minimizes the number if Unicode <-> UTF8 conversions necessary.
+    //
+    // The unicode char type is char16_t* instead of whcar_t*, because:
+    // * wchar_t is 16-bit encoding on Windows while it is 32-bit encoding on most Unix systems
+    // * The runtime uses 16-bit encoded unicode characters.
+
+    bool STDMETHODCALLTYPE bundle_probe(const char16_t* path, int64_t* offset, int64_t* size)
+    {
+        if (path == nullptr)
+        {
+            return false;
+        }
+
+        pal::string_t file_path;
+
+        if (!pal::unicode_palstring(path, &file_path))
+        {
+            trace::warning(_X("Failure probing contents of the application bundle."));
+            trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+
+            return false;
+        }
+
+        return bundle::runner_t::app()->probe(file_path, offset, size);
     }
 }
 
@@ -178,6 +217,16 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
             return StatusCode::LibHostDuplicateProperty;
         }
+    }
+
+    // Single-File Bundle Probe
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
+
+        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
     }
 
     return StatusCode::Success;

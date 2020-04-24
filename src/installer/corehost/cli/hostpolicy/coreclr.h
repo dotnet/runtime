@@ -67,7 +67,7 @@ enum class common_property
     AppPaths,
     AppNIPaths,
     RuntimeIdentifier,
-
+    BundleProbe,
     // Sentinel value - new values should be defined above
     Last
 };
