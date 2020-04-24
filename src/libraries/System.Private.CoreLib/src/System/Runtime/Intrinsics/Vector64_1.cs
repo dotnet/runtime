@@ -26,6 +26,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
@@ -37,6 +38,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector64<T> Zero
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
@@ -49,6 +51,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector64<T> AllBitsSet
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
