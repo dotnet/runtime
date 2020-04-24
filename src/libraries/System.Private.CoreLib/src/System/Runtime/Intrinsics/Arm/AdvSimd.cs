@@ -5716,6 +5716,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> MultiplySubtract(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) => MultiplySubtract(acc, left, right);
 
         /// <summary>
+        /// uint16x8_t vmull_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMULL.U8 Qd, Dn, Dm
+        ///   A64: UMULL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningLower(Vector64<byte> left, Vector64<byte> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        /// int32x4_t vmull_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMULL.S16 Qd, Dn, Dm
+        ///   A64: SMULL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningLower(Vector64<short> left, Vector64<short> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        /// int64x2_t vmull_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMULL.S32 Qd, Dn, Dm
+        ///   A64: SMULL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> MultiplyWideningLower(Vector64<int> left, Vector64<int> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        /// int16x8_t vmull_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMULL.S8 Qd, Dn, Dm
+        ///   A64: SMULL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningLower(Vector64<sbyte> left, Vector64<sbyte> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmull_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMULL.U16 Qd, Dn, Dm
+        ///   A64: UMULL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningLower(Vector64<ushort> left, Vector64<ushort> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
+        /// uint64x2_t vmull_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMULL.U32 Qd, Dn, Dm
+        ///   A64: UMULL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningLower(Vector64<uint> left, Vector64<uint> right) => MultiplyWideningLower(left, right);
+
+        /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
         ///   A32: VNEG.S16 Dd, Dm
         ///   A64: NEG Vd.4H, Vn.4H
