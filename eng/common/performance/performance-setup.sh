@@ -15,6 +15,8 @@ compare=false
 mono_dotnet=
 kind="micro"
 llvm=false
+monointerpreter=false
+monoaot=false
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
@@ -85,6 +87,14 @@ while (($# > 0)); do
       ;;
     --llvm)
       llvm=true
+      shift 1
+      ;;
+    --monointerpreter)
+      monointerpreter=true
+      shift 1
+      ;;
+    --monoaot)
+      monoaot=true
       shift 1
       ;;
     --monodotnet)
@@ -208,7 +218,7 @@ if [[ "$mono_dotnet" != "" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
-    $configurations="$configurations LLVM=$llvm"
+    configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
 fi
 
 if [[ "$use_baseline_core_run" = true ]]; then
