@@ -672,7 +672,6 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       liveRuntimeBuildConfig: release
-      runtimeFlavorDisplayName: 'Mono'
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
@@ -694,7 +693,6 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       liveRuntimeBuildConfig: release
-      runtimeFlavorDisplayName: 'Mono'
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
