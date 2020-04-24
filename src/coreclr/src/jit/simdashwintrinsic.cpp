@@ -394,6 +394,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
 
                     return gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
                 }
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and return below.
+                    break;
+                }
             }
         }
     }
