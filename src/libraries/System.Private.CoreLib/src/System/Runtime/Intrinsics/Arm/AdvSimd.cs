@@ -2526,6 +2526,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> AddPairwise(Vector64<uint> left, Vector64<uint> right) => AddPairwise(left, right);
 
         /// <summary>
+        /// uint16x4_t vpaddl_u8 (uint8x8_t a)
+        ///   A32: VPADDL.U8 Dd, Dm
+        ///   A64: UADDLP Vd.4H, Vn.8B
+        /// </summary>
+        public static Vector64<ushort> AddPairwiseWidening(Vector64<byte> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int32x2_t vpaddl_s16 (int16x4_t a)
+        ///   A32: VPADDL.S16 Dd, Dm
+        ///   A64: SADDLP Vd.2S, Vn.4H
+        /// </summary>
+        public static Vector64<int> AddPairwiseWidening(Vector64<short> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int16x4_t vpaddl_s8 (int8x8_t a)
+        ///   A32: VPADDL.S8 Dd, Dm
+        ///   A64: SADDLP Vd.4H, Vn.8B
+        /// </summary>
+        public static Vector64<short> AddPairwiseWidening(Vector64<sbyte> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// uint32x2_t vpaddl_u16 (uint16x4_t a)
+        ///   A32: VPADDL.U16 Dd, Dm
+        ///   A64: UADDLP Vd.2S, Vn.4H
+        /// </summary>
+        public static Vector64<uint> AddPairwiseWidening(Vector64<ushort> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// uint16x8_t vpaddlq_u8 (uint8x16_t a)
+        ///   A32: VPADDL.U8 Qd, Qm
+        ///   A64: UADDLP Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<ushort> AddPairwiseWidening(Vector128<byte> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int32x4_t vpaddlq_s16 (int16x8_t a)
+        ///   A32: VPADDL.S16 Qd, Qm
+        ///   A64: SADDLP Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<int> AddPairwiseWidening(Vector128<short> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int64x2_t vpaddlq_s32 (int32x4_t a)
+        ///   A32: VPADDL.S32 Qd, Qm
+        ///   A64: SADDLP Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<long> AddPairwiseWidening(Vector128<int> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int16x8_t vpaddlq_s8 (int8x16_t a)
+        ///   A32: VPADDL.S8 Qd, Qm
+        ///   A64: SADDLP Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<short> AddPairwiseWidening(Vector128<sbyte> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// uint32x4_t vpaddlq_u16 (uint16x8_t a)
+        ///   A32: VPADDL.U16 Qd, Qm
+        ///   A64: UADDLP Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<uint> AddPairwiseWidening(Vector128<ushort> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// uint64x2_t vpaddlq_u32 (uint32x4_t a)
+        ///   A32: VPADDL.U32 Qd, Qm
+        ///   A64: UADDLP Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<ulong> AddPairwiseWidening(Vector128<uint> value) => AddPairwiseWidening(value);
+
+        /// <summary>
+        /// int64x1_t vpaddl_s32 (int32x2_t a)
+        ///   A32: VPADDL.S32 Dd, Dm
+        ///   A64: SADDLP Dd, Vn.2S
+        /// </summary>
+        public static Vector64<long> AddPairwiseWideningScalar(Vector64<int> value) => AddPairwiseWideningScalar(value);
+
+        /// <summary>
+        /// uint64x1_t vpaddl_u32 (uint32x2_t a)
+        ///   A32: VPADDL.U32 Dd, Dm
+        ///   A64: UADDLP Dd, Vn.2S
+        /// </summary>
+        public static Vector64<ulong> AddPairwiseWideningScalar(Vector64<uint> value) => AddPairwiseWideningScalar(value);
+
+        /// <summary>
         /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VADD.F64 Dd, Dn, Dm
         ///   A64: FADD Dd, Dn, Dm
