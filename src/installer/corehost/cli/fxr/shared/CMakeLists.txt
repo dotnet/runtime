@@ -53,5 +53,13 @@ set(HEADERS
 
 include(../../lib.cmake)
 
+if(CLR_CMAKE_HOST_UNIX)
+    add_custom_target(hostfxr_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(hostfxr hostfxr_exports)
+
+    set_property(TARGET hostfxr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET hostfxr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_UNIX)
+
 install_with_stripped_symbols(hostfxr TARGETS corehost)
 target_link_libraries(hostfxr libhostcommon libhostfxr_static)
