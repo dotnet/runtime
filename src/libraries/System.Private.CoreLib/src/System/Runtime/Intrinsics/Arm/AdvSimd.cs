@@ -2239,6 +2239,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> AbsoluteDifferenceWideningLower(Vector64<uint> left, Vector64<uint> right) => AbsoluteDifferenceWideningLower(left, right);
 
         /// <summary>
+        /// uint16x8_t vabal_u8 (uint16x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VABAL.U8 Qd, Dn, Dm
+        ///   A64: UABAL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceWideningLowerAndAdd(Vector128<ushort> addend, Vector64<byte> left, Vector64<byte> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
+        /// int32x4_t vabal_s16 (int32x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VABAL.S16 Qd, Dn, Dm
+        ///   A64: SABAL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> AbsoluteDifferenceWideningLowerAndAdd(Vector128<int> addend, Vector64<short> left, Vector64<short> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
+        /// int64x2_t vabal_s32 (int64x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VABAL.S32 Qd, Dn, Dm
+        ///   A64: SABAL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> AbsoluteDifferenceWideningLowerAndAdd(Vector128<long> addend, Vector64<int> left, Vector64<int> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x8_t vabal_s8 (int16x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VABAL.S8 Qd, Dn, Dm
+        ///   A64: SABAL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> AbsoluteDifferenceWideningLowerAndAdd(Vector128<short> addend, Vector64<sbyte> left, Vector64<sbyte> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
+        /// uint32x4_t vabal_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VABAL.U16 Qd, Dn, Dm
+        ///   A64: UABAL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceWideningLowerAndAdd(Vector128<uint> addend, Vector64<ushort> left, Vector64<ushort> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
+        /// uint64x2_t vabal_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VABAL.U32 Qd, Dn, Dm
+        ///   A64: UABAL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> AbsoluteDifferenceWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
+
+        /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VADD.I8 Dd, Dn, Dm
         ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
