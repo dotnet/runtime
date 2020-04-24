@@ -170,20 +170,6 @@ static int FindICULibs()
 #define MinICUVersion 50
 #define MaxICUVersion 255
 
-static int FindSymbolVersion(char* symbolName, char* symbolVersion)
-{
-    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
-    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
-    {
-        if (FindSymbolVersion(i, -1, -1, symbolName, symbolVersion, symbolSuffix))
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
 static int FindICULibs(char* symbolName, char* symbolVersion)
 {
     libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
@@ -200,13 +186,17 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
         return FALSE;
     }
 
-    if (!FindSymbolVersion(symbolName, symbolVersion))
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
     {
-        fprintf(stderr, "Cannot determine ICU version.");
-        return FALSE;
+        if (FindSymbolVersion(i, -1, -1, symbolName, symbolVersion, symbolSuffix))
+        {
+            return TRUE;
+        }
     }
 
-    return TRUE;
+    fprintf(stderr, "Cannot determine ICU version.");
+    return FALSE;
 }
 
 #else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
