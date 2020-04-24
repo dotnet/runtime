@@ -21,7 +21,6 @@ parameters:
   runInUnloadableContext: false
   variables: {}
   pool: ''
-  runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
 
 ### Test run job
