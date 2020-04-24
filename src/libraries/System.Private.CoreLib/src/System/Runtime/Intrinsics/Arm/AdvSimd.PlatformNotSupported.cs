@@ -7101,6 +7101,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> SubtractWideningLower(Vector128<ulong> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x8_t vsubl_high_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VSUBL.U8 Qd, Dn+1, Dm+1
+        ///   A64: USUBL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> SubtractWideningUpper(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vsubl_high_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VSUBL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SSUBL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> SubtractWideningUpper(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vsubw_high_s8 (int16x8_t a, int8x16_t b)
+        ///   A32: VSUBW.S8 Qd, Qn, Dm+1
+        ///   A64: SSUBW2 Vd.8H, Vn.8H, Vm.16B
+        /// </summary>
+        public static Vector128<short> SubtractWideningUpper(Vector128<short> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vsubw_high_s16 (int32x4_t a, int16x8_t b)
+        ///   A32: VSUBW.S16 Qd, Qn, Dm+1
+        ///   A64: SSUBW2 Vd.4S, Vn.4S, Vm.8H
+        /// </summary>
+        public static Vector128<int> SubtractWideningUpper(Vector128<int> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vsubl_high_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VSUBL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SSUBL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> SubtractWideningUpper(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vsubw_high_s32 (int64x2_t a, int32x4_t b)
+        ///   A32: VSUBW.S32 Qd, Qn, Dm+1
+        ///   A64: SSUBW2 Vd.2D, Vn.2D, Vm.4S
+        /// </summary>
+        public static Vector128<long> SubtractWideningUpper(Vector128<long> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vsubl_high_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VSUBL.S8 Qd, Dn+1, Dm+1
+        ///   A64: SSUBL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<short> SubtractWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vsubw_high_u8 (uint16x8_t a, uint8x16_t b)
+        ///   A32: VSUBW.U8 Qd, Qn, Dm+1
+        ///   A64: USUBW2 Vd.8H, Vn.8H, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> SubtractWideningUpper(Vector128<ushort> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vsubl_high_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VSUBL.U16 Qd, Dn+1, Dm+1
+        ///   A64: USUBL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> SubtractWideningUpper(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vsubw_high_u16 (uint32x4_t a, uint16x8_t b)
+        ///   A32: VSUBW.U16 Qd, Qn, Dm+1
+        ///   A64: USUBW2 Vd.4S, Vn.4S, Vm.8H
+        /// </summary>
+        public static Vector128<uint> SubtractWideningUpper(Vector128<uint> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vsubl_high_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VSUBL.U32 Qd, Dn+1, Dm+1
+        ///   A64: USUBL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> SubtractWideningUpper(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vsubw_high_u32 (uint64x2_t a, uint32x4_t b)
+        ///   A32: VSUBW.U32 Qd, Qn, Dm+1
+        ///   A64: USUBW2 Vd.2D, Vn.2D, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> SubtractWideningUpper(Vector128<ulong> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         ///  uint8x8_t vqvtbl1_u8(uint8x16_t t, uint8x8_t idx)
         ///   A32: VTBL Dd, {Dn, Dn+1}, Dm
         ///   A64: TBL Vd.8B, {Vn.16B}, Vm.8B
