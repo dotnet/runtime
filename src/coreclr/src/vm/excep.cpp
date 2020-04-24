@@ -4357,9 +4357,10 @@ InitializeCrashDump()
 
 #endif // HOST_WINDOWS
 
-//******************************************************************************
-// Create crash dump if enabled and terminate process
-//******************************************************************************
+//************************************************************************************
+// Create crash dump if enabled and terminate process. Generates crash dumps for both
+// Windows and Linux if enabled. For Linux, it happens in TerminateProcess in the PAL.
+//************************************************************************************
 
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {

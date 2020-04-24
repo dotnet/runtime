@@ -222,6 +222,7 @@ void InitializeCrashDump();
 bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
 #endif
 
+// Generates crash dumps if enabled for both Windows and Linux
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 struct ThreadBaseExceptionFilterParam

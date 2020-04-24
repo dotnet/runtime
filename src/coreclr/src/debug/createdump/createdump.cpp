@@ -7,7 +7,7 @@
 bool g_diagnostics = false;
 
 //
-// The common create dump code
+// The Linux create dump code
 //
 bool
 CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
