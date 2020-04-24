@@ -21,7 +21,8 @@ namespace ILCompiler
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
         private readonly bool _isCompositeBuildMode;
         private readonly bool _isInputBubble;
-        private readonly ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _layoutDependsOnOtherModules = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _layoutDependsOnOtherVersionBubbles = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
 
@@ -69,15 +70,17 @@ namespace ILCompiler
             return true;
         }
 
-        /// <summary>
-        /// If true, the type is fully contained in the current compilation group.
-        /// </summary>
-        public override bool ContainsTypeLayout(TypeDesc type)
+        public virtual bool TypeLayoutDependsOnOtherModules(TypeDesc type)
         {
-            return _containsTypeLayoutCache.GetOrAdd(type, ContainsTypeLayoutUncached);
+            return _layoutDependsOnOtherModules.GetOrAdd(type, TypeLayoutDependsOnOtherModulesUncached);
         }
 
-        private bool ContainsTypeLayoutUncached(TypeDesc type)
+        public virtual bool TypeLayoutDependsOnOtherVersionBubbles(TypeDesc type)
+        {
+            return _layoutDependsOnOtherVersionBubbles.GetOrAdd(type, TypeLayoutDependsOnOtherVersionBubblesUncached);
+        }
+
+        private bool TypeLayoutDependsOnOtherModulesUncached(TypeDesc type)
         {
             if (type.IsObject ||
                 type.IsPrimitive ||
@@ -86,17 +89,17 @@ namespace ILCompiler
                 type.IsFunctionPointer ||
                 type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
-                return true;
+                return false;
             }
+
             var defType = (MetadataType)type;
-            if (!VersionsWithModule(defType.Module))
+
+            if (type.BaseType != null)
             {
-                return false;
+                if (CompareTypeLayoutForModuleCheck((MetadataType)type.BaseType))
+                    return true;
             }
-            if (!defType.IsValueType && !ContainsTypeLayout(defType.BaseType))
-            {
-                return false;
-            }
+
             foreach (FieldDesc field in defType.GetFields())
             {
                 if (field.IsStatic)
@@ -105,13 +108,143 @@ namespace ILCompiler
                 TypeDesc fieldType = field.FieldType;
 
                 if (fieldType.IsValueType &&
-                    !ContainsTypeLayout(fieldType))
+                    !fieldType.IsPrimitive)
                 {
-                    return false;
+                    if (CompareTypeLayoutForModuleCheck((MetadataType)fieldType))
+                    {
+                        return true;
+                    }
                 }
             }
 
-            return true;
+            return false;
+
+            bool CompareTypeLayoutForModuleCheck(MetadataType otherType)
+            {
+                if (otherType.Module != defType.Module ||
+                    TypeLayoutDependsOnOtherModules(otherType))
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private bool ModuleInMatchingVersionBubble(ModuleDesc module1, ModuleDesc module2)
+        {
+            return VersionsWithModule(module1) == VersionsWithModule(module2);
+        }
+
+        public bool NeedsAlignmentBetweenBaseTypeAndDerived(MetadataType baseType, MetadataType derivedType)
+        {
+
+            if (!ModuleInMatchingVersionBubble(derivedType.Module, baseType.Module) ||
+                TypeLayoutDependsOnOtherVersionBubbles(baseType) ||
+                LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(baseType))
+            {
+                return true;
+            }
+
+            return false;
+
+            bool LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(MetadataType type)
+            {
+                // Types without instantiations  do not depend on their type variables for layout
+                if (!type.HasInstantiation)
+                    return false;
+                
+                // Types that are not instantiated do not depend on their type variables for layout.
+                if (type.IsTypeDefinition)
+                    return false;
+
+                // If no part of the layout of this type depends on other modules, then there is no need
+                // to check for a type variable caused case
+                if (!TypeLayoutDependsOnOtherModules(type))
+                    return false;
+
+                foreach (var field in type.GetFields())
+                {
+                    var fieldType = field.FieldType;
+
+                    // non valuetypes are uninteresting for this check
+                    if (!fieldType.IsValueType)
+                        continue;
+
+                    // As primitive types are considered part of all version bubbles, they are also unconsidered
+                    if (fieldType.IsPrimitive)
+                        continue;
+
+                    var fieldTypeOnOpenType = field.GetTypicalFieldDefinition().FieldType;
+
+                    if (fieldType == fieldTypeOnOpenType)
+                    {
+                        // If the field type is the same, it isn't dependent on a type variable
+                        continue;
+                    }
+
+                    if (TypeLayoutDependsOnOtherModules(fieldType) || 
+                        ((MetadataType)fieldType).Module != type.Module)
+                    {
+                        // The layout of this field depends on other modules.
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        private bool TypeLayoutDependsOnOtherVersionBubblesUncached(TypeDesc type)
+        {
+            if (type.IsObject ||
+                type.IsPrimitive ||
+                type.IsEnum ||
+                type.IsPointer ||
+                type.IsFunctionPointer ||
+                type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return false;
+            }
+
+            var defType = (MetadataType)type;
+
+            if ((type.BaseType != null) && !type.BaseType.IsObject)
+            {
+                if (CompareTypeLayoutForVersionBubble((MetadataType)type.BaseType))
+                    return true;
+
+                if (NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: defType))
+                    return true;
+            }
+
+            foreach (FieldDesc field in defType.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+
+                if (fieldType.IsValueType &&
+                    !fieldType.IsPrimitive)
+                {
+                    if (CompareTypeLayoutForVersionBubble((MetadataType)fieldType))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+
+            bool CompareTypeLayoutForVersionBubble(MetadataType otherType)
+            {
+                if (!ModuleInMatchingVersionBubble(otherType.Module, defType.Module) ||
+                    TypeLayoutDependsOnOtherVersionBubbles(otherType))
+                {
+                    return true;
+                }
+                return false;
+            }
         }
 
         public sealed override bool VersionsWithModule(ModuleDesc module)

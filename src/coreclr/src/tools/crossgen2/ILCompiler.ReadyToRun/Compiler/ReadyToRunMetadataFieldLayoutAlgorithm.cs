@@ -27,7 +27,7 @@ namespace ILCompiler
         /// <summary>
         /// Compilation module group is used to identify which types extend beyond the current version bubble.
         /// </summary>
-        private CompilationModuleGroup _compilationGroup;
+        private ReadyToRunCompilationModuleGroupBase _compilationGroup;
 
         public ReadyToRunMetadataFieldLayoutAlgorithm()
         {
@@ -38,7 +38,7 @@ namespace ILCompiler
         /// Set up compilation group needed for proper calculation of base class alignment in auto layout.
         /// </summary>
         /// <param name="compilationGroup"></param>
-        public void SetCompilationGroup(CompilationModuleGroup compilationGroup)
+        public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationGroup)
         {
             _compilationGroup = compilationGroup;
         }
@@ -822,7 +822,7 @@ namespace ILCompiler
                 return;
             }
 
-            if (_compilationGroup.ContainsTypeLayout(baseType))
+            if (!_compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)baseType, derivedType: type))
             {
                 // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
                 return;

@@ -26,7 +26,7 @@ call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_ABubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1_A___ a CG1Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1__B__ b CG1Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1_AB__ a CG1Single b CG1Single
-call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1___C_ c CG1Single
+call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1___C_ crossboundarytest CG1Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1_A_C_ a CG1Single crossboundarytest CG1Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1__BC_ b CG1Single crossboundarytest CG1Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg1_ABC_ a CG1Single b CG1Single crossboundarytest CG1Single
@@ -46,7 +46,7 @@ goto done
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble_A___ a CG2SingleInputBubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble__B__ b CG2SingleInputBubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble_AB__ a CG2SingleInputBubble b CG2SingleInputBubble
-call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble___C_ c CG2SingleInputBubble
+call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble___C_ crossboundarytest CG2SingleInputBubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble_A_C_ a CG2SingleInputBubble crossboundarytest CG2SingleInputBubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble__BC_ b CG2SingleInputBubble crossboundarytest CG2SingleInputBubble
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2bubble_ABC_ a CG2SingleInputBubble b CG2SingleInputBubble crossboundarytest CG2SingleInputBubble
@@ -66,7 +66,7 @@ goto done
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_A___ a CG2Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2__B__ b CG2Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_AB__ a CG2Single b CG2Single
-call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2___C_ c CG2Single
+call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2___C_ crossboundarytest CG2Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_A_C_ a CG2Single crossboundarytest CG2Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2__BC_ b CG2Single crossboundarytest CG2Single
 call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_ABC_ a CG2Single b CG2Single crossboundarytest CG2Single
@@ -82,3 +82,4 @@ call %TESTBATCHROOT%\runindividualtest.cmd %TESTBATCHROOT% %TESTDIR% cg2_ABCD a 
 goto done
 
 :done
+ 

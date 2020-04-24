@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
@@ -333,9 +334,64 @@ namespace ILCompiler
             }
         }
 
-        internal bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {
-            // TODO: implement
+            // Primitive types and enums have fixed layout
+            if (type.IsPrimitive || type.IsEnum)
+            {
+                return true;
+            }
+
+            if (!(type is MetadataType defType))
+            {
+                // Non metadata backed types have layout defined in all version bubbles
+                return true;
+            }
+
+            if (!NodeFactory.CompilationModuleGroup.VersionsWithModule(defType.Module))
+            {
+                if (!type.IsValueType)
+                {
+                    // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
+                    // to play it safe and ignore it.
+                    return false;
+                }
+
+                // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
+                return type is MetadataType metadataType && metadataType.IsNonVersionable();
+            }
+
+            // If the above condition passed, check that all instance fields have fixed layout as well. In particular,
+            // it is important for generic types with non-versionable layout (e.g. Nullable<T>)
+            foreach (var field in type.GetFields())
+            {
+                var fieldType = field.FieldType;
+                if (!fieldType.IsValueType)
+                    continue;
+                
+                if (!IsLayoutFixedInCurrentVersionBubble(fieldType))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        {
+            // This method is not expected to be called for value types
+            Debug.Assert(!type.IsValueType);
+
+            while (!type.IsObject && type != null)
+            {
+                if (!IsLayoutFixedInCurrentVersionBubble(type))
+                {
+                    return false;
+                }
+                type = type.BaseType;
+            }
+
             return true;
         }
 
