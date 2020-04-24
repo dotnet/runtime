@@ -92,7 +92,7 @@ public:
                                                                                                                          "3. See documentation for more details on each level.")                                   \
     INT_CONFIG   (LogFileSize,            "GCLogFileSize",          NULL,                             0,                 "Specifies the GC log file size")                                                         \
     INT_CONFIG   (CompactRatio,           "GCCompactRatio",         NULL,                             0,                 "Specifies the ratio compacting GCs vs sweeping")                                         \
-    INT_CONFIG   (GCHeapAffinitizeMask,   "GCHeapAffinitizeMask",   NULL,                             0,                 "Specifies processor mask for Server GC threads")                                         \
+    INT_CONFIG   (GCHeapAffinitizeMask,   "GCHeapAffinitizeMask",   "System.GC.HeapAffinitizeMask",   0,                 "Specifies processor mask for Server GC threads")                                         \
     STRING_CONFIG(GCHeapAffinitizeRanges, "GCHeapAffinitizeRanges", NULL,                                                "Specifies list of processors for Server GC threads. The format is a comma separated "    \
                                                                                                                          "list of processor numbers or ranges of processor numbers. On Windows, each entry is "    \
                                                                                                                          "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
