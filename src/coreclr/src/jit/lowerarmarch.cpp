@@ -914,7 +914,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+        case NI_Vector64_CreateScalarUnsafe:
+            if (intrin.op1->IsCnsIntOrI())
+            {
+                const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
 
+                if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(intrin.baseType)))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
+            break;
         default:
             unreached();
     }

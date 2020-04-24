@@ -449,6 +449,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+                
+            case NI_Vector64_CreateScalarUnsafe:
+                assert(isRMW);
+                assert(targetReg != op1Reg);
+
+                // TODO: Reformat it little bit
+                if (intrin.op1->isContainedIntOrIImmed())
+                {
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                INS_OPTS_NONE);
+                }
+
+                break;
+
             default:
                 unreached();
         }
