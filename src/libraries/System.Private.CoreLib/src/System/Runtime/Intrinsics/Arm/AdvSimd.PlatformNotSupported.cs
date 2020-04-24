@@ -2916,6 +2916,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> AddWideningLower(Vector128<ulong> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x8_t vaddl_high_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VADDL.U8 Qd, Dn+1, Dm+1
+        ///   A64: UADDL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> AddWideningUpper(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vaddl_high_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VADDL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SADDL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> AddWideningUpper(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vaddw_high_s8 (int16x8_t a, int8x16_t b)
+        ///   A32: VADDW.S8 Qd, Qn, Dm+1
+        ///   A64: SADDW2 Vd.8H, Vn.8H, Vm.16B
+        /// </summary>
+        public static Vector128<short> AddWideningUpper(Vector128<short> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vaddw_high_s16 (int32x4_t a, int16x8_t b)
+        ///   A32: VADDW.S16 Qd, Qn, Dm+1
+        ///   A64: SADDW2 Vd.4S, Vn.4S, Vm.8H
+        /// </summary>
+        public static Vector128<int> AddWideningUpper(Vector128<int> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vaddl_high_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VADDL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SADDL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> AddWideningUpper(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vaddw_high_s32 (int64x2_t a, int32x4_t b)
+        ///   A32: VADDW.S32 Qd, Qn, Dm+1
+        ///   A64: SADDW2 Vd.2D, Vn.2D, Vm.4S
+        /// </summary>
+        public static Vector128<long> AddWideningUpper(Vector128<long> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vaddl_high_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VADDL.S8 Qd, Dn+1, Dm+1
+        ///   A64: SADDL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<short> AddWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vaddw_high_u8 (uint16x8_t a, uint8x16_t b)
+        ///   A32: VADDW.U8 Qd, Qn, Dm+1
+        ///   A64: UADDW2 Vd.8H, Vn.8H, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> AddWideningUpper(Vector128<ushort> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vaddl_high_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VADDL.U16 Qd, Dn+1, Dm+1
+        ///   A64: UADDL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> AddWideningUpper(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vaddw_high_u16 (uint32x4_t a, uint16x8_t b)
+        ///   A32: VADDW.U16 Qd, Qn, Dm+1
+        ///   A64: UADDW2 Vd.4S, Vn.4S, Vm.8H
+        /// </summary>
+        public static Vector128<uint> AddWideningUpper(Vector128<uint> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vaddl_high_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VADDL.U32 Qd, Dn+1, Dm+1
+        ///   A64: UADDL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> AddWideningUpper(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vaddw_high_u32 (uint64x2_t a, uint32x4_t b)
+        ///   A32: VADDW.U32 Qd, Qn, Dm+1
+        ///   A64: UADDW2 Vd.2D, Vn.2D, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> AddWideningUpper(Vector128<ulong> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
         ///   A64: AND Vd.8B, Vn.8B, Vm.8B
