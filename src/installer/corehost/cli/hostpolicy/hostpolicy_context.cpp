@@ -86,21 +86,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     probe_paths.tpa.append(corelib_path);
 
-    pal::string_t clrjit_path = probe_paths.clrjit;
-    if (clrjit_path.empty())
-    {
-        trace::warning(_X("Could not resolve CLRJit path"));
-    }
-    else if (pal::realpath(&clrjit_path))
-    {
-        trace::verbose(_X("The resolved JIT path is '%s'"), clrjit_path.c_str());
-    }
-    else
-    {
-        clrjit_path.clear();
-        trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
-    }
-
     const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
 
     pal::string_t fx_deps_str;
@@ -146,9 +131,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
     coreclr_properties.add(common_property::FxProductVersion, clr_library_version.c_str());
     coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
-
-    if (!clrjit_path.empty())
-        coreclr_properties.add(common_property::JitPath, clrjit_path.c_str());
 
     bool set_app_paths = false;
 
