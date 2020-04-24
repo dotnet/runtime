@@ -6,6 +6,7 @@
 using System.Xml;
 using System.Text;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -23,29 +24,29 @@ namespace System.Xml
         private string _baseURI = string.Empty;
         private Encoding? _encoding = null;
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string xmlLang, XmlSpace xmlSpace)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? xmlLang, XmlSpace xmlSpace)
         : this(nt, nsMgr, null, null, null, null, string.Empty, xmlLang, xmlSpace)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string xmlLang, XmlSpace xmlSpace, Encoding enc)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? xmlLang, XmlSpace xmlSpace, Encoding? enc)
         : this(nt, nsMgr, null, null, null, null, string.Empty, xmlLang, xmlSpace, enc)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string? docTypeName,
-                  string? pubId, string? sysId, string? internalSubset, string baseURI,
-                  string xmlLang, XmlSpace xmlSpace)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? docTypeName,
+                  string? pubId, string? sysId, string? internalSubset, string? baseURI,
+                  string? xmlLang, XmlSpace xmlSpace)
         : this(nt, nsMgr, docTypeName, pubId, sysId, internalSubset, baseURI, xmlLang, xmlSpace, null)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager? nsMgr, string? docTypeName,
-                          string? pubId, string? sysId, string? internalSubset, string baseURI,
-                          string xmlLang, XmlSpace xmlSpace, Encoding? enc)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? docTypeName,
+                          string? pubId, string? sysId, string? internalSubset, string? baseURI,
+                          string? xmlLang, XmlSpace xmlSpace, Encoding? enc)
         {
             if (nsMgr != null)
             {
@@ -59,6 +60,7 @@ namespace System.Xml
                     {
                         throw new XmlException(SR.Xml_NotSameNametable, string.Empty);
                     }
+
                     _nt = nt;
                 }
             }
@@ -102,6 +104,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string DocTypeName
         {
             get
@@ -114,6 +117,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string PublicId
         {
             get
@@ -126,6 +130,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string SystemId
         {
             get
@@ -138,6 +143,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string BaseURI
         {
             get
@@ -150,6 +156,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string InternalSubset
         {
             get
@@ -162,6 +169,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string XmlLang
         {
             get

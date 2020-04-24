@@ -19,7 +19,7 @@ namespace System.Xml
         internal static readonly Type TypeOfObject = typeof(object);
         internal static readonly Type TypeOfString = typeof(string);
 
-        private static volatile Type?[]? s_tokenTypeMap;
+        private static volatile Type?[] s_tokenTypeMap = null!;
 
         private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
         // length scale
@@ -108,9 +108,8 @@ namespace System.Xml
 
             public override bool Equals(object? other)
             {
-                if (other is QName)
+                if (other is QName that)
                 {
-                    QName that = (QName)other;
                     return this == that;
                 }
                 return false;
@@ -357,6 +356,7 @@ namespace System.Xml
             {
                 _xntFromSettings = true;
             }
+
             _xml = _xnt.Add("xml");
             _xmlns = _xnt.Add("xmlns");
             _nsxmlns = _xnt.Add(XmlReservedNs.NsXmlNs);
@@ -3363,7 +3363,6 @@ namespace System.Xml
 
         private System.Type GetValueType(BinXmlToken token)
         {
-            Debug.Assert(s_tokenTypeMap != null);
             Type? t = s_tokenTypeMap[(int)token];
 
             if (t == null)

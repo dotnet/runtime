@@ -446,12 +446,13 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(Stream input, Uri? baseUri, string baseUriString, XmlParserContext? inputContext)
+        internal XmlReader CreateReader(Stream input, Uri? baseUri, string? baseUriString, XmlParserContext? inputContext)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
             if (baseUriString == null)
             {
                 if (baseUri == null)
@@ -481,12 +482,13 @@ namespace System.Xml
             return reader;
         }
 
-        internal XmlReader CreateReader(TextReader input, string baseUriString, XmlParserContext? inputContext)
+        internal XmlReader CreateReader(TextReader input, string? baseUriString, XmlParserContext? inputContext)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
             if (baseUriString == null)
             {
                 baseUriString = string.Empty;
@@ -515,6 +517,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(reader));
             }
+
             return AddValidationAndConformanceWrapper(reader);
         }
 
