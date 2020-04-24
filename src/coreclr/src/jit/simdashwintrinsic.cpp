@@ -11,11 +11,11 @@ static const SimdAsHWIntrinsicInfo simdAsHWIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::##classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
 #define SIMD_AS_HWINTRINSIC(classId, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                      \
-    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::##classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
+    {NI_##classId##_##name, #name, SimdAsHWIntrinsicClassId::classId, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, static_cast<SimdAsHWIntrinsicFlag>(flag)},
 #include "simdashwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
