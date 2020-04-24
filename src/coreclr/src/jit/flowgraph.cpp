@@ -7899,7 +7899,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
-        lvaGenericsContextUseCount++;
+        lvaGenericsContextInUse = true;
 
         switch (kind.runtimeLookupKind)
         {
@@ -7913,6 +7913,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the class handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 break;
             }
 
@@ -7920,6 +7921,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
             {
                 // In this case, the hidden param is the method handle.
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                tree->gtFlags |= GTF_VAR_CONTEXT;
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
                 tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewCallArgs(tree));
@@ -23793,38 +23795,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
-    // If this inlinee was passed a runtime lookup generic context and
-    // ignores it, we can decrement the "generic context was used" ref
-    // count, because we created a new lookup tree and incremented the
-    // count when we imported the type parameter argument to pass to
-    // the inlinee. See corresponding logic in impImportCall that
-    // checks the sig for CORINFO_CALLCONV_PARAMTYPE.
-    //
-    // Does this method require a context (type) parameter?
-    if ((inlineInfo->inlineCandidateInfo->methInfo.args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
-    {
-        // Did the computation of that parameter require the
-        // caller to perform a runtime lookup?
-        if (inlineInfo->inlineCandidateInfo->exactContextNeedsRuntimeLookup)
-        {
-            // Fetch the temp for the generic context as it would
-            // appear in the inlinee's body.
-            const unsigned typeCtxtArg = inlineInfo->typeContextArg;
-            const unsigned tmpNum      = inlineInfo->lclTmpNum[typeCtxtArg];
-
-            // Was it used in the inline body?
-            if (tmpNum == BAD_VAR_NUM)
-            {
-                // No -- so the associated runtime lookup is not needed
-                // and also no longer provides evidence that the generic
-                // context should be kept alive.
-                JITDUMP("Inlinee ignores runtime lookup generics context\n");
-                assert(lvaGenericsContextUseCount > 0);
-                lvaGenericsContextUseCount--;
-            }
-        }
-    }
-
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
     {
@@ -25896,6 +25866,10 @@ PhaseStatus Compiler::fgTailMergeThrows()
         JITDUMP("Method does not have multiple noreturn calls.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+    else
+    {
+        JITDUMP("Scanning the %u candidates\n", optNoReturnCallCount);
+    }
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
@@ -25961,11 +25935,16 @@ PhaseStatus Compiler::fgTailMergeThrows()
             continue;
         }
 
-        // For throw helpers the block should have exactly one statement....
-        // (this isn't guaranteed, but seems likely)
-        Statement* stmt = block->firstStmt();
+        // We only look at the first statement for throw helper calls.
+        // Remainder of the block will be dead code.
+        //
+        // Throw helper calls could show up later in the block; we
+        // won't try merging those as we'd need to match up all the
+        // prior statements or split the block at this point, etc.
+        //
+        Statement* const stmt = block->firstStmt();
 
-        if ((stmt == nullptr) || (stmt->GetNextStmt() != nullptr))
+        if (stmt == nullptr)
         {
             continue;
         }
@@ -26027,13 +26006,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // We walk the map rather than the block list, to save a bit of time.
     BlockToBlockMap::KeyIterator iter(blockMap.Begin());
     BlockToBlockMap::KeyIterator end(blockMap.End());
-    int                          updateCount = 0;
+    unsigned                     updateCount = 0;
 
     for (; !iter.Equal(end); iter++)
     {
         BasicBlock* const nonCanonicalBlock = iter.Get();
         BasicBlock* const canonicalBlock    = iter.GetValue();
         flowList*         nextPredEdge      = nullptr;
+        bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
@@ -26047,14 +26027,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_NONE:
                 {
                     fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
                 case BBJ_ALWAYS:
                 {
                     fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26070,7 +26050,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     {
                         fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26078,7 +26058,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
                     fgReplaceSwitchJumpTarget(predBlock, canonicalBlock, nonCanonicalBlock);
-                    updateCount++;
+                    updated = true;
                 }
                 break;
 
@@ -26088,6 +26068,11 @@ PhaseStatus Compiler::fgTailMergeThrows()
                     break;
             }
         }
+
+        if (updated)
+        {
+            updateCount++;
+        }
     }
 
     if (updateCount == 0)
@@ -26095,13 +26080,18 @@ PhaseStatus Compiler::fgTailMergeThrows()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // TODO: Update the count of noreturn call sites -- this feeds a heuristic in morph
+    // to determine if these noreturn calls should be tail called.
+    //
+    // Updating the count does not lead to better results, so deferring for now.
+    //
+    JITDUMP("Made %u updates\n", updateCount);
+    assert(updateCount < optNoReturnCallCount);
+
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
     //
-    // Note we could invoke a cleanup pass here, but optOptimizeFlow
-    // seems to be missing some safety checks and doesn't expect to
-    // see an already cleaned-up flow graph.
     assert(fgModified);
     fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;

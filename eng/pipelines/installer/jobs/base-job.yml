@@ -130,7 +130,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android') }}:
+  - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android', 'Browser') }}:
 
     - name: CommonMSBuildArgs
       value: >-

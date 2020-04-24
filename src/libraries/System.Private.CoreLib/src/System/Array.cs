@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -25,6 +26,11 @@ namespace System
         // We have different max sizes for arrays with elements of size 1 for backwards compatibility
         internal const int MaxArrayLength = 0X7FEFFFFF;
         internal const int MaxByteArrayLength = 0x7FFFFFC7;
+
+        // This is the threshold where Introspective sort switches to Insertion sort.
+        // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
+        // Large value types may benefit from a smaller number.
+        internal const int IntrosortSizeThreshold = 16;
 
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area.
         private protected Array() { }
@@ -1916,11 +1922,11 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                    IntroSort(left, length + left - 1, 2 * (BitOperations.Log2((uint)length) + 1));
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    ThrowHelper.ThrowArgumentException_BadComparer(comparer);
                 }
                 catch (Exception e)
                 {
@@ -1930,20 +1936,22 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
+                Debug.Assert(hi > lo);
+                Debug.Assert(depthLimit >= 0);
+
                 while (hi > lo)
                 {
                     int partitionSize = hi - lo + 1;
-                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    if (partitionSize <= IntrosortSizeThreshold)
                     {
-                        if (partitionSize == 1)
-                        {
-                            return;
-                        }
+                        Debug.Assert(partitionSize >= 2);
+
                         if (partitionSize == 2)
                         {
                             SwapIfGreater(lo, hi);
                             return;
                         }
+
                         if (partitionSize == 3)
                         {
                             SwapIfGreater(lo, hi - 1);
@@ -1971,8 +1979,11 @@ namespace System
 
             private int PickPivotAndPartition(int lo, int hi)
             {
+                Debug.Assert(hi - lo >= IntrosortSizeThreshold);
+
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
+
                 // Sort lo, mid and hi appropriately, then pick mid as the pivot.
                 SwapIfGreater(lo, mid);
                 SwapIfGreater(lo, hi);
@@ -1994,7 +2005,10 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, hi - 1);
+                if (left != hi - 1)
+                {
+                    Swap(left, hi - 1);
+                }
                 return left;
             }
 
@@ -2122,11 +2136,11 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                    IntroSort(left, length + left - 1, 2 * (BitOperations.Log2((uint)length) + 1));
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    ThrowHelper.ThrowArgumentException_BadComparer(comparer);
                 }
                 catch (Exception e)
                 {
@@ -2136,20 +2150,22 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
+                Debug.Assert(hi > lo);
+                Debug.Assert(depthLimit >= 0);
+
                 while (hi > lo)
                 {
                     int partitionSize = hi - lo + 1;
-                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    if (partitionSize <= IntrosortSizeThreshold)
                     {
-                        if (partitionSize == 1)
-                        {
-                            return;
-                        }
+                        Debug.Assert(partitionSize >= 2);
+
                         if (partitionSize == 2)
                         {
                             SwapIfGreater(lo, hi);
                             return;
                         }
+
                         if (partitionSize == 3)
                         {
                             SwapIfGreater(lo, hi - 1);
@@ -2177,6 +2193,8 @@ namespace System
 
             private int PickPivotAndPartition(int lo, int hi)
             {
+                Debug.Assert(hi - lo >= IntrosortSizeThreshold);
+
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
 
@@ -2200,7 +2218,10 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, hi - 1);
+                if (left != hi - 1)
+                {
+                    Swap(left, hi - 1);
+                }
                 return left;
             }
 

@@ -45,7 +45,7 @@
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
         UseLlvm="$(UseLlvm)"
-        LlvmPath="$(LlvmPath)"
+        LlvmPath="$(RuntimePackDir)\native\cross"
         Optimized="False"
         AppDir="$(BundleDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
