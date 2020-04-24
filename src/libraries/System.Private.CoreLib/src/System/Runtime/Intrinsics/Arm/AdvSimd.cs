@@ -1191,6 +1191,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Subtract(left, right);
 
             /// <summary>
+            /// uint8_t vqsubb_u8 (uint8_t a, uint8_t b)
+            ///   A64: UQSUB Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<byte> SubtractSaturateScalar(Vector64<byte> left, Vector64<byte> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
+            /// int16_t vqsubh_s16 (int16_t a, int16_t b)
+            ///   A64: SQSUB Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<short> SubtractSaturateScalar(Vector64<short> left, Vector64<short> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
+            /// int32_t vqsubs_s32 (int32_t a, int32_t b)
+            ///   A64: SQSUB Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<int> SubtractSaturateScalar(Vector64<int> left, Vector64<int> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
+            /// int8_t vqsubb_s8 (int8_t a, int8_t b)
+            ///   A64: SQSUB Bd, Bn, Bm
+            /// </summary>
+            public static Vector64<sbyte> SubtractSaturateScalar(Vector64<sbyte> left, Vector64<sbyte> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
+            /// uint16_t vqsubh_u16 (uint16_t a, uint16_t b)
+            ///   A64: UQSUB Hd, Hn, Hm
+            /// </summary>
+            public static Vector64<ushort> SubtractSaturateScalar(Vector64<ushort> left, Vector64<ushort> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vqsubs_u32 (uint32_t a, uint32_t b)
+            ///   A64: UQSUB Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<uint> SubtractSaturateScalar(Vector64<uint> left, Vector64<uint> right) => SubtractSaturateScalar(left, right);
+
+            /// <summary>
             /// uint8x8_t vrbit_u8 (uint8x8_t a)
             ///   A64: RBIT Vd.8B, Vn.8B
             /// </summary>
