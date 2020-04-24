@@ -1658,28 +1658,28 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<ulong> UnzipOdd(Vector128<ulong> left, Vector128<ulong> right) => UnzipOdd(left, right);
 
-           /// <summary>
-           ///  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
-           ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
-           /// </summary>
+            /// <summary>
+            ///  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
+            /// </summary>
             public static Vector128<byte> VectorTableLookup(Vector128<byte> table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
-           /// <summary>
-           ///  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
-           ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
-           /// </summary>
+            /// <summary>
+            ///  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
+            /// </summary>
             public static Vector128<sbyte> VectorTableLookup(Vector128<sbyte> table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
-           /// <summary>
-           ///  uint8x16_t vqvtbx1q_u8(uint8x16_t r, int8x16_t t, uint8x16_t idx)
-           ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
-           /// </summary>
+            /// <summary>
+            ///  uint8x16_t vqvtbx1q_u8(uint8x16_t r, int8x16_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
+            /// </summary>
             public static Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, Vector128<byte> table, Vector128<byte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
 
-           /// <summary>
-           ///  int8x16_t vqvtbx1q_s8(int8x16_t r, int8x16_t t, uint8x16_t idx)
-           ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
-           /// </summary>
+            /// <summary>
+            ///  int8x16_t vqvtbx1q_s8(int8x16_t r, int8x16_t t, uint8x16_t idx)
+            ///   A64: TBX Vd.16B, {Vn.16B}, Vm.16B
+            /// </summary>
             public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, Vector128<sbyte> table, Vector128<sbyte> byteIndexes) => VectorTableLookupExtension(defaultValues, table, byteIndexes);
 
             /// <summary>
@@ -7017,6 +7017,90 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: SUB Dd, Dn, Dm
         /// </summary>
         public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractScalar(left, right);
+
+        /// <summary>
+        /// uint16x8_t vsubl_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VSUBL.U8 Qd, Dn, Dm
+        ///   A64: USUBL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> SubtractWideningLower(Vector64<byte> left, Vector64<byte> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int32x4_t vsubl_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VSUBL.S16 Qd, Dn, Dm
+        ///   A64: SSUBL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> SubtractWideningLower(Vector64<short> left, Vector64<short> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int64x2_t vsubl_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VSUBL.S32 Qd, Dn, Dm
+        ///   A64: SSUBL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> SubtractWideningLower(Vector64<int> left, Vector64<int> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int16x8_t vsubl_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VSUBL.S8 Qd, Dn, Dm
+        ///   A64: SSUBL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> SubtractWideningLower(Vector64<sbyte> left, Vector64<sbyte> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// uint32x4_t vsubl_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VSUBL.U16 Qd, Dn, Dm
+        ///   A64: USUBL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> SubtractWideningLower(Vector64<ushort> left, Vector64<ushort> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// uint64x2_t vsubl_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VSUBL.U32 Qd, Dn, Dm
+        ///   A64: USUBL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> SubtractWideningLower(Vector64<uint> left, Vector64<uint> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int16x8_t vsubw_s8 (int16x8_t a, int8x8_t b)
+        ///   A32: VSUBW.S8 Qd, Qn, Dm
+        ///   A64: SSUBW Vd.8H, Vn.8H, Vm.8B
+        /// </summary>
+        public static Vector128<short> SubtractWideningLower(Vector128<short> left, Vector64<sbyte> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int32x4_t vsubw_s16 (int32x4_t a, int16x4_t b)
+        ///   A32: VSUBW.S16 Qd, Qn, Dm
+        ///   A64: SSUBW Vd.4S, Vn.4S, Vm.4H
+        /// </summary>
+        public static Vector128<int> SubtractWideningLower(Vector128<int> left, Vector64<short> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// int64x2_t vsubw_s32 (int64x2_t a, int32x2_t b)
+        ///   A32: VSUBW.S32 Qd, Qn, Dm
+        ///   A64: SSUBW Vd.2D, Vn.2D, Vm.2S
+        /// </summary>
+        public static Vector128<long> SubtractWideningLower(Vector128<long> left, Vector64<int> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// uint16x8_t vsubw_u8 (uint16x8_t a, uint8x8_t b)
+        ///   A32: VSUBW.U8 Qd, Qn, Dm
+        ///   A64: USUBW Vd.8H, Vn.8H, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> SubtractWideningLower(Vector128<ushort> left, Vector64<byte> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// uint32x4_t vsubw_u16 (uint32x4_t a, uint16x4_t b)
+        ///   A32: VSUBW.U16 Qd, Qn, Dm
+        ///   A64: USUBW Vd.4S, Vn.4S, Vm.4H
+        /// </summary>
+        public static Vector128<uint> SubtractWideningLower(Vector128<uint> left, Vector64<ushort> right) => SubtractWideningLower(left, right);
+
+        /// <summary>
+        /// uint64x2_t vsubw_u32 (uint64x2_t a, uint32x2_t b)
+        ///   A32: VSUBW.U32 Qd, Qn, Dm
+        ///   A64: USUBW Vd.2D, Vn.2D, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> SubtractWideningLower(Vector128<ulong> left, Vector64<uint> right) => SubtractWideningLower(left, right);
 
         /// <summary>
         ///  uint8x8_t vqvtbl1_u8(uint8x16_t t, uint8x8_t idx)
