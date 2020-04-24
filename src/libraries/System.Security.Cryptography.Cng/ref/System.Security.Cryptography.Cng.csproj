@@ -5,11 +5,13 @@
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
     <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;net462;net47;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />

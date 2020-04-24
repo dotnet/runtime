@@ -5,11 +5,13 @@
     </RootNamespace>
     <!-- CommonStrings needs RootNamespace to be empty -->
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
     <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true' or '$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />

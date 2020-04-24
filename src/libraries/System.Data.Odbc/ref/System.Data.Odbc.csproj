@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent);net461</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Odbc.cs" />

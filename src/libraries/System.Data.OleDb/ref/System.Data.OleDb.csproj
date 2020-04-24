@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <NoWarn>$(NoWarn);0618</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.OleDb.cs" />

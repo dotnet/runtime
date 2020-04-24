@@ -2,11 +2,13 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- this library depends on Ref.Emit which is not available for netstandard -->
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>$(NetCoreAppCurrent);net461;netstandard2.0;netcoreapp2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />

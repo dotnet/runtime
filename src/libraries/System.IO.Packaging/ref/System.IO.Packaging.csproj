@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
     <TargetFrameworks>netstandard2.0;netstandard1.3;net46;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Packaging.cs" />

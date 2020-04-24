@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CS1574;CS3016;CA5379;CA5384</NoWarn>
@@ -10,6 +8,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />

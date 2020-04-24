@@ -3,9 +3,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0618</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">

@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>netstandard2.0-Windows_NT;net461-Windows_NT;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+  </PropertyGroup>
+  <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyProtectedData</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0-Windows_NT;net461-Windows_NT;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and ('$(TargetsNetStandard)' != 'true' or '$(TargetsWindows)' == 'true')">
     <Compile Include="System\Security\Cryptography\DataProtectionScope.cs" />
