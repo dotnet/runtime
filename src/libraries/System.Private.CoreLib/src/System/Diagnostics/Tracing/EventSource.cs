@@ -2149,7 +2149,11 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private unsafe void WriteEventString(EventLevel level, long keywords, string msgString)
+        // WriteEventString is used for logging an error message (or similar) to
+        // ETW and EventPipe providers. It is not a general purpose API, it will
+        // log the message with Level=LogAlways and Keywords=All to make sure whoever
+        // is listening gets the message.
+        private unsafe void WriteEventString(string msgString)
         {
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
             bool allAreNull = true;
@@ -2164,6 +2168,8 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
+            EventLevel level = EventLevel.LogAlways;
+            long keywords = -1;
             const string EventName = "EventSourceMessage";
             if (SelfDescribingEvents)
             {
@@ -2183,7 +2189,7 @@ namespace System.Diagnostics.Tracing
                 if (m_rawManifest == null && m_outOfBandMessageCount == 1)
                 {
                     ManifestBuilder manifestBuilder = new ManifestBuilder(Name, Guid, Name, null, EventManifestOptions.None);
-                    manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
+                    manifestBuilder.StartEvent(EventName, new EventAttribute(0) { Level = level, Task = (EventTask)0xFFFE });
                     manifestBuilder.AddEventParameter(typeof(string), "message");
                     manifestBuilder.EndEvent();
                     SendManifest(manifestBuilder.CreateManifest());
@@ -2206,7 +2212,27 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
                     if (m_eventPipeProvider != null)
                     {
-                        m_eventPipeProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
+                        if (m_writeEventStringEventHandle == IntPtr.Zero)
+                        {
+                            lock (m_createEventLock)
+                            {
+                                if (m_writeEventStringEventHandle == IntPtr.Zero)
+                                {
+                                    string eventName = "EventSourceMessage";
+                                    EventParameterInfo paramInfo = default(EventParameterInfo);
+                                    paramInfo.SetInfo("message", typeof(string));
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
+                                    uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
+
+                                    fixed (byte* pMetadata = metadata)
+                                    {
+                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level, pMetadata, metadataLength);
+                                    }
+                                }
+                            }
+                        }
+
+                        m_eventPipeProvider.WriteEvent(ref descr, m_writeEventStringEventHandle, null, null, 1, (IntPtr)((void*)&data));
                     }
 #endif // FEATURE_PERFTRACING
                 }
@@ -3824,7 +3850,7 @@ namespace System.Diagnostics.Tracing
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
 
-                WriteEventString(EventLevel.LogAlways, -1, msg);
+                WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }
             catch { }      // If we fail during last chance logging, well, we have to give up....
@@ -3881,6 +3907,8 @@ namespace System.Diagnostics.Tracing
         private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
+        private object m_createEventLock = new object();
+        private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverideEventProvider m_eventPipeProvider = null!;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.

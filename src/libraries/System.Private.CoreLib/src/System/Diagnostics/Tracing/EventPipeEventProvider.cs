@@ -8,8 +8,6 @@ namespace System.Diagnostics.Tracing
     {
         // The EventPipeProvider handle.
         private IntPtr m_provHandle = IntPtr.Zero;
-        private object m_createEventLock = new object();
-        private IntPtr m_writeEventStringeEventHandle = IntPtr.Zero;
 
         // Register an event provider.
         unsafe uint IEventProvider.EventRegister(
@@ -52,7 +50,7 @@ namespace System.Diagnostics.Tracing
             int userDataCount,
             EventProvider.EventData* userData)
         {
-            if (eventDescriptor.EventId != 0 && eventHandle != IntPtr.Zero)
+            if (eventHandle != IntPtr.Zero)
             {
                 if (userDataCount == 0)
                 {
@@ -71,30 +69,7 @@ namespace System.Diagnostics.Tracing
                 }
                 EventPipeInternal.WriteEventData(eventHandle, userData, (uint)userDataCount, activityId, relatedActivityId);
             }
-            else
-            {
-                if (m_writeEventStringeEventHandle == IntPtr.Zero)
-                {
-                    lock (m_createEventLock)
-                    {
-                        if (m_writeEventStringeEventHandle == IntPtr.Zero)
-                        {
-                            string eventName = "WriteEventString";
-                            EventParameterInfo paramInfo = default(EventParameterInfo);
-                            paramInfo.SetInfo("message", typeof(string));
-                            byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, 0, (uint)EventLevel.LogAlways, 0, new EventParameterInfo[] { paramInfo });
-                            uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
-                            fixed (byte* pMetadata = metadata)
-                            {
-                                m_writeEventStringeEventHandle = ((IEventProvider)this).DefineEventHandle(0, eventName, 0, 0, (uint)EventLevel.LogAlways, pMetadata, metadataLength);
-                            }
-                        }
-                    }
-                }
-
-                EventPipeInternal.WriteEventData(m_writeEventStringeEventHandle, userData, (uint)userDataCount, activityId, relatedActivityId);
-            }
             return EventProvider.WriteEventErrorCode.NoError;
         }
 

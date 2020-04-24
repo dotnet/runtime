@@ -81,6 +81,7 @@ namespace Tracing.Tests.EventSourceError
             source.Dynamic.All += (TraceEvent traceEvent) =>
             {
                 if (traceEvent.ProviderName == "SentinelEventSource"
+                    || traceEvent.ProviderName == "Microsoft-Windows-DotNETRuntime"
                     || traceEvent.ProviderName == "Microsoft-Windows-DotNETRuntimeRundown"
                     || traceEvent.ProviderName == "Microsoft-DotNETCore-EventPipe")
                 {
@@ -90,7 +91,7 @@ namespace Tracing.Tests.EventSourceError
                 ++eventCount;
 
                 if (traceEvent.ProviderName == "IllegalTypesEventSource"
-                    && traceEvent.EventName == "WriteEventString"
+                    && traceEvent.EventName == "EventSourceMessage"
                     && traceEvent.FormattedMessage.StartsWith("ERROR: Exception in Command Processing for EventSource IllegalTypesEventSource", StringComparison.OrdinalIgnoreCase))
                 {
                     sawEvent = true;
