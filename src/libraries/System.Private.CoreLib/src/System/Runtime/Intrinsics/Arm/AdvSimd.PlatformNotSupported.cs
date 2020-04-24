@@ -2593,6 +2593,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> AddPairwiseWidening(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x4_t vpadal_u8 (uint16x4_t a, uint8x8_t b)
+        ///   A32: VPADAL.U8 Dd, Dm
+        ///   A64: UADALP Vd.4H, Vn.8B
+        /// </summary>
+        public static Vector64<ushort> AddPairwiseWideningAndAdd(Vector64<ushort> addend, Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vpadal_s16 (int32x2_t a, int16x4_t b)
+        ///   A32: VPADAL.S16 Dd, Dm
+        ///   A64: SADALP Vd.2S, Vn.4H
+        /// </summary>
+        public static Vector64<int> AddPairwiseWideningAndAdd(Vector64<int> addend, Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vpadal_s8 (int16x4_t a, int8x8_t b)
+        ///   A32: VPADAL.S8 Dd, Dm
+        ///   A64: SADALP Vd.4H, Vn.8B
+        /// </summary>
+        public static Vector64<short> AddPairwiseWideningAndAdd(Vector64<short> addend, Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vpadal_u16 (uint32x2_t a, uint16x4_t b)
+        ///   A32: VPADAL.U16 Dd, Dm
+        ///   A64: UADALP Vd.2S, Vn.4H
+        /// </summary>
+        public static Vector64<uint> AddPairwiseWideningAndAdd(Vector64<uint> addend, Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vpadalq_u8 (uint16x8_t a, uint8x16_t b)
+        ///   A32: VPADAL.U8 Qd, Qm
+        ///   A64: UADALP Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<ushort> AddPairwiseWideningAndAdd(Vector128<ushort> addend, Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vpadalq_s16 (int32x4_t a, int16x8_t b)
+        ///   A32: VPADAL.S16 Qd, Qm
+        ///   A64: SADALP Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<int> AddPairwiseWideningAndAdd(Vector128<int> addend, Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vpadalq_s32 (int64x2_t a, int32x4_t b)
+        ///   A32: VPADAL.S32 Qd, Qm
+        ///   A64: SADALP Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<long> AddPairwiseWideningAndAdd(Vector128<long> addend, Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vpadalq_s8 (int16x8_t a, int8x16_t b)
+        ///   A32: VPADAL.S8 Qd, Qm
+        ///   A64: SADALP Vd.8H, Vn.16B
+        /// </summary>
+        public static Vector128<short> AddPairwiseWideningAndAdd(Vector128<short> addend, Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vpadalq_u16 (uint32x4_t a, uint16x8_t b)
+        ///   A32: VPADAL.U16 Qd, Qm
+        ///   A64: UADALP Vd.4S, Vn.8H
+        /// </summary>
+        public static Vector128<uint> AddPairwiseWideningAndAdd(Vector128<uint> addend, Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vpadalq_u32 (uint64x2_t a, uint32x4_t b)
+        ///   A32: VPADAL.U32 Qd, Qm
+        ///   A64: UADALP Vd.2D, Vn.4S
+        /// </summary>
+        public static Vector128<ulong> AddPairwiseWideningAndAdd(Vector128<ulong> addend, Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x1_t vpadal_s32 (int64x1_t a, int32x2_t b)
+        ///   A32: VPADAL.S32 Dd, Dm
+        ///   A64: SADALP Vd.1D, Vn.2S
+        /// </summary>
+        public static Vector64<long> AddPairwiseWideningAndAddScalar(Vector64<long> addend, Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vpadal_u32 (uint64x1_t a, uint32x2_t b)
+        ///   A32: VPADAL.U32 Dd, Dm
+        ///   A64: UADALP Vd.1D, Vn.2S
+        /// </summary>
+        public static Vector64<ulong> AddPairwiseWideningAndAddScalar(Vector64<ulong> addend, Vector64<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int64x1_t vpaddl_s32 (int32x2_t a)
         ///   A32: VPADDL.S32 Dd, Dm
         ///   A64: SADDLP Dd, Vn.2S
