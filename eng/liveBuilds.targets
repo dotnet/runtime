@@ -133,9 +133,9 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
+      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'Browser'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 

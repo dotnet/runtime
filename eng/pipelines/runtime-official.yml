@@ -199,6 +199,7 @@ stages:
       - Android_arm64
       - Android_x64
       - Android_x86
+      - Browser_wasm
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml
