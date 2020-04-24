@@ -36,7 +36,7 @@ typedef clock_serv_t mono_clock_id_t;
 #include <sys/types.h>
 typedef clockid_t mono_clock_id_t;
 #else
-typedef void* mono_clock_id_t;
+typedef void *mono_clock_id_t;
 #endif
 
 void mono_clock_init (mono_clock_id_t *clk_id);
