@@ -176,8 +176,12 @@ namespace System.Xml.Tests
                     syncWriter.WriteEndElement();
                 }
 
+                Assert.Equal(@"?<?xml version=""1.0"" encoding=""utf - 8""?><root><test abc=""1"" /></root>", Encoding.UTF8.GetString(stream1.GetBuffer()));
                 Assert.Equal(Encoding.UTF8.GetString(stream1.GetBuffer()), Encoding.UTF8.GetString(stream2.GetBuffer()));
                 Assert.Equal(Encoding.UTF8.GetString(stream2.GetBuffer()), Encoding.UTF8.GetString(stream3.GetBuffer()));
+
+                Assert.Equal(stream1.GetBuffer(), stream2.GetBuffer());
+                Assert.Equal(stream2.GetBuffer(), stream3.GetBuffer());
             }
         }
 
