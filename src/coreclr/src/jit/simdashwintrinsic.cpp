@@ -106,8 +106,8 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
 // Return Value:
 //    The SimdAsHWIntrinsicClassId associated with className and enclosingClassName
 SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* className,
-                                                                     const char* enclosingClassName,
-                                                                     int         sizeOfVectorT)
+                                                              const char* enclosingClassName,
+                                                              int         sizeOfVectorT)
 {
     assert(className != nullptr);
 
@@ -203,9 +203,9 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return impSimdAsHWIntrinsicSpecial(intrinsic, clsHnd, method, sig, mustExpand);
     }
 
-    CORINFO_ARG_LIST_HANDLE  argList  = sig->args;
-    var_types                argType  = TYP_UNKNOWN;
-    CORINFO_CLASS_HANDLE     argClass;
+    CORINFO_ARG_LIST_HANDLE argList = sig->args;
+    var_types               argType = TYP_UNKNOWN;
+    CORINFO_CLASS_HANDLE    argClass;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
@@ -215,8 +215,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         case 2:
         {
             CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                          = getArgForHWIntrinsic(argType, argClass);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
@@ -270,8 +270,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
 
     assert((hwIntrinsic != NI_Illegal) && varTypeIsSIMD(simdType) && compIsaSupportedDebugOnly(hwIntrinsicIsa));
 
-    CORINFO_ARG_LIST_HANDLE  argList = sig->args;
-    var_types                argType = TYP_UNKNOWN;
+    CORINFO_ARG_LIST_HANDLE argList = sig->args;
+    var_types               argType = TYP_UNKNOWN;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
@@ -284,8 +284,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
         case 2:
         {
             CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                          = getArgForHWIntrinsic(argType, argClass);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
@@ -376,16 +376,20 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
                         GenTree* constVector;
                         GenTree* constVectorDup;
 
-                        constVector = gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, constVal->TypeGet(), simdSize);
-                        constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("Clone for Vector<T> unsigned comparison"));
+                        constVector =
+                            gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, constVal->TypeGet(), simdSize);
+                        constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone for Vector<T> unsigned comparison"));
 
                         NamedIntrinsic subtractIntrinsic = (simdSize == 32) ? NI_AVX2_Subtract : NI_SSE2_Subtract;
 
                         // op1 = op1 - constVector
-                        op1 = gtNewSimdHWIntrinsicNode(retType, op1, constVector, subtractIntrinsic, baseType, simdSize);
+                        op1 =
+                            gtNewSimdHWIntrinsicNode(retType, op1, constVector, subtractIntrinsic, baseType, simdSize);
 
                         // op2 = op2 - constVector
-                        op2 = gtNewSimdHWIntrinsicNode(retType, op2, constVectorDup, subtractIntrinsic, baseType, simdSize);
+                        op2 = gtNewSimdHWIntrinsicNode(retType, op2, constVectorDup, subtractIntrinsic, baseType,
+                                                       simdSize);
                     }
 
                     return gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
@@ -397,6 +401,5 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
 
     assert(!"Unexpected SimdAsHWIntrinsic");
     return nullptr;
-
 }
 #endif // FEATURE_HW_INTRINSICS

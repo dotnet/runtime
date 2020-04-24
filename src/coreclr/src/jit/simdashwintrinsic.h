@@ -5,7 +5,8 @@
 #ifndef _SIMD_AS_HWINTRINSIC_H_
 #define _SIMD_AS_HWINTRINSIC_H_
 
-enum class SimdAsHWIntrinsicClassId {
+enum class SimdAsHWIntrinsicClassId
+{
     Unknown,
     Vector2,
     Vector3,
@@ -31,19 +32,23 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     NeedsOperandsSwapped = 0x08,
 };
 
-inline SimdAsHWIntrinsicFlag operator ~(SimdAsHWIntrinsicFlag value) {
+inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
+{
     return static_cast<SimdAsHWIntrinsicFlag>(~static_cast<unsigned int>(value));
 }
 
-inline SimdAsHWIntrinsicFlag operator |(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs) {
+inline SimdAsHWIntrinsicFlag operator|(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs)
+{
     return static_cast<SimdAsHWIntrinsicFlag>(static_cast<unsigned int>(lhs) | static_cast<unsigned int>(rhs));
 }
 
-inline SimdAsHWIntrinsicFlag operator &(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs) {
+inline SimdAsHWIntrinsicFlag operator&(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs)
+{
     return static_cast<SimdAsHWIntrinsicFlag>(static_cast<unsigned int>(lhs) & static_cast<unsigned int>(rhs));
 }
 
-inline SimdAsHWIntrinsicFlag operator ^(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs) {
+inline SimdAsHWIntrinsicFlag operator^(SimdAsHWIntrinsicFlag lhs, SimdAsHWIntrinsicFlag rhs)
+{
     return static_cast<SimdAsHWIntrinsicFlag>(static_cast<unsigned int>(lhs) ^ static_cast<unsigned int>(rhs));
 }
 
