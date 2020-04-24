@@ -4222,7 +4222,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
 #ifdef HOST_WINDOWS
 
-// Crash dump generating program arguments. Initialized in PROCAbortInitialize().
+// Crash dump generating program arguments if enabled.
 LPCWSTR g_createDumpCommandLine = nullptr;
 
 static void 

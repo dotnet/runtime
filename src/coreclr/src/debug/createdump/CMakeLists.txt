@@ -9,9 +9,6 @@ remove_definitions(-D_UNICODE)
 
 if(CLR_CMAKE_HOST_WIN32)
 
-    # Use static crt
-    add_definitions(-MT)
-
     set(CREATEDUMP_SOURCES
         main.cpp
         createdumpwindows.cpp
@@ -25,7 +22,6 @@ if(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(createdump
         kernel32.lib
         ${STATIC_MT_CRT_LIB}
-        ${STATIC_MT_CPP_LIB}
         advapi32.lib
         version.lib
         dbghelp.lib
