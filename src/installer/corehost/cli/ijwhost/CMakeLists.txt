@@ -8,7 +8,6 @@ set(DOTNET_PROJECT_NAME "ijwhost")
 
 # Include directories
 include_directories(../fxr)
-include_directories(../fxr/static)
 include_directories(${ARCH_SOURCES_DIR})
 
 # CMake does not recommend using globbing since it messes with the freshness checks
