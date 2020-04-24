@@ -254,11 +254,11 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-    unsigned            simdSize;
-    int                 numArgs;
-    instruction         ins[10];
-    HWIntrinsicCategory category;
-    HWIntrinsicFlag     flags;
+    unsigned               simdSize;
+    int                    numArgs;
+    instruction            ins[10];
+    HWIntrinsicCategory    category;
+    HWIntrinsicFlag        flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
