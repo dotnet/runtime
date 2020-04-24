@@ -2835,6 +2835,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<ulong> AddScalar(Vector64<ulong> left, Vector64<ulong> right) => AddScalar(left, right);
 
         /// <summary>
+        /// uint16x8_t vaddl_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VADDL.U8 Qd, Dn, Dm
+        ///   A64: UADDL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> AddWideningLower(Vector64<byte> left, Vector64<byte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int32x4_t vaddl_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VADDL.S16 Qd, Dn, Dm
+        ///   A64: SADDL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<int> AddWideningLower(Vector64<short> left, Vector64<short> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int64x2_t vaddl_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VADDL.S32 Qd, Dn, Dm
+        ///   A64: SADDL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<long> AddWideningLower(Vector64<int> left, Vector64<int> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int16x8_t vaddl_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VADDL.S8 Qd, Dn, Dm
+        ///   A64: SADDL Vd.8H, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector128<short> AddWideningLower(Vector64<sbyte> left, Vector64<sbyte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// uint32x4_t vaddl_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VADDL.U16 Qd, Dn, Dm
+        ///   A64: UADDL Vd.4S, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector128<uint> AddWideningLower(Vector64<ushort> left, Vector64<ushort> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// uint64x2_t vaddl_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VADDL.U32 Qd, Dn, Dm
+        ///   A64: UADDL Vd.2D, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> AddWideningLower(Vector64<uint> left, Vector64<uint> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int16x8_t vaddw_s8 (int16x8_t a, int8x8_t b)
+        ///   A32: VADDW.S8 Qd, Qn, Dm
+        ///   A64: SADDW Vd.8H, Vn.8H, Vm.8B
+        /// </summary>
+        public static Vector128<short> AddWideningLower(Vector128<short> left, Vector64<sbyte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int32x4_t vaddw_s16 (int32x4_t a, int16x4_t b)
+        ///   A32: VADDW.S16 Qd, Qn, Dm
+        ///   A64: SADDW Vd.4S, Vn.4S, Vm.4H
+        /// </summary>
+        public static Vector128<int> AddWideningLower(Vector128<int> left, Vector64<short> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// int64x2_t vaddw_s32 (int64x2_t a, int32x2_t b)
+        ///   A32: VADDW.S32 Qd, Qn, Dm
+        ///   A64: SADDW Vd.2D, Vn.2D, Vm.2S
+        /// </summary>
+        public static Vector128<long> AddWideningLower(Vector128<long> left, Vector64<int> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// uint16x8_t vaddw_u8 (uint16x8_t a, uint8x8_t b)
+        ///   A32: VADDW.U8 Qd, Qn, Dm
+        ///   A64: UADDW Vd.8H, Vn.8H, Vm.8B
+        /// </summary>
+        public static Vector128<ushort> AddWideningLower(Vector128<ushort> left, Vector64<byte> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// uint32x4_t vaddw_u16 (uint32x4_t a, uint16x4_t b)
+        ///   A32: VADDW.U16 Qd, Qn, Dm
+        ///   A64: UADDW Vd.4S, Vn.4S, Vm.4H
+        /// </summary>
+        public static Vector128<uint> AddWideningLower(Vector128<uint> left, Vector64<ushort> right) => AddWideningLower(left, right);
+
+        /// <summary>
+        /// uint64x2_t vaddw_u32 (uint64x2_t a, uint32x2_t b)
+        ///   A32: VADDW.U32 Qd, Qn, Dm
+        ///   A64: UADDW Vd.2D, Vn.2D, Vm.2S
+        /// </summary>
+        public static Vector128<ulong> AddWideningLower(Vector128<ulong> left, Vector64<uint> right) => AddWideningLower(left, right);
+
+        /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
         ///   A64: AND Vd.8B, Vn.8B, Vm.8B
