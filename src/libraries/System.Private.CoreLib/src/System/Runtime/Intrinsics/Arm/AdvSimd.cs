@@ -2281,6 +2281,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> AbsoluteDifferenceWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector64<uint> right) => AbsoluteDifferenceWideningLowerAndAdd(addend, left, right);
 
         /// <summary>
+        /// uint16x8_t vabdl_high_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VABDL.U8 Qd, Dn+1, Dm+1
+        ///   A64: UABDL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceWideningUpper(Vector128<byte> left, Vector128<byte> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// int32x4_t vabdl_high_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VABDL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SABDL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceWideningUpper(Vector128<short> left, Vector128<short> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// int64x2_t vabdl_high_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VABDL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SABDL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> AbsoluteDifferenceWideningUpper(Vector128<int> left, Vector128<int> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// int16x8_t vabdl_high_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VABDL.S8 Qd, Dn+1, Dm+1
+        ///   A64: SABDL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceWideningUpper(Vector128<sbyte> left, Vector128<sbyte> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// uint32x4_t vabdl_high_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VABDL.U16 Qd, Dn+1, Dm+1
+        ///   A64: UABDL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceWideningUpper(Vector128<ushort> left, Vector128<ushort> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// uint64x2_t vabdl_high_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VABDL.U32 Qd, Dn+1, Dm+1
+        ///   A64: UABDL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> AbsoluteDifferenceWideningUpper(Vector128<uint> left, Vector128<uint> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VADD.I8 Dd, Dn, Dm
         ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
