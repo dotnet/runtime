@@ -28,12 +28,13 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            if (classInfo.CreateObjectWithArgs == null)
+            Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)classInfo.CreateObjectWithArgs;
+            if (creator == null)
             {
-                classInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>();
+                creator = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>();
+                classInfo.CreateObjectWithArgs = creator;
             }
 
-            Func<IEnumerable<TElement>, TCollection> creator = (Func<IEnumerable<TElement>, TCollection>)classInfo.CreateObjectWithArgs;
             state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
         }
 
