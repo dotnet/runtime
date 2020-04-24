@@ -2543,14 +2543,14 @@ namespace Internal.JitInterface
         private void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
         {
             // Slow tailcalls are not supported yet
-            // https://github.com/dotnet/corert/issues/1683
+            // https://github.com/dotnet/runtime/issues/35423
             return null;
         }
 
         private bool getTailCallHelpers(ref CORINFO_RESOLVED_TOKEN callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, ref CORINFO_TAILCALL_HELPERS pResult)
         {
             // Slow tailcalls are not supported yet
-            // https://github.com/dotnet/corert/issues/1683
+            // https://github.com/dotnet/runtime/issues/35423
             throw new NotImplementedException(nameof(getTailCallHelpers));
         }
 

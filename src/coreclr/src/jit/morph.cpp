@@ -7622,6 +7622,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 //
 GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help)
 {
+    // R2R requires different handling but we don't support tailcall via
+    // helpers in R2R yet, so just leave it for now.
+    // TODO: R2R: TailCallViaHelper
+    assert(!opts.IsReadyToRun());
+
     JITDUMP("fgMorphTailCallViaHelpers (before):\n");
     DISPTREE(call);
 
@@ -7709,11 +7714,6 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             }
 
             eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
-
-            // R2R requires different handling but we don't support tailcall via
-            // helpers in R2R yet, so just leave it for now.
-            // TODO: R2R: TailCallViaHelper
-            assert(!opts.IsReadyToRun());
 
             if (!call->tailCallInfo->IsCallvirt() ||
                 ((callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) != 0) ||
@@ -8107,6 +8107,17 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
+//------------------------------------------------------------------------
+// getVirtMethodPointerTree: get a tree for a virtual method pointer
+//
+// Arguments:
+//    thisPtr - tree representing `this` pointer
+//    pResolvedToken - pointer to the resolved token of the method
+//    pCallInfo - pointer to call info
+//
+// Return Value:
+//    A node representing the virtual method pointer
+
 GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             CORINFO_CALL_INFO*      pCallInfo)
@@ -8117,6 +8128,16 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
     GenTreeCall::Use* helpArgs = gtNewCallArgs(thisPtr, exactTypeDesc, exactMethodDesc);
     return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, helpArgs);
 }
+
+//------------------------------------------------------------------------
+// getTokenHandleTree: get a handle tree for a token
+//
+// Arguments:
+//    pResolvedToken - token to get a handle for
+//    parent - whether parent should be imported
+//
+// Return Value:
+//    A node representing the virtual method pointer
 
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
@@ -15875,7 +15896,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
         // Has fgMorphStmt been sneakily changed ?
 
-        if (stmt->GetRootNode() != oldTree || block != compCurBB)
+        if ((stmt->GetRootNode() != oldTree) || (block != compCurBB))
         {
             if (stmt->GetRootNode() != oldTree)
             {

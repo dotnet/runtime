@@ -3535,7 +3535,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
-    // Also, only expand what's required in methods that call the NextCallReturnAddress intrinsic.
+    // NextCallReturnAddress intrinsic returns the return address of the next call.
+    // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
+    // To avoid that we conservatively expand only required intrinsics in methods that call
+    // the NextCallReturnAddress intrinsic.
     if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
