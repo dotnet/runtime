@@ -5,6 +5,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -129,7 +130,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            SortedSet<(int offset, int length)> previousKeys = GetPreviousKeyRanges();
+            HashSet<(int offset, int length)> previousKeys = GetPreviousKeyRanges();
 
             if (!previousKeys.Add(currentKeyRange))
             {
@@ -137,12 +138,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private SortedSet<(int offset, int length)> GetPreviousKeyRanges()
+        private HashSet<(int offset, int length)> GetPreviousKeyRanges()
         {
             if (_previousKeyRanges == null)
             {
                 _keyComparer ??= new KeyEncodingComparer(this);
-                _previousKeyRanges = new SortedSet<(int offset, int length)>(_keyComparer);
+                _previousKeyRanges = new HashSet<(int offset, int length)>(_keyComparer);
             }
 
             return _previousKeyRanges;
@@ -153,7 +154,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _originalBuffer.Span.Slice(range.offset, range.length);
         }
 
-        private class KeyEncodingComparer : IComparer<(int offset, int length)>
+        private class KeyEncodingComparer : IEqualityComparer<(int offset, int length)>
         {
             private readonly CborReader _reader;
 
@@ -162,9 +163,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _reader = reader;
             }
 
-            public int Compare((int offset, int length) x, (int offset, int length) y)
+            public int GetHashCode((int offset, int length) value)
             {
-                return CborConformanceLevelHelpers.CompareEncodings(_reader.GetKeyEncoding(x), _reader.GetKeyEncoding(y), _reader.ConformanceLevel);
+                return System.Marvin.ComputeHash32(_reader.GetKeyEncoding(value), System.Marvin.DefaultSeed);
+            }
+
+            public bool Equals((int offset, int length) x, (int offset, int length) y)
+            {
+                return _reader.GetKeyEncoding(x).SequenceEqual(_reader.GetKeyEncoding(y));
             }
         }
     }

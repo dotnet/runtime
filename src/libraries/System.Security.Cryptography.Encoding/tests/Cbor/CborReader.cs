@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private int? _currentKeyOffset = null;
         private bool _curentItemIsKey = false;
         private (int offset, int length)? _previousKeyRange;
-        private SortedSet<(int offset, int length)>? _previousKeyRanges;
+        private HashSet<(int offset, int length)>? _previousKeyRanges;
 
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int offset, int length)>? _rangeListAllocation = null;
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             public StackFrame(CborMajorType type, int frameOffset, uint? remainingDataItems,
                               int? currentKeyOffset, bool currentItemIsKey,
-                              (int offset, int length)? previousKeyRange, SortedSet<(int offset, int length)>? previousKeyRanges)
+                              (int offset, int length)? previousKeyRange, HashSet<(int offset, int length)>? previousKeyRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
             public (int offset, int length)? PreviousKeyRange { get; }
-            public SortedSet<(int offset, int length)>? PreviousKeyRanges { get; }
+            public HashSet<(int offset, int length)>? PreviousKeyRanges { get; }
         }
 
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             public Checkpoint(int bytesRead, int stackDepth, int frameOffset, uint? remainingDataItems,
                               int? currentKeyOffset, bool currentItemIsKey, (int offset, int length)? previousKeyRange,
-                              SortedSet<(int offset, int length)>? previousKeyRanges)
+                              HashSet<(int offset, int length)>? previousKeyRanges)
             {
                 BytesRead = bytesRead;
                 StackDepth = stackDepth;
@@ -449,7 +449,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
             public (int offset, int length)? PreviousKeyRange { get; }
-            public SortedSet<(int offset, int length)>? PreviousKeyRanges { get; }
+            public HashSet<(int offset, int length)>? PreviousKeyRanges { get; }
         }
 
         private Checkpoint CreateCheckpoint()
