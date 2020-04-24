@@ -15,6 +15,7 @@ if(CLR_CMAKE_HOST_WIN32)
     set(CREATEDUMP_SOURCES
         main.cpp
         createdumpwindows.cpp
+        createdump.rc
     )
 
     _add_executable(createdump
