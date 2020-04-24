@@ -5926,6 +5926,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> MultiplyWideningUpperAndAdd(Vector128<ulong> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyWideningUpperAndAdd(addend, left, right);
 
         /// <summary>
+        /// uint16x8_t vmlsl_high_u8 (uint16x8_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLSL.U8 Qd, Dn+1, Dm+1
+        ///   A64: UMLSL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<ushort> MultiplyWideningUpperAndSubtract(Vector128<ushort> minuend, Vector128<byte> left, Vector128<byte> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
+        /// int32x4_t vmlsl_high_s16 (int32x4_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLSL.S16 Qd, Dn+1, Dm+1
+        ///   A64: SMLSL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<int> MultiplyWideningUpperAndSubtract(Vector128<int> minuend, Vector128<short> left, Vector128<short> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
+        /// int64x2_t vmlsl_high_s32 (int64x2_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLSL.S32 Qd, Dn+1, Dm+1
+        ///   A64: SMLSL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<long> MultiplyWideningUpperAndSubtract(Vector128<long> minuend, Vector128<int> left, Vector128<int> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
+        /// int16x8_t vmlsl_high_s8 (int16x8_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLSL.S8 Qd, Dn+1, Dm+1
+        ///   A64: SMLSL2 Vd.8H, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<short> MultiplyWideningUpperAndSubtract(Vector128<short> minuend, Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
+        /// uint32x4_t vmlsl_high_u16 (uint32x4_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLSL.U16 Qd, Dn+1, Dm+1
+        ///   A64: UMLSL2 Vd.4S, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<uint> MultiplyWideningUpperAndSubtract(Vector128<uint> minuend, Vector128<ushort> left, Vector128<ushort> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
+        /// uint64x2_t vmlsl_high_u32 (uint64x2_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLSL.U32 Qd, Dn+1, Dm+1
+        ///   A64: UMLSL2 Vd.2D, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<ulong> MultiplyWideningUpperAndSubtract(Vector128<ulong> minuend, Vector128<uint> left, Vector128<uint> right) => MultiplyWideningUpperAndSubtract(minuend, left, right);
+
+        /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
         ///   A32: VNEG.S16 Dd, Dm
         ///   A64: NEG Vd.4H, Vn.4H
