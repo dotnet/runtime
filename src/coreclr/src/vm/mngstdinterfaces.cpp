@@ -924,7 +924,7 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
 
     // To handle calls via IEnumerable::GetEnumerator on an RCW we can
     // 3. Use EnumerableToDispatchMarshaler (legacy COM interop)
-    ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
+    retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
 
     GCPROTECT_END();
     HELPER_METHOD_FRAME_END();
