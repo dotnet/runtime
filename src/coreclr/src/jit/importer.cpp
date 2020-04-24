@@ -4436,7 +4436,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
         }
     }
-#if defined(TARGET_XARCH) // We currently only support BSWAP on x86
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
     {
         if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
@@ -4444,7 +4444,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
         }
     }
-#endif // !defined(TARGET_XARCH)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
