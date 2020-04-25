@@ -4463,13 +4463,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         CORINFO_SIG_INFO sig;
         info.compCompHnd->getMethodSig(method, &sig);
 
-        int sizeOfVectorT = 16;
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            sizeOfVectorT = 32;
-        }
-#endif // TARGET_XARCH
+        int sizeOfVectorT = getSIMDVectorRegisterByteLength();
 
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
