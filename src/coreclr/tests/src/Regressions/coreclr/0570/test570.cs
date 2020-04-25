@@ -10,7 +10,7 @@ public class Test570
     {
         int retVal = 100;
         int numDigits = 2;
-        if (!TestLibrary.Utilities.IsWindows)
+        if (!TestLibrary.Utilities.IsWindows || TestLibrary.Utilities.IsWindows10Version1903OrGreater)
         {
             numDigits = 3;
         }
