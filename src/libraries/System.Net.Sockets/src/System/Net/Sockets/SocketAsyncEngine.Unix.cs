@@ -395,6 +395,7 @@ namespace System.Net.Sockets
             // the last thread processing events, it must see the event queued by the enqueuer.
             Interlocked.Exchange(ref _eventQueueProcessingRequested, 0);
 
+            int startTimeMs = Environment.TickCount;
             ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
             while (eventQueue.TryDequeue(out SocketIOEvent ev))
             {
@@ -407,6 +408,13 @@ namespace System.Net.Sockets
                 }
 
                 ev.Context.HandleEvents(ev.Events);
+
+                if (Environment.TickCount - startTimeMs >= 15)
+                {
+                    // Yield the thread to allow the thread pool to run other work items
+                    ScheduleToProcessEvents();
+                    return;
+                }
             }
         }
 
