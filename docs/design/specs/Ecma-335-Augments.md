@@ -353,13 +353,13 @@ This text should be deleted, and the _metadata merging_ entry should be removed 
 
 ## Module Initializer
 
-All modules may have a module initializer. This method shall be a global method, static, take no parameters, return no value, be marked with **rtspecialname** and **specialname**, and be named `.cctor`.
+All modules may have a module initializer. A module initializer is defined as the type initializer (§ II.10.5.3) of the `<Module>` type (§ II.10.8).
 
 There are no limitations on what code is permitted in a module initializer. Module initializers are permitted to run and call both managed and unmanaged code.
 
 ### Module Initialization Guarantees
 
-The CLI shall provide the following guarantees regarding module initialization:
+In addition to the guarantees that apply to all type initializers, the CLI shall provide the following guarantees for module initializers:
 
 1. A module initializer is executed at, or sometime before, first access to any static field or first invocation of any method defined in the module.
 
