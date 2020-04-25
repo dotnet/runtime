@@ -1273,14 +1273,12 @@ Thread::UserAbort(ThreadAbortRequester requester,
         switch (action)
         {
         case eAbortThread:
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
             break;
         case eRudeAbortThread:
             if (abortType != EEPolicy::TA_Rude)
             {
                 abortType = EEPolicy::TA_Rude;
             }
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
             break;
         case eUnloadAppDomain:
         case eRudeUnloadAppDomain:
@@ -1297,7 +1295,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
         case eExitProcess:
         case eFastExitProcess:
         case eRudeExitProcess:
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
             EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
             _ASSERTE (!"Should not reach here");
             break;
@@ -1858,7 +1855,6 @@ LPrepareRetry:
             switch (action1)
             {
             case eRudeAbortThread:
-                GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
                 MarkThreadForAbort(requester, EEPolicy::TA_Rude);
                 SetRudeAbortEndTimeFromEEPolicy();
                 goto LRetry;
@@ -1866,7 +1862,6 @@ LPrepareRetry:
                 // AD unload does not abort finalizer thread.
                 if (this == FinalizerThread::GetFinalizerThread())
                 {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
                     MarkThreadForAbort(requester, EEPolicy::TA_Rude);
                     SetRudeAbortEndTimeFromEEPolicy();
                     goto LRetry;
@@ -1900,7 +1895,6 @@ LPrepareRetry:
             case eExitProcess:
             case eFastExitProcess:
             case eRudeExitProcess:
-                GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
                 EEPolicy::HandleExitProcessFromEscalation(action1, HOST_E_EXITPROCESS_TIMEOUT);
                 _ASSERTE (!"Should not reach here");
                 break;
@@ -2591,13 +2585,11 @@ void Thread::HandleThreadAbortTimeout()
         switch (action)
         {
         case eRudeAbortThread:
-            GetEEPolicy()->NotifyHostOnTimeout(operation,action);
             MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
             break;
         case eExitProcess:
         case eFastExitProcess:
         case eRudeExitProcess:
-            GetEEPolicy()->NotifyHostOnTimeout(operation,action);
             EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
             _ASSERTE (!"Should not reach here");
             break;
@@ -2689,7 +2681,6 @@ void Thread::PreWorkForThreadAbort()
         case eFastExitProcess:
         case eRudeExitProcess:
                 {
-            GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
             GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
                 }
             break;

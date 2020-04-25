@@ -36,24 +36,9 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
-//******************************************************************************
-//
-//  SwallowUnhandledExceptions
-//
-//   Consult the EE policy and the app config to determine if the runtime should "swallow" unhandled exceptions.
-//   Swallow if: the EEPolicy->UnhandledExceptionPolicy is "eHostDeterminedPolicy"
-//           or: the app config value LegacyUnhandledExceptionPolicy() is set.
-//
-//  Parameters:
-//    none
-//
-//  Return value:
-//    true - the runtime should "swallow" unhandled exceptions
-//
 inline bool SwallowUnhandledExceptions()
 {
-    return (eHostDeterminedPolicy == GetEEPolicy()->GetUnhandledExceptionPolicy()) ||
-           g_pConfig->LegacyUnhandledExceptionPolicy();
+    return g_pConfig->LegacyUnhandledExceptionPolicy();
 }
 
 // Enums

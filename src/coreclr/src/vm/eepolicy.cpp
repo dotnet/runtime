@@ -78,170 +78,6 @@ EEPolicy::EEPolicy ()
     m_ActionOnFailure[FAIL_AccessViolation] = eNoAction;
     m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
     m_ActionOnFailure[FAIL_CodeContract] = eThrowException;
-    m_unhandledExceptionPolicy = eRuntimeDeterminedPolicy;
-}
-
-BOOL EEPolicy::IsValidActionForOperation(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (operation) {
-    case OPR_ThreadAbort:
-        return action >= eAbortThread &&
-            action < MaxPolicyAction;
-    case OPR_ThreadRudeAbortInNonCriticalRegion:
-    case OPR_ThreadRudeAbortInCriticalRegion:
-        return action >= eRudeAbortThread && action != eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainUnload:
-        return action >= eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainRudeUnload:
-        return action >= eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_ProcessExit:
-        return action >= eExitProcess &&
-            action < MaxPolicyAction;
-    case OPR_FinalizerRun:
-        return action == eNoAction ||
-            (action >= eAbortThread &&
-             action < MaxPolicyAction);
-    default:
-        _ASSERT (!"Do not know valid action for this operation");
-        break;
-    }
-    return FALSE;
-}
-
-BOOL EEPolicy::IsValidActionForTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (operation) {
-    case OPR_ThreadAbort:
-        return action > eAbortThread &&
-            action < MaxPolicyAction;
-    case OPR_ThreadRudeAbortInNonCriticalRegion:
-    case OPR_ThreadRudeAbortInCriticalRegion:
-        return action > eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainUnload:
-        return action > eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainRudeUnload:
-        return action > eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_ProcessExit:
-        return action > eExitProcess &&
-            action < MaxPolicyAction;
-    case OPR_FinalizerRun:
-        return action == eNoAction ||
-            (action >= eAbortThread &&
-             action < MaxPolicyAction);
-    default:
-        _ASSERT (!"Do not know valid action for this operation");
-        break;
-    }
-    return FALSE;
-}
-
-BOOL EEPolicy::IsValidActionForFailure(EClrFailure failure, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (failure) {
-    case FAIL_NonCriticalResource:
-        return action >= eThrowException &&
-            action < MaxPolicyAction;
-    case FAIL_CriticalResource:
-        return action >= eThrowException &&
-            action < MaxPolicyAction;
-    case FAIL_FatalRuntime:
-        return action >= eRudeExitProcess &&
-            action < MaxPolicyAction;
-    case FAIL_OrphanedLock:
-        return action >= eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case FAIL_AccessViolation:
-        // Allowed actions on failure are:
-        //
-        // eNoAction or eRudeExitProcess.
-        return ((action == eNoAction) || (action == eRudeExitProcess));
-    case FAIL_StackOverflow:
-        return action >= eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case FAIL_CodeContract:
-        return action >= eThrowException &&
-            action <= eExitProcess;
-    default:
-        _ASSERTE (!"Do not know valid action for this failure");
-        break;
-    }
-
-    return FALSE;
-}
-
-HRESULT EEPolicy::SetTimeout(EClrOperation operation, DWORD timeout)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation)
-    {
-    m_Timeout[operation] = timeout;
-    if (operation == OPR_FinalizerRun &&
-        g_fEEStarted)
-    {
-        FastInterlockOr((DWORD*)&g_FinalizerWaiterStatus, FWS_WaitInterrupt);
-        FinalizerThread::SignalFinalizationDone(FALSE);
-    }
-    return S_OK;
-}
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetActionOnTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForTimeout(operation, action))
-    {
-        m_ActionOnTimeout[operation] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
 }
 
 EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
@@ -296,79 +132,6 @@ EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
     }
 }
 
-// Allow setting timeout and action in one call.
-// If we decide to have atomical operation on Policy, we can use lock here
-// while SetTimeout and SetActionOnTimeout can not.
-HRESULT EEPolicy::SetTimeoutAndAction(EClrOperation operation, DWORD timeout, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForTimeout(operation, action))
-    {
-        m_ActionOnTimeout[operation] = action;
-        m_Timeout[operation] = timeout;
-        if (operation == OPR_FinalizerRun &&
-            g_fEEStarted)
-        {
-            FastInterlockOr((DWORD*)&g_FinalizerWaiterStatus, FWS_WaitInterrupt);
-            FinalizerThread::SignalFinalizationDone(FALSE);
-        }
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetDefaultAction(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForOperation(operation, action))
-    {
-        m_DefaultAction[operation] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetActionOnFailure(EClrFailure failure, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(failure) < MaxClrFailure &&
-        IsValidActionForFailure(failure, action))
-    {
-        m_ActionOnFailure[failure] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
 EPolicyAction EEPolicy::GetActionOnFailureNoHostNotification(EClrFailure failure)
 {
     CONTRACTL
@@ -404,32 +167,6 @@ EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
 
     EPolicyAction finalAction = GetActionOnFailureNoHostNotification(failure);
     return finalAction;
-}
-
-
-void EEPolicy::NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-}
-
-
-void EEPolicy::NotifyHostOnDefaultAction(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
 }
 
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
@@ -701,7 +438,6 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleExitProcess\n");
 
     EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ProcessExit, NULL);
-    GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ProcessExit,action);
     HandleExitProcessHelper(action, 0, sca);
 }
 
@@ -1325,7 +1061,6 @@ void EEPolicy::HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCo
     {
         todo = action;
     }
-    GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ProcessExit,todo);
 
     HandleExitProcessHelper(todo, exitCode, SCA_ExitProcessWhenShutdownComplete);
 }

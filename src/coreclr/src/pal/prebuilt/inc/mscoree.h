@@ -191,13 +191,6 @@ enum __MIDL___MIDL_itf_mscoree_0000_0000_0007
     } 	EClrFailure;
 
 typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0008
-    {
-        eRuntimeDeterminedPolicy	= 0,
-        eHostDeterminedPolicy	= ( eRuntimeDeterminedPolicy + 1 ) 
-    } 	EClrUnhandledException;
-
-typedef /* [public] */ 
 enum __MIDL___MIDL_itf_mscoree_0000_0000_0009
     {
         eNoAction	= 0,

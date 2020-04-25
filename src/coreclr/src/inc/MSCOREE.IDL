@@ -160,12 +160,6 @@ typedef enum
 
 typedef enum
 {
-        eRuntimeDeterminedPolicy,       // default
-        eHostDeterminedPolicy,          // revert back to Everett behavior, i.e. swallow all exception
-} EClrUnhandledException;
-
-typedef enum
-{
     // !!! Please keep these ordered by severity
     // !!! If you don't, you need to change EEPolicy::IsValidActionForOperation
     // !!! and EEPolicy::IsValidActionForFailure

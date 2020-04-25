@@ -47,8 +47,6 @@ public:
 
     EEPolicy ();
 
-    HRESULT SetTimeout(EClrOperation operation, DWORD timeout);
-
     DWORD GetTimeout(EClrOperation operation)
     {
         LIMITED_METHOD_CONTRACT;
@@ -56,7 +54,6 @@ public:
         return m_Timeout[operation];
     }
 
-    HRESULT SetActionOnTimeout(EClrOperation operation, EPolicyAction action);
     EPolicyAction GetActionOnTimeout(EClrOperation operation, Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -64,11 +61,6 @@ public:
         return GetFinalAction(m_ActionOnTimeout[operation], pThread);
     }
 
-    void NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action);
-
-    HRESULT SetTimeoutAndAction(EClrOperation operation, DWORD timeout, EPolicyAction action);
-
-    HRESULT SetDefaultAction(EClrOperation operation, EPolicyAction action);
     EPolicyAction GetDefaultAction(EClrOperation operation, Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -76,35 +68,11 @@ public:
         return GetFinalAction(m_DefaultAction[operation], pThread);
     }
 
-    void NotifyHostOnDefaultAction(EClrOperation operation, EPolicyAction action);
-
-    HRESULT SetActionOnFailure(EClrFailure failure, EPolicyAction action);
-
     // Generally GetActionOnFailure should be used so that a host can get notification.
     // But if we have notified host on the same failure, but we need to check escalation again,
     // GetActionOnFailureNoHostNotification can be used.
     EPolicyAction GetActionOnFailure(EClrFailure failure);
     EPolicyAction GetActionOnFailureNoHostNotification(EClrFailure failure);
-
-    // get and set unhandled exception policy
-    HRESULT SetUnhandledExceptionPolicy(EClrUnhandledException policy)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (policy != eRuntimeDeterminedPolicy && policy != eHostDeterminedPolicy)
-        {
-            return E_INVALIDARG;
-        }
-        else
-        {
-            m_unhandledExceptionPolicy = policy;
-            return S_OK;
-        }
-    }
-    EClrUnhandledException GetUnhandledExceptionPolicy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_unhandledExceptionPolicy;
-    }
 
     static EPolicyAction DetermineResourceConstraintAction(Thread *pThread);
 
@@ -133,14 +101,7 @@ private:
     EPolicyAction m_ActionOnTimeout[MaxClrOperation];
     EPolicyAction m_DefaultAction[MaxClrOperation];
     EPolicyAction m_ActionOnFailure[MaxClrFailure];
-    EClrUnhandledException m_unhandledExceptionPolicy;
 
-    // TODO: Support multiple methods to set policy: hosting, config, managed api.
-
-    // Return BOOL if action is acceptable for operation.
-    BOOL IsValidActionForOperation(EClrOperation operation, EPolicyAction action);
-    BOOL IsValidActionForTimeout(EClrOperation operation, EPolicyAction action);
-    BOOL IsValidActionForFailure(EClrFailure failure, EPolicyAction action);
     EPolicyAction GetFinalAction(EPolicyAction action, Thread *pThread);
 
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
