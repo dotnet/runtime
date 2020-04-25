@@ -6988,14 +6988,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
         Interval* interval = refPosition->getInterval();
         if (!interval->isLocalVar)
         {
-            // The tmp allocation logic 'normalizes' types to a small number of
-            // types that need distinct stack locations from each other.
-            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
-            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
-            // LSRA is agnostic to those choices but needs
-            // to know what they are here.
-            var_types typ; // first variant
-
             GenTree* treeNode = refPosition->treeNode;
             if (treeNode == nullptr)
             {
@@ -7004,46 +6996,23 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             assert(treeNode != nullptr);
 
-            // In case of multi-reg call nodes, we need to use the type
-            // of the return register given by multiRegIdx of the refposition.
-            if (treeNode->IsMultiRegCall())
-            {
-                ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
-                typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
-            }
-#if FEATURE_ARG_SPLIT
-            else if (treeNode->OperIsPutArgSplit())
-            {
-                typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
-            }
-#if !defined(TARGET_64BIT)
-            else if (treeNode->OperIsPutArgReg())
-            {
-                // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
-                // However when they get spilled, they should be treated as separated int registers.
-                var_types typNode = treeNode->TypeGet();
-                typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
-            }
-#endif // !TARGET_64BIT
-#endif // FEATURE_ARG_SPLIT
-            else
-            {
-                typ = treeNode->TypeGet();
-            }
-            var_types type1BeforeNormalize = typ;
-            typ                            = RegSet::tmpNormalizeType(typ);
-
-            var_types type2;
+            // The tmp allocation logic 'normalizes' types to a small number of
+            // types that need distinct stack locations from each other.
+            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
+            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
+            // LSRA is agnostic to those choices but needs
+            // to know what they are here.
+            var_types typ;
             if (!treeNode->IsMultiRegNode())
             {
-                type2 = getDefType(treeNode);
+                typ = getDefType(treeNode);
             }
             else
             {
-                type2 = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
+                typ = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
             }
 
-            assert(type2 == type1BeforeNormalize);
+            typ = RegSet::tmpNormalizeType(typ);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
