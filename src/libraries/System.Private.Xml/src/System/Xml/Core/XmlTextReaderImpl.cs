@@ -386,7 +386,6 @@ namespace System.Xml
             else
             {
                 SetupFromParserContext(context, settings);
-                Debug.Assert(_nameTable != null);
                 nt = _nameTable;
             }
 
@@ -1119,7 +1118,7 @@ namespace System.Xml
         }
 
         // Moves to an attribute with the specified LocalName and NamespceURI
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             string? namespaceURIAtomized = (namespaceURI == null) ? string.Empty : _nameTable.Get(namespaceURI);
             string? localNameAtomized = _nameTable.Get(localName);
@@ -8002,7 +8001,7 @@ namespace System.Xml
             else
             {
                 Throw(SR.Xml_UnknownNs, node.prefix, node.LineNo, node.LinePos);
-                return null!;
+                return null;
             }
         }
 
@@ -9002,11 +9001,11 @@ namespace System.Xml
 
             if (expectedToken2 != null)
             {
-                Throw(SR.Xml_UnexpectedTokens2, new string?[3] { unexpectedToken, expectedToken1, expectedToken2 });
+                Throw(SR.Xml_UnexpectedTokens2, new string[3] { unexpectedToken, expectedToken1, expectedToken2 });
             }
             else
             {
-                Throw(SR.Xml_UnexpectedTokenEx, new string?[2] { unexpectedToken, expectedToken1 });
+                Throw(SR.Xml_UnexpectedTokenEx, new string[2] { unexpectedToken, expectedToken1 });
             }
         }
 

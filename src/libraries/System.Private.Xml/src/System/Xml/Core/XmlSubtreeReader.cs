@@ -73,7 +73,7 @@ namespace System.Xml
 
         // namespace management
         private readonly XmlNamespaceManager _nsManager;
-        private NodeData?[]? _nsAttributes;
+        private NodeData[]? _nsAttributes;
         private int _nsAttrCount;
         private int _curNsAttr = -1;
 
@@ -118,7 +118,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.type : reader.NodeType;
+                return _useCurNode ? _curNode.type : reader.NodeType;
             }
         }
 
@@ -126,7 +126,7 @@ namespace System.Xml
         {
             get
             {
-                return _useCurNode ? _curNode.name! : reader.Name;
+                return _useCurNode ? _curNode.name : reader.Name;
             }
         }
 
@@ -134,7 +134,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.localName : reader.LocalName;
+                return _useCurNode ? _curNode.localName : reader.LocalName;
             }
         }
 
@@ -142,7 +142,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.namespaceUri : reader.NamespaceURI;
+                return _useCurNode ? _curNode.namespaceUri : reader.NamespaceURI;
             }
         }
 
@@ -150,7 +150,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.prefix : reader.Prefix;
+                return _useCurNode ? _curNode.prefix : reader.Prefix;
             }
         }
 
@@ -158,7 +158,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.value : reader.Value;
+                return _useCurNode ? _curNode.value : reader.Value;
             }
         }
 
@@ -258,10 +258,10 @@ namespace System.Xml
 
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes![i]!.name)
+                if (name == _nsAttributes![i].name)
                 {
                     // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
-                    return _nsAttributes[i]!.value;
+                    return _nsAttributes[i].value;
                 }
             }
             return null;
@@ -282,10 +282,10 @@ namespace System.Xml
 
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes![i]!.localName && namespaceURI == _xmlnsUri)
+                if (name == _nsAttributes![i].localName && namespaceURI == _xmlnsUri)
                 {
                     // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
-                    return _nsAttributes[i]!.value;
+                    return _nsAttributes[i].value;
                 }
             }
 
@@ -305,7 +305,7 @@ namespace System.Xml
             }
             else if (i - n < _nsAttrCount)
             {
-                return _nsAttributes![i - n]!.value;
+                return _nsAttributes![i - n].value;
             }
             else
             {
@@ -328,7 +328,7 @@ namespace System.Xml
 
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes![i]!.name)
+                if (name == _nsAttributes![i].name)
                 {
                     MoveToNsAttribute(i);
                     return true;
@@ -352,7 +352,7 @@ namespace System.Xml
 
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes![i]!.localName && ns == _xmlnsUri)
+                if (name == _nsAttributes![i].localName && ns == _xmlnsUri)
                 {
                     MoveToNsAttribute(i);
                     return true;
@@ -1183,8 +1183,7 @@ namespace System.Xml
             {
                 if (!_useCurNode)
                 {
-                    IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-                    if (lineInfo != null)
+                    if (reader is IXmlLineInfo lineInfo)
                     {
                         return lineInfo.LineNumber;
                     }
@@ -1199,8 +1198,7 @@ namespace System.Xml
             {
                 if (!_useCurNode)
                 {
-                    IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-                    if (lineInfo != null)
+                    if (reader is IXmlLineInfo lineInfo)
                     {
                         return lineInfo.LinePosition;
                     }
@@ -1341,7 +1339,7 @@ namespace System.Xml
             }
             else
             {
-                _nsAttributes[index]!.Set(XmlNodeType.Attribute, localName, attrPrefix, name, _xmlnsUri, ns);
+                _nsAttributes[index].Set(XmlNodeType.Attribute, localName, attrPrefix, name, _xmlnsUri, ns);
             }
 
             Debug.Assert(_state == State.ClearNsAttributes || _state == State.Interactive || _state == State.PopNamespaceScope);
@@ -1354,13 +1352,13 @@ namespace System.Xml
         {
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (Ref.Equal(prefix, _nsAttributes![i]!.prefix) &&
-                     Ref.Equal(localName, _nsAttributes![i]!.localName)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                if (Ref.Equal(prefix, _nsAttributes![i].prefix) &&
+                     Ref.Equal(localName, _nsAttributes![i].localName)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 {
                     if (i < _nsAttrCount - 1)
                     {
                         // swap
-                        NodeData tmpNodeData = _nsAttributes![i]!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        NodeData tmpNodeData = _nsAttributes![i]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                         _nsAttributes[i] = _nsAttributes[_nsAttrCount - 1];
                         _nsAttributes[_nsAttrCount - 1] = tmpNodeData;
                     }
@@ -1376,7 +1374,7 @@ namespace System.Xml
             reader.MoveToElement();
             _curNsAttr = index;
             _nsIncReadOffset = 0;
-            SetCurrentNode(_nsAttributes![index]!);
+            SetCurrentNode(_nsAttributes![index]);
         }
 
         private bool InitReadElementContentAsBinary(State binaryState)

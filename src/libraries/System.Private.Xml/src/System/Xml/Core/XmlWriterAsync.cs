@@ -71,7 +71,6 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
         public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
         {

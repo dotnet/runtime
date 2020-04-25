@@ -755,8 +755,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    IDtdDefaultAttributeInfo? attrDef = x as IDtdDefaultAttributeInfo;
-                    if (attrDef != null)
+                    if (x is IDtdDefaultAttributeInfo attrDef)
                     {
                         localName = attrDef.LocalName;
                         prefix = attrDef.Prefix;
@@ -775,8 +774,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    IDtdDefaultAttributeInfo? attrDef = y as IDtdDefaultAttributeInfo;
-                    if (attrDef != null)
+                    if (y is IDtdDefaultAttributeInfo attrDef)
                     {
                         localName2 = attrDef.LocalName;
                         prefix2 = attrDef.Prefix;

@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -231,10 +232,10 @@ namespace System.Xml
         // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey.
 #pragma warning disable 3002
         public virtual IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
+#pragma warning restore 3002
         {
             Debug.Assert(_nsdecls != null);
 
-#pragma warning restore 3002
             int i = 0;
             switch (scope)
             {
@@ -365,7 +366,7 @@ namespace System.Xml
             return false;
         }
 
-        internal bool GetNamespaceDeclaration(int idx, out string? prefix, out string? uri)
+        internal bool GetNamespaceDeclaration(int idx, [NotNullWhen(true)] out string? prefix, out string? uri)
         {
             idx = _lastDecl - idx;
             if (idx < 0)

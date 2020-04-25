@@ -189,7 +189,7 @@ namespace System.Xml
             return _impl.GetAttribute(name);
         }
 
-        public override string? GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _impl.GetAttribute(localName, namespaceURI);
         }

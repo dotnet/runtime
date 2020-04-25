@@ -591,30 +591,32 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an element with the specified name containing the specified string value.
-        public void WriteElementString(string localName, string value)
+        public void WriteElementString(string localName, string? value)
         {
             WriteElementString(localName, null, value);
         }
 
         // Writes out an attribute with the specified name, namespace URI and string value.
-        public void WriteElementString(string localName, string? ns, string value)
+        public void WriteElementString(string localName, string? ns, string? value)
         {
             WriteStartElement(localName, ns);
             if (null != value && 0 != value.Length)
             {
                 WriteString(value);
             }
+
             WriteEndElement();
         }
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public void WriteElementString(string? prefix, string localName, string? ns, string value)
+        public void WriteElementString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartElement(prefix, localName, ns);
             if (null != value && 0 != value.Length)
             {
                 WriteString(value);
             }
+
             WriteEndElement();
         }
 
@@ -682,7 +684,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided file with the specified settings.
-        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings)
+        public static XmlWriter Create(string outputFileName, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(outputFileName);
@@ -704,7 +706,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided stream with the specified settings.
-        public static XmlWriter Create(Stream output, XmlWriterSettings settings)
+        public static XmlWriter Create(Stream output, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
@@ -726,7 +728,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided TextWriter with the specified settings.
-        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings)
+        public static XmlWriter Create(TextWriter output, XmlWriterSettings? settings)
         {
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(output);
@@ -746,7 +748,7 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder with the specified settings.
-        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings)
+        public static XmlWriter Create(StringBuilder output, XmlWriterSettings? settings)
         {
             if (output == null)
             {
