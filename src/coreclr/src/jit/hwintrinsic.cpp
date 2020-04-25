@@ -643,11 +643,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     baseType          = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
     unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
-    if (!varTypeIsArithmetic(baseType))
-    {
-        return nullptr;
-    }
-
     GenTree* immOp = nullptr;
 
 #ifdef TARGET_ARM64
