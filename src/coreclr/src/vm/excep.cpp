@@ -11221,7 +11221,7 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11268,7 +11268,7 @@ BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodD
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);

@@ -2757,7 +2757,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // that won't be reflected via the IL stub's MethodDesc.
             pFuncWithCEAttribute = GetUserMethodForILStub(pThread, (UINT_PTR)pStack, pFunc, &pILStubFrame);
         }
-        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute, FALSE);
+        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute);
     }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
