@@ -5,7 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\..\Common\tests\System\IO\Compression\CRC.cs" Link="Utils\CRC.cs" />
+    <Compile Include="..\..\..\..\Common\tests\System\IO\Compression\CRC.cs"
+             Link="Utils\CRC.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19577.1" />
