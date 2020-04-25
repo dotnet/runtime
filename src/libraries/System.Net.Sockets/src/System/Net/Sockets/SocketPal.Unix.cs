@@ -16,7 +16,7 @@ namespace System.Net.Sockets
     internal static partial class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = false;
-        public const int MaximumAddressSize = 150; // currently 128 for AF storage on Linux. Adding little bit more for any new protocols
+        public static int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()

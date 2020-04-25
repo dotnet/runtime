@@ -312,6 +312,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainSocketSizes.cs">
       <Link>Common\Interop\Unix\Interop.GetDomainSocketSizes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetMaximumAddressSize.cs">
+      <Link>Common\Interop\Unix\Interop.GetMaximumAddressSize.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPeerName.cs</Link>
     </Compile>

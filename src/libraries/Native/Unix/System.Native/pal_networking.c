@@ -3028,6 +3028,11 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
     *addressSize = sizeof(domainSocket);
 }
 
+int32_t SystemNative_GetMaximumAddressSize(void)
+{
+    return sizeof(struct sockaddr_storage);
+}
+
 int32_t SystemNative_Disconnect(intptr_t socket)
 {
     int fd = ToFileDescriptor(socket);

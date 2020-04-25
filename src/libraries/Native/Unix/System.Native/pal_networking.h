@@ -430,6 +430,8 @@ PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 
 PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
 
+PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);
+
 PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
 
 PALEXPORT int32_t SystemNative_Disconnect(intptr_t socket);

@@ -17,7 +17,7 @@ namespace System.Net.Sockets
     internal static class SocketPal
     {
         public const bool SupportsMultipleConnectAttempts = true;
-        public const int MaximumAddressSize = 110; //sockaddr_un
+        public static int MaximumAddressSize = UnixDomainSocketEndPoint.MaxAddressSize;
 
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
