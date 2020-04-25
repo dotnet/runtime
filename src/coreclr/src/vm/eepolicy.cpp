@@ -47,11 +47,9 @@ EEPolicy::EEPolicy ()
 
     int n;
     for (n = 0; n < MaxClrOperation; n++) {
-        m_Timeout[n] = INFINITE;
         m_ActionOnTimeout[n] = eNoAction;
         m_DefaultAction[n] = eNoAction;
     }
-    m_Timeout[OPR_ProcessExit] = 40000;
     m_ActionOnTimeout[OPR_ProcessExit] = eRudeExitProcess;
     m_ActionOnTimeout[OPR_ThreadAbort] = eAbortThread;
     m_ActionOnTimeout[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;
@@ -1064,37 +1062,3 @@ void EEPolicy::HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCo
 
     HandleExitProcessHelper(todo, exitCode, SCA_ExitProcessWhenShutdownComplete);
 }
-
-void EEPolicy::HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, LPCWSTR pInnerExceptionAsString)
-{
-    WRAPPER_NO_CONTRACT;
-
-    EEPolicy* pPolicy = GetEEPolicy();
-    // GetActionOnFailure will notify the host for us.
-    EPolicyAction action = pPolicy->GetActionOnFailure(FAIL_CodeContract);
-    Thread* pThread = GetThread();
-
-    switch(action) {
-    case eThrowException:
-        // Let managed code throw a ContractException (it's easier to pass the right parameters to the constructor).
-        break;
-    case eAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Safe, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eRudeAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eExitProcess:  // Merged w/ default case
-    default:
-        _ASSERTE(action == eExitProcess);
-        // Since we have no exception object, make sure
-        // UE tracker is clean so that RetrieveManagedBucketParameters
-        // does not take any bucket details.
-#ifndef TARGET_UNIX
-        pThread->GetExceptionState()->GetUEWatsonBucketTracker()->ClearWatsonBucketDetails();
-#endif // !TARGET_UNIX
-        pPolicy->HandleFatalError(COR_E_CODECONTRACTFAILED, NULL, pMessage);
-        break;
-    }
-}
-

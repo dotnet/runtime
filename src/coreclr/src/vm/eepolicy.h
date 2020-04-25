@@ -39,19 +39,13 @@ public:
         TA_Rude
     };
 
-    enum AppDomainUnloadTypes
-    {
-        ADU_Safe,
-        ADU_Rude
-    };
-
     EEPolicy ();
 
     DWORD GetTimeout(EClrOperation operation)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return m_Timeout[operation];
+        return INFINITE; // No hardcoded timeouts
     }
 
     EPolicyAction GetActionOnTimeout(EClrOperation operation, Thread *pThread)
@@ -82,10 +76,6 @@ public:
 
     static void HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame);
 
-    static void HandleSoftStackOverflow(BOOL fSkipDebugger = FALSE);
-
-    static void HandleStackOverflowAfterCatch();
-
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
     static int NOINLINE HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage=NULL, PEXCEPTION_POINTERS pExceptionInfo= NULL, LPCWSTR errorSource=NULL, LPCWSTR argExceptionString=NULL);
@@ -94,10 +84,7 @@ public:
 
     static void HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode);
 
-    static void HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, LPCWSTR pInnerExceptionAsString);
-
 private:
-    DWORD m_Timeout[MaxClrOperation];
     EPolicyAction m_ActionOnTimeout[MaxClrOperation];
     EPolicyAction m_DefaultAction[MaxClrOperation];
     EPolicyAction m_ActionOnFailure[MaxClrFailure];
