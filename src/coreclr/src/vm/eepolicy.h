@@ -56,12 +56,6 @@ public:
 
     EPolicyAction GetActionOnFailure(EClrFailure failure);
 
-    static EPolicyAction DetermineResourceConstraintAction(Thread *pThread);
-
-    static void PerformResourceConstraintAction(Thread *pThread, EPolicyAction action, UINT exitCode, BOOL haveStack);
-
-    static void HandleOutOfMemory();
-
     static void HandleStackOverflow();
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
