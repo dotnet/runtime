@@ -142,11 +142,23 @@ namespace System.Xml.Tests
         [Fact]
         public static async Task XmlWriter_AsyncSyncResult_ShouldBeSame_AfterDispose_StreamWriter()
         {
+            var settings = new XmlWriterSettings() { Async = true, Encoding = new UTF8Encoding(false) };
             using (var stream1 = new MemoryStream())
             using (var stream2 = new MemoryStream())
             using (var stream3 = new MemoryStream())
             {
-                using (var asyncWriter = XmlWriter.Create(stream1, new XmlWriterSettings() { Async = true }))
+                using (var asyncWriter = XmlWriter.Create(stream1, settings))
+                {
+                    await asyncWriter.WriteStartDocumentAsync();
+                    await asyncWriter.WriteStartElementAsync(string.Empty, "root", null);
+                    await asyncWriter.WriteStartElementAsync(null, "test", null);
+                    await asyncWriter.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                    await asyncWriter.WriteEndElementAsync();
+                    await asyncWriter.WriteEndElementAsync();
+                    Console.WriteLine(asyncWriter.Settings.Encoding);
+                }
+
+                await using (var asyncWriter = XmlWriter.Create(stream2, settings))
                 {
                     await asyncWriter.WriteStartDocumentAsync();
                     await asyncWriter.WriteStartElementAsync(string.Empty, "root", null);
@@ -156,17 +168,8 @@ namespace System.Xml.Tests
                     await asyncWriter.WriteEndElementAsync();
                 }
 
-                await using (var asyncWriter = XmlWriter.Create(stream2, new XmlWriterSettings() { Async = true }))
-                {
-                    await asyncWriter.WriteStartDocumentAsync();
-                    await asyncWriter.WriteStartElementAsync(string.Empty, "root", null);
-                    await asyncWriter.WriteStartElementAsync(null, "test", null);
-                    await asyncWriter.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
-                    await asyncWriter.WriteEndElementAsync();
-                    await asyncWriter.WriteEndElementAsync();
-                }
-
-                using (var syncWriter = XmlWriter.Create(stream3, new XmlWriterSettings() { Async = false }))
+                settings.Async = false;
+                using (var syncWriter = XmlWriter.Create(stream3, settings))
                 {
                     syncWriter.WriteStartDocument();
                     syncWriter.WriteStartElement(string.Empty, "root", null);
@@ -176,14 +179,16 @@ namespace System.Xml.Tests
                     syncWriter.WriteEndElement();
                 }
 
-                Assert.Equal(@"?<?xml version=""1.0"" encoding=""utf - 8""?><root><test abc=""1"" /></root>", Encoding.UTF8.GetString(stream1.GetBuffer()));
-                Assert.Equal(Encoding.UTF8.GetString(stream1.GetBuffer()), Encoding.UTF8.GetString(stream2.GetBuffer()));
-                Assert.Equal(Encoding.UTF8.GetString(stream2.GetBuffer()), Encoding.UTF8.GetString(stream3.GetBuffer()));
-
                 Assert.Equal(stream1.GetBuffer(), stream2.GetBuffer());
                 Assert.Equal(stream2.GetBuffer(), stream3.GetBuffer());
+
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream1.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream2.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream3.GetBuffer(), stream1.Length));
             }
         }
+
+        private static string readAsString(byte[] bytes, long length) => new UTF8Encoding().GetString(bytes, 0, (int)length);
 
         [Fact]
         public static async Task AsyncWriterDispose_ShouldCall_FlushAsyncWriteAsyncOnly_TextWriter()
