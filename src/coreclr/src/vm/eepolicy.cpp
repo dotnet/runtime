@@ -130,24 +130,6 @@ EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
     }
 }
 
-EPolicyAction EEPolicy::GetActionOnFailureNoHostNotification(EClrFailure failure)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }CONTRACTL_END;
-
-    _ASSERTE (failure < MaxClrFailure);
-    if (failure == FAIL_StackOverflow)
-    {
-        return m_ActionOnFailure[failure];
-    }
-
-    return GetFinalAction(m_ActionOnFailure[failure], GetThread());
-}
-
 EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
 {
     CONTRACTL
@@ -163,8 +145,7 @@ EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
         return m_ActionOnFailure[failure];
     }
 
-    EPolicyAction finalAction = GetActionOnFailureNoHostNotification(failure);
-    return finalAction;
+    return GetFinalAction(m_ActionOnFailure[failure], GetThread());
 }
 
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)

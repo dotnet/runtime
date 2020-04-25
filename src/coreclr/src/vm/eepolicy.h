@@ -62,11 +62,7 @@ public:
         return GetFinalAction(m_DefaultAction[operation], pThread);
     }
 
-    // Generally GetActionOnFailure should be used so that a host can get notification.
-    // But if we have notified host on the same failure, but we need to check escalation again,
-    // GetActionOnFailureNoHostNotification can be used.
     EPolicyAction GetActionOnFailure(EClrFailure failure);
-    EPolicyAction GetActionOnFailureNoHostNotification(EClrFailure failure);
 
     static EPolicyAction DetermineResourceConstraintAction(Thread *pThread);
 
