@@ -354,9 +354,20 @@ namespace System.Net.Sockets
                                 events = context.HandleSyncEventsSpeculatively(events);
                                 if (events != Interop.Sys.SocketEvents.None)
                                 {
-                                    eventQueue.Enqueue(new SocketIOEvent(context, events));
+                                    var ev = new SocketIOEvent(context, events);
+                                    eventQueue.Enqueue(ev);
                                     enqueuedEvent = true;
+
+                                    // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                    // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                    // such code may keep the stack location live for longer than necessary
+                                    ev = default;
                                 }
+
+                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                                // such code may keep the stack location live for longer than necessary
+                                context = null;
                             }
                         }
                     }
