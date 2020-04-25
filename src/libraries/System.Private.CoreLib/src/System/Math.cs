@@ -18,6 +18,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
@@ -219,24 +220,51 @@ namespace System
             return BitConverter.Int64BitsToDouble(bits);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe double CopySign(double x, double y)
         {
-            // This method is required to work for all inputs,
-            // including NaN, so we operate on the raw bits.
+            const long signMask
+                = unchecked((long)0b_1000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000);
 
-            long xbits = BitConverter.DoubleToInt64Bits(x);
-            long ybits = BitConverter.DoubleToInt64Bits(y);
-
-            // If the sign bits of x and y are not the same,
-            // flip the sign bit of x and return the new value;
-            // otherwise, just return x
-
-            if ((xbits ^ ybits) < 0)
+            if (Sse.X64.IsSupported)
             {
-                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
+                // Create vectors of the elements, and make them float to allow using SSE rather than SSE2 instructions
+                var xvec = Vector128.CreateScalarUnsafe(x).AsSingle();
+                var yvec = Vector128.CreateScalarUnsafe(y).AsSingle();
+
+                // Remove the sign from x, and remove everything but the sign from y
+                // Creating from a 'const long' is better than from the correct 'const float/double'
+                var mask = Vector128.CreateScalarUnsafe(signMask).AsSingle();
+                yvec = Sse.And(yvec, mask);
+                xvec = Sse.AndNot(mask, xvec);
+
+                // Simply OR them to get the correct sign
+                return Sse.Or(xvec, yvec).AsDouble().ToScalar();
+            }
+            else
+            {
+                return SoftwareFallback(x, y);
             }
 
-            return x;
+            static double SoftwareFallback(double x, double y)
+            {
+                const long signMask
+                                = unchecked((long)0b_1000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000);
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+
+                long xbits = BitConverter.DoubleToInt64Bits(x);
+                long ybits = BitConverter.DoubleToInt64Bits(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+
+                xbits &= ~signMask;
+                ybits &= signMask;
+
+                // Simply OR them to get the correct sign
+                return BitConverter.Int64BitsToDouble(xbits | ybits);
+            }
         }
 
         public static int DivRem(int a, int b, out int result)
