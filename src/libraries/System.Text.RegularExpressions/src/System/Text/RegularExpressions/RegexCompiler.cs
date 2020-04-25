@@ -289,33 +289,7 @@ namespace System.Text.RegularExpressions
         protected void Ldstr(string str) => _ilg!.Emit(OpCodes.Ldstr, str);
 
         /// <summary>A macro for the various forms of Ldc.</summary>
-        protected void Ldc(int i)
-        {
-            Debug.Assert(_ilg != null);
-
-            if ((uint)i < 8)
-            {
-                _ilg.Emit(i switch
-                {
-                    0 => OpCodes.Ldc_I4_0,
-                    1 => OpCodes.Ldc_I4_1,
-                    2 => OpCodes.Ldc_I4_2,
-                    3 => OpCodes.Ldc_I4_3,
-                    4 => OpCodes.Ldc_I4_4,
-                    5 => OpCodes.Ldc_I4_5,
-                    6 => OpCodes.Ldc_I4_6,
-                    _ => OpCodes.Ldc_I4_7,
-                });
-            }
-            else if (i <= 127 && i >= -128)
-            {
-                _ilg.Emit(OpCodes.Ldc_I4_S, (byte)i);
-            }
-            else
-            {
-                _ilg.Emit(OpCodes.Ldc_I4, i);
-            }
-        }
+        protected void Ldc(int i) => _ilg!.Emit(OpCodes.Ldc_I4, i);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldc_I8).</summary>
         protected void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
