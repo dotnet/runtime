@@ -87,8 +87,6 @@
     PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n) \
-    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc) \
-    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n) \
     PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n) \
     PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n) \
@@ -105,9 +103,6 @@
     PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc) \
-    PER_FUNCTION_BLOCK(uldn_close, libicuuc) \
-    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc) \
-    PER_FUNCTION_BLOCK(uldn_open, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc) \
@@ -150,15 +145,36 @@
     PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n)
 
 #if HAVE_SET_MAX_VARIABLE
-#define FOR_ALL_ICU_FUNCTIONS \
-    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n)
 #else
 
-#define FOR_ALL_ICU_FUNCTIONS \
-    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n)
 #endif
+
+#if defined(TARGET_WINDOWS)
+#define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_close, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_open, libicuuc)
+#else
+    // Unix ICU is dynamically resolved at runtime and these APIs in old versions
+    // of ICU were in libicui18n
+#define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_close, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_open, libicui18n)
+#endif
+
+#define FOR_ALL_ICU_FUNCTIONS \
+    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+    FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
+    FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS
 
 // Declare pointers to all the used ICU functions
 #define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C __typeof(fn)* fn##_ptr;
