@@ -7002,30 +7002,30 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
             // LSRA is agnostic to those choices but needs
             // to know what they are here.
-            var_types typ;
+            var_types type;
             if (!treeNode->IsMultiRegNode())
             {
-                typ = getDefType(treeNode);
+                type = getDefType(treeNode);
             }
             else
             {
-                typ = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
+                type = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
             }
 
-            typ = RegSet::tmpNormalizeType(typ);
+            type = RegSet::tmpNormalizeType(type);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
-                currentSpill[typ]++;
-                if (currentSpill[typ] > maxSpill[typ])
+                currentSpill[type]++;
+                if (currentSpill[type] > maxSpill[type])
                 {
-                    maxSpill[typ] = currentSpill[typ];
+                    maxSpill[type] = currentSpill[type];
                 }
             }
             else if (refPosition->reload)
             {
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
             else if (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA)
             {
@@ -7034,10 +7034,10 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // memory location.  To properly account max spill for typ we
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
-            JITDUMP("  Max spill for %s is %d\n", varTypeName(typ), maxSpill[typ]);
+            JITDUMP("  Max spill for %s is %d\n", varTypeName(type), maxSpill[type]);
         }
     }
 }
