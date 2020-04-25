@@ -353,6 +353,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private byte[] RentBuffer()
         {
+            // TODO-RZ: we need to be able to cancel this
             _bufferLimitSemaphore.Wait();
             return ArrayPool<byte>.Shared.Rent(PreferredChunkSize);
         }

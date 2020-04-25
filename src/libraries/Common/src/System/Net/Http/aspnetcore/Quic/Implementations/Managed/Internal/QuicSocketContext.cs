@@ -17,7 +17,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly IPEndPoint _listenEndpoint;
         private readonly CancellationTokenSource _socketTaskCts;
 
-        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>();
+        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private Task? _backgroundWorkerTask;
 
@@ -64,6 +64,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private async Task UpdateAsync(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             while (true)
             {
                 _writer.Reset(_sendBuffer);
@@ -84,6 +86,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 OnConnectionStateChanged(connection, newState);
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         protected Task UpdateAsync(ManagedQuicConnection connection)
@@ -97,7 +101,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 int milliseconds = (int)Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp));
 
-                // don't create tasks needlessly
+                // TODO-RZ: don't create tasks needlessly
                 // if (milliseconds > 0)
                 {
                     _timeoutTask = Task.Delay(milliseconds);
@@ -118,8 +122,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
 
-        private async Task OnReceived(QuicReader reader, IPEndPoint sender)
+        private async Task DoReceive(QuicReader reader, IPEndPoint sender)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             var connection = FindConnection(reader, sender);
             if (connection != null)
             {
@@ -129,6 +135,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 await UpdateAsync(connection, previousState).ConfigureAwait(false);
                 UpdateTimeout(connection.GetNextTimerTimestamp());
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        private async Task DoSignal()
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            await OnSignal();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        private async Task DoTimeout()
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            await OnTimeout();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         protected abstract Task OnSignal();
@@ -139,12 +165,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private async Task BackgroundWorker()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             var token = _socketTaskCts.Token;
 
             Task<SocketReceiveFromResult> socketReceiveTask =
                 _socket.ReceiveFromAsync(_recvBuffer, SocketFlags.None, _listenEndpoint);
 
-            var shutdownTcs = new TaskCompletionSource<int>();
+            var shutdownTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             _waitingTasks[0] = socketReceiveTask;
             _waitingTasks[1] = _signalTcs.Task;
@@ -162,11 +189,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     if (immediateTimeout)
                     {
                         ClearTimeout();
-                        await OnTimeout().ConfigureAwait(false);
+                        await DoTimeout().ConfigureAwait(false);
                     }
                     else
                     {
+                        if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
                         await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
+                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
                     }
 
 
@@ -183,7 +212,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
                         {
                             _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
-                            await OnReceived(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
+                            await DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
                         }
 
                         // start new receiving task
@@ -193,9 +222,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (_signalTcs.Task.IsCompleted)
                     {
-                        _signalTcs = new TaskCompletionSource<int>();
+                        _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                         _waitingTasks[1] = _signalTcs.Task;
-                        await OnSignal().ConfigureAwait(false);
+                        await DoSignal().ConfigureAwait(false);
                     }
                 } while (ShouldContinue);
             }
@@ -206,6 +235,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // cleanup everything
             _socket.Dispose();
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         protected abstract bool ShouldContinue { get; }

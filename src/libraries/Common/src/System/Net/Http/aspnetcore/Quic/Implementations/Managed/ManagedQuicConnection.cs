@@ -217,8 +217,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             long timer = Recovery.LossRecoveryTimer;
 
+            // TODO-RZ: find a way to get shutdown reliably without hammering the peer with packets.
             if (_closingPeriodEnd != null)
-                timer = Math.Min(timer, _closingPeriodEnd.Value);
+                timer = Math.Min(timer, _lastConnectionCloseSent + 1);
+                // timer = Math.Min(timer, _closingPeriodEnd.Value);
 
             return timer;
         }
@@ -894,16 +896,21 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndpoint.Address, _remoteEndpoint.Port);
 
-        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfError();
 
-            if (Connected) return new ValueTask();
+            if (Connected) return;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _socketContext.Ping();
             _socketContext.Start();
 
-            return _connectTcs.GetTask();
+            await _connectTcs.GetTask().ConfigureAwait(false);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
@@ -945,21 +952,28 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: finalize when do we throw these exceptions
             // ThrowIfError();
 
-            return await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            var stream = await _streams.IncomingStreams.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            return stream;
         }
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
 
-        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+        internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
-            if (_closeTcs.IsSet) return new ValueTask();
+            if (_closeTcs.IsSet) return;
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             outboundError = new QuicError((TransportErrorCode) errorCode, null, FrameType.Padding, false);
             _socketContext.Ping();
 
-            return _closeTcs.GetTask();
+            await _closeTcs.GetTask().ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #endregion

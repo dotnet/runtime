@@ -49,6 +49,7 @@ namespace System.Net.Quic.Implementations.Managed
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
             CancellationToken cancellationToken)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
@@ -59,6 +60,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _streamCollection.MarkFlushable(this);
                 _ctx.Ping();
             }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal void NotifyShutdownWriteCompleted()
@@ -72,18 +74,24 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override int Read(Span<byte> buffer)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotReadable();
 
-            return InboundBuffer!.Deliver(buffer);
+            int result = InboundBuffer!.Deliver(buffer);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return result;
         }
 
-        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotReadable();
 
-            return InboundBuffer!.DeliverAsync(buffer, cancellationToken);
+            int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return result;
         }
 
         internal override void AbortRead(long errorCode) => throw new NotImplementedException();
@@ -95,6 +103,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void Write(ReadOnlySpan<byte> buffer, bool endStream)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
@@ -108,6 +117,7 @@ namespace System.Net.Quic.Implementations.Managed
                 _streamCollection.MarkFlushable(this);
                 _ctx.Ping();
             }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -175,6 +185,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override void Shutdown()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             // ThrowIfNotWritable();
 
@@ -186,28 +197,35 @@ namespace System.Net.Quic.Implementations.Managed
                 _streamCollection.MarkFlushable(this);
                 _ctx.Ping();
             }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override void Flush()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
             OutboundBuffer!.FlushChunk();
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override Task FlushAsync(CancellationToken cancellationToken)
+        internal override async Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
-            return OutboundBuffer!.FlushChunkAsync(cancellationToken).AsTask();
+            await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override void Dispose()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _disposed = true;
             // TODO-RZ: we might need to do more
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override ValueTask DisposeAsync() => throw new NotImplementedException();
