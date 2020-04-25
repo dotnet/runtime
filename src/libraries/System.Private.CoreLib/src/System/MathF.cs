@@ -95,7 +95,7 @@ namespace System
         {
             const int signMask = unchecked((int)0b_1000_0000__0000_0000__0000_0000__0000_0000);
 
-            if (Sse.X64.IsSupported)
+            if (Sse.IsSupported)
             {
                 var xvec = Vector128.CreateScalarUnsafe(x);
                 var yvec = Vector128.CreateScalarUnsafe(y);
