@@ -326,6 +326,31 @@ We propose the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is an
 
 3) Having 3 spare bits available is very beneficial for the implementation. It allows to represent WinRT projected strings, namespaces, etc. in very efficient way. If we had to represent heap indices with all 32 bits it would bloat various structures and increase memory pressure. PE files over 0.5 GB of size are very rare, but the overhead would affect all compilers and tools working with the metadata reader.
 
+## Metadata merging
+
+The mention of metadata merging in § II.10.8 _Global fields and methods_ is a spec bug. The CLI does not merge metadata. Policies of static linkers that merge metadata may vary and do not concern the CLI.
+
+This text should be deleted, and the _metadata merging_ entry should be removed from the index:
+
+> ~~The only noticeable difference is in how definitions of this special class
+> are treated when multiple modules are combined together, as is done by a class loader. This process is
+> known as _metadata merging_.~~
+>
+> ~~For an ordinary type, if the metadata merges two definitions of the same type, it simply discards one
+> definition on the assumption they are equivalent, and that any anomaly will be discovered when the
+> type is used. For the special class that holds global members, however, members are unioned across all
+> modules at merge time. If the same name appears to be defined for cross-module use in multiple
+> modules then there is an error. In detail:~~
+>
+> * ~~If no member of the same kind (field or method), name, and signature exists, then
+>   add this member to the output class.~~
+>
+> * ~~If there are duplicates and no more than one has an accessibility other than
+>   **compilercontrolled**, then add them all to the output class.~~
+>
+> * ~~If there are duplicates and two or more have an accessibility other than
+>   **compilercontrolled**, an error has occurred.~~
+
 ## Module Initializer
 
 All modules may have a module initializer. This method shall be a global method, static, take no parameters, return no value, be marked with **rtspecialname** and **specialname**, and be named `.cctor`.
