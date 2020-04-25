@@ -72,13 +72,26 @@ namespace System.Net.NetworkInformation
         /// Constructs command line arguments appropriate for the ping or ping6 utility.
         /// </summary>
         /// <param name="packetSize">The packet size to use in the ping. Exact packet payload cannot be specified.</param>
+        /// <param name="timeout">The timeout to use in the ping, in milliseconds.</param>
         /// <param name="address">A string representation of the IP address to ping.</param>
         /// <returns>The constructed command line arguments, which can be passed to ping or ping6.</returns>
-        public static string ConstructCommandLine(int packetSize, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
+        public static string ConstructCommandLine(int packetSize, int timeout, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
         {
-
             StringBuilder sb = new StringBuilder();
             sb.Append("-c 1"); // Just send a single ping ("count = 1")
+
+            // Pass timeout argument to ping utility
+            // BusyBox and regular Linux 'ping' requires -W flag which accepts timeout in SECONDS. Therefore, we 
+            //      use ceiling when converting millis to seconds
+            // On FreeBSD and MacOS X 'ping' requires -W flag which accepts timeout in MILLISECONDS
+            sb.Append(" -W ");
+            if(!s_isBSD)
+            {
+                const int millisInSecond = 1000;
+                timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
+                timeout += remainder != 0 ? 1 : 0;
+            }
+            sb.Append(timeout);
 
             // The command-line flags for "Do-not-fragment" and "TTL" are not standard.
             // In fact, they are different even between ping and ping6 on the same machine.
