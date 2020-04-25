@@ -13,7 +13,6 @@
 #include "shimload.h"
 #include "metadataexports.h"
 #include "ex.h"
-#include "product_version.h"
 
 // ---------------------------------------------------------------------------
 // %%Function: MetaDataGetDispenser
@@ -126,79 +125,3 @@ STDAPI DLLEXPORT GetMetaDataPublicInterfaceFromInternal(
     END_ENTRYPOINT_NOTHROW;
     return hr;
 }
-
-//
-// Returns version of the runtime (null-terminated).
-//
-// Arguments:
-//    pBuffer - [out] Output buffer allocated by caller of size cchBuffer.
-//    cchBuffer - Size of pBuffer in characters.
-//    pdwLength - [out] Size of the version string in characters (incl. null-terminator). Will be filled
-//                even if ERROR_INSUFFICIENT_BUFFER is returned.
-//
-// Return Value:
-//    S_OK - Output buffer contains the version string.
-//    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in
-//                                                    characters.
-
-STDAPI GetCORVersionInternal(
-__out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
-                              DWORD cchBuffer,
-                        __out DWORD *pdwLength)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pBuffer, NULL_OK));
-        PRECONDITION(CheckPointer(pdwLength));
-    } CONTRACTL_END;
-
-    HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    if ((pBuffer != NULL) && (cchBuffer > 0))
-    {   // Initialize the output for case the function fails
-        *pBuffer = W('\0');
-    }
-
-#define VERSION_NUMBER_NOSHIM W("v") QUOTE_MACRO_L(CLR_MAJOR_VERSION.CLR_MINOR_VERSION.CLR_BUILD_VERSION)
-
-    DWORD length = (DWORD)(wcslen(VERSION_NUMBER_NOSHIM) + 1);
-    if (length > cchBuffer)
-    {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    }
-    else
-    {
-        if (pBuffer == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            CopyMemory(pBuffer, VERSION_NUMBER_NOSHIM, length * sizeof(WCHAR));
-            hr = S_OK;
-        }
-    }
-    *pdwLength = length;
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-
-}
-
-// Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
-// Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_opt(*pcchBuffer) LPWSTR wszBuffer,
-    __inout                       DWORD *pcchBuffer)
-{
-    // Simply forward the call to the ICLRRuntimeHostInternal implementation.
-    STATIC_CONTRACT_WRAPPER;
-
-    HRESULT hr = GetCORVersionInternal(wszBuffer, *pcchBuffer, pcchBuffer);
-
-    return hr;
-} // CLRRuntimeHostInternal_GetImageVersionString

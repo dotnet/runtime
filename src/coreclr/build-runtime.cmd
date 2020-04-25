@@ -324,8 +324,9 @@ if %__SkipGenerateVersion% EQU 0 (
     echo %__MsgPrefix%Generating native version headers
     set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
-        /t:GenerateNativeVersionFile /restore^
+        %__RepoRootDir%\eng\empty.csproj /t:GenerateRuntimeVersionFile /restore^
+        /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
+        /p:RuntimeVersionFile="%__RootBinDir%\obj\coreclr\runtime_version.h"^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
