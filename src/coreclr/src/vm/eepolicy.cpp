@@ -46,18 +46,6 @@ EEPolicy::EEPolicy ()
     CONTRACTL_END;
 
     int n;
-    for (n = 0; n < MaxClrOperation; n++) {
-        m_DefaultAction[n] = eNoAction;
-    }
-
-    m_DefaultAction[OPR_ThreadAbort] = eAbortThread;
-    m_DefaultAction[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;
-    m_DefaultAction[OPR_ThreadRudeAbortInCriticalRegion] = eRudeAbortThread;
-    m_DefaultAction[OPR_AppDomainUnload] = eUnloadAppDomain;
-    m_DefaultAction[OPR_AppDomainRudeUnload] = eRudeUnloadAppDomain;
-    m_DefaultAction[OPR_ProcessExit] = eExitProcess;
-    m_DefaultAction[OPR_FinalizerRun] = eNoAction;
-
     for (n = 0; n < MaxClrFailure; n++) {
         m_ActionOnFailure[n] = eNoAction;
     }
@@ -66,57 +54,6 @@ EEPolicy::EEPolicy ()
     m_ActionOnFailure[FAIL_OrphanedLock] = eNoAction;
     m_ActionOnFailure[FAIL_FatalRuntime] = eRudeExitProcess;
     m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
-}
-
-EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(static_cast<UINT>(action) < MaxPolicyAction);
-
-    if (action < eAbortThread || action > eExitProcess)
-    {
-        return action;
-    }
-
-    while(TRUE)
-    {
-        // Look at default action.  If the default action is more severe,
-        // use the default action instead.
-        EPolicyAction defaultAction = action;
-        switch (action)
-        {
-            case eAbortThread:
-            defaultAction = m_DefaultAction[OPR_ThreadAbort];
-                break;
-            case eRudeAbortThread:
-                defaultAction = m_DefaultAction[OPR_ThreadRudeAbortInCriticalRegion];
-                break;
-            case eUnloadAppDomain:
-            defaultAction = m_DefaultAction[OPR_AppDomainUnload];
-                break;
-            case eRudeUnloadAppDomain:
-            defaultAction = m_DefaultAction[OPR_AppDomainRudeUnload];
-                break;
-            case eExitProcess:
-            defaultAction = m_DefaultAction[OPR_ProcessExit];
-            if (defaultAction < action)
-                {
-                defaultAction = action;
-                }
-                break;
-            default:
-                break;
-            }
-        _ASSERTE(static_cast<UINT>(defaultAction) < MaxPolicyAction);
-
-        if (defaultAction == action)
-            {
-            return action;
-            }
-
-        _ASSERTE(defaultAction > action);
-        action = defaultAction;
-    }
 }
 
 EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
@@ -134,7 +71,7 @@ EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
         return m_ActionOnFailure[failure];
     }
 
-    return GetFinalAction(m_ActionOnFailure[failure], GetThread());
+    return m_ActionOnFailure[failure];
 }
 
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)

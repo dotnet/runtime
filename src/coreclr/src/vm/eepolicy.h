@@ -37,7 +37,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return GetFinalAction(m_DefaultAction[operation], pThread);
+        return m_DefaultAction[operation];
     }
 
     EPolicyAction GetActionOnFailure(EClrFailure failure);
@@ -53,10 +53,7 @@ public:
     static void HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode);
 
 private:
-    EPolicyAction m_DefaultAction[MaxClrOperation];
     EPolicyAction m_ActionOnFailure[MaxClrFailure];
-
-    EPolicyAction GetFinalAction(EPolicyAction action, Thread *pThread);
 
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 
