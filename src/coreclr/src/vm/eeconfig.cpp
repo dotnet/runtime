@@ -126,8 +126,6 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
-    fLegacyUnhandledExceptionPolicy = false;
-
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // By default, there is not pre-V4 CSE policy
     fLegacyCorruptedStateExceptionsPolicy = false;

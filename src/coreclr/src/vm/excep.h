@@ -36,11 +36,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
-inline bool SwallowUnhandledExceptions()
-{
-    return g_pConfig->LegacyUnhandledExceptionPolicy();
-}
-
 // Enums
 // return values of LookForHandler
 enum LFH {

@@ -4599,12 +4599,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         return UserBreakpointFilter(ep);
     }
 
-    // If host policy or config file says "swallow"...
-    if (SwallowUnhandledExceptions())
-    {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
     // If the exception is of a type that is always swallowed (ThreadAbort, AppDomainUnload)...
     if (ExceptionIsAlwaysSwallowed(ep))
     {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
@@ -5781,7 +5775,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
 #ifdef _DEBUG
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
-        !(swallowing && (SwallowUnhandledExceptions() || ExceptionIsAlwaysSwallowed(pExceptionInfo))) &&
+        !(swallowing && ExceptionIsAlwaysSwallowed(pExceptionInfo)) &&
         !(location == ClassInitUnhandledException && pThread->IsRudeAbortInitiated()))
         _ASSERTE(!"BreakOnUnCaughtException");
 #endif
@@ -5792,28 +5786,20 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     if (swallowing)
     {
-        // The default handling for versions v1.0 and v1.1 was to swallow unhandled exceptions.
-        //  With v2.0, the default is to let them go unhandled.  Hosts & config files can modify the default
-        //  to retain the v1.1 behaviour.
-        // Should we swallow this exception, or let it continue up and be unhandled?
-        if (!SwallowUnhandledExceptions())
-        {
-            // No, don't swallow unhandled exceptions...
-
-            // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
-            if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
-            {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
-                return EXCEPTION_EXECUTE_HANDLER;
-            }
-
-            #ifdef _DEBUG
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
-                _ASSERTE(!"BreakOnUnCaughtException");
-            #endif
-
-            // ...so, continue search. i.e. let the exception go unhandled.
-            return EXCEPTION_CONTINUE_SEARCH;
+        // No, don't swallow unhandled exceptions...
+        // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
+        if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
+        {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
+            return EXCEPTION_EXECUTE_HANDLER;
         }
+
+        #ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
+            _ASSERTE(!"BreakOnUnCaughtException");
+        #endif
+
+        // ...so, continue search. i.e. let the exception go unhandled.
+        return EXCEPTION_CONTINUE_SEARCH;
     }
 
 #ifdef DEBUGGING_SUPPORTED

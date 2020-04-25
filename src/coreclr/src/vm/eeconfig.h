@@ -133,8 +133,6 @@ public:
         }
     }
 
-    bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
-
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
     bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
@@ -560,8 +558,6 @@ private: //----------------------------------------------------------------
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
-
-    bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     bool fLegacyCorruptedStateExceptionsPolicy;
