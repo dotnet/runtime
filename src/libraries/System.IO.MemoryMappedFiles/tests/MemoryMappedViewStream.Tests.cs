@@ -424,11 +424,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            MemoryMappedFile mmf;
-            Assert.False(mmfWeak.TryGetTarget(out mmf));
-
-            MemoryMappedViewStream s;
-            Assert.False(mmvsWeak.TryGetTarget(out s));
+            if (PlatformDetection.IsPreciseGcSupported)
+            {
+                Assert.False(mmfWeak.TryGetTarget(out _));
+                Assert.False(mmvsWeak.TryGetTarget(out _));
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
