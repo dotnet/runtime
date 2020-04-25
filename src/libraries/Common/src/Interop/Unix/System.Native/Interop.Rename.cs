@@ -14,7 +14,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="oldPath">Path to the source item</param>
         /// <param name="newPath">Path to the desired new item</param>
-        /// <param name="flags">flags &amp; 1: whether to overwrite target; flags &amp; 2: whether this is Directory.Move or not</param>
+        /// <param name="flags">bit flags: flags &amp; 1: whether to overwrite target or not; flags &amp; 2: whether this is Directory.Move or not</param>
         /// <returns>
         /// Returns 0 on success; otherwise, returns -1
         /// </returns>
