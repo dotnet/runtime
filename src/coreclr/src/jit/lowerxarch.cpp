@@ -931,7 +931,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_SSE2_CompareGreaterThan:
         {
-            if (node->gtBaseType != TYP_DOUBLE)
+            if (node->gtSIMDBaseType != TYP_DOUBLE)
             {
                 break;
             }
@@ -947,28 +947,28 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE2_CompareNotGreaterThan:
         case NI_SSE2_CompareNotGreaterThanOrEqual:
         {
-            assert((node->gtBaseType == TYP_FLOAT) || (node->gtBaseType == TYP_DOUBLE));
+            assert((node->gtSIMDBaseType == TYP_FLOAT) || (node->gtSIMDBaseType == TYP_DOUBLE));
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 break;
             }
 
             // pre-AVX doesn't actually support these intrinsics in hardware so we need to swap the operands around
-            std::swap(node->gtOp1, node->gtOp2)
+            std::swap(node->gtOp1, node->gtOp2);
             break;
         }
 
         case NI_SSE2_CompareLessThan:
         case NI_AVX2_CompareLessThan:
         {
-            if (node->gtBaseType == TYP_DOUBLE)
+            if (node->gtSIMDBaseType == TYP_DOUBLE)
             {
                 break;
             }
 
             // this isn't actually supported in hardware so we need to swap the operands around
-            std::swap(node->gtOp1, node->gtOp2)
+            std::swap(node->gtOp1, node->gtOp2);
             break;
         }
 

@@ -3689,11 +3689,12 @@ protected:
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
 
-    GenTree* impSimdAsHWIntrinsicSpecial(NamedIntrinsic        intrinsic,
-                                         CORINFO_CLASS_HANDLE  clsHnd,
-                                         CORINFO_METHOD_HANDLE method,
-                                         CORINFO_SIG_INFO*     sig,
-                                         bool                  mustExpand);
+    GenTree* impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
+                                         CORINFO_CLASS_HANDLE clsHnd,
+                                         CORINFO_SIG_INFO*    sig,
+                                         var_types            retType,
+                                         var_types            baseType,
+                                         unsigned             simdSize);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -3714,6 +3715,13 @@ protected:
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
 
+    GenTree* impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
+                                       CORINFO_CLASS_HANDLE clsHnd,
+                                       var_types            retType,
+                                       var_types            baseType,
+                                       unsigned             simdSize,
+                                       GenTree*             op1,
+                                       GenTree*             op2);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,

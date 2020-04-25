@@ -82,8 +82,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic         intrinsicId = node->gtHWIntrinsicId;
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                    ival        = HWIntrinsicInfo::lookupIval(intrinsicId, compOpportunisticallyDependsOn(InstructionSet_AVX));
     int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
+
+    int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 

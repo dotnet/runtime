@@ -22,14 +22,11 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     // Indicates compFloatingPointUsed does not need to be set.
     NoFloatingPointUsed = 0x1,
 
-    // Indicates the intrinsic requires special handling and can't be table driven.
-    NotTableDriven = 0x2,
-
     // Indicates the intrinsic is for an instance method.
-    InstanceMethod = 0x04,
+    InstanceMethod = 0x02,
 
     // Indicates the operands should be swapped in importation.
-    NeedsOperandsSwapped = 0x08,
+    NeedsOperandsSwapped = 0x04,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -121,12 +118,6 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::InstanceMethod) == SimdAsHWIntrinsicFlag::InstanceMethod;
-    }
-
-    static bool IsTableDriven(NamedIntrinsic id)
-    {
-        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & SimdAsHWIntrinsicFlag::NotTableDriven) == SimdAsHWIntrinsicFlag::None;
     }
 
     static bool NeedsOperandsSwapped(NamedIntrinsic id)
