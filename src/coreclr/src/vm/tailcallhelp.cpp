@@ -111,6 +111,8 @@ struct TailCallInfo
 static MethodDesc* s_tailCallDispatcherMD;
 MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
 {
+    LIMITED_METHOD_CONTRACT;
+    
     return s_tailCallDispatcherMD;
 }
 
@@ -152,6 +154,8 @@ MethodDesc* TailCallHelp::GetTailCallDispatcherMD()
 // }
 MethodDesc* TailCallHelp::GetOrCreateTailCallDispatcherMD()
 {
+    STANDARD_VM_CONTRACT;
+    
     if (s_tailCallDispatcherMD != NULL)
         return s_tailCallDispatcherMD;
 

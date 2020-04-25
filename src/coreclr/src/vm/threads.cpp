@@ -57,7 +57,9 @@
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
 
 TailCallTls::TailCallTls()
-    : m_frame(&g_sentinelTailCallFrame)
+    // A new frame will always be allocated before the frame is modified,
+    // so casting away const is ok here.
+    : m_frame(const_cast<PortableTailCallFrame*>(&g_sentinelTailCallFrame))
     , m_argBuffer(NULL)
     , m_argBufferSize(0)
     , m_argBufferGCDesc(NULL)

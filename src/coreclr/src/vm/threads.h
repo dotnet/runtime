@@ -980,7 +980,7 @@ class TailCallTls
 {
     friend class MscorlibBinder;
 
-    const PortableTailCallFrame* m_frame;
+    PortableTailCallFrame* m_frame;
     char* m_argBuffer;
     size_t m_argBufferSize;
     void* m_argBufferGCDesc;
