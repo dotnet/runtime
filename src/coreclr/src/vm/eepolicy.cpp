@@ -70,9 +70,6 @@ EEPolicy::EEPolicy ()
     m_ActionOnFailure[FAIL_NonCriticalResource] = eThrowException;
     m_ActionOnFailure[FAIL_OrphanedLock] = eNoAction;
     m_ActionOnFailure[FAIL_FatalRuntime] = eRudeExitProcess;
-    // For CoreCLR, initialize the default action for AV processing to all
-    // all kind of code to catch AV exception. If the host wants, they can
-    // specify a different action for this.
     m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
 }
 

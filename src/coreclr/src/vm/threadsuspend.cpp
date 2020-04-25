@@ -1301,19 +1301,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
             _ASSERTE (!"unknown policy for thread abort");
         }
 
-        DWORD timeoutFromPolicy;
-        if (abortType != EEPolicy::TA_Rude)
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-        }
-        if (timeout > timeoutFromPolicy)
-        {
-            timeout = timeoutFromPolicy;
-        }
+        timeout = INFINITE;
     }
 
     AbortControlHolder AbortController(this);
@@ -1395,18 +1383,15 @@ LRetry:
             if (now_time >= abortEndTime)
             {
                 EPolicyAction action1 = eNoAction;
-                DWORD timeout1 = INFINITE;
                 if (fEscalation)
                 {
                     if (!IsRudeAbort())
                     {
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadAbort, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
                     }
                     else
                     {
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInCriticalRegion, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
                     }
                 }
                 if (action1 == eNoAction)
@@ -1414,10 +1399,6 @@ LRetry:
                     // timeout, but no action on timeout.
                     // Debugger can call this function to about func-eval with a timeout
                     return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
-                }
-                if (timeout1 != INFINITE)
-                {
-                    break;
                 }
             }
         }
@@ -1915,20 +1896,7 @@ LPrepareRetry:
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
     LIMITED_METHOD_CONTRACT;
-
-    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-
-    ULONGLONG newEndTime;
-    if (timeout == INFINITE)
-    {
-        newEndTime = MAXULONGLONG;
-    }
-    else
-    {
-        newEndTime = CLRGetTickCount64() + timeout;
-    }
-
-    SetAbortEndTime(newEndTime, TRUE);
+    SetAbortEndTime(MAXULONGLONG, TRUE);
 }
 
 ULONGLONG Thread::s_NextSelfAbortEndTime = MAXULONGLONG;
@@ -2009,34 +1977,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
     {
         ASSERT(!"Invalid abort information");
         return;
-    }
-
-    if (requester == TAR_Thread)
-    {
-        DWORD timeoutFromPolicy;
-        if (abortType != EEPolicy::TA_Rude)
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-        }
-        if (timeoutFromPolicy != INFINITE)
-        {
-            ULONGLONG endTime = CLRGetTickCount64() + timeoutFromPolicy;
-            if (abortType != EEPolicy::TA_Rude)
-            {
-                if (endTime < m_AbortEndTime)
-                {
-                    m_AbortEndTime = endTime;
-                }
-            }
-            else if (endTime < m_RudeAbortEndTime)
-            {
-                m_RudeAbortEndTime = endTime;
-            }
-        }
     }
 
     if (abortInfo == (m_AbortInfo & abortInfo))

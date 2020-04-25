@@ -33,13 +33,6 @@ public:
 
     EEPolicy ();
 
-    DWORD GetTimeout(EClrOperation operation)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return INFINITE; // No hardcoded timeouts
-    }
-
     EPolicyAction GetActionOnTimeout(EClrOperation operation, Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
