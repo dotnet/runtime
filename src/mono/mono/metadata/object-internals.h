@@ -1737,6 +1737,9 @@ mono_string_handle_length (MonoStringHandle s);
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
+mono_unichar2 *
+mono_string_handle_to_utf16(MonoStringHandle s);
+
 char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
 

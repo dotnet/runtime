@@ -120,6 +120,24 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-signal-handler.h"
 
+#ifdef ENABLE_NETCORE
+#include <stdint.h>
+typedef uint16_t UChar;
+
+#include "pal_locale.h"
+#include "pal_calendarData.h"
+#include "pal_casing.h"
+#include "pal_collation.h"
+#include "pal_locale.h"
+#include "pal_localeNumberData.h"
+#include "pal_localeStringData.h"
+#include "pal_icushim.h"
+#include "pal_idna.h"
+#include "pal_normalization.h"
+#include "pal_timeZoneInfo.h"
+
+#endif
+
 #if _MSC_VER
 #pragma warning(disable:4047) // FIXME differs in levels of indirection
 #endif
@@ -3541,7 +3559,239 @@ ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType (MonoError *error)
 	mono_error_set_not_implemented (error, "%s", "System.RuntimeType.IsWindowsRuntimeObjectType");
 	return FALSE;
 }
+
 #endif /* ENABLE_NETCORE */
+#ifdef ENABLE_NETCORE
+void
+ves_icall_System_GlobalizationNative_ChangeCase (guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoBoolean bToUpper, MonoError *error)
+{
+    GlobalizationNative_ChangeCase (src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+}
+
+void
+ves_icall_System_GlobalizationNative_ChangeCaseInvariant (guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoBoolean bToUpper, MonoError* error)
+{
+    GlobalizationNative_ChangeCaseInvariant (src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+}
+
+void
+ves_icall_System_GlobalizationNative_ChangeCaseTurkish (guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoBoolean bToUpper, MonoError* error)
+{
+    GlobalizationNative_ChangeCaseTurkish (src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+}
+
+void
+ves_icall_System_GlobalizationNative_CloseSortHandle (gpointer sortHandle, MonoError* error)
+{
+    GlobalizationNative_CloseSortHandle (sortHandle);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_CompareString (gpointer sortHandle, guint16_ref lpStr1, gint32 cwStr1Len, guint16_ref lpStr2, gint32 cwStr2Len, gint32 options, MonoError* error)
+{
+    guint32 ret = GlobalizationNative_CompareString (sortHandle, lpStr1, cwStr1Len, lpStr2, cwStr2Len, options);
+    return ret;
+}
+
+gint32
+ves_icall_System_GlobalizationNative_CompareStringOrdinalIgnoreCase (guint16_ref lpStr1, gint32 cwStr1Len, guint16_ref lpStr2, gint32 cwStr2Len, MonoError* error)
+{
+    guint32 ret = GlobalizationNative_CompareStringOrdinalIgnoreCase (lpStr1, cwStr1Len, lpStr2, cwStr2Len);
+    return ret;
+}
+
+gint32
+ves_icall_System_GlobalizationNative_EndsWith (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, MonoError* error)
+{
+    return GlobalizationNative_EndsWith (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_EnumCalendarInfo (MonoDelegateHandle callback, MonoStringHandle localeName, guint16 calendarId, gint32 dataType, gpointer context, MonoError* error)
+{
+    gpointer ptr = mono_delegate_to_ftnptr_impl (callback, error);
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_EnumCalendarInfo (ptr, localeNameStr, calendarId, dataType, context);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetCalendarInfo (MonoStringHandle localeName, guint16 calendarId, gint32 dataType, guint16_ref result, gint32 resultCapacity, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_GetCalendarInfo (localeNameStr, calendarId, dataType, result, resultCapacity);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetCalendars (MonoStringHandle localeName, MonoArrayHandle calendars_handle, gint32 calendarsCapacity, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    gpointer calendars = mono_array_addr_with_size_internal (MONO_HANDLE_RAW(calendars_handle), 1, 0);
+    return GlobalizationNative_GetCalendars (localeNameStr, calendars, calendarsCapacity);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetDefaultLocaleName (guint16_ref value, guint32 valueLength, MonoError* error)
+{
+    return GlobalizationNative_GetDefaultLocaleName (value, valueLength);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetICUVersion (MonoError* error)
+{
+    return GlobalizationNative_GetICUVersion ();
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetJapaneseEraStartDate (gint32 era, gint32_ref startYear, gint32_ref startMonth, gint32_ref startDay, MonoError* error)
+{
+    return GlobalizationNative_GetJapaneseEraStartDate (era, startYear, startMonth, startDay);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetLatestJapaneseEra (MonoError* error)
+{
+    return GlobalizationNative_GetLatestJapaneseEra ();
+}
+
+MonoBoolean
+ves_icall_System_GlobalizationNative_GetLocaleInfoGroupingSizes (MonoStringHandle localeName, gint32 localeGroupingDat, gint32_ref primaryGroupSize, gint32_ref secondaryGroupSize, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16(localeName);
+    return GlobalizationNative_GetLocaleInfoGroupingSizes (localeNameStr, localeGroupingDat, primaryGroupSize, secondaryGroupSize);
+}
+
+MonoBoolean
+ves_icall_System_GlobalizationNative_GetLocaleInfoInt (MonoStringHandle localeName, guint32 localeNumberData, guint32_ref value, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16(localeName);
+    return GlobalizationNative_GetLocaleInfoInt (localeNameStr, localeNumberData, value);
+}
+
+MonoBoolean
+ves_icall_System_GlobalizationNative_GetLocaleInfoString (MonoStringHandle localeName, guint32 localeStringData, guint16_ref value, guint32 valueLength, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_GetLocaleInfoString (localeNameStr, localeStringData, value, valueLength);
+}
+
+MonoBoolean 
+ves_icall_System_GlobalizationNative_GetLocaleName (MonoStringHandle localeName, guint16_ref value, guint32 valueLength, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_GetLocaleName (localeNameStr, value, valueLength);
+}
+
+gint32 
+ves_icall_System_GlobalizationNative_GetLocales (MonoArrayHandle value, gint32 valueLength, MonoError* error)
+{
+    gint32 ret = 0;
+    MonoArray* value_ptr = MONO_HANDLE_RAW(value);
+    if (value_ptr == NULL)
+        ret = GlobalizationNative_GetLocales((UChar*)value_ptr, valueLength);
+    else {
+        mono_unichar2 *vpch = (mono_unichar2*) mono_array_addr_with_size_internal (value_ptr, 1, 0);
+        ret = GlobalizationNative_GetLocales (vpch, valueLength);
+    }
+    return ret;
+}
+
+MonoBoolean 
+ves_icall_System_GlobalizationNative_GetLocaleTimeFormat (MonoStringHandle localeName, guint32 shortFormat, guint16_ref value, guint32 valueLength, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_GetLocaleTimeFormat (localeNameStr, shortFormat, value, valueLength);
+
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetSortHandle (MonoStringHandle sortName, gpointer_ptr ppSortHandle, MonoError* error)
+{
+    char* sortNameStr = mono_string_handle_to_utf8 (sortName, error);
+    return GlobalizationNative_GetSortHandle (sortNameStr, (SortHandle **)ppSortHandle);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetSortKey (gpointer sortHandle, guint16_ref str, guint32 strLength, guint8_ref sortKey, guint32 sortKeyLength, guint32 options, MonoError* error)
+{
+    return GlobalizationNative_GetSortKey (sortHandle, str, strLength, sortKey, sortKeyLength, options);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetSortVersion (gpointer sortHandle, MonoError* error)
+{
+    return GlobalizationNative_GetSortVersion (sortHandle);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_GetTimeZoneDisplayName (MonoStringHandle localeName, MonoStringHandle timeZoneId, gint32 type, guint16_ref result, gint32 resultLength, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    mono_unichar2* timeZoneIdStr = mono_string_handle_to_utf16 (timeZoneId);
+    return GlobalizationNative_GetTimeZoneDisplayName (localeNameStr, timeZoneIdStr, type, result, resultLength);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_IndexOf (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, gint32_ref pMatchedLength, MonoError* error)
+{
+    return GlobalizationNative_IndexOf (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, pMatchedLength);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_IndexOfOrdinalIgnoreCase (guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 findLast, MonoError* error)
+{
+    return GlobalizationNative_IndexOfOrdinalIgnoreCase (lpTarget, cwTargetLength, lpSource, cwSourceLength, findLast);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_IsNormalized (gint32 normalizationForm, guint16_ref src, gint32 srcLen, MonoError* error)
+{
+    return GlobalizationNative_IsNormalized (normalizationForm, src, srcLen);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_IsPredefinedLocale (MonoStringHandle localeName, MonoError* error)
+{
+    mono_unichar2* localeNameStr = mono_string_handle_to_utf16 (localeName);
+    return GlobalizationNative_IsPredefinedLocale (localeNameStr);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_LastIndexOf (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, MonoError* error)
+{
+    return GlobalizationNative_LastIndexOf (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_LoadICU (MonoError* error)
+{
+    return GlobalizationNative_LoadICU ();
+}
+
+gint32
+ves_icall_System_GlobalizationNative_NormalizeString (gint32 normalizationForm, guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoError* error)
+{
+    return GlobalizationNative_NormalizeString (normalizationForm, src, srcLen, dstBuffer, dstBufferCapacity);
+}
+
+gint32
+ves_icall_System_GlobalizationNative_StartsWith (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, MonoError* error)
+{
+    return GlobalizationNative_StartsWith (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+}
+
+gint32 
+ves_icall_System_GlobalizationNative_ToAscii (guint32 flags, guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoError* error)
+{
+    return GlobalizationNative_ToAscii (flags, src, srcLen, dstBuffer, dstBufferCapacity);
+}
+
+gint32 
+ves_icall_System_GlobalizationNative_ToUnicode (guint32 flags, guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoError* error)
+{
+    return GlobalizationNative_ToUnicode (flags, src, srcLen, dstBuffer, dstBufferCapacity);
+}
+
+#endif
 
 void
 ves_icall_RuntimeMethodInfo_GetPInvoke (MonoReflectionMethodHandle ref_method, int* flags, MonoStringHandleOut entry_point, MonoStringHandleOut dll_name, MonoError *error)

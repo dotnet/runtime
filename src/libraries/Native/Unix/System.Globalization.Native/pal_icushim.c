@@ -6,6 +6,7 @@
 #if defined(TARGET_UNIX)
 #include <dlfcn.h>
 #elif defined(TARGET_WINDOWS)
+#include <icu.h>
 #include <windows.h>
 #include <libloaderapi.h>
 #include <errhandlingapi.h>

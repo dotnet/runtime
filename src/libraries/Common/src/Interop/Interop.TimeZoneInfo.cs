@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 internal static partial class Interop
 {
@@ -15,8 +16,11 @@ internal static partial class Interop
             Standard = 1,
             DaylightSavings = 2,
         }
-
+#if MONO
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#else
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName")]
+#endif
         internal static extern unsafe ResultCode GetTimeZoneDisplayName(
             string localeName,
             string timeZoneId,

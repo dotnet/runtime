@@ -76,6 +76,9 @@ typedef gint32  *gint32_ref;
 typedef gint64  *gint64_ref;
 typedef gpointer *gpointer_ref;
 typedef gsize *gsize_ref;
+typedef guint16 *guint16_ref;
+typedef guint8 *guint8_ref;
+typedef const guint16_ref *const_guint16_ref;
 typedef guint32 *guint32_ref;
 typedef guint64 *guint64_ref;
 typedef int *int_ref;
@@ -85,6 +88,8 @@ typedef MonoClassField *MonoClassField_ref;
 typedef MonoEvent *MonoEvent_ref;
 typedef MonoEventInfo *MonoEventInfo_ref;
 typedef MonoGenericParamInfo *MonoGenericParamInfo_ptr;
+typedef MonoIntPtr *MonoIntPtr_ref;
+typedef MonoIntPtr **MonoIntPtr_ptr;
 typedef MonoMethod *MonoMethod_ref;
 typedef MonoMethodInfo *MonoMethodInfo_ref;
 typedef MonoResolveTokenError *MonoResolveTokenError_ref;
@@ -136,6 +141,8 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_guchar_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint     		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_const_guchar_ptr		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_const_guint16_ref ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_guint16  			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint32  			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint64  			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_int 			ICALL_HANDLES_WRAP_NONE
@@ -164,6 +171,7 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoMethodInfo_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoPropertyInfo_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoType_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_MonoIntPtr_ref        ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoTypedRef_ref 		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_gint32_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_gint64_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -171,12 +179,15 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_gsize_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint32_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint64_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_guint16_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_guint8_ref        ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_int_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_gint32_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_int_ptr_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_char_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint8_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoResolveTokenError_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_MonoIntPtr_ptr ICALL_HANDLES_WRAP_VALUETYPE_REF
 
 // HANDLE is not used just to avoid duplicate typedef warnings with some compilers.
 // gpointer == void* == HANDLE == FILE_HANDLE == PROCESS_HANDLE.
