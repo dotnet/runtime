@@ -31,17 +31,6 @@ public:
         TA_Rude
     };
 
-    EEPolicy ();
-
-    EPolicyAction GetDefaultAction(EClrOperation operation, Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return m_DefaultAction[operation];
-    }
-
-    EPolicyAction GetActionOnFailure(EClrFailure failure);
-
     static void HandleStackOverflow();
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
@@ -50,24 +39,9 @@ public:
 
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
-    static void HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode);
-
 private:
-    EPolicyAction m_ActionOnFailure[MaxClrFailure];
-
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
-
-    friend void SafeExitProcess(UINT exitCode, BOOL fAbort, ShutdownCompleteAction sca);
 };
-
-void InitEEPolicy();
-
-extern BYTE g_EEPolicyInstance[];
-
-inline EEPolicy* GetEEPolicy()
-{
-    return (EEPolicy*)&g_EEPolicyInstance;
-}
 
 //
 // Use EEPOLICY_HANDLE_FATAL_ERROR when you have a situtation where the Runtime's internal state would be

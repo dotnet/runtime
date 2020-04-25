@@ -28,52 +28,6 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
-BYTE g_EEPolicyInstance[sizeof(EEPolicy)];
-
-void InitEEPolicy()
-{
-    WRAPPER_NO_CONTRACT;
-    new (g_EEPolicyInstance) EEPolicy();
-}
-
-EEPolicy::EEPolicy ()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int n;
-    for (n = 0; n < MaxClrFailure; n++) {
-        m_ActionOnFailure[n] = eNoAction;
-    }
-    m_ActionOnFailure[FAIL_CriticalResource] = eThrowException;
-    m_ActionOnFailure[FAIL_NonCriticalResource] = eThrowException;
-    m_ActionOnFailure[FAIL_OrphanedLock] = eNoAction;
-    m_ActionOnFailure[FAIL_FatalRuntime] = eRudeExitProcess;
-    m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
-}
-
-EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }CONTRACTL_END;
-
-    _ASSERTE(static_cast<UINT>(failure) < MaxClrFailure);
-    if (failure == FAIL_StackOverflow)
-    {
-        return m_ActionOnFailure[failure];
-    }
-
-    return m_ActionOnFailure[failure];
-}
-
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d, fAbort = %d\n", exitCode, fAbort);
@@ -165,32 +119,6 @@ DWORD g_fFastExitProcess = 0;
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
 
-static void HandleExitProcessHelper(EPolicyAction action, UINT exitCode, ShutdownCompleteAction sca)
-{
-    WRAPPER_NO_CONTRACT;
-
-    switch (action) {
-    case eExitProcess:
-        if (g_fEEStarted)
-        {
-            EEShutDown(FALSE);
-        }
-        if (exitCode == 0)
-        {
-            exitCode = GetLatchedExitCode();
-        }
-        SafeExitProcess(exitCode, FALSE, sca);
-        break;
-    case eRudeExitProcess:
-        g_fFastExitProcess = 2;
-        SafeExitProcess(exitCode, TRUE, sca);
-        break;
-    default:
-        _ASSERTE (!"Invalid policy");
-        break;
-    }
-}
-
 //---------------------------------------------------------------------------------------
 //
 // EEPolicy::HandleStackOverflow - Handle stack overflow according to policy
@@ -249,8 +177,11 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleExitProcess\n");
 
-    EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ProcessExit, NULL);
-    HandleExitProcessHelper(action, 0, sca);
+    if (g_fEEStarted)
+    {
+        EEShutDown(FALSE);
+    }
+    SafeExitProcess(GetLatchedExitCode(), FALSE, sca);
 }
 
 
@@ -844,35 +775,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         g_fFastExitProcess = 2;
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
-        switch (GetEEPolicy()->GetActionOnFailure(FAIL_FatalRuntime))
-        {
-        case eRudeExitProcess:
-            LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-	        SafeExitProcess(exitCode, TRUE);
-            break;
-        default:
-            _ASSERTE(!"Invalid action for FAIL_FatalRuntime");
-            break;
-        }
+        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+	    SafeExitProcess(exitCode, TRUE);
     }
 
     UNREACHABLE();
     return -1;
-}
-
-void EEPolicy::HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode)
-{
-    WRAPPER_NO_CONTRACT;
-    CONTRACT_VIOLATION(GCViolation);
-
-    _ASSERTE (action >= eExitProcess);
-    // If policy for ExitProcess is not default action, i.e. ExitProcess, we will use it.
-    // Otherwise overwrite it with passing arg action;
-    EPolicyAction todo = GetEEPolicy()->GetDefaultAction(OPR_ProcessExit, NULL);
-    if (todo == eExitProcess)
-    {
-        todo = action;
-    }
-
-    HandleExitProcessHelper(todo, exitCode, SCA_ExitProcessWhenShutdownComplete);
 }

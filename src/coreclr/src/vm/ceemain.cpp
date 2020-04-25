@@ -1813,8 +1813,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 SetResourceCultureCallbacks(GetThreadUICultureNames,
                                             GetThreadUICultureId);
 
-                InitEEPolicy();
-
                 break;
             }
 
