@@ -242,9 +242,11 @@
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
+             Link="System\RealFormatterTestsBase.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="System\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
+             Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
   </ItemGroup>
   <ItemGroup>

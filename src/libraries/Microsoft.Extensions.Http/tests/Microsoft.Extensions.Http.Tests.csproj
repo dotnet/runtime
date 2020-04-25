@@ -18,7 +18,8 @@
              Link="tests\DI.Common\Common\src\TestLogger.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLoggerFactory.cs"
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
-    <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs" Link="Shared\SingleThreadedSynchronizationContext.cs"/>
+    <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs"
+             Link="Shared\SingleThreadedSynchronizationContext.cs" />
   </ItemGroup>
 
   <ItemGroup>

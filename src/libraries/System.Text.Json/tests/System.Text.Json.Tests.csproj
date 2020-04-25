@@ -132,7 +132,8 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+    <Compile Include="..\src\System\Text\Json\BitStack.cs"
+             Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
