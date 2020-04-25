@@ -365,6 +365,10 @@ namespace ILCompiler
             // it is important for generic types with non-versionable layout (e.g. Nullable<T>)
             foreach (var field in type.GetFields())
             {
+                // Only instance fields matter here
+                if (field.IsStatic)
+                    continue;
+
                 var fieldType = field.FieldType;
                 if (!fieldType.IsValueType)
                     continue;
