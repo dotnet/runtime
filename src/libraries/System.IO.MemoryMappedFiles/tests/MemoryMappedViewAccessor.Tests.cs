@@ -477,7 +477,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to allow a map and view to be finalized, just to ensure we don't crash.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [Fact]
         public void AllowFinalization()
         {
             // Explicitly do not dispose, to allow finalization to happen, just to try to verify
@@ -491,11 +491,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            MemoryMappedFile mmf;
-            Assert.False(mmfWeak.TryGetTarget(out mmf));
-
-            MemoryMappedViewAccessor mmva;
-            Assert.False(mmvaWeak.TryGetTarget(out mmva));
+            if (PlatformDetection.IsPreciseGcSupported)
+            {
+                Assert.False(mmfWeak.TryGetTarget(out _));
+                Assert.False(mmvaWeak.TryGetTarget(out _));
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
