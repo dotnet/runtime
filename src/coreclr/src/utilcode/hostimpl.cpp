@@ -76,7 +76,8 @@ void GetLastThrownObjectExceptionFromThread(Exception** ppException)
     *ppException = NULL;
 }
 
-void CrashDumpAndTerminateProcess(UINT exitCode)
+#ifdef HOST_WINDOWS
+void CreateCrashDumpIfEnabled()
 {
-    TerminateProcess(GetCurrentProcess(), exitCode);
 }
+#endif

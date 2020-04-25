@@ -4031,9 +4031,12 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 GCX_PREEMP();
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
+#ifdef HOST_WINDOWS
+                CreateCrashDumpIfEnabled();
+#endif
                 RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
-                                        0);
+                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                                       0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
         }
@@ -4310,7 +4313,7 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
     return fSuccess;
 }
 
-static void
+void
 CreateCrashDumpIfEnabled()
 {
     // If enabled, launch the create minidump utility and wait until it completes
