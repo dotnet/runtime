@@ -915,6 +915,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
         case NI_Vector64_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
             if (intrin.op1->IsCnsIntOrI())
             {
                 const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;

@@ -449,8 +449,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
-                
             case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
                 assert(isRMW);
 
                 if (intrin.op1->isContainedFltOrDblImmed())
