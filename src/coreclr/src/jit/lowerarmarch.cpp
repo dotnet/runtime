@@ -924,6 +924,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op1);
                 }
             }
+            else if (intrin.op1->IsCnsFltOrDbl())
+            {
+                assert(varTypeIsFloating(intrin.baseType));
+
+                const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+
+                if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
             break;
         default:
             unreached();
