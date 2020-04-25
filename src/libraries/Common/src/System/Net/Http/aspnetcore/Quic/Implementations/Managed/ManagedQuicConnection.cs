@@ -26,7 +26,6 @@ namespace System.Net.Quic.Implementations.Managed
 
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
-        // TODO-RZ: connect event is not signalled for server
         private readonly SingleEventValueTaskSource _connectTcs = new SingleEventValueTaskSource();
 
         private readonly SingleEventValueTaskSource _closeTcs = new SingleEventValueTaskSource();

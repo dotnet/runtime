@@ -377,6 +377,8 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 writer.WriteFrameType(FrameType.HandshakeDone);
                 // no data
+
+                _connectTcs.TryComplete();
                 context.SentPacket.HandshakeDoneSent = true;
                 _handshakeDoneSent = true;
             }
