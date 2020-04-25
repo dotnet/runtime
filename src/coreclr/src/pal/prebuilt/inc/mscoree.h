@@ -200,8 +200,7 @@ enum __MIDL___MIDL_itf_mscoree_0000_0000_0009
         eUnloadAppDomain	= ( eRudeAbortThread + 1 ) ,
         eRudeUnloadAppDomain	= ( eUnloadAppDomain + 1 ) ,
         eExitProcess	= ( eRudeUnloadAppDomain + 1 ) ,
-        eFastExitProcess	= ( eExitProcess + 1 ) ,
-        eRudeExitProcess	= ( eFastExitProcess + 1 ) ,
+        eRudeExitProcess	= (eExitProcess + 1 ) ,
         MaxPolicyAction	= (eRudeExitProcess + 1 )
     } 	EPolicyAction;
 

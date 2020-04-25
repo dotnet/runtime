@@ -172,7 +172,6 @@ typedef enum
     eExitProcess,
         // Look at CorHost2::Stop.  For eFastExitProcess, eRudeExitProcess, eDisableRuntime,
         // Stop bypasses finalizer run.
-    eFastExitProcess,
     eRudeExitProcess,
     MaxPolicyAction
 } EPolicyAction;

@@ -83,7 +83,7 @@ EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(static_cast<UINT>(action) < MaxPolicyAction);
 
-    if (action < eAbortThread || action > eFastExitProcess)
+    if (action < eAbortThread || action > eExitProcess)
     {
         return action;
     }
@@ -108,7 +108,6 @@ EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
             defaultAction = m_DefaultAction[OPR_AppDomainRudeUnload];
                 break;
             case eExitProcess:
-            case eFastExitProcess:
             defaultAction = m_DefaultAction[OPR_ProcessExit];
             if (defaultAction < action)
                 {
@@ -244,8 +243,6 @@ static void HandleExitProcessHelper(EPolicyAction action, UINT exitCode, Shutdow
     WRAPPER_NO_CONTRACT;
 
     switch (action) {
-    case eFastExitProcess:
-        g_fFastExitProcess = 1;
     case eExitProcess:
         if (g_fEEStarted)
         {

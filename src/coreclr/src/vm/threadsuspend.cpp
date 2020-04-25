@@ -1293,7 +1293,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
             }
             break;
         case eExitProcess:
-        case eFastExitProcess:
         case eRudeExitProcess:
             EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
             _ASSERTE (!"Should not reach here");
@@ -1893,7 +1892,6 @@ LPrepareRetry:
                 }
                 break;
             case eExitProcess:
-            case eFastExitProcess:
             case eRudeExitProcess:
                 EEPolicy::HandleExitProcessFromEscalation(action1, HOST_E_EXITPROCESS_TIMEOUT);
                 _ASSERTE (!"Should not reach here");
@@ -2588,7 +2586,6 @@ void Thread::HandleThreadAbortTimeout()
             MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
             break;
         case eExitProcess:
-        case eFastExitProcess:
         case eRudeExitProcess:
             EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
             _ASSERTE (!"Should not reach here");
@@ -2678,7 +2675,6 @@ void Thread::PreWorkForThreadAbort()
         switch (action)
         {
         case eExitProcess:
-        case eFastExitProcess:
         case eRudeExitProcess:
                 {
             GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
