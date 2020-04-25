@@ -281,9 +281,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!varTypeIsArithmetic(baseType))
         {
-            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As)
-                    || (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet)
-                    || (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As) ||
+                   (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_get_AllBitsSet) ||
+                   (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_get_AllBitsSet));
             return nullptr;
         }
     }
