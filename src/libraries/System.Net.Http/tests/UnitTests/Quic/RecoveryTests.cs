@@ -23,7 +23,8 @@ namespace System.Net.Quic.Tests
                 AckEliciting = ackEliciting,
                 BytesSent = bytesSent,
                 InFlight = inFlight,
-                TimeSent = sent
+                TimeSent = sent,
+                PacketNumber = sentPackets++
             };
         }
 
@@ -31,7 +32,7 @@ namespace System.Net.Quic.Tests
             int bytesSent)
         {
             var packet = NewPacket(ackEliciting, inFlight, bytesSent, now);
-            Recovery.OnPacketSent(++sentPackets, space, packet, handshakeComplete);
+            Recovery.OnPacketSent(space, packet, handshakeComplete);
         }
 
         private void ReceiveAck(long time, PacketSpace packetSpace, long ackDelay, params Range[] ranges) =>
@@ -56,7 +57,7 @@ namespace System.Net.Quic.Tests
             SendPacket(Now, PacketSpace.Initial, true, true, 1200);
 
             // simulate receiving ack frame some time later
-            ReceiveAck(Now + 2 * RecoveryController.InitialRtt, PacketSpace.Initial, Recovery.MaxAckDelay, 1..1);
+            ReceiveAck(Now + 2 * RecoveryController.InitialRtt, PacketSpace.Initial, Recovery.MaxAckDelay, 0..0);
 
             Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).AckedPackets);
         }
@@ -66,7 +67,7 @@ namespace System.Net.Quic.Tests
         {
             SendPacket(Now, PacketSpace.Initial, true, true, 1200);
 
-            ReceiveAck(Now + 2 * RecoveryController.InitialRtt, PacketSpace.Initial, Recovery.MaxAckDelay, 1..1);
+            ReceiveAck(Now + 2 * RecoveryController.InitialRtt, PacketSpace.Initial, Recovery.MaxAckDelay, 0..0);
 
             Assert.Equal(long.MaxValue, Recovery.LossRecoveryTimer);
         }
@@ -96,20 +97,21 @@ namespace System.Net.Quic.Tests
             // the second packet gets acked, since enough time has passed since sending the first one,
             // it should be considered lost
             Now += 2 * RecoveryController.InitialRtt;
-            ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, 2..2);
+            ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, 1..1);
 
             // no more packets in-flight => no timer
             Assert.Equal(long.MaxValue, Recovery.LossRecoveryTimer);
-            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
-            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).AckedPackets);
+            var pnSpace = Recovery.GetPacketNumberSpace(PacketSpace.Initial);
+            Assert.Single(pnSpace.LostPackets);
+            Assert.Single(pnSpace.AckedPackets);
         }
 
         [Fact]
         public void DeclaresPacketLostAfterReorderingWindow()
         {
-            // send many packets in a burst
-            int count = RecoveryController.PacketReorderingThreshold + 1;
-            for (int i = 0; i < count; i++)
+            // send many packets in a burst (one more than the threshold)
+            int count = RecoveryController.PacketReorderingThreshold;
+            for (int i = 0; i <= count; i++)
             {
                 SendPacket(Now, PacketSpace.Initial, true, true, 1200);
             }
@@ -119,7 +121,8 @@ namespace System.Net.Quic.Tests
             ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, count..count);
 
             // only the first packet should be deemed lost
-            Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
+            var pnSpace = Recovery.GetPacketNumberSpace(PacketSpace.Initial);
+            Assert.Single(pnSpace.LostPackets);
             // but timer should be armed for the other packets.
             Assert.NotEqual(long.MaxValue, Recovery.LossRecoveryTimer);
         }
@@ -132,7 +135,7 @@ namespace System.Net.Quic.Tests
             SendPacket(Now, PacketSpace.Initial, true, true, 1200);
 
             Now += +2 * RecoveryController.InitialRtt;
-            ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, 2..2);
+            ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, 1..1);
 
             // alarm should be armed for the timout on first packet
             Assert.NotEqual(long.MaxValue, Recovery.LossRecoveryTimer);

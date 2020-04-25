@@ -188,7 +188,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        internal void OnPacketSent(long packetNumber, PacketSpace space, SentPacket packet, bool handshakeComplete)
+        internal void OnPacketSent(PacketSpace space, SentPacket packet, bool handshakeComplete)
         {
             var pnSpace = GetPacketNumberSpace(space);
             pnSpace.SentPackets.Add(packet);
@@ -366,7 +366,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             long lastAckElicitingSent = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
-            if (lastAckElicitingSent != long.MaxValue)
+            if (lastAckElicitingSent == long.MaxValue)
             {
                 return;
             }
