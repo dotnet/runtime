@@ -457,8 +457,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
-                    GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue,
-                                              INS_OPTS_NONE);
+                    GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
