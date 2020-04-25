@@ -1,4 +1,3 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29123.88
@@ -13,12 +12,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem.Ready
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Checked|x64 = Checked|x64
+		Checked|x86 = Checked|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Checked|x64.ActiveCfg = Checked|x64
+		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Checked|x64.Build.0 = Checked|x64
+		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Checked|x86.ActiveCfg = Checked|x86
+		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Checked|x86.Build.0 = Checked|x86
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Debug|x64.ActiveCfg = Debug|x64
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Debug|x64.Build.0 = Debug|x64
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Debug|x86.ActiveCfg = Debug|x86
@@ -27,6 +32,10 @@ Global
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Release|x64.Build.0 = Release|x64
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Release|x86.ActiveCfg = Release|x86
 		{9B928D3E-06AB-45E5-BF79-F374F0AE3B98}.Release|x86.Build.0 = Release|x86
+		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Checked|x64.ActiveCfg = Checked|x64
+		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Checked|x64.Build.0 = Checked|x64
+		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Checked|x86.ActiveCfg = Checked|x86
+		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Checked|x86.Build.0 = Checked|x86
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Debug|x64.ActiveCfg = Debug|x64
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Debug|x64.Build.0 = Debug|x64
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Debug|x86.ActiveCfg = Debug|x86
@@ -35,6 +44,10 @@ Global
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Release|x64.Build.0 = Release|x64
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Release|x86.ActiveCfg = Release|x86
 		{FB2D45F2-FA4C-42B2-8E53-3E1F30CF8046}.Release|x86.Build.0 = Release|x86
+		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Checked|x64.ActiveCfg = Checked|x64
+		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Checked|x64.Build.0 = Checked|x64
+		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Checked|x86.ActiveCfg = Checked|x86
+		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Checked|x86.Build.0 = Checked|x86
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Debug|x64.ActiveCfg = Debug|x64
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Debug|x64.Build.0 = Debug|x64
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Debug|x86.ActiveCfg = Debug|x86
@@ -43,6 +56,10 @@ Global
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Release|x64.Build.0 = Release|x64
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Release|x86.ActiveCfg = Release|x86
 		{83A832DE-BF4A-44C4-B361-90F5F88B979B}.Release|x86.Build.0 = Release|x86
+		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Checked|x64.ActiveCfg = Checked|x64
+		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Checked|x64.Build.0 = Checked|x64
+		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Checked|x86.ActiveCfg = Checked|x86
+		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Checked|x86.Build.0 = Checked|x86
 		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Debug|x64.ActiveCfg = Debug|x64
 		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Debug|x64.Build.0 = Debug|x64
 		{751583CD-E880-49E1-B3E2-8B1990114CAC}.Debug|x86.ActiveCfg = Debug|x86

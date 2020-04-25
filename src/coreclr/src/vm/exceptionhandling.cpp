@@ -241,6 +241,9 @@ void InitializeExceptionHandling()
     // Register handler for termination requests (e.g. SIGTERM)
     PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
+#ifdef HOST_WINDOWS
+    InitializeCrashDump();
+#endif // HOST_WINDOWS
 }
 
 struct UpdateObjectRefInResumeContextCallbackState
@@ -4676,7 +4679,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
             }
-            TerminateProcess(GetCurrentProcess(), 1);
+            CrashDumpAndTerminateProcess(1);
             UNREACHABLE();
         }
 #endif // USE_GC_INFO_DECODER
@@ -4684,14 +4687,11 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
         {
-#ifdef VSD_STUB_CAN_THROW_AV
-            if (IsIPinVirtualStub(controlPc))
+            if (AdjustContextForVirtualStub(NULL, frameContext))
             {
-                AdjustContextForVirtualStub(NULL, frameContext);
                 controlPc = GetIP(frameContext);
                 break;
             }
-#endif // VSD_STUB_CAN_THROW_AV
 
 #ifdef FEATURE_WRITEBARRIER_COPY
             if (IsIPInWriteBarrierCodeCopy(controlPc))
@@ -4722,7 +4722,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
-                TerminateProcess(GetCurrentProcess(), 1);
+                CrashDumpAndTerminateProcess(1);
                 UNREACHABLE();
             }
 
@@ -5201,9 +5201,7 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
-#ifdef VSD_STUB_CAN_THROW_AV
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
-#endif // VSD_STUB_CAN_THROW_AV
         IsIPInMarkedJitHelper(controlPc));
 }
 
@@ -5292,12 +5290,10 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
-#ifdef VSD_STUB_CAN_THROW_AV
-            else if (IsIPinVirtualStub(controlPc))
+            else
             {
                 AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
             }
-#endif // VSD_STUB_CAN_THROW_AV
             fef.InitAndLink(ex->GetContextRecord());
         }
 

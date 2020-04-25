@@ -25,6 +25,7 @@
     <Compile Include="FieldBuilder\FieldBuilderSetOffset.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTyepParameterBuilderSetBaseTypeConstraint.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderGUID.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderIsByRefLike.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeArrayType.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeByRefType.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeGenericType.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="TypeBuilder\TypeBuilderGetGenericTypeDefinition.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGetMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderGUID.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderIsByRefLike.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericParameter.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderIsGenericTypeDefinition.cs" />

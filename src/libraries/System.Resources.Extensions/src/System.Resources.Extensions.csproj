@@ -8,20 +8,26 @@
   <PropertyGroup>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs" Link="System\Resources\Extensions\ResourceWriter.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PinnedBufferMemoryStream.cs" Link="System\IO\PinnedBufferMemoryStream.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Resources\FastResourceComparer.cs" Link="System\Resources\FastResourceComparer.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceReader.cs" Link="System\Resources\Extensions\ResourceReader.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Resources\RuntimeResourceSet.cs" Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
+    <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
+             Link="System\Resources\Extensions\ResourceWriter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PinnedBufferMemoryStream.cs"
+             Link="System\IO\PinnedBufferMemoryStream.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\FastResourceComparer.cs"
+             Link="System\Resources\FastResourceComparer.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceReader.cs"
+             Link="System\Resources\Extensions\ResourceReader.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs"
+             Link="System\Resources\ResourceTypeCode.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Resources\RuntimeResourceSet.cs"
+             Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
     <Compile Include="BinaryReaderExtensions.cs" />
+    <Compile Include="BinaryWriterExtensions.cs" />
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
-      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

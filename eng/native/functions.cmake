@@ -338,7 +338,7 @@ function(install_clr)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
         strip_symbols(${targetName} symbol_file)
 
-        foreach(destination in ${destinations})
+        foreach(destination ${destinations})
           # We don't need to install the export libraries for our DLLs
           # since they won't be directly linked against.
           install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
@@ -415,3 +415,28 @@ endfunction()
 function(add_executable_clr)
     _add_executable(${ARGV})
 endfunction()
+
+function(generate_module_index Target ModuleIndexFile)
+    if(CLR_CMAKE_HOST_WIN32)
+        set(scriptExt ".cmd")
+    else()
+        set(scriptExt ".sh")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${ModuleIndexFile}
+        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        DEPENDS ${Target}
+        COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
+    )
+
+    set_source_files_properties(
+        ${ModuleIndexFile}
+        PROPERTIES GENERATED TRUE
+    )
+
+    add_custom_target(
+        ${Target}_module_index_header
+        DEPENDS ${ModuleIndexFile}
+    )
+endfunction(generate_module_index)

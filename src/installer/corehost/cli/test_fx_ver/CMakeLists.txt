@@ -5,12 +5,16 @@ project(test_fx_ver)
 
 set(EXE_NAME "test_fx_ver")
 
+include_directories(../../)
+include_directories(../)
 include_directories(../fxr)
 include_directories(../hostmisc)
 
 set(SOURCES
     test_fx_ver.cpp
 )
+
+include(${CMAKE_CURRENT_LIST_DIR}/../hostmisc/hostmisc.cmake)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
@@ -21,7 +25,7 @@ else()
 endif()
 
 add_executable(${EXE_NAME} ${SOURCES})
-target_link_libraries(${EXE_NAME} libhostmisc libhostcommon)
+target_link_libraries(${EXE_NAME} libhostcommon)
 
 install(TARGETS ${EXE_NAME} DESTINATION corehost_test)
 

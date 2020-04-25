@@ -25,10 +25,7 @@ enum var_types : BYTE
 #define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
 #include "typelist.h"
 #undef DEF_TP
-
-    TYP_COUNT,
-
-    TYP_lastIntrins = TYP_DOUBLE
+    TYP_COUNT
 };
 
 /*****************************************************************************

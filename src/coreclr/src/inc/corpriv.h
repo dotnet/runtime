@@ -460,11 +460,6 @@ STDAPI GetCORSystemDirectoryInternal(
     __out_opt DWORD* pdwLength
     );
 
-STDAPI GetCORVersionInternal(
-    __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
-                                  DWORD  cchBuffer,
-    __out                         DWORD *pdwLength);
-
 #endif  // _CORPRIV_H_
 // EOF =======================================================================
 

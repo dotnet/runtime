@@ -1336,7 +1336,7 @@ protected:
 
     insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
 
-    void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
+    void perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

@@ -410,12 +410,14 @@ public:
             locDescInnerPtr.MakeByRef();
             pcsDispatch->SetStubTargetArgType(&locDescInnerPtr, false);
             pcsDispatch->EmitLDLOCA(dwInnerIInspectableLocalNum);
+            pcsDispatch->EmitCONV_I();
         }
 
         // pass pointer to the local to the factory method (last argument)
         locDescFactoryRetVal.MakeByRef();
         pcsDispatch->SetStubTargetArgType(&locDescFactoryRetVal, false);
         pcsDispatch->EmitLDLOCA(dwFactoryRetValLocalNum);
+        pcsDispatch->EmitCONV_I();
 
         /*
         *   UNMARSHAL

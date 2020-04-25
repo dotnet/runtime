@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void Peek_EmptyBuffer_ShouldReturnEof()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.PeekState());
         }
 
         [Fact]
@@ -59,12 +59,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
         [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
         [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
-        [InlineData(CborMajorType.Special, CborReaderState.SpecialValue)]
+        [InlineData(CborMajorType.Simple, CborReaderState.SpecialValue)]
         internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
         {
             ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };
             var reader = new CborReader(buffer);
-            Assert.Equal(expectedResult, reader.Peek());
+            Assert.Equal(expectedResult, reader.PeekState());
         }
 
         [Fact]
@@ -73,8 +73,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ReadOnlyMemory<byte> buffer = new byte[] { 0, 0 };
             var reader = new CborReader(buffer);
             reader.ReadInt64();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -109,8 +112,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-
             Assert.Throws<FormatException>(() => reader.ReadEncodedValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new[] { x });

@@ -28,9 +28,23 @@ namespace R2RDump
                 {
                     writer.Write($"Native Offset: 0x{theThis.BoundsList[i].NativeOffset:X}, ");
                 }
-                writer.WriteLine($"IL Offset: 0x{theThis.BoundsList[i].ILOffset:X}, Source Types: {theThis.BoundsList[i].SourceTypes}");
+                if (theThis.BoundsList[i].ILOffset == (uint)DebugInfoBoundsType.NoMapping)
+                {
+                    writer.WriteLine($"NoMapping, Source Types: {theThis.BoundsList[i].SourceTypes}");
+                }
+                else if (theThis.BoundsList[i].ILOffset == (uint)DebugInfoBoundsType.Prolog)
+                {
+                    writer.WriteLine($"Prolog, Source Types: {theThis.BoundsList[i].SourceTypes}");
+                }
+                else if (theThis.BoundsList[i].ILOffset == (uint)DebugInfoBoundsType.Epilog)
+                {
+                    writer.WriteLine($"Epilog, Source Types: {theThis.BoundsList[i].SourceTypes}");
+                }
+                else
+                {
+                    writer.WriteLine($"IL Offset: 0x{theThis.BoundsList[i].ILOffset:x4}, Source Types: {theThis.BoundsList[i].SourceTypes}");
+                }
             }
-
             writer.WriteLine("");
 
             if (dumpOptions.Normalize)

@@ -498,37 +498,15 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
         // Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-#ifdef TARGET_UNIX
         if (fAbort)
         {
-            TerminateProcess(GetCurrentProcess(), exitCode);
+            CrashDumpAndTerminateProcess(exitCode);
         }
-#endif
-
-        EEPolicy::ExitProcessViaShim(exitCode);
+        else
+        {
+            ExitProcess(exitCode);
+        }
     }
-}
-
-// This is a helper to exit the process after coordinating with the shim. It is used by
-// SafeExitProcess above, as well as from CorHost2::ExitProcess when we know that we must
-// exit the process without doing further work to shutdown this runtime. This first attempts
-// to call back to the Shim to shutdown any other runtimes within the process.
-//
-// IMPORTANT NOTE: exercise extreme caution when adding new calls to this method. It is highly
-// likely that you want to call SafeExitProcess, or EEPolicy::HandleExitProcess instead of this.
-// This function only exists to factor some common code out of the methods mentioned above.
-
-//static
-void EEPolicy::ExitProcessViaShim(UINT exitCode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We must call back to the Shim in order to exit the process, as this may be just one
-    // runtime in a process with many. We need to give the other runtimes a chance to exit
-    // cleanly. If we can't make the call, or if the call fails for some reason, then we
-    // simply exit the process here, which is rude to the others, but the best we can do.
-
-    ExitProcess(exitCode);
 }
 
 //---------------------------------------------------------------------------------------
@@ -1235,7 +1213,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
 
-    TerminateProcess(GetCurrentProcess(), COR_E_STACKOVERFLOW);
+    CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
 

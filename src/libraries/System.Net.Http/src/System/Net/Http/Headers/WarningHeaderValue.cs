@@ -143,7 +143,7 @@ namespace System.Net.Http.Headers
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

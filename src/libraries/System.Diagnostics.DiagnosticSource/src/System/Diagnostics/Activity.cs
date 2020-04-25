@@ -5,6 +5,7 @@
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,11 +30,14 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
-    public partial class Activity
+    public partial class Activity : IDisposable
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
+        private static ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -70,8 +74,17 @@ namespace System.Diagnostics
 
         private byte _w3CIdFlags;
 
-        private KeyValueListNode? _tags;
-        private KeyValueListNode? _baggage;
+        private LinkedListNode<KeyValuePair<string, string?>>? _tags;
+        private LinkedListNode<KeyValuePair<string, string?>>? _baggage;
+        private LinkedListNode<ActivityLink>? _links;
+        private LinkedListNode<ActivityEvent>? _events;
+        private ConcurrentDictionary<string, object>? _customProperties;
+        private string? _displayName;
+
+        /// <summary>
+        /// Kind describes the relationship between the Activity, its parents, and its children in a Trace.
+        /// </summary>
+        public ActivityKind Kind { get; private set; } = ActivityKind.Internal;
 
         /// <summary>
         /// An operation name is a COARSEST name that is useful grouping/filtering.
@@ -80,6 +93,23 @@ namespace System.Diagnostics
         /// the name but rather in the tags.
         /// </summary>
         public string OperationName { get; } = null!;
+
+        /// <summary>
+        /// DisplayName is name mainly intended to be used in the UI and not necessary has to be
+        /// same as OperationName.
+        /// </summary>
+        public string DisplayName
+        {
+            get => _displayName ?? OperationName;
+            set => _displayName = value;
+        }
+
+        /// <summary>
+        /// Get the ActivitySource object associated with this Activity.
+        /// All Activities created from public constructors will have a singleton source where the source name is empty string.
+        /// Otherwise, the source will be holding the object that created the Activity through ActivitySource.StartActivity.
+        /// </summary>
+        public ActivitySource Source { get; private set; }
 
         /// <summary>
         /// If the Activity that created this activity is from the same process you can get
@@ -216,19 +246,65 @@ namespace System.Diagnostics
         {
             get
             {
-                KeyValueListNode? tags = _tags;
+                LinkedListNode<KeyValuePair<string, string?>>? tags = _tags;
                 return tags != null ?
                     Iterate(tags) :
                     s_emptyBaggageTags;
 
-                static IEnumerable<KeyValuePair<string, string?>> Iterate(KeyValueListNode? tags)
+                static IEnumerable<KeyValuePair<string, string?>> Iterate(LinkedListNode<KeyValuePair<string, string?>>? tags)
                 {
                     do
                     {
-                        yield return tags!.keyValue;
+                        yield return tags!.Value;
                         tags = tags.Next;
                     }
                     while (tags != null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Events is the list of all <see cref="ActivityEvent" /> objects attached to this Activity object.
+        /// If there is not any <see cref="ActivityEvent" /> object attached to the Activity object, Events will return empty list.
+        /// </summary>
+        public IEnumerable<ActivityEvent> Events
+        {
+            get
+            {
+                LinkedListNode<ActivityEvent>? events = _events;
+                return events != null ? Iterate(events) : s_emptyEvents;
+
+                static IEnumerable<ActivityEvent> Iterate(LinkedListNode<ActivityEvent>? events)
+                {
+                    do
+                    {
+                        yield return events!.Value;
+                        events = events.Next;
+                    }
+                    while (events != null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Links is the list of all <see cref="ActivityLink" /> objects attached to this Activity object.
+        /// If there is no any <see cref="ActivityLink" /> object attached to the Activity object, Links will return empty list.
+        /// </summary>
+        public IEnumerable<ActivityLink> Links
+        {
+            get
+            {
+                LinkedListNode<ActivityLink>? links = _links;
+                return links != null ? Iterate(links) : s_emptyLinks;
+
+                static IEnumerable<ActivityLink> Iterate(LinkedListNode<ActivityLink>? links)
+                {
+                    do
+                    {
+                        yield return links!.Value;
+                        links = links.Next;
+                    }
+                    while (links != null);
                 }
             }
         }
@@ -260,9 +336,9 @@ namespace System.Diagnostics
                     Debug.Assert(activity != null);
                     do
                     {
-                        for (KeyValueListNode? baggage = activity._baggage; baggage != null; baggage = baggage.Next)
+                        for (LinkedListNode<KeyValuePair<string, string?>>? baggage = activity._baggage; baggage != null; baggage = baggage.Next)
                         {
-                            yield return baggage.keyValue;
+                            yield return baggage.Value;
                         }
 
                         activity = activity.Parent;
@@ -293,6 +369,10 @@ namespace System.Diagnostics
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
         {
+            Source = s_defaultSource;
+            // Allow data by default in the constructor to keep the compatability.
+            IsAllDataRequested = true;
+
             if (string.IsNullOrEmpty(operationName))
             {
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
@@ -310,13 +390,31 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddTag(string key, string? value)
         {
-            KeyValueListNode? currentTags = _tags;
-            KeyValueListNode newTags = new KeyValueListNode() { keyValue = new KeyValuePair<string, string?>(key, value) };
+            LinkedListNode<KeyValuePair<string, string?>>? currentTags = _tags;
+            LinkedListNode<KeyValuePair<string, string?>> newTags = new LinkedListNode<KeyValuePair<string, string?>>(new KeyValuePair<string, string?>(key, value));
             do
             {
                 newTags.Next = currentTags;
                 currentTags = Interlocked.CompareExchange(ref _tags, newTags, currentTags);
             } while (!ReferenceEquals(newTags.Next, currentTags));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add <see cref="ActivityEvent" /> object to the <see cref="Events" /> list.
+        /// </summary>
+        /// <param name="e"> object of <see cref="ActivityEvent"/> to add to the attached events list.</param>
+        /// <returns>'this' for convenient chaining</returns>
+        public Activity AddEvent(ActivityEvent e)
+        {
+            LinkedListNode<ActivityEvent>? currentEvents = _events;
+            LinkedListNode<ActivityEvent> newEvents = new LinkedListNode<ActivityEvent>(e);
+            do
+            {
+                newEvents.Next = currentEvents;
+                currentEvents = Interlocked.CompareExchange(ref _events, newEvents, currentEvents);
+            } while (!ReferenceEquals(newEvents.Next, currentEvents));
 
             return this;
         }
@@ -332,8 +430,8 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddBaggage(string key, string? value)
         {
-            KeyValueListNode? currentBaggage = _baggage;
-            KeyValueListNode newBaggage = new KeyValueListNode() { keyValue = new KeyValuePair<string, string?>(key, value) };
+            LinkedListNode<KeyValuePair<string, string?>>? currentBaggage = _baggage;
+            LinkedListNode<KeyValuePair<string, string?>> newBaggage = new LinkedListNode<KeyValuePair<string, string?>>(new KeyValuePair<string, string?>(key, value));
 
             do
             {
@@ -375,7 +473,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Set the parent ID using the W3C convention using a TraceId and a SpanId.   This
+        /// Set the parent ID using the W3C convention using a TraceId and a SpanId. This
         /// constructor has the advantage that no string manipulation is needed to set the ID.
         /// </summary>
         public Activity SetParentId(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None)
@@ -438,6 +536,12 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Get the context of the activity. Context becomes valid only if the activity has been started.
+        /// otherwise will default context.
+        /// </summary>
+        public ActivityContext Context => new ActivityContext(TraceId, SpanId, ActivityTraceFlags, TraceStateString);
+
+        /// <summary>
         /// Starts activity
         /// <list type="bullet">
         /// <item>Sets <see cref="Parent"/> to hold <see cref="Current"/>.</item>
@@ -464,7 +568,7 @@ namespace System.Diagnostics
                     if (parent != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
-                        // 1. Unstarted activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
+                        // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
                         Parent = parent;
                     }
@@ -492,6 +596,8 @@ namespace System.Diagnostics
                     _id = GenerateHierarchicalId();
 
                 SetCurrent(this);
+
+                Source.NotifyActivityStart(this);
             }
             return this;
         }
@@ -521,6 +627,8 @@ namespace System.Diagnostics
                 }
 
                 SetCurrent(Parent);
+
+                Source.NotifyActivityStop(this);
             }
         }
 
@@ -603,6 +711,12 @@ namespace System.Diagnostics
         /// True if the W3CIdFlags.Recorded flag is set.
         /// </summary>
         public bool Recorded { get => (ActivityTraceFlags & ActivityTraceFlags.Recorded) != 0; }
+
+        /// <summary>
+        /// Indicate if the this Activity object should be populated with all the propagation info and also all other
+        /// properties such as Links, Tags, and Events.
+        /// </summary>
+        public bool IsAllDataRequested { get; set;}
 
         /// <summary>
         /// Return the flags (defined by the W3C ID specification) associated with the activity.
@@ -716,6 +830,140 @@ namespace System.Diagnostics
             return id.Length == 55 &&
                    ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
                    ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+        }
+
+        /// <summary>
+        /// Dispose will stop the Activity if it is already started and notify any event listeners. Nothing will happen otherwise.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!IsFinished)
+            {
+                Stop();
+            }
+
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+
+        }
+
+        /// <summary>
+        /// SetCustomProperty allow attaching any custom object to this Activity object.
+        /// If the property name was previously associated with other object, SetCustomProperty will update to use the new propert value instead.
+        /// </summary>
+        /// <param name="propertyName"> The name to associate the value with.<see cref="OperationName"/></param>
+        /// <param name="propertyValue">The object to attach and map to the property name.</param>
+        public void SetCustomProperty(string propertyName, object? propertyValue)
+        {
+            if (_customProperties == null)
+            {
+                Interlocked.CompareExchange(ref _customProperties, new ConcurrentDictionary<string, object>(), null);
+            }
+
+            if (propertyValue == null)
+            {
+                _customProperties.TryRemove(propertyName, out object _);
+            }
+            else
+            {
+                _customProperties[propertyName] = propertyValue!;
+            }
+        }
+
+        /// <summary>
+        /// GetCustomProperty retrieve previously attached object mapped to the property name.
+        /// </summary>
+        /// <param name="propertyName"> The name to get the associated object with.</param>
+        /// <returns>The object mapped to the property name. Or null if there is no mapping previously done with this property name.</returns>
+        public object? GetCustomProperty(string propertyName)
+        {
+            // We don't check null name here as the dictionary is performing this check anyway.
+
+            if (_customProperties == null)
+            {
+                return null;
+            }
+
+            return _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+        }
+
+        internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
+                                                IEnumerable<KeyValuePair<string, string?>>? tags, IEnumerable<ActivityLink>? links,
+                                                DateTimeOffset startTime, ActivityDataRequest request)
+        {
+            Activity activity = new Activity(name);
+
+            activity.Source = source;
+            activity.Kind = kind;
+
+            if (parentId != null)
+            {
+                activity._parentId = parentId;
+            }
+            else if (parentContext != default)
+            {
+                activity._traceId = parentContext.TraceId.ToString();
+                activity._parentSpanId = parentContext.SpanId.ToString();
+                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._traceState = parentContext.TraceState;
+            }
+            else
+            {
+                Activity? parent = Current;
+                if (parent != null)
+                {
+                    // The parent change should not form a loop. We are actually guaranteed this because
+                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
+                    // 2. All started activities have a finite parent change (by inductive reasoning).
+                    activity.Parent = parent;
+                }
+            }
+
+            activity.IdFormat =
+                ForceDefaultIdFormat ? DefaultIdFormat :
+                activity.Parent != null ? activity.Parent.IdFormat :
+                activity._parentSpanId != null ? ActivityIdFormat.W3C :
+                activity._parentId == null ? DefaultIdFormat :
+                IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
+                ActivityIdFormat.Hierarchical;
+
+            if (activity.IdFormat == ActivityIdFormat.W3C)
+                activity.GenerateW3CId();
+            else
+                activity._id = activity.GenerateHierarchicalId();
+
+            if (links != null)
+            {
+                foreach (ActivityLink link in links)
+                {
+                     activity._links = new LinkedListNode<ActivityLink>(link, activity._links);
+                }
+            }
+
+            if (tags != null)
+            {
+                foreach (KeyValuePair<string, string?> tag in tags)
+                {
+                    activity._tags = new LinkedListNode<KeyValuePair<string, string?>>(tag, activity._tags);
+                }
+            }
+
+            activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.DateTime;
+
+            activity.IsAllDataRequested = request == ActivityDataRequest.AllData || request == ActivityDataRequest.AllDataAndRecorded;
+
+            if (request == ActivityDataRequest.AllDataAndRecorded)
+            {
+                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
+            }
+
+            SetCurrent(activity);
+
+            return activity;
         }
 
         /// <summary>
@@ -946,10 +1194,16 @@ namespace System.Diagnostics
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient
         /// </summary>
-        private partial class KeyValueListNode
+        private partial class LinkedListNode<T>
         {
-            public KeyValuePair<string, string?> keyValue;
-            public KeyValueListNode? Next;
+            public LinkedListNode(T value) => Value = value;
+            public LinkedListNode(T value, LinkedListNode<T>? next)
+            {
+                Value = value;
+                Next = next;
+            }
+            public T Value;
+            public LinkedListNode<T>? Next;
         }
 
         [Flags]

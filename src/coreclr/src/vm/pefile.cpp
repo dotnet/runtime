@@ -12,7 +12,6 @@
 #include "pefile.h"
 #include "eecontract.h"
 #include "eeconfig.h"
-#include "product_version.h"
 #include "eventtrace.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
@@ -1122,10 +1121,10 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAsse
     // Check that the EE version numbers are the same.
     //
 
-    if (info->wVersionMajor != CLR_MAJOR_VERSION
-        || info->wVersionMinor != CLR_MINOR_VERSION
-        || info->wVersionBuildNumber != CLR_BUILD_VERSION
-        || info->wVersionPrivateBuildNumber != CLR_BUILD_VERSION_QFE)
+    if (info->wVersionMajor != RuntimeFileMajorVersion
+        || info->wVersionMinor != RuntimeFileMinorVersion
+        || info->wVersionBuildNumber != RuntimeFileBuildVersion
+        || info->wVersionPrivateBuildNumber != RuntimeFileRevisionVersion)
     {
         RuntimeVerifyLog(LL_ERROR, pLogAsm, W("CLR version recorded in native image doesn't match the current CLR."));
         return FALSE;

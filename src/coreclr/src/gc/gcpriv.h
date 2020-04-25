@@ -1878,7 +1878,7 @@ protected:
     size_t&  promoted_bytes (int);
 
     PER_HEAP
-    uint8_t* find_object (uint8_t* o, uint8_t* low);
+    uint8_t* find_object (uint8_t* o);
 
     PER_HEAP
     dynamic_data* dynamic_data_of (int gen_number);
@@ -2011,8 +2011,6 @@ protected:
     void background_ephemeral_sweep();
     PER_HEAP
     void background_sweep ();
-    PER_HEAP
-    void background_mark_through_object (uint8_t* oo THREAD_NUMBER_DCL);
     PER_HEAP
     uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
     PER_HEAP
@@ -2301,8 +2299,6 @@ protected:
 #endif //BACKGROUND_GC
 
     PER_HEAP
-    uint8_t* next_end (heap_segment* seg, uint8_t* f);
-    PER_HEAP
     void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
     PER_HEAP
     BOOL process_mark_overflow (int condemned_gen_number);
@@ -2329,7 +2325,7 @@ protected:
     void mark_phase (int condemned_gen_number, BOOL mark_only_p);
 
     PER_HEAP
-    void pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t* high);
+    void pin_object (uint8_t* o, uint8_t** ppObject);
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
@@ -2487,8 +2483,6 @@ protected:
     struct relocate_args
     {
         uint8_t* last_plug;
-        uint8_t* low;
-        uint8_t* high;
         BOOL is_shortened;
         mark* pinned_plug_entry;
     };
@@ -4126,7 +4120,6 @@ public:
 
 #endif //HEAP_ANALYZE
 
-    /* ----------------------- global members ----------------------- */
 public:
 
     PER_HEAP

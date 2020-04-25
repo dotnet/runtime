@@ -23,6 +23,7 @@
 #cmakedefine01 HAVE_NUMA_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
+#cmakedefine01 HAVE_SYS_PTRACE_H
 
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_PTHREAD_SUSPEND
@@ -51,12 +52,14 @@
 #cmakedefine01 HAVE_TIMEGM
 #cmakedefine01 HAVE_POLL
 #cmakedefine01 HAVE_STATVFS
+#cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_THREAD_SELF
 #cmakedefine01 HAVE__LWP_SELF
 #cmakedefine01 HAVE_MACH_THREADS
 #cmakedefine01 HAVE_MACH_EXCEPTIONS
 #cmakedefine01 HAVE_VM_ALLOCATE
 #cmakedefine01 HAVE_VM_READ
+#cmakedefine01 HAVE_DIRECTIO
 #cmakedefine01 HAVE_SEMAPHORE_H
 #cmakedefine01 HAS_SYSV_SEMAPHORES
 #cmakedefine01 HAS_PTHREAD_MUTEXES
@@ -70,6 +73,7 @@
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT
 #cmakedefine01 HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
 #cmakedefine01 HAVE_PR_SET_PTRACER
+#cmakedefine01 HAVE_SWAPCTL
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_TIM
@@ -85,6 +89,8 @@
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T
 #cmakedefine01 HAVE_PRWATCH_T
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+#cmakedefine01 HAVE_DIRENT_D_TYPE
+#cmakedefine01 HAVE_FPREGS_WITH_CW
 
 #cmakedefine01 HAVE_YIELD_SYSCALL
 #cmakedefine01 HAVE_INFTIM
@@ -110,7 +116,6 @@
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 #cmakedefine01 HAVE_CLOCK_THREAD_CPUTIME
 #cmakedefine01 HAVE_PTHREAD_CONDATTR_SETCLOCK
-#cmakedefine01 STATVFS64_PROTOTYPE_BROKEN
 #cmakedefine01 HAVE_MMAP_DEV_ZERO
 #cmakedefine01 MMAP_ANON_IGNORES_PROTECTION
 #cmakedefine01 ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS

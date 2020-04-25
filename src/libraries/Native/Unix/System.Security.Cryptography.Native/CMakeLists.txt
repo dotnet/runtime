@@ -14,7 +14,7 @@ endif(CMAKE_STATIC_LIB_LINK)
 
 find_package(OpenSSL)
 if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
+    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!. See the requirements document for your specific operating system: https://github.com/dotnet/runtime/tree/master/docs/workflow/requirements.")
 endif(NOT OPENSSL_FOUND)
 
 include_directories(${OPENSSL_INCLUDE_DIR})

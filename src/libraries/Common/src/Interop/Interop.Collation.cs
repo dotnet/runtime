@@ -38,7 +38,8 @@ internal static partial class Interop
 #else
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_LastIndexOf")]
 #endif
-        internal static extern unsafe int LastIndexOf(IntPtr sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe int LastIndexOf(IntPtr sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
+
 #if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
 #else

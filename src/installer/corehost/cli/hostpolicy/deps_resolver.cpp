@@ -593,11 +593,6 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
         m_coreclr_library_version = entry.library_version;
         return;
     }
-    if (m_clrjit_path.empty() && ends_with(path, DIR_SEPARATOR + pal::string_t(LIBCLRJIT_NAME), false))
-    {
-        m_clrjit_path = path;
-        return;
-    }
 }
 
 void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
@@ -826,7 +821,6 @@ bool deps_resolver_t::resolve_probe_dirs(
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
         (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
-        (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
     }
 
     // Handle any additional deps.json that were specified.
@@ -892,7 +886,6 @@ bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unord
 
     // If we found coreclr and the jit during native path probe, set the paths now.
     probe_paths->coreclr = m_coreclr_path;
-    probe_paths->clrjit = m_clrjit_path;
 
     return true;
 }

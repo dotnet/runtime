@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.SkipValue();
             reader.ReadInt64();
             reader.ReadEndArray();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             reader.ReadTag();
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Fact]
@@ -59,7 +59,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.ReadStartArray();
+
+            int bytesRemaining = reader.BytesRemaining;
             Assert.Throws<InvalidOperationException>(() => reader.SkipValue());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
         }
 
         [Theory]
@@ -70,6 +73,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
 
         [Theory]
@@ -83,6 +87,40 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
             Assert.NotNull(exn.InnerException);
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
+
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Fact]
+        public static void SkipValue_NestedFormatException_ShouldPreserveOriginalReaderState()
+        {
+            string hexEncoding = "820181bf01ff"; // [1, [ {_ 1 : <missing value> } ]]
+            var reader = new CborReader(hexEncoding.HexToByteArray());
+
+            reader.ReadStartArray();
+            reader.ReadInt64();
+
+            // capture current state
+            int currentBytesRead = reader.BytesRead;
+            int currentBytesRemaining = reader.BytesRemaining;
+
+            // make failing call
+            int bytesRemaining = reader.BytesRemaining;
+            Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+
+            // ensure reader state has reverted to original
+            Assert.Equal(reader.BytesRead, currentBytesRead);
+            Assert.Equal(reader.BytesRemaining, currentBytesRemaining);
+
+            // ensure we can read every value up to the format error
+            Assert.Equal(CborReaderState.StartArray, reader.PeekState());
+            reader.ReadStartArray();
+            Assert.Equal(CborReaderState.StartMap, reader.PeekState());
+            reader.ReadStartMap();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
+            reader.ReadUInt64();
+            Assert.Equal(CborReaderState.FormatError, reader.PeekState());
         }
 
         [Theory]
@@ -99,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             reader.SkipValue();
-            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         public static IEnumerable<object[]> SkipTestInputs => SampleCborValues.Select(x => new [] { x });

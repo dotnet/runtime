@@ -83,9 +83,8 @@
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA256SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA512SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA384SignatureDescription.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Collections" />

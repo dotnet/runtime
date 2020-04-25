@@ -77,7 +77,6 @@ MONO_JIT_ICALL (__emul_fconv_to_i4)	\
 MONO_JIT_ICALL (__emul_fconv_to_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_i8)	\
 MONO_JIT_ICALL (__emul_fconv_to_ovf_u8)	\
-MONO_JIT_ICALL (__emul_fconv_to_ovf_u8_un)	\
 MONO_JIT_ICALL (__emul_fconv_to_r4)	\
 MONO_JIT_ICALL (__emul_fconv_to_u)	\
 MONO_JIT_ICALL (__emul_fconv_to_u1)	\
@@ -115,7 +114,6 @@ MONO_JIT_ICALL (__emul_op_irem_un) \
 MONO_JIT_ICALL (__emul_rconv_to_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_i8) \
 MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
-MONO_JIT_ICALL (__emul_rconv_to_ovf_u8_un) \
 MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
