@@ -1114,7 +1114,7 @@ IMetaDataAssemblyEmit * Zapper::CreateAssemblyEmitter()
 
     // Hardwire the metadata version to be the current runtime version so that the ngen image
     // does not change when the directory runtime is installed in different directory (e.g. v2.0.x86chk vs. v2.0.80826).
-    BSTRHolder strVersion(SysAllocString(W("v")VER_PRODUCTVERSION_NO_QFE_STR_L));
+    BSTRHolder strVersion(SysAllocString(CLR_METADATA_VERSION_L));
     VARIANT versionOption;
     V_VT(&versionOption) = VT_BSTR;
     V_BSTR(&versionOption) = strVersion;
@@ -1180,10 +1180,10 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
-    // .NET Core requires SSE2.
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // .NET Core requires SSE2.
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
 #endif
@@ -1205,8 +1205,6 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
         m_pOpt->m_compilerFlags.Set(InstructionSet_AES);
         m_pOpt->m_compilerFlags.Set(InstructionSet_PCLMULQDQ);
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE3);

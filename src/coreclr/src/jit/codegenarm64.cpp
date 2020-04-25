@@ -2372,6 +2372,35 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForBswap: Produce code for a GT_BSWAP / GT_BSWAP16 node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForBswap(GenTree* tree)
+{
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    regNumber targetReg  = tree->GetRegNum();
+    var_types targetType = tree->TypeGet();
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(operand->isUsedFromReg());
+    regNumber operandReg = genConsumeReg(operand);
+
+    if (tree->OperIs(GT_BSWAP16))
+    {
+        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+    }
+    else
+    {
+        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
+    }
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV node. We don't see MOD:
 // (1) integer MOD is morphed into a sequence of sub, mul, div in fgMorph;
 // (2) float/double MOD is morphed into a helper call by front-end.
@@ -7216,6 +7245,12 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_I(INS_smov, EA_4BYTE, REG_R5, REG_V17, 2);
     theEmitter->emitIns_R_R_I(INS_smov, EA_2BYTE, REG_R6, REG_V18, 4);
     theEmitter->emitIns_R_R_I(INS_smov, EA_1BYTE, REG_R7, REG_V19, 8);
+
+    // ext extract vector from pair of vectors
+    theEmitter->emitIns_R_R_R_I(INS_ext, EA_8BYTE, REG_V0, REG_V1, REG_V2, 3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R_I(INS_ext, EA_8BYTE, REG_V4, REG_V5, REG_V6, 7, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V8, REG_V9, REG_V10, 11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R_I(INS_ext, EA_16BYTE, REG_V12, REG_V13, REG_V14, 15, INS_OPTS_16B);
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 

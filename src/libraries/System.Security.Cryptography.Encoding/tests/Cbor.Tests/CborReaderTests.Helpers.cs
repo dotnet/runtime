@@ -18,18 +18,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 switch (expectedValue)
                 {
                     case null:
-                        Assert.Equal(CborReaderState.Null, reader.Peek());
+                        Assert.Equal(CborReaderState.Null, reader.PeekState());
                         reader.ReadNull();
                         break;
                     case bool expected:
-                        Assert.Equal(CborReaderState.Boolean, reader.Peek());
+                        Assert.Equal(CborReaderState.Boolean, reader.PeekState());
                         bool b = reader.ReadBoolean();
                         Assert.Equal(expected, b);
                         break;
                     case int expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
-                        long i = reader.ReadInt64();
-                        Assert.Equal(expected, (int)i);
+                        int i = reader.ReadInt32();
+                        Assert.Equal(expected, i);
                         break;
                     case long expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
@@ -42,47 +42,47 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Assert.Equal(expected, u);
                         break;
                     case float expected:
-                        Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
+                        Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.PeekState());
                         float f = reader.ReadSingle();
                         Assert.Equal(expected, f);
                         break;
                     case double expected:
-                        Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.Peek());
+                        Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.PeekState());
                         double d = reader.ReadDouble();
                         Assert.Equal(expected, d);
                         break;
                     case string expected:
-                        Assert.Equal(CborReaderState.TextString, reader.Peek());
+                        Assert.Equal(CborReaderState.TextString, reader.PeekState());
                         string s = reader.ReadTextString();
                         Assert.Equal(expected, s);
                         break;
                     case byte[] expected:
-                        Assert.Equal(CborReaderState.ByteString, reader.Peek());
+                        Assert.Equal(CborReaderState.ByteString, reader.PeekState());
                         byte[] bytes = reader.ReadByteString();
                         Assert.Equal(expected.ByteArrayToHex(), bytes.ByteArrayToHex());
                         break;
                     case string[] expectedChunks:
-                        Assert.Equal(CborReaderState.StartTextString, reader.Peek());
+                        Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
                         reader.ReadStartTextStringIndefiniteLength();
                         foreach(string expectedChunk in expectedChunks)
                         {
-                            Assert.Equal(CborReaderState.TextString, reader.Peek());
+                            Assert.Equal(CborReaderState.TextString, reader.PeekState());
                             string chunk = reader.ReadTextString();
                             Assert.Equal(expectedChunk, chunk);
                         }
-                        Assert.Equal(CborReaderState.EndTextString, reader.Peek());
+                        Assert.Equal(CborReaderState.EndTextString, reader.PeekState());
                         reader.ReadEndTextStringIndefiniteLength();
                         break;
                     case byte[][] expectedChunks:
-                        Assert.Equal(CborReaderState.StartByteString, reader.Peek());
+                        Assert.Equal(CborReaderState.StartByteString, reader.PeekState());
                         reader.ReadStartByteStringIndefiniteLength();
                         foreach (byte[] expectedChunk in expectedChunks)
                         {
-                            Assert.Equal(CborReaderState.ByteString, reader.Peek());
+                            Assert.Equal(CborReaderState.ByteString, reader.PeekState());
                             byte[] chunk = reader.ReadByteString();
                             Assert.Equal(expectedChunk.ByteArrayToHex(), chunk.ByteArrayToHex());
                         }
-                        Assert.Equal(CborReaderState.EndByteString, reader.Peek());
+                        Assert.Equal(CborReaderState.EndByteString, reader.PeekState());
                         reader.ReadEndByteStringIndefiniteLength();
                         break;
 
@@ -99,13 +99,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 static void VerifyPeekInteger(CborReader reader, bool isUnsignedInteger)
                 {
                     CborReaderState expectedState = isUnsignedInteger ? CborReaderState.UnsignedInteger : CborReaderState.NegativeInteger;
-                    Assert.Equal(expectedState, reader.Peek());
+                    Assert.Equal(expectedState, reader.PeekState());
                 }
             }
 
             public static void VerifyArray(CborReader reader, object[] expectedValues, bool expectDefiniteLengthCollections = true)
             {
-                Assert.Equal(CborReaderState.StartArray, reader.Peek());
+                Assert.Equal(CborReaderState.StartArray, reader.PeekState());
 
                 ulong? length = reader.ReadStartArray();
 
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     VerifyValue(reader, value);
                 }
 
-                Assert.Equal(CborReaderState.EndArray, reader.Peek());
+                Assert.Equal(CborReaderState.EndArray, reader.PeekState());
                 reader.ReadEndArray();
             }
 
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new ArgumentException($"cbor map expected values missing '{CborWriterTests.Helpers.MapPrefixIdentifier}' prefix.");
                 }
 
-                Assert.Equal(CborReaderState.StartMap, reader.Peek());
+                Assert.Equal(CborReaderState.StartMap, reader.PeekState());
 
                 ulong? length = reader.ReadStartMap();
 
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     VerifyValue(reader, value);
                 }
 
-                Assert.Equal(CborReaderState.EndMap, reader.Peek());
+                Assert.Equal(CborReaderState.EndMap, reader.PeekState());
                 reader.ReadEndMap();
             }
         }

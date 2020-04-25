@@ -679,6 +679,14 @@ CorUnix::InternalCreateFile(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
+#elif HAVE_DIRECTIO
+        if (-1 == directio(filed, DIRECTIO_ON))
+        {
+            ASSERT("Can't set DIRECTIO_ON; directio() failed. errno is %d (%s)\n",
+               errno, strerror(errno));
+            palError = ERROR_INTERNAL_ERROR;
+            goto done;
+        }
 #else
 #error Insufficient support for uncached I/O on this platform
 #endif

@@ -28,7 +28,16 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            state.Current.ReturnValue = GetCreatorDelegate(options)((Dictionary<string, TValue>)state.Current.ReturnValue!);
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+
+            Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
+            if (creator == null)
+            {
+                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TValue, TCollection>();
+                classInfo.CreateObjectWithArgs = creator;
+            }
+
+            state.Current.ReturnValue = creator((Dictionary<string, TValue>)state.Current.ReturnValue!);
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -71,18 +80,6 @@ namespace System.Text.Json.Serialization.Converters
             } while (enumerator.MoveNext());
 
             return true;
-        }
-
-        private Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>? _creatorDelegate;
-
-        private Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection> GetCreatorDelegate(JsonSerializerOptions options)
-        {
-            if (_creatorDelegate == null)
-            {
-                _creatorDelegate = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TValue, TCollection>();
-            }
-
-            return _creatorDelegate;
         }
     }
 }

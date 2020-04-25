@@ -73,6 +73,7 @@ namespace TestLibrary
         // Windows 10 October 2018 Update
         public static bool IsWindows10Version1809OrGreater =>
             IsWindows && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17763;
+
         public static bool IsWindowsIoTCore
         {
             get

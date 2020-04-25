@@ -3324,46 +3324,123 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
 
         /// <summary>
-        ///  int8x8_t vmovn_s16 (int16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
+        /// uint8_t vget_lane_u8 (uint8x8_t v, const int lane)
+        ///   A32: VMOV.U8 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.B[lane]
         /// </summary>
-        public static Vector64<sbyte> ExtractAndNarrowLow (Vector128<short> value) => ExtractAndNarrowLow (value);
+        public static byte Extract(Vector64<byte> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  int16x4_t vmovn_s32 (int32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
+        /// int16_t vget_lane_s16 (int16x4_t v, const int lane)
+        ///   A32: VMOV.S16 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.H[lane]
         /// </summary>
-        public static Vector64<short> ExtractAndNarrowLow (Vector128<int> value) => ExtractAndNarrowLow (value);
+        public static short Extract(Vector64<short> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  int32x2_t vmovn_s64 (int64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
+        /// int32_t vget_lane_s32 (int32x2_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.S[lane]
         /// </summary>
-        public static Vector64<int> ExtractAndNarrowLow (Vector128<long> value) => ExtractAndNarrowLow (value);
+        public static int Extract(Vector64<int> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
+        /// int8_t vget_lane_s8 (int8x8_t v, const int lane)
+        ///   A32: VMOV.S8 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.B[lane]
         /// </summary>
-        public static Vector64<byte> ExtractAndNarrowLow (Vector128<ushort> value) => ExtractAndNarrowLow (value);
+        public static sbyte Extract(Vector64<sbyte> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
+        /// float32_t vget_lane_f32 (float32x2_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: DUP Sd, Vn.S[lane]
         /// </summary>
-        public static Vector64<ushort> ExtractAndNarrowLow (Vector128<uint> value) => ExtractAndNarrowLow (value);
+        public static float Extract(Vector64<float> vector, byte index) => Extract(vector, index);
 
         /// <summary>
-        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
+        /// uint16_t vget_lane_u16 (uint16x4_t v, const int lane)
+        ///   A32: VMOV.U16 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.H[lane]
         /// </summary>
-        public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) => ExtractAndNarrowLow (value);
+        public static ushort Extract(Vector64<ushort> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// uint32_t vget_lane_u32 (uint32x2_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static uint Extract(Vector64<uint> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// uint8_t vgetq_lane_u8 (uint8x16_t v, const int lane)
+        ///   A32: VMOV.U8 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static byte Extract(Vector128<byte> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// float64_t vgetq_lane_f64 (float64x2_t v, const int lane)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: DUP Dd, Vn.D[lane]
+        /// </summary>
+        public static double Extract(Vector128<double> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// int16_t vgetq_lane_s16 (int16x8_t v, const int lane)
+        ///   A32: VMOV.S16 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static short Extract(Vector128<short> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// int32_t vgetq_lane_s32 (int32x4_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static int Extract(Vector128<int> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// int64_t vgetq_lane_s64 (int64x2_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static long Extract(Vector128<long> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// int8_t vgetq_lane_s8 (int8x16_t v, const int lane)
+        ///   A32: VMOV.S8 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static sbyte Extract(Vector128<sbyte> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// float32_t vgetq_lane_f32 (float32x4_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: DUP Sd, Vn.S[lane]
+        /// </summary>
+        public static float Extract(Vector128<float> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// uint16_t vgetq_lane_u16 (uint16x8_t v, const int lane)
+        ///   A32: VMOV.U16 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static ushort Extract(Vector128<ushort> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// uint32_t vgetq_lane_u32 (uint32x4_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static uint Extract(Vector128<uint> vector, byte index) => Extract(vector, index);
+
+        /// <summary>
+        /// uint64_t vgetq_lane_u64 (uint64x2_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static ulong Extract(Vector128<ulong> vector, byte index) => Extract(vector, index);
 
         /// <summary>
         ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
@@ -3406,6 +3483,167 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: XTN2 Vd.4S, Vn.2D
         /// </summary>
         public static Vector128<uint> ExtractAndNarrowHigh (Vector64<uint> lower, Vector128<ulong> value) => ExtractAndNarrowHigh (lower, value);
+
+        /// <summary>
+        ///  int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractAndNarrowLow (Vector128<short> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractAndNarrowLow (Vector128<int> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractAndNarrowLow (Vector128<long> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractAndNarrowLow (Vector128<ushort> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractAndNarrowLow (Vector128<uint> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) => ExtractAndNarrowLow (value);
+
+        /// <summary>
+        /// uint8x8_t vext_s8 (uint8x8_t a, uint8x8_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #n
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
+        /// </summary>
+        public static Vector64<byte> ExtractVector64(Vector64<byte> upper, Vector64<byte> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// int16x4_t vext_s16 (int16x4_t a, int16x4_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
+        /// </summary>
+        public static Vector64<short> ExtractVector64(Vector64<short> upper, Vector64<short> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// int32x2_t vext_s32 (int32x2_t a, int32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<int> ExtractVector64(Vector64<int> upper, Vector64<int> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// int8x8_t vext_s8 (int8x8_t a, int8x8_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #n
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ExtractVector64(Vector64<sbyte> upper, Vector64<sbyte> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// float32x2_t vext_f32 (float32x2_t a, float32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<float> ExtractVector64(Vector64<float> upper, Vector64<float> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// uint16x4_t vext_s16 (uint16x4_t a, uint16x4_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
+        /// </summary>
+        public static Vector64<ushort> ExtractVector64(Vector64<ushort> upper, Vector64<ushort> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// uint32x2_t vext_s32 (uint32x2_t a, uint32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<uint> ExtractVector64(Vector64<uint> upper, Vector64<uint> lower, byte index) => ExtractVector64(upper, lower, index);
+
+        /// <summary>
+        /// uint8x16_t vextq_s8 (uint8x16_t a, uint8x16_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #n
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
+        /// </summary>
+        public static Vector128<byte> ExtractVector128(Vector128<byte> upper, Vector128<byte> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// float64x2_t vextq_f64 (float64x2_t a, float64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<double> ExtractVector128(Vector128<double> upper, Vector128<double> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// int16x8_t vextq_s16 (int16x8_t a, int16x8_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
+        /// </summary>
+        public static Vector128<short> ExtractVector128(Vector128<short> upper, Vector128<short> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// int32x4_t vextq_s32 (int32x4_t a, int32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<int> ExtractVector128(Vector128<int> upper, Vector128<int> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// int64x2_t vextq_s64 (int64x2_t a, int64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<long> ExtractVector128(Vector128<long> upper, Vector128<long> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// int8x16_t vextq_s8 (int8x16_t a, int8x16_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #n
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ExtractVector128(Vector128<sbyte> upper, Vector128<sbyte> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// float32x4_t vextq_f32 (float32x4_t a, float32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<float> ExtractVector128(Vector128<float> upper, Vector128<float> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// uint16x8_t vextq_s16 (uint16x8_t a, uint16x8_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
+        /// </summary>
+        public static Vector128<ushort> ExtractVector128(Vector128<ushort> upper, Vector128<ushort> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// uint32x4_t vextq_s32 (uint32x4_t a, uint32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<uint> ExtractVector128(Vector128<uint> upper, Vector128<uint> lower, byte index) => ExtractVector128(upper, lower, index);
+
+        /// <summary>
+        /// uint64x2_t vextq_s64 (uint64x2_t a, uint64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) => ExtractVector128(upper, lower, index);
 
         /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
@@ -3496,6 +3734,125 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplySubtractNegatedScalar(acc, left, right);
+
+        /// <summary>
+        /// uint8x8_t vset_lane_u8 (uint8_t a, uint8x8_t v, const int lane)
+        ///   A32: VMOV.8 Dd[lane], Rt
+        ///   A64: INS Vd.B[lane], Wn
+        /// </summary>
+        public static Vector64<byte> Insert(Vector64<byte> vector, byte index, byte data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int16x4_t vset_lane_s16 (int16_t a, int16x4_t v, const int lane)
+        ///   A32: VMOV.16 Dd[lane], Rt
+        ///   A64: INS Vd.H[lane], Wn
+        /// </summary>
+        public static Vector64<short> Insert(Vector64<short> vector, byte index, short data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int32x2_t vset_lane_s32 (int32_t a, int32x2_t v, const int lane)
+        ///   A32: VMOV.32 Dd[lane], Rt
+        ///   A64: INS Vd.S[lane], Wn
+        /// </summary>
+        public static Vector64<int> Insert(Vector64<int> vector, byte index, int data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int8x8_t vset_lane_s8 (int8_t a, int8x8_t v, const int lane)
+        ///   A32: VMOV.8 Dd[lane], Rt
+        ///   A64: INS Vd.B[lane], Wn
+        /// </summary>
+        public static Vector64<sbyte> Insert(Vector64<sbyte> vector, byte index, sbyte data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// float32x2_t vset_lane_f32 (float32_t a, float32x2_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: INS Vd.S[lane], Vn.S[0]
+        /// </summary>
+        public static Vector64<float> Insert(Vector64<float> vector, byte index, float data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint16x4_t vset_lane_u16 (uint16_t a, uint16x4_t v, const int lane)
+        ///   A32: VMOV.16 Dd[lane], Rt
+        ///   A64: INS Vd.H[lane], Wn
+        /// </summary>
+        public static Vector64<ushort> Insert(Vector64<ushort> vector, byte index, ushort data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint32x2_t vset_lane_u32 (uint32_t a, uint32x2_t v, const int lane)
+        ///   A32: VMOV.32 Dd[lane], Rt
+        ///   A64: INS Vd.S[lane], Wn
+        /// </summary>
+        public static Vector64<uint> Insert(Vector64<uint> vector, byte index, uint data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint8x16_t vsetq_lane_u8 (uint8_t a, uint8x16_t v, const int lane)
+        ///   A32: VMOV.8 Dd[lane], Rt
+        ///   A64: INS Vd.B[lane], Wn
+        /// </summary>
+        public static Vector128<byte> Insert(Vector128<byte> vector, byte index, byte data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// float64x2_t vsetq_lane_f64 (float64_t a, float64x2_t v, const int lane)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: INS Vd.D[lane], Vn.D[0]
+        /// </summary>
+        public static Vector128<double> Insert(Vector128<double> vector, byte index, double data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int16x8_t vsetq_lane_s16 (int16_t a, int16x8_t v, const int lane)
+        ///   A32: VMOV.16 Dd[lane], Rt
+        ///   A64: INS Vd.H[lane], Wn
+        /// </summary>
+        public static Vector128<short> Insert(Vector128<short> vector, byte index, short data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int32x4_t vsetq_lane_s32 (int32_t a, int32x4_t v, const int lane)
+        ///   A32: VMOV.32 Dd[lane], Rt
+        ///   A64: INS Vd.S[lane], Wn
+        /// </summary>
+        public static Vector128<int> Insert(Vector128<int> vector, byte index, int data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int64x2_t vsetq_lane_s64 (int64_t a, int64x2_t v, const int lane)
+        ///   A32: VMOV.64 Dd, Rt, Rt2
+        ///   A64: INS Vd.D[lane], Xn
+        /// </summary>
+        public static Vector128<long> Insert(Vector128<long> vector, byte index, long data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// int8x16_t vsetq_lane_s8 (int8_t a, int8x16_t v, const int lane)
+        ///   A32: VMOV.8 Dd[lane], Rt
+        ///   A64: INS Vd.B[lane], Wn
+        /// </summary>
+        public static Vector128<sbyte> Insert(Vector128<sbyte> vector, byte index, sbyte data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// float32x4_t vsetq_lane_f32 (float32_t a, float32x4_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: INS Vd.S[lane], Vn.S[0]
+        /// </summary>
+        public static Vector128<float> Insert(Vector128<float> vector, byte index, float data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint16x8_t vsetq_lane_u16 (uint16_t a, uint16x8_t v, const int lane)
+        ///   A32: VMOV.16 Dd[lane], Rt
+        ///   A64: INS Vd.H[lane], Wn
+        /// </summary>
+        public static Vector128<ushort> Insert(Vector128<ushort> vector, byte index, ushort data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint32x4_t vsetq_lane_u32 (uint32_t a, uint32x4_t v, const int lane)
+        ///   A32: VMOV.32 Dd[lane], Rt
+        ///   A64: INS Vd.S[lane], Wn
+        /// </summary>
+        public static Vector128<uint> Insert(Vector128<uint> vector, byte index, uint data) => Insert(vector, index, data);
+
+        /// <summary>
+        /// uint64x2_t vsetq_lane_u64 (uint64_t a, uint64x2_t v, const int lane)
+        ///   A32: VMOV.64 Dd, Rt, Rt2
+        ///   A64: INS Vd.D[lane], Xn
+        /// </summary>
+        public static Vector128<ulong> Insert(Vector128<ulong> vector, byte index, ulong data) => Insert(vector, index, data);
 
         /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)

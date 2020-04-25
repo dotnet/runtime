@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Collections;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -62,6 +64,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1 };
             yield return new object[] { "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, -1 };
+
+            // Weightless characters
+            yield return new object[] { "", "\u200d", 0, 0, CompareOptions.None, -1 };
+            yield return new object[] { "hello", "\u200d", 0, 5, CompareOptions.IgnoreCase, -1 };
 
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, -1 };
@@ -167,6 +173,11 @@ namespace System.Globalization.Tests
             yield return new object[] { "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, CompareOptions.IgnoreNonSpace, -1 };
 
+            // Weightless characters
+            yield return new object[] { "", "\u200d", 0, 0, CompareOptions.None, -1 };
+            yield return new object[] { "", "\u200d", -1, 0, CompareOptions.None, -1 };
+            yield return new object[] { "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, -1 };
+
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, -1 };
             yield return new object[] { "More Test's", "Tests", 10, 11, CompareOptions.None, -1 };
@@ -248,6 +259,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "Exhibit \u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, false };
             yield return new object[] { "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, false };
+
+            // Weightless characters
+            yield return new object[] { "", "\u200d", CompareOptions.None, false };
+            yield return new object[] { "", "\u200d", CompareOptions.IgnoreCase, false };
 
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", CompareOptions.IgnoreSymbols, false };
@@ -476,6 +491,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
         }
 
+        [Fact]
+        public static void IcuShouldNotBeLoaded()
+        {
+            Assert.False(PlatformDetection.IsIcuGlobalization);
+        }
+
         [Theory]
         [MemberData(nameof(Cultures_TestData))]
         public void TestCultureData(string cultureName)
@@ -634,6 +655,77 @@ namespace System.Globalization.Tests
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
         }
 
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 2)]
+        [InlineData(100_000, 200_000)]
+        [InlineData(0x3FFF_FFFF, 0x7FFF_FFFE)]
+        public void TestGetSortKeyLength_Valid(int inputLength, int expectedSortKeyLength)
+        {
+            using BoundedMemory<char> boundedMemory = BoundedMemory.Allocate<char>(0); // AV if dereferenced
+            boundedMemory.MakeReadonly();
+            ReadOnlySpan<char> dummySpan = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(boundedMemory.Span), inputLength);
+            Assert.Equal(expectedSortKeyLength, CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan));
+        }
+
+        [Theory]
+        [InlineData(0x4000_0000)]
+        [InlineData(int.MaxValue)]
+        public unsafe void TestGetSortKeyLength_OverlongArgument(int inputLength)
+        {
+            using BoundedMemory<char> boundedMemory = BoundedMemory.Allocate<char>(0); // AV if dereferenced
+            boundedMemory.MakeReadonly();
+
+            Assert.Throws<ArgumentException>("source", () =>
+            {
+                ReadOnlySpan<char> dummySpan = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(boundedMemory.Span), inputLength);
+                CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan);
+            });
+        }
+
+        [Theory]
+        [InlineData("Hello", CompareOptions.None, "Hello")]
+        [InlineData("Hello", CompareOptions.IgnoreWidth, "Hello")]
+        [InlineData("Hello", CompareOptions.IgnoreCase, "HELLO")]
+        [InlineData("Hello", CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth, "HELLO")]
+        [InlineData("Hell\u00F6", CompareOptions.None, "Hell\u00F6")] // U+00F6 = LATIN SMALL LETTER O WITH DIAERESIS
+        [InlineData("Hell\u00F6", CompareOptions.IgnoreCase, "HELL\u00F6")] // note the final "o with diaeresis" isn't capitalized
+        public unsafe void TestSortKey_FromSpan(string input, CompareOptions options, string expected)
+        {
+            byte[] expectedOutputBytes = GetExpectedInvariantOrdinalSortKey(expected);
+
+            CompareInfo compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+
+            // First, validate that too short a buffer throws
+
+            Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(input, new byte[expectedOutputBytes.Length - 1], options));
+
+            // Next, validate that using a properly-sized buffer succeeds
+            // We'll use BoundedMemory to check for buffer overruns
+
+            using BoundedMemory<char> boundedInputMemory = BoundedMemory.AllocateFromExistingData<char>(input);
+            boundedInputMemory.MakeReadonly();
+            ReadOnlySpan<char> boundedInputSpan = boundedInputMemory.Span;
+
+            using BoundedMemory<byte> boundedOutputMemory = BoundedMemory.Allocate<byte>(expectedOutputBytes.Length);
+            Span<byte> boundedOutputSpan = boundedOutputMemory.Span;
+
+            Assert.Equal(expectedOutputBytes.Length, compareInfo.GetSortKey(boundedInputSpan, boundedOutputSpan, options));
+            Assert.Equal(expectedOutputBytes, boundedOutputSpan[0..expectedOutputBytes.Length].ToArray());
+
+            // Now try it once more, passing a larger span where the last byte points to unallocated memory.
+            // If GetSortKey attempts to write beyond the number of bytes we expect, the unit test will AV.
+
+            boundedOutputSpan.Clear();
+
+            fixed (byte* pBoundedOutputSpan = boundedOutputSpan)
+            {
+                boundedOutputSpan = new Span<byte>(pBoundedOutputSpan, boundedOutputSpan.Length + 1); // last byte is unallocated memory
+                Assert.Equal(expectedOutputBytes.Length, compareInfo.GetSortKey(boundedInputSpan, boundedOutputSpan, options));
+                Assert.Equal(expectedOutputBytes, boundedOutputSpan[0..expectedOutputBytes.Length].ToArray());
+            }
+        }
+
         [Fact]
         public void TestSortKey_ZeroWeightCodePoints()
         {
@@ -767,6 +859,7 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
+                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
             }
         }
@@ -809,6 +902,9 @@ namespace System.Globalization.Tests
                 using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
                 valueBoundedMemory.MakeReadonly();
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                res = CultureInfo.GetCultureInfo(cul).CompareInfo.Compare(sourceBoundedSpan, valueBoundedSpan, options);
+                Assert.Equal(result, Math.Sign(res));
 
                 res = sourceBoundedSpan.CompareTo(valueBoundedSpan, GetStringComparison(options));
                 Assert.Equal(result, Math.Sign(res));
@@ -916,6 +1012,20 @@ namespace System.Globalization.Tests
 
             Assert.Equal(expectedToLower, Rune.ToLowerInvariant(originalRune).Value);
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
+        }
+
+        private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            Span<byte> tempBuffer = stackalloc byte[sizeof(char)];
+
+            foreach (char ch in input)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(tempBuffer, (ushort)ch);
+                memoryStream.Write(tempBuffer);
+            }
+
+            return memoryStream.ToArray();
         }
     }
 }

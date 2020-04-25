@@ -95,7 +95,8 @@ build_native()
         if [[ "$__SkipGenerateVersion" == 0 ]]; then
             "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
                                                    /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /t:GenerateNativeVersionFile /restore \
+                                                   /p:RuntimeVersionFile="$intermediatesDir/../runtime_version.h" \
+                                                   /t:GenerateRuntimeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
             local exit_code="$?"
             if [[ "$exit_code" != 0 ]]; then

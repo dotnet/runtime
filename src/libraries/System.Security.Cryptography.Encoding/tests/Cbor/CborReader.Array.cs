@@ -15,17 +15,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                AdvanceBuffer(1);
-                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Array, null);
+                AdvanceBuffer(1);
                 return null;
             }
             else
             {
                 ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
-                AdvanceBuffer(1 + additionalBytes);
-                AdvanceDataItemCounters();
                 PushDataItem(CborMajorType.Array, arrayLength);
+                AdvanceBuffer(1 + additionalBytes);
                 return arrayLength;
             }
         }
@@ -42,11 +40,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 PopDataItem(expectedType: CborMajorType.Array);
+                AdvanceDataItemCounters();
                 AdvanceBuffer(1);
             }
             else
             {
                 PopDataItem(expectedType: CborMajorType.Array);
+                AdvanceDataItemCounters();
             }
         }
     }

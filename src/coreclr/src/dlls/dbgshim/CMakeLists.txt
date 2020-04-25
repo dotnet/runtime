@@ -40,6 +40,11 @@ if(CLR_CMAKE_HOST_OSX)
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_OSX)
 
+if(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+endif(CLR_CMAKE_HOST_SUNOS)
+
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 if(CLR_CMAKE_HOST_UNIX)

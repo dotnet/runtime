@@ -983,12 +983,6 @@ mono_fconv_ovf_u8 (double v)
 	return res;
 }
 
-guint64
-mono_fconv_ovf_u8_un (double v)
-{
-	return mono_fconv_ovf_u8 (v);
-}
-
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
 gint64
 mono_rconv_i8 (float v)
@@ -1024,12 +1018,6 @@ mono_rconv_ovf_u8 (float v)
 		return 0;
 	}
 	return res;
-}
-
-guint64
-mono_rconv_ovf_u8_un (float v)
-{
-	return mono_rconv_ovf_u8 (v);
 }
 
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8

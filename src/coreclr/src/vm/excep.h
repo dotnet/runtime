@@ -22,14 +22,8 @@ class Thread;
 #include <excepcpu.h>
 #include "interoputil.h"
 
-#if defined(TARGET_ARM) || defined(TARGET_X86)
-#define VSD_STUB_CAN_THROW_AV
-#endif // TARGET_ARM || TARGET_X86
-
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
-#ifdef VSD_STUB_CAN_THROW_AV
 BOOL IsIPinVirtualStub(PCODE f_IP);
-#endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
@@ -223,12 +217,20 @@ enum UnhandledExceptionLocation
                             FatalExecutionEngineException
 };
 
+#ifdef HOST_WINDOWS
+void InitializeCrashDump();
+bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
+void CreateCrashDumpIfEnabled();
+#endif
+
+// Generates crash dumps if enabled for both Windows and Linux
+void CrashDumpAndTerminateProcess(UINT exitCode);
+
 struct ThreadBaseExceptionFilterParam
 {
     UnhandledExceptionLocation location;
 };
 
-LONG ThreadBaseExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 

@@ -291,7 +291,7 @@ namespace Internal.JitInterface
 
                 InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             PublishProfileData();
@@ -1395,6 +1395,12 @@ namespace Internal.JitInterface
             if (classSize.IsIndeterminate)
             {
                 throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                _methodCodeNode.Fixups.Add(node);
             }
 #endif
             return (uint)classSize.AsInt;

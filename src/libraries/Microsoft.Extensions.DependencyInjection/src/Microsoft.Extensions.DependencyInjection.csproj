@@ -48,12 +48,10 @@
 
     <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
 
-    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
-      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
-      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
+             Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
+             Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
   </ItemGroup>
 
 </Project>

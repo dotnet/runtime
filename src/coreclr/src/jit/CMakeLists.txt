@@ -319,6 +319,9 @@ else()
     set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
   elseif(CLR_CMAKE_TARGET_OSX)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
+  elseif(CLR_CMAKE_HOST_SUNOS)
+    # Add linker exports file option
+    set(JIT_EXPORTS_LINKER_OPTION -Wl,-M,${JIT_EXPORTS_FILE})
   endif()
 
   set(SHARED_LIB_SOURCES ${SOURCES})

@@ -22,9 +22,9 @@ namespace System.Globalization.Tests
                     continue;
                 }
                 string ascii = c.ToString();
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
+                if (PlatformDetection.IsIcuGlobalization) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
                 {
-                    if ((c >= 'A' && c <= 'Z'))
+                    if (c >= 'A' && c <= 'Z')
                     {
                         yield return new object[] { ascii, 0, 1, ascii.ToLower() };
                     }
