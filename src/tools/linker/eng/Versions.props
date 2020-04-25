@@ -13,7 +13,7 @@
   <PropertyGroup>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- ilasm -->
-    <MicrosoftNETSdkILPackageVersion>5.0.0-preview.4.20219.6</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>5.0.0-preview.5.20224.4</MicrosoftNETSdkILPackageVersion>
     <!-- see https://github.com/dotnet/runtime/issues/1338 -->
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETCoreILAsmVersion>
     <!-- These should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
