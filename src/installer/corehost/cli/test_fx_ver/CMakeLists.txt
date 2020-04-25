@@ -9,12 +9,12 @@ include_directories(../../)
 include_directories(../)
 include_directories(../fxr)
 include_directories(../hostmisc)
-include(${CMAKE_CURRENT_LIST_DIR}/../hostmisc/hostmisc.cmake)
 
 set(SOURCES
     test_fx_ver.cpp
-    ${HOSTMISC_SRC}
 )
+
+include(${CMAKE_CURRENT_LIST_DIR}/../hostmisc/hostmisc.cmake)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)

@@ -46,8 +46,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 include(../../hostmisc/hostmisc.cmake)
-list(APPEND SOURCES ${HOSTMISC_SRC})
-list(APPEND HEADERS ${HOSTMISC_HDR})
 
 include(../testexe.cmake)
 
