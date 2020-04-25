@@ -293,7 +293,7 @@ namespace System.Net.NetworkInformation
                 fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, timeoutInMillis, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, timeout, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
