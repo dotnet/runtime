@@ -817,10 +817,10 @@ LONG ReflectionInvocationExceptionFilter(
 class CEHelper
 {
     BOOL static IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc);
-    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity);
 
 public:
-    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo = TRUE);
+    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc);
     BOOL static CanIDispatchTargetHandleException();
     BOOL static IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
     BOOL static IsProcessCorruptedStateException(OBJECTREF oThrowable);

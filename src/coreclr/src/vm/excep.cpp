@@ -11214,23 +11214,14 @@ BOOL CEHelper::IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc)
 // Given a MethodDesc and CorruptionSeverity, this method will return a
 // BOOL indicating if the method can handle those kinds of CEs or not.
 /* static */
-BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity)
 {
     BOOL fCanMethodHandleSeverity = FALSE;
 
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS; // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
-        // First pass requires THROWS and in 2nd we need to be due to the AppX check below where GetFusionAssemblyName can throw.
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11273,20 +11264,11 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
 //
 // This method accounts for both corrupting and non-corrupting exceptions.
 /* static */
-BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc)
 {
     CONTRACTL
     {
-        // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS/THROWS
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS;
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11329,7 +11311,7 @@ BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodD
             LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Exception is corrupting.\n"));
 
             // Check if the method can handle the severity specified in the exception object.
-            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity, fCalculateSecurityInfo);
+            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity);
         }
         else
         {
