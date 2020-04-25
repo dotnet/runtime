@@ -133,7 +133,6 @@ public:
         }
     }
 
-    bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
     bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
@@ -562,7 +561,6 @@ private: //----------------------------------------------------------------
 
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
 
-    bool fLegacyNullReferenceExceptionPolicy; // Old AV's as NullRef behavior
     bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS

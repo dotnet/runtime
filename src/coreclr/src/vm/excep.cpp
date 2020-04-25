@@ -3272,38 +3272,30 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 
         case STATUS_ACCESS_VIOLATION:
             {
-                // We have a config key, InsecurelyTreatAVsAsNullReference, that ensures we always translate to
-                // NullReferenceException instead of doing the new AV translation logic.
-                if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy())
-                {
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                    // If we got the exception on a redirect function it means the original exception happened in managed code:
-                    if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
-                        return (DWORD) kNullReferenceException;
+                // If we got the exception on a redirect function it means the original exception happened in managed code:
+                if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
+                    return (DWORD) kNullReferenceException;
 
-                    if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
-                    {
-                        return (DWORD) kNullReferenceException;
-                    }
+                if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
+                {
+                    return (DWORD) kNullReferenceException;
+                }
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
-                    // If the IP of the AV is not in managed code, then its an AccessViolationException.
-                    if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
-
-                    // If the address accessed is above 64k (Windows) or page size (PAL), then its an AccessViolationException.
-                    // Note: Win9x is a little different... it never gives you the proper address of the read or write that caused
-                    // the fault. It always gives -1, so we can't use it as part of the decision... just give
-                    // NullReferenceException instead.
-                    if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
+                // If the IP of the AV is not in managed code, then its an AccessViolationException.
+                if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
+                {
+                    return (DWORD) kAccessViolationException;
                 }
 
-            return (DWORD) kNullReferenceException;
+                // If the address accessed is above 64k (Windows) or page size (Unix), then its an AccessViolationException.
+                if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
+                {
+                    return (DWORD) kAccessViolationException;
+                }
+
+                return (DWORD) kNullReferenceException;
             }
 
         case STATUS_ARRAY_BOUNDS_EXCEEDED:

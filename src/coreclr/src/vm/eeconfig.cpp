@@ -126,7 +126,6 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
-    fLegacyNullReferenceExceptionPolicy = false;
     fLegacyUnhandledExceptionPolicy = false;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
