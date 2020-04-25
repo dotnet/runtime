@@ -20,9 +20,8 @@
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
-      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

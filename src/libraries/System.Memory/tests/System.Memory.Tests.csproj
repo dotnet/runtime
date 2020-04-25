@@ -169,9 +169,8 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
     <Compile Include="ReadOnlySpan\ToString.cs" />
     <Compile Include="ReadOnlySpan\ToUpperLower.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>ReadOnlySpan\StringTests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
+             Link="ReadOnlySpan\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />
@@ -260,11 +259,9 @@
     <Compile Include="Base64\Base64TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
-      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs">
-      <Link>Common\System\MutableDecimal.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
+             Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\MutableDecimal.cs"
+             Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
 </Project>
