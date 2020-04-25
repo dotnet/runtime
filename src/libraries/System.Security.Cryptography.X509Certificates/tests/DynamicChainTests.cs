@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: true,
-                    pathLengthConstraint: 1,
+                    pathLengthConstraint: 0,
                     critical: true)
             };
 
