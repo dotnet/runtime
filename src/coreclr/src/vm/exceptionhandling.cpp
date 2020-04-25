@@ -241,6 +241,9 @@ void InitializeExceptionHandling()
     // Register handler for termination requests (e.g. SIGTERM)
     PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
+#ifdef HOST_WINDOWS
+    InitializeCrashDump();
+#endif // HOST_WINDOWS
 }
 
 struct UpdateObjectRefInResumeContextCallbackState
@@ -4676,7 +4679,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
             }
-            TerminateProcess(GetCurrentProcess(), 1);
+            CrashDumpAndTerminateProcess(1);
             UNREACHABLE();
         }
 #endif // USE_GC_INFO_DECODER
@@ -4719,7 +4722,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
-                TerminateProcess(GetCurrentProcess(), 1);
+                CrashDumpAndTerminateProcess(1);
                 UNREACHABLE();
             }
 

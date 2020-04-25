@@ -145,13 +145,7 @@ private:
 
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 
-    // IMPORTANT NOTE: only the following two functions should be calling ExitProcessViaShim.
-    // - CorHost2::ExitProcess
-    // - SafeExitProcess
-    friend class CorHost2;
-    friend void SafeExitProcess(UINT , BOOL , ShutdownCompleteAction);
-
-    static void ExitProcessViaShim(UINT exitCode);
+    friend void SafeExitProcess(UINT exitCode, BOOL fAbort, ShutdownCompleteAction sca);
 };
 
 void InitEEPolicy();
