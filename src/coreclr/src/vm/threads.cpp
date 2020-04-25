@@ -54,7 +54,7 @@
 #include "eventpipebuffermanager.h"
 #endif // FEATURE_PERFTRACING
 
-static PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
+static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
 
 TailCallTls::TailCallTls()
     : m_frame(&g_sentinelTailCallFrame)
@@ -66,10 +66,21 @@ TailCallTls::TailCallTls()
 
 void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
 {
-    m_argBufferSize = size;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(m_argBuffer == NULL);
 
     if (size > sizeof(m_argBufferInline))
-        m_argBuffer = new char[size];
+    {
+        m_argBuffer = new (nothrow) char[size];
+        if (m_argBuffer == NULL)
+            return NULL;
+    }
     else
         m_argBuffer = m_argBufferInline;
 
@@ -79,14 +90,25 @@ void* TailCallTls::AllocArgBuffer(size_t size, void* gcDesc)
         m_argBufferGCDesc = gcDesc;
     }
 
+    m_argBufferSize = size;
+
     return m_argBuffer;
 }
 
 void TailCallTls::FreeArgBuffer()
 {
-    m_argBufferGCDesc = NULL;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
     if (m_argBufferSize > sizeof(m_argBufferInline))
         delete[] m_argBuffer;
+
+    m_argBufferGCDesc = NULL;
+    m_argBuffer = NULL;
 }
 
 #if defined (_DEBUG_IMPL) || defined(_PREFAST_)

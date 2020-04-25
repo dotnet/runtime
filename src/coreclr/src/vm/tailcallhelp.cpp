@@ -15,17 +15,28 @@
 
 FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        INJECT_FAULT(FCThrow(kOutOfMemoryException););
+    }
+    CONTRACTL_END
 
     _ASSERTE(size >= 0);
 
-    return GetThread()->GetTailCallTls()->AllocArgBuffer(static_cast<size_t>(size), gcDesc);
+    void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(static_cast<size_t>(size), gcDesc);
+    
+    if (result == NULL)
+        FCThrow(kOutOfMemoryException);
+
+    return result;
 }
 FCIMPLEND
 
 FCIMPL0(void, TailCallHelp::FreeTailCallArgBuffer)
 {
     FCALL_CONTRACT;
+    
     GetThread()->GetTailCallTls()->FreeArgBuffer();
 }
 FCIMPLEND
@@ -397,6 +408,9 @@ void TailCallHelp::LayOutArgBuffer(
     layout->Size = offs;
 }
 
+// The types we get from a signature can be generic type arguments, but the
+// stubs we create are not generic, so this function normalizes types in the
+// signature to a compatible more general type.
 TypeHandle TailCallHelp::NormalizeSigType(TypeHandle tyHnd)
 {
     CorElementType ety = tyHnd.GetSignatureCorElementType();
@@ -565,7 +579,6 @@ void TailCallHelp::CreateStoreArgsStubSig(
     // Specifically the following things might be conditionally inserted:
     // * Call target address (for calli or generic calls resolved at tailcall site)
     // * This pointer (for instance calls)
-    // * Generic context (for generic calls requiring context)
 
     sig->AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
 

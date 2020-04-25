@@ -980,7 +980,7 @@ class TailCallTls
 {
     friend class MscorlibBinder;
 
-    PortableTailCallFrame* m_frame;
+    const PortableTailCallFrame* m_frame;
     char* m_argBuffer;
     size_t m_argBufferSize;
     void* m_argBufferGCDesc;
@@ -995,7 +995,7 @@ public:
         *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
-    PortableTailCallFrame* GetFrame() { return m_frame; }
+    const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
 // #ThreadClass
