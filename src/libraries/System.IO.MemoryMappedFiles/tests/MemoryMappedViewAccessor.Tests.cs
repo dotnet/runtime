@@ -477,7 +477,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to allow a map and view to be finalized, just to ensure we don't crash.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void AllowFinalization()
         {
             // Explicitly do not dispose, to allow finalization to happen, just to try to verify
