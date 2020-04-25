@@ -223,8 +223,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe double CopySign(double x, double y)
         {
-            const long signMask
-                = unchecked((long)0b_1000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000__0000_0000);
+            const long signMask = 1L << 63;
 
             if (Sse.X64.IsSupported)
             {
