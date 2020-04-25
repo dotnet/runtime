@@ -395,27 +395,35 @@ namespace System.Net.Sockets
             // the last thread processing events, it must see the event queued by the enqueuer.
             Interlocked.Exchange(ref _eventQueueProcessingRequested, 0);
 
-            int startTimeMs = Environment.TickCount;
             ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-            while (eventQueue.TryDequeue(out SocketIOEvent ev))
+            int startTimeMs = Environment.TickCount;
+            if (!eventQueue.TryDequeue(out SocketIOEvent ev))
             {
-                // An event was successfully dequeued, and as there may be more events to process, speculatively schedule a work
-                // item to parallelize processing of events. Since this is only for additional parallelization, doing so
-                // speculatively is ok.
-                if (_eventQueueProcessingRequested == 0)
-                {
-                    ScheduleToProcessEvents();
-                }
+                return;
+            }
 
+            // An event was successfully dequeued, and as there may be more events to process, speculatively schedule a work
+            // item to parallelize processing of events. Since this is only for additional parallelization, doing so
+            // speculatively is ok.
+            ScheduleToProcessEvents();
+
+            while (true)
+            {
                 ev.Context.HandleEvents(ev.Events);
 
                 if (Environment.TickCount - startTimeMs >= 15)
                 {
-                    // Yield the thread to allow the thread pool to run other work items
-                    ScheduleToProcessEvents();
+                    break;
+                }
+
+                if (!eventQueue.TryDequeue(out ev))
+                {
                     return;
                 }
             }
+
+            // Yield the thread to allow the thread pool to run other work items
+            ScheduleToProcessEvents();
         }
 
         private void RequestEventLoopShutdown()
