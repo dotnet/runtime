@@ -14,6 +14,8 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
