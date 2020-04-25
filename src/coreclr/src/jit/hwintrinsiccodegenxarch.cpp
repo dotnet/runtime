@@ -82,7 +82,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic         intrinsicId = node->gtHWIntrinsicId;
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                    ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
+    int                    ival        = HWIntrinsicInfo::lookupIval(intrinsicId, compOpportunisticallyDependsOn(InstructionSet_AVX));
     int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
@@ -1352,25 +1352,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-        // All integer overloads are handled by table codegen
-        case NI_SSE2_CompareLessThan:
-        {
-            assert(op1 != nullptr);
-            assert(op2 != nullptr);
-
-            assert(baseType == TYP_DOUBLE);
-
-            int ival = HWIntrinsicInfo::lookupIval(intrinsicId);
-            assert((ival >= 0) && (ival <= 127));
-
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            op1Reg          = op1->GetRegNum();
-            op2Reg          = op2->GetRegNum();
-            emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op2Reg, ival);
-
-            break;
-        }
-
         case NI_SSE2_X64_ConvertScalarToVector128Double:
         {
             assert(baseType == TYP_LONG);

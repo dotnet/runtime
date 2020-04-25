@@ -929,6 +929,49 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (node->gtHWIntrinsicId)
     {
+        case NI_SSE2_CompareGreaterThan:
+        {
+            if (node->gtBaseType != TYP_DOUBLE)
+            {
+                break;
+            }
+
+            __fallthrough;
+        }
+
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE_CompareNotGreaterThan:
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        case NI_SSE2_CompareGreaterThanOrEqual:
+        case NI_SSE2_CompareNotGreaterThan:
+        case NI_SSE2_CompareNotGreaterThanOrEqual:
+        {
+            assert((node->gtBaseType == TYP_FLOAT) || (node->gtBaseType == TYP_DOUBLE));
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                break;
+            }
+
+            // pre-AVX doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            std::swap(node->gtOp1, node->gtOp2)
+            break;
+        }
+
+        case NI_SSE2_CompareLessThan:
+        case NI_AVX2_CompareLessThan:
+        {
+            if (node->gtBaseType == TYP_DOUBLE)
+            {
+                break;
+            }
+
+            // this isn't actually supported in hardware so we need to swap the operands around
+            std::swap(node->gtOp1, node->gtOp2)
+            break;
+        }
+
         case NI_SSE_CompareScalarOrderedEqual:
             LowerHWIntrinsicCC(node, NI_SSE_COMISS, GenCondition::FEQ);
             break;
@@ -2662,7 +2705,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             switch (containingIntrinsicId)
             {
                 case NI_SSE_Shuffle:
-                case NI_SSE2_CompareLessThan:
                 case NI_SSE2_ShiftLeftLogical:
                 case NI_SSE2_ShiftRightArithmetic:
                 case NI_SSE2_ShiftRightLogical:
@@ -3275,28 +3317,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    break;
-                }
-
-                case HW_Category_Special:
-                {
-                    if (intrinsicId == NI_SSE2_CompareLessThan)
-                    {
-                        bool supportsRegOptional = false;
-
-                        if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                        {
-                            MakeSrcContained(node, op2);
-                        }
-                        else if (supportsRegOptional)
-                        {
-                            op2->SetRegOptional();
-                        }
-                    }
-                    else
-                    {
-                        unreached();
-                    }
                     break;
                 }
 
