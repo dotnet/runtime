@@ -402,9 +402,11 @@ namespace System.Net.Sockets
                 return;
             }
 
-            // An event was successfully dequeued, and as there may be more events to process, speculatively schedule a work
-            // item to parallelize processing of events. Since this is only for additional parallelization, doing so
-            // speculatively is ok.
+            // An event was successfully dequeued, and there may be more events to process. Schedule a work item to parallelize
+            // processing of events, before processing more events. Following this, it is the responsibility of the new work
+            // item and the epoll thread to schedule more work items as necessary. The parallelization may be necessary here if
+            // the user callback as part of handling the event blocks for some reason that may have a dependency on other queued
+            // socket events.
             ScheduleToProcessEvents();
 
             while (true)
