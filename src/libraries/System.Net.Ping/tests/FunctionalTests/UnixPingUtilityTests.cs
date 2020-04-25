@@ -20,16 +20,20 @@ namespace System.Net.NetworkInformation.Tests
         private const int IcmpHeaderLengthInBytes = 8;
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(50)]
-        [InlineData(1000)]
+        [InlineData(0, 1500)]
+        [InlineData(1, 1500)]
+        [InlineData(50, 1500)]
+        [InlineData(1000, 1500)]
+        [InlineData(0, 3000)]
+        [InlineData(1, 3000)]
+        [InlineData(50, 3000)]
+        [InlineData(1000, 3000)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
-        public static async Task PacketSizeIsRespected(int payloadSize)
+        public static async Task PacketSizeIsRespected(int payloadSize, int timeout)
         {
             IPAddress localAddress = await TestSettings.GetLocalIPAddressAsync();
             bool ipv4 = localAddress.AddressFamily == AddressFamily.InterNetwork;
-            string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, localAddress.ToString(), ipv4);
+            string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, timeout, localAddress.ToString(), ipv4);
             string utilityPath = (localAddress.AddressFamily == AddressFamily.InterNetwork)
                 ? UnixCommandLinePing.Ping4UtilityPath
                 : UnixCommandLinePing.Ping6UtilityPath;
