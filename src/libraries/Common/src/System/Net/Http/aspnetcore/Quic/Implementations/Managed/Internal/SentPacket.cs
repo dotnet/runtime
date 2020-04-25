@@ -84,7 +84,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal int BytesSent { get; set; }
 
         /// <summary>
-        ///     True if the packet counts toward bytes in flight for congestion control purposes.
+        ///     True if the packet counts toward bytes in flight for congestion control purposes. That happens when
+        ///     The packet contains either PADDING frame or an ack-eliciting frame.
         /// </summary>
         internal bool InFlight { get; set; }
 

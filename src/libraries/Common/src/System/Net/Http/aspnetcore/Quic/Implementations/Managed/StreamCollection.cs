@@ -17,12 +17,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     All streams organized by the stream type.
         /// </summary>
-        private readonly List<ManagedQuicStream?>[] _streams =
+        private readonly List<ManagedQuicStream>[] _streams =
         {
-            new List<ManagedQuicStream?>(),
-            new List<ManagedQuicStream?>(),
-            new List<ManagedQuicStream?>(),
-            new List<ManagedQuicStream?>()
+            new List<ManagedQuicStream>(),
+            new List<ManagedQuicStream>(),
+            new List<ManagedQuicStream>(),
+            new List<ManagedQuicStream>()
         };
 
         /// <summary>
@@ -72,13 +72,8 @@ namespace System.Net.Quic.Implementations.Managed
             // reserve space in the list
             while (streamList.Count <= index)
             {
-                streamList.Add(null);
-            }
-
-            var stream = streamList[index];
-            if (stream == null)
-            {
-                stream = streamList[index] ??= CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, ctx);
+                var stream = CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, ctx);
+                streamList.Add(stream);
 
                 if (!isLocal)
                 {
@@ -88,7 +83,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            return stream;
+            return streamList[index];
         }
 
         private ManagedQuicStream CreateStream(long streamId,
@@ -125,6 +120,7 @@ namespace System.Net.Quic.Implementations.Managed
             var streamList = _streams[(int)type];
             long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
 
+            // TODO-RZ: data race: this is called from user-thread
             var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams, ctx);
             streamList.Add(stream);
             return stream;
@@ -149,5 +145,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             return _streams[(int)type].Count;
         }
+
+        internal IEnumerable<ManagedQuicStream> AllStreams => _streams.SelectMany(i => i);
     }
 }

@@ -570,12 +570,15 @@ namespace System.Net.Quic.Implementations.Managed
                 if (paddingLength > 0)
                     // zero bytes are equivalent to PADDING frames
                     writer.GetWritableSpan(paddingLength).Clear();
+
+                context.SentPacket.InFlight = true; // padding implies InFlight
             }
 
             // pad the packet payload so that it can always be sampled for header protection
             if (writer.BytesWritten - pnOffset < seal.PayloadSampleLength + 4)
             {
                 writer.GetWritableSpan(seal.PayloadSampleLength + 4 - writer.BytesWritten + pnOffset).Clear();
+                context.SentPacket.InFlight = true; // padding implies InFlight
             }
 
             // reserve space for AEAD integrity tag
@@ -595,7 +598,7 @@ namespace System.Net.Quic.Implementations.Managed
             context.SentPacket.BytesSent = writer.BytesWritten;
             context.SentPacket.TimeSent = context.Timestamp;
 
-            Recovery.OnPacketSent(pnSpace.NextPacketNumber, GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
+            Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
 
             return true;
@@ -788,7 +791,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
-            DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+            _ = DisposeAsync();//.AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
@@ -996,5 +999,28 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         internal void SignalConnectionClose() => _closeTcs.TryComplete();
+
+        private void StartClosing(long now)
+        {
+            Debug.Assert(_closingPeriodEnd == null);
+
+            // The closing and draining states SHOULD exists for at least three times the current PTO interval
+            // Note: this is to properly discard reordered/delayed packets.
+            _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
+
+            // TODO-RZ: data race with user who is trying to open a new stream?
+            foreach (var stream in _streams.AllStreams)
+            {
+                stream.OnConnectionClosed();
+            }
+        }
+
+        private void StartDraining()
+        {
+            _isDraining = true;
+
+            // for all user's purposes, the connection is closed.
+            SignalConnectionClose();
+        }
     }
 }

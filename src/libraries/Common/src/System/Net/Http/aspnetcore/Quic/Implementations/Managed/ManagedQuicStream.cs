@@ -183,6 +183,12 @@ namespace System.Net.Quic.Implementations.Managed
             return _shutdownCompleted.GetTask();
         }
 
+        internal void OnConnectionClosed()
+        {
+            // closing connection (CONNECTION_CLOSE frame) causes all streams to become closed
+            NotifyShutdownWriteCompleted();
+        }
+
         internal override void Shutdown()
         {
             ThrowIfDisposed();

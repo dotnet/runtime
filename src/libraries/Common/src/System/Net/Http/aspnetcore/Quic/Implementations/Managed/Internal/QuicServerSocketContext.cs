@@ -160,7 +160,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Debug.Assert(connection.IsClosed);
             _connectionIds.Remove(connection.SourceConnectionId!);
             ImmutableInterlocked.TryRemove(ref _connections, connection.SourceConnectionId!, out _);
-            Console.WriteLine("Server closing");
         }
     }
 }

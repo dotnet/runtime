@@ -374,32 +374,12 @@ namespace System.Net.Quic.Implementations.Managed
 
             // TODO-RZ other frames
 
-            if (outboundError != null)
-            {
-                if (_closingPeriodEnd == null)
-                {
-                    // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
-                    StartClosing(context.Timestamp);
+            // start by non ack-eliciting frames
+            WriteAckFrame(writer, pnSpace, context);
+            WriteConnectionCloseFrame(writer, context);
 
-                }
-
-                if (inboundError != null)
-                {
-                    // RFC allows sending one packet to hasten up the closing, but otherwise se should be draining
-                    StartDraining();
-                }
-
-                if (_lastConnectionCloseSent < context.Timestamp)
-                {
-                    // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
-                    // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
-                    // amount of time before responding.
-                    WriteConnectionCloseFrame(writer, outboundError!);
-                    _lastConnectionCloseSent = context.Timestamp;
-                }
-
-                return;
-            }
+            // we can simply track if this packet by tracking the written offset.
+            int writtenAfterNonAckEliciting = writer.BytesWritten;
 
             if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
                 _tls.IsHandshakeComplete)
@@ -425,31 +405,50 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 WriteStreamFrames(writer, context);
             }
+
+            if (writer.BytesWritten > writtenAfterNonAckEliciting)
+            {
+                // ack-eliciting frame was definitely sent.
+                context.SentPacket.InFlight = true;
+                context.SentPacket.AckEliciting = true;
+            }
         }
 
-        private void StartClosing(long now)
+        private void WriteConnectionCloseFrame(QuicWriter writer, SendContext context)
         {
-            // The closing and draining states SHOULD exists for at least three times the current PTO interval
-            // Note: this is to properly discard reordered/delayed packets.
+            if (outboundError == null)
+            {
+                // nothing to send
+                return;
+            }
 
-            _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
-        }
+            if (_closingPeriodEnd == null)
+            {
+                // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
+                StartClosing(context.Timestamp);
+            }
 
-        private void StartDraining()
-        {
-            _isDraining = true;
+            if (inboundError != null)
+            {
+                // RFC allows sending one packet to hasten up the closing, but otherwise we should be draining
+                StartDraining();
+            }
 
-            // for all user's purposes, the connection is closed.
-            SignalConnectionClose();
-        }
+            if (_lastConnectionCloseSent < context.Timestamp)
+            {
+                // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
+                // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
+                // amount of time before responding.
 
-        private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
-        {
-            ConnectionCloseFrame.Write(writer,
-                new ConnectionCloseFrame((long)error.ErrorCode,
-                    error.IsQuicError,
-                    error.FrameType,
-                    error.ReasonPhrase));
+                // TODO-RZ: check if we can fit
+                ConnectionCloseFrame.Write(writer,
+                    new ConnectionCloseFrame((long)outboundError.ErrorCode,
+                        outboundError.IsQuicError,
+                        outboundError.FrameType,
+                        outboundError.ReasonPhrase));
+
+                _lastConnectionCloseSent = context.Timestamp;
+            }
         }
 
         private static void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
@@ -468,8 +467,6 @@ namespace System.Net.Quic.Implementations.Managed
 
                 context.SentPacket.SentStreamData.Add(
                     SentPacket.StreamChunkInfo.ForCryptoStream(offset, offset + count - 1));
-                context.SentPacket.AckEliciting = true;
-                context.SentPacket.InFlight = true;
             }
         }
 
@@ -587,8 +584,6 @@ namespace System.Net.Quic.Implementations.Managed
 
                     context.SentPacket.SentStreamData.Add(
                         new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
-                    context.SentPacket.AckEliciting = true;
-                    context.SentPacket.InFlight = true;
                 }
 
                 if (buffer.IsFlushable)
