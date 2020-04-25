@@ -893,7 +893,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)MemoryStackFp);
+            EEPolicy::HandleStackOverflow();
             FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }

@@ -18,14 +18,6 @@
 
 extern "C" UINT_PTR STDCALL GetCurrentIP();
 
-enum StackOverflowDetector
-{
-    SOD_ManagedFrameHandler,
-    SOD_UnmanagedFrameHandler,
-    SOD_SOTolerantTransitor,
-    SOD_SOIntolerantTransitor,
-};
-
 // EEPolicy maintains actions for resource failure and timeout
 class EEPolicy
 {
@@ -70,7 +62,7 @@ public:
 
     static void HandleOutOfMemory();
 
-    static void HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame);
+    static void HandleStackOverflow();
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 

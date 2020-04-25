@@ -346,28 +346,12 @@ void EEPolicy::HandleOutOfMemory()
 //
 // EEPolicy::HandleStackOverflow - Handle stack overflow according to policy
 //
-// Arguments:
-//    detector:
-//    pLimitFrame: the limit of search for frames in order to decide if in SO tolerant
-//
 // Return Value:
 //    None.
 //
 // How is stack overflow handled?
-// If stack overflows in non-hosted case, we terminate the process.
-// For hosted case with escalation policy
-// 1. If stack overflows in managed code, or in VM before switching to SO intolerant region, and the GC mode is Cooperative
-//    the domain is rudely unloaded, or the process is terminated if the current domain is default domain.
-//    a. This action is done through BEGIN_SO_TOLERANT_CODE if there is one.
-//    b. If there is not this macro on the stack, we mark the domain being unload requested, and when the thread
-//       dies or is recycled, we finish the AD unload.
-// 2. If stack overflows in SO tolerant region, but the GC mode is Preemptive, the process is killed in vector handler, or our
-//    managed exception handler (COMPlusFrameHandler or ProcessCLRException).
-// 3. If stack overflows in SO intolerant region, the process is killed as soon as the exception is seen by our vector handler, or
-//    our managed exception handler.
-//
-// The process is terminated if there is StackOverflow as all clr code is considered SO Intolerant.
-void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame)
+// If stack overflows, we terminate the process.
+void EEPolicy::HandleStackOverflow()
 {
     WRAPPER_NO_CONTRACT;
 

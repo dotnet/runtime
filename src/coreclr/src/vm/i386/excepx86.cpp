@@ -1692,7 +1692,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     {
         if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
         {
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)pEstablisherFrame);
+            EEPolicy::HandleStackOverflow();
 
             // VC's unhandled exception filter plays with stack.  It VirtualAlloc's a new stack, and
             // then launch Watson from the new stack.  When Watson asks CLR to save required data, we
