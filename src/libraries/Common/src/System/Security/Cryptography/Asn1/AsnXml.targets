@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)asn.xsd">
-             Link="Common\System\Security\Cryptography\Asn1\asn.xsd">
+      <Link>Common\System\Security\Cryptography\Asn1\asn.xsd</Link>
     </None>
   </ItemGroup>
 
@@ -35,9 +35,9 @@
 
     <Copy
       Condition="'@(_AsnXmlDiffCode)' != '0'"
-      SourceFiles="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')"
+      SourceFiles="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')" 
       DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
-
+    
     <Warning Condition="'@(_AsnXmlDiffCode)' != '0'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
   </Target>
-</Project>
+</Project>  

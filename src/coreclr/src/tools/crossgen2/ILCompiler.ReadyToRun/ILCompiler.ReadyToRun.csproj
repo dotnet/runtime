@@ -209,16 +209,16 @@
 
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs">
-             Link="Common\ModuleHeaders.cs">
+      <Link>Common\ModuleHeaders.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Text\Utf8String.cs">
-             Link="Common\Utf8String.cs">
+      <Link>Common\Utf8String.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Text\Utf8StringBuilder.cs">
-             Link="Common\Utf8StringBuilder.cs">
+      <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\System\Collections\Generic\ArrayBuilder.cs">
-             Link="Common\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>

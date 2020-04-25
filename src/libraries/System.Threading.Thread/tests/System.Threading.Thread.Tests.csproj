@@ -13,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-             Link="CommonTest\System\Threading\ThreadTestHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
     <ProjectReference Include="STAMain\STAMain.csproj" />
     <ProjectReference Include="MTAMain\MTAMain.csproj" />

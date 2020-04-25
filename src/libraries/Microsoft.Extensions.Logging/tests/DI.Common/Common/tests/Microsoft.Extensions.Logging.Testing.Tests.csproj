@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\..\..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs">
-             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs</Link>
     </Compile>
     <Compile Include="..\src\LogLevelAttribute.cs">
       <Link>tests\DI.Common\Common\src\LogLevelAttribute.cs</Link>

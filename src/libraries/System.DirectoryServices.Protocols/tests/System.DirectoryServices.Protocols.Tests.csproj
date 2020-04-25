@@ -48,7 +48,7 @@
     <Compile Include="AddRequestTests.cs" />
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs">
-             Link="Common\DirectoryServices\LdapConfiguration.cs">
+      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

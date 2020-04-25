@@ -9,7 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-             Link="Common\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

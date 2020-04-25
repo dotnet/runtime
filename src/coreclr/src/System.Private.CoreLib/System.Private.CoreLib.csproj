@@ -260,19 +260,19 @@
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
-             Link="Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
-             Link="Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
-             Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
-             Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
@@ -283,16 +283,16 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
-             Link="Common\System\Runtime\InteropServices\IDispatch.cs">
+      <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
-             Link="Common\System\Runtime\InteropServices\ComEventsMethod.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
-             Link="Common\System\Runtime\InteropServices\ComEventsSink.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
-             Link="Common\System\Runtime\InteropServices\Variant.cs">
+      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ActivationFactoryLoader.cs" Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'" />
@@ -366,7 +366,7 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
-             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
@@ -378,7 +378,7 @@
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-             Link="Common\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

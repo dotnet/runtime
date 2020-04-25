@@ -14,19 +14,19 @@
     <Compile Include="System\Threading\ReadLock.cs" />
     <Compile Include="System\Threading\WriteLock.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs">
-             Link="Common\System\Composition\Diagnostics\CompositionTrace.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTrace.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs">
-             Link="Common\System\Composition\Diagnostics\CompositionTraceId.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs">
-             Link="Common\System\Composition\Diagnostics\CompositionTraceSource.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs">
-             Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs">
-             Link="Common\System\Composition\Diagnostics\TraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

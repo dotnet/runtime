@@ -11,10 +11,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-             Link="Common\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-             Link="Common\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IMetadataView.cs" />

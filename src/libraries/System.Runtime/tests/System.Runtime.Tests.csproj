@@ -8,43 +8,43 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
-             Link="Common\System\EnumTypes.cs">
+      <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\MockType.cs">
-             Link="Common\System\MockType.cs">
+      <Link>Common\System\MockType.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs">
-             Link="Common\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs">
-             Link="Common\System\Collections\ICollection.Generic.Tests.cs">
+      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs">
-             Link="Common\System\Collections\IEnumerable.Generic.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs">
-             Link="Common\System\Collections\IList.Generic.Tests.cs">
+      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs">
-             Link="Common\System\Collections\TestBase.Generic.cs">
+      <Link>Common\System\Collections\TestBase.Generic.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
-             Link="Common\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-             Link="Common\System\StringTests.cs">
+      <Link>Common\System\StringTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
-             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs">
-             Link="Common\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
-             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
-             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
     </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
@@ -236,7 +236,7 @@
     <Compile Include="System\Type\TypeTests.cs" />
     <Compile Include="System\Type\TypeTests.Get.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
-             Link="Common\System\RandomDataGenerator.cs">
+      <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
@@ -263,7 +263,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
-             Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
@@ -272,7 +272,7 @@
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

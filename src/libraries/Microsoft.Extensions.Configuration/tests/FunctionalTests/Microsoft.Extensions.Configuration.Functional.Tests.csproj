@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
-             Link="Common\ConfigurationProviderExtensions.cs">
+      <Link>Common\ConfigurationProviderExtensions.cs</Link>
     </Compile>
   </ItemGroup>
 

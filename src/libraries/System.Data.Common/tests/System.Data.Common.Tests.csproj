@@ -114,10 +114,10 @@
     <Compile Include="System\Data\XmlDataReaderTest.cs" />
     <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

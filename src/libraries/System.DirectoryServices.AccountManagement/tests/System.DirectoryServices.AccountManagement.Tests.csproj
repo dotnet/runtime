@@ -11,7 +11,7 @@
     <Compile Include="UserPrincipalTest.cs" />
     <Compile Include="AccountManagementTests.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs">
-             Link="Common\DirectoryServices\LdapConfiguration.cs">
+      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

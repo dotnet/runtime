@@ -84,7 +84,7 @@
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
-             Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs">
+      <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">

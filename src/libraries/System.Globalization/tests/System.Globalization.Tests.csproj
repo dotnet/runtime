@@ -114,7 +114,7 @@
     <Compile Include="System\Globalization\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
-             Link="Common\System\RandomDataGenerator.cs">
+      <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

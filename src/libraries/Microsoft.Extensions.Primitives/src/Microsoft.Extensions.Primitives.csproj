@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs">
-             Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs">
+      <Link>Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs</Link>
     </Compile>
     <Compile Include="CancellationChangeToken.cs" />
     <Compile Include="ChangeToken.cs" />

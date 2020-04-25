@@ -15,10 +15,10 @@
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-             Link="Common\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
-             Link="Common\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
