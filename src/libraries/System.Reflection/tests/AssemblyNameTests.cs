@@ -396,7 +396,7 @@ namespace System.Reflection.Tests
         public static void Name_WithNullPublicKey()
         {
             AssemblyName assemblyName = new AssemblyName("noname,PublicKeyToken=null");
-            Assert.Equal(assemblyName.GetPublicKeyToken().Length == 0);
+            Assert.Equal(0, assemblyName.GetPublicKeyToken().Length);
             Assert.Equal("noname, PublicKeyToken=null", assemblyName.FullName);
         }
 
