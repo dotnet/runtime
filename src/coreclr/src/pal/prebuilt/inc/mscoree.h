@@ -185,9 +185,7 @@ enum __MIDL___MIDL_itf_mscoree_0000_0000_0007
         FAIL_FatalRuntime	= ( FAIL_CriticalResource + 1 ) ,
         FAIL_OrphanedLock	= ( FAIL_FatalRuntime + 1 ) ,
         FAIL_StackOverflow	= ( FAIL_OrphanedLock + 1 ) ,
-        FAIL_AccessViolation	= ( FAIL_StackOverflow + 1 ) ,
-        FAIL_CodeContract	= ( FAIL_AccessViolation + 1 ) ,
-        MaxClrFailure	= ( FAIL_CodeContract + 1 ) 
+        MaxClrFailure	= (FAIL_StackOverflow + 1 )
     } 	EClrFailure;
 
 typedef /* [public] */ 

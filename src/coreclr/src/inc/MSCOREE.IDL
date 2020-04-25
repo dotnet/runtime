@@ -150,10 +150,6 @@ typedef enum
     FAIL_FatalRuntime,
     FAIL_OrphanedLock,
     FAIL_StackOverflow,
-    // In CoreCLR, we will treat AV specially, based upon the escalation policy.
-    // Currently only used in CoreCLR.
-    FAIL_AccessViolation,
-    FAIL_CodeContract,
     MaxClrFailure
     // Do not add anything after this
 } EClrFailure;

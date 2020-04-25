@@ -73,9 +73,7 @@ EEPolicy::EEPolicy ()
     // For CoreCLR, initialize the default action for AV processing to all
     // all kind of code to catch AV exception. If the host wants, they can
     // specify a different action for this.
-    m_ActionOnFailure[FAIL_AccessViolation] = eNoAction;
     m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
-    m_ActionOnFailure[FAIL_CodeContract] = eThrowException;
 }
 
 EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
