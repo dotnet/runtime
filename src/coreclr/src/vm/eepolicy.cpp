@@ -47,13 +47,8 @@ EEPolicy::EEPolicy ()
 
     int n;
     for (n = 0; n < MaxClrOperation; n++) {
-        m_ActionOnTimeout[n] = eNoAction;
         m_DefaultAction[n] = eNoAction;
     }
-    m_ActionOnTimeout[OPR_ProcessExit] = eRudeExitProcess;
-    m_ActionOnTimeout[OPR_ThreadAbort] = eAbortThread;
-    m_ActionOnTimeout[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;
-    m_ActionOnTimeout[OPR_ThreadRudeAbortInCriticalRegion] = eRudeAbortThread;
 
     m_DefaultAction[OPR_ThreadAbort] = eAbortThread;
     m_DefaultAction[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;

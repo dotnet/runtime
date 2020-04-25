@@ -33,13 +33,6 @@ public:
 
     EEPolicy ();
 
-    EPolicyAction GetActionOnTimeout(EClrOperation operation, Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return GetFinalAction(m_ActionOnTimeout[operation], pThread);
-    }
-
     EPolicyAction GetDefaultAction(EClrOperation operation, Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -60,7 +53,6 @@ public:
     static void HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode);
 
 private:
-    EPolicyAction m_ActionOnTimeout[MaxClrOperation];
     EPolicyAction m_DefaultAction[MaxClrOperation];
     EPolicyAction m_ActionOnFailure[MaxClrFailure];
 

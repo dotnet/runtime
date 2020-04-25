@@ -1382,22 +1382,10 @@ LRetry:
 
             if (now_time >= abortEndTime)
             {
-                EPolicyAction action1 = eNoAction;
-                if (fEscalation)
-                {
-                    if (!IsRudeAbort())
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadAbort, this);
-                    }
-                    else
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInCriticalRegion, this);
-                    }
-                }
-                if (action1 == eNoAction)
+                if (!fEscalation)
                 {
                     // timeout, but no action on timeout.
-                    // Debugger can call this function to about func-eval with a timeout
+                    // Debugger can call this function to abort func-eval with a timeout
                     return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
                 }
             }
@@ -2495,12 +2483,9 @@ void Thread::HandleThreadAbortTimeout()
 {
     WRAPPER_NO_CONTRACT;
 
-    EPolicyAction action = eNoAction;
-    EClrOperation operation = OPR_ThreadRudeAbortInNonCriticalRegion;
-
     if (IsFuncEvalAbort())
     {
-        // There can't be escalation policy for FuncEvalAbort timeout.
+        // There can't be escalation for FuncEvalAbort timeout.
         // The debugger should retain control of the policy.  For example, if a RudeAbort times out, it's
         // probably because the debugger had some other thread frozen.  When the thread is thawed, things might
         // be fine, so we don't want to escelate the FuncEvalRudeAbort (which will be swalled by FuncEvalHijackWorker)
@@ -2508,37 +2493,10 @@ void Thread::HandleThreadAbortTimeout()
         return;
     }
 
-    if (!IsRudeAbort())
+    if (IsRudeAbort())
     {
-        operation = OPR_ThreadAbort;
+        MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
     }
-    else
-    {
-        operation = OPR_ThreadRudeAbortInCriticalRegion;
-    }
-    action = GetEEPolicy()->GetActionOnTimeout(operation, this);
-    // We only support escalation to rude abort
-
-    EX_TRY {
-        switch (action)
-        {
-        case eRudeAbortThread:
-            MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
-            break;
-        case eExitProcess:
-        case eRudeExitProcess:
-            EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
-            _ASSERTE (!"Should not reach here");
-            break;
-        case eNoAction:
-            break;
-        default:
-            _ASSERTE (!"unknown policy for thread abort");
-        }
-    }
-    EX_CATCH {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 }
 
 void Thread::HandleThreadAbort ()
