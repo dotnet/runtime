@@ -57,10 +57,20 @@ namespace System.Net.Quic.Tests
             return new PacketFlight(packets, written);
         }
 
-        internal OneRttPacket Get1RttToSend(ManagedQuicConnection from)
+        internal TPacket GetPacketToSend<TPacket>(ManagedQuicConnection from) where TPacket : PacketBase
         {
             var flight = GetFlightToSend(from);
-            return Assert.IsType<OneRttPacket>(Assert.Single(flight.Packets));
+            return Assert.IsType<TPacket>(Assert.Single(flight.Packets));
+        }
+
+        internal OneRttPacket Get1RttToSend(ManagedQuicConnection from)
+        {
+            return GetPacketToSend<OneRttPacket>(from);
+        }
+
+        internal InitialPacket GetInitialToSend(ManagedQuicConnection from)
+        {
+            return GetPacketToSend<InitialPacket>(from);
         }
 
         internal OneRttPacket Send1Rtt(ManagedQuicConnection source,

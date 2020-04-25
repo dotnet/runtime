@@ -57,8 +57,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                _streamCollection.MarkFlushable(this);
-                _ctx.Ping();
+                RequestUpdate();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -114,8 +113,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                _streamCollection.MarkFlushable(this);
-                _ctx.Ping();
+                RequestUpdate();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -174,13 +172,26 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
+        internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
-            Shutdown();
-            return _shutdownCompleted.GetTask();
+            if (CanWrite)
+            {
+                OutboundBuffer!.MarkEndOfData();
+                await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+                RequestUpdate();
+            }
+
+            // TODO-RZ: cancellation
+            await _shutdownCompleted.GetTask();
+        }
+
+        private void RequestUpdate()
+        {
+            _streamCollection.MarkFlushable(this);
+            _ctx.Ping();
         }
 
         internal void OnConnectionClosed()
@@ -199,9 +210,8 @@ namespace System.Net.Quic.Implementations.Managed
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
-                // ensure that the stream is marked as flushable so that the fin bit is sent even if no more data was written since last time
-                _streamCollection.MarkFlushable(this);
-                _ctx.Ping();
+                OutboundBuffer!.FlushChunk();
+                RequestUpdate();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }

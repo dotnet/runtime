@@ -294,25 +294,16 @@ namespace System.Net.Quic.Implementations.Managed
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
-            // don't buffer if not needed
-            if (stream.BytesRead == crypto.Offset)
+            // TODO-RZ: don't buffer if not needed
+            stream.Receive(crypto.Offset, crypto.CryptoData);
+
+            // process also buffered data received earlier
+            if (stream.BytesAvailable > 0)
             {
-                stream.Skip(crypto.CryptoData.Length);
-                _tls.OnDataReceived(level, crypto.CryptoData);
-
-                // process also buffered data received earlier
-                if (stream.BytesAvailable > 0)
-                {
-                    // define a copy of level variable with smaller scope to prevent allocations in common case
-                    EncryptionLevel level2 = level;
-                    stream.Deliver(segment => { _tls.OnDataReceived(level2, segment.Span); });
-                }
-
+                // define a copy of level variable with smaller scope to prevent allocations in common case
+                EncryptionLevel level2 = level;
+                stream.Deliver(segment => { _tls.OnDataReceived(level2, segment.Span); });
                 context.HandshakeWanted = true;
-            }
-            else
-            {
-                stream.Receive(crypto.Offset, crypto.CryptoData);
             }
 
             return ProcessPacketResult.Ok;
@@ -394,7 +385,6 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 writer.WriteFrameType(FrameType.Ping);
                 // no data
-                // TODO-RZ resend ping after loss?
                 _pingWanted = false;
             }
 

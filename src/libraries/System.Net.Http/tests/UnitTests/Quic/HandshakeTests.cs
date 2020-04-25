@@ -61,6 +61,22 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public void SendsProbeTimeoutIfInitialLost()
+        {
+            // first packet lost
+            _harness.GetInitialToSend(_client);
+            Assert.NotEqual(long.MaxValue, _client.GetNextTimerTimestamp());
+
+            _harness.Timestamp = _client.GetNextTimerTimestamp();
+            var flight = _harness.GetFlightToSend(_client);
+            var packet = Assert.IsType<InitialPacket>(Assert.Single(flight.Packets));
+
+            // it is still initial packet, so minimum size applies
+            Assert.Equal(QuicConstants.MinimumClientInitialDatagramSize, flight.UdpDatagramSize);
+            packet.ShouldHaveFrame<PingFrame>();
+        }
+
+        [Fact]
         public void SimpleSuccessfulConnectionTest()
         {
             // Expected handshake pattern

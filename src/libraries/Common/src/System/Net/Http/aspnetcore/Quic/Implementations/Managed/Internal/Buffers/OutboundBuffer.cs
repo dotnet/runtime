@@ -175,6 +175,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         internal async ValueTask EnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
+            Debug.Assert(!SizeKnown);
+
             while (buffer.Length > 0)
             {
                 int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, buffer.Length);
@@ -198,6 +200,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="data">Data to be sent.</param>
         internal void Enqueue(ReadOnlySpan<byte> data)
         {
+            Debug.Assert(!SizeKnown);
+
             while (data.Length > 0)
             {
                 int toWrite = Math.Min(_toBeQueuedChunk.Buffer!.Length - _toBeQueuedChunk.Length, data.Length);

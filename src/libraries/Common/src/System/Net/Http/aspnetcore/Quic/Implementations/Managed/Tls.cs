@@ -143,7 +143,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int OnDataReceived(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            return Interop.OpenSslQuic.SslProvideQuicData(_ssl, ToOpenSslEncryptionLevel(level), data);
+            int status = Interop.OpenSslQuic.SslProvideQuicData(_ssl, ToOpenSslEncryptionLevel(level), data);
+            Debug.Assert(status == 1);
+            return status;
         }
 
         internal SslError DoHandshake()

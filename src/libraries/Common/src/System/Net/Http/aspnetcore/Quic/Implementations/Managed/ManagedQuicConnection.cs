@@ -173,9 +173,10 @@ namespace System.Net.Quic.Implementations.Managed
 
             _remoteEndpoint = options.RemoteEndPoint!;
 
-            var listenEndPoint = options.LocalEndPoint ?? new IPEndPoint(_remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
-                ? IPAddress.Any
-                : IPAddress.IPv6Any, 0);
+            var listenEndPoint = options.LocalEndPoint ?? new IPEndPoint(
+                _remoteEndpoint.AddressFamily == AddressFamily.InterNetwork
+                    ? IPAddress.Any
+                    : IPAddress.IPv6Any, 0);
             _socketContext = new SingleConnectionSocketContext(listenEndPoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             _gcHandle = GCHandle.Alloc(this);
@@ -194,7 +195,8 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         // server constructor
-        public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext, IPEndPoint remoteEndpoint)
+        public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext,
+            IPEndPoint remoteEndpoint)
         {
             _isServer = true;
             _serverOpts = options;
@@ -456,7 +458,8 @@ namespace System.Net.Quic.Implementations.Managed
                     // clients SHOULD ignore fixed bit when receiving version negotiation
                     !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation ||
                     // packet is not meant for us after all
-                    SourceConnectionId != null && !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data))
+                    SourceConnectionId != null &&
+                    !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data))
                 {
                     return ProcessPacketResult.DropPacket;
                 }
@@ -490,11 +493,16 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var level = (EncryptionLevel)i;
                 var pnSpace = _pnSpaces[i];
+                var recoverySpace = Recovery.GetPacketNumberSpace((PacketSpace)i);
 
-                if (pnSpace.CryptoOutboundStream.IsFlushable)
-                    return level;
-
-                if (pnSpace.AckElicited)
+                // to advance handshake
+                if (pnSpace.CryptoOutboundStream.IsFlushable ||
+                    // resend lost data
+                    recoverySpace.LostPackets.Count > 0 ||
+                    // send acknowledgements
+                    pnSpace.AckElicited ||
+                    // avoid deadlocks during handshake
+                    recoverySpace.RemainingLossProbes > 0)
                     return level;
             }
 
@@ -511,7 +519,6 @@ namespace System.Net.Quic.Implementations.Managed
                 EncryptionLevel.Application => (PacketType.OneRtt, PacketSpace.Application),
                 _ => throw new InvalidOperationException()
             };
-
 
             var pnSpace = GetPacketNumberSpace(level);
             var recoverySpace = Recovery.GetPacketNumberSpace(packetSpace);
@@ -534,9 +541,29 @@ namespace System.Net.Quic.Implementations.Managed
                 // use minimum size for packets during handshake
                 : QuicConstants.MinimumClientInitialDatagramSize);
 
-            // limit outbound packet by available congestion window
-            // TODO-RZ: ignore congestion window when sending probe packets
-            maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
+            // make sure we send something if a probe is wanted
+            if (recoverySpace.RemainingLossProbes > 0)
+            {
+                _pingWanted = true;
+                recoverySpace.RemainingLossProbes--;
+                // probe packets are not limited by congestion window
+
+                // TODO-RZ: Although ping should always work, the actual algorithm for probe packet is following
+                // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
+                // {
+                    // TODO-RZ: Client needs to send an anti-deadlock packet:
+                // }
+                // else
+                // {
+                    // TODO-RZ: PTO. Send new data if available, else retransmit old data.
+                    // If neither is available, send single PING frame.
+                // }
+            }
+            else
+            {
+                // limit outbound packet by available congestion window
+                maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
+            }
 
             if (maxPacketLength < 50)
             {
@@ -727,7 +754,8 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason, FrameType frameType = FrameType.Padding)
+        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason,
+            FrameType frameType = FrameType.Padding)
         {
             outboundError = new QuicError(errorCode, reason, frameType);
             return ProcessPacketResult.Error;
@@ -781,7 +809,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            await CloseAsync((long) TransportErrorCode.NoError).ConfigureAwait(false);
+            await CloseAsync((long)TransportErrorCode.NoError).ConfigureAwait(false);
 
             _tls.Dispose();
             _gcHandle.Free();
@@ -791,7 +819,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
-            _ = DisposeAsync();//.AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+            _ = DisposeAsync(); //.AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
@@ -973,7 +1001,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (IsClosed) return;
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            outboundError = new QuicError((TransportErrorCode) errorCode, null, FrameType.Padding, false);
+            outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
             _socketContext.Ping();
 
             await _closeTcs.GetTask().ConfigureAwait(false);

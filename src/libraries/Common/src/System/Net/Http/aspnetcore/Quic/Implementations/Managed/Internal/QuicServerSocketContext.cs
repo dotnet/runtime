@@ -79,6 +79,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 }
             }
 
+            reader.Seek(0);
             return connection;
         }
 

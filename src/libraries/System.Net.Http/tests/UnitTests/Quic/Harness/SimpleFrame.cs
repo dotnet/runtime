@@ -2,17 +2,27 @@ using System.Net.Quic.Implementations.Managed.Internal;
 
 namespace System.Net.Quic.Tests.Harness
 {
-    internal class SimpleFrame : FrameBase
+    internal class PingFrame : SimpleFrame
+    {
+        public PingFrame() : base(FrameType.Ping)
+        {
+        }
+    }
+
+    internal class HandshakeDoneFrame : SimpleFrame
+    {
+        public HandshakeDoneFrame() : base(FrameType.HandshakeDone)
+        {
+        }
+    }
+
+    internal abstract class SimpleFrame : FrameBase
     {
         private FrameType type;
 
-        public SimpleFrame(FrameType frameType)
+        protected SimpleFrame(FrameType frameType)
         {
             type = frameType;
-        }
-
-        public SimpleFrame()
-        {
         }
 
         internal override FrameType FrameType => type;

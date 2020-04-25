@@ -17,7 +17,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly IPEndPoint _listenEndpoint;
         private readonly CancellationTokenSource _socketTaskCts;
 
-        private TaskCompletionSource<int> _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource<int> _signalTcs =
+            new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private Task? _backgroundWorkerTask;
 
@@ -67,10 +68,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            while (true)
+            // TODO-RZ: I would like to have unbound loop there, but untill flow control is implemented, it might loop
+            // indefinitely
+            // while (true)
+            for (int i = 0; i < 2; i++)
             {
                 _writer.Reset(_sendBuffer);
                 connection.SendData(_writer, out var receiver, Timestamp.Now);
+
+                var newState = connection.GetConnectionState();
+                if (newState != previousState)
+                {
+                    OnConnectionStateChanged(connection, newState);
+                }
+                previousState = newState;
 
                 if (_writer.BytesWritten == 0)
                 {
@@ -80,12 +91,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 await _socket.SendToAsync(new ArraySegment<byte>(_sendBuffer, 0, _writer.BytesWritten),
                     SocketFlags.None,
                     receiver).ConfigureAwait(false);
-            }
-
-            var newState = connection.GetConnectionState();
-            if (newState != previousState)
-            {
-                OnConnectionStateChanged(connection, newState);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -100,28 +105,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (timestamp < _currentTimeout)
             {
-                int milliseconds = (int)Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp));
+                int milliseconds = (int)Timestamp.GetMilliseconds(Timestamp.Now - timestamp);
 
                 // don't create tasks needlessly
                 if (milliseconds > 0)
                 {
-                    ClearTimeout();
+                    // cancel previous delay task
+                    _timeoutCts.Cancel();
+                    _timeoutCts = new CancellationTokenSource();
+
                     _timeoutTask = Task.Delay(milliseconds, _timeoutCts.Token);
-                    _waitingTasks[2] = _timeoutTask;
+                }
+                else
+                {
+                    _timeoutTask = Task.CompletedTask;
                 }
 
+                _waitingTasks[2] = _timeoutTask;
                 _currentTimeout = timestamp;
             }
-        }
-
-        protected void ClearTimeout()
-        {
-            // TODO-RZ: gracefully stop the current timeout task
-            _timeoutCts.Cancel();
-            _timeoutCts = new CancellationTokenSource();
-            _currentTimeout = long.MaxValue;
-            _timeoutTask = _infiniteTimeoutTask;
-            _waitingTasks[2] = _timeoutTask;
         }
 
         protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
@@ -134,7 +136,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (connection != null)
             {
                 var previousState = connection.GetConnectionState();
-                reader.Seek(0);
                 connection.ReceiveData(reader, sender, Timestamp.Now);
                 await UpdateAsync(connection, previousState).ConfigureAwait(false);
                 UpdateTimeout(connection.GetNextTimerTimestamp());
@@ -147,6 +148,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _waitingTasks[1] = _signalTcs.Task;
             await OnSignal().ConfigureAwait(false);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -155,6 +158,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private async Task DoTimeout()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            // clear previous timeout
+            _currentTimeout = long.MaxValue;
+            _waitingTasks[2] = _timeoutTask = _infiniteTimeoutTask;
 
             await OnTimeout().ConfigureAwait(false);
 
@@ -165,7 +172,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected abstract Task OnTimeout();
 
-        protected abstract void OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
+        protected abstract void
+            OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
 
         private async Task BackgroundWorker()
         {
@@ -187,25 +195,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // TODO-RZ: allow timers for multiple connections on server
             try
             {
-                do
+                while (ShouldContinue && !token.IsCancellationRequested)
                 {
-                    bool immediateTimeout = Timestamp.Now >= _currentTimeout;
-                    if (immediateTimeout)
+                    if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
+                    await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
+
+                    if (_timeoutTask.IsCompleted)
                     {
-                        ClearTimeout();
                         await DoTimeout().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Wait");
-                        await Task.WhenAny(_waitingTasks).ConfigureAwait(false);
-                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Wait");
-                    }
-
-
-                    if (token.IsCancellationRequested)
-                    {
-                        break;
                     }
 
                     if (socketReceiveTask.IsCompleted)
@@ -230,11 +228,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (_signalTcs.Task.IsCompleted)
                     {
-                        _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-                        _waitingTasks[1] = _signalTcs.Task;
                         await DoSignal().ConfigureAwait(false);
                     }
-                } while (ShouldContinue);
+                }
             }
             catch (Exception e)
             {

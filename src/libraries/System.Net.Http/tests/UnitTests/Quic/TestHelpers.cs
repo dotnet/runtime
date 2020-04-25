@@ -9,6 +9,17 @@ namespace System.Net.Quic.Tests
 {
     internal static class TestHelpers
     {
+        public static TFrame ShouldHaveFrame<TFrame>(this InitialPacket packet) where TFrame : FrameBase
+        {
+            return ShouldHaveFrameCommonImpl<TFrame, InitialPacket>(packet);
+        }
+        private static TFrame ShouldHaveFrameCommonImpl<TFrame, TPacket>(this TPacket packet) where TFrame : FrameBase where TPacket : CommonPacket
+        {
+            var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();
+            Assert.True(frame != null, $"Packet does not contain {typeof(TFrame).Name}s.");
+            return frame!;
+        }
+
         public static TFrame ShouldHaveFrame<TFrame>(this OneRttPacket packet) where TFrame : FrameBase
         {
             var frame = packet.Frames.OfType<TFrame>().SingleOrDefault();

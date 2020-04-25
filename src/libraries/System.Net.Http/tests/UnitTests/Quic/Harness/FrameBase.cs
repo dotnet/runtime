@@ -32,7 +32,7 @@ namespace System.Net.Quic.Tests.Harness
                 case FrameType.Padding:
                     return Parse<PaddingFrame>(reader);
                 case FrameType.Ping:
-                    return Parse<SimpleFrame>(reader);
+                    return Parse<PingFrame>(reader);
                 case FrameType.Ack:
                 case FrameType.AckWithEcn:
                     return Parse<AckFrame>(reader);
@@ -69,7 +69,7 @@ namespace System.Net.Quic.Tests.Harness
                 case FrameType.ConnectionCloseApplication:
                     return Parse<ConnectionCloseFrame>(reader);
                 case FrameType.HandshakeDone:
-                    return Parse<SimpleFrame>(reader);
+                    return Parse<HandshakeDoneFrame>(reader);
                 default:
                     if ((type & FrameType.StreamMask) == type)
                         return Parse<StreamFrame>(reader);

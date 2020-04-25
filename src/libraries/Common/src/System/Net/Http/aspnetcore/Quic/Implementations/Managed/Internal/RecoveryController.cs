@@ -144,12 +144,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <returns></returns>
         internal int GetAvailableCongestionWindowBytes()
         {
-            // for (int i = 0; i < _pnSpaces.Length; i++)
-            // {
-                // if (_pnSpaces[i].RemainingLossProbes > 0)
-                    // return int.MaxValue;
-            // }
-
             return Math.Max(0, CongestionController.CongestionWindow - AckElicitingBytesInFlight);
         }
 
@@ -365,6 +359,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
+            // probe timeout
             long lastAckElicitingSent = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
             if (lastAckElicitingSent == long.MaxValue)
             {
@@ -410,18 +405,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             pnSpace.RemainingLossProbes = 2;
-            // TODO-RZ: Move the code handling these cases to ManagedQuicConnection
-            // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
-            // {
-                // TODO-RZ: Client needs to send an anti-deadlock packet:
-                // throw new NotImplementedException();
-            // }
-            // else
-            // {
-                // TODO-RZ: PTO. Send new data if available, else retransmit old data.
-                // If neither is available, send single PING frame.
-                // throw new NotImplementedException();
-            // }
 
             PtoCount++;
             SetLossDetectionTimer(isHandshakeComplete);
