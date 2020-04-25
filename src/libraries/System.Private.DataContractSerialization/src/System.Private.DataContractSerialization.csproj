@@ -18,10 +18,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />

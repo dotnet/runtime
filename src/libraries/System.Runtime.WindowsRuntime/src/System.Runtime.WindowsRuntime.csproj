@@ -56,31 +56,31 @@
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs</Link>
+             Link="Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
-      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
+             Link="Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
+             Link="Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs</Link>
+             Link="Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+             Link="Common\Interop\Windows\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
+             Link="Common\System\IO\Win32Marshal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

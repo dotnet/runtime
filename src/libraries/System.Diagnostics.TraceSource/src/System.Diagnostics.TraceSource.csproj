@@ -30,29 +30,29 @@
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.cs</Link>
+             Link="Common\System\Diagnostics\TraceListenerHelpers.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Windows.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.Windows.cs</Link>
+             Link="Common\System\Diagnostics\TraceListenerHelpers.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\Interop.GetCurrentProcessId.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetCurrentProcessId.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPid.cs">
-      <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetPid.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Unix.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.Unix.cs</Link>
+             Link="Common\System\Diagnostics\TraceListenerHelpers.Unix.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

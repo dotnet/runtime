@@ -46,13 +46,13 @@
       <Link>System\Uri.MethodsTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
-      <Link>Common\System\EnumTypes.cs</Link>
+             Link="Common\System\EnumTypes.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\MockType.cs">
-      <Link>Common\System\MockType.cs</Link>
+             Link="Common\System\MockType.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>Common\System\StringTests.cs</Link>
+             Link="Common\System\StringTests.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

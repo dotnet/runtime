@@ -7,28 +7,28 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="WebClientTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
-      <Link>Common\System\Net\Capability.Security.cs</Link>
+             Link="Common\System\Net\Capability.Security.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-      <Link>Common\System\Net\Configuration.cs</Link>
+             Link="Common\System\Net\Configuration.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs">
-      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
+             Link="Common\System\Net\Configuration.Certificates.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
-      <Link>Common\System\Net\Configuration.Http.cs</Link>
+             Link="Common\System\Net\Configuration.Http.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs">
-      <Link>Common\System\Net\Configuration.Security.cs</Link>
+             Link="Common\System\Net\Configuration.Security.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs">
-      <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
+             Link="Common\System\Net\Http\LoopbackServer.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs">
-      <Link>Common\System\Net\Http\GenericLoopbackServer.cs</Link>
+             Link="Common\System\Net\Http\GenericLoopbackServer.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs">
     </Compile>
   </ItemGroup>
 </Project>

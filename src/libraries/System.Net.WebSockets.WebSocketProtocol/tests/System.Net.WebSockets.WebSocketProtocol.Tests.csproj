@@ -4,16 +4,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketCreateTest.cs">
-      <Link>Common\System\Net\WebSockets\WebSocketCreateTest.cs</Link>
+             Link="Common\System\Net\WebSockets\WebSocketCreateTest.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-      <Link>Common\System\Net\Configuration.cs</Link>
+             Link="Common\System\Net\Configuration.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs">
-      <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
+             Link="Common\System\Net\Configuration.WebSockets.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="WebSocketProtocolTests.cs" />
   </ItemGroup>

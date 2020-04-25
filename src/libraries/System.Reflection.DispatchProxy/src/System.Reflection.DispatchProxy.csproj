@@ -12,7 +12,7 @@
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
-      <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
+             Link="Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

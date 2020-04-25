@@ -53,13 +53,13 @@
     <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">

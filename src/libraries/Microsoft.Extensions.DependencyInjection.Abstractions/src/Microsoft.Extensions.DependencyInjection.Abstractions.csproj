@@ -8,16 +8,16 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
-      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
+             Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
     </Compile>
     <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilities.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilities.cs</Link>
+             Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilities.cs">
     </Compile>
     <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs</Link>
+             Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs</Link>
+             Link="Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs">
     </Compile>
   </ItemGroup>
 

@@ -13,37 +13,37 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetUnixName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetOSArchitecture.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

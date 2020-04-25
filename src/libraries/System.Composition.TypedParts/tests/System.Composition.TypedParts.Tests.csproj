@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="ContainerConfigurationTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs">
     </Compile>
     <Compile Include="ReflectionTests.cs" />
   </ItemGroup>

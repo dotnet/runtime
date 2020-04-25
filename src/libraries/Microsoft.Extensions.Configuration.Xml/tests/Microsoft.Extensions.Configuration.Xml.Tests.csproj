@@ -16,22 +16,22 @@
       <Link>Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ReplaceCulture.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ReplaceCulture.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ReplaceCulture.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\FrameworkSkipConditionAttribute.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\FrameworkSkipConditionAttribute.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\FrameworkSkipConditionAttribute.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs">
     </Compile>
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs">
     </Compile>
   </ItemGroup>
 

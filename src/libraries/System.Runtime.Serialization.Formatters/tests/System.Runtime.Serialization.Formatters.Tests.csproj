@@ -22,18 +22,18 @@
     <Compile Include="TargetFrameworkMoniker.cs" />
     <Compile Include="TypeSerializableValue.cs" />
     <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
+             Link="Common\System\Drawing\Helpers.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\NonRuntimeType.cs">
-      <Link>Common\System\NonRuntimeType.cs</Link>
+             Link="Common\System\NonRuntimeType.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

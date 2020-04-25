@@ -7,22 +7,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\Interop.FreeLibrary.cs</Link>
+             Link="Common\Interop\Windows\Interop.FreeLibrary.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetModuleHandle.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetModuleHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Common\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
+             Link="Common\Interop\Windows\Interop.LoadLibraryEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
+             Link="Common\System\IO\TempFile.cs">
     </Compile>
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />

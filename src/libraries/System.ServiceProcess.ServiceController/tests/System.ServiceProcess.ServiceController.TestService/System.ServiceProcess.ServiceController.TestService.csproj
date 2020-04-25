@@ -15,37 +15,37 @@
       <Link>Microsoft\Win32\SafeHandles\SafeServiceHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ServiceProcessOptions.cs">
-      <Link>Common\Interop\Windows\Interop.ServiceProcessOptions.cs</Link>
+             Link="Common\Interop\Windows\Interop.ServiceProcessOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseServiceHandle.cs">
-      <Link>Common\Interop\Windows\Interop.CloseServiceHandle.cs</Link>
+             Link="Common\Interop\Windows\Interop.CloseServiceHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenSCManager.cs">
-      <Link>Common\Interop\Windows\Interop.OpenSCManager.cs</Link>
+             Link="Common\Interop\Windows\Interop.OpenSCManager.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenService.cs">
-      <Link>Common\Interop\Windows\Interop.OpenService.cs</Link>
+             Link="Common\Interop\Windows\Interop.OpenService.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CreateService.cs">
-      <Link>Common\Interop\Windows\Interop.CreateService.cs</Link>
+             Link="Common\Interop\Windows\Interop.CreateService.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_DESCRIPTION.cs">
-      <Link>Common\Interop\Windows\Interop.SERVICE_DESCRIPTION.cs</Link>
+             Link="Common\Interop\Windows\Interop.SERVICE_DESCRIPTION.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ChangeServiceConfig2.cs">
-      <Link>Common\Interop\Windows\Interop.ChangeServiceConfig2.cs</Link>
+             Link="Common\Interop\Windows\Interop.ChangeServiceConfig2.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_DELAYED_AUTOSTART_INFO.cs">
-      <Link>Common\Interop\Windows\Interop.SERVICE_DELAYED_AUTOSTART_INFO.cs</Link>
+             Link="Common\Interop\Windows\Interop.SERVICE_DELAYED_AUTOSTART_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeleteService.cs">
-      <Link>Common\Interop\Windows\Interop.DeleteService.cs</Link>
+             Link="Common\Interop\Windows\Interop.DeleteService.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs">
     </Compile>
   </ItemGroup>
 </Project>

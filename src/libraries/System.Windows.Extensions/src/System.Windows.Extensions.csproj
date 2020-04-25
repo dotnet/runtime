@@ -7,58 +7,58 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_IntPtr.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertOpenStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertOpenStore.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertOpenStore.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\CryptUI\Interop.CryptUIDlgCertificate.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptUIDlgCertificate.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptUIDlgCertificate.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.MessageBeep.cs">
-      <Link>Common\Interop\Windows\User32\Interop.MessageBeep.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.MessageBeep.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.MMCKINFO.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.MMCKINFO.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.MMCKINFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.mmioAscend.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.mmioAscend.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.mmioAscend.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.mmioClose.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.mmioClose.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.mmioClose.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.mmioDescend.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.mmioDescend.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.mmioDescend.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.mmioRead.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.mmioRead.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.mmioRead.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.mmioOpen.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.mmioOpen.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.mmioOpen.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.PlaySound.cs">
-      <Link>Common\Interop\Windows\WinMm\Interop.PlaySound.cs</Link>
+             Link="Common\Interop\Windows\WinMm\Interop.PlaySound.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2UI.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SafeX509Handles.cs" />

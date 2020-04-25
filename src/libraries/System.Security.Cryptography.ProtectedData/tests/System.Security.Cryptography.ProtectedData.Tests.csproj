@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="ProtectedDataTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs">
     </Compile>
   </ItemGroup>
 </Project>

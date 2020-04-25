@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs">
-      <Link>Common\System\Data\Common\AdapterUtil.cs</Link>
+             Link="Common\System\Data\Common\AdapterUtil.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.Drivers.cs">
       <Link>System\Data\Common\AdapterUtil.Drivers.cs</Link>
@@ -18,7 +18,7 @@
     <Compile Include="Common\System\Data\Common\AdapterUtil.Odbc.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\DbConnectionOptions.Common.cs">
-      <Link>Common\System\Data\Common\DbConnectionOptions.Common.cs</Link>
+             Link="Common\System\Data\Common\DbConnectionOptions.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
@@ -26,17 +26,17 @@
     <Compile Include="Common\System\Data\Common\DBConnectionString.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs">
-      <Link>Common\System\Data\Common\NameValuePair.cs</Link>
+             Link="Common\System\Data\Common\NameValuePair.cs">
     </Compile>
     <Compile Include="Common\System\Data\Common\NameValuePermission.cs" />
     <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
     <Compile Include="Common\System\Data\DataStorage.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbBuffer.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\FieldNameLookup.cs">
-      <Link>Common\System\Data\ProviderBase\FieldNameLookup.cs</Link>
+             Link="Common\System\Data\ProviderBase\FieldNameLookup.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Data\Common\BasicFieldNameLookup.cs">
-      <Link>Common\System\Data\ProviderBase\BasicFieldNameLookup.cs</Link>
+             Link="Common\System\Data\ProviderBase\BasicFieldNameLookup.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Data\ProviderBase\DbConnectionInternal.cs">
       <Link>System\Data\ProviderBase\DbConnectionInternal.cs</Link>
@@ -113,29 +113,29 @@
     <Compile Include="System\Data\Odbc\OdbcType.cs" />
     <Compile Include="System\Data\Odbc\OdbcUtils.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs">
-      <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
+             Link="Common\System\Data\Common\MultipartIdentifier.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Odbc.cs">
-      <Link>Common\Interop\Interop.Odbc.cs</Link>
+             Link="Common\Interop\Interop.Odbc.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
-      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Linux\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+             Link="Common\Interop\OSX\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">

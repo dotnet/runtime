@@ -31,52 +31,52 @@
     <Compile Include="NegotiateStreamKerberosTest.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs">
-      <Link>Common\System\IO\DelegateStream.cs</Link>
+             Link="Common\System\IO\DelegateStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
-      <Link>Common\System\Net\Capability.Security.cs</Link>
+             Link="Common\System\Net\Capability.Security.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs">
-      <Link>Common\System\Net\SslStreamCertificatePolicy.cs</Link>
+             Link="Common\System\Net\SslStreamCertificatePolicy.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
-      <Link>Common\System\Net\Configuration.cs</Link>
+             Link="Common\System\Net\Configuration.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs">
-      <Link>Common\System\Net\Configuration.Security.cs</Link>
+             Link="Common\System\Net\Configuration.Security.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs">
-      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
+             Link="Common\System\Net\Configuration.Certificates.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
-      <Link>Common\System\Net\Configuration.Http.cs</Link>
+             Link="Common\System\Net\Configuration.Http.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestClient.cs">
-      <Link>Common\System\Net\HttpsTestClient.cs</Link>
+             Link="Common\System\Net\HttpsTestClient.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs">
-      <Link>Common\System\Net\HttpsTestServer.cs</Link>
+             Link="Common\System\Net\HttpsTestServer.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
-      <Link>Common\System\Net\SslProtocolSupport.cs</Link>
+             Link="Common\System\Net\SslProtocolSupport.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs">
-      <Link>Common\System\Net\TestLogging.cs</Link>
+             Link="Common\System\Net\TestLogging.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs">
-      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
+             Link="Common\System\Net\VerboseTestLogging.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs">
-      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
+             Link="Common\System\Net\EventSourceTestLogging.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs">
-      <Link>Common\System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
+             Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs">
-      <Link>Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
+             Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
@@ -102,25 +102,25 @@
   <ItemGroup>
     <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="IdentityValidator.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs">
-      <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
+             Link="Common\System\Net\Capability.Security.Windows.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="IdentityValidator.Unix.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs">
-      <Link>Common\System\Net\Capability.Security.Unix.cs</Link>
+             Link="Common\System\Net\Capability.Security.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

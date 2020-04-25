@@ -24,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs">
     </Compile>
   </ItemGroup>
 </Project>

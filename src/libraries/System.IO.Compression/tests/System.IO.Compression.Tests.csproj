@@ -15,34 +15,34 @@
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
-      <Link>Common\System\IO\PathFeatures.cs</Link>
+             Link="Common\System\IO\PathFeatures.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs">
-      <Link>Common\System\IO\Compression\CRC.cs</Link>
+             Link="Common\System\IO\Compression\CRC.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamTestBase.cs</Link>
+             Link="Common\System\IO\Compression\CompressionStreamTestBase.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamUnitTestBase.cs</Link>
+             Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs">
-      <Link>Common\System\IO\Compression\FileData.cs</Link>
+             Link="Common\System\IO\Compression\FileData.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs">
-      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
+             Link="Common\System\IO\Compression\LocalMemoryStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs">
-      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
+             Link="Common\System\IO\Compression\StreamHelpers.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
+             Link="Common\System\IO\TempFile.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs">
-      <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
+             Link="Common\System\IO\Compression\ZipTestHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
   </ItemGroup>
   <!--

@@ -47,16 +47,16 @@
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
-      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
+             Link="Common\System\Buffers\NativeMemoryManager.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs">
-      <Link>Common\System\IO\CallTrackingStream.cs</Link>
+             Link="Common\System\IO\CallTrackingStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs">
-      <Link>Common\System\IO\DelegateStream.cs</Link>
+             Link="Common\System\IO\DelegateStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs">
-      <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
+             Link="Common\System\IO\WrappedMemoryStream.cs">
     </Compile>
     <Compile Include="TestDataProvider\TestDataProvider.cs" />
     <Compile Include="TextReader\CharArrayTextReader.cs" />

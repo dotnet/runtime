@@ -19,7 +19,7 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs">
-      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
+             Link="Common\DirectoryServices\LdapConfiguration.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

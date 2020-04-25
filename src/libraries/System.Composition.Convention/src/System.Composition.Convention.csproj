@@ -14,19 +14,19 @@
     <Compile Include="System\Composition\Convention\PartConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\PartConventionBuilderOfT.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTrace.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTrace.cs</Link>
+             Link="Common\System\Composition\Diagnostics\CompositionTrace.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceId.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
+             Link="Common\System\Composition\Diagnostics\CompositionTraceId.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\CompositionTraceSource.cs">
-      <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
+             Link="Common\System\Composition\Diagnostics\CompositionTraceSource.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\DebuggerTraceWriter.cs">
-      <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
+             Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs">
-      <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
+             Link="Common\System\Composition\Diagnostics\TraceWriter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

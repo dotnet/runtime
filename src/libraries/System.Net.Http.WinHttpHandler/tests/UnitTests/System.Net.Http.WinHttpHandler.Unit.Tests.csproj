@@ -12,82 +12,82 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
-      <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
+             Link="CommonTest\System\Net\SslProtocolSupport.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
+             Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs">
-      <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs</Link>
+             Link="Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
+             Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
+             Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs">
-      <Link>Common\System\CharArrayHelpers.cs</Link>
+             Link="Common\System\CharArrayHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
+             Link="Common\System\StringExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+             Link="Common\System\IO\StreamHelpers.CopyValidation.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+             Link="Common\System\Net\HttpStatusDescription.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
+             Link="Common\System\Net\UriScheme.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+             Link="Common\System\Net\SecurityProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs">
-      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+             Link="Common\System\Net\Http\NoWriteNoSeekStreamContent.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
+             Link="Common\System\Net\Http\WinInetProxyHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Windows.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
-      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
+             Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
-      <Link>Common\System\Text\SimpleRegex.cs</Link>
+             Link="Common\System\Text\SimpleRegex.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs">
-      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>

@@ -51,10 +51,10 @@
     <Compile Include="System\Utf8Extensions.Portable.cs" />
     <Compile Include="System\Utf8String.Portable.cs" />
     <Compile Include="$(CommonPath)System\Marvin.cs">
-      <Link>Common\System\Marvin.cs</Link>
+             Link="Common\System\Marvin.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
       <Link>System\Char8.cs</Link>

@@ -54,7 +54,7 @@
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
     <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs">
-      <Link>Common\System\Linq\SkipTakeData.cs</Link>
+             Link="Common\System\Linq\SkipTakeData.cs">
     </Compile>
   </ItemGroup>
 </Project>

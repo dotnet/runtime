@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs">
-      <Link>CommonTest\System\IO\WrappedMemoryStream.cs</Link>
+             Link="CommonTest\System\IO\WrappedMemoryStream.cs">
     </Compile>
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
@@ -137,7 +137,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
+             Link="CommonTest\System\Buffers\ArrayBufferWriter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

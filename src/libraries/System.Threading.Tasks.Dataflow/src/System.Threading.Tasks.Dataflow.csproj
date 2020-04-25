@@ -42,7 +42,7 @@
     <Compile Include="Internal\TargetCore.cs" />
     <Compile Include="Internal\TargetRegistry.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs">
-      <Link>Common\Internal\Padding.cs</Link>
+             Link="Common\Internal\Padding.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">

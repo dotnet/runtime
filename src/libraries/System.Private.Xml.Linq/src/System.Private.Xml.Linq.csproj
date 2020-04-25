@@ -7,10 +7,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
-      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
+             Link="Common\System\Collections\Generic\EnumerableHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
+             Link="Common\System\Text\StringBuilderCache.cs">
     </Compile>
     <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
     <Compile Include="System\Xml\Linq\Extensions.cs" />

@@ -28,7 +28,7 @@
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs">
-      <Link>Common\System\Security\Cryptography\KeySizeHelpers.cs</Link>
+             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -41,7 +41,7 @@
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.Unix.cs" />
     <Compile Include="Internal\Cryptography\Unix\HashAlgorithmNames.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
-      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -72,82 +72,82 @@
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptCreateHash.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptCreateHash.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptCreateHash.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDecrypt.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDecrypt.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDecrypt.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDeriveKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDeriveKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDeriveKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptEncrypt.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptEncrypt.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptEncrypt.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptExportKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptExportKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptExportKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGenKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGenKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGenKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetDefaultProvider.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetDefaultProvider.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetDefaultProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetHashParam.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetHashParam.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetHashParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetKeyParam.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetKeyParam.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetKeyParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetUserKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetUserKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetUserKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptHashData.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptHashData.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptHashData.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptImportKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptImportKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptImportKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptSetKeyParam.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptSetKeyParam.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptSetKeyParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptSignHash.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptSignHash.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptSignHash.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeHashHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeHashHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeHashHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeKeyHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeKeyHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeKeyHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeProvHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeProvHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeProvHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

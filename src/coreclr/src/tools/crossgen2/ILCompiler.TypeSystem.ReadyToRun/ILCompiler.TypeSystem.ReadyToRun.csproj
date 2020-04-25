@@ -581,7 +581,7 @@
       <Link>TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\System\FormattingHelpers.cs">
-      <Link>Common\System\FormattingHelpers.cs</Link>
+             Link="Common\System\FormattingHelpers.cs">
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\ArrayType.Sorting.cs">
       <Link>TypeSystem\Sorting\ArrayType.Sorting.cs</Link>

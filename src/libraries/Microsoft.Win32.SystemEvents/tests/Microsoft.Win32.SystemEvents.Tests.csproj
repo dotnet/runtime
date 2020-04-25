@@ -4,16 +4,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Constants.cs">
-      <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.Constants.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.FindWindow.cs">
-      <Link>Common\Interop\Windows\User32\Interop.FindWindow.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.FindWindow.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.SendMessage.cs">
-      <Link>Common\Interop\Windows\User32\Interop.SendMessage.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.SendMessage.cs">
     </Compile>
     <Compile Include="GenericEventTests.cs" />
     <Compile Include="SystemEvents.InvokeOnEventsThread.cs" />

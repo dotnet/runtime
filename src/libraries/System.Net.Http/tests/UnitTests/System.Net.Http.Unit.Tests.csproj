@@ -13,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
@@ -31,7 +31,7 @@
       <Link>ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-      <Link>Common\System\Net\ArrayBuffer.cs</Link>
+             Link="Common\System\Net\ArrayBuffer.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
@@ -58,16 +58,16 @@
       <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
-      <Link>Common\System\Text\SimpleRegex.cs</Link>
+             Link="Common\System\Text\SimpleRegex.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+             Link="Common\System\ShouldNotBeInvokedException.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs">
-      <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
+             Link="Common\System\Net\Http\HPackEncoder.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs">
-      <Link>Common\System\Net\Http\HuffmanEncoder.cs</Link>
+             Link="Common\System\Net\Http\HuffmanEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
@@ -463,61 +463,61 @@
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs">
-      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
+             Link="Common\System\Net\Http\WinInetProxyHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
-      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
       <Link>WinHttpHandler\UnitTests\FakeInterop.cs</Link>

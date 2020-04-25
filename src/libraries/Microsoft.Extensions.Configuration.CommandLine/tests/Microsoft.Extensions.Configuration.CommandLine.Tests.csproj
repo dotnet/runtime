@@ -7,13 +7,13 @@
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
-      <Link>Common\ConfigurationProviderTestBase.cs</Link>
+             Link="Common\ConfigurationProviderTestBase.cs">
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
-      <Link>Common\ConfigurationProviderExtensions.cs</Link>
+             Link="Common\ConfigurationProviderExtensions.cs">
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs">
-      <Link>Common\TestStreamHelpers.cs</Link>
+             Link="Common\TestStreamHelpers.cs">
     </Compile>
   </ItemGroup>
 

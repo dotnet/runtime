@@ -10,13 +10,13 @@
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
     <Compile Include="ValueTaskTests.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
-      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
+             Link="Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs">
-      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs</Link>
+             Link="Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs">
-      <Link>Common\System\Threading\Tasks\GetStateMachineData.cs</Link>
+             Link="Common\System\Threading\Tasks\GetStateMachineData.cs">
     </Compile>
   </ItemGroup>
 </Project>

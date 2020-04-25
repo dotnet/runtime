@@ -9,7 +9,7 @@
     <Compile Include="RuntimeIdentifierTests.cs" />
     <Compile Include="DescriptionNameTests.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs">
-      <Link>Common\Interop\Linux\Interop.cgroups.cs</Link>
+             Link="Common\Interop\Linux\Interop.cgroups.cs">
     </Compile>
   </ItemGroup>
 </Project>

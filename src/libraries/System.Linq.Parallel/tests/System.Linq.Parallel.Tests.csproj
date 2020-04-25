@@ -5,13 +5,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+             Link="Common\System\ShouldNotBeInvokedException.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+             Link="CommonTest\System\Threading\ThreadPoolHelpers.cs">
     </Compile>
     <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />

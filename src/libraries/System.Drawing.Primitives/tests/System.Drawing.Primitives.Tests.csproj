@@ -13,13 +13,13 @@
     <Compile Include="SizeTests.cs" />
     <Compile Include="ColorTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\DataContractSerializerHelper.cs">
-      <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
+             Link="Common\System\Runtime\Serialization\DataContractSerializerHelper.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs">
-      <Link>Common\System\Runtime\Serialization\Utils.cs</Link>
+             Link="Common\System\Runtime\Serialization\Utils.cs">
     </Compile>
   </ItemGroup>
 </Project>

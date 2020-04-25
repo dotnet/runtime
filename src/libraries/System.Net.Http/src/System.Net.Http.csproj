@@ -90,34 +90,34 @@
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+             Link="Common\System\IO\StreamHelpers.CopyValidation.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs">
-      <Link>Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs</Link>
+             Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs">
-      <Link>Common\System\IO\DelegatingStream.cs</Link>
+             Link="Common\System\IO\DelegatingStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs">
-      <Link>Common\System\IO\ReadOnlyMemoryStream.cs</Link>
+             Link="Common\System\IO\ReadOnlyMemoryStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
+             Link="Common\System\Text\StringBuilderCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs">
-      <Link>Common\System\Net\HttpDateParser.cs</Link>
+             Link="Common\System\Net\HttpDateParser.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
-      <Link>Common\System\Text\SimpleRegex.cs</Link>
+             Link="Common\System\Text\SimpleRegex.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-       <Link>Common\System\Net\ArrayBuffer.cs</Link>
+              Link="Common\System\Net\ArrayBuffer.cs">
      </Compile>
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
@@ -170,232 +170,232 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
-      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
+             Link="Common\System\Net\NTAuthentication.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
-      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
+             Link="Common\System\Net\ContextFlagsPal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
-      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3SettingType.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Http3SettingType.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Http3SettingType.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Http3StreamType.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Http3StreamType.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Http3StreamType.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3ErrorCode.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3Frame.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\Frames\Http3FrameType.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs" >
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnection.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicConnection.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnection.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListener.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicListener.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListener.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStream.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicStream.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs</Link>
+             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs">
-      <Link>Common\System\Net\SecurityStatusPal.cs</Link>
+             Link="Common\System\Net\SecurityStatusPal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs">
-      <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
+             Link="Common\System\Net\Security\SSPIHandleCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
+             Link="Common\System\Net\Security\NetEventSource.Security.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs">
-      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+             Link="Common\System\Net\ExceptionCheck.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs">
-      <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
+             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs">
-      <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
+             Link="Common\System\Net\NegotiationInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
+             Link="Common\System\Net\InternalException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs">
-      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
+             Link="Common\System\Net\Logging\DebugThreadTracking.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs">
-      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
+             Link="Common\System\Net\DebugSafeHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs</Link>
+             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
+             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
-      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Linux\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
@@ -404,40 +404,40 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Unix.cs">
-      <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
+             Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs">
-      <Link>Common\System\Net\Security\Unix\SafeFreeCredentials.cs</Link>
+             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs">
-      <Link>Common\System\Net\Security\Unix\SafeDeleteContext.cs</Link>
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs">
-      <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
-      <Link>Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs</Link>
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs">
-      <Link>Common\System\Net\Security\Unix\SecChannelBindings.cs</Link>
+             Link="Common\System\Net\Security\Unix\SecChannelBindings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs">
-      <Link>Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs</Link>
+             Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
@@ -448,45 +448,45 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MacProxy.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFData.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFData.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFDictionary.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFDictionary.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFDictionary.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFProxy.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFProxy.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFProxy.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFUrl.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFUrl.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFUrl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFString.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFNumber.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFError.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFError.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs">
-      <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
+             Link="Common\Interop\OSX\Interop.RunLoop.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+             Link="Common\Interop\OSX\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+             Link="Common\System\Net\HttpStatusDescription.cs">
     </Compile>
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
@@ -495,160 +495,160 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
+             Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs">
-      <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs</Link>
+             Link="Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs</Link>
+             Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
+             Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp.cs">
-      <Link>Common\Interop\Windows\WinHttp\Interop.winhttp.cs</Link>
+             Link="Common\Interop\Windows\WinHttp\Interop.winhttp.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
-      <Link>Common\System\CharArrayHelpers.cs</Link>
+             Link="Common\System\CharArrayHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
+             Link="Common\System\StringExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+             Link="Common\System\Net\SecurityProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
+             Link="Common\System\Net\UriScheme.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
-      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+             Link="Common\System\Net\Http\NoWriteNoSeekStreamContent.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
+             Link="Common\System\Net\Http\WinInetProxyHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
-      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
+             Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
-      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
+             Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
+             Link="Common\System\Net\Security\SecurityBuffer.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
+             Link="Common\System\Net\Security\SecurityBufferType.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs">
-      <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
+             Link="Common\System\Net\Security\SecurityContextTokenHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs">
-      <Link>Common\System\Net\SecurityStatusAdapterPal.Windows.cs</Link>
+             Link="Common\System\Net\SecurityStatusAdapterPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs">
-      <Link>Common\System\Net\ContextFlagsAdapterPal.Windows.cs</Link>
+             Link="Common\System\Net\ContextFlagsAdapterPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs">
-      <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
+             Link="Common\System\Net\Security\NegotiateStreamPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.Windows.cs</Link>
+             Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
+             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs</Link>
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs</Link>
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\ISSPIInterface.cs">
-      <Link>Common\Interop\Windows\SspiCli\ISSPIInterface.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\ISSPIInterface.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIAuthType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIAuthType.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPIAuthType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs">
-      <Link>Common\Interop\Windows\SspiCli\SafeDeleteContext.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SafeDeleteContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\GlobalSSPI.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.SSPI.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\Interop.SSPI.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecuritySafeHandles.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIWrapper.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs">
     </Compile>
   </ItemGroup>
   <!-- Common -->
@@ -656,173 +656,173 @@
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs">
-      <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+             Link="Common\System\Net\Mail\DomainLiteralReader.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs">
-      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
+             Link="Common\System\Net\Mail\DotAtomReader.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs">
-      <Link>Common\System\Net\Mail\MailAddress.cs</Link>
+             Link="Common\System\Net\Mail\MailAddress.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs">
-      <Link>Common\System\Net\Mail\MailAddressParser.cs</Link>
+             Link="Common\System\Net\Mail\MailAddressParser.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs">
-      <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
+             Link="Common\System\Net\Mail\MailBnfHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs">
-      <Link>Common\System\Net\Mail\QuotedPairReader.cs</Link>
+             Link="Common\System\Net\Mail\QuotedPairReader.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs">
-      <Link>Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
+             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs">
-      <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
+             Link="Common\System\Net\Mail\WhitespaceReader.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs">
-      <Link>Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs">
-      <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
+             Link="Common\Interop\Unix\StrongToWeakReference.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+             Link="Common\System\Net\SecurityProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
+             Link="Common\System\Net\UriScheme.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+             Link="Common\Interop\Unix\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+             Link="Common\Interop\Unix\Interop.IOErrors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Close.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Open.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.OpenFlags.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Pipe.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Poll.cs</Link>
+             Link="Common\Interop\Unix\libc\Interop.Poll.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
+             Link="Common\Interop\Unix\libc\Interop.Read.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
+             Link="Common\Interop\Unix\libc\Interop.Write.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs">
-      <Link>Common\System\CharArrayHelpers.cs</Link>
+             Link="Common\System\CharArrayHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
+             Link="Common\System\StringExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+             Link="Common\System\Net\HttpStatusDescription.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs">
-      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+             Link="Common\System\Net\Http\NoWriteNoSeekStreamContent.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs">
-      <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
+             Link="Common\System\Net\Http\TlsCertificateExtensions">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Unix.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.Unix.cs</Link>
+             Link="Common\System\Net\Security\CertificateHelper.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs">
-      <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
+             Link="Common\System\Net\Security\CertificateValidation.Unix.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

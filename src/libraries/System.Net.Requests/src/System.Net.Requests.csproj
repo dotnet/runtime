@@ -44,60 +44,60 @@
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
     <Compile Include="System\Net\NetEventSource.Requests.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
+             Link="Common\System\Net\InternalException.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs">
-      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
+             Link="Common\System\Net\Logging\DebugThreadTracking.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs">
-      <Link>Common\System\Net\HttpDateParser.cs</Link>
+             Link="Common\System\Net\HttpDateParser.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpValidationHelpers.cs">
-      <Link>Common\System\Net\HttpValidationHelpers.cs</Link>
+             Link="Common\System\Net\HttpValidationHelpers.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+             Link="Common\System\Net\LazyAsyncResult.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs">
-      <Link>Common\System\Net\ContextAwareResult.cs</Link>
+             Link="Common\System\Net\ContextAwareResult.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs">
-      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+             Link="Common\System\Net\ExceptionCheck.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\TlsStream.cs">
-      <Link>Common\System\Net\TlsStream.cs</Link>
+             Link="Common\System\Net\TlsStream.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+             Link="Common\System\Net\SecurityProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\WinInet\Interop.wininet_errors.cs">
-      <Link>Common\Interop\Windows\WinInet\Interop.wininet_errors.cs</Link>
+             Link="Common\Interop\Windows\WinInet\Interop.wininet_errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+             Link="Common\System\Net\ContextAwareResult.Windows.cs">
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs">
-      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
+             Link="Common\System\Net\ContextAwareResult.Unix.cs">
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>

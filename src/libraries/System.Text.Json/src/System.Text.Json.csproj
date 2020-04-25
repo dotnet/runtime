@@ -16,10 +16,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
@@ -214,7 +214,7 @@
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>Common\System\Buffers\ArrayBufferWriter.cs</Link>
+             Link="Common\System\Buffers\ArrayBufferWriter.cs">
     </Compile>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -225,7 +225,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

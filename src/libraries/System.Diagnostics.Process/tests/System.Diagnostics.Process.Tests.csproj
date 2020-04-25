@@ -10,13 +10,13 @@
       <Link>System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs">
-      <Link>Common\System\IO\StringParser.cs</Link>
+             Link="Common\System\IO\StringParser.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+             Link="Common\System\ShouldNotBeInvokedException.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Microsoft\Win32\TempRegistryKey.cs">
-      <Link>Common\Microsoft\Win32\TempRegistryKey.cs</Link>
+             Link="Common\Microsoft\Win32\TempRegistryKey.cs">
     </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />

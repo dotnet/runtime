@@ -995,97 +995,97 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
-      <Link>Common\Interop\Interop.Calendar.cs</Link>
+             Link="Common\Interop\Interop.Calendar.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
-      <Link>Common\Interop\Interop.Casing.cs</Link>
+             Link="Common\Interop\Interop.Casing.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
-      <Link>Common\Interop\Interop.Collation.cs</Link>
+             Link="Common\Interop\Interop.Collation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
-      <Link>Common\Interop\Interop.ICU.cs</Link>
+             Link="Common\Interop\Interop.ICU.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Idna.cs">
-      <Link>Common\Interop\Interop.Idna.cs</Link>
+             Link="Common\Interop\Interop.Idna.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
-      <Link>Common\Interop\Interop.Locale.cs</Link>
+             Link="Common\Interop\Interop.Locale.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
-      <Link>Common\Interop\Interop.Normalization.cs</Link>
+             Link="Common\Interop\Interop.Normalization.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
-      <Link>Common\Interop\Interop.ResultCode.cs</Link>
+             Link="Common\Interop\Interop.ResultCode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs">
-      <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
+             Link="Common\Interop\Interop.TimeZoneInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
-      <Link>Common\Interop\Interop.Utils.cs</Link>
+             Link="Common\Interop\Interop.Utils.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Interop.Errors.cs</Link>
+             Link="Common\Interop\Interop.Errors.cs">
     </Compile>
     <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+             Link="Common\Interop\Windows\Interop.BOOL.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Globalization.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Globalization.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.Globalization.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Idna.cs">
-      <Link>Common\Interop\Windows\Normaliz\Interop.Idna.cs</Link>
+             Link="Common\Interop\Windows\Normaliz\Interop.Idna.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Normalization.cs">
-      <Link>Common\Interop\Windows\Normaliz\Interop.Normalization.cs</Link>
+             Link="Common\Interop\Windows\Normaliz\Interop.Normalization.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
+             Link="Common\System\HResults.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+             Link="Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+             Link="Common\System\IO\StreamHelpers.CopyValidation.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
-      <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
+             Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
+             Link="Common\System\Text\StringBuilderCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ActivityControl.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.ActivityControl.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.ActivityControl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EtwEnableCallback.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EtwEnableCallback.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EtwEnableCallback.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">
-      <Link>Common\Interop\Interop.HostPolicy.cs</Link>
+             Link="Common\Interop\Interop.HostPolicy.cs">
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\DiagnosticCounter.cs" />
@@ -1146,7 +1146,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)\..\..\Common\src\System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -1182,334 +1182,334 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventRegister.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventRegister.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventRegister.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventSetInformation.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventSetInformation.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventSetInformation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventTraceGuidsEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventTraceGuidsEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventTraceGuidsEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventUnregister.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventUnregister.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventUnregister.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteString.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventWriteString.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventWriteString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegCloseKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteValue.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegDeleteValue.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegDeleteValue.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegEnumValue.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegEnumValue.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegEnumValue.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegFlushKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegFlushKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegFlushKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegSetValueEx.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs</Link>
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+             Link="Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs">
-      <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
+             Link="Common\Interop\Windows\Interop.BOOLEAN.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompletionPort.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileAttributes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FileAttributes.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FileAttributes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTimeToSystemTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FileTimeToSystemTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FileTimeToSystemTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FileTypes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindClose.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FindClose.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FindClose.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfo.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetCPInfo.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCPInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimePreciseAsFileTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimePreciseAsFileTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemTimePreciseAsFileTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LockFile.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LockFile.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.LockFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MemOptions.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MemOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MUI.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MUI.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MUI.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OutputDebugString.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.OutputDebugString.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.OutputDebugString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.QueryUnbiasedInterruptTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.QueryUnbiasedInterruptTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SecurityOptions.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetEndOfFile.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetEndOfFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TimeZone.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.TimeZone.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.TimeZone.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TimeZone.Registry.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.TimeZone.Registry.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.TimeZone.Registry.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualFree.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VirtualFree.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.VirtualFree.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs</Link>
+             Link="Common\Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
+             Link="Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
+             Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs</Link>
+             Link="Common\Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
-      <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
+             Link="Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
-      <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
+             Link="Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
-      <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
+             Link="Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Constants.cs">
-      <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.Constants.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.LoadString.cs">
-      <Link>Common\Interop\Windows\User32\Interop.LoadString.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.LoadString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.SendMessageTimeout.cs">
-      <Link>Common\Interop\Windows\User32\Interop.SendMessageTimeout.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.SendMessageTimeout.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
-      <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
-      <Link>Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
-      <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
+             Link="Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
@@ -1567,49 +1567,49 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs</Link>
+             Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs</Link>
+             Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.EventWaitHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.EventWaitHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetEnvironmentStrings.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetEnvironmentStrings.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.GetEnvironmentStrings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Mutex.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.Mutex.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Semaphore.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.Semaphore.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
+             Link="Common\System\IO\Win32Marshal.cs">
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
@@ -1623,115 +1623,115 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+             Link="Common\Interop\Unix\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+             Link="Common\Interop\Unix\Interop.IOErrors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Access.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Access.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChDir.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.ChDir.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Close.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.FLock.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FSync.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FSync.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.FSync.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FTruncate.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.FTruncate.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetCpuUtilization.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetCwd.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs">
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetPid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimestamp.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetUnixName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LockFileRegion.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.LockFileRegion.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.LockFileRegion.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.LSeek.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.MksTemps.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.MountPoints.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Open.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.OpenFlags.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.PathConf.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Permissions.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Read.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadDir.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.ReadDir.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.ReadDir.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Stat.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.SysConf.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysLog.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.SysLog.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.SysLog.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Unlink.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Unlink.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Write.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Write.cs">
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />

@@ -9,10 +9,10 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
-      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
+             Link="Common\System\Memory\PointerMemoryManager.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
-      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+             Link="Common\System\Security\Cryptography\CryptoPool.cs">
     </Compile>
     <Compile Include="Cert.cs" />
     <Compile Include="CertTests.cs" />
@@ -41,7 +41,7 @@
     <Compile Include="X500DistinguishedNameTests.cs" />
     <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs">
     </Compile>
     <Compile Include="ImportTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
@@ -66,71 +66,71 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+             Link="Common\Interop\Unix\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetEUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Permissions.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Stat.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs">
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+             Link="Common\System\IO\PersistedFiles.Unix.cs">
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
+             Link="Common\System\IO\PersistedFiles.Names.Unix.cs">
     </Compile>
     <Compile Include="HostnameMatchTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFData.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFData.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFError.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFError.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFString.cs">
-      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+             Link="Common\Interop\OSX\Interop.CoreFoundation.CFString.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+             Link="Common\Interop\OSX\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs</Link>
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs</Link>
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs</Link>
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -74,19 +74,19 @@
     <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
 
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true'">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetNodeName.cs</Link>
+             Link="Common\Interop\Unix\System.Native\Interop.GetNodeName.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
-      <Link>Common\System\IO\PathFeatures.cs</Link>
+             Link="Common\System\IO\PathFeatures.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+             Link="Common\System\ShouldNotBeInvokedException.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>Common\System\Security\Cryptography\ByteUtils.cs</Link>
+             Link="Common\System\Security\Cryptography\ByteUtils.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

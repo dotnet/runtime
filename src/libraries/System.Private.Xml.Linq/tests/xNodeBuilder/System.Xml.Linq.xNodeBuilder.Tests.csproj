@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
-      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+             Link="Common\System\Collections\DictionaryExtensions.cs">
     </Compile>
     <Compile Include="CommonTests.cs" />
     <Compile Include="EndOfLineHandlingTests.cs" />

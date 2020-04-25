@@ -34,7 +34,7 @@
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>

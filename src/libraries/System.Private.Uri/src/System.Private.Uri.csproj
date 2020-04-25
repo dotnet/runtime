@@ -7,10 +7,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
-      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+             Link="Common\System\Collections\Generic\ArrayBuilder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -38,7 +38,7 @@
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

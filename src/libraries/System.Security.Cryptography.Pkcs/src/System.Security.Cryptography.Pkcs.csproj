@@ -60,23 +60,23 @@
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedContentInfoAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="Internal\Cryptography\Pal\AnyOS\AsnHelpers.cs" />
@@ -161,223 +161,223 @@
   <!-- Interop types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptDestroyKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptGetProvParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptReleaseContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeHashHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeHashHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeHashHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeKeyHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeKeyHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeKeyHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\SafeProvHandle.cs">
-      <Link>Common\Interop\Windows\Advapi32\SafeProvHandle.cs</Link>
+             Link="Common\Interop\Windows\Advapi32\SafeProvHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_ID.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CERT_ID.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_ID.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_ISSUER_SERIAL_NUMBER.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CERT_ISSUER_SERIAL_NUMBER.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_ISSUER_SERIAL_NUMBER.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetPublicKeyLength.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertGetPublicKeyLength.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetPublicKeyLength.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertIdChoice.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertIdChoice.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertIdChoice.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameToStr.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_CMS_RECIPIENT_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_CMS_RECIPIENT_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_CMS_RECIPIENT_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_CTRL_DECRYPT_PARA.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_CTRL_DECRYPT_PARA.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_CTRL_DECRYPT_PARA.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_CTRL_KEY_AGREE_DECRYPT_PARA.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_CTRL_KEY_AGREE_DECRYPT_PARA.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_CTRL_KEY_AGREE_DECRYPT_PARA.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_ENVELOPED_ENCODE_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_ENVELOPED_ENCODE_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_ENVELOPED_ENCODE_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_AGREE_RECIPIENT_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_KEY_TRANS_RECIPIENT_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_RC2_AUX_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_RC2_AUX_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_RC2_AUX_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCODE_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCODE_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCODE_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMSG_RECIPIENT_ENCRYPTED_KEY_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMsgCmsRecipientChoice.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMsgCmsRecipientChoice.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMsgCmsRecipientChoice.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CMsgKeyAgreeOriginatorChoice.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CMsgKeyAgreeOriginatorChoice.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CMsgKeyAgreeOriginatorChoice.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CmsKeyAgreeKeyChoice.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CmsKeyAgreeKeyChoice.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CmsKeyAgreeKeyChoice.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE_TYPE_VALUE.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE_TYPE_VALUE.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTE_TYPE_VALUE.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTES.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ATTRIBUTES.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_KEY_PROV_INFO.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_KEY_PROV_INFO.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_KEY_PROV_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_RC2_CBC_PARAMETERS.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CRYPT_RC2_CBC_PARAMETERS.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_RC2_CBC_PARAMETERS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKey.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKey.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKey.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKeyFlags.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKeyFlags.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKeyFlags.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObject.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptDecodeObject.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObject.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObjectStructType.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptDecodeObjectStructType.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObjectStructType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptEncodeDecodeWrappers.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptEncodeDecodeWrappers.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptEncodeDecodeWrappers.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptEncodeObject.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptEncodeObject.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptEncodeObject.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptKeySpec.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptKeySpec.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptKeySpec.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgClose.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgControl.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgControl.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgControl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgOpenToDecode.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgOpenToDecode.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgOpenToDecode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgOpenToEncode.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgOpenToEncode.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgOpenToEncode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgParamType.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgParamType.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgParamType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgType.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgType.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgUpdate.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgUpdate.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgUpdate.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptRc2Version.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptRc2Version.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptRc2Version.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ErrorCode.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.ErrorCode.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.ErrorCode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgControlType.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.MsgControlType.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.MsgControlType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Heap.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.Heap.cs</Link>
+             Link="Common\Interop\Windows\kernel32\Interop.Heap.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs">
-      <Link>Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs</Link>
+             Link="Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Properties.cs">
-      <Link>Common\Interop\Windows\NCrypt\Interop.Properties.cs</Link>
+             Link="Common\Interop\Windows\NCrypt\Interop.Properties.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
-      <Link>Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <!-- Common types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs">
-      <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
+             Link="Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
@@ -418,147 +418,147 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
-      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
+             Link="Common\System\Memory\PointerMemoryManager.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
-      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+             Link="Common\System\Security\Cryptography\CryptoPool.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs">
-      <Link>Common\System\Security\Cryptography\Oids.cs</Link>
+             Link="Common\System\Security\Cryptography\Oids.cs">
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AttributeAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AttributeAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\AttributeAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AttributeAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\AttributeAsn.manual.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.manual.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\AttributeAsn.manual.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\DirectoryStringAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\GeneralNameAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\OtherNameAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\OtherNameAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PBEParameter.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PBEParameter.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PBEParameter.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PBEParameter.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PBES2Params.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PBES2Params.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PBES2Params.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PBES2Params.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PBES2Params.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pbkdf2Params.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pbkdf2Params.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PssParamsAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\OaepParamsAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\OaepParamsAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\OaepParamsAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\OaepParamsAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\OaepParamsAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\OaepParamsAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\OaepParamsAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Rc2CbcParameters.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\X509ExtensionAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml" />
@@ -656,59 +656,59 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs">
-      <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs">
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\CertBagAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\MacData.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\MacData.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\MacData.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.manual.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.manual.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.manual.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\PfxAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml">
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
+             Link="Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs">
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs">
-      <Link>Common\System\Security\Cryptography\PasswordBasedEncryption.cs</Link>
+             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs">
-      <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
+             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs">
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.xml.cs">

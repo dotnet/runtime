@@ -33,10 +33,10 @@
     <Compile Include="ExecutionContextTests.cs" />
     <Compile Include="SynchronizationContextTests.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>CommonTest\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+             Link="CommonTest\System\Diagnostics\Tracing\TestEventListener.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs">
     </Compile>
   </ItemGroup>
 </Project>

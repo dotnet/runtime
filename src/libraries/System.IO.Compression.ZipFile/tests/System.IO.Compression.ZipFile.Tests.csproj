@@ -9,25 +9,25 @@
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
+             Link="Common\System\IO\TempFile.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
+             Link="Common\System\IO\TempDirectory.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs">
-      <Link>Common\System\IO\Compression\CRC.cs</Link>
+             Link="Common\System\IO\Compression\CRC.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs">
-      <Link>Common\System\IO\Compression\FileData.cs</Link>
+             Link="Common\System\IO\Compression\FileData.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs">
-      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
+             Link="Common\System\IO\Compression\LocalMemoryStream.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs">
-      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
+             Link="Common\System\IO\Compression\StreamHelpers.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs">
-      <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
+             Link="Common\System\IO\Compression\ZipTestHelper.cs">
     </Compile>
   </ItemGroup>
   <!--

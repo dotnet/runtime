@@ -8,10 +8,10 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
     </Compile>
     <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
     </Compile>
   </ItemGroup>
 

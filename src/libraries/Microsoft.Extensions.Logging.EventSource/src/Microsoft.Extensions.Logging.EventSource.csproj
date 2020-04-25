@@ -9,10 +9,10 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs">
-      <Link>Common\src\Extensions\Logging\NullExternalScopeProvider.cs</Link>
+             Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs">
     </Compile>
     <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs">
-      <Link>Common\src\Extensions\Logging\NullScope.cs</Link>
+             Link="Common\src\Extensions\Logging\NullScope.cs">
     </Compile>
 
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

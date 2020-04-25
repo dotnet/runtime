@@ -27,10 +27,10 @@
     <Compile Include="Fakes\FakeLazyAsyncResult.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
-      <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
+             Link="CommonTest\System\Net\SslProtocolSupport.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -69,10 +69,10 @@
       <Link>ProductionCode\Common\System\Net\TlsAlertMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
+             Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">

@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
+    <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
@@ -36,7 +36,7 @@
       <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs">
-      <Link>Common\System\Net\SocketAddress.cs</Link>
+             Link="Common\System\Net\SocketAddress.cs">
     </Compile>
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
@@ -48,7 +48,7 @@
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
+             Link="Common\System\HexConverter.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -82,22 +82,22 @@
       <Link>ProductionCode\System\Net\SocketException.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs">
-      <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
+             Link="Common\System\Net\SocketAddressPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs">
-      <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
-      <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
-      <Link>Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
+             Link="Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
-      <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
+             Link="Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
-      <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
+             Link="Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -117,13 +117,13 @@
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs">
-      <Link>Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs">
-      <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
+             Link="Common\System\Net\SocketAddressPal.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs">
-      <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
+             Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs">
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>

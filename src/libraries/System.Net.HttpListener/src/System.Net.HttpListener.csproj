@@ -57,47 +57,47 @@
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
+             Link="Common\System\StringExtensions.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\CookieComparer.cs">
-      <Link>Common\System\Net\CookieComparer.cs</Link>
+             Link="Common\System\Net\CookieComparer.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\CookieFields.cs">
-      <Link>Common\System\Net\CookieFields.cs</Link>
+             Link="Common\System\Net\CookieFields.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\CookieParser.cs">
-      <Link>Common\System\Net\CookieParser.cs</Link>
+             Link="Common\System\Net\CookieParser.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs">
-      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
+             Link="Common\System\Net\CaseInsensitiveAscii.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs">
-      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+             Link="Common\System\Net\ExceptionCheck.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+             Link="Common\System\Net\HttpStatusDescription.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+             Link="Common\System\Net\HttpKnownHeaderNames.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+             Link="Common\System\Net\LazyAsyncResult.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
+             Link="Common\System\Net\UriScheme.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\WebHeaderEncoding.cs">
-      <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
+             Link="Common\System\Net\WebHeaderEncoding.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs">
-      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
+             Link="Common\System\Net\WebSockets\WebSocketValidate.cs">
     </Compile>
     <Compile Include="System\Net\Windows\CookieExtensions.cs" />
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(ForceManagedImplementation)' != 'true'">
@@ -115,10 +115,10 @@
     <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerAsyncResult.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs">
-      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
+             Link="Common\System\Net\DebugSafeHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
+             Link="Common\System\Net\InternalException.cs">
     </Compile>
     <Compile Include="System\Net\Windows\HttpResponseStream.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpResponseStreamAsyncResult.cs" />
@@ -131,189 +131,189 @@
     <Compile Include="System\Net\Windows\WebSockets\WebSocketHttpListenerDuplexStream.cs" />
     <Compile Include="System\Net\Windows\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
+             Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+             Link="Common\Interop\Windows\Interop.BOOL.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.Structs.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.Structs.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.Structs.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketAbortHandle.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketAbortHandle.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketAbortHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketBeginClientHandshake.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketBeginClientHandshake.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketBeginClientHandshake.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketBeginServerHandshake.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketBeginServerHandshake.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketBeginServerHandshake.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketCompleteAction.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCompleteAction.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketCompleteAction.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketCreateClientHandle.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCreateClientHandle.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketCreateClientHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketCreateServerHandle.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketCreateServerHandle.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketCreateServerHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketDeleteHandle.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketDeleteHandle.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketDeleteHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketEndServerHandshake.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketEndServerHandshake.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketEndServerHandshake.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketGetAction.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketGetAction.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketGetAction.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketReceive.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketReceive.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketReceive.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WebSocket\Interop.WebSocketSend.cs">
-      <Link>Common\Interop\Windows\WebSocket\Interop.WebSocketSend.cs</Link>
+             Link="Common\Interop\Windows\WebSocket\Interop.WebSocketSend.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\HttpApi\Interop.ErrorCodes.cs">
-      <Link>Common\Interop\Windows\HttpApi\Interop.ErrorCodes.cs</Link>
+             Link="Common\Interop\Windows\HttpApi\Interop.ErrorCodes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\HttpApi\Interop.HttpApi.cs">
-      <Link>Common\Interop\Windows\HttpApi\Interop.HttpApi.cs</Link>
+             Link="Common\Interop\Windows\HttpApi\Interop.HttpApi.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
     </Compile>
     <!-- Add NTAuthentication -->
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs</Link>
+             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
+             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs">
-      <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
+             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
+             Link="Common\System\NotImplemented.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs">
-      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
+             Link="Common\System\Net\Logging\DebugThreadTracking.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
-      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
+             Link="Common\System\Net\ContextFlagsPal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs">
-      <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
+             Link="Common\System\Net\NegotiationInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
-      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
+             Link="Common\System\Net\NTAuthentication.Common.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs">
-      <Link>Common\System\Net\SecurityStatusPal.cs</Link>
+             Link="Common\System\Net\SecurityStatusPal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
+             Link="Common\System\Net\Security\SecurityBuffer.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
+             Link="Common\System\Net\Security\SecurityBufferType.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs">
-      <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
+             Link="Common\System\Net\Security\SSPIHandleCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
+             Link="Common\System\Net\Security\NetEventSource.Security.cs">
     </Compile>
     <!-- Windows specific NTAuthentication -->
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs">
-      <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
+             Link="Common\System\Net\Security\SecurityContextTokenHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs">
-      <Link>Common\System\Net\SecurityStatusAdapterPal.Windows.cs</Link>
+             Link="Common\System\Net\SecurityStatusAdapterPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs">
-      <Link>Common\System\Net\ContextFlagsAdapterPal.Windows.cs</Link>
+             Link="Common\System\Net\ContextFlagsAdapterPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs">
-      <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
+             Link="Common\System\Net\Security\NegotiateStreamPal.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs">
-      <Link>Common\System\Net\Security\NetEventSource.Security.Windows.cs</Link>
+             Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
-      <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
+             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs</Link>
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs">
-      <Link>Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs</Link>
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\ISSPIInterface.cs">
-      <Link>Common\Interop\Windows\SspiCli\ISSPIInterface.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\ISSPIInterface.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIAuthType.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIAuthType.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPIAuthType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs">
-      <Link>Common\Interop\Windows\SspiCli\SafeDeleteContext.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SafeDeleteContext.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\GlobalSSPI.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SSPI.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.SSPI.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\Interop.SSPI.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecuritySafeHandles.cs">
-      <Link>Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs">
-      <Link>Common\Interop\Windows\SspiCli\SSPIWrapper.cs</Link>
+             Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(ForceManagedImplementation)' == 'true'">
@@ -336,7 +336,7 @@
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskToApm.cs">
     </Compile>
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Net.ServicePoint" />

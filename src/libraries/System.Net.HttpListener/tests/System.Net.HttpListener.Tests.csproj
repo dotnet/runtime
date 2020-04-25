@@ -24,7 +24,7 @@
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsOSX)'=='true'">

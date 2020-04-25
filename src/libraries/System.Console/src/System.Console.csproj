@@ -18,159 +18,159 @@
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs">
-      <Link>Common\System\Text\ConsoleEncoding.cs</Link>
+             Link="Common\System\Text\ConsoleEncoding.cs">
     </Compile>
   </ItemGroup>
   <!-- iOS/tvOS -->
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\ConsolePal.iOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.Log.cs">
-      <Link>Common\Interop\OSX\Interop.Log.cs</Link>
+             Link="Common\Interop\OSX\Interop.Log.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Text\OSEncoding.Windows.cs">
-      <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
+             Link="Common\System\Text\OSEncoding.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\OSEncoder.cs">
-      <Link>Common\System\Text\OSEncoder.cs</Link>
+             Link="Common\System\Text\OSEncoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\DBCSDecoder.cs">
-      <Link>Common\System\Text\DBCSDecoder.cs</Link>
+             Link="Common\System\Text\DBCSDecoder.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetCPInfoEx.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Common\Interop\Windows\Interop.MAX_PATH.cs</Link>
+             Link="Common\Interop\Windows\Interop.MAX_PATH.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Windows\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+             Link="Common\Interop\Windows\Interop.BOOL.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Beep.cs">
-      <Link>Common\Interop\Windows\Interop.Beep.cs</Link>
+             Link="Common\Interop\Windows\Interop.Beep.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+             Link="Common\Interop\Windows\Interop.FormatMessage.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCursorInfo.cs">
-      <Link>Common\Interop\Windows\Interop.ConsoleCursorInfo.cs</Link>
+             Link="Common\Interop\Windows\Interop.ConsoleCursorInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleScreenBufferInfo.cs">
-      <Link>Common\Interop\Windows\Interop.ConsoleScreenBufferInfo.cs</Link>
+             Link="Common\Interop\Windows\Interop.ConsoleScreenBufferInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+             Link="Common\Interop\Windows\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FillConsoleOutputAttribute.cs">
-      <Link>Common\Interop\Windows\Interop.FillConsoleOutputAttribute.cs</Link>
+             Link="Common\Interop\Windows\Interop.FillConsoleOutputAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FillConsoleOutputCharacter.cs">
-      <Link>Common\Interop\Windows\Interop.FillConsoleOutputCharacter.cs</Link>
+             Link="Common\Interop\Windows\Interop.FillConsoleOutputCharacter.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs">
-      <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
+             Link="Common\Interop\Windows\Interop.FileTypes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleScreenBufferInfo.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleScreenBufferInfo.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetConsoleScreenBufferInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleCP.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleCP.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetConsoleCP.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleTitle.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleTitle.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetConsoleTitle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleMode.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetConsoleMode.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleOutputCP.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetConsoleOutputCP.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLargestConsoleWindowSize.cs">
-      <Link>Common\Interop\Windows\Interop.GetLargestConsoleWindowSize.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetLargestConsoleWindowSize.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetFileType.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetKeyState.cs">
-      <Link>Common\Interop\Windows\Interop.GetKeyState.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetKeyState.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetStdHandle.cs</Link>
+             Link="Common\Interop\Windows\Interop.GetStdHandle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
-      <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
+             Link="Common\Interop\Windows\Interop.HandleTypes.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+             Link="Common\Interop\Windows\Interop.MultiByteToWideChar.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PeekConsoleInput.cs">
-      <Link>Common\Interop\Windows\Interop.PeekConsoleInput.cs</Link>
+             Link="Common\Interop\Windows\Interop.PeekConsoleInput.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.ReadFile.cs</Link>
+             Link="Common\Interop\Windows\Interop.ReadFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadConsole.cs">
-      <Link>Common\Interop\Windows\Interop.ReadConsole.cs</Link>
+             Link="Common\Interop\Windows\Interop.ReadConsole.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadConsoleInput.cs">
-      <Link>Common\Interop\Windows\Interop.ReadConsoleInput.cs</Link>
+             Link="Common\Interop\Windows\Interop.ReadConsoleInput.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadConsoleOutput.cs">
-      <Link>Common\Interop\Windows\Interop.ReadConsoleOutput.cs</Link>
+             Link="Common\Interop\Windows\Interop.ReadConsoleOutput.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCP.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleCP.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleCP.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCursorPosition.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleOutputCP.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleOutputCP.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleOutputCP.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleScreenBufferSize.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleTextAttribute.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleTitle.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleTitle.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleTitle.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleWindowInfo.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs</Link>
+             Link="Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+             Link="Common\Interop\Windows\Interop.WideCharToMultiByte.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
+             Link="Common\Interop\Windows\Interop.WriteFile.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteConsole.cs">
-      <Link>Common\Interop\Windows\Interop.WriteConsole.cs</Link>
+             Link="Common\Interop\Windows\Interop.WriteConsole.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteConsoleOutput.cs">
-      <Link>Common\Interop\Windows\Interop.WriteConsoleOutput.cs</Link>
+             Link="Common\Interop\Windows\Interop.WriteConsoleOutput.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Windows.cs">
-      <Link>Common\System\IO\EncodingHelper.Windows.cs</Link>
+             Link="Common\System\IO\EncodingHelper.Windows.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
+             Link="Common\System\IO\Win32Marshal.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+             Link="Common\System\Text\ValueStringBuilder.cs">
     </Compile>
   </ItemGroup>
   <!-- Unix -->
@@ -180,103 +180,103 @@
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
+             Link="Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+             Link="Common\System\IO\PersistedFiles.Unix.cs">
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
+             Link="Common\System\IO\PersistedFiles.Names.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
+             Link="Common\System\Text\StringBuilderCache.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs">
-      <Link>Common\System\Text\EncodingHelper.Unix.cs</Link>
+             Link="Common\System\Text\EncodingHelper.Unix.cs">
     </Compile>
     <Compile Include="$(CommonPath)System\Text\StringOrCharArray.cs">
-      <Link>Common\System\Text\StringOrCharArray.cs</Link>
+             Link="Common\System\Text\StringOrCharArray.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+             Link="Common\Interop\Unix\Interop.Libraries.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+             Link="Common\Interop\Unix\Interop.Errors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+             Link="Common\Interop\Unix\Interop.IOErrors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Common\Interop\Unix\Interop.Close.cs</Link>
+             Link="Common\Interop\Unix\Interop.Close.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs">
-      <Link>Common\Interop\Unix\Interop.Dup.cs</Link>
+             Link="Common\Interop\Unix\Interop.Dup.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileDescriptors.cs">
-      <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
+             Link="Common\Interop\Unix\Interop.FileDescriptors.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
-      <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
+             Link="Common\Interop\Unix\Interop.FLock.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetControlCharacters.cs">
-      <Link>Common\Interop\Unix\Interop.GetControlCharacters.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetControlCharacters.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs">
-      <Link>Common\Interop\Unix\Interop.IsATty.cs</Link>
+             Link="Common\Interop\Unix\Interop.IsATty.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
-      <Link>Common\Interop\Unix\Interop.LSeek.cs</Link>
+             Link="Common\Interop\Unix\Interop.LSeek.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Common\Interop\Unix\Interop.Open.cs</Link>
+             Link="Common\Interop\Unix\Interop.Open.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
+             Link="Common\Interop\Unix\Interop.OpenFlags.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
-      <Link>Common\Interop\Unix\Interop.Poll.cs</Link>
+             Link="Common\Interop\Unix\Interop.Poll.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetEUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForCtrlC.cs">
-      <Link>Common\Interop\Unix\Interop.RegisterForCtrlC.cs</Link>
+             Link="Common\Interop\Unix\Interop.RegisterForCtrlC.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RestoreAndHandleCtrl.cs">
-      <Link>Common\Interop\Unix\Interop.RestoreAndHandleCtrl.cs</Link>
+             Link="Common\Interop\Unix\Interop.RestoreAndHandleCtrl.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs">
-      <Link>Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs</Link>
+             Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs">
-      <Link>Common\Interop\Unix\Interop.SetSignalForBreak.cs</Link>
+             Link="Common\Interop\Unix\Interop.SetSignalForBreak.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SNPrintF.cs">
-      <Link>Common\Interop\Unix\Interop.SNPrintF.cs</Link>
+             Link="Common\Interop\Unix\Interop.SNPrintF.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
+             Link="Common\Interop\Unix\Interop.Stat.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
-      <Link>Common\Interop\Unix\Interop.Read.cs</Link>
+             Link="Common\Interop\Unix\Interop.Read.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Common\Interop\Unix\Interop.Write.cs</Link>
+             Link="Common\Interop\Unix\Interop.Write.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
-      <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs</Link>
+             Link="Common\Interop\Unix\Interop.GetWindowWidth.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs">
-      <Link>Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs</Link>
+             Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs">
-      <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs</Link>
+             Link="Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs">
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.StdinReady.cs">
-      <Link>Common\Interop\Unix\Interop.StdinReady.cs</Link>
+             Link="Common\Interop\Unix\Interop.StdinReady.cs">
     </Compile>
   </ItemGroup>
   <ItemGroup>
