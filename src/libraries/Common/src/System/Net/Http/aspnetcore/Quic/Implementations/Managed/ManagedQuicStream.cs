@@ -89,7 +89,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfNotReadable();
 
-            int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken);
+            int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
@@ -185,9 +185,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override void Shutdown()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             // ThrowIfNotWritable();
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO-RZ: is this really intened use for this method?
             if (CanWrite)
@@ -202,20 +202,20 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override void Flush()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             OutboundBuffer!.FlushChunk();
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }

@@ -26,6 +26,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private Task _timeoutTask;
         private long _currentTimeout = long.MaxValue;
+        private CancellationTokenSource _timeoutCts = new CancellationTokenSource();
 
         private readonly Task[] _waitingTasks = new Task[4];
 
@@ -101,10 +102,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 int milliseconds = (int)Timestamp.GetMilliseconds(Math.Max(0, Timestamp.Now - timestamp));
 
-                // TODO-RZ: don't create tasks needlessly
-                // if (milliseconds > 0)
+                // don't create tasks needlessly
+                if (milliseconds > 0)
                 {
-                    _timeoutTask = Task.Delay(milliseconds);
+                    ClearTimeout();
+                    _timeoutTask = Task.Delay(milliseconds, _timeoutCts.Token);
                     _waitingTasks[2] = _timeoutTask;
                 }
 
@@ -115,6 +117,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected void ClearTimeout()
         {
             // TODO-RZ: gracefully stop the current timeout task
+            _timeoutCts.Cancel();
+            _timeoutCts = new CancellationTokenSource();
             _currentTimeout = long.MaxValue;
             _timeoutTask = _infiniteTimeoutTask;
             _waitingTasks[2] = _timeoutTask;
@@ -143,7 +147,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            await OnSignal();
+            await OnSignal().ConfigureAwait(false);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -152,7 +156,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            await OnTimeout();
+            await OnTimeout().ConfigureAwait(false);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -206,13 +210,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                     if (socketReceiveTask.IsCompleted)
                     {
-                        var result = await socketReceiveTask.ConfigureAwait(false);
-
-                        // process only datagrams big enough to contain valid QUIC packets
-                        if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
+                        // TODO-RZ: Avoid connection forcibly closed exception
+                        if (socketReceiveTask.IsCompletedSuccessfully)
                         {
-                            _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
-                            await DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
+                            var result = await socketReceiveTask.ConfigureAwait(false);
+
+                            // process only datagrams big enough to contain valid QUIC packets
+                            if (result.ReceivedBytes >= QuicConstants.MinimumPacketSize)
+                            {
+                                _reader.Reset(_recvBuffer.AsMemory(0, result.ReceivedBytes));
+                                await DoReceive(_reader, (IPEndPoint)result.RemoteEndPoint).ConfigureAwait(false);
+                            }
                         }
 
                         // start new receiving task
@@ -234,7 +242,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             // cleanup everything
+
+            _socket.Close();
             _socket.Dispose();
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 

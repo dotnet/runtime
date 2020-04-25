@@ -99,7 +99,7 @@ namespace System.Net.Quic.Tests
             ReceiveAck(Now, PacketSpace.Initial, Recovery.MaxAckDelay, 2..2);
 
             // no more packets in-flight => no timer
-            // Assert.Equal(long.MaxValue, Recovery.LossRecoveryTimer);
+            Assert.Equal(long.MaxValue, Recovery.LossRecoveryTimer);
             Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).LostPackets);
             Assert.Single(Recovery.GetPacketNumberSpace(PacketSpace.Initial).AckedPackets);
         }

@@ -35,7 +35,7 @@ internal static partial class Interop
         internal const string MsQuic = "msquic.dll";
         internal const string HostPolicy = "hostpolicy.dll";
 
-        internal const string Ssl = "libssl-1_1.dll";
-        internal const string Crypto = "libcrypto-1_1.dll";
+        internal const string Ssl = "libssl-1_1-x64.dll";
+        internal const string Crypto = "libcrypto-1_1-x64.dll";
     }
 }

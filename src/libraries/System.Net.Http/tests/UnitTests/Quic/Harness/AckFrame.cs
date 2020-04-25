@@ -84,15 +84,18 @@ namespace System.Net.Quic.Tests.Harness
 
             foreach (var range in AckRanges)
             {
-                builder.Append(lastAcked - range.Gap - 2);
+                builder.Append(',');
+
                 long nextLast = lastAcked - range.Gap - range.Acked - 2;
 
-                if (lastAcked != nextLast)
+                builder.Append(lastAcked - range.Gap - 2);
+                if (range.Acked > 0)
                 {
                     builder.Append('-');
                     builder.Append(nextLast);
-                    lastAcked = nextLast;
                 }
+
+                lastAcked = nextLast;
             }
 
             return builder.ToString();

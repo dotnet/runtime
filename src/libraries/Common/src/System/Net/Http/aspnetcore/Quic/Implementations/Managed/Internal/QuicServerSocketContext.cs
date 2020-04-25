@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -110,7 +111,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 if (connection.GetNextTimerTimestamp() <= now)
                 {
-                    await UpdateAsync(connection);
+                    await UpdateAsync(connection).ConfigureAwait(false);
                 }
 
                 nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
@@ -131,17 +132,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 case QuicConnectionState.Closing:
                     break;
                 case QuicConnectionState.Draining:
-                    // Servers that retain an open socket for accepting new connections SHOULD NOT exit the closing
+                    // RFC: Servers that retain an open socket for accepting new connections SHOULD NOT exit the closing
                     // or draining period early.
-                    if (_acceptNewConnections)
+
+                    // this means that we need to keep the connection in the map until the timer runs out, closing event
+                    // will be already signaled to user.
+                    if (!_acceptNewConnections)
                     {
-                        break;
+                        DetachConnection(connection);
                     }
 
-                    connection.SignalConnectionClose();
-                    // fallthrough
-                    goto case QuicConnectionState.Closed;
+                    break;
                 case QuicConnectionState.Closed:
+                    // draining timer elapsed, discard the state
                     DetachConnection(connection);
                     break;
 
@@ -154,8 +157,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void DetachConnection(ManagedQuicConnection connection)
         {
+            Debug.Assert(connection.IsClosed);
             _connectionIds.Remove(connection.SourceConnectionId!);
             ImmutableInterlocked.TryRemove(ref _connections, connection.SourceConnectionId!, out _);
+            Console.WriteLine("Server closing");
         }
     }
 }

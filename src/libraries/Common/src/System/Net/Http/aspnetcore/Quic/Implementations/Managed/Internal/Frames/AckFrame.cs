@@ -65,11 +65,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly int GetSerializedLength()
         {
-            return 1 + // type
-                   QuicPrimitives.GetVarIntLength(LargestAcknowledged) +
-                   QuicPrimitives.GetVarIntLength(AckDelay) +
-                   QuicPrimitives.GetVarIntLength(AckRangeCount) +
-                   QuicPrimitives.GetVarIntLength(FirstAckRange) +
+            return GetOverhead(LargestAcknowledged, AckDelay, AckRangeCount, FirstAckRange) +
                    AckRangesRaw.Length +
                    (HasEcnCounts
                        ? QuicPrimitives.GetVarIntLength(Ect0Count) +
@@ -77,6 +73,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                          QuicPrimitives.GetVarIntLength(CeCount)
                        : 0);
 
+        }
+
+        internal static int GetOverhead(long largestAcknowledged, long ackDelay, long ackRangeCount,
+            long firstAckRange)
+        {
+            return 1 + // type
+                   QuicPrimitives.GetVarIntLength(largestAcknowledged) +
+                   QuicPrimitives.GetVarIntLength(ackDelay) +
+                   QuicPrimitives.GetVarIntLength(ackRangeCount) +
+                   QuicPrimitives.GetVarIntLength(firstAckRange);
         }
 
         internal AckFrame(long largestAcknowledged, long ackDelay, long ackRangeCount, long firstAckRange,

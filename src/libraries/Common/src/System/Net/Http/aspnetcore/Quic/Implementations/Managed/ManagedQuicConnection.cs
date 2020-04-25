@@ -51,6 +51,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal bool IsClosed => _closeTcs.IsSet;
 
+        internal QuicConnectionState ConnectionState => GetConnectionState();
+
         internal QuicConnectionState GetConnectionState()
         {
             if (IsClosed) return QuicConnectionState.Closed;
@@ -219,8 +221,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             // TODO-RZ: find a way to get shutdown reliably without hammering the peer with packets.
             if (_closingPeriodEnd != null)
-                timer = Math.Min(timer, _lastConnectionCloseSent + 1);
-                // timer = Math.Min(timer, _closingPeriodEnd.Value);
+                timer = Math.Min(timer, _closingPeriodEnd.Value);
 
             return timer;
         }
@@ -966,7 +967,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             ThrowIfDisposed();
 
-            if (_closeTcs.IsSet) return;
+            if (IsClosed) return;
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             outboundError = new QuicError((TransportErrorCode) errorCode, null, FrameType.Padding, false);

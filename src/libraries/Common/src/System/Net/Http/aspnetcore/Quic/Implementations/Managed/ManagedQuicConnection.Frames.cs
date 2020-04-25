@@ -211,16 +211,25 @@ namespace System.Net.Quic.Implementations.Managed
 
                 StartClosing(context.Timestamp);
 
-                // TODO-RZ: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
-                // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
-                _isDraining = true;
+                if (outboundError == null)
+                {
+                    // From RFC: An endpoint that receives a CONNECTION_CLOSE frame MAY send a single packet containing a
+                    // CONNECTION_CLOSE frame before entering the draining state, using NO_ERROR code if appropriate.
+                    outboundError = new QuicError(TransportErrorCode.NoError);
+                    // draining state will be entered once the error is sent.
+                }
+                else
+                {
+                    StartDraining();
+                }
 
-                // this does nothing if
+                // connection will not succeed
                 _connectTcs.TryCompleteException(new QuicErrorException(inboundError));
             }
 
             return ProcessPacketResult.Ok; //TODO-RZ: Draining/closing state management
         }
+
 
         private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, RecvContext context)
         {
@@ -374,6 +383,12 @@ namespace System.Net.Quic.Implementations.Managed
 
                 }
 
+                if (inboundError != null)
+                {
+                    // RFC allows sending one packet to hasten up the closing, but otherwise se should be draining
+                    StartDraining();
+                }
+
                 if (_lastConnectionCloseSent < context.Timestamp)
                 {
                     // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
@@ -418,6 +433,14 @@ namespace System.Net.Quic.Implementations.Managed
             // Note: this is to properly discard reordered/delayed packets.
 
             _closingPeriodEnd = now + 3 * Recovery.GetProbeTimeoutInterval();
+        }
+
+        private void StartDraining()
+        {
+            _isDraining = true;
+
+            // for all user's purposes, the connection is closed.
+            SignalConnectionClose();
         }
 
         private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
@@ -468,6 +491,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
 
+
             // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
                             (int)_localTransportParameters.AckDelayExponent;
@@ -476,14 +500,17 @@ namespace System.Net.Quic.Implementations.Managed
             var firstRange = ranges[^1];
 
             int written = 0;
-            int lengthEstimate = ranges.Count * 2 * 4;
+            int lengthEstimate = ranges.Count * 2 * 4; // assume worst case encoding
 
             Span<byte> ackRangesRaw = lengthEstimate <= 512
                 ? stackalloc byte[lengthEstimate]
                 : new byte[lengthEstimate];
 
             long prevSmallestAcked = firstRange.Start;
+            int overhead = AckFrame.GetOverhead(largest, ackDelay, ranges.Count, firstRange.Length - 1);
 
+            // write as many ranges as possible
+            int rangesSent = 0;
             for (int i = ranges.Count - 2; i >= 0; i--)
             {
                 var range = ranges[i];
@@ -496,21 +523,35 @@ namespace System.Net.Quic.Implementations.Managed
                 long gap = prevSmallestAcked - nextLargestAcked - 2;
                 long ack = range.Length - 1;
 
-                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written), gap);
-                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written), ack);
+                int rangeWireLength = 0;
+                rangeWireLength += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written + rangeWireLength), gap);
+                rangeWireLength += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written + rangeWireLength), ack);
+
+                if (written + overhead + rangeWireLength > writer.BytesAvailable)
+                {
+                    // cannot fit more
+                    break;
+                }
+
                 prevSmallestAcked = ranges[i].Start;
+                // record that the range has been sent
+                context.SentPacket.AckedRanges.Add(range.Start, range.End);
+                rangesSent++;
+                written += rangeWireLength;
             }
 
-            // record that the ranges have been sent
-            context.SentPacket.AckedRanges.Add(ranges);
+            if (written + overhead <= writer.BytesAvailable)
+            {
+                context.SentPacket.AckedRanges.Add(firstRange.Start, firstRange.End);
 
-            // TODO-RZ implement ECN counts
-            AckFrame.Write(writer,
-                new AckFrame(largest, ackDelay, ranges.Count - 1,
-                    firstRange.Length - 1, ackRangesRaw.Slice(0, written),
-                    false, 0, 0, 0));
+                // TODO-RZ implement ECN counts
+                AckFrame.Write(writer,
+                    new AckFrame(largest, ackDelay, rangesSent,
+                        firstRange.Length - 1, ackRangesRaw.Slice(0, written),
+                        false, 0, 0, 0));
 
-            pnSpace.AckElicited = false;
+                pnSpace.AckElicited = false;
+            }
         }
 
         private void WriteStreamFrames(QuicWriter writer, SendContext context)
