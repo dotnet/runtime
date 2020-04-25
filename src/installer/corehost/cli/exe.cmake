@@ -17,7 +17,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
 list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
-    ${HOSTMISC_SRC}
 )
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
