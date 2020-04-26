@@ -1064,6 +1064,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
         public static void BuildChainForFraudulentCertificate()
         {
             byte[] certBytes = Convert.FromBase64String(@"
@@ -1119,6 +1120,7 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
         public static void BuildChainForCertificateSignedWithDisallowedKey()
         {
             byte[] intermediateBytes = Convert.FromBase64String(@"
