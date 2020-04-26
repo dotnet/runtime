@@ -3664,16 +3664,21 @@ private:
     // For prefixFlags
     enum
     {
-        PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+        PREFIX_TAILCALL_EXPLICIT = 0x000000001, // call has "tail" IL prefix
         PREFIX_TAILCALL_IMPLICIT =
             0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
         PREFIX_TAILCALL_STRESS =
             0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-        PREFIX_VOLATILE    = 0x00001000,
-        PREFIX_UNALIGNED   = 0x00010000,
-        PREFIX_CONSTRAINED = 0x00100000,
-        PREFIX_READONLY    = 0x01000000
+        PREFIX_TAILCALL      = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+        PREFIX_VOLATILE      = 0x00001000,
+        PREFIX_UNALIGNED     = 0x00010000,
+        PREFIX_CONSTRAINED   = 0x00100000,
+        PREFIX_READONLY      = 0x01000000,
+        // DO NOT CHANGE THESE VALUES - impImportBlockCode (at case CEE_NOCHECK) relies on these being 6 bits left of the IL no. prefix flags
+        PREFIX_NO_TYPECHECK  = 0x000000040,
+        PREFIX_NO_RANGECHECK = 0x000000080,
+        PREFIX_NO_NULLCHECK  = 0x000000100,
+        PREFIX_NO_TYPERANGENULLCHECK = (PREFIX_NO_TYPECHECK | PREFIX_NO_RANGECHECK | PREFIX_NO_NULLCHECK)
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);

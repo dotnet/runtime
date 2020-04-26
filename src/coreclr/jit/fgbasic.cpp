@@ -2084,6 +2084,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 goto OBSERVE_OPCODE;
             }
 
+            case CEE_NOCHECK:
+            {
+                noway_assert(sz == 0);
+
+                int flags = getU1LittleEndian(codeAddr);
+
+                prefixFlags |= (flags <<= 6);
+
+                impValidateCheckElisionOpcode(codeAddr, codeEndp, true);
+                handled = true;
+                goto OBSERVE_OPCODE;
+            }
+
             case CEE_TAILCALL:
             {
                 noway_assert(sz == 0);
@@ -3050,6 +3063,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             case CEE_READONLY:
             case CEE_CONSTRAINED:
             case CEE_VOLATILE:
+            case CEE_NOCHECK:
             case CEE_UNALIGNED:
                 // fgFindJumpTargets should have ruled out this possibility
                 //   (i.e. a prefix opcodes as last instruction in a block)

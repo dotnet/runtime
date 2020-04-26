@@ -5525,6 +5525,38 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
     }
 }
 
+/*****************************************************************************/
+// Checks whether the opcode is a valid opcode for no. (check elision) prefix
+
+static void impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
+{
+    if ((flags & PREFIX_NO_TYPECHECK) != 0)
+    {
+        if (!(opcode == CEE_CASTCLASS || opcode == CEE_UNBOX || opcode == CEE_LDELEMA
+            || (opcode >= CEE_STELEM_I && opcode <= CEE_STELEM_REF) || opcode == CEE_STELEM))
+        {
+            BADCODE("Invalid opcode for no. prefix with typecheck flag");
+        }
+    }
+    if ((flags & PREFIX_NO_RANGECHECK) != 0)
+    {
+        // Covers LDELEMA, LDELEM_*, and STELEM_*
+        if (!(opcode >= CEE_LDELEMA && opcode <= CEE_STELEM))
+        {
+            BADCODE("Invalid opcode for no. prefix with rangecheck flag");
+        }
+    }
+    if ((flags & PREFIX_NO_NULLCHECK) != 0)
+    {
+        if (!(opcode == CEE_LDFLD || opcode == CEE_STFLD || opcode == CEE_CALLVIRT || opcode == CEE_LDVIRTFTN
+                || (opcode >= CEE_LDELEMA && opcode <= CEE_STELEM)))
+        {
+            BADCODE("Invalid opcode for no. prefix with nullcheck flag");
+        }
+    }
+}
+/*****************************************************************************/
+
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
@@ -8751,6 +8783,36 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 assert(sz == 0);
+                goto PREFIX;
+
+            case CEE_NOCHECK:
+                assert(sz == 1);
+                JITDUMP(" no.");
+                Verify(!(prefixFlags & PREFIX_NO_TYPERANGENULLCHECK), "Multiple no. prefixes");
+
+                {
+                    int flags = getU1LittleEndian(codeAddr);
+
+                    JITDUMP(" %u", flags);
+
+                    ++codeAddr;
+
+                    // PREFIX_NO_TYPECHECK = 0x000000040 which is 0x1 (the value of typecheck flag) << 6
+                    // The 2 subsequent flags are just left shift of 1, the same as the nullcheck/rangecheck IL flags, so we just have to
+                    // left shift by 6 to transform
+                    flags <<= 6;
+                    if ((flags & (~PREFIX_NO_TYPERANGENULLCHECK)) != 0)
+                    {
+                        BADCODE("no. followed by invalid flags");
+                    }
+
+                    impValidateCheckElisionOpcode(codeAddr, codeEndp, flags);
+
+
+
+                    prefixFlags |= flags;
+                }
+
                 goto PREFIX;
 
             case CEE_TAILCALL:
