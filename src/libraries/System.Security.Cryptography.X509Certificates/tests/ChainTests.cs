@@ -1067,6 +1067,12 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void BuildChainForFraudulentCertificate()
         {
+            // This certificate is a misissued certificate for a "high-value"
+            // domain, mail.google.com. Windows and macOS give this certificate
+            // special distrust treatment beyond normal revocation, resulting
+            // in ExplicitDistrust. OpenSSL relies on normal revocation routines
+            // to distrust this certificate, so we skip this test on Linux.
+
             byte[] certBytes = Convert.FromBase64String(@"
 MIIF7jCCBNagAwIBAgIQBH7L6fylX3vQnq424QyuHjANBgkqhkiG9w0BAQUFADCB
 lzELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2Ug
@@ -1113,9 +1119,9 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
                     .OfType<X509ChainElement>()
                     .Single(e => e.Certificate.Subject == cert.Subject);
 
-                const X509ChainStatusFlags expectedFlag = X509ChainStatusFlags.ExplicitDistrust;
+                const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
                 X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
-                Assert.True((actualFlags & expectedFlag) == expectedFlag, $"Has expected flag {expectedFlag} but was {actualFlags}");
+                Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
             }
         }
 
@@ -1123,6 +1129,14 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void BuildChainForCertificateSignedWithDisallowedKey()
         {
+            // The intermediate certificate is from the now defunct CA DigiNotar.
+            // This intermediate is disallowed on the macOS on Windows platforms
+            // which result in an ExplicitDistrust result. OpenSSL does not treat
+            // this intermediate differently, and distributions have removed the
+            // root CA from the trust store anyway, resulting in a partial chain.
+            // Since OpenSSL isn't going out of its way to give the CA or its
+            // intermediates any special distrust, we skip this test on Linux.
+
             byte[] intermediateBytes = Convert.FromBase64String(@"
 MIIDzTCCAzagAwIBAgIERpwssDANBgkqhkiG9w0BAQUFADCBwzELMAkGA1UEBhMC
 VVMxFDASBgNVBAoTC0VudHJ1c3QubmV0MTswOQYDVQQLEzJ3d3cuZW50cnVzdC5u
@@ -1182,9 +1196,9 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                     .OfType<X509ChainElement>()
                     .Single(e => e.Certificate.Subject == intermediateCert.Subject);
 
-                const X509ChainStatusFlags expectedFlag = X509ChainStatusFlags.ExplicitDistrust;
+                const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
                 X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
-                Assert.True((actualFlags & expectedFlag) == expectedFlag, $"Has expected flag {expectedFlag} but was {actualFlags}");
+                Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
             }
         }
 
