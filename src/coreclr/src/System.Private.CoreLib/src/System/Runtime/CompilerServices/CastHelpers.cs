@@ -211,28 +211,105 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                // Early read of interfaceCount before testing it to hide some latency.
                 nuint interfaceCount = mt->InterfaceCount;
+                MethodTable** interfaceMap = mt->InterfaceMap;
+                nuint i = 0;
                 if (interfaceCount != 0)
                 {
-                    MethodTable** interfaceMap = mt->InterfaceMap;
-                    for (nuint i = 0; ; i += 4)
+#if TARGET_64BIT
+                    if (Sse41.X64.IsSupported)
                     {
-                        if (interfaceMap[i + 0] == toTypeHnd)
+                        if (interfaceCount >= 2)
+                        {
+                            // More than 2 interfaces, we will do a vectorized check so load the typehandle into a Vector.
+                            Vector128<nuint> vTypeHnd = Vector128.Create((nuint)toTypeHnd);
+                            if (interfaceCount >= 4)
+                            {
+                                // More than 4 interfaces so we will check in batches of 4.
+                                nuint limit = (interfaceCount & ~3u) * (nuint)Vector128<byte>.Count;
+                                do
+                                {
+                                    // Compare 2 interface handles twice,
+                                    // Or the two equality results together,
+                                    // Check if any are true.
+                                    if (Sse2.MoveMask(
+                                        Sse2.Or(
+                                            Sse41.CompareEqual(LoadVector128(interfaceMap, i), vTypeHnd).AsByte(),
+                                            Sse41.CompareEqual(LoadVector128(interfaceMap, i + (nuint)Vector128<byte>.Count), vTypeHnd).AsByte()
+                                        )) != 0)
+                                    {
+                                        goto done;
+                                    }
+
+                                    i += (nuint)Vector128<byte>.Count * 2;
+                                } while (i < limit);
+                            }
+
+                            // Check remaining 2 if any.
+                            if ((interfaceCount & 2) != 0)
+                            {
+                                if (Sse2.MoveMask(Sse41.CompareEqual(LoadVector128(interfaceMap, i), vTypeHnd).AsByte()) != 0)
+                                {
+                                    goto done;
+                                }
+                            }
+
+                            // Check final one.
+                            if ((interfaceCount & 1) != 0)
+                            {
+                                if (interfaceMap[interfaceCount - 1] == toTypeHnd)
+                                    goto done;
+                            }
+                        }
+                        else
+                        {
+                            // Only one interface, check directly.
+                            if (interfaceMap[0] == toTypeHnd)
+                                goto done;
+                        }
+                    }
+                    else
+#endif
+                    if (interfaceCount >= 2)
+                    {
+                        nuint limit = interfaceCount & ~3u;
+                        // Unroll in batches of 4.
+                        while (i < limit)
+                        {
+                            if (interfaceMap[i + 0] == toTypeHnd)
+                                goto done;
+                            if (interfaceMap[i + 1] == toTypeHnd)
+                                goto done;
+                            if (interfaceMap[i + 2] == toTypeHnd)
+                                goto done;
+                            if (interfaceMap[i + 3] == toTypeHnd)
+                                goto done;
+
+                            i += 4;
+                        }
+
+                        // Check remaining 2 if any.
+                        if ((interfaceCount & 2) != 0)
+                        {
+                            if (interfaceMap[i] == toTypeHnd)
+                                goto done;
+                            if (interfaceMap[i + 1] == toTypeHnd)
+                                goto done;
+                        }
+
+                        // Check final one.
+                        if ((interfaceCount & 1) != 0)
+                        {
+                            if (interfaceMap[interfaceCount - 1] == toTypeHnd)
+                                goto done;
+                        }
+                    }
+                    else
+                    {
+                        // Only one interface, check directly.
+                        if (interfaceMap[0] == toTypeHnd)
                             goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 1] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 2] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 3] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
                     }
                 }
 
@@ -383,32 +460,111 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                // Early read of interfaceCount before testing it to hide some latency.
                 nuint interfaceCount = mt->InterfaceCount;
+                MethodTable** interfaceMap = mt->InterfaceMap;
+                nuint i = 0;
+
                 if (interfaceCount == 0)
                 {
                     goto slowPath;
                 }
-
-                MethodTable** interfaceMap = mt->InterfaceMap;
-                for (nuint i = 0; ; i += 4)
+#if TARGET_64BIT
+                if (Sse41.X64.IsSupported)
                 {
-                    if (interfaceMap[i + 0] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 1] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 2] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 3] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
+                    if (interfaceCount >= 2)
+                    {
+                        // More than 2, we will do a vectorized check so load the typehandle into a Vector
+                        Vector128<nuint> vTypeHnd = Vector128.Create((nuint)toTypeHnd);
+                        if (interfaceCount >= 4)
+                        {
+                            // More than 4 interfaces so we will check in batches of 4.
+                            nuint limit = (interfaceCount & ~3u) * (nuint)Vector128<byte>.Count;
+                            do
+                            {
+                                // Compare 2 interface handles twice,
+                                // Or the two equality results together,
+                                // Check if any are true.
+                                if (Sse2.MoveMask(
+                                    Sse2.Or(
+                                        Sse41.CompareEqual(LoadVector128(interfaceMap, i), vTypeHnd).AsByte(),
+                                        Sse41.CompareEqual(LoadVector128(interfaceMap, i + (nuint)Vector128<byte>.Count), vTypeHnd).AsByte()
+                                    )) != 0)
+                                {
+                                    goto done;
+                                }
+
+                                i += (nuint)Vector128<byte>.Count * 2;
+                            } while (i < limit);
+                        }
+
+                        // Check remaining 2 if any.
+                        if ((interfaceCount & 2) != 0)
+                        {
+                            if (Sse2.MoveMask(Sse41.CompareEqual(LoadVector128(interfaceMap, i), vTypeHnd).AsByte()) != 0)
+                            {
+                                goto done;
+                            }
+                        }
+
+                        // Check final one.
+                        if ((interfaceCount & 1) != 0)
+                        {
+                            if (interfaceMap[interfaceCount - 1] == toTypeHnd)
+                                goto done;
+                        }
+                    }
+                    else
+                    {
+                        // Only one interface, check directly.
+                        if (interfaceMap[0] == toTypeHnd)
+                            goto done;
+                    }
                 }
+                else
+#endif
+                if (interfaceCount >= 2)
+                {
+                    nuint limit = interfaceCount & ~3u;
+                    // Unroll in batches of 4.
+                    while (i < limit)
+                    {
+                        if (interfaceMap[i + 0] == toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 1] == toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 2] == toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 3] == toTypeHnd)
+                            goto done;
+
+                        i += 4;
+                    }
+
+                    // Check remaining 2 if any.
+                    if ((interfaceCount & 2) != 0)
+                    {
+                        if (interfaceMap[i] == toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 1] == toTypeHnd)
+                            goto done;
+                    }
+
+                    // Check final one.
+                    if ((interfaceCount & 1) != 0)
+                    {
+                        if (interfaceMap[interfaceCount - 1] == toTypeHnd)
+                            goto done;
+                    }
+                }
+                else
+                {
+                    // Only one interface, check directly.
+                    if (interfaceMap[0] == toTypeHnd)
+                        goto done;
+                }
+
+                goto slowPath;
             }
 
         done:
@@ -583,5 +739,9 @@ namespace System.Runtime.CompilerServices
 
             throw new ArrayTypeMismatchException();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector128<nuint> LoadVector128(void* start, nuint byteOffset)
+            => Unsafe.ReadUnaligned<Vector128<nuint>>(ref Unsafe.AddByteOffset(ref Unsafe.AsRef<byte>(start), byteOffset));
     }
 }
