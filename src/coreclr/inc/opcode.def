@@ -316,7 +316,7 @@ OPDEF(CEE_INITOBJ,                    "initobj",          PopI,               Pu
 OPDEF(CEE_CONSTRAINED,                "constrained.",     Pop0,               Push0,       InlineType,         IPrefix,     2,  0xFE,    0x16,    META)
 OPDEF(CEE_CPBLK,                      "cpblk",            PopI+PopI+PopI,     Push0,       InlineNone,         IPrimitive,  2,  0xFE,    0x17,    NEXT)
 OPDEF(CEE_INITBLK,                    "initblk",          PopI+PopI+PopI,     Push0,       InlineNone,         IPrimitive,  2,  0xFE,    0x18,    NEXT)
-OPDEF(CEE_UNUSED69,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  2,  0xFE,    0x19,    NEXT)
+OPDEF(CEE_NOCHECK,                    "no.",              Pop0,               Push0,       ShortInlineI,       IPrefix,     2,  0xFE,    0x19,    META)
 OPDEF(CEE_RETHROW,                    "rethrow",          Pop0,               Push0,       InlineNone,         IObjModel,   2,  0xFE,    0x1A,    THROW)
 OPDEF(CEE_UNUSED51,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  2,  0xFE,    0x1B,    NEXT)
 OPDEF(CEE_SIZEOF,                     "sizeof",           Pop0,               PushI,       InlineType,         IPrimitive,  2,  0xFE,    0x1C,    NEXT)
