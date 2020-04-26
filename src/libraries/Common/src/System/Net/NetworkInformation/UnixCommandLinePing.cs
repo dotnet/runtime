@@ -81,15 +81,29 @@ namespace System.Net.NetworkInformation
             sb.Append("-c 1"); // Just send a single ping ("count = 1")
 
             // Pass timeout argument to ping utility
-            // BusyBox and regular Linux 'ping' requires -W flag which accepts timeout in SECONDS. Therefore, we
-            // use ceiling when converting millis to seconds
-            // On FreeBSD and MacOS X 'ping' requires -W flag which accepts timeout in MILLISECONDS
-            sb.Append(" -W ");
-            if (!s_isBSD)
+            // BusyBox, Linux: ping and ping6 requires -W flag which accepts timeout in SECONDS.
+            // On FreeBSD and MacOS X ping requires -W flag which accepts timeout in MILLISECONDS; ping6 
+            // requires -x which accepts timeout in MILLISECONDS
+            if (s_isBSD)
             {
+                if (ipv4)
+                {
+                    sb.Append(" -W ");
+                }
+                else
+                {
+                    sb.Append(" -x ");
+                }
+            }
+            else
+            {
+                sb.Append(" -W ");
                 const int millisInSecond = 1000;
                 timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
-                timeout += remainder != 0 ? 1 : 0;
+                if (remainder != 0)
+                {
+                    timeout += 1;
+                }
             }
             sb.Append(timeout);
 
