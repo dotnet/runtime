@@ -3696,6 +3696,14 @@ protected:
                                          var_types            baseType,
                                          unsigned             simdSize);
 
+    GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
+                                        var_types            retType,
+                                        var_types            baseType,
+                                        unsigned             simdSize,
+                                        GenTree*             op1,
+                                        GenTree*             op2,
+                                        GenTree*             op3);
+
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
