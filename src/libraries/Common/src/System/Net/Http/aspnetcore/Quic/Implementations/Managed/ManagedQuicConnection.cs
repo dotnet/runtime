@@ -284,6 +284,11 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var status = ReceiveOne(reader, context);
 
+                if (status == ProcessPacketResult.DropPacket)
+                {
+                    Console.WriteLine("Packet dropped");
+                }
+
                 // Receive will adjust the buffer length once it is known, thus the length here skips the
                 // just processed coalesced packet
                 buffer = buffer.Slice(reader.Buffer.Length);
@@ -482,11 +487,32 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal EncryptionLevel GetWriteLevel()
         {
-            // TODO-RZ: handle resend and packet loss of earlier levels
-            EncryptionLevel desiredLevel = _tls.WriteLevel;
-            // if not connected, then handshake is not done yet
-            // if (!Connected && desiredLevel == EncryptionLevel.Application)
-            // return EncryptionLevel.Handshake;
+            // if there is a probe waiting to be sent on any level, send it.
+            // Because probe packets are not limited by congestion window, this avoids a live-lock in
+            // scenario where there is a pending ack in e.g. Initial epoch, but the connection cannot
+            // send it because it is limited by congestion window, because it has in-flight packets
+            // in Handshake epoch.
+            for (int i = 0; i < _pnSpaces.Length; i++)
+            {
+                var recoverySpace = Recovery.GetPacketNumberSpace((PacketSpace)i);
+                if (recoverySpace.RemainingLossProbes > 0)
+                {
+                    return (EncryptionLevel)i;
+                }
+            }
+
+            if (outboundError != null && outboundError.IsQuicError)
+            {
+                // send error in appropriate epoch,
+                EncryptionLevel desiredLevel = _tls.WriteLevel;
+                if (!Connected && desiredLevel == EncryptionLevel.Application)
+                {
+                    // don't use application level if handshake is not complete
+                    return EncryptionLevel.Handshake;
+                }
+
+                return desiredLevel;
+            }
 
             for (int i = 0; i < _pnSpaces.Length; i++)
             {
@@ -499,13 +525,12 @@ namespace System.Net.Quic.Implementations.Managed
                     // resend lost data
                     recoverySpace.LostPackets.Count > 0 ||
                     // send acknowledgements
-                    pnSpace.AckElicited ||
-                    // avoid deadlocks during handshake
-                    recoverySpace.RemainingLossProbes > 0)
+                    pnSpace.AckElicited)
                     return level;
             }
 
-            return desiredLevel;
+            // else we send stream/application data
+            return EncryptionLevel.Application;
         }
 
         private bool SendOne(QuicWriter writer, EncryptionLevel level, SendContext context)
@@ -540,12 +565,10 @@ namespace System.Net.Quic.Implementations.Managed
                 // use minimum size for packets during handshake
                 : QuicConstants.MinimumClientInitialDatagramSize);
 
+            bool isProbePacket = recoverySpace.RemainingLossProbes > 0;
+
             // make sure we send something if a probe is wanted
-            if (recoverySpace.RemainingLossProbes > 0)
-            {
-                _pingWanted = true;
-                recoverySpace.RemainingLossProbes--;
-                // probe packets are not limited by congestion window
+            _pingWanted |= isProbePacket;
 
                 // TODO-RZ: Although ping should always work, the actual algorithm for probe packet is following
                 // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
@@ -557,16 +580,17 @@ namespace System.Net.Quic.Implementations.Managed
                     // TODO-RZ: PTO. Send new data if available, else retransmit old data.
                     // If neither is available, send single PING frame.
                 // }
-            }
-            else
+
+            // limit outbound packet by available congestion window
+            // probe packets are not limited by congestion window
+            if (!isProbePacket)
             {
-                // limit outbound packet by available congestion window
                 maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
             }
 
-            if (maxPacketLength < 50)
+            if (maxPacketLength <= seal.TagLength)
             {
-                // TODO-RZ: better estimate for minimal usable size
+                // unable to send any useful data anyway.
                 return false;
             }
 
@@ -574,15 +598,15 @@ namespace System.Net.Quic.Implementations.Managed
             var origBuffer = writer.Buffer;
 
             writer.Reset(origBuffer.Slice(0, Math.Min(origBuffer.Length, maxPacketLength - seal.TagLength)), written);
-
             WriteFrames(writer, packetType, level, context);
-
             writer.Reset(origBuffer, writer.BytesWritten);
+
             if (writer.BytesWritten == written)
             {
                 // no data to send
                 // TODO-RZ: we might be able to detect this sooner
                 writer.Reset(writer.Buffer);
+                Debug.Assert(!_pingWanted);
                 return false;
             }
 
@@ -624,6 +648,10 @@ namespace System.Net.Quic.Implementations.Managed
             context.SentPacket.BytesSent = writer.BytesWritten;
             context.SentPacket.TimeSent = context.Timestamp;
 
+            if (isProbePacket)
+            {
+                recoverySpace.RemainingLossProbes--;
+            }
             Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
 
@@ -818,7 +846,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
-            _ = DisposeAsync(); //.AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+            // TODO-RZ: I don't like this, but there does not seem to be a better way, unless we just want to do
+            // fire-and-forget
+            DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
@@ -996,6 +1026,14 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+
+            if (!Connected)
+            {
+                // abandon connection attempt
+                // TODO-RZ: can we just wink the connection out?
+                // _connectTcs.TryCompleteException();
+                _closeTcs.TryComplete();
+            }
 
             if (IsClosed) return;
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);

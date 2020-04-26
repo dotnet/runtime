@@ -420,26 +420,32 @@ namespace System.Net.Quic.Implementations.Managed
                 StartClosing(context.Timestamp);
             }
 
+            // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
+            // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
+            // amount of time before responding.
+            if (_lastConnectionCloseSent >= context.Timestamp)
+            {
+                return;
+            }
+
+            var frame = new ConnectionCloseFrame((long)outboundError.ErrorCode,
+                outboundError.IsQuicError,
+                outboundError.FrameType,
+                outboundError.ReasonPhrase);
+
+            if (frame.GetSerializedLength() > writer.BytesAvailable)
+            {
+                // we can't fit the frame into the packet, wait for next time
+                return;
+            }
+
+            ConnectionCloseFrame.Write(writer, frame);
+            _lastConnectionCloseSent = context.Timestamp;
+
             if (inboundError != null)
             {
                 // RFC allows sending one packet to hasten up the closing, but otherwise we should be draining
                 StartDraining();
-            }
-
-            if (_lastConnectionCloseSent < context.Timestamp)
-            {
-                // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
-                // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
-                // amount of time before responding.
-
-                // TODO-RZ: check if we can fit
-                ConnectionCloseFrame.Write(writer,
-                    new ConnectionCloseFrame((long)outboundError.ErrorCode,
-                        outboundError.IsQuicError,
-                        outboundError.FrameType,
-                        outboundError.ReasonPhrase));
-
-                _lastConnectionCloseSent = context.Timestamp;
             }
         }
 
@@ -484,6 +490,8 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
                             (int)_localTransportParameters.AckDelayExponent;
+            // sanity check
+            ackDelay = Math.Max(0, ackDelay);
 
             long largest = ranges.GetMax();
             var firstRange = ranges[^1];
