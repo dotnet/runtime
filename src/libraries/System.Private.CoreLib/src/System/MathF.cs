@@ -100,7 +100,7 @@ namespace System
 
                 Vector128<float> mask = Vector128.CreateScalarUnsafe(-0.0f); // has sign bit set, everything else 0
 
-                return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
+                return Vector128Helpers.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
             else
             {

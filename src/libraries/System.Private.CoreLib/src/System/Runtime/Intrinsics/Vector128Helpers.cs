@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics.X86;
 namespace System.Runtime.Intrinsics
 {
     // Contains internal helper methods
-    public static partial class Vector128
+    internal static class Vector128Helpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<T> ConditionalSelectBitwise<T>(Vector128<T> selector, Vector128<T> ifTrue, Vector128<T> ifFalse)
@@ -20,8 +20,8 @@ namespace System.Runtime.Intrinsics
 
             if (Sse.IsSupported)
             {
-                var trueMask = Sse.And(ifTrue.AsSingle(), selector.AsSingle());
-                var falseMask  = Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle());
+                Vector128<float> trueMask = Sse.And(ifTrue.AsSingle(), selector.AsSingle());
+                Vector128<float> falseMask  = Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle());
 
                 return Sse.Or(falseMask, trueMask).As<float, T>();
             }

@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
     // value instead, thus reducing the number of locals and helping prevent us from hitting
     // the internal inlining limits of the JIT.
 
-    public static partial class Vector128
+    public static class Vector128
     {
         internal const int Size = 16;
 

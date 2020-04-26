@@ -225,12 +225,12 @@ namespace System
         {
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                var xvec = Vector128.CreateScalarUnsafe(x);
-                var yvec = Vector128.CreateScalarUnsafe(y);
+                Vector128<double> xvec = Vector128.CreateScalarUnsafe(x);
+                Vector128<double> yvec = Vector128.CreateScalarUnsafe(y);
 
-                var mask = Vector128.CreateScalarUnsafe(-0.0); // has sign bit set, everything else 0
+                Vector128<double> mask = Vector128.CreateScalarUnsafe(-0.0); // has sign bit set, everything else 0
 
-                return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
+                return Vector128Helpers.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
             else
             {
