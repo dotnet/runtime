@@ -17,7 +17,9 @@ hostfxr_exports::hostfxr_exports(const pal::string_t &hostfxr_path)
     run_app = (hostfxr_run_app_fn)pal::get_symbol(_dll, "hostfxr_run_app");
 
     init_config = (hostfxr_initialize_for_runtime_config_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_runtime_config");
+    init_managed_host = (hostfxr_initialize_for_managed_host_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_managed_host");
     get_delegate = (hostfxr_get_runtime_delegate_fn)pal::get_symbol(_dll, "hostfxr_get_runtime_delegate");
+    create_delegate = (hostfxr_create_delegate_fn)pal::get_symbol(_dll, "hostfxr_create_delegate");
 
     get_prop_value = (hostfxr_get_runtime_property_value_fn)pal::get_symbol(_dll, "hostfxr_get_runtime_property_value");
     set_prop_value = (hostfxr_set_runtime_property_value_fn)pal::get_symbol(_dll, "hostfxr_set_runtime_property_value");
@@ -33,6 +35,7 @@ hostfxr_exports::hostfxr_exports(const pal::string_t &hostfxr_path)
 
     if (init_command_line == nullptr || run_app == nullptr
         || init_config == nullptr || get_delegate == nullptr
+        || init_managed_host == nullptr || create_delegate == nullptr
         || get_prop_value == nullptr || set_prop_value == nullptr
         || get_properties == nullptr || close == nullptr
         || main_startupinfo == nullptr || set_error_writer == nullptr

@@ -38,6 +38,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.HaveStdOutContaining("mock entryPointMethodName:GetClassFactoryForTypeInternal");
         }
 
+        public static AndConstraint<CommandResultAssertions> CreateDelegateMock_Custom(this CommandResultAssertions assertion)
+        {
+            return assertion.CreateDelegateMock()
+                .And.HaveStdOutContaining("mock entryPointAssemblyName:entryAssembly")
+                .And.HaveStdOutContaining("mock entryPointTypeName:entryType")
+                .And.HaveStdOutContaining("mock entryPointMethodName:entryMethod");
+        }
+
         public static AndConstraint<CommandResultAssertions> CreateDelegateMock_InMemoryAssembly(this CommandResultAssertions assertion)
         {
             return assertion.CreateDelegateMock()
@@ -64,6 +72,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public static AndConstraint<CommandResultAssertions> InitializeContextForConfig(this CommandResultAssertions assertion, string path)
         {
             return assertion.HaveStdErrContaining($"Initialized context for config: {path}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> InitializeContextForManagedHost(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.HaveStdErrContaining($"Initialized context for managed host: [{path}], [(null)], [(null)]");
         }
 
         public static AndConstraint<CommandResultAssertions> InitializeSecondaryContext(this CommandResultAssertions assertion, string path, int statusCode)

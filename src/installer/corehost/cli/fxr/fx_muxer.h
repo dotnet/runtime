@@ -31,11 +31,23 @@ public:
         const host_startup_info_t& host_info,
         const pal::char_t * runtime_config_path,
         hostfxr_handle *host_context_handle);
+    static int initialize_for_managed_host(
+        const host_startup_info_t &host_info,
+        const pal::char_t *managed_host_path,
+        const pal::char_t *deps_json_path,
+        const pal::char_t *runtime_config_path,
+        hostfxr_handle *host_context_handle);
     static int run_app(host_context_t *context);
     static int get_runtime_delegate(
         host_context_t *context,
         coreclr_delegate_type delegate_type,
         void** delegate);
+    static int create_delegate(
+        host_context_t *context,
+        const pal::char_t *entry_point_assembly_name,
+        const pal::char_t *entry_point_type_name,
+        const pal::char_t *entry_point_method_name,
+        void **delegate);
     static const host_context_t* get_active_host_context();
     static int close_host_context(host_context_t *context);
 private:

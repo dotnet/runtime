@@ -14,7 +14,9 @@ public:
     hostfxr_run_app_fn run_app;
 
     hostfxr_initialize_for_runtime_config_fn init_config;
+    hostfxr_initialize_for_managed_host_fn init_managed_host;
     hostfxr_get_runtime_delegate_fn get_delegate;
+    hostfxr_create_delegate_fn create_delegate;
 
     hostfxr_get_runtime_property_value_fn get_prop_value;
     hostfxr_set_runtime_property_value_fn set_prop_value;

@@ -17,6 +17,7 @@ namespace
 {
     const pal::char_t *app_log_prefix = _X("[APP] ");
     const pal::char_t *config_log_prefix = _X("[CONFIG] ");
+    const pal::char_t *managed_host_log_prefix = _X("[MANAGED_HOST] ");
     const pal::char_t *secondary_log_prefix = _X("[SECONDARY] ");
 
     const hostfxr_delegate_type first_delegate_type = hostfxr_delegate_type::hdt_com_activation;
@@ -171,6 +172,39 @@ namespace
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
             test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc  << std::endl;
+
+        return rc == StatusCode::Success && rcClose == StatusCode::Success;
+    }
+
+    bool managed_host_test(
+        const hostfxr_exports &hostfxr,
+        host_context_test::check_properties check_properties,
+        const pal::char_t *managed_host_path,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        int rc = hostfxr.init_managed_host(managed_host_path, nullptr, nullptr, nullptr, &handle);
+        if (!STATUS_CODE_SUCCEEDED(rc))
+        {
+            test_output << log_prefix << _X("hostfxr_initialize_for_managed_host failed: ") << std::hex << std::showbase << rc << std::endl;
+            return false;
+        }
+
+        test_output << log_prefix << _X("hostfxr_initialize_for_managed_host succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
+        inspect_modify_properties(check_properties, hostfxr, handle, argc, argv, log_prefix, test_output);
+
+        void* delegate;
+        rc = hostfxr.create_delegate(handle, L"entryAssembly", L"entryType", L"entryMethod", &delegate);
+        if (rc != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_create_delegate failed: ") << std::hex << std::showbase << rc << std::endl;
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -380,6 +414,19 @@ bool host_context_test::config_multiple(
         return false;
 
     return config_test(hostfxr, check_properties, secondary_config_path, argc, argv, secondary_delegate_type, secondary_log_prefix, test_output);
+}
+
+bool host_context_test::managed_host(
+    check_properties check_properties,
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *managed_host_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr { hostfxr_path };
+
+    return managed_host_test(hostfxr, check_properties, managed_host_path, argc, argv, managed_host_log_prefix, test_output);
 }
 
 namespace

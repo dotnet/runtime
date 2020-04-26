@@ -38,4 +38,10 @@ typedef int(HOSTPOLICY_CALLTYPE *corehost_initialize_fn)(
     int32_t options,
     corehost_context_contract *handle);
 
+typedef int(HOSTPOLICY_CALLTYPE *corehost_create_delegate_fn)(
+    const pal::char_t *assembly_name,
+    const pal::char_t *type_name,
+    const pal::char_t *method_name,
+    /*out*/ void **delegate);
+
 #endif //__HOSTPOLICY_H__

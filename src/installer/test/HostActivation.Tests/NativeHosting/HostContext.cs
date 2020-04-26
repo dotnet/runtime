@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public const string App = "app";
             public const string Config = "config";
             public const string ConfigMultiple = "config_multiple";
+            public const string ManagedHost = "managed_host";
             public const string Mixed = "mixed";
             public const string NonContextMixed = "non_context_mixed";
         }
@@ -38,6 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             public const string App = "[APP] ";
             public const string Config = "[CONFIG] ";
+            public const string ManagedHost = "[MANAGED_HOST] ";
             public const string Secondary = "[SECONDARY] ";
         }
 
@@ -568,6 +570,39 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                         .HaveStdErrContaining("All specified properties match those in the previously loaded runtime");
                 }
             }
+        }
+
+
+        [Theory]
+        [InlineData(CheckProperties.None)]
+        [InlineData(CheckProperties.Get)]
+        [InlineData(CheckProperties.Set)]
+        [InlineData(CheckProperties.Remove)]
+        [InlineData(CheckProperties.GetAll)]
+        [InlineData(CheckProperties.GetActive)]
+        [InlineData(CheckProperties.GetAllActive)]
+        public void CreateDelegate(string checkProperties)
+        {
+            string newPropertyName = "HOST_TEST_PROPERTY";
+            string[] args =
+            {
+                HostContextArg,
+                Scenario.ManagedHost,
+                checkProperties,
+                sharedState.HostFxrPath,
+                sharedState.AppPath,
+                SharedTestState.AppPropertyName,
+                newPropertyName,
+            };
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Pass()
+                .And.InitializeContextForManagedHost(sharedState.AppPath)
+                .And.CreateDelegateMock_Custom();
+
+            CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.ManagedHost, SharedTestState.AppPropertyName, SharedTestState.AppPropertyValue);
+            propertyValidation.ValidateActiveContext(result, newPropertyName);
         }
 
         public class CheckPropertiesValidation

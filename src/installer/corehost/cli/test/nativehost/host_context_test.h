@@ -43,6 +43,13 @@ namespace host_context_test
         int argc,
         const pal::char_t *argv[],
         pal::stringstream_t &test_output);
+    bool managed_host(
+        check_properties scenario,
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *managed_host_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
     bool mixed(
         check_properties scenario,
         const pal::string_t &hostfxr_path,

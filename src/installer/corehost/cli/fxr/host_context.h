@@ -21,6 +21,14 @@ enum class host_context_type
     invalid,      // Failed on loading runtime
 };
 
+enum class host_context_init_type
+{
+    empty,        // Not initialized
+    app,          // From hostfxr_initialize_for_dotnet_command_line
+    component,    // From hostfxr_initialize_for_runtime_config
+    managed_host, // From hostfxr_initialize_for_managed_host
+};
+
 struct host_context_t
 {
 public: // static
@@ -43,8 +51,8 @@ public:
     const hostpolicy_contract_t hostpolicy_contract;
     corehost_context_contract hostpolicy_context_contract;
 
-    // Whether or not the context was initialized for an app. argv will be empty for non-app contexts.
-    bool is_app;
+    // How the context was initialized. argv will be empty for non-app contexts.
+    host_context_init_type init_type;
     std::vector<pal::string_t> argv;
 
     // Frameworks used for active context

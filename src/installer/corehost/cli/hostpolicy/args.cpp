@@ -70,7 +70,8 @@ bool parse_arguments(
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;
     }
-    else if (init.host_mode == host_mode_t::libhost)
+    else if (init.host_mode == host_mode_t::libhost ||
+             init.host_mode == host_mode_t::managedhost)
     {
         // Find the managed assembly in the same directory
         managed_application_path = init.host_info.app_path;
@@ -110,7 +111,7 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
     if (args.managed_application.empty())
     {
         // Managed app being empty by itself is not a failure. Host may be initialized from a config file. 
-        assert(args.host_mode != host_mode_t::apphost);
+        assert(args.host_mode != host_mode_t::apphost && args.host_mode != host_mode_t::managedhost);
         return true;
     }
 

@@ -20,6 +20,9 @@ struct hostpolicy_contract_t
     // 3.0+ contracts
     corehost_set_error_writer_fn set_error_writer;
     corehost_initialize_fn initialize;
+
+    // 5.0+ contracts
+    corehost_create_delegate_fn create_delegate;
 };
 
 namespace hostpolicy_resolver

@@ -66,6 +66,13 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_initialize_for_runtime_config_fn)(
     const struct hostfxr_initialize_parameters *parameters,
     /*out*/ hostfxr_handle *host_context_handle);
 
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_initialize_for_managed_host_fn)(
+    const char_t *managed_host_path,
+    const char_t *deps_json_path,
+    const char_t *runtime_config_path,
+    const struct hostfxr_initialize_parameters *parameters,
+    /*out*/ hostfxr_handle *host_context_handle);
+
 typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_property_value_fn)(
     const hostfxr_handle host_context_handle,
     const char_t *name,
@@ -84,6 +91,13 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_run_app_fn)(const hostfxr_handle host_
 typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_delegate_fn)(
     const hostfxr_handle host_context_handle,
     enum hostfxr_delegate_type type,
+    /*out*/ void **delegate);
+
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_create_delegate_fn)(
+    const hostfxr_handle host_context_handle,
+    const char_t *entry_point_assembly_name,
+    const char_t *entry_point_type_name,
+    const char_t *entry_point_method_name,
     /*out*/ void **delegate);
 
 typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_close_fn)(const hostfxr_handle host_context_handle);

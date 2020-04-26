@@ -22,6 +22,8 @@ enum host_mode_t
                     // but it has its "hostfxr.dll" next to it.
 
     libhost,        // Invoked from a non-exe scenario (e.g. COM Activation or self-hosting native application)
+
+    managedhost,    // Invoked from a custom native host to start the runtime with a managed host.
 };
 
 #define _HOST_INTERFACE_PACK 1

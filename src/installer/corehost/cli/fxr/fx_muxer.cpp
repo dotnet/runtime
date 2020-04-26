@@ -683,6 +683,63 @@ namespace
 
         return rc;
     }
+
+    int get_init_info_for_managed_host(
+        const host_startup_info_t  &host_info,
+        pal::string_t &managed_host_path,
+        pal::string_t &deps_json_path,
+        pal::string_t &runtime_config_path,
+        /*out*/ pal::string_t &hostpolicy_dir,
+        /*out*/ std::unique_ptr<corehost_init_t> &init)
+    {
+        // Read config
+        fx_definition_vector_t fx_definitions;
+        auto app = new fx_definition_t();
+        fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
+
+        const runtime_config_t::settings_t override_settings;
+        int rc = read_config(*app, managed_host_path, runtime_config_path, override_settings);
+        if (rc != StatusCode::Success)
+        {
+            return rc;
+        }
+
+        // If the deps file is specified, it must exist.
+        pal::string_t deps_file = deps_json_path;
+        if (!deps_file.empty() && !pal::realpath(&deps_file))
+        {
+            trace::error(_X("The specified deps.json [%s] does not exist"), deps_json_path.c_str());
+            return StatusCode::InvalidArgFailure;
+        }
+
+        const runtime_config_t app_config = app->get_runtime_config();
+        bool is_framework_dependent = app_config.get_is_framework_dependent();
+
+        if (is_framework_dependent)
+        {
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+            if (rc != StatusCode::Success)
+            {
+                return rc;
+            }
+        }
+
+        const std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
+
+        trace::verbose(_X("Apphost loading occurring for a %s managed host per config file [%s] and deps file [%s]"),
+            (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str(), deps_json_path.c_str());
+
+        const host_mode_t mode = host_mode_t::managedhost;
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &hostpolicy_dir))
+        {
+            return StatusCode::CoreHostLibMissingFailure;
+        }
+
+        const pal::string_t additional_deps_serialized;
+        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+
+        return StatusCode::Success;
+    }
 }
 
 int fx_muxer_t::initialize_for_app(
@@ -730,7 +787,7 @@ int fx_muxer_t::initialize_for_app(
         return rc;
     }
 
-    context->is_app = true;
+    context->init_type = host_context_init_type::app;
     for (int i = 0; i < argc; ++i)
         context->argv.push_back(argv[i]);
 
@@ -800,9 +857,66 @@ int fx_muxer_t::initialize_for_runtime_config(
         return rc;
     }
 
-    context->is_app = false;
+    context->init_type = host_context_init_type::component;
 
     trace::info(_X("Initialized %s for config: %s"), already_initialized ? _X("secondary context") : _X("context"), runtime_config_path);
+    *host_context_handle = context.release();
+    return rc;
+}
+
+int fx_muxer_t::initialize_for_managed_host(
+    const host_startup_info_t &host_info,
+    const pal::char_t *managed_host_path,
+    const pal::char_t *deps_json_path,
+    const pal::char_t *runtime_config_path,
+    hostfxr_handle *host_context_handle)
+{
+    {
+        std::unique_lock<std::mutex> lock{ g_context_lock };
+        g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
+
+        if (g_active_host_context != nullptr)
+        {
+            trace::error(_X("Hosting components are already initialized. Re-initialization for a managed host is not allowed."));
+            return StatusCode::HostInvalidState;
+        }
+
+        g_context_initializing.store(true);
+    }
+
+    int rc;
+    pal::string_t managed_host = managed_host_path;
+    pal::string_t deps_json;
+    if (deps_json_path != nullptr)
+    {
+        deps_json = deps_json_path;
+    }
+    pal::string_t runtime_config;
+    if (runtime_config_path != nullptr)
+    {
+        runtime_config = runtime_config_path;
+    }
+    std::unique_ptr<host_context_t> context;
+    pal::string_t hostpolicy_dir;
+    std::unique_ptr<corehost_init_t> init;
+    rc = get_init_info_for_managed_host(host_info, managed_host, deps_json, runtime_config, hostpolicy_dir, init);
+    if (rc != StatusCode::Success)
+    {
+        handle_initialize_failure_or_abort();
+        return rc;
+    }
+
+    rc = initialize_context(hostpolicy_dir, *init, intialization_options_t::none, context);
+
+    if (!STATUS_CODE_SUCCEEDED(rc))
+    {
+        trace::error(_X("Failed to initialize context for managed host: [%s], [%s], [%s]. Error code: 0x%x"), managed_host_path, deps_json_path, runtime_config_path, rc);
+        return rc;
+    }
+
+    context->init_type = host_context_init_type::managed_host;
+
+    trace::info(_X("Initialized context for managed host: [%s], [%s], [%s]"), managed_host_path, deps_json_path, runtime_config_path);
     *host_context_handle = context.release();
     return rc;
 }
@@ -835,7 +949,7 @@ namespace
 
 int fx_muxer_t::run_app(host_context_t *context)
 {
-    if (!context->is_app)
+    if (context->init_type != host_context_init_type::app)
         return StatusCode::InvalidArgFailure;
 
     int argc = context->argv.size();
@@ -858,7 +972,7 @@ int fx_muxer_t::run_app(host_context_t *context)
 
 int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
-    if (context->is_app)
+    if (context->init_type != host_context_init_type::component)
         return StatusCode::InvalidArgFailure;
 
     const corehost_context_contract &contract = context->hostpolicy_context_contract;
@@ -873,6 +987,34 @@ int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_t
         }
 
         return contract.get_runtime_delegate(type, delegate);
+    }
+}
+
+int fx_muxer_t::create_delegate(
+    host_context_t *context,
+    const pal::char_t *entry_point_assembly_name,
+    const pal::char_t *entry_point_type_name,
+    const pal::char_t *entry_point_method_name,
+    void **delegate)
+{
+    if (context->init_type != host_context_init_type::managed_host)
+        return StatusCode::InvalidArgFailure;
+
+    const hostpolicy_contract_t& contract = context->hostpolicy_contract;
+    {
+        // initialize_for_managed_host should not have succeeded in this case.
+        assert(contract.create_delegate != nullptr);
+
+        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
+
+        // managed_host doesn't create secondary host_contexts
+        assert(context->type != host_context_type::secondary);
+
+        int rc = load_runtime(context);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        return contract.create_delegate(entry_point_assembly_name, entry_point_type_name, entry_point_method_name, delegate);
     }
 }
 

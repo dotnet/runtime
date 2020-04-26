@@ -450,6 +450,37 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
     return corehost_init(hostpolicy_init, 0, nullptr, location, args);
 }
 
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_create_delegate(
+    const pal::char_t *assembly_name,
+    const pal::char_t *type_name,
+    const pal::char_t *method_name,
+    void **delegate)
+{
+    if (delegate == nullptr)
+        return StatusCode::InvalidArgFailure;
+
+    const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
+    if (context == nullptr)
+        return StatusCode::HostInvalidState;
+
+    coreclr_t* coreclr = context->coreclr.get();
+
+    std::vector<char> entryPointAssemblyName;
+    pal::pal_clrstring(assembly_name, &entryPointAssemblyName);
+
+    std::vector<char> entryPointTypeName;
+    pal::pal_clrstring(type_name, &entryPointTypeName);
+
+    std::vector<char> entryPointMethodName;
+    pal::pal_clrstring(method_name, &entryPointMethodName);
+
+    return coreclr->create_delegate(
+        entryPointAssemblyName.data(),
+        entryPointTypeName.data(),
+        entryPointMethodName.data(),
+        delegate);
+}
+
 namespace
 {
     int HOSTPOLICY_CALLTYPE get_delegate(coreclr_delegate_type type, void **delegate)

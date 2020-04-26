@@ -176,6 +176,10 @@ int main(const int argc, const pal::char_t *argv[])
 
             success = host_context_test::config_multiple(check_properties, hostfxr_path, app_or_config_path, secondary_config_path, remaining_argc, remaining_argv, test_output);
         }
+        else if (pal::strcmp(scenario, _X("managed_host")) == 0)
+        {
+            success = host_context_test::managed_host(check_properties, hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+        }
         else if (pal::strcmp(scenario, _X("mixed")) == 0)
         {
             // args: ... <scenario> <check_properties> <hostfxr_path> <app_path> <config_path>

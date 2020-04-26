@@ -197,11 +197,13 @@ int hostpolicy_resolver::load(
 
         g_hostpolicy_contract.set_error_writer = reinterpret_cast<corehost_set_error_writer_fn>(pal::get_symbol(g_hostpolicy, "corehost_set_error_writer"));
         g_hostpolicy_contract.initialize = reinterpret_cast<corehost_initialize_fn>(pal::get_symbol(g_hostpolicy, "corehost_initialize"));
+        g_hostpolicy_contract.create_delegate = reinterpret_cast<corehost_create_delegate_fn>(pal::get_symbol(g_hostpolicy, "corehost_create_delegate"));
 
         // It's possible to not have corehost_set_error_writer and corehost_initialize. These were
         // introduced in 3.0, so 2.0 hostpolicy would not have the exports. In this case, we will
-        // not propagate the error writer and errors will still be reported to stderr. Callers are
-        // responsible for checking that the function pointers are not null before using them.
+        // not propagate the error writer and errors will still be reported to stderr.
+        // It's possible to not have corehost_create_delegate. This was introduced in 5.0.
+        // Callers are responsible for checking that these function pointers are not null before using them.
 
         g_hostpolicy_dir = lib_dir;
     }

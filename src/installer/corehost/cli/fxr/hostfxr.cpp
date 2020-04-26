@@ -575,6 +575,62 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_initialize_for_runtime_config(
 }
 
 //
+// Initializes the hosting components using an application
+//
+// Parameters:
+//    managed_host_path
+//      Path to the managed host assembly file
+//    deps_json_path
+//      Optional. Path to the .deps.json file
+//    runtime_config_path
+//      Optional. Path to the .runtimeconfig.json file
+//    parameters
+//      Optional. Additional parameters for initialization
+//    host_context_handle
+//      On success, this will be populated with an opaque value representing the initialized host context
+//
+// Return value:
+//    Success          - Hosting components were successfully initialized
+//    HostInvalidState - Hosting components are already initialized
+//
+// This function will find the .runtimeconfig.json and .deps.json corresponding to the given application
+// with which to resolve frameworks and dependencies and prepare everything needed to load the runtime.
+//
+// This function does not load the runtime.
+//
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_initialize_for_managed_host(
+    const pal::char_t *managed_host_path,
+    const pal::char_t *deps_json_path,
+    const pal::char_t *runtime_config_path,
+    const struct hostfxr_initialize_parameters *parameters,
+    /*out*/ hostfxr_handle *host_context_handle)
+{
+    trace_hostfxr_entry_point(_X("hostfxr_initialize_for_managed_host"));
+
+    if (managed_host_path == nullptr || host_context_handle == nullptr)
+    {
+        return StatusCode::InvalidArgFailure;
+    }
+
+    *host_context_handle = nullptr;
+
+    host_startup_info_t startup_info;
+    startup_info.app_path = managed_host_path;
+    int rc = populate_startup_info(parameters, startup_info);
+    if (rc != StatusCode::Success)
+    {
+        return rc;
+    }
+
+    return fx_muxer_t::initialize_for_managed_host(
+        startup_info,
+        managed_host_path,
+        deps_json_path,
+        runtime_config_path,
+        host_context_handle);
+}
+
+//
 // Load CoreCLR and run the application for an initialized host context
 //
 // Parameters:
@@ -655,6 +711,48 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
         return StatusCode::InvalidArgFailure;
 
     return fx_muxer_t::get_runtime_delegate(context, hostfxr_delegate_to_coreclr_delegate(type), delegate);
+}
+
+//
+// Create a native callable function pointer for a managed method from the currently loaded CoreCLR or from a newly created one.
+//
+// Parameters:
+//     host_context_handle
+//       Handle to the initialized host context
+//     entry_point_assembly_name
+//       Name of the assembly which holds the custom entry point
+//     entry_point_type_name
+//       Name of the type which holds the custom entry point
+//     entry_point_method_name
+//       Name of the method which is the custom entry point
+//     delegate
+//       Output parameter, the function stores a native callable function pointer to the delegate at the specified address
+//
+// Returns:
+//     The error code result.
+//
+// The host_context_handle must have been initialized using hostfxr_initialize_for_managed_host.
+// The assembly is loaded into the default AssemblyLoadContext.
+//
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_create_delegate(
+    const hostfxr_handle host_context_handle,
+    const pal::char_t *entry_point_assembly_name,
+    const pal::char_t *entry_point_type_name,
+    const pal::char_t *entry_point_method_name,
+    /*out*/ void **delegate)
+{
+    trace_hostfxr_entry_point(_X("hostfxr_create_delegate"));
+
+    if (entry_point_assembly_name == nullptr || entry_point_type_name == nullptr || entry_point_method_name == nullptr || delegate == nullptr)
+        return StatusCode::InvalidArgFailure;
+
+    *delegate = nullptr;
+
+    host_context_t* context = host_context_t::from_handle(host_context_handle);
+    if (context == nullptr)
+        return StatusCode::InvalidArgFailure;
+
+    return fx_muxer_t::create_delegate(context, entry_point_assembly_name, entry_point_type_name, entry_point_method_name, delegate);
 }
 
 //
