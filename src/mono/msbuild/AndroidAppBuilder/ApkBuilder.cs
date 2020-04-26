@@ -124,7 +124,6 @@ public class ApkBuilder
         // 3. Generate APK
 
         string apkFile = Path.Combine(workplace, "bin", appName + ".unaligned.apk");
-        // TODO: we need to copy content from appDir to a temp folder and drop native binaries
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: workplace);
         
         var dynamicLibs = new List<string>();
