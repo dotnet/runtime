@@ -350,8 +350,11 @@ struct ResolveHolder
 
     void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
-                     void * cacheAddr, INT32 * counterAddr,
-                     size_t stackArgumentsSize);
+                     void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                     , size_t stackArgumentsSize
+#endif
+                     );
 
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -938,8 +941,11 @@ void ResolveHolder::InitializeStatic()
 
 void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
-                                void * cacheAddr, INT32 * counterAddr,
-                                size_t stackArgumentsSize)
+                                void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                                , size_t stackArgumentsSize
+#endif
+                                )
 {
     _stub = resolveInit;
 
