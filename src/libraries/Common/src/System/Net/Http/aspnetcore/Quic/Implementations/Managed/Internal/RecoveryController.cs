@@ -312,7 +312,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                                   1.0 / 4 * Math.Abs(SmoothedRtt - adjustedRttTicks));
         }
 
-        private PacketNumberSpace GetSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
+        private PacketNumberSpace GetEarliestSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
         {
             var epoch = _pnSpaces[0];
 
@@ -344,7 +344,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // cancel previous timer
             LossRecoveryTimer = long.MaxValue;
 
-            long earliestLossTime = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
+            long earliestLossTime = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer).NextLossTime;
             if (earliestLossTime != long.MaxValue)
             {
                 // Time threshold loss detection.
@@ -360,7 +360,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             // probe timeout
-            long lastAckElicitingSent = GetSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
+            long lastAckElicitingSent = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
             if (lastAckElicitingSent == long.MaxValue)
             {
                 return;
@@ -393,7 +393,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void OnLossDetectionTimeout(bool isHandshakeComplete, long now)
         {
-            var pnSpace = GetSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer);
+            var pnSpace = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.LossTimeComparer);
             long earliestLossTime = pnSpace.NextLossTime;
 
             if (earliestLossTime != long.MaxValue)
@@ -404,9 +404,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            pnSpace.RemainingLossProbes = 2;
+            // if no ack-based loss detection expected, set timeout for probing if last sent packet
+            // was lost
+            pnSpace = GetEarliestSpace(isHandshakeComplete,
+                PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
 
+            pnSpace.RemainingLossProbes = 2;
             PtoCount++;
+
             SetLossDetectionTimer(isHandshakeComplete);
         }
 
