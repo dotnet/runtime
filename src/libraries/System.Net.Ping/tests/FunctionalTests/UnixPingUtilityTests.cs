@@ -20,47 +20,52 @@ namespace System.Net.NetworkInformation.Tests
         private const int IcmpHeaderLengthInBytes = 8;
 
         [Theory]
-        [InlineData(0, 1500)]
-        [InlineData(1, 1500)]
-        [InlineData(50, 1500)]
-        [InlineData(1000, 1500)]
-        [InlineData(0, 3000)]
-        [InlineData(1, 3000)]
-        [InlineData(50, 3000)]
-        [InlineData(1000, 3000)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
-        public static async Task PacketSizeIsRespected(int payloadSize, int timeout)
+        [InlineData(100)]
+        [InlineData(1000)]
+        [InlineData(1500)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void TimeoutIsRespected(int timeout)
         {
-            IPAddress localAddress = await TestSettings.GetLocalIPAddressAsync();
-            bool ipv4 = localAddress.AddressFamily == AddressFamily.InterNetwork;
-            string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, timeout, localAddress.ToString(), ipv4);
-            string utilityPath = (localAddress.AddressFamily == AddressFamily.InterNetwork)
-                ? UnixCommandLinePing.Ping4UtilityPath
-                : UnixCommandLinePing.Ping6UtilityPath;
+            Process p = ConstructPingProcess(IPAddress.Parse(TestSettings.UnreachableAddress), 50, timeout);
+            Stopwatch stopWatch = Stopwatch.StartNew();
+                        
+            p.Start();
+            p.WaitForExit();
 
-            var p = new Process();
-            p.StartInfo.FileName = utilityPath;
-            p.StartInfo.Arguments = arguments;
-            p.StartInfo.UseShellExecute = false;
+            //ensure that the process takes longer than or equal to 'timeout'
+            Assert.True(stopWatch.ElapsedMilliseconds >= timeout);
+        }
 
-            p.StartInfo.RedirectStandardOutput = true;
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(50)]
+        [InlineData(1000)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
+        public static async Task PacketSizeIsRespected(int payloadSize)
+        {
             var stdOutLines = new List<string>();
-            p.OutputDataReceived += new DataReceivedEventHandler(
-                delegate (object sendingProcess, DataReceivedEventArgs outputLine) { stdOutLines.Add(outputLine.Data); });
+            var stdErrLines = new List<string>();
+
+            Process p = ConstructPingProcess(await TestSettings.GetLocalIPAddressAsync(), payloadSize, 1000);
+            p.StartInfo.RedirectStandardOutput = true;
+            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine) 
+            { 
+                stdOutLines.Add(outputLine.Data); 
+            };
 
             p.StartInfo.RedirectStandardError = true;
-            var stdErrLines = new List<string>();
-            p.ErrorDataReceived += new DataReceivedEventHandler(
-                delegate (object sendingProcess, DataReceivedEventArgs errorLine) { stdErrLines.Add(errorLine.Data); });
+            p.ErrorDataReceived += delegate (object sendingProcess, DataReceivedEventArgs errorLine) 
+            { 
+                stdErrLines.Add(errorLine.Data); 
+            };
 
             p.Start();
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
 
             // There are multiple issues with ping6 in macOS 10.12 (Sierra), see https://github.com/dotnet/runtime/issues/24682.
-            bool isPing6OnMacSierra = utilityPath.Equals(UnixCommandLinePing.Ping6UtilityPath) &&
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-                    !PlatformDetection.IsMacOsHighSierraOrHigher;
+            bool isPing6OnMacSierra = IsPing6OnMacSierra(p.StartInfo);
 
             string pingOutput;
             if (!p.WaitForExit(TestSettings.PingTimeout))
@@ -72,7 +77,7 @@ namespace System.Net.NetworkInformation.Tests
                 pingOutput = string.Join("\n", stdOutLines);
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
-                    $"[{utilityPath} {arguments}] process did not exit in {TestSettings.PingTimeout} ms.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
+                    $"[{p.StartInfo.FileName} {p.StartInfo.Arguments}] process did not exit in {TestSettings.PingTimeout} ms.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
             }
 
             // Ensure standard output and error are flushed
@@ -88,7 +93,7 @@ namespace System.Net.NetworkInformation.Tests
 
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
-                    $"[{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
+                    $"[{p.StartInfo.FileName} {p.StartInfo.Arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
             }
 
             try
@@ -110,8 +115,31 @@ namespace System.Net.NetworkInformation.Tests
             {
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
-                    $"Parse error for [{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]", e);
+                    $"Parse error for [{p.StartInfo.FileName} {p.StartInfo.Arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]", e);
             }
+        }
+
+        private static bool IsPing6OnMacSierra(ProcessStartInfo startInfo)
+        {
+            return startInfo.FileName.Equals(UnixCommandLinePing.Ping6UtilityPath) &&
+                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                    !PlatformDetection.IsMacOsHighSierraOrHigher;
+        }
+
+        private static Process ConstructPingProcess(IPAddress localAddress, int payloadSize, int timeout)
+        {
+            bool ipv4 = localAddress.AddressFamily == AddressFamily.InterNetwork;
+            string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, timeout, localAddress.ToString(), ipv4);
+            string utilityPath = (localAddress.AddressFamily == AddressFamily.InterNetwork)
+                ? UnixCommandLinePing.Ping4UtilityPath
+                : UnixCommandLinePing.Ping6UtilityPath;
+
+            var p = new Process();
+            p.StartInfo.FileName = utilityPath;
+            p.StartInfo.Arguments = arguments;
+            p.StartInfo.UseShellExecute = false;
+
+            return p;
         }
 
         private static int ParseReturnedPacketSize(string pingOutput)
