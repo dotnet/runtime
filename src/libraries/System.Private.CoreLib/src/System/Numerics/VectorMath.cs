@@ -36,10 +36,10 @@ namespace System.Numerics
 
             if (Sse.IsSupported)
             {
-                Vector128<float> trueMask = Sse.And(ifTrue.AsSingle(), selector.AsSingle());
-                Vector128<float> falseMask  = Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle());
-
-                return Sse.Or(falseMask, trueMask).As<float, T>();
+                return Sse.Or(
+                            Sse.And(ifTrue.AsSingle(), selector.AsSingle()),
+                            Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle())
+                        ).As<float, T>();
             }
             else if (AdvSimd.IsSupported)
             {
