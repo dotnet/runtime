@@ -267,7 +267,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     CORINFO_ARG_LIST_HANDLE argList = sig->args;
     var_types               argType = TYP_UNKNOWN;
-    CORINFO_CLASS_HANDLE argClass;
+    CORINFO_CLASS_HANDLE    argClass;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
@@ -364,8 +364,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // op1 = op1 < Zero
                         tmp         = gtNewSIMDVectorZero(retType, baseType, simdSize);
                         hwIntrinsic = isVectorT256 ? NI_VectorT256_LessThan : NI_VectorT128_LessThan;
-                        op1         =
-                            impSimdAsHWIntrinsicRelOp(hwIntrinsic, clsHnd, retType, baseType, simdSize, op1, tmp);
+                        op1 = impSimdAsHWIntrinsicRelOp(hwIntrinsic, clsHnd, retType, baseType, simdSize, op1, tmp);
 
                         // tmp = Zero - op1Dup1
                         tmp         = gtNewSIMDVectorZero(retType, baseType, simdSize);
@@ -701,7 +700,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
     // op3 = op3 & ~op1Dup
     hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(NI_VectorT128_AndNot, baseType);
 
-    if (SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(hwIntrinsic))
+    if (SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(NI_VectorT128_AndNot))
     {
         std::swap(op3, op1Dup);
     }
@@ -774,15 +773,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                 hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, TYP_INT);
                 assert(hwIntrinsic != intrinsic);
 
-                GenTree* t = gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
+                GenTree* t = gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsic, TYP_INT, simdSize);
 
                 t = impCloneExpr(t, &op1, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                  nullptr DEBUGARG("Clone for Vector<T> equality comparison"));
 
-                op2 = gtNewSimdHWIntrinsicNode(retType, t, gtNewIconNode(SHUFFLE_ZWXY, TYP_INT), hwIntrinsic, baseType,
-                                               simdSize);
+                op2 = gtNewSimdHWIntrinsicNode(retType, t, gtNewIconNode(SHUFFLE_ZWXY, TYP_INT), NI_SSE2_Shuffle,
+                                               TYP_INT, simdSize);
 
-                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(NI_VectorT128_op_BitwiseAnd, TYP_INT);
+                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(NI_VectorT128_op_BitwiseAnd, baseType);
                 assert(hwIntrinsic != NI_VectorT128_op_BitwiseAnd);
             }
             assert(hwIntrinsic != NI_Illegal);
@@ -919,8 +918,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                     }
                 }
 
-                GenTree* constVector = gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit,
-                                                     constVal->TypeGet(), simdSize);
+                GenTree* constVector =
+                    gtNewSIMDNode(retType, constVal, nullptr, SIMDIntrinsicInit, constVal->TypeGet(), simdSize);
 
                 GenTree* constVectorDup;
                 constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL,
@@ -993,28 +992,24 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                 op2Dup1 = impCloneExpr(op2Dup1, &op2Dup2, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone for Vector<T> greater/less than comparison"));
 
-                NamedIntrinsic ceqHWIntrinsic = isVectorT256 ? NI_VectorT256_Equals : NI_VectorT128_Equals;
-
                 GenTree* t = impSimdAsHWIntrinsicRelOp(intrinsic, clsHnd, retType, TYP_INT, simdSize, op1, op2);
-                GenTree* u =
-                    impSimdAsHWIntrinsicRelOp(ceqHWIntrinsic, clsHnd, retType, TYP_INT, simdSize, op1Dup1, op2Dup1);
+                GenTree* u = impSimdAsHWIntrinsicRelOp(NI_VectorT128_Equals, clsHnd, retType, TYP_INT, simdSize,
+                                                       op1Dup1, op2Dup1);
                 GenTree* v =
                     impSimdAsHWIntrinsicRelOp(intrinsic, clsHnd, retType, TYP_UINT, simdSize, op1Dup2, op2Dup2);
 
-                op1 = gtNewSimdHWIntrinsicNode(retType, t, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), hwIntrinsic,
-                                               baseType, simdSize);
+                op1 = gtNewSimdHWIntrinsicNode(retType, t, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), NI_SSE2_Shuffle,
+                                               TYP_INT, simdSize);
 
-                v = gtNewSimdHWIntrinsicNode(retType, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), hwIntrinsic, baseType,
+                v = gtNewSimdHWIntrinsicNode(retType, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), NI_SSE2_Shuffle, TYP_INT,
                                              simdSize);
-                u = gtNewSimdHWIntrinsicNode(retType, u, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), hwIntrinsic, baseType,
+                u = gtNewSimdHWIntrinsicNode(retType, u, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), NI_SSE2_Shuffle, TYP_INT,
                                              simdSize);
 
-                intrinsic   = isVectorT256 ? NI_VectorT256_op_BitwiseAnd : NI_VectorT128_op_BitwiseAnd;
-                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
+                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(NI_VectorT128_op_BitwiseAnd, baseType);
                 op2         = gtNewSimdHWIntrinsicNode(retType, v, u, hwIntrinsic, baseType, simdSize);
 
-                intrinsic   = isVectorT256 ? NI_VectorT256_op_BitwiseOr : NI_VectorT128_op_BitwiseOr;
-                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, baseType);
+                hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(NI_VectorT128_op_BitwiseOr, baseType);
             }
             assert(hwIntrinsic != NI_Illegal);
 
