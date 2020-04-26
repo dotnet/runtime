@@ -9,21 +9,12 @@ using Microsoft.Build.Utilities;
 
 public class AndroidAppBuilderTask : Task
 {
-    /// <summary>
-    /// ProjectName is used as an app name, bundleId and xcode project name
-    /// </summary>
     [Required]
     public string ProjectName { get; set; } = ""!;
 
-    /// <summary>
-    /// Target directory with *dll and other content to be AOT'd and/or bundled
-    /// </summary>
     [Required]
     public string AppDir { get; set; } = ""!;
 
-    /// <summary>
-    /// Path to Mono public headers (*.h)
-    /// </summary>
     [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
 
@@ -44,15 +35,9 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string Abi { get; set; } = ""!;
 
-    /// <summary>
-    /// Path to Android SDK
-    /// </summary>
     [Required]
     public string AndroidSdk { get; set; } = ""!;
     
-    /// <summary>
-    /// Path to Android NDK
-    /// </summary>
     [Required]
     public string AndroidNdk { get; set; } = ""!;
     
@@ -61,25 +46,13 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string MinApiLevel { get; set; } = "21"!;
     
-    /// <summary>
-    /// Android API to build against (uses the latest available if not set)
-    /// </summary>
     public string? BuildApiLevel { get; set; }
     
-    /// <summary>
-    /// Build-tools version (uses the latest available if not set)
-    /// </summary>
     public string? BuildToolsVersion { get; set; }
 
-    /// <summary>
-    /// Path to *.apk bundle
-    /// </summary>
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
     
-    /// <summary>
-    /// Package unique id
-    /// </summary>
     [Output]
     public string ApkPackageId { get; set; } = ""!;
 
