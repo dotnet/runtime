@@ -223,15 +223,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            const double signMask = -0.0;
-
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
                 // Create vectors of the elements, and make them float to allow using SSE rather than SSE2 instructions
                 var xvec = Vector128.CreateScalarUnsafe(x);
                 var yvec = Vector128.CreateScalarUnsafe(y);
 
-                var mask = Vector128.CreateScalarUnsafe(signMask);
+                var mask = Vector128.CreateScalarUnsafe(-0.0); // has sign bit set, everything else 0
 
                 return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
