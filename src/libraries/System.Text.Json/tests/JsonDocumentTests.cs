@@ -2239,9 +2239,11 @@ namespace System.Text.Json.Tests
             {
                 AllowTrailingCommas = true
             };
-            var ex = Record.Exception(() => JsonDocument.Parse(json, options));
 
-            Assert.Null(ex);
+            using (JsonDocument doc = JsonDocument.Parse(json, options))
+            {
+                Assert.Equal(json, doc.RootElement.GetRawText());
+            }
             Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(json));
         }
 
