@@ -93,21 +93,32 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CopySign(float x, float y)
         {
-            const int signMask = 1 << 31;
+            const float signMask = -0.0f;
 
-            if (Sse.IsSupported)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
                 var xvec = Vector128.CreateScalarUnsafe(x);
                 var yvec = Vector128.CreateScalarUnsafe(y);
 
-                // Remove the sign from x, and remove everything but the sign from y
-                // Creating from a 'const long' is better than from the correct 'const float/double'
-                var mask = Vector128.CreateScalarUnsafe(signMask).AsSingle();
-                yvec = Sse.And(yvec, mask);
-                xvec = Sse.AndNot(mask, xvec);
+                var mask = Vector128.CreateScalarUnsafe(signMask);
 
-                // Simply OR them to get the correct sign
-                return Sse.Or(xvec, yvec).ToScalar();
+                if (Sse41.IsSupported)
+                {
+                    return Sse41.BlendVariable(xvec, yvec, mask).ToScalar();
+                }
+                else if (Sse.IsSupported)
+                {
+                    // Remove the sign from x, and remove everything but the sign from y
+                    yvec = Sse.And(yvec, mask);
+                    xvec = Sse.AndNot(mask, xvec);
+
+                    // Simply OR them to get the correct sign
+                    return Sse.Or(xvec, yvec).ToScalar();
+                }
+                else
+                {
+                    return AdvSimd.BitwiseSelect(mask.AsByte(), yvec.AsByte(), xvec.AsByte()).ToScalar();
+                }
             }
             else
             {
@@ -116,14 +127,14 @@ namespace System
 
             static float SoftwareFallback(float x, float y)
             {
+                const int signMask = 1 << 31;
+
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
-
                 int xbits = BitConverter.SingleToInt32Bits(x);
                 int ybits = BitConverter.SingleToInt32Bits(y);
 
                 // Remove the sign from x, and remove everything but the sign from y
-
                 xbits &= ~signMask;
                 ybits &= signMask;
 

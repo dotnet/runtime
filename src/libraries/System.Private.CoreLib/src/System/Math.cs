@@ -223,22 +223,33 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            const long signMask = 1L << 63;
+            const double signMask = -0.0;
 
-            if (Sse.X64.IsSupported)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
                 // Create vectors of the elements, and make them float to allow using SSE rather than SSE2 instructions
                 var xvec = Vector128.CreateScalarUnsafe(x).AsSingle();
                 var yvec = Vector128.CreateScalarUnsafe(y).AsSingle();
 
-                // Remove the sign from x, and remove everything but the sign from y
-                // Creating from a 'const long' is better than from the correct 'const float/double'
                 var mask = Vector128.CreateScalarUnsafe(signMask).AsSingle();
-                yvec = Sse.And(yvec, mask);
-                xvec = Sse.AndNot(mask, xvec);
 
-                // Simply OR them to get the correct sign
-                return Sse.Or(xvec, yvec).AsDouble().ToScalar();
+                if (Sse41.IsSupported)
+                {
+                    return Sse41.BlendVariable(xvec, yvec, mask).AsDouble().ToScalar();
+                }
+                else if (Sse.IsSupported)
+                {
+                    // Remove the sign from x, and remove everything but the sign from y
+                    yvec = Sse.And(yvec, mask);
+                    xvec = Sse.AndNot(mask, xvec);
+
+                    // Simply OR them to get the correct sign
+                    return Sse.Or(xvec, yvec).AsDouble().ToScalar();
+                }
+                else
+                {
+                    return AdvSimd.BitwiseSelect(mask.AsByte(), yvec.AsByte(), xvec.AsByte()).AsDouble().ToScalar();
+                }
             }
             else
             {
@@ -247,14 +258,14 @@ namespace System
 
             static double SoftwareFallback(double x, double y)
             {
+                const long signMask = 1L << 63;
+
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
-
                 long xbits = BitConverter.DoubleToInt64Bits(x);
                 long ybits = BitConverter.DoubleToInt64Bits(y);
 
                 // Remove the sign from x, and remove everything but the sign from y
-
                 xbits &= ~signMask;
                 ybits &= signMask;
 
