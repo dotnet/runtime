@@ -58,7 +58,7 @@ namespace System.Configuration
                     // used for local paths and "file://" for UNCs. Simply removing the prefix will make
                     // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
                     // "/home").
-                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
+                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.ApplicationConfigBase, exeAssembly.ManifestModule.Name);
                     Uri uri = new Uri(configBasePath);
 
                     Debug.Assert(uri.IsFile);

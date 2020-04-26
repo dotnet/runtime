@@ -31,7 +31,7 @@ namespace System
         public static AppDomain CurrentDomain => s_domain;
 
         public string BaseDirectory => AppContext.BaseDirectory;
-
+        public string ApplicationConfigBase => AppContext.ApplicationConfigBase;
         public string? RelativeSearchPath => null;
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();

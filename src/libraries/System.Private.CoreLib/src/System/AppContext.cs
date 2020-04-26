@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Configuration;
 
 namespace System
 {
@@ -19,6 +20,8 @@ namespace System
         private static Dictionary<string, bool>? s_switches;
         private static string? s_defaultBaseDirectory;
 
+        public static string ApplicationConfigBase =>
+            GetData("APP_CONTEXT_CONFIGURATION_DIRECTORY") as string ?? BaseDirectory;
         public static string BaseDirectory =>
             // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type.
             // Otherwise the caller will get invalid cast exception
