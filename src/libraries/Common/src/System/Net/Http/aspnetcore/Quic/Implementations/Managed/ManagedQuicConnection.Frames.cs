@@ -458,7 +458,7 @@ namespace System.Net.Quic.Implementations.Managed
                 pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
                 context.SentPacket.SentStreamData.Add(
-                    SentPacket.StreamChunkInfo.ForCryptoStream(offset, offset + count - 1));
+                    SentPacket.StreamChunkInfo.ForCryptoStream(offset, count));
             }
         }
 
