@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Logcat
     {
         [DllImport(Libraries.Liblog)]
-        private static extern void __android_log_print (int level, string? tag, string format, string args, IntPtr ptr);
+        private static extern void __android_log_print(int level, string? tag, string format, string args, IntPtr ptr);
 
         private const int InfoLevel = 4;
 
