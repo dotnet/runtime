@@ -105,8 +105,17 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override void Serialize(QuicWriter writer)
         {
+            Span<byte> ackRanges = stackalloc byte[4 * AckRanges.Count * 2];
+
+            int written = 0;
+            foreach (AckRange range in AckRanges)
+            {
+                written += QuicPrimitives.WriteVarInt(ackRanges.Slice(written), range.Gap);
+                written += QuicPrimitives.WriteVarInt(ackRanges.Slice(written), range.Acked);
+            }
+
             ImplFrame.Write(writer, new ImplFrame(
-                LargestAcknowledged, AckDelay, AckRanges.Count, FirstAckRange, ReadOnlySpan<byte>.Empty, HasEcnCounts, Ect0Count, Ect1Count, CeCount
+                LargestAcknowledged, AckDelay, AckRanges.Count, FirstAckRange, ackRanges.Slice(0, written), HasEcnCounts, Ect0Count, Ect1Count, CeCount
                 ));
         }
 
