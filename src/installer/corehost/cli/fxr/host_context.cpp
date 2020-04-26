@@ -24,7 +24,8 @@ namespace
             return StatusCode::HostApiUnsupportedVersion;
         }
 
-        if (host_interface->host_mode == host_mode_t::managedhost && hostpolicy_contract.create_delegate == nullptr)
+        if (!already_loaded && host_interface->host_mode == host_mode_t::managedhost &&
+            hostpolicy_contract.create_delegate == nullptr)
         {
             trace::error(_X("This host must target .NET Core 5.0 or a higher version."));
             return StatusCode::HostApiUnsupportedVersion;
