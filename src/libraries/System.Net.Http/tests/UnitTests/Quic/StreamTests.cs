@@ -198,12 +198,12 @@ namespace System.Net.Quic.Tests
 
             clientStream.Write(data);
             clientStream.Flush();
-            _harness.Timestamp += RecoveryController.InitialRtt * 3;
+            _harness.Timestamp += RecoveryController.InitialRtt * 1;
             // deliver second packet
             _harness.Send1Rtt(_client, _server).ShouldHaveFrame<StreamFrame>();
 
             // send ack back, leading the client to believe that first packet was lost
-            _harness.Timestamp += RecoveryController.InitialRtt * 3;
+            _harness.Timestamp += RecoveryController.InitialRtt * 1;
             _harness.Send1Rtt(_server, _client).ShouldHaveFrame<AckFrame>();
 
             // resend original data
