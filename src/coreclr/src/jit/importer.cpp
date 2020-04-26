@@ -7206,7 +7206,8 @@ enum
     PREFIX_VOLATILE    = 0x00000100,
     PREFIX_UNALIGNED   = 0x00001000,
     PREFIX_CONSTRAINED = 0x00010000,
-    PREFIX_READONLY    = 0x00100000
+    PREFIX_READONLY    = 0x00100000,
+    PREFIX_NOCHECK     = 0x01000000
 };
 
 /********************************************************************************
@@ -10005,6 +10006,7 @@ static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
             case CEE_TAILCALL:
             case CEE_CONSTRAINED:
             case CEE_READONLY:
+            case CEE_NOCHECK:
                 break;
             default:
                 return opcode;
@@ -10034,6 +10036,46 @@ static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* code
         BADCODE("Invalid opcode for unaligned. or volatile. prefix");
     }
 }
+
+enum PREFIX_NOCHECK_FLAGS
+{
+    PREFIX_NOCHECK_FLAG_TYPECHECK = 0x01,
+    PREFIX_NOCHECK_FLAG_RANGECHECK = 0x02,
+    PREFIX_NOCHECK_FLAG_NULLCHECK = 0x04,
+    PREFIX_NOCHECK_FLAG_ALL = PREFIX_NOCHECK_FLAG_TYPECHECK | PREFIX_NOCHECK_FLAG_RANGECHECK | PREFIX_NOCHECK_FLAG_NULLCHECK
+};
+
+/*****************************************************************************/
+// Checks whether the opcode is a valid opcode for no. (check elision) prefix
+    static void impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
+    {
+        OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
+        if ((flags & PREFIX_NOCHECK_FLAG_TYPECHECK) != 0)
+        {
+            if (!(opcode == CEE_CASTCLASS || opcode == CEE_UNBOX || opcode == CEE_LDELEMA
+                || (opcode >= CEE_STELEM_I && opcode <= CEE_STELEM_REF) || opcode == CEE_STELEM))
+            {
+                BADCODE("Invalid opcode for no. prefix with typecheck flag");
+            }
+        }
+        if ((flags & PREFIX_NOCHECK_FLAG_RANGECHECK) != 0)
+        {
+            // Covers LDELEMA, LDELEM_*, and STELEM_*
+            if (!(opcode >= CEE_LDELEMA && opcode <= CEE_STELEM))
+            {
+                BADCODE("Invalid opcode for no. prefix with rangecheck flag");
+            }
+        }
+        if ((flags & PREFIX_NOCHECK_FLAG_NULLCHECK) != 0)
+        {
+            if (!(opcode == CEE_LDFLD || opcode == CEE_STFLD || opcode == CEE_CALLVIRT || opcode == CEE_LDVIRTFTN
+                 || (opcode >= CEE_LDELEMA && opcode <= CEE_STELEM)))
+            {
+                BADCODE("Invalid opcode for no. prefix with nullcheck flag");
+            }
+        }
+    }
 
 /*****************************************************************************/
 
@@ -13537,6 +13579,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 assert(sz == 0);
+                goto PREFIX;
+
+            case CEE_NOCHECK:
+                assert(sz == 1);
+                JITDUMP(" no.");
+                Verify(!(prefixFlags & PREFIX_NOCHECK), "Multiple no. prefixes");
+                prefixFlags |= PREFIX_NOCHECK;
+
+                {
+                    int flags = getU1LittleEndian(codeAddr);
+
+                    JITDUMP(" %u", flags);
+
+                    if ((flags & (~PREFIX_NOCHECK_FLAG_ALL)) != 0)
+                    {
+                        BADCODE("no. followed by invalid flags");
+                    }
+
+                    ++codeAddr;
+                    impValidateCheckElisionOpcode(codeAddr, codeEndp, flags);
+                }
+
                 goto PREFIX;
 
             case CEE_TAILCALL:
