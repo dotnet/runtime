@@ -142,6 +142,8 @@ namespace System.Net.Sockets
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening);
 
+                // We should change stackalloc if this ever grows too big.
+                Debug.Assert(SocketPal.MaximumAddressSize <= 512);
                 // Try to get the address of the socket.
                 Span<byte> buffer = stackalloc byte[SocketPal.MaximumAddressSize];
                 int bufferLength = buffer.Length;
@@ -363,7 +365,7 @@ namespace System.Net.Sockets
                     Internals.SocketAddress socketAddress =
                         _addressFamily == AddressFamily.InterNetwork || _addressFamily == AddressFamily.InterNetworkV6 ?
                             IPEndPointExtensions.Serialize(_rightEndPoint) :
-                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size thaan _rightEndPoint.
+                            new Internals.SocketAddress(_addressFamily, SocketPal.MaximumAddressSize); // may be different size than _rightEndPoint.
 
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
