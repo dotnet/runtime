@@ -227,12 +227,7 @@ namespace System
         {
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                Vector128<double> xvec = Vector128.CreateScalarUnsafe(x);
-                Vector128<double> yvec = Vector128.CreateScalarUnsafe(y);
-
-                Vector128<double> mask = Vector128.CreateScalarUnsafe(-0.0); // has sign bit set, everything else 0
-
-                return VectorMath.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
+                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {
