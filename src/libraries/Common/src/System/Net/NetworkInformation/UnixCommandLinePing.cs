@@ -82,7 +82,7 @@ namespace System.Net.NetworkInformation
 
             // Pass timeout argument to ping utility
             // BusyBox, Linux: ping and ping6 requires -W flag which accepts timeout in SECONDS.
-            // On FreeBSD and MacOS X ping requires -W flag which accepts timeout in MILLISECONDS; ping6 
+            // On FreeBSD and MacOS X ping requires -W flag which accepts timeout in MILLISECONDS; ping6
             // requires -x which accepts timeout in MILLISECONDS
             if (s_isBSD)
             {
