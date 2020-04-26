@@ -225,7 +225,6 @@ namespace System
         {
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                // Create vectors of the elements, and make them float to allow using SSE rather than SSE2 instructions
                 var xvec = Vector128.CreateScalarUnsafe(x);
                 var yvec = Vector128.CreateScalarUnsafe(y);
 
