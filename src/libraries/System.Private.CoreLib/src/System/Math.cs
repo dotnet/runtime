@@ -228,28 +228,12 @@ namespace System
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
                 // Create vectors of the elements, and make them float to allow using SSE rather than SSE2 instructions
-                var xvec = Vector128.CreateScalarUnsafe(x).AsSingle();
-                var yvec = Vector128.CreateScalarUnsafe(y).AsSingle();
+                var xvec = Vector128.CreateScalarUnsafe(x);
+                var yvec = Vector128.CreateScalarUnsafe(y);
 
-                var mask = Vector128.CreateScalarUnsafe(signMask).AsSingle();
+                var mask = Vector128.CreateScalarUnsafe(signMask);
 
-                if (Sse41.IsSupported)
-                {
-                    return Sse41.BlendVariable(xvec, yvec, mask).AsDouble().ToScalar();
-                }
-                else if (Sse.IsSupported)
-                {
-                    // Remove the sign from x, and remove everything but the sign from y
-                    yvec = Sse.And(yvec, mask);
-                    xvec = Sse.AndNot(mask, xvec);
-
-                    // Simply OR them to get the correct sign
-                    return Sse.Or(xvec, yvec).AsDouble().ToScalar();
-                }
-                else
-                {
-                    return AdvSimd.BitwiseSelect(mask.AsByte(), yvec.AsByte(), xvec.AsByte()).AsDouble().ToScalar();
-                }
+                return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
             else
             {

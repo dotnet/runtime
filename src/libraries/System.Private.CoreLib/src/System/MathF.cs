@@ -102,23 +102,7 @@ namespace System
 
                 var mask = Vector128.CreateScalarUnsafe(signMask);
 
-                if (Sse41.IsSupported)
-                {
-                    return Sse41.BlendVariable(xvec, yvec, mask).ToScalar();
-                }
-                else if (Sse.IsSupported)
-                {
-                    // Remove the sign from x, and remove everything but the sign from y
-                    yvec = Sse.And(yvec, mask);
-                    xvec = Sse.AndNot(mask, xvec);
-
-                    // Simply OR them to get the correct sign
-                    return Sse.Or(xvec, yvec).ToScalar();
-                }
-                else
-                {
-                    return AdvSimd.BitwiseSelect(mask.AsByte(), yvec.AsByte(), xvec.AsByte()).ToScalar();
-                }
+                return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
             else
             {
