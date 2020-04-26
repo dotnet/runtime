@@ -140,8 +140,6 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            Debug.Assert(!(IsInvalidForSerialization(declaredPropertyType) || IsInvalidForSerialization(runtimePropertyType)));
-
             return CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,

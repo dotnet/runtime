@@ -397,6 +397,8 @@ namespace System.Text.Json
                 }
             }
 
+            Debug.Assert(!IsInvalidForSerialization(runtimeType));
+
             return converter;
         }
 
