@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
+    <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
+    <MonoRuntimeDir>$(ArtifactsDir)bin\mono\Android.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
+    <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
+  </PropertyGroup>
+
+  <Target Name="RebuildAndroidAppBuilder">
+    <MSBuild Projects="$(RepoRoot)src\mono\msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
+             Properties="Configuration=$(Configuration)" Targets="Restore;Build" />
+  </Target>
+
+  <UsingTask TaskName="AndroidAppBuilderTask" 
+             AssemblyFile="$(ArtifactsObjDir)mono\AndroidAppBuilder\$(TargetArchitecture)\$(Configuration)\AndroidAppBuilder.dll" />
+
+  <Target Name="BuildAppBundle" DependsOnTargets="RebuildAndroidAppBuilder">
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
+    </PropertyGroup>
+    <ItemGroup>
+      <AppBinaries Include="bin\*.*"/>
+      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
+      <MonoRuntimeBinaries Include="$(MonoRuntimeDir)\*.*" />
+    </ItemGroup>
+    <Error Condition="'$(AndroidAbi)'==''" Text="Unknown $(TargetArchitecture), only x64 and arm64 are supported for this sample" />
+    <Error Condition="'$(ANDROID_SDK_ROOT)' == ''" Text="ANDROID_SDK_ROOT should point to a valid Android SDK location" />
+    <Error Condition="'$(ANDROID_NDK_ROOT)' == ''" Text="ANDROID_NDK_ROOT should point to a valid Android NDK location" />
+    <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy SourceFiles="@(AppBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <!-- runtime pack contains all needed binaries but lets overwrite them from artifacts/bin/mono to sync runtime changes -->
+    <Copy SourceFiles="@(MonoRuntimeBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
+    <AndroidAppBuilderTask 
+        Abi="$(AndroidAbi)"
+        ProjectName="HelloAndroid"
+        MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
+        MainLibraryFileName="Program.dll"
+        AndroidSdk="$(ANDROID_SDK_ROOT)"
+        AndroidNdk="$(ANDROID_NDK_ROOT)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BundleDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+  </Target>
+
+  <!-- Deploy and launch on an active emulator or device -->
+  <Target Name="ReinstallAndLaunch">
+    <PropertyGroup>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+    </PropertyGroup>
+    <Error Condition="'$(ANDROID_SDK_ROOT)' == ''" Text="ANDROID_SDK_ROOT should point to a valid Android SDK location" />
+    <Exec Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Command="$(AdbTool) install -r bin/bundle/bin/HelloAndroid.unaligned.apk" />
+    <Exec Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <!--Exec Command="$(AdbTool) logcat" /-->
+  </Target>
+</Project>
