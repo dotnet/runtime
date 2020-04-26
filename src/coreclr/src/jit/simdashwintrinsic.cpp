@@ -299,6 +299,32 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
+                case NI_Vector2_op_Division:
+                case NI_Vector3_op_Division:
+                {
+                    // Vector2/3 div: since the top-most elements will be zero, we end up
+                    // perfoming 0/0 which is a NAN. Therefore, post division we need to set the
+                    // top-most elements to zero. This is achieved by left logical shift followed
+                    // by right logical shift of the result.
+
+                    // These are 16 byte operations, so we subtract from 16 bytes, not the vector register length.
+                    unsigned shiftCount = 16 - simdSize;
+                    assert((shiftCount > 0) && (shiftCount <= 16));
+
+                    // retNode = Sse.Divide(op1, op2);
+                    GenTree* retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_SSE_Divide, baseType, simdSize);
+
+                    // retNode = Sse.ShiftLeftLogical128BitLane(retNode.AsInt32(), shiftCount).AsSingle()
+                    retNode = gtNewSimdHWIntrinsicNode(retType, retNode, gtNewIconNode(shiftCount, TYP_INT),
+                                                       NI_SSE2_ShiftLeftLogical128BitLane, TYP_INT, simdSize);
+
+                    // retNode = Sse.ShiftRightLogical128BitLane(retNode.AsInt32(), shiftCount).AsSingle()
+                    retNode = gtNewSimdHWIntrinsicNode(retType, retNode, gtNewIconNode(shiftCount, TYP_INT),
+                                                       NI_SSE2_ShiftRightLogical128BitLane, TYP_INT, simdSize);
+
+                    return retNode;
+                }
+
                 case NI_VectorT128_GreaterThan:
                 case NI_VectorT128_GreaterThanOrEqual:
                 case NI_VectorT128_LessThan:

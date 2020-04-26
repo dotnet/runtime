@@ -3030,7 +3030,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->gtGetOp2();
     GenTree* op3 = nullptr;
 
-    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId) || (simdSize == 8) || (simdSize == 12))
+    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId))
     {
         // AVX2 gather are not containable and always have constant IMM argument
         if (HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsicId))
@@ -3040,6 +3040,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             MakeSrcContained(node, lastOp);
         }
         // Exit early if containment isn't supported
+        return;
+    }
+
+    if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
+    {
+        GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
+        assert(lastOp != nullptr);
+
+        if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
+        {
+            MakeSrcContained(node, lastOp);
+        }
+    }
+
+    if ((node->gtSIMDSize == 8) || (node->gtSIMDSize == 12))
+    {
+        // TODO-XArch-CQ: Ideally we would key this off of the size containingNode
+        // expects vs the size node actually is or would be if spilled to the stack
         return;
     }
 
@@ -3506,17 +3524,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         else
         {
             unreached();
-        }
-
-        if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
-        {
-            GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
-            assert(lastOp != nullptr);
-
-            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, lastOp);
-            }
         }
     }
 }
