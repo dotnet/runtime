@@ -25,10 +25,13 @@ namespace System.Runtime.Intrinsics
 
                 return Sse.Or(ifFalse, ifTrue).As<float, T>();
             }
-            else (AdvSimd.IsSupported)
+            else if (AdvSimd.IsSupported)
             {
                 return AdvSimd.BitwiseSelect(selector.AsByte(), ifTrue.AsByte(), ifFalse.AsByte()).As<byte, T>();
             }
+
+            ThrowHelper.ThrowPlatformNotSupportedException();
+            return default;
         }
     }
 }
