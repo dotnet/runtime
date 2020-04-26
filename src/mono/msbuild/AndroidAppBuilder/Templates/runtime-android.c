@@ -172,7 +172,6 @@ mono_mobile_runtime_init (void)
     managed_argv[0] = bundle_path;
 
     int res = mono_jit_exec (mono_domain_get (), assembly, 1, managed_argv);
-    // Print this so apps parsing logs can detect when we exited
     LOG_INFO ("Exit code: %d.", res);
     return res;
 }

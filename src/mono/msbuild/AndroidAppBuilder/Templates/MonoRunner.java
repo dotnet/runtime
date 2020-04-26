@@ -24,7 +24,7 @@ import java.io.OutputStream;
 
 public class MonoRunner extends Instrumentation
 {
-	static MonoRunner inst;
+    static MonoRunner inst;
 
     static {
         System.loadLibrary("runtime-android");
@@ -61,9 +61,9 @@ public class MonoRunner extends Instrumentation
     }
     
     static void WriteLineToInstrumentation(String line) {
-    	Bundle b = new Bundle();
-    	b.putString(Instrumentation.REPORT_KEY_STREAMRESULT, line + "\n");
-    	MonoRunner.inst.sendStatus(0, b);
+        Bundle b = new Bundle();
+        b.putString(Instrumentation.REPORT_KEY_STREAMRESULT, line + "\n");
+        MonoRunner.inst.sendStatus(0, b);
     }
 
     static void copyAssetDir(AssetManager am, String path, String outpath) {
