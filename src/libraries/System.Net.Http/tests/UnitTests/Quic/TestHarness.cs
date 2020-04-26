@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
@@ -21,7 +22,8 @@ namespace System.Net.Quic.Tests
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
 
-        internal long Timestamp = Implementations.Managed.Internal.Timestamp.Now;
+        private readonly long _startTimestamp = Implementations.Managed.Internal.Timestamp.Now;
+        internal long Timestamp;
 
         internal static ManagedQuicConnection CreateClient(QuicClientConnectionOptions options)
         {
@@ -41,6 +43,8 @@ namespace System.Net.Quic.Tests
 
             _reader = new QuicReader(buffer);
             _writer = new QuicWriter(buffer);
+
+            Timestamp = _startTimestamp;
         }
 
         internal const string CertificateFilePath = "Certs/cert.crt";
@@ -54,7 +58,16 @@ namespace System.Net.Quic.Tests
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
 
-            return new PacketFlight(packets, written);
+            // debug: check that serializing packets back gives identical datagram
+            _writer.Reset(copy);
+            foreach (var packet in packets)
+            {
+                packet.Serialize(_writer, new TestHarnessContext(from));
+                _writer.Reset(_writer.Buffer.Slice(_writer.BytesWritten));
+            }
+            Debug.Assert(copy.AsSpan().SequenceEqual(buffer.AsSpan(0, written)));
+
+            return new PacketFlight(packets, written, from, Timestamp);
         }
 
         internal TPacket GetPacketToSend<TPacket>(ManagedQuicConnection from) where TPacket : PacketBase
@@ -130,19 +143,30 @@ namespace System.Net.Quic.Tests
             SendFlight(source, destination, new []{packet});
         }
 
-        private void LogFlightPackets(IEnumerable<PacketBase> packets, bool clientSending)
+        internal void LogFlightPackets(PacketFlight flight, bool lost = false)
         {
-            _output.WriteLine(clientSending ? "\nClient:" : "\nServer:");
-            foreach (PacketBase packet in packets)
+            var sender = flight.Sender == _client ? "Client" : "Server";
+            var lostLabel = lost ? " (Lost)" : "";
+            long milliseconds = Implementations.Managed.Internal.Timestamp.GetMilliseconds(flight.TimeSent - _startTimestamp);
+            _output.WriteLine($"\n[{milliseconds}] {sender}{lostLabel}:");
+            foreach (PacketBase packet in flight.Packets)
             {
                 _output.WriteLine(packet.ToString());
             }
         }
 
-        internal PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
+        internal void LogFlightPackets(IEnumerable<PacketBase> packets, bool clientSending, bool lost = false)
+        {
+            LogFlightPackets(new PacketFlight(packets.ToList(), 0, clientSending ? _client : null, Timestamp), lost);
+        }
+
+        internal PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination,
+            long packetTravelTime = 0)
         {
             _writer.Reset(buffer);
             source.SendData(_writer, out _, Timestamp);
+
+            Timestamp += packetTravelTime;
 
             // make a copy of the buffer, because decryption happens in-place
             int written = _writer.BytesWritten;
@@ -155,7 +179,7 @@ namespace System.Net.Quic.Tests
             _reader.Reset(buffer.AsMemory(0, written));
             destination.ReceiveData(_reader, IpAnyEndpoint, Timestamp);
 
-            return new PacketFlight(packets, written);
+            return new PacketFlight(packets, written, source, Timestamp);
         }
 
 
