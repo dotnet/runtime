@@ -17,7 +17,7 @@ namespace System
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
             string log = ConsolePal.OutputEncoding.GetString(buffer, offset, count);
-            Interop.Logcat.LogInfo(null, log);
+            Interop.Logcat.AndroidLogPrint(LogLevel.Info, null, log);
         }
     }
 
