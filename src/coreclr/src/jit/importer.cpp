@@ -7199,15 +7199,19 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
 // For prefixFlags
 enum
 {
-    PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+    PREFIX_TAILCALL_EXPLICIT = 0x000000001, // call has "tail" IL prefix
     PREFIX_TAILCALL_IMPLICIT =
-        0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT),
-    PREFIX_VOLATILE    = 0x00000100,
-    PREFIX_UNALIGNED   = 0x00001000,
-    PREFIX_CONSTRAINED = 0x00010000,
-    PREFIX_READONLY    = 0x00100000,
-    PREFIX_NOCHECK     = 0x01000000
+        0x000000002, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+    PREFIX_TAILCALL      = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT),
+    PREFIX_VOLATILE      = 0x000000004,
+    PREFIX_UNALIGNED     = 0x000000008,
+    PREFIX_CONSTRAINED   = 0x000000010,
+    PREFIX_READONLY      = 0x000000020,
+    // DO NOT CHANGE THESE VALUES - impImportBlockCode (at case CEE_NOCHECK) relies on these being 6 bits left of the IL no. prefix flags
+    PREFIX_NO_TYPECHECK  = 0x000000040,
+    PREFIX_NO_RANGECHECK = 0x000000080,
+    PREFIX_NO_NULLCHECK  = 0x000000100,
+    PREFIX_NO_TYPERANGENULLCHECK = (PREFIX_NO_TYPECHECK | PREFIX_NO_RANGECHECK | PREFIX_NO_NULLCHECK)
 };
 
 /********************************************************************************
@@ -10037,21 +10041,13 @@ static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* code
     }
 }
 
-enum PREFIX_NOCHECK_FLAGS
-{
-    PREFIX_NOCHECK_FLAG_TYPECHECK = 0x01,
-    PREFIX_NOCHECK_FLAG_RANGECHECK = 0x02,
-    PREFIX_NOCHECK_FLAG_NULLCHECK = 0x04,
-    PREFIX_NOCHECK_FLAG_ALL = PREFIX_NOCHECK_FLAG_TYPECHECK | PREFIX_NOCHECK_FLAG_RANGECHECK | PREFIX_NOCHECK_FLAG_NULLCHECK
-};
-
 /*****************************************************************************/
 // Checks whether the opcode is a valid opcode for no. (check elision) prefix
     static void impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
     {
         OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
-        if ((flags & PREFIX_NOCHECK_FLAG_TYPECHECK) != 0)
+        if ((flags & PREFIX_NO_TYPECHECK) != 0)
         {
             if (!(opcode == CEE_CASTCLASS || opcode == CEE_UNBOX || opcode == CEE_LDELEMA
                 || (opcode >= CEE_STELEM_I && opcode <= CEE_STELEM_REF) || opcode == CEE_STELEM))
@@ -10059,7 +10055,7 @@ enum PREFIX_NOCHECK_FLAGS
                 BADCODE("Invalid opcode for no. prefix with typecheck flag");
             }
         }
-        if ((flags & PREFIX_NOCHECK_FLAG_RANGECHECK) != 0)
+        if ((flags & PREFIX_NO_RANGECHECK) != 0)
         {
             // Covers LDELEMA, LDELEM_*, and STELEM_*
             if (!(opcode >= CEE_LDELEMA && opcode <= CEE_STELEM))
@@ -10067,7 +10063,7 @@ enum PREFIX_NOCHECK_FLAGS
                 BADCODE("Invalid opcode for no. prefix with rangecheck flag");
             }
         }
-        if ((flags & PREFIX_NOCHECK_FLAG_NULLCHECK) != 0)
+        if ((flags & PREFIX_NO_NULLCHECK) != 0)
         {
             if (!(opcode == CEE_LDFLD || opcode == CEE_STFLD || opcode == CEE_CALLVIRT || opcode == CEE_LDVIRTFTN
                  || (opcode >= CEE_LDELEMA && opcode <= CEE_STELEM)))
@@ -13584,21 +13580,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_NOCHECK:
                 assert(sz == 1);
                 JITDUMP(" no.");
-                Verify(!(prefixFlags & PREFIX_NOCHECK), "Multiple no. prefixes");
-                prefixFlags |= PREFIX_NOCHECK;
+                Verify(!(prefixFlags & PREFIX_NO_TYPERANGENULLCHECK), "Multiple no. prefixes");
 
                 {
                     int flags = getU1LittleEndian(codeAddr);
 
                     JITDUMP(" %u", flags);
 
-                    if ((flags & (~PREFIX_NOCHECK_FLAG_ALL)) != 0)
+                    ++codeAddr;
+
+                    // PREFIX_NO_TYPECHECK = 0x000000040 which is 0x1 (the value of typecheck flag) << 6
+                    // The 2 subsequent flags are just left shift of 1, the same as the nullcheck/rangecheck IL flags, so we just have to
+                    // left shift by 6 to transform
+                    flags <<= 6;
+                    if ((flags & (~PREFIX_NO_TYPERANGENULLCHECK)) != 0)
                     {
                         BADCODE("no. followed by invalid flags");
                     }
 
-                    ++codeAddr;
                     impValidateCheckElisionOpcode(codeAddr, codeEndp, flags);
+
+
+
+                    prefixFlags |= flags;
                 }
 
                 goto PREFIX;
