@@ -5,6 +5,8 @@
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
