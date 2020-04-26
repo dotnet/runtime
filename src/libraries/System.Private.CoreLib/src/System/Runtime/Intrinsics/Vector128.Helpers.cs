@@ -20,10 +20,10 @@ namespace System.Runtime.Intrinsics
 
             if (Sse.IsSupported)
             {
-                ifTrue = Sse.And(ifTrue.AsSingle(), selector.AsSingle());
-                ifFalse = Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle());
+                var trueMask = Sse.And(ifTrue.AsSingle(), selector.AsSingle());
+                var falseMask  = Sse.AndNot(selector.AsSingle(), ifFalse.AsSingle());
 
-                return Sse.Or(ifFalse, ifTrue).As<float, T>();
+                return Sse.Or(falseMask, trueMask).As<float, T>();
             }
             else if (AdvSimd.IsSupported)
             {
