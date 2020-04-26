@@ -311,6 +311,58 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return impSimdAsHWIntrinsicRelOp(intrinsic, clsHnd, retType, baseType, simdSize, op1, op2);
                 }
 
+                case NI_VectorT128_op_Multiply:
+                {
+                    assert(baseType == TYP_INT);
+
+                    NamedIntrinsic hwIntrinsic = NI_Illegal;
+
+                    if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    {
+                        hwIntrinsic = NI_SSE41_MultiplyLow;
+                    }
+                    else
+                    {
+                        // op1Dup = op1
+                        GenTree* op1Dup;
+                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone for Vector<int> multiply"));
+
+                        // op2Dup = op2
+                        GenTree* op2Dup;
+                        op2 = impCloneExpr(op2, &op2Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone for Vector<int> multiply"));
+
+                        // op1 = Sse2.ShiftRightLogical128BitLane(op1, 4)
+                        op1 = gtNewSimdHWIntrinsicNode(retType, op1, gtNewIconNode(4, TYP_INT),
+                                                       NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+
+                        // op2 = Sse2.ShiftRightLogical128BitLane(op1, 4)
+                        op2 = gtNewSimdHWIntrinsicNode(retType, op2, gtNewIconNode(4, TYP_INT),
+                                                       NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+
+                        // op2 = Sse2.Multiply(op2.AsUInt64(), op1.AsUInt64()).AsInt32()
+                        op2 = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_SSE2_Multiply, TYP_ULONG, simdSize);
+
+                        // op2 = Sse2.Shuffle(op2, (0, 0, 2, 0))
+                        op2 = gtNewSimdHWIntrinsicNode(retType, op2, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
+                                                       NI_SSE2_Shuffle, baseType, simdSize);
+
+                        // op1 = Sse2.Multiply(op1Dup.AsUInt64(), op2Dup.AsUInt64()).AsInt32()
+                        op1 = gtNewSimdHWIntrinsicNode(retType, op1Dup, op2Dup, NI_SSE2_Multiply, TYP_ULONG, simdSize);
+
+                        // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
+                        op1 = gtNewSimdHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
+                                                       NI_SSE2_Shuffle, baseType, simdSize);
+
+                        // result = Sse2.UnpackLow(op1, op2)
+                        hwIntrinsic = NI_SSE2_UnpackLow;
+                    }
+                    assert(hwIntrinsic != NI_Illegal);
+
+                    return gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
+                }
+
                 default:
                 {
                     // Some platforms warn about unhandled switch cases
