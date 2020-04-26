@@ -91,9 +91,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe float CopySign(float x, float y)
+        public static float CopySign(float x, float y)
         {
-            const int signMask = unchecked((int)0b_1000_0000__0000_0000__0000_0000__0000_0000);
+            const int signMask = 1 << 31;
 
             if (Sse.IsSupported)
             {
@@ -116,8 +116,6 @@ namespace System
 
             static float SoftwareFallback(float x, float y)
             {
-                const int signMask = unchecked((int)0b_1000_0000__0000_0000__0000_0000__0000_0000);
-
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
 
