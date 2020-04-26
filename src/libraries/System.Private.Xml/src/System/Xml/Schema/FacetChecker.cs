@@ -309,7 +309,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFixedFlags & RestrictionFlags.TotalDigits) != 0)
                 {
-                    if (!_datatype.IsEqual(_datatype.Restriction.TotalDigits, _derivedRestriction.TotalDigits))
+                    if (_datatype.Restriction.TotalDigits != _derivedRestriction.TotalDigits)
                     {
                         throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
@@ -338,7 +338,7 @@ namespace System.Xml.Schema
                 {
                     if (_derivedRestriction.FractionDigits > _datatype.Restriction.FractionDigits)
                     {
-                        throw new XmlSchemaException(SR.Sch_TotalDigitsMismatch, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_FractionDigitsMismatch, string.Empty);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.FractionDigits);

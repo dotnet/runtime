@@ -4,9 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.DependencyInjection.cs" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Threading.Tasks.Extensions"  />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces"  />
   </ItemGroup>
 </Project>

@@ -10,11 +10,10 @@
 #include "clrhost.h"
 #include "utilcode.h"
 #include "ex.h"
-#include "hostimpl.h"
 #include "clrnt.h"
 #include "contract.h"
 
-CoreClrCallbacks g_CoreClrCallbacks;
+HINSTANCE g_hmodCoreCLR;
 
 thread_local int t_CantAllocCount;
 
@@ -114,38 +113,12 @@ HMODULE GetCLRModule ()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_SUPPORTS_DAC; // DAC can call in here since we initialize the SxS callbacks in ClrDataAccess::Initialize.
 
-#ifdef DACCESS_COMPILE
-    // For DAC, "g_CoreClrCallbacks" is populated in InitUtilCode when the latter is invoked
-    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the
-    // host-process address space.
-    //
-    // This function will be invoked in the host when DAC uses SEHException::GetHr that calls into
-    // IsComplusException, which calls into WasThrownByUs that calls GetCLRModule when EH SxS is enabled.
-    // However, this function can also be executed within the target space as well.
-    //
-    // Since DACCop gives the warning to DACize this global that, actually, would be used only
-    // in the respective address spaces and does not require marshalling, we need to ignore this
-    // warning.
-    DACCOP_IGNORE(UndacizedGlobalVariable, "g_CoreClrCallbacks has the dual mode DAC issue.");
-#endif // DACCESS_COMPILE
-    VALIDATECORECLRCALLBACKS();
+    // You got here because the dll that included this copy of utilcode.lib.
+    // did not set g_hmodCoreCLR. The most likely cause is that you're running
+    // a dll (other than coreclr.dll) that links to utilcode.lib.
+    _ASSERTE(g_hmodCoreCLR != NULL);
 
-    // This is the normal coreclr case - we return the module handle that was captured in our DllMain.
-#ifdef DACCESS_COMPILE
-    // For DAC, "g_CoreClrCallbacks" is populated in InitUtilCode when the latter is invoked
-    // from ClrDataAccess::Initialize alongwith a reference to a structure allocated in the
-    // host-process address space.
-    //
-    // This function will be invoked in the host when DAC uses SEHException::GetHr that calls into
-    // IsComplusException, which calls into WasThrownByUs that calls GetCLRModule when EH SxS is enabled.
-    // However, this function can also be executed within the target space as well.
-    //
-    // Since DACCop gives the warning to DACize this global that, actually, would be used only
-    // in the respective address spaces and does not require marshalling, we need to ignore this
-    // warning.
-    DACCOP_IGNORE(UndacizedGlobalVariable, "g_CoreClrCallbacks has the dual mode DAC issue.");
-#endif // DACCESS_COMPILE
-    return g_CoreClrCallbacks.m_hmodCoreCLR;
+    return g_hmodCoreCLR;
 }
 
 
@@ -276,65 +249,3 @@ LoadsTypeHolder::~LoadsTypeHolder()
 }
 
 #endif //defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
-
-
-//--------------------------------------------------------------------------
-// Side by side inproc support
-//
-// These are new abstractions designed to support loading multiple CLR
-// versions in the same process.
-//--------------------------------------------------------------------------
-
-
-//--------------------------------------------------------------------------
-// One-time initialized called by coreclr.dll in its dllmain.
-//--------------------------------------------------------------------------
-VOID InitUtilcode(CoreClrCallbacks const & cccallbacks)
-{
-    //! WARNING: At the time this function is invoked, the C Runtime has NOT been fully initialized, let alone the CLR.
-    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!)
-
-    LIMITED_METHOD_CONTRACT;
-
-    g_CoreClrCallbacks = cccallbacks;
-}
-
-CoreClrCallbacks const & GetClrCallbacks()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    VALIDATECORECLRCALLBACKS();
-    return g_CoreClrCallbacks;
-}
-
-#ifdef _DEBUG
-void OnUninitializedCoreClrCallbacks()
-{
-    // Supports DAC since it can be called from GetCLRModule which supports DAC as well.
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // If you got here, the most likely cause of the failure is that you're loading some DLL
-    // (other than coreclr.dll) that links to utilcode.lib, or that you're using a nohost
-    // variant of utilcode.lib but hitting code that assumes there is a CLR in the process.
-    //
-    // It is expected that coreclr.dll
-    // is the ONLY dll that links to utilcode libraries.
-    //
-    // If you must introduce a new dll that links to utilcode.lib, it is your responsibility
-    // to ensure that that dll invoke InitUtilcode() and forward it the right data from the *correct*
-    // loaded instance of coreclr. And you'll have to do without the CRT being initialized.
-    //
-    // Can't use an _ASSERTE here because even that's broken if we get to this point.
-    MessageBoxW(0,
-                W("g_CoreClrCallbacks not initialized."),
-                W("\n\n")
-                W("You got here because the dll that included this copy of utilcode.lib ")
-                W("did not call InitUtilcode() The most likely cause is that you're running ")
-                W("a dll (other than coreclr.dll) that links to utilcode.lib.")
-                ,
-                0);
-    _ASSERTE(FALSE);
-    DebugBreak();
-}
-#endif // _DEBUG
-

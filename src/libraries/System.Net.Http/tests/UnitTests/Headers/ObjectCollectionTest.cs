@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Net.Http.Headers;
 
 using Xunit;
@@ -18,14 +17,13 @@ namespace System.Net.Http.Tests
             ObjectCollection<string> c = new ObjectCollection<string>();
 
             c.Add("value1");
-            c.Insert(0, "value2");
+            c.Add("value2");
 
             Assert.Throws<ArgumentNullException>(() => { c.Add(null); });
-            Assert.Throws<ArgumentNullException>(() => { c[0] = null; });
 
             Assert.Equal(2, c.Count);
-            Assert.Equal("value2", c[0]);
-            Assert.Equal("value1", c[1]);
+            Assert.True(c.Contains("value2"));
+            Assert.True(c.Contains("value1"));
 
             // Use custom validator
             c = new ObjectCollection<string>(item =>
@@ -37,13 +35,11 @@ namespace System.Net.Http.Tests
             });
 
             c.Add("value1");
-            c[0] = "value2";
 
             Assert.Throws<InvalidOperationException>(() => { c.Add(null); });
-            Assert.Throws<InvalidOperationException>(() => { c[0] = null; });
 
             Assert.Equal(1, c.Count);
-            Assert.Equal("value2", c[0]);
+            Assert.True(c.Contains("value1"));
         }
     }
 }

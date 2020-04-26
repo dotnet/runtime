@@ -5,7 +5,7 @@
 #ifndef IJW_BOOTSTRAP_THUNK_H
 #define IJW_BOOTSTRAP_THUNK_H
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 #error "This file should only be included on x86 builds."
 #endif
 

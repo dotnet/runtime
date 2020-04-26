@@ -4,10 +4,13 @@
 
 namespace System.Globalization
 {
-	partial class GlobalizationMode
-	{
-		static bool GetGlobalizationInvariantMode () {
-			return GetInvariantSwitchValue ();
-		}
-	}
+    internal partial class GlobalizationMode
+    {
+        internal static bool UseNls => true;
+
+        private static bool GetGlobalizationInvariantMode()
+        {
+            return GetInvariantSwitchValue();
+        }
+    }
 }

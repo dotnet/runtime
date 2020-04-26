@@ -155,7 +155,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', true)]
         [InlineData("Hello", 'E', false)]
         [InlineData("", 'H', false)]
-        public static void Contains(string s, char value, bool expected)
+        public static void Contains_Char(string s, char value, bool expected)
         {
             Assert.Equal(expected, s.Contains(value));
 
@@ -200,7 +200,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
-        public static void Contains(string s, char value, StringComparison comparisionType, bool expected)
+        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisionType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisionType));
         }
@@ -272,7 +272,7 @@ namespace System.Tests
         [InlineData("Hello", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", "ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("Hello", "Ell" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
-        public static void Contains(string s, string value, StringComparison comparisonType, bool expected)
+        public static void Contains_String_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
             Assert.Equal(expected, s.AsSpan().Contains(value, comparisonType));
@@ -426,7 +426,7 @@ namespace System.Tests
         [InlineData(StringComparison.InvariantCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
         [InlineData(StringComparison.OrdinalIgnoreCase)]
-        public static void Contains_NullValue_ThrowsArgumentNullException(StringComparison comparisonType)
+        public static void Contains_NullValue_WithComparisonType_ThrowsArgumentNullException(StringComparison comparisonType)
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => "foo".Contains(null, comparisonType));
         }
@@ -964,7 +964,7 @@ namespace System.Tests
         [InlineData("_____________\u807f\u007f_", '\u007f', StringComparison.OrdinalIgnoreCase, 14)]
         [InlineData("__\u807f_______________", '\u007f', StringComparison.OrdinalIgnoreCase, -1)]
         [InlineData("__\u807f___\u007f___________", '\u007f', StringComparison.OrdinalIgnoreCase, 6)]
-        public static void IndexOf_SingleLetter(string s, char target, StringComparison stringComparison, int expected)
+        public static void IndexOf_SingleLetter_StringComparison(string s, char target, StringComparison stringComparison, int expected)
         {
             Assert.Equal(expected, s.IndexOf(target, stringComparison));
             var charArray = new char[1];

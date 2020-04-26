@@ -5415,6 +5415,11 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
     CONTRACTL_END;
 
+    if (IsILStub())
+    {
+        return AsDynamicMethodDesc()->IsNativeCallableStub();
+    }
+
     HRESULT hr = GetCustomAttribute(
         WellKnownAttribute::NativeCallable,
         nullptr,

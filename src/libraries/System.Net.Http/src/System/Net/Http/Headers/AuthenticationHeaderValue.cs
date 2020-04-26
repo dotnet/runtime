@@ -104,14 +104,14 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out AuthenticationHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out AuthenticationHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
 
             if (GenericHeaderParser.SingleValueAuthenticationParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (AuthenticationHeaderValue)output;
+                parsedValue = (AuthenticationHeaderValue)output!;
                 return true;
             }
             return false;

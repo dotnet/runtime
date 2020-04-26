@@ -83,6 +83,7 @@ namespace StressAllocator
 
         public static int countIters = DEFAULT_ITERATIONS;
         public static float percentPinned = DEFAULT_PINNED;
+        public static bool usePOH = false;  // if true, use POH allocations instead of pinned handles.
         public static bool LOHpin = false;  //if true, apply the percentPinned to just LOH, not overall.
         public static float percentBucket1 = DEFAULT_BUCKET1;
         public static float percentBucket2 = DEFAULT_BUCKET2;
@@ -521,6 +522,11 @@ namespace StressAllocator
                         currentArgValue = args[++i];
                         percentPinned = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
+                    else if (String.Compare(currentArg.ToLower(), "usepoh") == 0)
+                    {
+                        currentArgValue = args[++i];
+                        usePOH = bool.Parse(currentArgValue);
+                    }
                     else if (String.Compare(currentArg.ToLower(), "lohpin") == 0)  //for LOH compacting testing, this is the option to apply the pinning percentage to LOH
                     {
                         LOHpin = true;
@@ -608,6 +614,7 @@ namespace StressAllocator
             Console.WriteLine("-objcount " + objCount);
             Console.WriteLine("-t " + numThreads);
             Console.WriteLine("-pinned " + percentPinned);
+            Console.WriteLine("-usepoh " + usePOH);
             Console.WriteLine("-bucket1 " + percentBucket1);
             Console.WriteLine("-bucket2 " + percentBucket2);
             Console.WriteLine("-bucket3 " + percentBucket3);
@@ -632,6 +639,7 @@ namespace StressAllocator
             Console.WriteLine("-maxlife  <milliseconds> : maximum object lifetime, default is " + maxLife);
             Console.WriteLine("-objcount <count> : how many objects are initially allocated, default is " + objCount);
             Console.WriteLine("-pinned <percent of pinned objects> : specify the percentage of data that we want to pin (number from 0 to 100), default is " + percentPinned);
+            Console.WriteLine("-usepoh <true/false> : specify whether to use poh for pinning, default is " + false);
             Console.WriteLine("-bucket1 <percentage> : specify the percentage of be in size bucket1(" + BUCKET1_MIN + "bytes to " + BUCKET2_MIN + "bytes), default is " + DEFAULT_BUCKET1);
             Console.WriteLine("-bucket2 <percentage> : specify the percentage of be in size bucket2(" + BUCKET2_MIN + "bytes to " + BUCKET3_MIN + "bytes), default is " + DEFAULT_BUCKET2);
             Console.WriteLine("-bucket3 <percentage> : specify the percentage of be in size bucket3(" + BUCKET3_MIN + "bytes to " + BUCKET4_MIN + "bytes), default is " + DEFAULT_BUCKET3);
@@ -713,18 +721,21 @@ namespace StressAllocator
                 }
                 else   //pinned
                 {
-                    m_pinnedData = new byte[m_dataSize];
+                    m_pinnedData = System.GC.AllocateArray<byte>(m_dataSize, pinned: usePOH);
                     for (int i = 0; i < m_dataSize; i += 1000)
                     {
                         m_pinnedData[i] = 5;
                     }
-                    m_pinnedHandle = GCHandle.Alloc(m_pinnedData, GCHandleType.Pinned);
+
+                    if (!usePOH)
+                        m_pinnedHandle = GCHandle.Alloc(m_pinnedData, GCHandleType.Pinned);
+
                     WR_All.Add(m_pinnedData);
                 }
             }
             public void CleanUp()
             {
-                if (m_pinned)
+                if (m_pinned && !usePOH)
                 {
                     if (m_pinnedHandle.IsAllocated)
                         m_pinnedHandle.Free();

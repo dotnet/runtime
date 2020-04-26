@@ -1,6 +1,10 @@
 include(CheckPIESupported)
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
+# If set, indicates that this is not an officially supported release
+# Keep in sync with IsPrerelease in Directory.Build.props
+set(PRERELEASE 1)
+
 #----------------------------------------
 # Detect and set platform variable names
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
@@ -36,7 +40,7 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
             set(CLR_CMAKE_HOST_UNIX_ARMV7L 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm OR CMAKE_SYSTEM_PROCESSOR STREQUAL armv7-a)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
             set(CLR_CMAKE_HOST_UNIX_ARM64 1)
@@ -54,10 +58,12 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
     endif()
 
-    execute_process(
-        COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-        OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(EXISTS ${LINUX_ID_FILE})
+        execute_process(
+            COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
+            OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
@@ -66,9 +72,6 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
-        elseif(CLR_CMAKE_LINUX_ID STREQUAL android)
-            set(CLR_CMAKE_HOST_ANDROID 1)
-            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
@@ -76,7 +79,7 @@ endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
 if(CLR_CMAKE_HOST_OS STREQUAL Darwin)
     set(CLR_CMAKE_HOST_UNIX 1)
     set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-    set(CLR_CMAKE_HOST_DARWIN 1)
+    set(CLR_CMAKE_HOST_OSX 1)
     set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
 endif(CLR_CMAKE_HOST_OS STREQUAL Darwin)
 
@@ -93,6 +96,35 @@ if(CLR_CMAKE_HOST_OS STREQUAL iOS)
         clr_unknown_arch()
     endif()
 endif(CLR_CMAKE_HOST_OS STREQUAL iOS)
+
+if(CLR_CMAKE_HOST_OS STREQUAL tvOS)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_TVOS 1)
+    if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+        set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    else()
+        clr_unknown_arch()
+    endif()
+endif(CLR_CMAKE_HOST_OS STREQUAL tvOS)
+
+if(CLR_CMAKE_HOST_OS STREQUAL Android)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_LINUX 1)
+    set(CLR_CMAKE_HOST_ANDROID 1)
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7-a)
+        set(CLR_CMAKE_HOST_UNIX_ARM 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+        set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+        set(CLR_CMAKE_HOST_UNIX_X86 1)
+    else()
+        clr_unknown_arch()
+    endif()
+endif(CLR_CMAKE_HOST_OS STREQUAL Android)
 
 if(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
     set(CLR_CMAKE_HOST_UNIX 1)
@@ -134,7 +166,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL Windows)
 endif(CLR_CMAKE_HOST_OS STREQUAL Windows)
 
 if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
-    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    #set(CLR_CMAKE_HOST_UNIX 1) # TODO: this should be reenabled but it activates a bunch of additional compiler flags in configurecompiler.cmake
+    set(CLR_CMAKE_HOST_UNIX_WASM 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
 #--------------------------------------------
@@ -164,6 +197,9 @@ elseif(CLR_CMAKE_HOST_UNIX_AMD64)
 elseif(CLR_CMAKE_HOST_UNIX_X86)
     set(CLR_CMAKE_HOST_ARCH_I386 1)
     set(CLR_CMAKE_HOST_ARCH "x86")
+elseif(CLR_CMAKE_HOST_UNIX_WASM)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    set(CLR_CMAKE_HOST_ARCH "wasm")
 elseif(WIN32)
     # CLR_CMAKE_HOST_ARCH is passed in as param to cmake
     if (CLR_CMAKE_HOST_ARCH STREQUAL x64)
@@ -205,6 +241,8 @@ if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
     set(CLR_CMAKE_TARGET_ARCH_ARM 1)
     set(CLR_CMAKE_TARGET_ARCH_ARMV7L 1)
     set(ARM_SOFTFP 1)
+  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL wasm)
+    set(CLR_CMAKE_TARGET_ARCH_WASM 1)
   else()
     clr_unknown_arch()
 endif()
@@ -233,21 +271,26 @@ if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL android)
+if(CLR_CMAKE_TARGET_OS STREQUAL Android)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_ANDROID 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL android)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Android)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
     set(CLR_CMAKE_TARGET_UNIX 1)
-    set(CLR_CMAKE_TARGET_DARWIN 1)
+    set(CLR_CMAKE_TARGET_OSX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL iOS)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_IOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL iOS)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL tvOS)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_TVOS 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL tvOS)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL FreeBSD)
     set(CLR_CMAKE_TARGET_UNIX 1)
@@ -269,6 +312,12 @@ if(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
     set(CLR_CMAKE_TARGET_SUNOS 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_EMSCRIPTEN 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
+
 if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)
         set(CLR_CMAKE_TARGET_UNIX_AMD64 1)
@@ -280,6 +329,8 @@ if(CLR_CMAKE_TARGET_UNIX)
         set(CLR_CMAKE_TARGET_UNIX_ARM64 1)
     elseif(CLR_CMAKE_TARGET_ARCH STREQUAL x86)
         set(CLR_CMAKE_TARGET_UNIX_X86 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL wasm)
+        set(CLR_CMAKE_TARGET_UNIX_WASM 1)
     else()
         clr_unknown_arch()
     endif()
@@ -306,20 +357,33 @@ else()
     endif()
 endif()
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    # All code we build should be compiled as position independent
-    get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-    if("CXX" IN_LIST languages)
-        set(CLR_PIE_LANGUAGE CXX)
-    else()
-        set(CLR_PIE_LANGUAGE C)
+if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
+    # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
+    # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
+    # but since we know that PIE is supported, we can safely skip this redundant check).
+    #
+    # The default linker on Solaris also does not support PIE.
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_SUNOS)
+        # All code we build should be compiled as position independent
+        get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+        if("CXX" IN_LIST languages)
+            set(CLR_PIE_LANGUAGE CXX)
+        else()
+            set(CLR_PIE_LANGUAGE C)
+        endif()
+        check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
+        if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
+            message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+                      "PIE link options will not be passed to linker.")
+        endif()
     endif()
-    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
-    if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
-        message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                  "PIE link options will not be passed to linker.")
-    endif()
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-set(CLR_CMAKE_CONFIGURE_PLATFORM_INCLUDED 1)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
+if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
+    # Clear _FORTIFY_SOURCE=2, if set
+    string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+endif()

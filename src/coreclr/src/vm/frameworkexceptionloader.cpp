@@ -16,16 +16,14 @@ struct ExceptionLocationData
     LPCUTF8 Namespace;
     LPCUTF8 Name;
     LPCUTF8 AssemblySimpleName;
-    LPCUTF8 PublicKeyToken;
 };
 
 static const
 ExceptionLocationData g_ExceptionLocationData[] = {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) { ns, PTR_CSTR((TADDR) # reKind), assemblySimpleName, publicKeyToken },
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) { ns, PTR_CSTR((TADDR) # reKind), assemblySimpleName },
 #include "rexcep.h"
-    {NULL, NULL, NULL, NULL}  // On Silverlight, this table may be empty.  This dummy entry allows us to compile.
 };
 
 
@@ -39,7 +37,7 @@ MethodTable* FrameworkExceptionLoader::GetException(RuntimeExceptionKind kind)
         GC_TRIGGERS;
 
         PRECONDITION(kind > kLastExceptionInMscorlib);
-        PRECONDITION(kind - (kLastExceptionInMscorlib + 1) < COUNTOF(g_ExceptionLocationData) - 1);
+        PRECONDITION(kind - (kLastExceptionInMscorlib + 1) < COUNTOF(g_ExceptionLocationData));
     }
     CONTRACTL_END;
 
@@ -48,7 +46,7 @@ MethodTable* FrameworkExceptionLoader::GetException(RuntimeExceptionKind kind)
     // Note that some assemblies, like System.Runtime.WindowsRuntime, might not be installed on pre-Windows 8 machines.
     int index = kind - (kLastExceptionInMscorlib + 1);
     ExceptionLocationData exData = g_ExceptionLocationData[index];
-    _ASSERTE(exData.Name != NULL && exData.AssemblySimpleName != NULL && exData.PublicKeyToken != NULL);  // Was the exception defined in mscorlib instead?
+    _ASSERTE(exData.Name != NULL && exData.AssemblySimpleName != NULL);  // Was the exception defined in mscorlib instead?
     StackSString assemblyQualifiedName;
     _ASSERTE(exData.Namespace != NULL);  // If we need to support stuff in a global namespace, fix this.
     assemblyQualifiedName.SetUTF8(exData.Namespace);
@@ -56,11 +54,6 @@ MethodTable* FrameworkExceptionLoader::GetException(RuntimeExceptionKind kind)
     assemblyQualifiedName.AppendUTF8(exData.Name);
     assemblyQualifiedName.AppendUTF8(", ");
     assemblyQualifiedName.AppendUTF8(exData.AssemblySimpleName);
-    assemblyQualifiedName.AppendUTF8(", PublicKeyToken=");
-    assemblyQualifiedName.AppendUTF8(exData.PublicKeyToken);
-    assemblyQualifiedName.AppendUTF8(", Version=");
-    assemblyQualifiedName.AppendUTF8(VER_ASSEMBLYVERSION_STR);
-    assemblyQualifiedName.AppendUTF8(", Culture=neutral");
 
     MethodTable* pMT = NULL;
     // Loading will either succeed or throw a FileLoadException.  Catch & swallow that exception.
@@ -95,7 +88,7 @@ void FrameworkExceptionLoader::GetExceptionName(RuntimeExceptionKind kind, SStri
         MODE_ANY;
 
         PRECONDITION(kind > kLastExceptionInMscorlib);
-        PRECONDITION(kind - (kLastExceptionInMscorlib + 1) < COUNTOF(g_ExceptionLocationData) - 1);
+        PRECONDITION(kind - (kLastExceptionInMscorlib + 1) < COUNTOF(g_ExceptionLocationData));
     } CONTRACTL_END;
 
     exceptionName.SetUTF8(g_ExceptionLocationData[kind].Namespace);

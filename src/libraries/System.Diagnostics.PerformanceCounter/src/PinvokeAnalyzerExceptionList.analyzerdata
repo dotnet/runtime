@@ -1,1 +1,3 @@
+advapi32.dll!ConvertStringSecurityDescriptorToSecurityDescriptor
+kernel32.dll!LoadLibrary
 perfcounter.dll!FormatFromRawValue

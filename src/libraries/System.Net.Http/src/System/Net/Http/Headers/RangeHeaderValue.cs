@@ -25,17 +25,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<RangeItemHeaderValue> Ranges
-        {
-            get
-            {
-                if (_ranges == null)
-                {
-                    _ranges = new ObjectCollection<RangeItemHeaderValue>();
-                }
-                return _ranges;
-            }
-        }
+        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new ObjectCollection<RangeItemHeaderValue>();
 
         public RangeHeaderValue()
         {
@@ -126,14 +116,14 @@ namespace System.Net.Http.Headers
             return (RangeHeaderValue)GenericHeaderParser.RangeParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out RangeHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out RangeHeaderValue? parsedValue)
         {
             int index = 0;
              parsedValue = null;
 
             if (GenericHeaderParser.RangeParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RangeHeaderValue)output;
+                parsedValue = (RangeHeaderValue)output!;
                 return true;
             }
             return false;

@@ -4,16 +4,17 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Tests;
 using Xunit;
 
-namespace System.Text.RegularExpressions
+namespace System.Text.RegularExpressions.Tests
 {
     public class RegexUnicodeCharTests
     {
         private const int MaxUnicodeRange = 2 << 15;
 
         [Fact]
-        public static void RegexUnicodeChar()
+        public void RegexUnicodeChar()
         {
             // Regex engine is Unicode aware now for the \w and \d character classes
             // \s is not - i.e. it still only recognizes the ASCII space separators, not Unicode ones
@@ -221,6 +222,61 @@ namespace System.Text.RegularExpressions
 
                 match = match.NextMatch();
                 Assert.False(match.Success);
+            }
+        }
+
+        [OuterLoop("May take tens of seconds due to large number of cultures tested")]
+        [Fact]
+        public void ValidateCategoriesParticipatingInCaseConversion()
+        {
+            // Some optimizations in RegexCompiler rely on only some Unicode categories participating
+            // in case conversion.  If this test ever fails, that optimization needs to be revisited,
+            // as our assumptions about the Unicode spec may have been invalidated.
+
+            var nonParticipatingCategories = new HashSet<UnicodeCategory>()
+            {
+                UnicodeCategory.ClosePunctuation,
+                UnicodeCategory.ConnectorPunctuation,
+                UnicodeCategory.Control,
+                UnicodeCategory.DashPunctuation,
+                UnicodeCategory.DecimalDigitNumber,
+                UnicodeCategory.FinalQuotePunctuation,
+                UnicodeCategory.InitialQuotePunctuation,
+                UnicodeCategory.LineSeparator,
+                UnicodeCategory.OpenPunctuation,
+                UnicodeCategory.OtherNumber,
+                UnicodeCategory.OtherPunctuation,
+                UnicodeCategory.ParagraphSeparator,
+                UnicodeCategory.SpaceSeparator,
+            };
+
+            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.AllCultures))
+            {
+                using (new ThreadCultureChange(ci))
+                {
+                    for (int i = 0; i <= char.MaxValue; i++)
+                    {
+                        char ch = (char)i;
+                        char upper = char.ToUpper(ch);
+                        char lower = char.ToLower(ch);
+
+                        if (nonParticipatingCategories.Contains(char.GetUnicodeCategory(ch)))
+                        {
+                            // If this character is in one of these categories, make sure it doesn't change case.
+                            Assert.Equal(ch, upper);
+                            Assert.Equal(ch, lower);
+                        }
+                        else
+                        {
+                            // If it's not in one of these categories, make sure it doesn't change case to
+                            // something in one of these categories.
+                            UnicodeCategory upperCategory = char.GetUnicodeCategory(upper);
+                            UnicodeCategory lowerCategory = char.GetUnicodeCategory(lower);
+                            Assert.False(nonParticipatingCategories.Contains(upperCategory));
+                            Assert.False(nonParticipatingCategories.Contains(lowerCategory));
+                        }
+                    }
+                }
             }
         }
     }

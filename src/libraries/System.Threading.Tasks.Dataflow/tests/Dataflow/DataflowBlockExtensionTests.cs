@@ -306,10 +306,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
 
             // Validate sane behavior with a bad LinkTo
-            Assert.Null(
-                new DelegatePropagator<int, int> {
-                    LinkToDelegate = (_,__) => null
-                }.AsObservable().Subscribe(DataflowBlock.NullTarget<int>().AsObserver()));
+            new DelegatePropagator<int, int>
+            {
+                LinkToDelegate = (_, __) => null
+            }.AsObservable().Subscribe(DataflowBlock.NullTarget<int>().AsObserver()).Dispose();
         }
 
         [Fact]

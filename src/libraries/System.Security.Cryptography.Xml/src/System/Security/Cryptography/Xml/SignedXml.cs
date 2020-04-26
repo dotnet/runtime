@@ -392,7 +392,7 @@ namespace System.Security.Cryptography.Xml
                 }
                 else if (key is RSA)
                 {
-                    // Default to RSA-SHA1
+                    // Default to RSA-SHA256
                     if (SignedInfo.SignatureMethod == null)
                         SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
                 }

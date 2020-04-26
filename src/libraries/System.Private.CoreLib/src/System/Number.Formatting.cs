@@ -277,7 +277,8 @@ namespace System
             "($#)", "-$#", "$-#", "$#-",
             "(#$)", "-#$", "#-$", "#$-",
             "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)"
+            "$ -#", "#- $", "($ #)", "(# $)",
+            "$- #"
         };
 
         private static readonly string[] s_posPercentFormats =
@@ -698,7 +699,7 @@ namespace System
             if (string.IsNullOrEmpty(format))
             {
                 return value >= 0 ?
-                    UInt32ToDecStr((uint)value, digits: -1) :
+                    UInt32ToDecStr((uint)value) :
                     NegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
 
@@ -800,7 +801,7 @@ namespace System
             // Fast path for default format
             if (string.IsNullOrEmpty(format))
             {
-                return UInt32ToDecStr(value, digits: -1);
+                return UInt32ToDecStr(value);
             }
 
             return FormatUInt32Slow(value, format, provider);
@@ -1068,7 +1069,7 @@ namespace System
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
                     byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
 
                     UInt64ToNumber(value, ref number);
 
@@ -1122,7 +1123,7 @@ namespace System
         public static string Int32ToDecStr(int value)
         {
             return value >= 0 ?
-                UInt32ToDecStr((uint)value, -1) :
+                UInt32ToDecStr((uint)value) :
                 NegativeInt32ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
@@ -1267,9 +1268,9 @@ namespace System
             return bufferEnd;
         }
 
-        internal static unsafe string UInt32ToDecStr(uint value, int digits)
+        internal static unsafe string UInt32ToDecStr(uint value)
         {
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
             if (bufferLength == 1)
@@ -1281,19 +1282,28 @@ namespace System
             fixed (char* buffer = result)
             {
                 char* p = buffer + bufferLength;
-                if (digits <= 1)
+                do
                 {
-                    do
-                    {
-                        value = Math.DivRem(value, 10, out uint remainder);
-                        *(--p) = (char)(remainder + '0');
-                    }
-                    while (value != 0);
+                    value = Math.DivRem(value, 10, out uint remainder);
+                    *(--p) = (char)(remainder + '0');
                 }
-                else
-                {
-                    p = UInt32ToDecChars(p, value, digits);
-                }
+                while (value != 0);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe string UInt32ToDecStr(uint value, int digits)
+        {
+            if (digits <= 1)
+                return UInt32ToDecStr(value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = buffer + bufferLength;
+                p = UInt32ToDecChars(p, value, digits);
                 Debug.Assert(p == buffer);
             }
             return result;
@@ -2169,7 +2179,7 @@ namespace System
             {
                 if (groupDigits != null)
                 {
-                    Debug.Assert(sGroup != null, "Must be nulll when groupDigits != null");
+                    Debug.Assert(sGroup != null, "Must be null when groupDigits != null");
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.

@@ -106,7 +106,6 @@ namespace SuperPMICollection
         private static string s_baseFailMclFile = null;     // Pathname for a temporary .MCL file used for noticing superpmi replay failures against preliminary MCH.
         private static string s_finalFailMclFile = null;    // Pathname for a temporary .MCL file used for noticing superpmi replay failures against final MCH.
         private static string s_baseMchFile = null;         // The base .MCH file path
-        private static string s_nodupMchFile = null;        // The nodup .MCH file path
         private static string s_finalMchFile = null;        // The clean thin unique .MCH file path
         private static string s_tocFile = null;             // The .TOC file path for the clean thin unique .MCH file
         private static string s_errors = "";                // Collect non-fatal file delete errors to display at the end of the collection process.
@@ -146,7 +145,6 @@ namespace SuperPMICollection
             s_baseFailMclFile  = Path.Combine(s_tempDir, "basefail.mcl");
             s_finalFailMclFile = Path.Combine(s_tempDir, "finalfail.mcl");
             s_baseMchFile      = Path.Combine(s_tempDir, "base.mch");
-            s_nodupMchFile     = Path.Combine(s_tempDir, "nodup.mch");
 
             if (outputMchPath == null)
             {
@@ -341,11 +339,11 @@ namespace SuperPMICollection
         }
 
         // Merge MC files:
-        //      mcs -merge <s_baseMchFile> <s_tempDir>\*.mc -recursive
+        //      mcs -merge <s_baseMchFile> <s_tempDir>\*.mc -recursive -dedup -thin
         private static void MergeMCFiles()
         {
             string pattern = Path.Combine(s_tempDir, "*.mc");
-            RunProgram(Global.McsPath, "-merge " + s_baseMchFile + " " + pattern + " -recursive");
+            RunProgram(Global.McsPath, "-merge " + s_baseMchFile + " " + pattern + " -recursive -dedup -thin");
             if (!File.Exists(s_baseMchFile))
             {
                 throw new SpmiException("file missing: " + s_baseMchFile);
@@ -362,54 +360,32 @@ namespace SuperPMICollection
             }
         }
 
-        // Create a thin unique MCH:
-        //      <mcl> -removeDup -thin <s_baseMchFile> <s_nodupMchFile>
-        private static void CreateThinUniqueMCH()
-        {
-            RunProgram(Global.McsPath, "-removeDup -thin " + s_baseMchFile + " " + s_nodupMchFile);
-
-            if (!File.Exists(s_nodupMchFile))
-            {
-                throw new SpmiException("file missing: " + s_nodupMchFile);
-            }
-
-            if (!Global.SkipCleanup)
-            {
-                // The base file is no longer used; delete it.
-                if (File.Exists(s_baseMchFile))
-                {
-                    SafeFileDelete(s_baseMchFile);
-                    s_baseMchFile = null;
-                }
-            }
-        }
-
         // Create clean MCH file:
-        //      <superPmiPath> -p -f <s_baseFailMclFile> <s_nodupMchFile> <jitPath>
+        //      <superPmiPath> -p -f <s_baseFailMclFile> <s_baseMchFile> <jitPath>
         //      if <s_baseFailMclFile> is non-empty:
-        //           <mcl> -strip <s_baseFailMclFile> <s_nodupMchFile> <s_finalMchFile>
+        //           <mcl> -strip <s_baseFailMclFile> <s_baseMchFile> <s_finalMchFile>
         //      else:
-        //           move s_nodupMchFile to s_finalMchFile
+        //           move s_baseMchFile to s_finalMchFile
         //      del <s_baseFailMclFile>
         private static void CreateCleanMCHFile()
         {
-            RunProgram(Global.SuperPmiPath, "-p -f " + s_baseFailMclFile + " " + s_nodupMchFile + " " + Global.JitPath);
+            RunProgram(Global.SuperPmiPath, "-p -f " + s_baseFailMclFile + " " + s_baseMchFile + " " + Global.JitPath);
 
             if (File.Exists(s_baseFailMclFile) && !String.IsNullOrEmpty(File.ReadAllText(s_baseFailMclFile)))
             {
-                RunProgram(Global.McsPath, "-strip " + s_nodupMchFile + " " + s_finalMchFile);
+                RunProgram(Global.McsPath, "-strip " + s_baseMchFile + " " + s_finalMchFile);
             }
             else
             {
                 try
                 {
-                    Console.WriteLine("Moving {0} to {1}", s_nodupMchFile, s_finalMchFile);
-                    File.Move(s_nodupMchFile, s_finalMchFile, overwrite:true);
-                    s_nodupMchFile = null; // This file no longer exists.
+                    Console.WriteLine("Moving {0} to {1}", s_baseMchFile, s_finalMchFile);
+                    File.Move(s_baseMchFile, s_finalMchFile, overwrite:true);
+                    s_baseMchFile = null; // This file no longer exists.
                 }
                 catch (Exception ex)
                 {
-                    string err = string.Format("Error moving file \"{0}\" to \"{1}\": {2}", s_nodupMchFile, s_finalMchFile, ex.Message);
+                    string err = string.Format("Error moving file \"{0}\" to \"{1}\": {2}", s_baseMchFile, s_finalMchFile, ex.Message);
                     s_errors += err + System.Environment.NewLine;
                     Console.Error.WriteLine(err);
                 }
@@ -428,11 +404,11 @@ namespace SuperPMICollection
                     s_baseFailMclFile = null;
                 }
 
-                // The nodup file is no longer used.
-                if ((s_nodupMchFile != null) && File.Exists(s_nodupMchFile))
+                // The base file is no longer used.
+                if ((s_baseMchFile != null) && File.Exists(s_baseMchFile))
                 {
-                    SafeFileDelete(s_nodupMchFile);
-                    s_nodupMchFile = null;
+                    SafeFileDelete(s_baseMchFile);
+                    s_baseMchFile = null;
                 }
             }
         }
@@ -476,7 +452,6 @@ namespace SuperPMICollection
         // Cleanup. If we get here due to a failure of some kind, we want to do full cleanup. If we get here as part
         // of normal shutdown processing, we want to keep the s_finalMchFile and s_tocFile if s_saveFinalMchFile == true.
         //      del <s_baseMchFile>
-        //      del <s_nodupMchFile>
         //      del <s_finalMchFile>
         //      del <s_tocFile>
         //      rmdir <s_tempDir>
@@ -497,11 +472,6 @@ namespace SuperPMICollection
                 {
                     SafeFileDelete(s_baseMchFile);
                     s_baseMchFile = null;
-                }
-                if ((s_nodupMchFile != null) && File.Exists(s_nodupMchFile))
-                {
-                    SafeFileDelete(s_nodupMchFile);
-                    s_nodupMchFile = null;
                 }
 
                 if (!s_saveFinalMchFile)
@@ -542,12 +512,11 @@ namespace SuperPMICollection
         {
             // Do a basic SuperPMI collect and validation:
             // 1. Collect MC files by running a set of sample apps.
-            // 2. Merge the MC files into a single MCH using "mcs -merge *.mc -recursive".
-            // 3. Create a thin unique MCH by using "mcs -removeDup -thin".
-            // 4. Create a clean MCH by running superpmi over the MCH, and using "mcs -strip" to filter
+            // 2. Merge the MC files into a single MCH using "mcs -merge *.mc -recursive -dedup -thin".
+            // 3. Create a clean MCH by running superpmi over the MCH, and using "mcs -strip" to filter
             //    out any failures (if any).
-            // 5. Create a TOC using "mcs -toc".
-            // 6. Verify the resulting MCH file is error-free when running superpmi against it with the
+            // 4. Create a TOC using "mcs -toc".
+            // 5. Verify the resulting MCH file is error-free when running superpmi against it with the
             //    same JIT used for collection.
             //
             // MCH files are big. If we don't need them anymore, clean them up right away to avoid
@@ -564,7 +533,6 @@ namespace SuperPMICollection
                 ChooseFilePaths(outputMchPath);
                 CollectMCFiles(runProgramPath, runProgramArguments);
                 MergeMCFiles();
-                CreateThinUniqueMCH();
                 CreateCleanMCHFile();
                 CreateTOC();
                 VerifyFinalMCH();

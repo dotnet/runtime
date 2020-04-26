@@ -837,16 +837,9 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError GetSockName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetSockName(SafeSocketHandle handle, byte* buffer, int* nameLen)
         {
-            Interop.Error err;
-            int addrLen = nameLen;
-            fixed (byte* rawBuffer = buffer)
-            {
-                err = Interop.Sys.GetSockName(handle, rawBuffer, &addrLen);
-            }
-
-            nameLen = addrLen;
+            Interop.Error err = Interop.Sys.GetSockName(handle, buffer, nameLen);
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
@@ -1846,7 +1839,7 @@ namespace System.Net.Sockets
             asyncResult.SocketAddress = socketAddress;
 
             bool isIPv4, isIPv6;
-            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject).AddressFamily, socketAddress, out isIPv4, out isIPv6);
+            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject!).AddressFamily, socketAddress, out isIPv4, out isIPv6);
 
             int socketAddressSize = socketAddress.InternalSize;
             int bytesReceived;

@@ -178,6 +178,7 @@ namespace System.Drawing
         DC_PAPERNAMES = 16,
         DC_ORIENTATION = 17,
         DC_COPIES = 18,
+        DC_COLORDEVICE = 32,
         PD_ALLPAGES = 0x00000000,
         PD_SELECTION = 0x00000001,
         PD_PAGENUMS = 0x00000002,
@@ -560,22 +561,6 @@ namespace System.Drawing
             public ushort bmPlanes;
             public ushort bmBitsPixel;
             public IntPtr bmBits;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public class BITMAPINFOHEADER
-        {
-            public int biSize = 40;
-            public int biWidth;
-            public int biHeight;
-            public short biPlanes;
-            public short biBitCount;
-            public int biCompression;
-            public int biSizeImage;
-            public int biXPelsPerMeter;
-            public int biYPelsPerMeter;
-            public int biClrUsed;
-            public int biClrImportant;
         }
 
         // https://devblogs.microsoft.com/oldnewthing/20101018-00/?p=12513

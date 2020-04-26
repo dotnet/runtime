@@ -13,7 +13,7 @@ namespace System.Runtime
             AssemblyLoadContext.Default.SetProfileOptimizationRoot(directoryPath);
         }
 
-        public static void StartProfile(string profile)
+        public static void StartProfile(string? profile)
         {
             AssemblyLoadContext.Default.StartProfileOptimization(profile);
         }

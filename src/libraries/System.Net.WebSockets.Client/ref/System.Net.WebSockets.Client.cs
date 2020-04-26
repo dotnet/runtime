@@ -11,13 +11,13 @@ namespace System.Net.WebSockets
     {
         public ClientWebSocket() { }
         public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
-        public override string CloseStatusDescription { get { throw null; } }
+        public override string? CloseStatusDescription { get { throw null; } }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
-        public override string SubProtocol { get { throw null; } }
+        public override string? SubProtocol { get { throw null; } }
         public override void Abort() { }
-        public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Dispose() { }
         public override System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -29,15 +29,15 @@ namespace System.Net.WebSockets
     {
         internal ClientWebSocketOptions() { }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
-        public System.Net.CookieContainer Cookies { get { throw null; } set { } }
-        public System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
+        public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
-        public System.Net.IWebProxy Proxy { get { throw null; } set { } }
-        public System.Net.Security.RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null; } set { } }
+        public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
+        public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
         public void AddSubProtocol(string subProtocol) { }
         public void SetBuffer(int receiveBufferSize, int sendBufferSize) { }
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, System.ArraySegment<byte> buffer) { }
-        public void SetRequestHeader(string headerName, string headerValue) { }
+        public void SetRequestHeader(string headerName, string? headerValue) { }
     }
 }

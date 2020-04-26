@@ -11,7 +11,6 @@
 
 #include <wininet.h>
 #include <urlmon.h>
-#include <version.h>
 
 DWORD
 GetFileVersionInfoSizeW_NoThrow(

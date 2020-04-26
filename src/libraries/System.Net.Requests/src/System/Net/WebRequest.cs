@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Http;
@@ -28,7 +29,7 @@ namespace System.Net
             }
         }
 
-        private static List<WebRequestPrefixElement> s_prefixList;
+        private static List<WebRequestPrefixElement>? s_prefixList;
         private static object s_internalSyncObject = new object();
 
         internal const int DefaultTimeoutMilliseconds = 100 * 1000;
@@ -69,7 +70,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, requestUri);
 
             string LookupUri;
-            WebRequestPrefixElement Current = null;
+            WebRequestPrefixElement? Current = null;
             bool Found = false;
 
             if (!useUriBase)
@@ -121,12 +122,10 @@ namespace System.Net
                 }
             }
 
-            WebRequest webRequest = null;
-
             if (Found)
             {
                 // We found a match, so just call the creator and return what it does.
-                webRequest = Current.Creator.Create(requestUri);
+                WebRequest webRequest = Current!.Creator.Create(requestUri);
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(null, webRequest);
                 return webRequest;
             }
@@ -261,8 +260,7 @@ namespace System.Net
 
                 // As AbsoluteUri is used later for Create, account for formating changes
                 // like Unicode escaping, default ports, etc.
-                Uri tempUri;
-                if (Uri.TryCreate(prefix, UriKind.Absolute, out tempUri))
+                if (Uri.TryCreate(prefix, UriKind.Absolute, out Uri? tempUri))
                 {
                     string cookedUri = tempUri.AbsoluteUri;
 
@@ -385,15 +383,15 @@ namespace System.Net
             }
         }
 
-        public static RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        public static RequestCachePolicy? DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
 
-        public virtual RequestCachePolicy CachePolicy { get; set; }
+        public virtual RequestCachePolicy? CachePolicy { get; set; }
 
         public AuthenticationLevel AuthenticationLevel { get; set; } = AuthenticationLevel.MutualAuthRequested;
 
         public TokenImpersonationLevel ImpersonationLevel { get; set; } = TokenImpersonationLevel.Delegation;
 
-        public virtual string ConnectionGroupName
+        public virtual string? ConnectionGroupName
         {
             get
             {
@@ -449,7 +447,7 @@ namespace System.Net
             }
         }
 
-        public virtual string ContentType
+        public virtual string? ContentType
         {
             get
             {
@@ -461,7 +459,8 @@ namespace System.Net
             }
         }
 
-        public virtual ICredentials Credentials
+        [DisallowNull]
+        public virtual ICredentials? Credentials
         {
             get
             {
@@ -507,7 +506,7 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public virtual IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        public virtual IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
@@ -517,7 +516,7 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
@@ -537,8 +536,8 @@ namespace System.Net
             // Unwrap() that it's worth it to just rely on Task.Run and accept the closure/delegate.
             return Task.Run(() =>
                 Task<Stream>.Factory.FromAsync(
-                    (callback, state) => ((WebRequest)state).BeginGetRequestStream(callback, state),
-                    iar => ((WebRequest)iar.AsyncState).EndGetRequestStream(iar),
+                    (callback, state) => ((WebRequest)state!).BeginGetRequestStream(callback, state),
+                    iar => ((WebRequest)iar.AsyncState!).EndGetRequestStream(iar),
                     this));
         }
 
@@ -547,8 +546,8 @@ namespace System.Net
             // See comment in GetRequestStreamAsync().  Same logic applies here.
             return Task.Run(() =>
                 Task<WebResponse>.Factory.FromAsync(
-                    (callback, state) => ((WebRequest)state).BeginGetResponse(callback, state),
-                    iar => ((WebRequest)iar.AsyncState).EndGetResponse(iar),
+                    (callback, state) => ((WebRequest)state!).BeginGetResponse(callback, state),
+                    iar => ((WebRequest)iar.AsyncState!).EndGetResponse(iar),
                     this));
         }
 
@@ -557,17 +556,14 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        private static IWebProxy s_DefaultWebProxy;
+        private static IWebProxy? s_DefaultWebProxy;
         private static bool s_DefaultWebProxyInitialized;
 
         public static IWebProxy GetSystemWebProxy() => HttpClient.DefaultProxy;
 
-        public static IWebProxy DefaultWebProxy
+        public static IWebProxy? DefaultWebProxy
         {
-            get
-            {
-                return LazyInitializer.EnsureInitialized(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
-            }
+            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
             set
             {
                 lock (s_internalSyncObject)
@@ -590,7 +586,7 @@ namespace System.Net
             }
         }
 
-        public virtual IWebProxy Proxy
+        public virtual IWebProxy? Proxy
         {
             get
             {

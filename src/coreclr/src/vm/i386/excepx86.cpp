@@ -3631,7 +3631,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 #endif // !FEATURE_EH_FUNCLETS
 }
-#endif // !DACCESS_COMPILE
 
 // Returns TRUE if caller should resume execution.
 BOOL
@@ -3653,7 +3652,7 @@ AdjustContextForVirtualStub(
     PCODE f_IP = GetIP(pContext);
 
     VirtualCallStubManager::StubKind sk;
-    /* VirtualCallStubManager *pMgr = */ VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
@@ -3679,11 +3678,12 @@ AdjustContextForVirtualStub(
         return FALSE;
     }
 
-    PCODE callsite = GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
+    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext));
     if (pExceptionRecord != NULL)
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
     }
+
     SetIP(pContext, callsite);
 
 #if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
@@ -3693,7 +3693,35 @@ AdjustContextForVirtualStub(
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 
     // put ESP back to what it was before the call.
-    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*)));
+    TADDR sp = GetSP(pContext) + sizeof(void*);
+
+#ifndef UNIX_X86_ABI
+    // set the ESP to what it would be after the call (remove pushed arguments)
+
+    size_t stackArgumentsSize;
+    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    {
+        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
+        DispatchHolder *holder = DispatchHolder::FromDispatchEntry(f_IP);
+        MethodTable *pMT = (MethodTable*)holder->stub()->expectedMT();
+        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, f_IP, sk));
+        MethodDesc* pMD = VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, pMT);
+        stackArgumentsSize = pMD->SizeOfArgStack();
+    }
+    else
+    {
+        // Compute the stub entry address from the address of failure (location of dereferencing of "this" pointer)
+        ResolveHolder *holder = ResolveHolder::FromResolveEntry(f_IP - ResolveStub::offsetOfThisDeref());
+        stackArgumentsSize = holder->stub()->stackArgumentsSize();
+    }
+
+    sp += stackArgumentsSize;
+#endif // UNIX_X86_ABI
+
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(sp)));
 
     return TRUE;
 }
+
+#endif // !DACCESS_COMPILE

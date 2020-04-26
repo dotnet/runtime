@@ -52,9 +52,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// gets decremented after each successful propagation.</summary>
             internal int RemainingMessages;
             /// <summary>The previous node in the list.</summary>
-            internal LinkedTargetInfo Previous;
+            internal LinkedTargetInfo? Previous;
             /// <summary>The next node in the list.</summary>
-            internal LinkedTargetInfo Next;
+            internal LinkedTargetInfo? Next;
         }
 
         /// <summary>A reference to the owning source block.</summary>
@@ -62,9 +62,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>A mapping of targets to information about them.</summary>
         private readonly Dictionary<ITargetBlock<T>, LinkedTargetInfo> _targetInformation;
         /// <summary>The first node of an ordered list of targets. Messages should be offered to targets starting from First and following Next.</summary>
-        private LinkedTargetInfo _firstTarget;
+        private LinkedTargetInfo? _firstTarget;
         /// <summary>The last node of the ordered list of targets. This field is used purely as a perf optimization to avoid traversing the list for each Add.</summary>
-        private LinkedTargetInfo _lastTarget;
+        private LinkedTargetInfo? _lastTarget;
         /// <summary>Number of links with positive RemainingMessages counters.
         /// This is an optimization that allows us to skip dictionary lookup when this counter is 0.</summary>
         private int _linksWithRemainingMessages;
@@ -86,7 +86,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(target != null, "The target that is supposed to be linked must not be null.");
             Debug.Assert(linkOptions != null, "The link options must not be null.");
 
-            LinkedTargetInfo targetInfo;
+            LinkedTargetInfo? targetInfo;
 
             // If the target already exists in the registry, replace it with a new NopLinkPropagator to maintain uniqueness
             if (_targetInformation.TryGetValue(target, out targetInfo)) target = new NopLinkPropagator(_owningSource, target);
@@ -147,7 +147,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(!onlyIfReachedMaxMessages || _linksWithRemainingMessages > 0, "We shouldn't have ended on the slow path.");
 
             // If the target is registered...
-            LinkedTargetInfo node;
+            LinkedTargetInfo? node;
             if (_targetInformation.TryGetValue(target, out node))
             {
                 Debug.Assert(node != null, "The LinkedTargetInfo node referenced in the Dictionary must be non-null.");
@@ -180,10 +180,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Clears the target registry entry points while allowing subsequent traversals of the linked list.</summary>
-        internal LinkedTargetInfo ClearEntryPoints()
+        internal LinkedTargetInfo? ClearEntryPoints()
         {
             // Save _firstTarget so we can return it
-            LinkedTargetInfo firstTarget = _firstTarget;
+            LinkedTargetInfo? firstTarget = _firstTarget;
 
             // Clear out the entry points
             _firstTarget = _lastTarget = null;
@@ -196,7 +196,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         /// <summary>Propagated completion to the targets of the given linked list.</summary>
         /// <param name="firstTarget">The head of a saved linked list.</param>
-        internal void PropagateCompletion(LinkedTargetInfo firstTarget)
+        internal void PropagateCompletion(LinkedTargetInfo? firstTarget)
         {
             Debug.Assert(_owningSource.Completion.IsCompleted, "The owning source must have completed before propagating completion.");
 
@@ -204,14 +204,14 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Task owningSourceCompletion = _owningSource.Completion;
 
             // Propagate completion to those targets that have requested it
-            for (LinkedTargetInfo node = firstTarget; node != null; node = node.Next)
+            for (LinkedTargetInfo? node = firstTarget; node != null; node = node.Next)
             {
                 if (node.PropagateCompletion) Common.PropagateCompletion(owningSourceCompletion, node.Target, Common.AsyncExceptionHandler);
             }
         }
 
         /// <summary>Gets the first node of the ordered target list.</summary>
-        internal LinkedTargetInfo FirstTargetNode { get { return _firstTarget; } }
+        internal LinkedTargetInfo? FirstTargetNode { get { return _firstTarget; } }
 
         /// <summary>Adds a LinkedTargetInfo node to the doubly-linked list.</summary>
         /// <param name="node">The node to be added.</param>
@@ -257,8 +257,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(node != null, "Node to remove is required.");
             Debug.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null before RemoveFromList.");
 
-            LinkedTargetInfo previous = node.Previous;
-            LinkedTargetInfo next = node.Next;
+            LinkedTargetInfo? previous = node.Previous;
+            LinkedTargetInfo? next = node.Next;
 
             // Remove the node by linking the adjacent nodes
             if (node.Previous != null)
@@ -290,7 +290,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 var targets = new ITargetBlock<T>[Count];
                 int i = 0;
-                for (LinkedTargetInfo node = _firstTarget; node != null; node = node.Next)
+                for (LinkedTargetInfo? node = _firstTarget; node != null; node = node.Next)
                 {
                     targets[i++] = node.Target;
                 }
@@ -325,13 +325,14 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-            DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
+            DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
             {
                 Debug.Assert(source == _owningSource, "Only valid to be used with the source for which it was created.");
                 return _target.OfferMessage(messageHeader, messageValue, this, consumeToAccept);
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
+            [return: MaybeNull]
             T ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out bool messageConsumed)
             {
                 return _owningSource.ConsumeMessage(messageHeader, this, out messageConsumed);

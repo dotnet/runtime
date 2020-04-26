@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (!serviceType.IsAssignableFrom(constructorInfo.DeclaringType))
             {
-                throw new ArgumentException(Resources.FormatImplementationTypeCantBeConvertedToServiceType(constructorInfo.DeclaringType, serviceType));
+                throw new ArgumentException(SR.Format(SR.ImplementationTypeCantBeConvertedToServiceType, constructorInfo.DeclaringType, serviceType));
             }
 
             ServiceType = serviceType;

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -66,8 +67,7 @@ namespace System.Threading.Tasks
         // These two masks are used to clear all STATE_XXXX bits and leave any STATEFLAG_XXXX bits.
         private const int STATEMASK_CLEAR_ALL_ASYNC_STATES = ~STATEMASK_SELECT_ANY_ASYNC_STATE;
 
-
-        private static InvalidOperationException CreateCannotGetResultsFromIncompleteOperationException(Exception cause)
+        private static InvalidOperationException CreateCannotGetResultsFromIncompleteOperationException(Exception? cause)
         {
             InvalidOperationException ex = (cause == null)
                             ? new InvalidOperationException(SR.InvalidOperation_CannotGetResultsFromIncompleteOperation)
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks
         #region Instance variables
 
         /// <summary>The token source used to cancel running operations.</summary>
-        private CancellationTokenSource _cancelTokenSource = null;
+        private CancellationTokenSource? _cancelTokenSource = null;
 
         /// <summary>The async info's ID. InvalidAsyncId stands for not yet been initialised.</summary>
         private uint _id = AsyncInfoIdGenerator.InvalidId;
@@ -90,7 +90,7 @@ namespace System.Threading.Tasks
         /// <summary>The cached error code used to avoid creating several exception objects if the <code>ErrorCode</code>
         /// property is accessed several times. <code>null</code> indicates either no error or that <code>ErrorCode</code>
         /// has not yet been called.</summary>
-        private Exception _error = null;
+        private Exception? _error = null;
 
         /// <summary>The state of the async info. Interlocked operations are used to manipulate this field.</summary>
         private volatile int _state = STATE_NOT_INITIALIZED;
@@ -101,16 +101,16 @@ namespace System.Threading.Tasks
         /// or to one of Task or Task{TResult} in the latter case. This approach allows us to save a field on all IAsyncInfos.
         /// Notably, this makes us pay the added cost of boxing for synchronously completing IAsyncInfos where TResult is a
         /// value type, however, this is expected to occur rather rare compared to non-synchronously completed user-IAsyncInfos.</summary>
-        private object _dataContainer;
+        private object? _dataContainer;
 
         /// <summary>Registered completed handler.</summary>
-        private TCompletedHandler _completedHandler;
+        private TCompletedHandler? _completedHandler;
 
         /// <summary>Registered progress handler.</summary>
-        private TProgressHandler _progressHandler;
+        private TProgressHandler? _progressHandler;
 
         /// <summary>The synchronization context on which this instance was created/started. Used to callback invocations.</summary>
-        private SynchronizationContext _startingContext;
+        private SynchronizationContext? _startingContext;
 
         #endregion Instance variables
 
@@ -146,7 +146,7 @@ namespace System.Threading.Tasks
 
             // Set the completion routine and let the task running:
             task.ContinueWith(
-                (_, this_) => ((TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>)this_).TaskCompleted(),
+                (_, this_) => ((TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>)this_!).TaskCompleted(),
                 this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
@@ -162,7 +162,7 @@ namespace System.Threading.Tasks
         /// <param name="underlyingProgressDispatcher">A progress listener/pugblisher that receives progress notifications
         /// form <code>underlyingTask</code>.</param>
         internal TaskToAsyncInfoAdapter(Task underlyingTask,
-                                        CancellationTokenSource underlyingCancelTokenSource, Progress<TProgressInfo> underlyingProgressDispatcher)
+                                        CancellationTokenSource? underlyingCancelTokenSource, Progress<TProgressInfo>? underlyingProgressDispatcher)
         {
             if (underlyingTask == null)
                 throw new ArgumentNullException(nameof(underlyingTask));
@@ -189,7 +189,7 @@ namespace System.Threading.Tasks
             _state = (STATEFLAG_COMPLETION_HNDL_NOT_YET_INVOKED | STATE_STARTED);
 
             underlyingTask.ContinueWith(
-                (_, this_) => ((TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>)this_).TaskCompleted(),
+                (_, this_) => ((TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>)this_!).TaskCompleted(),
                 this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks
         /// specified <code>synchronousResult</code> is used as the result value.
         /// </summary>
         /// <param name="synchronousResult">The result of this synchronously completed IAsyncInfo.</param>
-        internal TaskToAsyncInfoAdapter(TResult synchronousResult)
+        internal TaskToAsyncInfoAdapter([AllowNull] TResult synchronousResult)
         {
             // We already completed. There will be no progress callback invokations and a potential completed handler invokation will be synchronous.
             // We do not need the starting SynchronizationContext:
@@ -342,7 +342,7 @@ namespace System.Threading.Tasks
 
         #region Infrastructure methods
 
-        private SynchronizationContext GetStartingContext()
+        private SynchronizationContext? GetStartingContext()
         {
 #if DESKTOP // as a reminder that on most platforms we want a different behavior
             return SynchronizationContext.CurrentNoFlow;
@@ -352,7 +352,7 @@ namespace System.Threading.Tasks
         }
 
 
-        internal Task Task
+        internal Task? Task
         {
             get
             {
@@ -361,12 +361,12 @@ namespace System.Threading.Tasks
                 if (CompletedSynchronously)
                     return null;
 
-                return (Task)_dataContainer;
+                return (Task?)_dataContainer;
             }
         }
 
 
-        internal CancellationTokenSource CancelTokenSource
+        internal CancellationTokenSource? CancelTokenSource
         {
             get { return _cancelTokenSource; }
         }
@@ -403,7 +403,7 @@ namespace System.Threading.Tasks
             bool conditionFailed;
 
             // Get the handler:
-            TCompletedHandler handler = Volatile.Read(ref _completedHandler);
+            TCompletedHandler? handler = Volatile.Read(ref _completedHandler);
 
             // If we might not run the handler now, we need to remember that if it is set later, it will need to be run then:
             if (handler == null)
@@ -444,7 +444,7 @@ namespace System.Threading.Tasks
             {
                 var tuple = (Tuple<TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>,
                                    TProgressHandler,
-                                   TProgressInfo>)tupleObject;
+                                   TProgressInfo>)tupleObject!;
 
                 tuple.Item1.OnProgress(tuple.Item2, tuple.Item3);
             }, Tuple.Create(this, handler, progressInfo));
@@ -456,7 +456,7 @@ namespace System.Threading.Tasks
         void IProgress<TProgressInfo>.Report(TProgressInfo value)
         {
             // If no progress handler is set, there is nothing to do:
-            TProgressHandler handler = Volatile.Read(ref _progressHandler);
+            TProgressHandler? handler = Volatile.Read(ref _progressHandler);
             if (handler == null)
                 return;
 
@@ -479,7 +479,7 @@ namespace System.Threading.Tasks
         }
 
 
-        private void OnReportChainedProgress(object sender, TProgressInfo progressInfo)
+        private void OnReportChainedProgress(object? sender, TProgressInfo progressInfo)
         {
             ((IProgress<TProgressInfo>)this).Report(progressInfo);
         }
@@ -577,7 +577,7 @@ namespace System.Threading.Tasks
             Debug.Assert(IsInRunningState);
             Debug.Assert(!CompletedSynchronously);
 
-            Task task = _dataContainer as Task;
+            Task? task = _dataContainer as Task;
             Debug.Assert(task != null);
             Debug.Assert(task.IsCompleted);
 
@@ -652,7 +652,7 @@ namespace System.Threading.Tasks
                     // Invoke callback in the right context (delegate cached by compiler):
                     _startingContext.Post((tupleObject) =>
                     {
-                        var tuple = (Tuple<TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>, AsyncStatus>)tupleObject;
+                        var tuple = (Tuple<TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>, AsyncStatus>)tupleObject!;
                         tuple.Item1.OnCompletedInvoker(tuple.Item2);
                     }, Tuple.Create(this, terminationStatus));
                 }
@@ -698,7 +698,6 @@ namespace System.Threading.Tasks
             return AsyncStatus.Error;
         }
 
-
         internal TResult GetResultsInternal()
         {
             EnsureNotClosed();
@@ -706,7 +705,7 @@ namespace System.Threading.Tasks
             // If this IAsyncInfo has actually faulted, GetResults will throw the same error as returned by ErrorCode:
             if (IsInErrorState)
             {
-                Exception error = ErrorCode;
+                Exception? error = ErrorCode;
                 Debug.Assert(error != null);
                 ExceptionDispatchInfo.Capture(error).Throw();
             }
@@ -718,16 +717,16 @@ namespace System.Threading.Tasks
 
             // If this is a synchronous operation, use the cached result:
             if (CompletedSynchronously)
-                return (TResult)_dataContainer;
+                return (TResult)_dataContainer!;
 
             // The operation is asynchronous:
-            Task<TResult> task = _dataContainer as Task<TResult>;
+            Task<TResult>? task = _dataContainer as Task<TResult>;
 
             // Since CompletedSynchronously is false and EnsureNotClosed() did not throw, task can only be null if:
             //  - this IAsyncInfo has completed synchronously, however we checked for this above;
             //  - it was not converted to Task<TResult>, which means it is a non-generic Task. In that case we cannot get a result from Task.
             if (task == null)
-                return default(TResult);
+                return default(TResult)!;
 
             Debug.Assert(IsInRunToCompletionState);
 
@@ -815,11 +814,11 @@ namespace System.Threading.Tasks
         /// If we the completion handler is set AFTER this IAsyncInfo already completed, then this setter will invoke the handler synchronously
         /// on the current context.
         /// </summary>
-        public virtual TCompletedHandler Completed
+        public virtual TCompletedHandler? Completed
         {
             get
             {
-                TCompletedHandler handler = Volatile.Read(ref _completedHandler);
+                TCompletedHandler? handler = Volatile.Read(ref _completedHandler);
                 EnsureNotClosed();
                 return handler;
             }
@@ -833,7 +832,7 @@ namespace System.Threading.Tasks
                 //  Some other WinRT projection languages do not allow setting the Completed handler more than once, even if it is set to null.
                 //  We could do the same by introducing a new STATEFLAG_COMPLETION_HNDL_SET bit-flag constant and saving a this state into
                 //  the m_state field to indicate that the completion handler has been set previously, but we choose not to do this.)
-                TCompletedHandler handlerBefore = Interlocked.CompareExchange(ref _completedHandler, value, null);
+                TCompletedHandler? handlerBefore = Interlocked.CompareExchange(ref _completedHandler, value, null);
                 if (handlerBefore != null)
                 {
                     InvalidOperationException ex = new InvalidOperationException(SR.InvalidOperation_CannotSetCompletionHanlderMoreThanOnce);
@@ -864,11 +863,11 @@ namespace System.Threading.Tasks
 
 
         /// <summary>Gets or sets the progress handler.</summary>
-        public virtual TProgressHandler Progress
+        public virtual TProgressHandler? Progress
         {
             get
             {
-                TProgressHandler handler = Volatile.Read(ref _progressHandler);
+                TProgressHandler? handler = Volatile.Read(ref _progressHandler);
                 EnsureNotClosed();
 
                 return handler;
@@ -930,7 +929,7 @@ namespace System.Threading.Tasks
 
 
         /// <summary>Gets the error code for the async info.</summary>
-        public virtual Exception ErrorCode
+        public virtual Exception? ErrorCode
         {
             get
             {
@@ -942,17 +941,17 @@ namespace System.Threading.Tasks
                 if (!IsInErrorState)
                     return null;
 
-                Exception error = Volatile.Read(ref _error);
+                Exception? error = Volatile.Read(ref _error);
 
                 // ERROR is a terminal state. SO if we have an error, just return it.
                 // If we completed synchronously, we return the current error iven if it is null since we do not expect this to change:
                 if (error != null || CompletedSynchronously)
                     return error;
 
-                Task task = _dataContainer as Task;
+                Task? task = _dataContainer as Task;
                 Debug.Assert(task != null);
 
-                AggregateException aggregateException = task.Exception;
+                AggregateException? aggregateException = task.Exception;
 
                 // By spec, if task.IsFaulted is true, then task.Exception must not be null and its InnerException must
                 // also not be null. However, in case something is unexpected on the Task side of the road, let?s be defensive
@@ -965,7 +964,7 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    Exception innerException = aggregateException.InnerException;
+                    Exception? innerException = aggregateException.InnerException;
 
                     error = (innerException == null)
                                 ? aggregateException
@@ -974,7 +973,7 @@ namespace System.Threading.Tasks
 
                 // If m_error was set concurrently, setError will be non-null. Then we use that - as it is the first m_error
                 // that was set. If setError we know that we won any races and we can return error:
-                Exception setError = Interlocked.CompareExchange(ref _error, error, null);
+                Exception? setError = Interlocked.CompareExchange(ref _error, error, null);
                 return setError ?? error;
             }
         }

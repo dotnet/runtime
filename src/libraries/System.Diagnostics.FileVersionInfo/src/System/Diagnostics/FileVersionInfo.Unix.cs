@@ -45,7 +45,7 @@ namespace System.Diagnostics
         {
             // First make sure it's a file we can actually read from.  Only regular files are relevant,
             // and attempting to open and read from a file such as a named pipe file could cause us to
-            // hang (waiting for someone else to open and write to the file).
+            // stop responding (waiting for someone else to open and write to the file).
             Interop.Sys.FileStatus fileStatus;
             if (Interop.Sys.Stat(_fileName, out fileStatus) != 0 ||
                 (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFREG)

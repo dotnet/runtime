@@ -181,9 +181,14 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
         {
-            using (var server = Http2LoopbackServer.CreateServer())
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+        }
+
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, Http2Options http2Options, int timeout = 60_000)
+        {
+            using (var server = Http2LoopbackServer.CreateServer(http2Options ?? new Http2Options()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
@@ -196,6 +201,8 @@ namespace System.Net.Test.Common
     public class Http2Options : GenericLoopbackOptions
     {
         public int ListenBacklog { get; set; } = 1;
+
+        public bool ClientCertificateRequired { get; set; }
 
         public Http2Options()
         {
@@ -237,7 +244,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override Version Version => HttpVersion.Version20;
+    public override Version Version => HttpVersion20.Value;
     }
 
     public enum ProtocolErrors
@@ -256,5 +263,10 @@ namespace System.Net.Test.Common
         ENHANCE_YOUR_CALM = 0xb,
         INADEQUATE_SECURITY = 0xc,
         HTTP_1_1_REQUIRED = 0xd
+    }
+
+    public static class HttpVersion20
+    {
+        public static readonly Version Value = new Version(2, 0);
     }
 }

@@ -3,29 +3,24 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs">
-      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
+             Link="Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
+             Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

@@ -15,7 +15,7 @@
 //
 // Return Value:
 //    The 64-bit only InstructionSet associated with isa
-static InstructionSet Arm64VersionOfIsa(InstructionSet isa)
+static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
@@ -38,7 +38,7 @@ static InstructionSet Arm64VersionOfIsa(InstructionSet isa)
 //
 // Return Value:
 //    The InstructionSet associated with className
-static InstructionSet lookupInstructionSet(const char* className)
+static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
 
@@ -99,7 +99,7 @@ static InstructionSet lookupInstructionSet(const char* className)
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
 {
     assert(className != nullptr);
 
@@ -115,37 +115,6 @@ InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enc
 }
 
 //------------------------------------------------------------------------
-// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
-//
-// Arguments:
-//    id -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//
-// Return Value:
-//     The upper bound for the imm-value of the intrinsic associated with id
-//
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
-{
-    assert(HWIntrinsicInfo::HasFullRangeImm(id));
-    return 255;
-}
-
-//------------------------------------------------------------------------
-// isInImmRange: Check if ival is valid for the intrinsic
-//
-// Arguments:
-//    id   -- The NamedIntrinsic associated with the HWIntrinsic to lookup
-//    ival -- the imm value to be checked
-//
-// Return Value:
-//     true if ival is valid for the intrinsic
-//
-bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
-{
-    assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
-    return ival <= lookupImmUpperBound(id) && ival >= 0;
-}
-
-//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -153,7 +122,7 @@ bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival)
 //
 // Return Value:
 //    true if isa is supported; otherwise, false
-bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
+bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
@@ -188,7 +157,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
 //
 // Return Value:
 //    true if isa is scalar; otherwise, false
-bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
+bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
@@ -205,6 +174,64 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
             return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// lookupImmUpperBound: Gets the upper bound for the imm-value of a given NamedIntrinsic
+//
+// Arguments:
+//    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
+//
+// Return Value:
+//     The upper bound for a value of the intrinsic immediate operand
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType)
+{
+    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
+
+    int immUpperBound = 0;
+
+    if (HWIntrinsicInfo::HasFullRangeImm(intrinsic))
+    {
+        immUpperBound = 255;
+    }
+    else
+    {
+        switch (intrinsic)
+        {
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_ExtractVector128:
+            case NI_AdvSimd_ExtractVector64:
+            case NI_AdvSimd_Insert:
+                immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    return immUpperBound;
+}
+
+//------------------------------------------------------------------------
+// isInImmRange: Check if ival is valid for the intrinsic
+//
+// Arguments:
+//    id        -- the NamedIntrinsic associated with the HWIntrinsic to lookup
+//    ival      -- the imm value to be checked
+//    simdType  -- vector size
+//    baseType  -- base type of the Vector64/128<T>
+//
+// Return Value:
+//     true if ival is valid for the intrinsic
+//
+bool HWIntrinsicInfo::isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType)
+{
+    assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
+
+    return ival <= lookupImmUpperBound(id, simdSize, baseType) && ival >= 0;
 }
 
 //------------------------------------------------------------------------

@@ -4681,7 +4681,7 @@ template<class T> void DeleteExecutable(T *p)
     {
         p->T::~T();
 
-        ClrHeapFree(ClrGetProcessExecutableHeap(), 0, p);
+        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
     }
 }
 
@@ -4713,50 +4713,7 @@ typedef HMODULE HMODULE_TGT;
 
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
-//----------------------------------------------------------------------------------------
-// The runtime invokes InitUtilcode() in its dllmain and passes along all of the critical
-// callback pointers. For the desktop CLR, all DLLs loaded by the runtime must also call
-// InitUtilcode with the same callbacks as the runtime used. To achieve this, the runtime
-// calls a special initialization routine exposed by the loaded module with the callbacks,
-// which in turn calls InitUtilcode.
-//
-// This structure collects all of the critical callback info passed in InitUtilcode().
-//----------------------------------------------------------------------------------------
-struct CoreClrCallbacks
-{
-    typedef IExecutionEngine* (* pfnIEE_t)();
-    typedef HRESULT (* pfnGetCORSystemDirectory_t)(SString& pbuffer);
-
-    HINSTANCE                   m_hmodCoreCLR;
-    pfnIEE_t                    m_pfnIEE;
-    pfnGetCORSystemDirectory_t  m_pfnGetCORSystemDirectory;
-};
-
-
-// For DAC, we include this functionality only when EH SxS is enabled.
-
-//----------------------------------------------------------------------------------------
-// CoreCLR must invoke this before CRT initialization to ensure utilcode has all the callback
-// pointers it needs.
-//----------------------------------------------------------------------------------------
-VOID InitUtilcode(const CoreClrCallbacks &cccallbacks);
-CoreClrCallbacks const & GetClrCallbacks();
-
-//----------------------------------------------------------------------------------------
-// Stuff below is for utilcode.lib eyes only.
-//----------------------------------------------------------------------------------------
-
-// Stores callback pointers provided by InitUtilcode().
-extern CoreClrCallbacks g_CoreClrCallbacks;
-
-// Throws up a helpful dialog if InitUtilcode() wasn't called.
-#ifdef _DEBUG
-void OnUninitializedCoreClrCallbacks();
-#define VALIDATECORECLRCALLBACKS() if (g_CoreClrCallbacks.m_hmodCoreCLR == NULL) OnUninitializedCoreClrCallbacks()
-#else  //_DEBUG
-#define VALIDATECORECLRCALLBACKS()
-#endif //_DEBUG
-
+extern HINSTANCE g_hmodCoreCLR;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
@@ -4887,37 +4844,6 @@ inline T* InterlockedCompareExchangeT(
 // to the appropriate pointer type.
 template <typename T>
 inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, reinterpret_cast<T*>(value));
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, reinterpret_cast<T*>(exchange), comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, reinterpret_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
     T* volatile *  target,
     std::nullptr_t value) // When nullptr is provided as argument.
 {
@@ -4943,6 +4869,37 @@ inline T* InterlockedCompareExchangeT(
 {
     //STATIC_ASSERT(comparand == 0);
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
+}
+
+// NULL pointer variants of the above to avoid having to cast NULL
+// to the appropriate pointer type.
+template <typename T>
+inline T* InterlockedExchangeT(
+    T* volatile *   target,
+    int             value) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(value == 0);
+    return InterlockedExchangeT(target, nullptr);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    int             exchange,  // When NULL is provided as argument.
+    T*              comparand)
+{
+    //STATIC_ASSERT(exchange == 0);
+    return InterlockedCompareExchangeT(destination, nullptr, comparand);
+}
+
+template <typename T>
+inline T* InterlockedCompareExchangeT(
+    T* volatile *   destination,
+    T*              exchange,
+    int             comparand) // When NULL is provided as argument.
+{
+    //STATIC_ASSERT(comparand == 0);
+    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 #undef InterlockedExchangePointer

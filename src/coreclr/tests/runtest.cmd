@@ -47,14 +47,14 @@ if /i "%1" == "x64"                                     (set __BuildArch=x64&shi
 if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
 if /i "%1" == "arm"                                     (set __BuildArch=arm&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"                                 (set __BuildType=Checked&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "AgainstPackages"                         (echo error: Remove /AgainstPackages switch&&echo /b 1)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
@@ -98,7 +98,7 @@ goto CollectMsbuildArgs
 
 set CORE_ROOT=%1
 echo %__MsgPrefix%CORE_ROOT is initially set to: "%CORE_ROOT%"
-shift 
+shift
 :ArgsDone
 
 :: Done with argument processing. Check argument values for validity.
@@ -188,7 +188,7 @@ exit /b %ERRORLEVEL%
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
+::       assembly.
 set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
 
 if not defined __Sequential (
@@ -315,7 +315,7 @@ if %__exitCode% neq 0 (
     echo Unable to precompile %2
     exit /b 0
 )
-    
+
 echo %__MsgPrefix%Successfully precompiled %2
 exit /b 0
 
@@ -456,7 +456,7 @@ REM ============================================================================
 :ResolveDependencies
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
-call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true 
+call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true
 if errorlevel 1 (
     echo %__MsgPrefix%Test Dependency Resolution Failed
     exit /b 1

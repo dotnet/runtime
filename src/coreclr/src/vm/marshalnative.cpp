@@ -372,7 +372,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
 
     FieldDesc *pField = refField->GetField();
     TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
-    
+
     if (th.IsBlittable())
     {
         return pField->GetOffset();
@@ -388,7 +388,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
         {
             // It isn't marshalable so throw an ArgumentException.
             StackSString strTypeName;
-            TypeString::AppendType(strTypeName, th);                
+            TypeString::AppendType(strTypeName, th);
             COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
         }
         EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
@@ -401,7 +401,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
 #endif
         while (numReferenceFields--)
         {
-            if (pNFD->GetFieldDesc() == pField) 
+            if (pNFD->GetFieldDesc() == pField)
             {
                 externalOffset = pNFD->GetExternalOffset();
                 INDEBUG(foundField = true);
@@ -802,11 +802,7 @@ FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE
     OBJECTREF oref = (OBJECTREF) orefUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
+    _ASSERTE(oref != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -868,11 +864,7 @@ FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSA
     OBJECTREF oref = (OBJECTREF) orefUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
+    _ASSERTE(oref != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -899,13 +891,8 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(oref, refClass);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-    if(!refClass)
-        COMPlusThrowArgumentNull(W("t"));
-
+    _ASSERTE(oref != NULL);
+    _ASSERTE(refClass != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -946,22 +933,17 @@ FCIMPLEND
 //====================================================================
 // return an Object for IUnknown
 //====================================================================
-FCIMPL1(Object*, MarshalNative::GetObjectForIUnknown, IUnknown* pUnk)
+FCIMPL1(Object*, MarshalNative::GetObjectForIUnknownNative, IUnknown* pUnk)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
     OBJECTREF oref = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -974,12 +956,12 @@ FCIMPL1(Object*, MarshalNative::GetObjectForIUnknown, IUnknown* pUnk)
 FCIMPLEND
 
 
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknown, IUnknown* pUnk)
+FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
@@ -987,9 +969,6 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknown, IUnknown* pUnk)
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
     HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -1763,147 +1742,6 @@ FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
 
     HELPER_METHOD_FRAME_END();
     return retVal;
-}
-FCIMPLEND
-
-FCIMPL1(int, MarshalNative::GetComSlotForMethodInfo, ReflectMethodObject* pMethodUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMethodUNSAFE));
-        PRECONDITION(pMethodUNSAFE->GetMethod()->GetMethodTable()->IsInterface());
-    }
-    CONTRACTL_END;
-
-    REFLECTMETHODREF refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-    MethodDesc *pMeth = refMethod->GetMethod();
-    _ASSERTE(pMeth);
-    int retVal = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refMethod);
-
-    retVal = pMeth->GetComSlot();
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-FCIMPL3(Object*, MarshalNative::GetMethodInfoForComSlot, ReflectClassBaseObject* tUNSAFE, INT32 slot, ComMemberType* pMemberType)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMemberType, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refRetVal = NULL;
-    REFLECTCLASSBASEREF t = (REFLECTCLASSBASEREF) tUNSAFE;
-    REFLECTCLASSBASEREF tInterface = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(t, tInterface);
-
-    int StartSlot = -1;
-    OBJECTREF MemberInfoObj = NULL;
-
-    if (!(t))
-        COMPlusThrow(kArgumentNullException);
-
-    MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
-
-    TypeHandle type = t->GetType();
-    MethodTable *pMT= type.GetMethodTable();
-    if (NULL == pMT)
-        COMPlusThrow(kArgumentNullException);
-
-    // The service does not make any sense to be called for non COM visible types.
-    if (!::IsTypeVisibleFromCom(type))
-        COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
-
-    // Retrieve the start slot and the default interface class.
-    StartSlot = GetComSlotInfo(pMT, &pMT);
-    if (StartSlot == -1)
-        COMPlusThrowArgumentOutOfRange(W("slot"), W("ArgumentOutOfRange_Count"));
-
-    // Retrieve the map of members.
-    ComMTMemberInfoMap MemberMap(pMT);
-    MemberMap.Init(sizeof(void*));
-    CQuickArray<ComMTMethodProps> &rProps = MemberMap.GetMethods();
-
-    // Update the typehandle we'll be using based on the interface returned by GetComSlotInfo.
-    tInterface = (REFLECTCLASSBASEREF)pMT->GetManagedClassObject();
-    type = TypeHandle(pMT);
-
-    // Make sure the specified slot is valid.
-    if (slot < StartSlot)
-        COMPlusThrowArgumentOutOfRange(W("slot"), W("ArgumentOutOfRange_Count"));
-    if (slot >= StartSlot + (int)rProps.Size())
-        COMPlusThrowArgumentOutOfRange(W("slot"), W("ArgumentOutOfRange_Count"));
-
-    ComMTMethodProps *pProps = &rProps[slot - StartSlot];
-    if (pProps->semantic >= FieldSemanticOffset)
-    {
-        // We are dealing with a field.
-        ComCallMethodDesc *pFieldMeth = reinterpret_cast<ComCallMethodDesc*>(pProps->pMeth);
-        FieldDesc *pField = pFieldMeth->GetFieldDesc();
-
-        // call the managed code to get the FieldInfo
-        MethodDescCallSite getFieldInfo(METHOD__CLASS__GET_FIELD_INFO);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(tInterface),
-            (ARG_SLOT)pField
-        };
-
-        MemberInfoObj = getFieldInfo.Call_RetOBJECTREF(args);
-
-        *(pMemberType) = (pProps->semantic == (FieldSemanticOffset + msGetter)) ? CMT_PropGet : CMT_PropSet;
-    }
-    else if (pProps->property == mdPropertyNil)
-    {
-        // We are dealing with a normal property.
-
-        // call the managed code to get the MethodInfo
-        MethodDescCallSite getMethodBase(METHOD__CLASS__GET_METHOD_BASE);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(tInterface),
-            (ARG_SLOT)pProps->pMeth
-        };
-
-        MemberInfoObj = getMethodBase.Call_RetOBJECTREF(args);
-
-        *(pMemberType) = CMT_Method;
-    }
-    else
-    {
-        // We are dealing with a property.
-        mdProperty tkProp;
-        if (TypeFromToken(pProps->property) == mdtProperty)
-            tkProp = pProps->property;
-        else
-            tkProp = rProps[pProps->property].property;
-
-        // call the managed code to get the PropertyInfo
-        MethodDescCallSite getPropertyInfo(METHOD__CLASS__GET_PROPERTY_INFO);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(tInterface),
-            tkProp
-        };
-
-        MemberInfoObj = getPropertyInfo.Call_RetOBJECTREF(args);
-
-        *(pMemberType) = (pProps->semantic == msGetter) ? CMT_PropGet : CMT_PropSet;
-    }
-
-    refRetVal = MemberInfoObj;
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
 

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -16,14 +19,14 @@ namespace Microsoft.Extensions.Configuration.CommandLine
     public partial class CommandLineConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
         public CommandLineConfigurationProvider(System.Collections.Generic.IEnumerable<string> args, System.Collections.Generic.IDictionary<string, string> switchMappings = null) { }
-        protected System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        protected System.Collections.Generic.IEnumerable<string> Args { get { throw null; } }
         public override void Load() { }
     }
     public partial class CommandLineConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public CommandLineConfigurationSource() { }
-        public System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public System.Collections.Generic.IDictionary<string, string> SwitchMappings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IEnumerable<string> Args { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<string, string> SwitchMappings { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
 }

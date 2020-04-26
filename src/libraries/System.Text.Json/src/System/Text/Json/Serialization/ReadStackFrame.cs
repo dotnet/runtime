@@ -38,6 +38,17 @@ namespace System.Text.Json
         // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
         public object? AddMethodDelegate;
 
+        // Holds relevant state when deserializing objects with parameterized constructors.
+        public int CtorArgumentStateIndex;
+        public ArgumentState? CtorArgumentState;
+
+        public void EndConstructorParameter()
+        {
+            CtorArgumentState!.JsonParameterInfo = null;
+            JsonPropertyName = null;
+            PropertyState = StackFramePropertyState.None;
+        }
+
         public void EndProperty()
         {
             JsonPropertyInfo = null!;
@@ -86,6 +97,8 @@ namespace System.Text.Json
         public void Reset()
         {
             AddMethodDelegate = null;
+            CtorArgumentStateIndex = 0;
+            CtorArgumentState = null;
             JsonClassInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;

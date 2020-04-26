@@ -199,6 +199,7 @@ ICALL_SIG (3, (object, object, ptr))		\
 ICALL_SIG (3, (object, ptr, int))		\
 ICALL_SIG (3, (object, ptr, int32))		\
 ICALL_SIG (3, (object, ptr, ptr))		\
+ICALL_SIG (3, (object, ptr, sizet))		\
 ICALL_SIG (3, (ptr, int32, ptrref))		\
 ICALL_SIG (3, (ptr, object, ptr))		\
 ICALL_SIG (3, (ptr, ptr, int))			\
@@ -229,6 +230,8 @@ ICALL_SIG (4, (object, ptr, int, int))		\
 ICALL_SIG (4, (object, ptr, int, int32))	\
 ICALL_SIG (4, (object, ptr, int, ptr))	    \
 ICALL_SIG (4, (object, ptr, ptr, int32))	\
+ICALL_SIG (4, (object, ptr, sizet, ptr))	    \
+ICALL_SIG (4, (object, ptr, sizet, int32))	    \
 ICALL_SIG (4, (ptr, object, int32, int32))	\
 ICALL_SIG (4, (ptr, object, ptr, ptr))		\
 ICALL_SIG (4, (ptr, ptr, int, ptr))		\

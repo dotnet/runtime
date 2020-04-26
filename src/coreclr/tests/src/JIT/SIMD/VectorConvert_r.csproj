@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(BuildArch)' == 'x86'">
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'x86'">
     <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
@@ -13,6 +13,9 @@
     <Compile Include="VectorConvert.cs" />
     <Compile Include="VectorUtil.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
   <ItemGroup>
     <TraitTags Include="BitSpecific" />
   </ItemGroup>

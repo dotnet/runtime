@@ -107,7 +107,7 @@ noinst_LTLIBRARIES = libmonoruntime-config.la $(support_libraries) $(boehm_libra
 
 lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS) $(METADATA_CFLAGS)
 
 #
 # Make sure any prefix changes are updated in the binaries too.
@@ -455,6 +455,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-config.h		\
 	mono-debug.h		\
 	mono-gc.h		\
+	mono-private-unstable.h	\
 	object.h		\
 	object-forward.h	\
 	opcodes.h		\

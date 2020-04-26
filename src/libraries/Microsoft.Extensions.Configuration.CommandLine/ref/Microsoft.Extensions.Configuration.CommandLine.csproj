@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Configuration.CommandLine.cs" />
-    <Reference Include="Microsoft.Extensions.Configuration"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration\ref\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
   </ItemGroup>
 </Project>

@@ -899,7 +899,7 @@ namespace System.Numerics
             result.M21 = result.M23 = result.M24 = 0.0f;
 
             result.M31 = result.M32 = 0.0f;
-            var negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+            float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
             result.M33 = negFarRange;
             result.M34 = -1.0f;
 
@@ -936,7 +936,7 @@ namespace System.Numerics
             result.M22 = 2.0f * nearPlaneDistance / height;
             result.M21 = result.M23 = result.M24 = 0.0f;
 
-            var negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+            float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
             result.M33 = negFarRange;
             result.M31 = result.M32 = 0.0f;
             result.M34 = -1.0f;
@@ -978,7 +978,7 @@ namespace System.Numerics
 
             result.M31 = (left + right) / (right - left);
             result.M32 = (top + bottom) / (top - bottom);
-            var negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+            float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
             result.M33 = negFarRange;
             result.M34 = -1.0f;
 
@@ -1761,15 +1761,15 @@ namespace System.Numerics
         {
             if (Sse.IsSupported)
             {
-                var row1 = Sse.LoadVector128(&matrix.M11);
-                var row2 = Sse.LoadVector128(&matrix.M21);
-                var row3 = Sse.LoadVector128(&matrix.M31);
-                var row4 = Sse.LoadVector128(&matrix.M41);
+                Vector128<float> row1 = Sse.LoadVector128(&matrix.M11);
+                Vector128<float> row2 = Sse.LoadVector128(&matrix.M21);
+                Vector128<float> row3 = Sse.LoadVector128(&matrix.M31);
+                Vector128<float> row4 = Sse.LoadVector128(&matrix.M41);
 
-                var l12 = Sse.UnpackLow(row1, row2);
-                var l34 = Sse.UnpackLow(row3, row4);
-                var h12 = Sse.UnpackHigh(row1, row2);
-                var h34 = Sse.UnpackHigh(row3, row4);
+                Vector128<float> l12 = Sse.UnpackLow(row1, row2);
+                Vector128<float> l34 = Sse.UnpackLow(row3, row4);
+                Vector128<float> h12 = Sse.UnpackHigh(row1, row2);
+                Vector128<float> h34 = Sse.UnpackHigh(row3, row4);
 
                 Sse.Store(&matrix.M11, Sse.MoveLowToHigh(l12, l34));
                 Sse.Store(&matrix.M21, Sse.MoveHighToLow(l34, l12));
@@ -2016,7 +2016,7 @@ namespace System.Numerics
         {
             if (Sse.IsSupported)
             {
-                var row = Sse.LoadVector128(&value1.M11);
+                Vector128<float> row = Sse.LoadVector128(&value1.M11);
                 Sse.Store(&value1.M11,
                     Sse.Add(Sse.Add(Sse.Multiply(Sse.Shuffle(row, row, 0x00), Sse.LoadVector128(&value2.M11)),
                                     Sse.Multiply(Sse.Shuffle(row, row, 0x55), Sse.LoadVector128(&value2.M21))),

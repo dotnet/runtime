@@ -1993,14 +1993,17 @@ HRESULT CordbModule::CreateClass(mdTypeDef classMetaDataToken,
     HRESULT hr = m_classes.AddBase(pClass);
 
     if (SUCCEEDED(hr))
-        *ppClass = pClass;
-    else
-        delete pClass;
-
-    if (classMetaDataToken == COR_GLOBAL_PARENT_TOKEN)
     {
-        _ASSERTE( m_pClass == NULL ); //redundant create
-        m_pClass.Assign(pClass);
+        *ppClass = pClass;
+        if (classMetaDataToken == COR_GLOBAL_PARENT_TOKEN)
+        {
+            _ASSERTE( m_pClass == NULL ); //redundant create
+            m_pClass.Assign(pClass);
+        }
+    }
+    else
+    {
+        delete pClass;
     }
 
     return hr;
@@ -5331,6 +5334,3 @@ void CordbNativeCode::LoadNativeInfo()
     }
 
 } // CordbNativeCode::LoadNativeInfo
-
-
-

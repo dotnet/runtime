@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -16,7 +17,7 @@ namespace System.Net
 
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteContext? _securityContext;
-        private string _spn = null!;
+        private string? _spn;
 
         private int _tokenSize;
         private ContextFlagsPal _requestedContextFlags;
@@ -92,12 +93,12 @@ namespace System.Net
         //
         // This overload does not attempt to impersonate because the caller either did it already or the original thread context is still preserved.
         //
-        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
+        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             Initialize(isServer, package, credential, spn, requestedContextFlags, channelBinding);
         }
 
-        private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
+        private void Initialize(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, package, spn, requestedContextFlags);
 
@@ -162,7 +163,7 @@ namespace System.Net
             return NegotiateStreamPal.VerifySignature(_securityContext!, buffer, offset, count);
         }
 
-        internal int MakeSignature(byte[] buffer, int offset, int count, ref byte[] output)
+        internal int MakeSignature(byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             return NegotiateStreamPal.MakeSignature(_securityContext!, buffer, offset, count, ref output);
         }
@@ -202,7 +203,7 @@ namespace System.Net
             return outgoingBlob;
         }
 
-        internal byte[]? GetOutgoingBlob(byte[] incomingBlob, bool thrownOnError)
+        internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool thrownOnError)
         {
             SecurityStatusPal statusCode;
             return GetOutgoingBlob(incomingBlob, thrownOnError, out statusCode);

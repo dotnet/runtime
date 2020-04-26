@@ -31,9 +31,8 @@
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
     <Compile Include="RegexReductionTests.cs" />
-    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
-      <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
-    </Compile>
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs"
+             Link="System\Text\RegularExpressions\RegexParseError.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
@@ -43,8 +42,7 @@
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
 </Project>

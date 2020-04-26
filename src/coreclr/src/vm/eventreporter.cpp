@@ -17,12 +17,11 @@
 #include "eventreporter.h"
 #include "typestring.h"
 #include "debugdebugger.h"
+#include "clrversion.h"
 
 #include <configuration.h>
 
 #include "../dlls/mscorrc/resource.h"
-
-#include "getproductversionnumber.h"
 
 //---------------------------------------------------------------------------------------
 //
@@ -90,35 +89,12 @@ EventReporter::EventReporter(EventReporterType type)
         m_Description.Append(ssMessage);
     }
 
-    BOOL fHasVersion = FALSE;
-    DWORD dwMajorVersion = 0;
-    DWORD dwMinorVersion = 0;
-    DWORD dwBuild = 0;
-    DWORD dwRevision = 0;
-    EventReporter::GetCoreCLRInstanceProductVersion(&dwMajorVersion, &dwMinorVersion, &dwBuild, &dwRevision);
-    m_Description.AppendPrintf(W("%lu.%lu.%lu.%lu\n"),dwMajorVersion, dwMinorVersion, dwBuild, dwRevision);
-    fHasVersion = TRUE;
+    m_Description.Append(VER_FILEVERSION_STR_L);
+    m_Description.Append(W("\n"));
 
-    if (!fHasVersion)
-    {
-        ssMessage.Clear();
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNKNOWN))
-            m_Description.Append(W("unknown\n"));
-        else
-        {
-            m_Description.Append(ssMessage);
-            m_Description.Append(W("\n"));
-        }
-    }
-
-    // Log the .NET Core Version if we can get it
-    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
-    if (fxProductVersion != nullptr)
-    {
-        m_Description.Append(W(".NET Core Version: "));
-        m_Description.Append(fxProductVersion);
-        m_Description.Append(W("\n"));
-    }
+    m_Description.Append(W(".NET Version: "));
+    m_Description.Append(CLR_PRODUCT_VERSION_L);
+    m_Description.Append(W("\n"));
 
     ssMessage.Clear();
 
@@ -721,43 +697,5 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         EX_END_CATCH(SwallowAllExceptions);
 
         reporter.Report();
-    }
-}
-
-// This function will return the product version of CoreCLR
-// instance we are executing in.
-void EventReporter::GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * pdwMinor, DWORD * pdwBuild, DWORD * pdwRevision)
-{
-    STATIC_CONTRACT_THROWS;
-
-    // Get the instance of the runtime
-    HMODULE hModRuntime = GetCLRModule();
-    _ASSERTE(hModRuntime != NULL);
-
-    // Get the path to the runtime
-    PathString runtimePath;
-    DWORD ret = WszGetModuleFileName(hModRuntime, runtimePath);
-    if (ret != 0)
-    {
-        // Got the path - get the file version from the path
-        SString path;
-        path.Clear();
-        path.Append(runtimePath);
-        DWORD dwVersionMS = 0;
-        DWORD dwVersionLS = 0;
-        GetProductVersionNumber(path, &dwVersionMS, &dwVersionLS);
-
-        // Get the Major.Minor.Build.Revision details from the returned values
-        *pdwMajor = HIWORD(dwVersionMS);
-        *pdwMinor = LOWORD(dwVersionMS);
-        *pdwBuild = HIWORD(dwVersionLS);
-        *pdwRevision = LOWORD(dwVersionLS);
-        LOG((LF_CORDB, LL_INFO100, "GetCoreCLRInstanceVersion: Got CoreCLR version: %lu.%lu.%lu.%lu\n",
-            *pdwMajor, *pdwMinor, *pdwBuild, *pdwRevision));
-    }
-    else
-    {
-        // Failed to get the path
-        LOG((LF_CORDB, LL_INFO100, "GetCoreCLRInstanceVersion: Unable to get CoreCLR version.\n"));
     }
 }

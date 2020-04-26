@@ -80,47 +80,50 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string BaseAddress { get { throw null; } set { } }
-        public System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } }
-        public System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
+        public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
         public bool IsBusy { get { throw null; } }
-        public System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public System.Collections.Specialized.NameValueCollection QueryString { get { throw null; } set { } }
-        public System.Net.WebHeaderCollection ResponseHeaders { get { throw null; } }
+        public System.Net.WebHeaderCollection? ResponseHeaders { get { throw null; } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
-        public event System.Net.DownloadDataCompletedEventHandler DownloadDataCompleted { add { } remove { } }
-        public event System.ComponentModel.AsyncCompletedEventHandler DownloadFileCompleted { add { } remove { } }
-        public event System.Net.DownloadProgressChangedEventHandler DownloadProgressChanged { add { } remove { } }
-        public event System.Net.DownloadStringCompletedEventHandler DownloadStringCompleted { add { } remove { } }
-        public event System.Net.OpenReadCompletedEventHandler OpenReadCompleted { add { } remove { } }
-        public event System.Net.OpenWriteCompletedEventHandler OpenWriteCompleted { add { } remove { } }
-        public event System.Net.UploadDataCompletedEventHandler UploadDataCompleted { add { } remove { } }
-        public event System.Net.UploadFileCompletedEventHandler UploadFileCompleted { add { } remove { } }
-        public event System.Net.UploadProgressChangedEventHandler UploadProgressChanged { add { } remove { } }
-        public event System.Net.UploadStringCompletedEventHandler UploadStringCompleted { add { } remove { } }
-        public event System.Net.UploadValuesCompletedEventHandler UploadValuesCompleted { add { } remove { } }
+        public event System.Net.DownloadDataCompletedEventHandler? DownloadDataCompleted { add { } remove { } }
+        public event System.ComponentModel.AsyncCompletedEventHandler? DownloadFileCompleted { add { } remove { } }
+        public event System.Net.DownloadProgressChangedEventHandler? DownloadProgressChanged { add { } remove { } }
+        public event System.Net.DownloadStringCompletedEventHandler? DownloadStringCompleted { add { } remove { } }
+        public event System.Net.OpenReadCompletedEventHandler? OpenReadCompleted { add { } remove { } }
+        public event System.Net.OpenWriteCompletedEventHandler? OpenWriteCompleted { add { } remove { } }
+        public event System.Net.UploadDataCompletedEventHandler? UploadDataCompleted { add { } remove { } }
+        public event System.Net.UploadFileCompletedEventHandler? UploadFileCompleted { add { } remove { } }
+        public event System.Net.UploadProgressChangedEventHandler? UploadProgressChanged { add { } remove { } }
+        public event System.Net.UploadStringCompletedEventHandler? UploadStringCompleted { add { } remove { } }
+        public event System.Net.UploadValuesCompletedEventHandler? UploadValuesCompleted { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        public event System.Net.WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
+        public event System.Net.WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
         public void CancelAsync() { }
         public byte[] DownloadData(string address) { throw null; }
         public byte[] DownloadData(System.Uri address) { throw null; }
         public void DownloadDataAsync(System.Uri address) { }
-        public void DownloadDataAsync(System.Uri address, object userToken) { }
+        public void DownloadDataAsync(System.Uri address, object? userToken) { }
         public System.Threading.Tasks.Task<byte[]> DownloadDataTaskAsync(string address) { throw null; }
         public System.Threading.Tasks.Task<byte[]> DownloadDataTaskAsync(System.Uri address) { throw null; }
         public void DownloadFile(string address, string fileName) { }
         public void DownloadFile(System.Uri address, string fileName) { }
         public void DownloadFileAsync(System.Uri address, string fileName) { }
-        public void DownloadFileAsync(System.Uri address, string fileName, object userToken) { }
+        public void DownloadFileAsync(System.Uri address, string fileName, object? userToken) { }
         public System.Threading.Tasks.Task DownloadFileTaskAsync(string address, string fileName) { throw null; }
         public System.Threading.Tasks.Task DownloadFileTaskAsync(System.Uri address, string fileName) { throw null; }
         public string DownloadString(string address) { throw null; }
         public string DownloadString(System.Uri address) { throw null; }
         public void DownloadStringAsync(System.Uri address) { }
-        public void DownloadStringAsync(System.Uri address, object userToken) { }
+        public void DownloadStringAsync(System.Uri address, object? userToken) { }
         public System.Threading.Tasks.Task<string> DownloadStringTaskAsync(string address) { throw null; }
         public System.Threading.Tasks.Task<string> DownloadStringTaskAsync(System.Uri address) { throw null; }
         protected virtual System.Net.WebRequest GetWebRequest(System.Uri address) { throw null; }
@@ -143,64 +146,64 @@ namespace System.Net
         public System.IO.Stream OpenRead(string address) { throw null; }
         public System.IO.Stream OpenRead(System.Uri address) { throw null; }
         public void OpenReadAsync(System.Uri address) { }
-        public void OpenReadAsync(System.Uri address, object userToken) { }
+        public void OpenReadAsync(System.Uri address, object? userToken) { }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenReadTaskAsync(string address) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenReadTaskAsync(System.Uri address) { throw null; }
         public System.IO.Stream OpenWrite(string address) { throw null; }
-        public System.IO.Stream OpenWrite(string address, string method) { throw null; }
+        public System.IO.Stream OpenWrite(string address, string? method) { throw null; }
         public System.IO.Stream OpenWrite(System.Uri address) { throw null; }
-        public System.IO.Stream OpenWrite(System.Uri address, string method) { throw null; }
+        public System.IO.Stream OpenWrite(System.Uri address, string? method) { throw null; }
         public void OpenWriteAsync(System.Uri address) { }
-        public void OpenWriteAsync(System.Uri address, string method) { }
-        public void OpenWriteAsync(System.Uri address, string method, object userToken) { }
+        public void OpenWriteAsync(System.Uri address, string? method) { }
+        public void OpenWriteAsync(System.Uri address, string? method, object? userToken) { }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(string address) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(string address, string method) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(string address, string? method) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(System.Uri address) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(System.Uri address, string method) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenWriteTaskAsync(System.Uri address, string? method) { throw null; }
         public byte[] UploadData(string address, byte[] data) { throw null; }
-        public byte[] UploadData(string address, string method, byte[] data) { throw null; }
+        public byte[] UploadData(string address, string? method, byte[] data) { throw null; }
         public byte[] UploadData(System.Uri address, byte[] data) { throw null; }
-        public byte[] UploadData(System.Uri address, string method, byte[] data) { throw null; }
+        public byte[] UploadData(System.Uri address, string? method, byte[] data) { throw null; }
         public void UploadDataAsync(System.Uri address, byte[] data) { }
-        public void UploadDataAsync(System.Uri address, string method, byte[] data) { }
-        public void UploadDataAsync(System.Uri address, string method, byte[] data, object userToken) { }
+        public void UploadDataAsync(System.Uri address, string? method, byte[] data) { }
+        public void UploadDataAsync(System.Uri address, string? method, byte[] data, object? userToken) { }
         public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(string address, byte[] data) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(string address, string method, byte[] data) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(string address, string? method, byte[] data) { throw null; }
         public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(System.Uri address, byte[] data) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(System.Uri address, string method, byte[] data) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadDataTaskAsync(System.Uri address, string? method, byte[] data) { throw null; }
         public byte[] UploadFile(string address, string fileName) { throw null; }
-        public byte[] UploadFile(string address, string method, string fileName) { throw null; }
+        public byte[] UploadFile(string address, string? method, string fileName) { throw null; }
         public byte[] UploadFile(System.Uri address, string fileName) { throw null; }
-        public byte[] UploadFile(System.Uri address, string method, string fileName) { throw null; }
+        public byte[] UploadFile(System.Uri address, string? method, string fileName) { throw null; }
         public void UploadFileAsync(System.Uri address, string fileName) { }
-        public void UploadFileAsync(System.Uri address, string method, string fileName) { }
-        public void UploadFileAsync(System.Uri address, string method, string fileName, object userToken) { }
+        public void UploadFileAsync(System.Uri address, string? method, string fileName) { }
+        public void UploadFileAsync(System.Uri address, string? method, string fileName, object? userToken) { }
         public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(string address, string fileName) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(string address, string method, string fileName) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(string address, string? method, string fileName) { throw null; }
         public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(System.Uri address, string fileName) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(System.Uri address, string method, string fileName) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadFileTaskAsync(System.Uri address, string? method, string fileName) { throw null; }
         public string UploadString(string address, string data) { throw null; }
-        public string UploadString(string address, string method, string data) { throw null; }
+        public string UploadString(string address, string? method, string data) { throw null; }
         public string UploadString(System.Uri address, string data) { throw null; }
-        public string UploadString(System.Uri address, string method, string data) { throw null; }
+        public string UploadString(System.Uri address, string? method, string data) { throw null; }
         public void UploadStringAsync(System.Uri address, string data) { }
-        public void UploadStringAsync(System.Uri address, string method, string data) { }
-        public void UploadStringAsync(System.Uri address, string method, string data, object userToken) { }
+        public void UploadStringAsync(System.Uri address, string? method, string data) { }
+        public void UploadStringAsync(System.Uri address, string? method, string data, object? userToken) { }
         public System.Threading.Tasks.Task<string> UploadStringTaskAsync(string address, string data) { throw null; }
-        public System.Threading.Tasks.Task<string> UploadStringTaskAsync(string address, string method, string data) { throw null; }
+        public System.Threading.Tasks.Task<string> UploadStringTaskAsync(string address, string? method, string data) { throw null; }
         public System.Threading.Tasks.Task<string> UploadStringTaskAsync(System.Uri address, string data) { throw null; }
-        public System.Threading.Tasks.Task<string> UploadStringTaskAsync(System.Uri address, string method, string data) { throw null; }
+        public System.Threading.Tasks.Task<string> UploadStringTaskAsync(System.Uri address, string? method, string data) { throw null; }
         public byte[] UploadValues(string address, System.Collections.Specialized.NameValueCollection data) { throw null; }
-        public byte[] UploadValues(string address, string method, System.Collections.Specialized.NameValueCollection data) { throw null; }
+        public byte[] UploadValues(string address, string? method, System.Collections.Specialized.NameValueCollection data) { throw null; }
         public byte[] UploadValues(System.Uri address, System.Collections.Specialized.NameValueCollection data) { throw null; }
-        public byte[] UploadValues(System.Uri address, string method, System.Collections.Specialized.NameValueCollection data) { throw null; }
+        public byte[] UploadValues(System.Uri address, string? method, System.Collections.Specialized.NameValueCollection data) { throw null; }
         public void UploadValuesAsync(System.Uri address, System.Collections.Specialized.NameValueCollection data) { }
-        public void UploadValuesAsync(System.Uri address, string method, System.Collections.Specialized.NameValueCollection data) { }
-        public void UploadValuesAsync(System.Uri address, string method, System.Collections.Specialized.NameValueCollection data, object userToken) { }
+        public void UploadValuesAsync(System.Uri address, string? method, System.Collections.Specialized.NameValueCollection data) { }
+        public void UploadValuesAsync(System.Uri address, string? method, System.Collections.Specialized.NameValueCollection data, object? userToken) { }
         public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(string address, System.Collections.Specialized.NameValueCollection data) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(string address, string method, System.Collections.Specialized.NameValueCollection data) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(string address, string? method, System.Collections.Specialized.NameValueCollection data) { throw null; }
         public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(System.Uri address, System.Collections.Specialized.NameValueCollection data) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(System.Uri address, string method, System.Collections.Specialized.NameValueCollection data) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> UploadValuesTaskAsync(System.Uri address, string? method, System.Collections.Specialized.NameValueCollection data) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class WriteStreamClosedEventArgs : System.EventArgs
@@ -210,7 +213,7 @@ namespace System.Net
         public WriteStreamClosedEventArgs() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        public System.Exception Error { get { throw null; } }
+        public System.Exception? Error { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void WriteStreamClosedEventHandler(object sender, System.Net.WriteStreamClosedEventArgs e);

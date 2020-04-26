@@ -18,7 +18,7 @@
 #define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
 #define MAKE_TARGET_DLLNAME_A(name) name ".dll"
 #else // TARGET_WINDOWS
-#ifdef TARGET_DARWIN
+#ifdef TARGET_OSX
 #define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
 #define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
 #else
@@ -370,9 +370,9 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 #define T_CRITICAL_SECTION_VALIDATION_MESSAGE "T_CRITICAL_SECTION validation failed. It is not in sync with CRITICAL_SECTION"
 
-#if defined(TARGET_DARWIN) && defined(TARGET_X86)
+#if defined(TARGET_OSX) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 76
-#elif defined(TARGET_DARWIN) && defined(TARGET_AMD64)
+#elif defined(TARGET_OSX) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 120
 #elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 12
@@ -392,9 +392,11 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #define DAC_CS_NATIVE_DATA_SIZE 56
 #elif defined(TARGET_NETBSD) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 56
+#elif defined(__sun) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 48
 #else
 #warning
-#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture
+#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture. This should be same value as PAL_CS_NATIVE_DATA_SIZE (aka sizeof(PAL_CS_NATIVE_DATA)).
 #endif
 
 struct T_CRITICAL_SECTION {

@@ -1,0 +1,32 @@
+/**
+ * \file
+ * 
+ * Private unstable APIs.
+ *
+ * WARNING: The declarations and behavior of functions in this header are NOT STABLE and can be modified or removed at
+ * any time.
+ *
+ */
+
+
+#ifndef __MONO_JIT_MONO_PRIVATE_UNSTABLE_H__
+#define __MONO_JIT_MONO_PRIVATE_UNSTABLE_H__
+
+#include <mono/utils/mono-publib.h>
+#include <mono/metadata/image.h>
+
+/* These are used to load the AOT data for aot images compiled with MONO_AOT_FILE_FLAG_SEPARATE_DATA */
+/*
+ * Return the AOT data for ASSEMBLY. SIZE is the size of the data. OUT_HANDLE should be set to a handle which is later
+ * passed to the free function.
+ */
+typedef unsigned char* (*MonoLoadAotDataFunc)          (MonoAssembly *assembly, int size, void* user_data, void **out_handle);
+/* Not yet used */
+typedef void  (*MonoFreeAotDataFunc)          (MonoAssembly *assembly, int size, void* user_data, void *handle);
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, void* user_data);
+
+MONO_API int
+monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
+
+#endif /*__MONO_JIT_MONO_PRIVATE_UNSTABLE_H__*/

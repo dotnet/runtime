@@ -6,6 +6,7 @@ parameters:
   framework: ''
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -34,15 +35,14 @@ jobs:
       displayName: 'Test Build'
 
       dependsOn:
-      - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
-        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      # Libraries Test also depends on Product, now that the libraries build only depends on corelib
+      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
-        - _skipTestRestoreArg: /p:SkipTestRestore=false
         
         - ${{ parameters.variables }}
 
@@ -54,15 +54,12 @@ jobs:
             artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
-        
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
 
         - script: $(_buildScript)
-                -buildtests
+                -subset libs.pretest+libs.tests
                 $(_buildArguments)
                 $(_archiveTestsParameter)
-          displayName: Build
+          displayName: Restore and Build
 
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:

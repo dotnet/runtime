@@ -111,7 +111,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out StringWithQualityHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out StringWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
             if (GenericHeaderParser.SingleValueStringWithQualityParser.TryParseValue(
                 input, null, ref index, out object? output))
             {
-                parsedValue = (StringWithQualityHeaderValue)output;
+                parsedValue = (StringWithQualityHeaderValue)output!;
                 return true;
             }
             return false;

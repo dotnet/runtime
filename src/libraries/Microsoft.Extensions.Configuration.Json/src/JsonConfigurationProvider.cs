@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Json
             }
             catch (JsonException e)
             {
-                throw new FormatException(Resources.Error_JSONParseError, e);
+                throw new FormatException(SR.Error_JSONParseError, e);
             }
         }
     }

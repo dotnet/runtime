@@ -762,12 +762,6 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 
-#ifdef HOST_64BIT
-const size_t INVALID_POINTER_VALUE = 0xFEEDFACEABADF00D;
-#else
-const size_t INVALID_POINTER_VALUE = 0xFEEDFACE;
-#endif
-
 // Constants for making sure size_t fit into smaller types.
 const size_t MAX_USHORT_SIZE_T   = static_cast<size_t>(static_cast<unsigned short>(-1));
 const size_t MAX_UNSIGNED_SIZE_T = static_cast<size_t>(static_cast<unsigned>(-1));

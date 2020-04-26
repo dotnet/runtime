@@ -274,7 +274,7 @@ public:
         SLink   *ret = SLink::FindAndRemove(m_pHead, GetLink(pObj), &prior);
 
         if (ret == m_pTail)
-            m_pTail = prior;
+            m_pTail = PTR_SLink(prior);
 
         return GetObject(ret);
     }

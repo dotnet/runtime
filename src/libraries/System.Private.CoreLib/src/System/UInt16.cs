@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,12 +69,12 @@ namespace System
         // Converts the current value to a String in base-10 with no extra padding.
         public override string ToString()
         {
-            return Number.UInt32ToDecStr(m_value, -1);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
@@ -135,7 +136,7 @@ namespace System
             return (ushort)i;
         }
 
-        public static bool TryParse(string? s, out ushort result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out ushort result)
         {
             if (s == null)
             {
@@ -151,7 +152,7 @@ namespace System
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 

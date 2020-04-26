@@ -34,7 +34,7 @@
     <Compile Include="mono\System.Drawing.Imaging\GifCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\IconCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\JpegCodecTests.cs" />
-    <Compile Include="mono\System.Drawing.Imaging\PngCodecTesst.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\PngCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\TiffCodecTests.cs" />
     <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
     <Compile Include="mono\System.Imaging\MetafileTest.cs" />
@@ -79,15 +79,12 @@
     <Compile Include="Printing\PaperSizeTests.cs" />
     <Compile Include="Printing\PaperSourceTests.cs" />
     <Compile Include="Printing\PrinterUnitConvertTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />    

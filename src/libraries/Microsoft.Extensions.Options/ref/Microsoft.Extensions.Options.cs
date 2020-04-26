@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -25,70 +28,70 @@ namespace Microsoft.Extensions.Options
     public partial class ConfigureNamedOptions<TOptions> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class
     {
         public ConfigureNamedOptions(string name, System.Action<TOptions> action) { }
-        public System.Action<TOptions> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions> Action { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureNamedOptions<TOptions, TDep> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep : class
     {
         public ConfigureNamedOptions(string name, TDep dependency, System.Action<TOptions, TDep> action) { }
-        public System.Action<TOptions, TDep> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep Dependency { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep> Action { get { throw null; } }
+        public TDep Dependency { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class
     {
         public ConfigureNamedOptions(string name, TDep1 dependency, TDep2 dependency2, System.Action<TOptions, TDep1, TDep2> action) { }
-        public System.Action<TOptions, TDep1, TDep2> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class
     {
         public ConfigureNamedOptions(string name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, System.Action<TOptions, TDep1, TDep2, TDep3> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class
     {
         public ConfigureNamedOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class where TDep5 : class
     {
         public ConfigureNamedOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep5 Dependency5 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public TDep5 Dependency5 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void Configure(string name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
     public partial class ConfigureOptions<TOptions> : Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class
     {
         public ConfigureOptions(System.Action<TOptions> action) { }
-        public System.Action<TOptions> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions> Action { get { throw null; } }
         public virtual void Configure(TOptions options) { }
     }
     public partial interface IConfigureNamedOptions<in TOptions> : Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class
@@ -145,8 +148,8 @@ namespace Microsoft.Extensions.Options
     public partial class OptionsBuilder<TOptions> where TOptions : class
     {
         public OptionsBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name) { }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string Name { get { throw null; } }
+        public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get { throw null; } }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Configure(System.Action<TOptions> configureOptions) { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Configure<TDep>(System.Action<TOptions, TDep> configureOptions) where TDep : class { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Configure<TDep1, TDep2>(System.Action<TOptions, TDep1, TDep2> configureOptions) where TDep1 : class where TDep2 : class { throw null; }
@@ -208,75 +211,75 @@ namespace Microsoft.Extensions.Options
     public partial class OptionsValidationException : System.Exception
     {
         public OptionsValidationException(string optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string> failureMessages) { }
-        public System.Collections.Generic.IEnumerable<string> Failures { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.IEnumerable<string> Failures { get { throw null; } }
         public override string Message { get { throw null; } }
-        public string OptionsName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Type OptionsType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string OptionsName { get { throw null; } }
+        public System.Type OptionsType { get { throw null; } }
     }
     public partial class OptionsWrapper<TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
-        public TOptions Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TOptions Value { get { throw null; } }
     }
     public partial class PostConfigureOptions<TOptions> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class
     {
         public PostConfigureOptions(string name, System.Action<TOptions> action) { }
-        public System.Action<TOptions> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions> Action { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
     }
     public partial class PostConfigureOptions<TOptions, TDep> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep : class
     {
         public PostConfigureOptions(string name, TDep dependency, System.Action<TOptions, TDep> action) { }
-        public System.Action<TOptions, TDep> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep Dependency { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep> Action { get { throw null; } }
+        public TDep Dependency { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
     public partial class PostConfigureOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class
     {
         public PostConfigureOptions(string name, TDep1 dependency, TDep2 dependency2, System.Action<TOptions, TDep1, TDep2> action) { }
-        public System.Action<TOptions, TDep1, TDep2> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
     public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class
     {
         public PostConfigureOptions(string name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, System.Action<TOptions, TDep1, TDep2, TDep3> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
     public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class
     {
         public PostConfigureOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
     public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class where TDep5 : class
     {
         public PostConfigureOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> action) { }
-        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep5 Dependency5 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public TDep5 Dependency5 { get { throw null; } }
+        public string Name { get { throw null; } }
         public virtual void PostConfigure(string name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
@@ -285,75 +288,75 @@ namespace Microsoft.Extensions.Options
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Skip;
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Success;
         public ValidateOptionsResult() { }
-        public bool Failed { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] protected set { } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] protected set { } }
-        public System.Collections.Generic.IEnumerable<string> Failures { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] protected set { } }
-        public bool Skipped { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] protected set { } }
-        public bool Succeeded { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] protected set { } }
+        public bool Failed { get { throw null; } protected set { } }
+        public string FailureMessage { get { throw null; } protected set { } }
+        public System.Collections.Generic.IEnumerable<string> Failures { get { throw null; } protected set { } }
+        public bool Skipped { get { throw null; } protected set { } }
+        public bool Succeeded { get { throw null; } protected set { } }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string failureMessage) { throw null; }
     }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, System.Func<TOptions, bool> validation, string failureMessage) { }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, TDep dependency, System.Func<TOptions, TDep, bool> validation, string failureMessage) { }
-        public TDep Dependency { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, TDep, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TDep Dependency { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, TDep, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, TDep1 dependency1, TDep2 dependency2, System.Func<TOptions, TDep1, TDep2, bool> validation, string failureMessage) { }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, TDep1, TDep2, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, TDep1, TDep2, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, System.Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string failureMessage) { }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, TDep1, TDep2, TDep3, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, TDep1, TDep2, TDep3, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string failureMessage) { }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string failureMessage) { }
-        public TDep1 Dependency1 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep2 Dependency2 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep3 Dependency3 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep4 Dependency4 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public TDep5 Dependency5 { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string FailureMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> Validation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public TDep1 Dependency1 { get { throw null; } }
+        public TDep2 Dependency2 { get { throw null; } }
+        public TDep3 Dependency3 { get { throw null; } }
+        public TDep4 Dependency4 { get { throw null; } }
+        public TDep5 Dependency5 { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string name, TOptions options) { throw null; }
     }
 }

@@ -97,14 +97,14 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out RetryConditionHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out RetryConditionHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
 
             if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RetryConditionHeaderValue)output;
+                parsedValue = (RetryConditionHeaderValue)output!;
                 return true;
             }
             return false;
@@ -158,7 +158,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(current), out date))
+                if (!HttpDateParser.TryParse(input.AsSpan(current), out date))
                 {
                     return 0;
                 }

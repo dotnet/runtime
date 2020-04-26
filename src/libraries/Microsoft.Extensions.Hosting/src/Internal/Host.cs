@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Stopped();
         }
 
-        public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
+        public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
 
         public async ValueTask DisposeAsync()
         {

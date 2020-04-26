@@ -16,14 +16,14 @@ namespace System.Net.Mail
         {
         }
 
-        public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
+        public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
                 {
-                    NTAuthentication clientContext;
+                    NTAuthentication? clientContext;
                     if (!_sessions.TryGetValue(sessionCookie, out clientContext))
                     {
                         if (credential == null)
@@ -37,8 +37,8 @@ namespace System.Net.Mail
                                                  ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBindingToken);
                     }
 
-                    byte[] byteResp;
-                    string resp = null;
+                    byte[]? byteResp;
+                    string? resp = null;
 
                     if (!clientContext.IsCompleted)
                     {
@@ -46,7 +46,7 @@ namespace System.Net.Mail
                         // If auth is not yet completed keep producing
                         // challenge responses with GetOutgoingBlob
 
-                        byte[] decodedChallenge = null;
+                        byte[]? decodedChallenge = null;
                         if (challenge != null)
                         {
                             decodedChallenge =
@@ -96,7 +96,7 @@ namespace System.Net.Mail
 
         public void CloseContext(object sessionCookie)
         {
-            NTAuthentication clientContext = null;
+            NTAuthentication? clientContext = null;
             lock (_sessions)
             {
                 if (_sessions.TryGetValue(sessionCookie, out clientContext))
@@ -115,7 +115,7 @@ namespace System.Net.Mail
         //
         // Returns null for failure, Base64 encoded string on
         // success.
-        private string GetSecurityLayerOutgoingBlob(string challenge, NTAuthentication clientContext)
+        private string? GetSecurityLayerOutgoingBlob(string? challenge, NTAuthentication clientContext)
         {
             // must have a security layer challenge
 
@@ -182,7 +182,7 @@ namespace System.Net.Mail
             // "authorization identity" is not supplied as it is unnecessary.
 
             // let MakeSignature figure out length of output
-            byte[] output = null;
+            byte[]? output = null;
             try
             {
                 len = clientContext.MakeSignature(input, 0, 4, ref output);

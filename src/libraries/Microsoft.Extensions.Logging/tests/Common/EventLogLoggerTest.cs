@@ -6,18 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.EventLog;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging
 {
-    [OSSkipCondition(OperatingSystems.Linux)]
-    [OSSkipCondition(OperatingSystems.MacOSX)]
     public class EventLogLoggerTest
     {
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void IsEnabledReturnsCorrectValue()
         {
             // Arrange
@@ -37,7 +35,8 @@ namespace Microsoft.Extensions.Logging
             Assert.False(logger.IsEnabled(LogLevel.Trace));
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void CallingBeginScopeOnLogger_ReturnsNonNullableInstance()
         {
             // Arrange
@@ -50,7 +49,8 @@ namespace Microsoft.Extensions.Logging
             Assert.NotNull(disposable);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsEventLog_Constructor_CreatesWithExpectedInformation()
         {
             // Arrange
@@ -68,7 +68,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(sourceName, windowsEventLog.DiagnosticsEventLog.Source);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Constructor_CreatesWindowsEventLog_WithExpectedInformation()
         {
             // Arrange & Act
@@ -81,7 +82,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(".", windowsEventLog.DiagnosticsEventLog.MachineName);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Constructor_CreatesWindowsEventLog_WithSuppliedEventLogSettings()
         {
             // Arrange
@@ -104,6 +106,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void IOptions_CreatesWindowsEventLog_WithSuppliedEventLogSettings()
         {
             var serviceCollection = new ServiceCollection();
@@ -124,7 +127,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal("blah", settings.MachineName);
         }
 
-        [ConditionalTheory]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(50)]
         [InlineData(49)]
         [InlineData(36)]
@@ -149,8 +153,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(expectedMessage, testEventLog.Messages[0]);
         }
 
-
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Message_WritesFullMessageWithScopes()
         {
             // Arrange
@@ -187,7 +191,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(expectedMessage, testEventLog.Messages[0]);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void MessageWrittenToEventLogContainsEventId()
         {
             // Arrange
@@ -208,7 +213,8 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(1, testEventLog.Entries[0].EventId);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void EventIdWrittenToEventLogUsesDefaultIfSpecified()
         {
             // Arrange
@@ -232,13 +238,15 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(1034, testEventLog.Entries[0].EventId);
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void NullCategoryNameThrows()
         {
             Assert.Throws<ArgumentNullException>(() => new EventLogLogger(null, new EventLogSettings() { }, new LoggerExternalScopeProvider()));
         }
 
-        [ConditionalFact]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void NullEventSettingsThrows()
         {
             Assert.Throws<ArgumentNullException>(() => new EventLogLogger("Something", settings: null, new LoggerExternalScopeProvider()));
@@ -289,7 +297,8 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [MemberData(nameof(WritesSplitMessagesData))]
         public void MessageExceedingMaxSize_WritesSplitMessages(int messageSize, string[] expectedMessages)
         {

@@ -1211,9 +1211,7 @@ internal class Program
         RunTest("ChkCast", ChkCast());
         RunTest("ChkCastValueType", ChkCastValueType());
         RunTest("BoxUnbox", BoxUnbox());
-        // TODO: enabling this test requires fixes to IsManagedSequential I'm going to send out
-        // in a subsequent PR together with removal of this temporary clause [trylek]
-        // RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
+        RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
         RunTest("CastClassWithCharTest", CastClassWithCharTest());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());

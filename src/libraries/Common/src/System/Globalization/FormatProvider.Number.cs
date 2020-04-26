@@ -607,7 +607,8 @@ namespace System.Globalization
                 "($#)", "-$#", "$-#", "$#-",
                 "(#$)", "-#$", "#-$", "#$-",
                 "-# $", "-$ #", "# $-", "$ #-",
-                "$ -#", "#- $", "($ #)", "(# $)"
+                "$ -#", "#- $", "($ #)", "(# $)",
+                "$- #"
             };
 
             private static readonly string[] s_posPercentFormats =

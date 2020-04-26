@@ -22,7 +22,7 @@ namespace System.Net
         // even though validators may exist, we should not initialize this initially since by default it is empty
         // and it may never be populated with values if the user does not set them
         private readonly Dictionary<string, ValidateAndParseValue> _validators;
-        private Dictionary<string, object> _internalObjects = null;
+        private Dictionary<string, object>? _internalObjects = null;
 
         #endregion
 
@@ -41,7 +41,7 @@ namespace System.Net
 
         // precondition:  key must not be null
         // addValue determines if we are doing a set (false) or an add (true)
-        private void PersistValue(string key, string value, bool addValue)
+        private void PersistValue(string key, string? value, bool addValue)
         {
             Debug.Assert(key != null, "key was null");
 
@@ -56,7 +56,7 @@ namespace System.Net
             // in addition, a key with an empty value is not valid so we do not persist those either
             if (!string.IsNullOrEmpty(value))
             {
-                ValidateAndParseValue foundEntry;
+                ValidateAndParseValue? foundEntry;
                 if (_validators != null && _validators.TryGetValue(key, out foundEntry))
                 {
                     // run the validator for this key; it will throw if the value is invalid
@@ -116,10 +116,10 @@ namespace System.Net
 
         // public interface only allows strings so this provides a means
         // to get the objects when they are not strings
-        internal object InternalGet(string key)
+        internal object? InternalGet(string key)
         {
             // internalObjects will throw if the key is not found so we must check it
-            object foundObject;
+            object? foundObject;
             if (_internalObjects != null && _internalObjects.TryGetValue(key, out foundObject))
             {
                 return foundObject;
@@ -152,7 +152,7 @@ namespace System.Net
 
         #region Public Fields
 
-        public override string this[string key]
+        public override string? this[string key]
         {
             get
             {
@@ -170,7 +170,7 @@ namespace System.Net
 
         #region Public Methods
 
-        public override void Add(string key, string value)
+        public override void Add(string key, string? value)
         {
             PersistValue(key, value, true);
         }

@@ -364,6 +364,7 @@ set(VM_SOURCES_WKS
     interoputil.cpp
     interpreter.cpp
     invokeutil.cpp
+    ipcstreamfactory.cpp
     jithelpers.cpp
     managedmdimport.cpp
     marshalnative.cpp
@@ -474,7 +475,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    hosting.h
     ibclogger.h
     ilmarshalers.h
     interopconverter.h
@@ -483,6 +483,7 @@ set(VM_HEADERS_WKS
     interpreter.h
     interpreter.hpp
     invokeutil.h
+    ipcstreamfactory.h
     managedmdimport.hpp
     marshalnative.h
     methodtablebuilder.h

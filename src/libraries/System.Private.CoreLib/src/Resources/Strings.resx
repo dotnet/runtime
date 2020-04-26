@@ -523,6 +523,9 @@
   <data name="Arg_MustBeInt64" xml:space="preserve">
     <value>Object must be of type Int64.</value>
   </data>
+  <data name="Arg_MustBeIntPtr" xml:space="preserve">
+    <value>Object must be of type IntPtr.</value>
+  </data>
   <data name="Arg_MustBeInterface" xml:space="preserve">
     <value>Type passed must be an interface.</value>
   </data>
@@ -561,6 +564,9 @@
   </data>
   <data name="Arg_MustBeUInt64" xml:space="preserve">
     <value>Object must be of type UInt64.</value>
+  </data>
+  <data name="Arg_MustBeUIntPtr" xml:space="preserve">
+    <value>Object must be of type UIntPtr.</value>
   </data>
   <data name="Arg_MustBeVersion" xml:space="preserve">
     <value>Object must be of type Version.</value>
@@ -2188,8 +2194,8 @@
   <data name="Format_AttributeUsage" xml:space="preserve">
     <value>Duplicate AttributeUsageAttribute found on attribute type {0}.</value>
   </data>
-  <data name="Format_Bad7BitInt32" xml:space="preserve">
-    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  <data name="Format_Bad7BitInt" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7-bit encoded integer.</value>
   </data>
   <data name="Format_BadBase" xml:space="preserve">
     <value>Invalid digits for the specified base.</value>
@@ -2402,7 +2408,7 @@
     <value>ILGenerator usage is invalid.</value>
   </data>
   <data name="InvalidOperation_BadInstructionOrIndexOutOfBound" xml:space="preserve">
-    <value>MSIL instruction is invalid or index is out of bounds.</value>
+    <value>Opcodes using a short-form index cannot address a local position over 255.</value>
   </data>
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
@@ -2927,7 +2933,7 @@
     <value>Cannot resolve {0} to a TypeInfo object.</value>
   </data>
   <data name="NotSupported_NYI" xml:space="preserve">
-    <value>This feature is not currently implemented.</value>
+    <value>This feature is not implemented.</value>
   </data>
   <data name="NotSupported_ObsoleteResourcesFile" xml:space="preserve">
     <value>Found an obsolete .resources file in assembly '{0}'. Rebuild that .resources file then rebuild that assembly.</value>

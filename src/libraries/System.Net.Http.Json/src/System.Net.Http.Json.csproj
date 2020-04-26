@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
+    <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
+    <Compile Include="System\Net\Http\Json\JsonContent.cs" />
+    <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
+    <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
+    <Reference Include="System.Net.Mail" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
+    <Reference Include="System.Buffers" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Text.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+</Project>

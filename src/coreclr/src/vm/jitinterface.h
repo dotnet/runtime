@@ -930,6 +930,9 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+                                   bool supportEnabled);
+
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
                                CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
@@ -1034,9 +1037,6 @@ public:
     int doAssert(const char* szFile, int iLine, const char* szExpr);
 
     void reportFatalError(CorJitResult result);
-
-    void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts,
-                            CORINFO_METHOD_HANDLE methodHnd);
 
     HRESULT allocMethodBlockCounts (
             UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
@@ -1601,14 +1601,6 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-//These should only be called from ThreadStore::TrapReturningThreads!
-
-//Called when the VM wants to suspend one or more threads.
-void    EnableJitGCPoll();
-//Called when there are no threads to suspend.
-void    DisableJitGCPoll();
-#endif
 
 // Helper for RtlVirtualUnwind-based tail calls
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
@@ -1641,9 +1633,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
-#ifdef ENABLE_FAST_GCPOLL_HELPER
-EXTERN_C FCDECL0(VOID, JIT_PollGC_Nop);
-#endif
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);

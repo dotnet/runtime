@@ -47,22 +47,22 @@
     <MONO_LLVM_DEFAULT_API_VERSION>610</MONO_LLVM_DEFAULT_API_VERSION>
     <MONO_LLVM_DEFAULT_INCLUDE_DIR>$(MONO_DIR)/external/llvm-project/llvm/include</MONO_LLVM_DEFAULT_INCLUDE_DIR>
   </PropertyGroup>
-  <PropertyGroup Label="Static-C-Runtime" Condition="$(MONO_USE_STATIC_C_RUNTIME)=='true'">
+  <PropertyGroup Label="Static-C-Runtime" Condition="'$(MONO_USE_STATIC_C_RUNTIME)'=='true'">
     <MONO_C_RUNTIME Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</MONO_C_RUNTIME>
     <MONO_C_RUNTIME Condition="'$(Configuration)'!='Debug'">MultiThreaded</MONO_C_RUNTIME>
   </PropertyGroup>
-  <PropertyGroup Label="Dynamic-C-Runtime" Condition="$(MONO_USE_STATIC_C_RUNTIME)!='true'">
+  <PropertyGroup Label="Dynamic-C-Runtime" Condition="'$(MONO_USE_STATIC_C_RUNTIME)'!='true'">
     <MONO_C_RUNTIME Condition="'$(Configuration)'=='Debug'">MultiThreadedDebugDLL</MONO_C_RUNTIME>
     <MONO_C_RUNTIME Condition="'$(Configuration)'!='Debug'">MultiThreadedDLL</MONO_C_RUNTIME>
   </PropertyGroup>
-  <PropertyGroup Label="MonoSGEN" Condition="$(MONO_TARGET_GC)=='sgen' Or $(MONO_TARGET_GC)!='boehm'">
+  <PropertyGroup Label="MonoSGEN" Condition="'$(MONO_TARGET_GC)'=='sgen' Or '$(MONO_TARGET_GC)'!='boehm'">
     <SGEN_DEFINES>HAVE_SGEN_GC;HAVE_MOVING_COLLECTOR;HAVE_WRITE_BARRIERS;HAVE_CONC_GC_AS_DEFAULT</SGEN_DEFINES>
     <GC_DEFINES>$(SGEN_DEFINES)</GC_DEFINES>
     <GC_LIB>libgcmonosgen.lib</GC_LIB>
     <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-sgen</MONO_TARGET_SUFFIX>
     <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'">$(MONO_BUILD_DIR_PREFIX)sgen/</MONO_BUILD_DIR_PREFIX>
   </PropertyGroup>
-  <PropertyGroup Label="MonoBOEHM" Condition="$(MONO_TARGET_GC)=='boehm'">
+  <PropertyGroup Label="MonoBOEHM" Condition="'$(MONO_TARGET_GC)'=='boehm'">
     <BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
     <GC_DEFINES>$(BOEHM_DEFINES)</GC_DEFINES>
     <GC_LIB>libgc.lib</GC_LIB>
@@ -74,10 +74,10 @@
     <MONO_STATIC_LIBMONO_LIB>libmono-static$(MONO_TARGET_SUFFIX).lib</MONO_STATIC_LIBMONO_LIB>
     <MONO_DYNAMIC_LIBMONO_LIB>mono-2.0$(MONO_TARGET_SUFFIX).lib</MONO_DYNAMIC_LIBMONO_LIB>
   </PropertyGroup>
-  <PropertyGroup Label="Static-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)=='true'">
+  <PropertyGroup Label="Static-libmono-Library" Condition="'$(MONO_USE_STATIC_LIBMONO)'=='true'">
     <MONO_LIBMONO_LIB>$(MONO_STATIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
   </PropertyGroup>
-  <PropertyGroup Label="Dynamic-libmono-Library" Condition="$(MONO_USE_STATIC_LIBMONO)!='true'">
+  <PropertyGroup Label="Dynamic-libmono-Library" Condition="'$(MONO_USE_STATIC_LIBMONO)'!='true'">
     <MONO_LIBMONO_LIB>eglib.lib;$(MONO_DYNAMIC_LIBMONO_LIB)</MONO_LIBMONO_LIB>
   </PropertyGroup>
   <PropertyGroup Label="MonoProfiler">
@@ -136,6 +136,8 @@
     <Link>
       <AdditionalDependencies>bcrypt.lib;Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)/lib/$(Configuration)</AdditionalLibraryDirectories>
+      <!-- Matching CoreCLR Release build configuration, https://github.com/dotnet/runtime/blob/ef718368e970fe05b2f0e121a066aef56fed6bad/src/coreclr/configurecompiler.cmake#L487 -->
+      <AdditionalOptions Condition="'$(MONO_ENABLE_NETCORE)'=='true' and '$(MONO_USE_STATIC_C_RUNTIME)'=='true' and '$(Configuration)'=='Release'">/NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)/lib/$(Configuration)</AdditionalLibraryDirectories>

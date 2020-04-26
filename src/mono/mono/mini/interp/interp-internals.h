@@ -19,8 +19,7 @@
 #define MINT_TYPE_R4 6
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
-#define MINT_TYPE_P  9
-#define MINT_TYPE_VT 10
+#define MINT_TYPE_VT 9
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
@@ -43,9 +42,11 @@ enum {
 #if SIZEOF_VOID_P == 4
 typedef guint32 mono_u;
 typedef gint32  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I4
 #elif SIZEOF_VOID_P == 8
 typedef guint64 mono_u;
 typedef gint64  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I8
 #endif
 
 
@@ -245,6 +246,7 @@ typedef struct {
 	gint32 movlocs;
 	gint32 copy_propagations;
 	gint32 constant_folds;
+	gint32 ldlocas_removed;
 	gint32 killed_instructions;
 	gint32 emitted_instructions;
 	gint32 super_instructions;
@@ -279,7 +281,7 @@ mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref)
-		return MINT_TYPE_P;
+		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -297,13 +299,8 @@ enum_type:
 		return MINT_TYPE_I4;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-		return MINT_TYPE_I4;
-#else
-		return MINT_TYPE_I8;
-#endif
 	case MONO_TYPE_PTR:
-		return MINT_TYPE_P;
+		return MINT_TYPE_I;
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;
 	case MONO_TYPE_I8:

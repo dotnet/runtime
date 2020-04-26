@@ -515,6 +515,8 @@ public:
     unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
                                               // eh)
 
+    unsigned char lvSuppressedZeroInit : 1; // local needs zero init if we transform tail call to loop
+
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -1128,6 +1130,13 @@ enum class PhaseChecks
 {
     CHECK_NONE,
     CHECK_ALL
+};
+
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,
+    MODIFIED_EVERYTHING
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
@@ -2845,9 +2854,7 @@ public:
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
-    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree*  array,
-                                                   unsigned* runtimeLookupCount = nullptr,
-                                                   GenTree** handleTree         = nullptr);
+    CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array, GenTree** handleTree = nullptr);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
@@ -2890,7 +2897,9 @@ public:
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
     int gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining);
     char* gtGetLclVarName(unsigned lclNum);
-    void gtDispLclVar(unsigned varNum, bool padForBiggestDisp = true);
+    void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
+    void gtDispLclVarStructType(unsigned lclNum);
+    void gtDispClassLayout(ClassLayout* layout, var_types type);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength);
@@ -3118,7 +3127,7 @@ public:
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    unsigned lvaGenericsContextUseCount;
+    bool lvaGenericsContextInUse;
 
     bool lvaKeepAliveAndReportThis(); // Synchronized instance method of a reference type, or
                                       // CORINFO_GENERICS_CTXT_FROM_THIS?
@@ -3672,7 +3681,7 @@ protected:
                                        bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -3681,7 +3690,7 @@ protected:
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
-    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand);
+    GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand, int immUpperBound);
 
 #ifdef TARGET_XARCH
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
@@ -4357,31 +4366,35 @@ public:
 
     void fgInit();
 
-    void fgImport();
+    PhaseStatus fgImport();
 
-    void fgTransformIndirectCalls();
+    PhaseStatus fgTransformIndirectCalls();
 
-    void fgTransformPatchpoints();
+    PhaseStatus fgTransformPatchpoints();
 
-    void fgInline();
+    PhaseStatus fgInline();
 
-    void fgRemoveEmptyTry();
+    PhaseStatus fgRemoveEmptyTry();
 
-    void fgRemoveEmptyFinally();
+    PhaseStatus fgRemoveEmptyFinally();
 
-    void fgMergeFinallyChains();
+    PhaseStatus fgMergeFinallyChains();
 
-    void fgCloneFinally();
+    PhaseStatus fgCloneFinally();
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
-    void fgUpdateFinallyTargetFlags();
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgUpdateFinallyTargetFlags();
 
     void fgClearAllFinallyTargetBits();
 
     void fgAddFinallyTargetFlags();
 
-    void fgTailMergeThrows();
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
                                             BasicBlock* canonicalBlock,
@@ -4426,6 +4439,8 @@ public:
 
     void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
     void fgMorphBlocks();
+
+    void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
@@ -5738,8 +5753,13 @@ private:
     // static) written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopNestSideEffects(unsigned lnum);
 
+    // Given a loop number 'lnum' mark it and any nested loops as having 'memoryHavoc'
+    void optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc);
+
     // Add the side effects of "blk" (which is required to be within a loop) to all loops of which it is a part.
-    void optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
+    // Returns false if we encounter a block that is not marked as being inside a loop.
+    //
+    bool optComputeLoopSideEffectsOfBlock(BasicBlock* blk);
 
     // Hoist the expression "expr" out of loop "lnum".
     void optPerformHoistExpr(GenTree* expr, unsigned lnum);
@@ -6039,6 +6059,7 @@ protected:
     bool optLoopContains(unsigned l1, unsigned l2);
 
     // Requires "loopInd" to be a valid index into the loop table.
+
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
     // loop nested in "loopInd" that shares the same head as "loopInd".
@@ -6060,6 +6081,9 @@ protected:
     // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
     // of "from".)  Copies the jump destination from "from" to "to".
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
+
+    // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+    bool optIsLoopEntry(BasicBlock* block);
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
     unsigned optLoopDepth(unsigned lnum)
@@ -7633,12 +7657,12 @@ private:
     SIMDLevel getSIMDSupportLevel()
     {
 #if defined(TARGET_XARCH)
-        if (compSupports(InstructionSet_AVX2))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
         }
 
-        if (compSupports(InstructionSet_SSE42))
+        if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             return SIMD_SSE4_Supported;
         }
@@ -7784,7 +7808,7 @@ private:
                     unreached();
             }
         }
-        assert(emitTypeSize(simdType) <= maxSIMDStructBytes());
+        assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
         switch (simdBaseType)
         {
             case TYP_FLOAT:
@@ -8030,13 +8054,6 @@ private:
     // Whether SIMD vector occupies part of SIMD register.
     // SSE2: vector2f/3f are considered sub register SIMD types.
     // AVX: vector2f, 3f and 4f are all considered sub register SIMD types.
-    bool isSubRegisterSIMDType(CORINFO_CLASS_HANDLE typeHnd)
-    {
-        unsigned  sizeBytes = 0;
-        var_types baseType  = getBaseTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
-        return (baseType == TYP_FLOAT) && (sizeBytes < getSIMDVectorRegisterByteLength());
-    }
-
     bool isSubRegisterSIMDType(GenTreeSIMD* simdNode)
     {
         return (simdNode->gtSIMDSize < getSIMDVectorRegisterByteLength());
@@ -8053,6 +8070,8 @@ private:
         }
         else
         {
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
@@ -8093,6 +8112,9 @@ private:
         else
         {
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8113,7 +8135,7 @@ private:
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compSupports(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
             return YMM_REGSIZE_BYTES;
         }
@@ -8126,6 +8148,7 @@ private:
         return getSIMDVectorRegisterByteLength();
 #endif
     }
+
     unsigned int minSIMDStructBytes()
     {
         return emitTypeSize(TYP_SIMD8);
@@ -8185,12 +8208,38 @@ public:
     unsigned largestEnregisterableStructSize()
     {
 #ifdef FEATURE_SIMD
-        unsigned vectorRegSize = getSIMDVectorRegisterByteLength();
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        if (opts.IsReadyToRun())
+        {
+            // Return constant instead of maxSIMDStructBytes, as maxSIMDStructBytes performs
+            // checks that are effected by the current level of instruction set support would
+            // otherwise cause the highest level of instruction set support to be reported to crossgen2.
+            // and this api is only ever used as an optimization or assert, so no reporting should
+            // ever happen.
+            return YMM_REGSIZE_BYTES;
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        unsigned vectorRegSize = maxSIMDStructBytes();
         assert(vectorRegSize >= TARGET_POINTER_SIZE);
         return vectorRegSize;
 #else  // !FEATURE_SIMD
         return TARGET_POINTER_SIZE;
 #endif // !FEATURE_SIMD
+    }
+
+    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
+    // structs will fit the criteria.
+    bool structSizeMightRepresentSIMDType(size_t structSize)
+    {
+#ifdef FEATURE_SIMD
+        // Do not use maxSIMDStructBytes as that api in R2R on X86 and X64 may notify the JIT
+        // about the size of a struct under the assumption that the struct size needs to be recorded.
+        // By using largestEnregisterableStructSize here, the detail of whether or not Vector256<T> is
+        // enregistered or not will not be messaged to the R2R compiler.
+        return (structSize >= minSIMDStructBytes()) && (structSize <= largestEnregisterableStructSize());
+#else
+        return false;
+#endif // FEATURE_SIMD
     }
 
 #ifdef FEATURE_SIMD
@@ -8270,7 +8319,12 @@ private:
         return false;
     }
 
-    bool compSupports(InstructionSet isa) const
+#ifdef DEBUG
+    // Answer the question: Is a particular ISA supported?
+    // Use this api when asking the question so that future
+    // ISA questions can be asked correctly or when asserting
+    // support/nonsupport for an instruction set
+    bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8278,11 +8332,61 @@ private:
         return false;
 #endif
     }
+#endif // DEBUG
+
+    void notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+
+    // Answer the question: Is a particular ISA supported?
+    // The result of this api call will exactly match the target machine
+    // on which the function is executed (except for CoreLib, where there are special rules)
+    bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
+    {
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        uint64_t isaBit       = (1ULL << isa);
+        bool     isaSupported = (opts.compSupportsISA & (1ULL << isa)) != 0;
+        if ((opts.compSupportsISAReported & isaBit) == 0)
+        {
+            notifyInstructionSetUsage(isa, isaSupported);
+            ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
+        }
+
+        return isaSupported;
+#else
+        return false;
+#endif
+    }
+
+    // Ensure that code will not execute if an instruction set is useable. Call only
+    // if the instruction set has previously reported as unuseable, but when
+    // that that status has not yet been recorded to the AOT compiler
+    void compVerifyInstructionSetUnuseable(CORINFO_InstructionSet isa)
+    {
+        // use compExactlyDependsOn to capture are record the use of the isa
+        bool isaUseable = compExactlyDependsOn(isa);
+        // Assert that the is unuseable. If true, this function should never be called.
+        assert(!isaUseable);
+    }
+
+    // Answer the question: Is a particular ISA supported?
+    // The result of this api call will match the target machine if the result is true
+    // If the result is false, then the target machine may have support for the instruction
+    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
+    {
+        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        {
+            return compExactlyDependsOn(isa);
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     bool canUseVexEncoding() const
     {
 #ifdef TARGET_XARCH
-        return compSupports(InstructionSet_AVX);
+        return compOpportunisticallyDependsOn(InstructionSet_AVX);
 #else
         return false;
 #endif
@@ -8320,6 +8424,7 @@ public:
     bool compHasBackwardJump;      // Does the method (or some inlinee) have a lexically backwards jump?
     bool compSwitchedToOptimized;  // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts;    // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    bool compSuppressedZeroInit;   // There are vars with lvSuppressedZeroInit set
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
@@ -8377,13 +8482,12 @@ public:
     {
         JitFlags* jitFlags; // all flags passed from the EE
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-        void setSupportedISA(InstructionSet isa)
+        uint64_t compSupportsISAReported;
+        void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-            compSupportsISA |= 1ULL << isa;
+            compSupportsISA = isas.GetFlagsRaw();
         }
-#endif
 
         unsigned compFlags; // method attributes
         unsigned instrCount;
@@ -9538,14 +9642,14 @@ public:
 private:
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
                                                   // in the current compilation.
     unsigned __int64 m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#endif                                    // defined(DEBUG) || defined(INLINE_DATA)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
@@ -9553,11 +9657,6 @@ private:
     void RecordStateAtEndOfInlining();
     // Assumes being called at the end of compilation.  Update the SQM state.
     void RecordStateAtEndOfCompilation();
-
-#ifdef FEATURE_CLRSQM
-    // Does anything SQM related necessary at process shutdown time.
-    static void ProcessShutdownSQMWork(ICorStaticInfo* statInfo);
-#endif // FEATURE_CLRSQM
 
 public:
 #if FUNC_INFO_LOGGING

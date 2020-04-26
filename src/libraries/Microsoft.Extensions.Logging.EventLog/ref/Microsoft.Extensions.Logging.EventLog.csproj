@@ -4,7 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.EventLog.cs" />
-    <Reference Include="Microsoft.Extensions.Logging"  />
-    <Reference Include="System.Diagnostics.EventLog"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 </Project>

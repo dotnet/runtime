@@ -44,9 +44,7 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result)
-        {
-            return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
-        }
+        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }
 }

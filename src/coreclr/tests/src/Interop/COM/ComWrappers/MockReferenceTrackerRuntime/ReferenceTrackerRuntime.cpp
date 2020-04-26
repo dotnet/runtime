@@ -6,6 +6,7 @@
 #include <ComHelpers.h>
 #include <unordered_map>
 #include <list>
+#include <inspectable.h>
 
 namespace API
 {
@@ -336,4 +337,42 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReleaseAllTrackerObjects()
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTrackingOnThread()
 {
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)
+{
+    if (obj == nullptr)
+        return E_POINTER;
+
+    HRESULT hr;
+    ComSmartPtr<ITest> testObj;
+    RETURN_IF_FAILED(obj->QueryInterface(&testObj))
+    RETURN_IF_FAILED(testObj->SetValue(i));
+
+    *out = testObj.Detach();
+    return S_OK;
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIDispatch(IDispatch *obj, int i, IDispatch **out)
+{
+    if (obj == nullptr)
+        return E_POINTER;
+
+    return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIInspectable(IInspectable * obj, int i, IInspectable **out)
+{
+    if (obj == nullptr)
+        return E_POINTER;
+
+    return UpdateTestObjectAsIUnknown(obj, i, (IUnknown **)out);
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsInterface(ITest *obj, int i, ITest **out)
+{
+    if (obj == nullptr)
+        return E_POINTER;
+
+    return UpdateTestObjectAsIUnknown(obj, i, (IUnknown**)out);
 }

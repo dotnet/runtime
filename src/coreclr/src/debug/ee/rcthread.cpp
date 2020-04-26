@@ -17,7 +17,6 @@
 #include "securitywrapper.h"
 #endif
 #include <aclapi.h>
-#include <hosting.h>
 
 #include "eemessagebox.h"
 
@@ -242,8 +241,8 @@ HRESULT DebuggerIPCControlBlock::Init(
     memset( this, 0, sizeof( DebuggerIPCControlBlock) );
 
     // Setup version checking info.
-    m_verMajor = CLR_BUILD_VERSION;
-    m_verMinor = CLR_BUILD_VERSION_QFE;
+    m_verMajor = RuntimeFileBuildVersion;
+    m_verMinor = RuntimeFileRevisionVersion;
 
 #ifdef _DEBUG
     m_checkedBuild = true;

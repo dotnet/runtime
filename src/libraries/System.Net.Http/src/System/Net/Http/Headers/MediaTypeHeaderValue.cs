@@ -55,17 +55,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         [DisallowNull]
         public string? MediaType
@@ -137,14 +127,14 @@ namespace System.Net.Http.Headers
             return (MediaTypeHeaderValue)MediaTypeHeaderParser.SingleValueParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out MediaTypeHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out MediaTypeHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
 
             if (MediaTypeHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (MediaTypeHeaderValue)output;
+                parsedValue = (MediaTypeHeaderValue)output!;
                 return true;
             }
             return false;

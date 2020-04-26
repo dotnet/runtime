@@ -31,7 +31,7 @@ namespace System.Net
         ///       class with the specified message.
         ///    </para>
         /// </devdoc>
-        public ProtocolViolationException(string message) : base(message)
+        public ProtocolViolationException(string? message) : base(message)
         {
         }
 

@@ -3,10 +3,10 @@
 [![Build Status](https://dnceng.visualstudio.com/public/_apis/build/status/dotnet/runtime/runtime?branchName=master)](https://dnceng.visualstudio.com/public/_build/latest?definitionId=686&branchName=master)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 
-This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
-all supported platforms, as well as the sources to .NET Core runtime and libraries.
+This repo contains the code to build the .NET runtime, libraries and shared host (`dotnet`) installers for
+all supported platforms, as well as the sources to .NET runtime and libraries.
 
-## What is .NET Core?
+## What is .NET?
 
 Official Starting Page: https://dotnet.microsoft.com/
 
@@ -24,6 +24,7 @@ We welcome contributions! Many people all over the world have helped make this p
 
 * [Contributing](CONTRIBUTING.md) explains what kinds of changes we welcome
 - [Workflow Instructions](docs/workflow/README.md) explains how to build and test
+* [Get Up and Running on .NET Core](docs/project/dogfooding.md) explains how to get nightly builds of the runtime and its libraries to test them in your own projects.
 
 ## Reporting security issues and security bugs
 
@@ -33,28 +34,28 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 ## Filing issues
 
-This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET Core runtime and libraries.
+This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET runtime and libraries.
 
 For other issues, please use the following repos:
 
-- For overall .NET Core SDK issues, file in the [dotnet/sdk](https://github.com/dotnet/sdk) repo
+- For overall .NET SDK issues, file in the [dotnet/sdk](https://github.com/dotnet/sdk) repo
 - For ASP.NET issues, file in the [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore) repo.
 
 ## Useful Links
 
 * [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
+* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.1)
 * [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
 * [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 
 ## .NET Foundation
 
-.NET Core is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
+.NET Runtime is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
 
 There are many .NET related projects on GitHub.
 
 - [.NET home repo](https://github.com/Microsoft/dotnet) - links to 100s of .NET projects, from Microsoft and the community.
-- [ASP.NET Core home](https://docs.microsoft.com/aspnet/core/?view=aspnetcore-3.0) - the best place to start learning about ASP.NET Core.
+- [ASP.NET Core home](https://docs.microsoft.com/aspnet/core/?view=aspnetcore-3.1) - the best place to start learning about ASP.NET Core.
 
 This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 

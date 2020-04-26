@@ -1288,9 +1288,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             src->gtType  = genActualType(returnType);
             call->gtType = src->gtType;
 
-            // !!! The destination could be on stack. !!!
-            // This flag will let us choose the correct write barrier.
-            destFlags = GTF_IND_TGTANYWHERE;
+            if ((destAddr->gtOper != GT_ADDR) || (destAddr->AsOp()->gtOp1->gtOper != GT_LCL_VAR))
+            {
+                // !!! The destination could be on stack. !!!
+                // This flag will let us choose the correct write barrier.
+                destFlags = GTF_IND_TGTANYWHERE;
+            }
         }
     }
     else if (src->OperIsBlk())
@@ -1532,7 +1535,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // Notes:
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
-//    for full enregistration, e.g. TYP_SIMD16.
+//    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
 {
@@ -1550,7 +1554,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-            if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
+            if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
                 var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
@@ -1979,12 +1983,13 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
     // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextUseCount++;
+    lvaGenericsContextInUse = true;
 
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
         ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
         // Vtable pointer of this object
         ctxTree = gtNewOperNode(GT_IND, TYP_I_IMPL, ctxTree);
@@ -1996,6 +2001,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
 
         ctxTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL); // Exact method descriptor as passed in as last arg
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
 }
@@ -4132,7 +4138,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compSupports(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -4362,7 +4368,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     }
     if (className != nullptr)
     {
-        JITDUMP("%s", className);
+        JITDUMP("%s.", className);
     }
     if (methodName != nullptr)
     {
@@ -4430,7 +4436,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
         }
     }
-#if defined(TARGET_XARCH) // We currently only support BSWAP on x86
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
     {
         if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
@@ -4438,7 +4444,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
         }
     }
-#endif // !defined(TARGET_XARCH)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
@@ -6737,9 +6743,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
-    for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
+    for (GenTreeCall::Use& argUse : GenTreeCall::UseList(args))
     {
-        call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        // We should not be passing gc typed args to an unmanaged call.
+        GenTree* arg = argUse.GetNode();
+        if (varTypeIsGC(arg->TypeGet()))
+        {
+            assert(!"*** invalid IL: gc type passed to unmanaged call");
+        }
+
+        call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
     }
 }
 
@@ -7344,10 +7357,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Also, popping arguments in a varargs function is more work and NYI
     // If we have a security object, we have to keep our frame around for callers
     // to see any imperative security.
+    // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
+    // at the end, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is synchronized";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is Reverse P/Invoke";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -7629,7 +7649,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // it may cause registered args to be spilled. Simply spill it.
 
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -8241,7 +8261,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (!(mflags & CORINFO_FLG_STATIC) && !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
     {
         GenTree* obj;
 
@@ -11479,6 +11500,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Jmp not allowed in protected region");
                 }
 
+                if (opts.IsReversePInvoke())
+                {
+                    BADCODE("Jmp not allowed in reverse P/Invoke");
+                }
+
                 if (verCurrentState.esStackDepth != 0)
                 {
                     BADCODE("Stack must be empty after CEE_JMPs");
@@ -13697,7 +13723,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
                         bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
-                        if (fgVarNeedsExplicitZeroInit(lvaGetDesc(lclNum), bbInALoop, bbIsReturn))
+                        LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                        if (fgVarNeedsExplicitZeroInit(lclDsc, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
                             newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
@@ -13707,6 +13734,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                            false,            // isVolatile
                                                            false);           // not copyBlock
                             impAppendTree(newObjThisPtr, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+                        }
+                        else
+                        {
+                            JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+                            lclDsc->lvSuppressedZeroInit = 1;
+                            compSuppressedZeroInit       = true;
                         }
 
                         // Obtain the address of the temp
@@ -18583,7 +18616,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //
 //   Checks for various inline blocking conditions and makes notes in
 //   the inline info arg table about the properties of the actual. These
-//   properties are used later by impFetchArg to determine how best to
+//   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
@@ -19795,7 +19828,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;
