@@ -415,7 +415,6 @@ struct HWIntrinsicInfo
 
                 assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
                 return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
-
             }
 
             case NI_SSE_CompareNotLessThanOrEqual:
