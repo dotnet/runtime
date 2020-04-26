@@ -258,11 +258,6 @@ namespace ILCompiler.PEWriter
                     writer.WriteLine($"  ({node.Name})");
                 }
             }
-
-            foreach (MapFileNode node in _nodes)
-            {
-                Section section = _sections[node.SectionIndex];
-            }
         }
 
         private static string GetNameHead(Section section)
