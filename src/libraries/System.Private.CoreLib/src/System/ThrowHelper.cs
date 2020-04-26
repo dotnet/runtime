@@ -321,12 +321,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowPlatformNotSupportedException()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        [DoesNotReturn]
         internal static void ThrowAggregateException(List<Exception> exceptions)
         {
             throw new AggregateException(exceptions);
