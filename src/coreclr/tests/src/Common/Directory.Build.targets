@@ -34,6 +34,7 @@
       <RunTimeArtifactsExcludeFiles Include="linuxonjit.dll" />
       
       <RunTimeArtifactsIncludeFolders Include="/" />
+      <RunTimeArtifactsIncludeFolders Include="IL/" />
       <RunTimeArtifactsIncludeFolders Include="crossgen2/" />
       <RunTimeArtifactsIncludeFolders Include="PDB/" />
       <RunTimeArtifactsIncludeFolders Include="R2RTest/" />
