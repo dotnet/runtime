@@ -1331,11 +1331,20 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
             LclVarDsc* varDsc = &comp->lvaTable[varNum];
             type              = varDsc->lvType;
         }
-        else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
+        else if (arg->OperIsSIMD())
         {
             assert((arg->AsSIMD()->gtSIMDSize == 16) || (arg->AsSIMD()->gtSIMDSize == 12));
 
             if (arg->AsSIMD()->gtSIMDSize == 12)
+            {
+                type = TYP_SIMD12;
+            }
+        }
+        else if (arg->OperIsHWIntrinsic())
+        {
+            assert((arg->AsHWIntrinsic()->gtSIMDSize == 16) || (arg->AsHWIntrinsic()->gtSIMDSize == 12));
+
+            if (arg->AsHWIntrinsic()->gtSIMDSize == 12)
             {
                 type = TYP_SIMD12;
             }
