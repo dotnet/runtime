@@ -198,7 +198,7 @@ namespace
         inspect_modify_properties(check_properties, hostfxr, handle, argc, argv, log_prefix, test_output);
 
         void* delegate;
-        rc = hostfxr.create_delegate(handle, L"entryAssembly", L"entryType", L"entryMethod", &delegate);
+        rc = hostfxr.create_delegate(handle, _X("entryAssembly"), _X("entryType"), _X("entryMethod"), &delegate);
         if (rc != StatusCode::Success)
             test_output << log_prefix << _X("hostfxr_create_delegate failed: ") << std::hex << std::showbase << rc << std::endl;
 
