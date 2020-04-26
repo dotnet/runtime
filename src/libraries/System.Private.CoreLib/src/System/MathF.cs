@@ -95,10 +95,10 @@ namespace System
         {
             if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                var xvec = Vector128.CreateScalarUnsafe(x);
-                var yvec = Vector128.CreateScalarUnsafe(y);
+                Vector128<float> xvec = Vector128.CreateScalarUnsafe(x);
+                Vector128<float> yvec = Vector128.CreateScalarUnsafe(y);
 
-                var mask = Vector128.CreateScalarUnsafe(-0.0f); // has sign bit set, everything else 0
+                Vector128<float> mask = Vector128.CreateScalarUnsafe(-0.0f); // has sign bit set, everything else 0
 
                 return Vector128.ConditionalSelectBitwise(mask, yvec, xvec).ToScalar();
             }
