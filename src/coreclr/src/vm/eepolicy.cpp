@@ -776,7 +776,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-	    SafeExitProcess(exitCode, TRUE);
+        SafeExitProcess(exitCode, TRUE);
     }
 
     UNREACHABLE();
