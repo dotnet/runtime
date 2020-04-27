@@ -2,9 +2,9 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetFramework)' != 'net461' and '$(TargetFramework)' != 'net462'">$(DefineConstants);FEATURE_ECPARAMETERS</DefineConstants>
     <!-- FEATURE_DSA_HASHDATA is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
-    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp')) or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard'))">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
     <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
-    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp')) or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard'))">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
     <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;net462;net47;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
