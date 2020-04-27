@@ -15,7 +15,7 @@ deploy-launch: bundle
 	$(DOTNET) msbuild /t:ReinstallAndLaunch
 
 runtimepack:
-	../../../../.././build.sh -c $(MONO_CONFIG) -os Android -arch $(MONO_ARCH) -subset Mono /p:DisableCrossgen=true
+	../../../../.././build.sh -c $(MONO_CONFIG) -os Android -arch $(MONO_ARCH) -subset Mono+Libs /p:DisableCrossgen=true
 
 clean:
 	rm -rf bin
