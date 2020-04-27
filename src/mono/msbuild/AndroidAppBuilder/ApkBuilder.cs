@@ -68,6 +68,7 @@ public class ApkBuilder
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
+        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
         string androidJar = Path.Combine(sdkPath, "platforms", "android-" + buildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(ndkPath, "build", "cmake", "android.toolchain.cmake");
@@ -121,7 +122,7 @@ public class ApkBuilder
 
         // 3. Generate APK
 
-        string apkFile = Path.Combine(workplace, "bin", appName + ".unaligned.apk");
+        string apkFile = Path.Combine(workplace, "bin", $"{appName}.unaligned.apk");
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: workplace);
         
         var dynamicLibs = new List<string>();
@@ -147,12 +148,17 @@ public class ApkBuilder
                 "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt -dname \"CN=Android Debug,O=Android,C=US\"", workingDir: workplace, silent: true);
         }
 
-        // 5. Sign APK
+        // 5. Align APK
+
+        string alignedApk = Path.Combine(workplace, "bin", $"{appName}.apk");
+        Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: workplace);
+
+        // 6. Sign APK
 
         Utils.RunProcess(apksigner, $"sign --min-sdk-version {minApiLevel} --ks debug.keystore --ks-pass pass:android " +
-            $"--key-pass pass:android {apkFile}", workingDir: workplace);
+            $"--key-pass pass:android {alignedApk}", workingDir: workplace);
 
-        return (apkFile, packageId);
+        return (alignedApk, packageId);
     }
     
     /// <summary>
