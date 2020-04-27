@@ -7638,7 +7638,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	generate_compacted_code (td);
 
 	if (td->verbose_level) {
-		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
+		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);
+		g_print ("Locals size %d, VT stack size: %d\n", td->total_locals_size, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
 		dump_mint_code (td->new_code, td->new_code_end);
 	}
