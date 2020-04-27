@@ -177,7 +177,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">
     <MonoProject Include="$(MonoProjectRoot)llvm\llvm-init.proj" />
   </ItemGroup>
 

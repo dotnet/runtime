@@ -1092,5 +1092,36 @@ namespace System.Xml.Tests
             Assert.Contains("maxOccurs", ex.Message);
         }
         #endregion
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void TotalDigitsParseValue_Succeeds()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:decimal'>
+            <xs:totalDigits value='8' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:totalDigits value='8'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+            using (StringReader srdr = new StringReader(schema))
+            using (XmlReader xmlrdr = XmlReader.Create(srdr))
+            {
+                XmlSchemaSet ss = new XmlSchemaSet();
+
+                ss.Add(null, xmlrdr);
+
+                // Assert does not throw (Regression test for issue #34426)
+                ss.Compile();
+            }
+        }
     }
 }
