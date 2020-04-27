@@ -88,22 +88,12 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD_x64'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCoreInternal-Pool
-          queue: BuildPool.Ubuntu.1604.Amd64
-
-        # Public FreeBSD Build Pool
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD_x64'), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCorePublic-Pool
-          queue: BuildPool.Ubuntu.1604.Amd64.Open
-
-        # Official FreeBSD Build Pool
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
