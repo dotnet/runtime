@@ -205,7 +205,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     emitAttr emitSize;
     insOpts  opt = INS_OPTS_NONE;
 
-    if ((intrin.category == HW_Category_SIMDScalar) || (intrin.category == HW_Category_Scalar))
+    if (intrin.category == HW_Category_SIMDScalar)
+    {
+        emitSize = emitTypeSize(intrin.baseType);
+    }
+    else if (intrin.category == HW_Category_Scalar)
     {
         emitSize = emitActualTypeSize(intrin.baseType);
     }
