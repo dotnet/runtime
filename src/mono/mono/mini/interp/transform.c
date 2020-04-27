@@ -7222,6 +7222,10 @@ retry:
 					}
 
 					if (sp->ins) {
+						// If the top of stack is not pushed by a ldloc, we are introducing a
+						// new dependency on the src_local since we are adding a movloc from it.
+						if (!MINT_IS_LDLOC (sp->ins->opcode))
+							local_ref_count [src_local]++;
 						interp_clear_ins (td, sp->ins);
 						interp_clear_ins (td, ins);
 
