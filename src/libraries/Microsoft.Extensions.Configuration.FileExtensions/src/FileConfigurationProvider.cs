@@ -65,10 +65,10 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    var error = new StringBuilder($"The configuration file '{Source.Path}' was not found and is not optional.");
+                    var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path));
                     if (!string.IsNullOrEmpty(file?.PhysicalPath))
                     {
-                        error.Append($" The physical path is '{file.PhysicalPath}'.");
+                        error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
                     }
                     HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
                 }
