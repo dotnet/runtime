@@ -99,7 +99,7 @@
     <OutputRid Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and '$(ForceRuntimeIdentifierToBeSet)' == 'true'">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
