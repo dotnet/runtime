@@ -54,11 +54,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
         private bool _curentItemIsKey = false;
-        private (int offset, int length)? _previousKeyRange;
-        private HashSet<(int offset, int length)>? _previousKeyRanges;
+        private (int Offset, int Length)? _previousKeyRange;
+        private HashSet<(int Offset, int Length)>? _previousKeyRanges;
 
         // stores a reusable List allocation for keeping ranges in the buffer
-        private List<(int offset, int length)>? _rangeListAllocation = null;
+        private List<(int Offset, int Length)>? _rangeListAllocation = null;
 
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
@@ -377,9 +377,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private List<(int offset, int length)> AcquireRangeList()
+        private List<(int Offset, int Length)> AcquireRangeList()
         {
-            List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
+            List<(int Offset, int Length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
 
             if (ranges != null)
             {
@@ -387,10 +387,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 return ranges;
             }
 
-            return new List<(int, int)>();
+            return new List<(int Offset, int Length)>();
         }
 
-        private void ReturnRangeList(List<(int offset, int length)> ranges)
+        private void ReturnRangeList(List<(int Offset, int Length)> ranges)
         {
             _rangeListAllocation = ranges;
         }
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             public StackFrame(CborMajorType type, int frameOffset, uint? remainingDataItems,
                               int? currentKeyOffset, bool currentItemIsKey,
-                              (int offset, int length)? previousKeyRange, HashSet<(int offset, int length)>? previousKeyRanges)
+                              (int Offset, int Length)? previousKeyRange, HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -417,8 +417,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
-            public (int offset, int length)? PreviousKeyRange { get; }
-            public HashSet<(int offset, int length)>? PreviousKeyRanges { get; }
+            public (int Offset, int Length)? PreviousKeyRange { get; }
+            public HashSet<(int Offset, int Length)>? PreviousKeyRanges { get; }
         }
 
         // Struct containing checkpoint data for rolling back reader state in the event of a failure
@@ -427,8 +427,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private readonly struct Checkpoint
         {
             public Checkpoint(int bytesRead, int stackDepth, int frameOffset, uint? remainingDataItems,
-                              int? currentKeyOffset, bool currentItemIsKey, (int offset, int length)? previousKeyRange,
-                              HashSet<(int offset, int length)>? previousKeyRanges)
+                              int? currentKeyOffset, bool currentItemIsKey, (int Offset, int Length)? previousKeyRange,
+                              HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
                 BytesRead = bytesRead;
                 StackDepth = stackDepth;
@@ -448,8 +448,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
-            public (int offset, int length)? PreviousKeyRange { get; }
-            public HashSet<(int offset, int length)>? PreviousKeyRanges { get; }
+            public (int Offset, int Length)? PreviousKeyRange { get; }
+            public HashSet<(int Offset, int Length)>? PreviousKeyRanges { get; }
         }
 
         private Checkpoint CreateCheckpoint()

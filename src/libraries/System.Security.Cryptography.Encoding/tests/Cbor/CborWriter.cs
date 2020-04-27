@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
         private int? _currentValueOffset = null;
-        private SortedSet<(int offset, int keyLength, int keyValueLength)>? _keyValueEncodingRanges = null;
+        private SortedSet<(int Offset, int KeyLength, int TotalLength)>? _keyValueEncodingRanges = null;
 
         public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax)
         {

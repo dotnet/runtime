@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private bool TryReadChunkedByteStringConcatenated(Span<byte> destination, out int bytesWritten)
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
 
             if (concatenatedBufferSize > destination.Length)
             {
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private bool TryReadChunkedTextStringConcatenated(Span<char> destination, out int charsWritten)
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
             ReadOnlySpan<byte> buffer = _buffer.Span;
 
             int concatenatedStringSize = 0;
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private byte[] ReadChunkedByteStringConcatenated()
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
             var output = new byte[concatenatedBufferSize];
 
             ReadOnlySpan<byte> source = _buffer.Span;
@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private string ReadChunkedTextStringConcatenated()
         {
-            List<(int offset, int length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
             ReadOnlySpan<byte> buffer = _buffer.Span;
             int concatenatedStringSize = 0;
 
@@ -282,7 +282,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ReturnRangeList(ranges);
             return output;
 
-            static void BuildString(Span<char> target, (List<(int offset, int length)> ranges, ReadOnlyMemory<byte> source) input)
+            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source) input)
             {
                 ReadOnlySpan<byte> source = input.source.Span;
 
@@ -298,9 +298,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         // reads a buffer starting with an indefinite-length string,
         // performing validation and returning a list of ranges containing the individual chunk payloads
-        private List<(int offset, int length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
+        private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
-            var ranges = AcquireRangeList();
+            List<(int Offset, int Length)> ranges = AcquireRangeList();
             ReadOnlySpan<byte> buffer = _buffer.Span;
             concatenatedBufferSize = 0;
 
