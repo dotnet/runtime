@@ -68,7 +68,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO-RZ: I would like to have unbound loop there, but untill flow control is implemented, it might loop
+            // TODO-RZ: I would like to have unbound loop there, but until flow control is implemented, it might loop
             // indefinitely
             // while (true)
             for (int i = 0; i < 2; i++)

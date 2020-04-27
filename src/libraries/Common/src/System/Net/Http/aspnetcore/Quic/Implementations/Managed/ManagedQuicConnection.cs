@@ -492,18 +492,25 @@ namespace System.Net.Quic.Implementations.Managed
             // scenario where there is a pending ack in e.g. Initial epoch, but the connection cannot
             // send it because it is limited by congestion window, because it has in-flight packets
             // in Handshake epoch.
-            for (int i = 0; i < _pnSpaces.Length; i++)
+            var probeSpace = PacketSpace.Initial;
+            for (int i = 1; i < _pnSpaces.Length; i++)
             {
-                var recoverySpace = Recovery.GetPacketNumberSpace((PacketSpace)i);
-                if (recoverySpace.RemainingLossProbes > 0)
+                var packetSpace = (PacketSpace)i;
+                var recoverySpace = Recovery.GetPacketNumberSpace(packetSpace);
+                if (recoverySpace.RemainingLossProbes > Recovery.GetPacketNumberSpace(probeSpace).RemainingLossProbes)
                 {
-                    return (EncryptionLevel)i;
+                    probeSpace = packetSpace;
                 }
             }
 
+            if (Recovery.GetPacketNumberSpace(probeSpace).RemainingLossProbes > 0)
+            {
+                return (EncryptionLevel) probeSpace;
+            }
+
+            // if pending errors, send them in appropriate epoch,
             if (outboundError != null && outboundError.IsQuicError)
             {
-                // send error in appropriate epoch,
                 EncryptionLevel desiredLevel = _tls.WriteLevel;
                 if (!Connected && desiredLevel == EncryptionLevel.Application)
                 {

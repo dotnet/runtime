@@ -242,8 +242,6 @@ namespace System.Net.Quic.Implementations.Managed
                 frame.LargestAcknowledged < frame.FirstAckRange) // acking negative PN
                 return CloseConnection(TransportErrorCode.ProtocolViolation, QuicError.InvalidAckRange, FrameType.Ack);
 
-            // TODO-RZ: check ackDelay
-
             RangeSet ranges = new RangeSet();
             ranges.Add(frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
 
@@ -485,7 +483,7 @@ namespace System.Net.Quic.Implementations.Managed
             pnSpace.LastAckSent = context.Timestamp;
 
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
-
+            Debug.Assert(pnSpace.LargestReceivedPacketTimestamp != 0);
 
             // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>

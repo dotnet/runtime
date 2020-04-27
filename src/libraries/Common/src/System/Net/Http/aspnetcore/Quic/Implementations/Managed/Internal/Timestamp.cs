@@ -10,9 +10,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         public static long Now => Stopwatch.GetTimestamp();
 
         public static long FromMilliseconds(long milliseconds) => TimeSpan.TicksPerMillisecond * milliseconds;
-        public static long FromMicroseconds(long microseconds) => TimeSpan.TicksPerMillisecond * 1000 * microseconds;
+        public static long FromMicroseconds(long microseconds) => TimeSpan.TicksPerMillisecond * microseconds / 1000;
 
-        public static long GetMilliseconds(long timeDiff) => timeDiff / TimeSpan.TicksPerMillisecond;
-        public static long GetMicroseconds(long timeDiff) => timeDiff / (TimeSpan.TicksPerMillisecond * 1000);
+        public static long GetMilliseconds(long ticks) => ticks / TimeSpan.TicksPerMillisecond;
+        public static long GetMicroseconds(long ticks) => ticks * 1000 / TimeSpan.TicksPerMillisecond;
     }
 }

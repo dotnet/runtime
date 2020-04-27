@@ -15,7 +15,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Largest packet number received from the peer.
         /// </summary>
-        internal long LargestReceivedPacketNumber { get; set; }
+        internal long LargestReceivedPacketNumber { get; set; } = -1;
 
         /// <summary>
         ///     Timestamp when packet with <see cref="LargestReceivedPacketNumber"/> was received.

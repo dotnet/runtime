@@ -304,12 +304,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             ackDelay = Math.Min(ackDelay, MaxAckDelay);
 
             // adjust for ack delay if plausible
-            long adjustedRttTicks = LatestRtt;
-            if (adjustedRttTicks > MinimumRtt + ackDelay)
-                adjustedRttTicks = LatestRtt - ackDelay;
+            long adjustedRtt = LatestRtt;
+            if (adjustedRtt > MinimumRtt + ackDelay)
+                adjustedRtt = LatestRtt - ackDelay;
 
-            RttVariation = (long)(3.0 / 4 * RttVariation +
-                                  1.0 / 4 * Math.Abs(SmoothedRtt - adjustedRttTicks));
+            RttVariation = (long)(3 * RttVariation / 4 +
+                                  1 * Math.Abs(SmoothedRtt - adjustedRtt) / 4);
         }
 
         private PacketNumberSpace GetEarliestSpace(bool handshakeComplete, Comparer<PacketNumberSpace> comparer)
