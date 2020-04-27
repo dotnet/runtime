@@ -18,6 +18,9 @@ set(SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/empty.cpp
 )
 
+set(HEADERS
+)
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         hostpolicy.def)
@@ -41,10 +44,6 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
     endif(CLR_CMAKE_HOST_SUNOS)
 endif(CLR_CMAKE_TARGET_WIN32)
-
-
-set(HEADERS
-)
 
 include(../../lib.cmake)
 
