@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.CodeDom.Compiler
 {
@@ -252,6 +254,48 @@ namespace System.CodeDom.Compiler
         {
             OutputTabs();
             _writer.WriteLine(value);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync()
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync().ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(char value)
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(string? value)
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync(value, cancellationToken).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(char[] buffer, int index, int count)
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync(buffer, index, count).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            OutputTabs();
+            await _writer.WriteLineAsync(buffer, cancellationToken).ConfigureAwait(false);
             _tabsPending = true;
         }
     }
