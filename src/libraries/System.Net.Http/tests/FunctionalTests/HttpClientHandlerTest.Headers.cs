@@ -45,6 +45,33 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
+        {
+            string version = "2017-04-17";
+            string blob = "BlockBlob";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("x-ms-version", version);
+                    client.DefaultRequestHeaders.Add("x-ms-blob-type", blob);
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                    (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
+                }
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                string headerValue = requestData.GetSingleHeaderValue("x-ms-blob-type");
+                Assert.Equal(blob, headerValue);
+                headerValue = requestData.GetSingleHeaderValue("x-ms-version");
+                Assert.Equal(version, version);
+            });
+        }
+
         [Theory]
         [InlineData("\u05D1\u05F1")]
         [InlineData("jp\u30A5")]
