@@ -1302,11 +1302,6 @@ namespace System.Xml.Tests
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
 
-            // Issue 30218: invalid formatters
-            // TODO remove once invalid formatter is removed from Sch_AttributeRestrictionInvalidFromWildcard.
-            Text.RegularExpressions.Regex rx = new Text.RegularExpressions.Regex(@"\{[a-zA-Z ]+[^\}]*\}");
-            Assert.Empty(rx.Matches(ex.Message));
-
             Assert.Contains("wildcard", ex.Message);
             Assert.Contains("redefine", ex.Message);
         }
