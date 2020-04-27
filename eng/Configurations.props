@@ -13,7 +13,6 @@
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
-    <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
   </PropertyGroup>
 
   <!-- The TFMs to build and test against. -->
@@ -38,6 +37,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier.ToString().ToLowerInvariant)</RuntimeRID>
+    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</RuntimeRID>
+    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(RuntimeRID)' != ''">$(RuntimeRID.Remove($(RuntimeRID.LastIndexOf('-'))))</RuntimeOS>
+
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>

@@ -26,8 +26,6 @@
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
 
-  <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
-
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
   <PropertyGroup>

@@ -80,11 +80,8 @@
     <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
   </PropertyGroup>
 
-  <Import Project="$(HostMachineInfoProps)"
-          Condition="Exists('$(HostMachineInfoProps)')" />
-
-  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostMachineRid)' != ''">
-    <OutputRid>$(HostMachineRid.Remove($(HostMachineRid.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
+  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(RuntimeOS)' != ''">
+    <OutputRid>$(RuntimeOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <!-- Portable -->
@@ -298,9 +295,9 @@
       </PropertyGroup>
       <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
         <HostMachineRidTargetsDebianPackages Condition="
-          $(HostMachineRid.StartsWith('debian')) or
-          $(HostMachineRid.StartsWith('ubuntu')) or
-          $(HostMachineRid.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
+          $(RuntimeOS.StartsWith('debian')) or
+          $(RuntimeOS.StartsWith('ubuntu')) or
+          $(RuntimeOS.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
         <!-- If the build machine isn't known to be Debian-based, try to build RPM packages. -->
         <HostMachineRidTargetsRpmPackages Condition="'$(HostMachineRidTargetsDebianPackages)' != 'true'">true</HostMachineRidTargetsRpmPackages>
       </PropertyGroup>
