@@ -113,7 +113,7 @@ jobs:
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
       - script: du -sh $(Build.SourcesDirectory)/*
         displayName: Disk Usage
 

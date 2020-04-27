@@ -105,7 +105,7 @@ jobs:
       - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
       - script: du -sh $(Build.SourcesDirectory)/*
         displayName: Disk Usage
 

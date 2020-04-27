@@ -61,7 +61,7 @@ jobs:
                 $(_archiveTestsParameter)
           displayName: Restore and Build
 
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
           - script: du -sh $(Build.SourcesDirectory)/*
             displayName: Disk Usage
 
