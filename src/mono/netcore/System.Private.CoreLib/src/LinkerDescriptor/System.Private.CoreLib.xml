@@ -818,5 +818,9 @@
 		<type fullname="Interop/Globalization">
 			<method name="GetICUVersion" />
 		</type>
+		<type fullname="System.Runtime.InteropServices.Marshal">
+			<!-- marshal-ilgen.c: emit_marshal_custom_get_instance -->
+			<method name="GetCustomMarshalerInstance" />
+		</type>
 	</assembly>
 </linker>
