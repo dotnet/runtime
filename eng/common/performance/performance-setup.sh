@@ -188,9 +188,6 @@ if [[ "$internal" == true ]]; then
 fi
 
 if [[ "$mono_dotnet" != "" ]]; then
-    using_mono=true
-    mono_dotnet_path=$payload_directory/dotnet-mono
-    mv $mono_dotnet $mono_dotnet_path
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
 fi
 
@@ -214,6 +211,12 @@ else
     
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
+fi
+
+if [[ "$mono_dotnet" != "" ]]; then
+    using_mono=true
+    mono_dotnet_path=$payload_directory/dotnet-mono
+    mv $mono_dotnet $mono_dotnet_path
 fi
 
 if [[ "$use_core_run" = true ]]; then

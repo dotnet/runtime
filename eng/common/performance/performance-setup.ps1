@@ -55,9 +55,6 @@ if ($Internal) {
 
 if($MonoDotnet -ne "")
 {
-    $UsingMono = "true"
-    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
-    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
     $Configurations += " LLVM=$LLVM MonoInterpreter=$MonoInterpreter MonoAOT=$MonoAOT"
 }
 
@@ -79,6 +76,13 @@ if ($RunFromPerformanceRepo) {
 }
 else {
     git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+}
+
+if($MonoDotnet -ne "")
+{
+    $UsingMono = "true"
+    $MonoDotnetPath = (Join-Path $PayloadDirectory "dotnet-mono")
+    Move-Item -Path $MonoDotnet -Destination $MonoDotnetPath
 }
 
 if ($UseCoreRun) {
