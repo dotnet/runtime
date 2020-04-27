@@ -24,6 +24,7 @@
 //
 
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Mono.Linker
 {
@@ -44,19 +45,21 @@ namespace Mono.Linker
 		/// Called when the linker recognized a reflection access pattern (and thus was able to correctly apply marking to the accessed item).
 		/// </summary>
 		/// <param name="sourceMethod">The method which contains the reflection access pattern.</param>
-		/// <param name="reflectionMethod">The reflection method which is at the heart of the access pattern.</param>
+		/// <param name="reflectionMethodCall">The il instruction where the reflection method which is at the heart of the access pattern is called.</param>
 		/// <param name="accessedItem">The item accessed through reflection. This can be one of:
 		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition, InterfaceImplementation.</param>
-		void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMetadataTokenProvider accessedItem);
+		void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem);
 
 		/// <summary>
 		/// Called when the linker detected a reflection access but was not able to recognize the entire pattern.
 		/// </summary>
 		/// <param name="sourceMethod">The method which contains the reflection access code.</param>
-		/// <param name="reflectionMethod">The reflection method which is at the heart of the access code.</param>
+		/// <param name="reflectionMethodCall">The il instruction where the reflection method which is at the heart of the access code is called.</param>
+		/// <param name="accessedItem">The item accessed through reflection. This can be one of:
+		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition, InterfaceImplementation.</param>
 		/// <param name="message">Humanly readable message describing what failed during the pattern recognition.</param>
 		/// <remarks>This effectively means that there's a potential hole in the linker marking - some items which are accessed only through
 		/// reflection may not be marked correctly and thus may fail at runtime.</remarks>
-		void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, string message);
+		void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message);
 	}
 }

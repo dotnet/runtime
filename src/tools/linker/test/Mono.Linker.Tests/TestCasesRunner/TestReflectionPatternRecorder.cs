@@ -1,4 +1,5 @@
 ﻿using Mono.Cecil;
+using Mono.Cecil.Cil;
 using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -8,7 +9,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public struct ReflectionAccessPattern
 		{
 			public MethodDefinition SourceMethod;
-			public MethodDefinition ReflectionMethod;
+			public Instruction ReflectionMethodCall;
 			public IMetadataTokenProvider AccessedItem;
 			public string Message;
 		}
@@ -16,20 +17,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public List<ReflectionAccessPattern> RecognizedPatterns = new List<ReflectionAccessPattern> ();
 		public List<ReflectionAccessPattern> UnrecognizedPatterns = new List<ReflectionAccessPattern> ();
 
-		public void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMetadataTokenProvider accessedItem)
+		public void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem)
 		{
 			RecognizedPatterns.Add (new ReflectionAccessPattern {
 				SourceMethod = sourceMethod,
-				ReflectionMethod = reflectionMethod,
+				ReflectionMethodCall = reflectionMethodCall,
 				AccessedItem = accessedItem
 			});
 		}
 
-		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, string message)
+		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message)
 		{
 			UnrecognizedPatterns.Add (new ReflectionAccessPattern {
 				SourceMethod = sourceMethod,
-				ReflectionMethod = reflectionMethod,
+				ReflectionMethodCall = reflectionMethodCall,
+				AccessedItem = accessedItem,
 				Message = message
 			});
 		}

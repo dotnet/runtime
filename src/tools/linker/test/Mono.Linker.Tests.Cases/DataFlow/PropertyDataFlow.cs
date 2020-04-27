@@ -102,7 +102,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				return _fieldWithPublicConstructors;
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "set_" + nameof (PropertyDefaultConstructorWithExplicitAccessors), new Type[] { typeof (Type) })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), nameof (_fieldWithPublicConstructors))]
 			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
@@ -110,7 +110,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		Type PropertyConstructorsWithExplicitAccessors {
-			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors), new Type[] { })]
+			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors),
+				new Type[] { }, returnType: typeof (Type))]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 			get {
 				return _fieldWithPublicConstructors;

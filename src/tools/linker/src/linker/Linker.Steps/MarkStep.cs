@@ -707,7 +707,7 @@ namespace Mono.Linker.Steps
 			Annotations.Mark (ca, reason);
 			MarkMethod (ca.Constructor, new DependencyInfo (DependencyKind.AttributeConstructor, ca));
 
-			MarkCustomAttributeArguments (ca);
+			MarkCustomAttributeArguments (reason.Source as MethodDefinition, ca);
 
 			TypeReference constructor_type = ca.Constructor.DeclaringType;
 			TypeDefinition type = constructor_type.Resolve ();
@@ -846,7 +846,8 @@ namespace Mono.Linker.Steps
 
 			if (property != null && _flowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
 				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
-				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
+				var caCtor = (ca as CustomAttribute).Constructor.Resolve ();
+				scanner.ProcessAttributeDataflow (caCtor, property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
 			}
 		}
 
@@ -918,7 +919,7 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
-		void MarkCustomAttributeArguments (CustomAttribute ca)
+		void MarkCustomAttributeArguments (MethodDefinition source, CustomAttribute ca)
 		{
 			if (!ca.HasConstructorArguments)
 				return;
@@ -929,7 +930,7 @@ namespace Mono.Linker.Steps
 			var resolvedConstructor = ca.Constructor.Resolve ();
 			if (resolvedConstructor != null && _flowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
 				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
-				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
+				scanner.ProcessAttributeDataflow (source, resolvedConstructor, ca.ConstructorArguments);
 			}
 		}
 
