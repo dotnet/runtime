@@ -277,9 +277,20 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                Thread thread = new Thread(s => ((SocketAsyncEngine)s!).EventLoop());
-                thread.Name = ".NET Sockets";
-                thread.Start(this);
+                bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
+                try
+                {
+                    if (suppressFlow) ExecutionContext.SuppressFlow();
+
+                    Thread thread = new Thread(s => ((SocketAsyncEngine)s!).EventLoop());
+                    thread.IsBackground = true;
+                    thread.Name = ".NET Sockets";
+                    thread.Start(this);
+                }
+                finally
+                {
+                    if (suppressFlow) ExecutionContext.RestoreFlow();
+                }
             }
             catch
             {
