@@ -229,6 +229,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void DoHandshake()
         {
+            // TODO-RZ: handle failed handshake attempts
             var status = _tls.DoHandshake();
 
             // TODO-RZ: application level protocol negotiation

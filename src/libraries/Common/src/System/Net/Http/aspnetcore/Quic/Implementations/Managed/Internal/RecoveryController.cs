@@ -308,6 +308,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (adjustedRtt > MinimumRtt + ackDelay)
                 adjustedRtt = LatestRtt - ackDelay;
 
+            SmoothedRtt = (7 * SmoothedRtt + adjustedRtt) / 8;
             RttVariation = (long)(3 * RttVariation / 4 +
                                   1 * Math.Abs(SmoothedRtt - adjustedRtt) / 4);
         }
