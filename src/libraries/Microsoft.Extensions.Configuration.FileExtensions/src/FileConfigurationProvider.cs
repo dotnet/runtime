@@ -88,7 +88,8 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception e)
                     {
-                        HandleException(ExceptionDispatchInfo.Capture(e));
+                        var exception = new InvalidDataException(SR.Format(SR.Error_LoadFailed, file.PhysicalPath), e);
+                        HandleException(ExceptionDispatchInfo.Capture(exception));
                     }
                 }
             }
@@ -101,6 +102,9 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <exception cref="FileNotFoundException">If Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
+        /// <exception cref="InvalidDataException">Wrapping any exception thrown by the concrete implementation of the
+        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// if you need more control over the exception.</exception>
         public override void Load()
         {
             Load(reload: false);
