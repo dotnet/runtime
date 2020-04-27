@@ -94,9 +94,16 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_CannotSerializeOpenGeneric(Type type)
+        public static void ThrowInvalidOperationException_CannotSerializeInvalidType(Type type, Type? parentClassType, PropertyInfo? propertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.CannotSerializeOpenGeneric, type));
+            if (parentClassType == null)
+            {
+                Debug.Assert(propertyInfo == null);
+                throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidType, type));
+            }
+
+            Debug.Assert(propertyInfo != null);
+            throw new InvalidOperationException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyInfo.Name, parentClassType));
         }
 
         [DoesNotReturn]

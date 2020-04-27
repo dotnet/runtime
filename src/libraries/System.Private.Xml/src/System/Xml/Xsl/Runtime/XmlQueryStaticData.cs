@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
             int length;
 
             // Read a format version
-            int formatVersion = dataReader.ReadInt32Encoded();
+            int formatVersion = dataReader.Read7BitEncodedInt();
 
             // Changes in the major part of version are not supported
             if ((formatVersion & ~0xff) > CurrentFormatVersion)
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.Runtime
                 _filters = new Int32Pair[length];
                 for (int idx = 0; idx < length; idx++)
                 {
-                    _filters[idx] = new Int32Pair(dataReader.ReadInt32Encoded(), dataReader.ReadInt32Encoded());
+                    _filters[idx] = new Int32Pair(dataReader.Read7BitEncodedInt(), dataReader.Read7BitEncodedInt());
                 }
             }
 
@@ -197,7 +197,7 @@ namespace System.Xml.Xsl.Runtime
             XmlQueryDataWriter dataWriter = new XmlQueryDataWriter(dataStream);
 
             // First put the format version
-            dataWriter.WriteInt32Encoded(CurrentFormatVersion);
+            dataWriter.Write7BitEncodedInt(CurrentFormatVersion);
 
             // XmlWriterSettings defaultWriterSettings;
             _defaultWriterSettings.GetObjectData(dataWriter);
@@ -259,8 +259,8 @@ namespace System.Xml.Xsl.Runtime
                 dataWriter.Write(_filters.Length);
                 foreach (Int32Pair filter in _filters)
                 {
-                    dataWriter.WriteInt32Encoded(filter.Left);
-                    dataWriter.WriteInt32Encoded(filter.Right);
+                    dataWriter.Write7BitEncodedInt(filter.Left);
+                    dataWriter.Write7BitEncodedInt(filter.Right);
                 }
             }
 
@@ -409,14 +409,6 @@ namespace System.Xml.Xsl.Runtime
         public XmlQueryDataReader(Stream input) : base(input) { }
 
         /// <summary>
-        /// Read in a 32-bit integer in compressed format.
-        /// </summary>
-        public int ReadInt32Encoded()
-        {
-            return Read7BitEncodedInt();
-        }
-
-        /// <summary>
         /// Read a string value from the stream. Value can be null.
         /// </summary>
         public string ReadStringQ()
@@ -445,14 +437,6 @@ namespace System.Xml.Xsl.Runtime
     internal class XmlQueryDataWriter : BinaryWriter
     {
         public XmlQueryDataWriter(Stream output) : base(output) { }
-
-        /// <summary>
-        /// Write a 32-bit integer in a compressed format.
-        /// </summary>
-        public void WriteInt32Encoded(int value)
-        {
-            Write7BitEncodedInt(value);
-        }
 
         /// <summary>
         /// Write a string value to the stream. Value can be null.

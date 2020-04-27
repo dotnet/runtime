@@ -15,12 +15,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
@@ -213,9 +211,8 @@
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>Common\System\Buffers\ArrayBufferWriter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
+             Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -224,9 +221,8 @@
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Collections" />

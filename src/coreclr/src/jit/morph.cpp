@@ -5376,7 +5376,12 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree->ChangeOper(GT_IND);
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
+        bool canCSE               = indir->CanCSE();
         indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
+        if (!canCSE)
+        {
+            indir->SetDoNotCSE();
+        }
 
 #ifdef DEBUG
         indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
@@ -7101,6 +7106,10 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     // Heuristic: regular calls to noreturn methods can sometimes be
     // merged, so if we have multiple such calls, we defer tail calling.
+    //
+    // TODO: re-examine this; now that we're merging before morph we
+    // don't need to worry about interfering with merges.
+    //
     if (call->IsNoReturn() && (optNoReturnCallCount > 1))
     {
         failTailCall("Defer tail calling throw helper; anticipating merge");
@@ -8137,7 +8146,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
     // for all non-parameter IL locals as well as temp structs with GC fields.
     // Liveness phase will remove unnecessary initializations.
-    if (info.compInitMem)
+    if (info.compInitMem || compSuppressedZeroInit)
     {
         unsigned   varNum;
         LclVarDsc* varDsc;
@@ -8154,7 +8163,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 var_types lclType            = varDsc->TypeGet();
                 bool      isUserLocal        = (varNum < info.compLocalsCount);
                 bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
-                if (isUserLocal || structWithGCFields)
+                bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
+                if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
                 {
                     GenTree* lcl  = gtNewLclvNode(varNum, lclType);
                     GenTree* init = nullptr;
@@ -13022,6 +13032,22 @@ DONE_MORPHING_CHILDREN:
                 }
                 else if (op1->OperGet() == GT_ADD)
                 {
+#ifdef TARGET_ARM
+                    // Check for a misalignment floating point indirection.
+                    if (varTypeIsFloating(typ))
+                    {
+                        GenTree* addOp2 = op1->AsOp()->gtGetOp2();
+                        if (addOp2->IsCnsIntOrI())
+                        {
+                            ssize_t offset = addOp2->AsIntCon()->gtIconVal;
+                            if ((offset % emitTypeSize(TYP_FLOAT)) != 0)
+                            {
+                                tree->gtFlags |= GTF_IND_UNALIGNED;
+                            }
+                        }
+                    }
+#endif // TARGET_ARM
+
                     /* Try to change *(&lcl + cns) into lcl[cns] to prevent materialization of &lcl */
 
                     if (op1->AsOp()->gtOp1->OperGet() == GT_ADDR && op1->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
@@ -13071,19 +13097,6 @@ DONE_MORPHING_CHILDREN:
                             {
                                 break;
                             }
-
-#ifdef TARGET_ARM
-                            // Check for a LclVar TYP_STRUCT with misalignment on a Floating Point field
-                            //
-                            if (varTypeIsFloating(typ))
-                            {
-                                if ((ival1 % emitTypeSize(typ)) != 0)
-                                {
-                                    tree->gtFlags |= GTF_IND_UNALIGNED;
-                                    break;
-                                }
-                            }
-#endif
                         }
                         // Now we can fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
@@ -13384,9 +13397,6 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
-
-            /* op1 of a GT_ADDR is an l-value. Only r-values can be CSEed */
-            op1->gtFlags |= GTF_DONT_CSE;
             break;
 
         case GT_COLON:
@@ -16045,7 +16055,7 @@ GenTree* Compiler::fgInitThisClass()
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
-        lvaGenericsContextUseCount++;
+        lvaGenericsContextInUse = true;
 
         switch (kind.runtimeLookupKind)
         {
@@ -16054,6 +16064,7 @@ GenTree* Compiler::fgInitThisClass()
                 // the hierarchy
                 {
                     GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+                    vtTree->gtFlags |= GTF_VAR_CONTEXT;
                     // Vtable pointer of this object
                     vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
                     vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
@@ -16065,12 +16076,14 @@ GenTree* Compiler::fgInitThisClass()
             case CORINFO_LOOKUP_CLASSPARAM:
             {
                 GenTree* vtTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                vtTree->gtFlags |= GTF_VAR_CONTEXT;
                 return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, gtNewCallArgs(vtTree));
             }
 
             case CORINFO_LOOKUP_METHODPARAM:
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
+                methHndTree->gtFlags |= GTF_VAR_CONTEXT;
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID,
                                            gtNewCallArgs(gtNewIconNode(0), methHndTree));
             }
@@ -16831,8 +16844,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 tree->SetOper(GT_LCL_VAR);
                 tree->AsLclVarCommon()->SetLclNum(fieldLclIndex);
                 tree->gtType = fieldType;
-                tree->gtFlags &= GTF_NODE_MASK;
-                tree->gtFlags &= ~GTF_GLOB_REF;
+                tree->gtFlags &= GTF_NODE_MASK; // Note: that clears all flags except `GTF_COLON_COND`.
 
                 if (parent->gtOper == GT_ASG)
                 {
@@ -17676,7 +17688,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     if (verbose)
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
-        printf("From " FMT_BB ", stmt", block->bbNum);
+        printf("From " FMT_BB ", stmt ", block->bbNum);
         printStmtID(stmt);
         printf(" to stmt");
         printStmtID(lastStmt);
@@ -17742,12 +17754,15 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n" FMT_BB " stmt", block->bbNum);
+        printf("\n" FMT_BB " stmt ", block->bbNum);
         printStmtID(stmt);
         printf("(before)\n");
         gtDispStmt(stmt);
     }
 #endif
+
+    assert(!simdStructNode->CanCSE());
+    simdStructNode->ClearDoNotCSE();
 
     tree = gtNewAssignNode(dstNode, simdStructNode);
 

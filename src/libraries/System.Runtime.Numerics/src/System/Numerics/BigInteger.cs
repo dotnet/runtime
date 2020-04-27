@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Numerics
@@ -673,12 +674,12 @@ namespace System.Numerics
             return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? value, out BigInteger result)
+        public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
         {
             return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
+        public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
             return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
         }

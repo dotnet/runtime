@@ -493,6 +493,8 @@ namespace System.Reflection.Emit
                 return false;
             }
         }
+
+        public override bool IsByRefLike => false;
     }
 }
 #endif

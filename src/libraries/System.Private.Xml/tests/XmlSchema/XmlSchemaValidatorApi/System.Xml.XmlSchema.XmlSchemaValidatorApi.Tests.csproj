@@ -20,9 +20,8 @@
     <Compile Include="ValidatorModule.cs" />
     <Compile Include="XmlTestSettings.cs" />
     <Compile Include="CXmlTestResolver.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\TestFiles\**\*"

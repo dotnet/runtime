@@ -1246,19 +1246,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
-    // For SafeAbort from FuncEval abort, we do not apply escalation policy.  Debugger
-    // tries SafeAbort first with a short timeout.  The thread will return to debugger.
-    // After some break, the thread is going to do RudeAbort if abort has not finished.
-    EClrOperation operation;
-    if (abortType == EEPolicy::TA_Rude)
-    {
-        operation = OPR_ThreadRudeAbortInCriticalRegion;
-    }
-    else
-    {
-        operation = OPR_ThreadAbort;
-    }
-
     // Debugger func-eval aborts (both rude + normal) don't have any escalation policy. They are invoked
     // by the debugger and the debugger handles the consequences.
     // Furthermore, in interop-debugging, threads will be hard-suspened in preemptive mode while we try to abort them.
@@ -1269,55 +1256,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
     BOOL fEscalation = (requester != TAR_FuncEval);
     if (fEscalation)
     {
-        EPolicyAction action = GetEEPolicy()->GetDefaultAction(operation, this);
-        switch (action)
-        {
-        case eAbortThread:
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-            break;
-        case eRudeAbortThread:
-            if (abortType != EEPolicy::TA_Rude)
-            {
-                abortType = EEPolicy::TA_Rude;
-            }
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-            break;
-        case eUnloadAppDomain:
-        case eRudeUnloadAppDomain:
-            // AD unload does not abort finalizer thread.
-            if (this != FinalizerThread::GetFinalizerThread())
-            {
-                if (this == GetThread())
-                {
-                    Join(INFINITE,TRUE);
-                }
-                return S_OK;
-            }
-            break;
-        case eExitProcess:
-        case eFastExitProcess:
-        case eRudeExitProcess:
-            GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-            EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
-            _ASSERTE (!"Should not reach here");
-            break;
-        default:
-            _ASSERTE (!"unknown policy for thread abort");
-        }
-
-        DWORD timeoutFromPolicy;
-        if (abortType != EEPolicy::TA_Rude)
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-        }
-        if (timeout > timeoutFromPolicy)
-        {
-            timeout = timeoutFromPolicy;
-        }
+        timeout = INFINITE;
     }
 
     AbortControlHolder AbortController(this);
@@ -1398,30 +1337,11 @@ LRetry:
 
             if (now_time >= abortEndTime)
             {
-                EPolicyAction action1 = eNoAction;
-                DWORD timeout1 = INFINITE;
-                if (fEscalation)
-                {
-                    if (!IsRudeAbort())
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadAbort, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-                    }
-                    else
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInCriticalRegion, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-                    }
-                }
-                if (action1 == eNoAction)
+                if (!fEscalation)
                 {
                     // timeout, but no action on timeout.
-                    // Debugger can call this function to about func-eval with a timeout
+                    // Debugger can call this function to abort func-eval with a timeout
                     return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
-                }
-                if (timeout1 != INFINITE)
-                {
-                    break;
                 }
             }
         }
@@ -1844,68 +1764,11 @@ LPrepareRetry:
 
         if (IsAbortRequested() && fEscalation)
         {
-            EPolicyAction action1;
-            EClrOperation operation1;
-            if (!IsRudeAbort())
+            if (IsRudeAbort())
             {
-                operation1 = OPR_ThreadAbort;
-            }
-            else
-            {
-                operation1 = OPR_ThreadRudeAbortInCriticalRegion;
-            }
-            action1 = GetEEPolicy()->GetActionOnTimeout(operation1, this);
-            switch (action1)
-            {
-            case eRudeAbortThread:
-                GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
                 MarkThreadForAbort(requester, EEPolicy::TA_Rude);
                 SetRudeAbortEndTimeFromEEPolicy();
                 goto LRetry;
-            case eUnloadAppDomain:
-                // AD unload does not abort finalizer thread.
-                if (this == FinalizerThread::GetFinalizerThread())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
-                    MarkThreadForAbort(requester, EEPolicy::TA_Rude);
-                    SetRudeAbortEndTimeFromEEPolicy();
-                    goto LRetry;
-                }
-                else
-                {
-                    if (this == GetThread())
-                    {
-                        Join(INFINITE,TRUE);
-                    }
-                    return S_OK;
-                }
-                break;
-            case eRudeUnloadAppDomain:
-                // AD unload does not abort finalizer thread.
-                if (this == FinalizerThread::GetFinalizerThread())
-                {
-                    MarkThreadForAbort(requester, EEPolicy::TA_Rude);
-                    SetRudeAbortEndTimeFromEEPolicy();
-                    goto LRetry;
-                }
-                else
-                {
-                    if (this == GetThread())
-                    {
-                        Join(INFINITE,TRUE);
-                    }
-                    return S_OK;
-                }
-                break;
-            case eExitProcess:
-            case eFastExitProcess:
-            case eRudeExitProcess:
-                GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
-                EEPolicy::HandleExitProcessFromEscalation(action1, HOST_E_EXITPROCESS_TIMEOUT);
-                _ASSERTE (!"Should not reach here");
-                break;
-            default:
-            break;
             }
         }
 
@@ -1923,20 +1786,7 @@ LPrepareRetry:
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
     LIMITED_METHOD_CONTRACT;
-
-    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-
-    ULONGLONG newEndTime;
-    if (timeout == INFINITE)
-    {
-        newEndTime = MAXULONGLONG;
-    }
-    else
-    {
-        newEndTime = CLRGetTickCount64() + timeout;
-    }
-
-    SetAbortEndTime(newEndTime, TRUE);
+    SetAbortEndTime(MAXULONGLONG, TRUE);
 }
 
 ULONGLONG Thread::s_NextSelfAbortEndTime = MAXULONGLONG;
@@ -2017,34 +1867,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
     {
         ASSERT(!"Invalid abort information");
         return;
-    }
-
-    if (requester == TAR_Thread)
-    {
-        DWORD timeoutFromPolicy;
-        if (abortType != EEPolicy::TA_Rude)
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-        }
-        if (timeoutFromPolicy != INFINITE)
-        {
-            ULONGLONG endTime = CLRGetTickCount64() + timeoutFromPolicy;
-            if (abortType != EEPolicy::TA_Rude)
-            {
-                if (endTime < m_AbortEndTime)
-                {
-                    m_AbortEndTime = endTime;
-                }
-            }
-            else if (endTime < m_RudeAbortEndTime)
-            {
-                m_RudeAbortEndTime = endTime;
-            }
-        }
     }
 
     if (abortInfo == (m_AbortInfo & abortInfo))
@@ -2563,12 +2385,9 @@ void Thread::HandleThreadAbortTimeout()
 {
     WRAPPER_NO_CONTRACT;
 
-    EPolicyAction action = eNoAction;
-    EClrOperation operation = OPR_ThreadRudeAbortInNonCriticalRegion;
-
     if (IsFuncEvalAbort())
     {
-        // There can't be escalation policy for FuncEvalAbort timeout.
+        // There can't be escalation for FuncEvalAbort timeout.
         // The debugger should retain control of the policy.  For example, if a RudeAbort times out, it's
         // probably because the debugger had some other thread frozen.  When the thread is thawed, things might
         // be fine, so we don't want to escelate the FuncEvalRudeAbort (which will be swalled by FuncEvalHijackWorker)
@@ -2576,40 +2395,10 @@ void Thread::HandleThreadAbortTimeout()
         return;
     }
 
-    if (!IsRudeAbort())
+    if (IsRudeAbort())
     {
-        operation = OPR_ThreadAbort;
+        MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
     }
-    else
-    {
-        operation = OPR_ThreadRudeAbortInCriticalRegion;
-    }
-    action = GetEEPolicy()->GetActionOnTimeout(operation, this);
-    // We only support escalation to rude abort
-
-    EX_TRY {
-        switch (action)
-        {
-        case eRudeAbortThread:
-            GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-            MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
-            break;
-        case eExitProcess:
-        case eFastExitProcess:
-        case eRudeExitProcess:
-            GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-            EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_THREADABORT);
-            _ASSERTE (!"Should not reach here");
-            break;
-        case eNoAction:
-            break;
-        default:
-            _ASSERTE (!"unknown policy for thread abort");
-        }
-    }
-    EX_CATCH {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 }
 
 void Thread::HandleThreadAbort ()
@@ -2680,23 +2469,6 @@ void Thread::PreWorkForThreadAbort()
     // the abort is favored. But we do need to reset the interrupt bits.
     FastInterlockAnd((ULONG *) &m_State, ~(TS_Interruptible | TS_Interrupted));
     ResetUserInterrupted();
-
-    if (IsRudeAbort()) {
-        EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
-        switch (action)
-        {
-        case eExitProcess:
-        case eFastExitProcess:
-        case eRudeExitProcess:
-                {
-            GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
-            GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
-                }
-            break;
-        default:
-            break;
-        }
-    }
 }
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)

@@ -722,6 +722,14 @@ int GenTree::GetRegisterDstCount() const
 #endif
     }
 #endif
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        assert(TypeGet() == TYP_STRUCT);
+        return 2;
+    }
+#endif
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -1288,6 +1296,15 @@ AGAIN:
                     return true;
                 }
                 break;
+
+            case GT_CNS_STR:
+                if ((op1->AsStrCon()->gtSconCPX == op2->AsStrCon()->gtSconCPX) &&
+                    (op1->AsStrCon()->gtScpHnd == op2->AsStrCon()->gtScpHnd))
+                {
+                    return true;
+                }
+                break;
+
 #if 0
             // TODO-CQ: Enable this in the future
         case GT_CNS_LNG:
@@ -1450,7 +1467,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->gtIndexBaseType != op2->AsHWIntrinsic()->gtIndexBaseType))
+                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
                     {
                         return false;
                     }
@@ -2120,7 +2137,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->gtIndexBaseType;
+                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -5550,6 +5567,47 @@ bool GenTree::OperMayThrow(Compiler* comp)
     return false;
 }
 
+//-----------------------------------------------------------------------------------
+// GetFieldCount: Return the register count for a multi-reg lclVar.
+//
+// Arguments:
+//     compiler - the current Compiler instance.
+//
+// Return Value:
+//     Returns the number of registers defined by this node.
+//
+// Notes:
+//     This must be a multireg lclVar.
+//
+unsigned int GenTreeLclVar::GetFieldCount(Compiler* compiler)
+{
+    assert(IsMultiReg());
+    LclVarDsc* varDsc = compiler->lvaGetDesc(GetLclNum());
+    return varDsc->lvFieldCnt;
+}
+
+//-----------------------------------------------------------------------------------
+// GetFieldTypeByIndex: Get a specific register's type, based on regIndex, that is produced
+//                    by this multi-reg node.
+//
+// Arguments:
+//     compiler - the current Compiler instance.
+//     idx      - which register type to return.
+//
+// Return Value:
+//     The register type assigned to this index for this node.
+//
+// Notes:
+//     This must be a multireg lclVar and 'regIndex' must be a valid index for this node.
+//
+var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
+{
+    assert(IsMultiReg());
+    LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
+    LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
+    return fieldVarDsc->TypeGet();
+}
+
 #if DEBUGGABLE_GENTREE
 // static
 GenTree::VtablePtr GenTree::s_vtablesForOpers[] = {nullptr};
@@ -7430,7 +7488,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->gtIndexBaseType = hwintrinsicOp->gtIndexBaseType;
+                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
             }
             break;
 #endif
@@ -9874,6 +9932,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     --msgLength;
                     break;
                 }
+                if (tree->gtFlags & GTF_VAR_MULTIREG)
+                {
+                    printf((tree->gtFlags & GTF_VAR_DEF) ? "M" : "m");
+                    --msgLength;
+                    break;
+                }
                 if (tree->gtFlags & GTF_VAR_DEF)
                 {
                     printf("D");
@@ -9892,6 +9956,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     --msgLength;
                     break;
                 }
+                if (tree->gtFlags & GTF_VAR_CONTEXT)
+                {
+                    printf("!");
+                    --msgLength;
+                    break;
+                }
+
                 goto DASH;
 
             case GT_EQ:
@@ -11285,10 +11356,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
             }
 
+            gtDispCommonEndLine(tree);
+
             if (tree->AsField()->gtFldObj && !topOnly)
             {
-                gtDispVN(tree);
-                printf("\n");
                 gtDispChild(tree->AsField()->gtFldObj, indentStack, IIArcBottom);
             }
 
@@ -12421,11 +12492,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree*             op2TunneledHandle  = nullptr;
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
-        unsigned             runtimeLookupCount = 0;
 
         // Try and find class handles from op1 and op2
-        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &runtimeLookupCount, &op1TunneledHandle);
-        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &runtimeLookupCount, &op2TunneledHandle);
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &op1TunneledHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &op2TunneledHandle);
 
         // If we have both class handles, try and resolve the type equality test completely.
         bool resolveFailed = false;
@@ -12444,11 +12514,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
                 JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
                 GenTree* result = gtNewIconNode(compareResult);
-
-                // Any runtime lookups that fed into this compare are
-                // now dead code, so they no longer require the runtime context.
-                assert(lvaGenericsContextUseCount >= runtimeLookupCount);
-                lvaGenericsContextUseCount -= runtimeLookupCount;
                 return result;
             }
             else
@@ -12611,15 +12676,12 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 //
 // Arguments:
 //    tree - tree that passes the handle to the helper
-//    runtimeLookupCount [optional, in/out] - incremented if tree was a runtime lookup
 //    handleTree [optional, out] - set to the literal operand tree for indirect handles
 //
 // Returns:
 //    The compile time class handle if known.
 //
-CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
-                                                         unsigned* runtimeLookupCount,
-                                                         GenTree** handleTree)
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree** handleTree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -12639,11 +12701,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     else if (tree->OperGet() == GT_RUNTIMELOOKUP)
     {
         result = tree->AsRuntimeLookup()->GetClassHandle();
-
-        if (runtimeLookupCount != nullptr)
-        {
-            *runtimeLookupCount = *runtimeLookupCount + 1;
-        }
     }
     // Or something reached indirectly
     else if (tree->gtOper == GT_IND)
@@ -17071,7 +17128,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     // We only return the HWIntrinsicNode if SSE is supported, since it is possible for
                     // the user to disable the SSE HWIntrinsic support via the COMPlus configuration knobs
                     // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_Zero, baseType, size);
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, baseType, size);
                 }
                 return nullptr;
             case TYP_SIMD32:
@@ -17080,7 +17137,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     // We only return the HWIntrinsicNode if AVX is supported, since it is possible for
                     // the user to disable the AVX HWIntrinsic support via the COMPlus configuration knobs
                     // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector256_Zero, baseType, size);
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector256_get_Zero, baseType, size);
                 }
                 return nullptr;
             default:
@@ -19042,3 +19099,20 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
     gtRsvdRegs &= ~tempRegMask;
     return genRegNumFromMask(tempRegMask);
 }
+
+#ifdef TARGET_ARM
+//------------------------------------------------------------------------
+// IsOffsetMisaligned: check if the field needs a special handling on arm.
+//
+// Return Value:
+//    true if it is a float field with a misaligned offset, false otherwise.
+//
+bool GenTreeLclFld::IsOffsetMisaligned() const
+{
+    if (varTypeIsFloating(gtType))
+    {
+        return ((m_lclOffs % emitTypeSize(TYP_FLOAT)) != 0);
+    }
+    return false;
+}
+#endif // TARGET_ARM

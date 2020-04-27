@@ -5,7 +5,6 @@
     <TrxTestResultsName>testResults.trx</TrxTestResultsName>
     <HtmlTestResultsName>testResults.html</HtmlTestResultsName>
     <TestResultsName>$(HtmlTestResultsName)</TestResultsName>
-    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)vstest.xunit.json</TestRunnerConfigPath>
   </PropertyGroup>
 
   <ItemGroup>

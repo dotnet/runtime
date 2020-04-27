@@ -1156,70 +1156,6 @@ void ForceEEShutdown(ShutdownCompleteAction sca)
     EEPolicy::HandleExitProcess(sca);
 }
 
-static bool WaitForEndOfShutdown_OneIteration()
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    // We are shutting down.  GC triggers does not have any effect now.
-    CONTRACT_VIOLATION(GCViolation);
-
-    // If someone calls EEShutDown while holding OS loader lock, the thread we created for shutdown
-    // won't start running.  This is a deadlock we can not fix.  Instead, we timeout and continue the
-    // current thread.
-    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ProcessExit);
-    timeout *= 2;
-    ULONGLONG endTime = CLRGetTickCount64() + timeout;
-    bool done = false;
-
-    EX_TRY
-    {
-        ULONGLONG curTime = CLRGetTickCount64();
-        if (curTime > endTime)
-        {
-            done = true;
-        }
-        else
-        {
-#ifdef PROFILING_SUPPORTED
-            if (CORProfilerPresent())
-            {
-                // A profiler is loaded, so just wait without timeout. This allows
-                // profilers to complete potentially lengthy post processing, without the
-                // CLR killing them off first. The Office team's server memory profiler,
-                // for example, does a lot of post-processing that can exceed the 80
-                // second imit we normally impose here. The risk of waiting without
-                // timeout is that, if there really is a deadlock, shutdown will hang.
-                // Since that will only happen if a profiler is loaded, that is a
-                // reasonable compromise
-                timeout = INFINITE;
-            }
-            else
-#endif //PROFILING_SUPPORTED
-            {
-                timeout = static_cast<DWORD>(endTime - curTime);
-            }
-            DWORD status = g_pEEShutDownEvent->Wait(timeout,TRUE);
-            if (status == WAIT_OBJECT_0 || status == WAIT_TIMEOUT)
-            {
-                done = true;
-            }
-            else
-            {
-                done = false;
-            }
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-    return done;
-}
-
 void WaitForEndOfShutdown()
 {
     CONTRACTL{
@@ -1240,7 +1176,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    while (!WaitForEndOfShutdown_OneIteration());
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
 }
 
 // ---------------------------------------------------------------------------
@@ -1876,8 +1812,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
             // TODO: This shouldn't rely on the LCID (id), but only the name
                 SetResourceCultureCallbacks(GetThreadUICultureNames,
                                             GetThreadUICultureId);
-
-                InitEEPolicy();
 
                 break;
             }

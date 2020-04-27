@@ -98,6 +98,7 @@ check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_G
 
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
+check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 check_function_exists(sysctl HAVE_SYSCTL)
 check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)

@@ -195,25 +195,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Clamp(Vector4 value1, Vector4 min, Vector4 max)
         {
-            // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            float x = value1.X;
-            x = (min.X > x) ? min.X : x;  // max(x, minx)
-            x = (max.X < x) ? max.X : x;  // min(x, maxx)
-
-            float y = value1.Y;
-            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
-            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
-
-            float z = value1.Z;
-            z = (min.Z > z) ? min.Z : z;  // max(z, minz)
-            z = (max.Z < z) ? max.Z : z;  // min(z, maxz)
-
-            float w = value1.W;
-            w = (min.W > w) ? min.W : w;  // max(w, minw)
-            w = (max.W < w) ? max.W : w;  // min(w, minw)
-
-            return new Vector4(x, y, z, w);
+            return Vector4.Min(Vector4.Max(value1, min), max);
         }
 
         /// <summary>

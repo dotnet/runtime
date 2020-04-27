@@ -136,10 +136,12 @@ namespace Internal.JitInterface
         private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
 
         private readonly ReadyToRunCodegenCompilation _compilation;
-        private IReadyToRunMethodCodeNode _methodCodeNode;
+        private MethodWithGCInfo _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
+
+        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -204,7 +206,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -1503,7 +1505,7 @@ namespace Internal.JitInterface
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
             ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            _methodCodeNode.Fixups.Add(node);
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -1884,7 +1886,7 @@ namespace Internal.JitInterface
 
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                                md = getUnboxingThunk(md);
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
@@ -1905,6 +1907,11 @@ namespace Internal.JitInterface
 
                 pResult.lookup.constLookup = CreateConstLookupToSymbol(symbolNode);
             }
+        }
+
+        private MethodDesc getUnboxingThunk(MethodDesc method)
+        {
+            return s_unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
@@ -1936,6 +1943,17 @@ namespace Internal.JitInterface
             }
 
             return true;
+        }
+
+        private bool NeedsTypeLayoutCheck(TypeDesc type)
+        {
+            if (!type.IsDefType)
+                return false;
+
+            if (!type.IsValueType)
+                return false;
+
+            return !IsLayoutFixedInCurrentVersionBubble(type);
         }
 
         /// <summary>
@@ -2115,7 +2133,7 @@ namespace Internal.JitInterface
             pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
             if (_profileDataNode == null)
             {
-                _profileDataNode = _compilation.NodeFactory.ProfileData((MethodWithGCInfo)_methodCodeNode);
+                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
             }
             return 0;
         }

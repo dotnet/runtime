@@ -39,24 +39,22 @@
 
 
 #ifdef FEATURE_COMINTEROP
-    DEFINE_ASM_QUAL_TYPE_NAME(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME, g_EnumeratorToEnumClassName, g_CorelibAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
+    DEFINE_ASM_QUAL_TYPE_NAME(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME, g_EnumeratorToEnumClassName, g_CorelibAsmName);
 
     static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN    = lengthof(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME);
     static const char       ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE[]    = {""};
     static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = lengthof(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
 
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName, VER_ASSEMBLYVERSION_STR, g_FXKeyToken);
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName, VER_ASSEMBLYVERSION_STR, g_FXKeyToken);
+    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
+    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
 
-    DEFINE_ASM_QUAL_TYPE_NAME(URI_ASM_QUAL_TYPE_NAME, g_SystemUriClassName, g_SystemRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_FXKeyToken);
+    DEFINE_ASM_QUAL_TYPE_NAME(URI_ASM_QUAL_TYPE_NAME, g_SystemUriClassName, g_SystemRuntimeAsmName);
 
-    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsName, g_ObjectModelAsmName, VER_ASSEMBLYVERSION_STR, g_FXKeyToken);
-    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
+    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsName, g_ObjectModelAsmName);
+    DEFINE_ASM_QUAL_TYPE_NAME(NCCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName);
 
-
-    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsName, g_ObjectModelAsmName, VER_ASSEMBLYVERSION_STR, g_FXKeyToken);
-    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-
+    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsName, g_ObjectModelAsmName);
+    DEFINE_ASM_QUAL_TYPE_NAME(PCEVENTARGS_MARSHALER_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventArgsMarshalerName, g_SystemRuntimeWindowsRuntimeAsmName);
 
     #define OLECOLOR_TO_SYSTEMCOLOR_METH_NAME   "FromOle"
     #define SYSTEMCOLOR_TO_OLECOLOR_METH_NAME   "ToOle"

@@ -31,11 +31,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
         }
 
-        public void WriteTag(CborTag tag)
+        public void WriteInt32(int value) => WriteInt64(value);
+        public void WriteUInt32(uint value) => WriteUInt64(value);
+
+        // Writes a CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public void WriteCborNegativeIntegerEncoding(ulong value)
         {
-            WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
-            // NB tag writes do not advance data item counters
-            _isTagContext = true;
+            WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
+            AdvanceDataItemCounters();
         }
 
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
