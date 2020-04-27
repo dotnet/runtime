@@ -8,8 +8,7 @@
   <PropertyGroup>
     <!-- Reuse the same runtimeconfig used by MSBuild. -->
     <GeneratorRuntimeConfig>$(MSBuildToolsPath)\MSBuild.runtimeconfig.json</GeneratorRuntimeConfig>
-    <GeneratorCommand Condition="'$(TargetsNetCoreApp)' == 'true'">"$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))" --fx-version $(ProductVersion)</GeneratorCommand>
-    <GeneratorCommand Condition="'$(TargetsNetCoreApp)' != 'true'">"$(DotNetTool)"</GeneratorCommand>
+    <GeneratorCommand>"$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))" --fx-version $(ProductVersion)</GeneratorCommand>
     <GeneratorCommand Condition="'$(TargetOS)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
     <GeneratorCommand Condition="'$(TargetOS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
   </PropertyGroup>
