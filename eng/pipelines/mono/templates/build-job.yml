@@ -105,6 +105,10 @@ jobs:
       - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: du -sh $(Build.SourcesDirectory)/*
+      displayName: Disk Usage
+
     # Publish product output directory for consumption by tests.
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:

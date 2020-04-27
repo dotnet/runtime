@@ -61,6 +61,10 @@ jobs:
                 $(_archiveTestsParameter)
           displayName: Restore and Build
 
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: du -sh $(Build.SourcesDirectory)/*
+          displayName: Disk Usage
+
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(Build.SourcesDirectory)/artifacts/helix

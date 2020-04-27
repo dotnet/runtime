@@ -88,6 +88,10 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: du -sh $(Build.SourcesDirectory)/*
+          displayName: Disk Usage
+
         - ${{ if eq(parameters.runTests, false) }}:
           - ${{ if ne(parameters.isOfficialBuild, true) }}:            
             - task: CopyFiles@2
