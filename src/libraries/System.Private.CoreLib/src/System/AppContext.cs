@@ -10,7 +10,6 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Threading;
-using System.Configuration;
 
 namespace System
 {
