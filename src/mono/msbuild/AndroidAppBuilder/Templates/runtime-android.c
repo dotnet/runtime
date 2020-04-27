@@ -137,8 +137,6 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 int
 mono_mobile_runtime_init (void)
 {
-    // for now, only Invariant Mode is supported (FIXME: integrate ICU)
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", true);
     // uncomment for debug output:
     //
     // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
