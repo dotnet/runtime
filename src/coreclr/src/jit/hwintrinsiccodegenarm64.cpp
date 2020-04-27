@@ -451,8 +451,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
-                assert(isRMW);
-
+            {
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
@@ -469,8 +468,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    assert(targetReg != op1Reg);
-
                     if (intrin.op1->isContainedIntOrIImmed())
                     {
                         // movi/movni reg, #imm8
@@ -484,7 +481,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                     INS_OPTS_NONE);
                     }
                 }
-                break;
+            }
+            break;
 
             default:
                 unreached();
