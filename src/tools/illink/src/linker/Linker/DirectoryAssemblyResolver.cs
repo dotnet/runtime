@@ -85,7 +85,7 @@ namespace Mono.Linker {
 			if (assembly != null)
 				return assembly;
 
-			throw new AssemblyResolutionException (name);
+			throw new AssemblyResolutionException (name, new FileNotFoundException ($"Unable to find '{name.Name}.dll' or '{name.Name}.exe' file"));
 		}
 
 		AssemblyDefinition SearchDirectory (AssemblyNameReference name, IEnumerable<string> directories, ReaderParameters parameters)
