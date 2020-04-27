@@ -41,6 +41,9 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
       displayName: Build product
 
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      -script: du -sh * $(Build.SourcesDirectory)/*
+
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
