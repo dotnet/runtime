@@ -152,6 +152,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsMismatch_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -1151,4 +1152,3 @@ namespace System.Xml.Tests
         }
     }
 }
-
