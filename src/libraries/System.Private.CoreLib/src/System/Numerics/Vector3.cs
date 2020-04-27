@@ -232,7 +232,9 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount)
         {
-            return value1 + (value2 - value1) * amount;
+            Vector3 firstInfluence = value1 * (1f - amount);
+            Vector3 secondInfluence = value2 * amount;
+            return firstInfluence + secondInfluence;
         }
 
         /// <summary>
