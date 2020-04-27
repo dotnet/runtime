@@ -11,10 +11,10 @@
 
 extern "C"
 {
-    int corehost_load(const host_interface_t* init);
-    int corehost_unload();
-    corehost_error_writer_fn corehost_set_error_writer(corehost_error_writer_fn error_writer);
-    int corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract);
+    int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init);
+    int HOSTPOLICY_CALLTYPE corehost_unload();
+    corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer);
+    int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract);
 }
 
 int hostpolicy_resolver::load(
