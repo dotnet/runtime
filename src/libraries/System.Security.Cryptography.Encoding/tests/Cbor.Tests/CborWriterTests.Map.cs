@@ -160,6 +160,43 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(CborConformanceLevel.Strict, 42)]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, 42)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, 42)]
+        [InlineData(CborConformanceLevel.Strict, "foobar")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "foobar")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar")]
+        [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } })]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } })]
+        internal static void WriteMap_DuplicateKeys_StrictConformance_ShouldBeRecoverableError(CborConformanceLevel level, object dupeKey)
+        {
+            byte[] expected = PerformWrite(attemptDuplicateWrite: false);
+            byte[] actual = PerformWrite(attemptDuplicateWrite: true);
+            Assert.Equal(expected.ByteArrayToHex(), actual.ByteArrayToHex());
+
+            byte[] PerformWrite(bool attemptDuplicateWrite)
+            {
+                using var writer = new CborWriter(level);
+                writer.WriteStartMap(2);
+                Helpers.WriteValue(writer, dupeKey);
+                writer.WriteInt32(0);
+
+                if (attemptDuplicateWrite)
+                {
+                    Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, dupeKey));
+                }
+
+                // wrap dupe key in an array to satisfy key sorting & uniqueness constraints
+                Helpers.WriteValue(writer, new object[] { dupeKey }); 
+                writer.WriteInt32(0);
+                writer.WriteEndMap();
+
+                return writer.ToArray();
+            }
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]

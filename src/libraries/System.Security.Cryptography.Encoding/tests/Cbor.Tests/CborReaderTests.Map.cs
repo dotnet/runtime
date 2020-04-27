@@ -191,7 +191,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadStartMap();
             Helpers.VerifyValue(reader, dupeKey);
             reader.ReadInt32();
+
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            CborReaderState state = reader.PeekState();
+
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, dupeKey));
+
+            // ensure reader state is preserved
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(state, reader.PeekState());
         }
 
         [Theory]
@@ -227,8 +237,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt32(); // value is always an integer
             }
 
+            int bytesRead = reader.BytesRead;
+            int bytesRemaining = reader.BytesRemaining;
+            CborReaderState state = reader.PeekState();
+
             // the final element violates sorting invariant
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, keySequence.Last()));
+
+            // ensure reader state is preserved
+            Assert.Equal(bytesRead, reader.BytesRead);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(state, reader.PeekState());
         }
 
         [Theory]

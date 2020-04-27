@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            _currentValueOffset = _offset;
+            int currentValueOffset = _offset;
 
             if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
@@ -75,15 +75,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 (int Offset, int KeyLength, int TotalLength) currentKeyRange =
                     (_currentKeyOffset.Value,
-                     _currentValueOffset.Value - _currentKeyOffset.Value,
-                     0);
+                     currentValueOffset - _currentKeyOffset.Value,
+                     0); 
 
                 if (ranges.Contains(currentKeyRange))
                 {
-                    // TODO: check if rollback is necessary here
+                    // reset writer state to before the offending key write
+                    _buffer.AsSpan(currentKeyRange.Offset, _offset).Fill(0);
+                    _offset = currentKeyRange.Offset;
+
                     throw new InvalidOperationException("Duplicate key encoding in CBOR map.");
                 }
             }
+
+            _currentValueOffset = currentValueOffset;
         }
 
         private void HandleValueWritten()

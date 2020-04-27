@@ -361,6 +361,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _cachedState = CborReaderState.Unknown;
         }
 
+        private void ResetBuffer(int position)
+        {
+            _buffer = _originalBuffer.Slice(position);
+            _bytesRead = position;
+            // invalidate the state cache
+            _cachedState = CborReaderState.Unknown;
+        }
+
         private void EnsureBuffer(int length)
         {
             if (_buffer.Length < length)

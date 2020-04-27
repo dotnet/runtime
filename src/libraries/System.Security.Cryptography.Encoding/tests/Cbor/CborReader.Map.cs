@@ -115,10 +115,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 int cmp = CborConformanceLevelHelpers.CompareEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
                 if (cmp > 0)
                 {
+                    ResetBuffer(currentKeyRange.Offset);
                     throw new FormatException("CBOR map keys are not in sorted encoding order.");
                 }
                 else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
+                    ResetBuffer(currentKeyRange.Offset);
                     throw new FormatException("CBOR map contains duplicate keys.");
                 }
             }
@@ -134,6 +136,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (!previousKeys.Add(currentKeyRange))
             {
+                ResetBuffer(currentKeyRange.Offset);
                 throw new FormatException("CBOR map contains duplicate keys.");
             }
         }

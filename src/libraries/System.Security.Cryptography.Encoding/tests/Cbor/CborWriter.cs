@@ -161,9 +161,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void AdvanceDataItemCounters()
         {
-            _remainingDataItems--;
-            _isTagContext = false;
-
             if (_currentKeyOffset != null) // this is a map context
             {
                 if (_currentValueOffset == null)
@@ -175,6 +172,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     HandleValueWritten();
                 }
             }
+
+            _remainingDataItems--;
+            _isTagContext = false;
         }
 
         private void WriteInitialByte(CborInitialByte initialByte)
