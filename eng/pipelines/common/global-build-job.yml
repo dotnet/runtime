@@ -42,7 +42,7 @@ jobs:
       displayName: Build product
 
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      -script: du -sh * $(Build.SourcesDirectory)/*
+      - script: du -sh * $(Build.SourcesDirectory)/*
 
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
