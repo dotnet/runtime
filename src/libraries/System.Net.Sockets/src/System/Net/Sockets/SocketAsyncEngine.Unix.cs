@@ -354,7 +354,7 @@ namespace System.Net.Sockets
             // Write to the pipe, which will wake up the event loop and cause it to exit.
             //
             byte b = 1;
-            int bytesWritten = Interop.Sys.Write(_shutdownWritePipe, &b, 1);
+            int bytesWritten = Interop.Sys.Write((IntPtr)_shutdownWritePipe, &b, 1);
             if (bytesWritten != 1)
             {
                 throw new InternalException(bytesWritten);
