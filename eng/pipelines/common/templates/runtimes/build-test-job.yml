@@ -115,7 +115,7 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: du -sh $(Build.SourcesDirectory)/*
-      displayName: Disk Usage
+        displayName: Disk Usage
 
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml

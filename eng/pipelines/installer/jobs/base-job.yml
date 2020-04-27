@@ -436,7 +436,7 @@ jobs:
 
   - ${{ if eq(parameters.osGroup, 'OSX') }}:
     - script: du -sh $(Build.SourcesDirectory)/*
-    displayName: Disk Usage
+      displayName: Disk Usage
 
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:

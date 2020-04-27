@@ -107,7 +107,7 @@ jobs:
 
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: du -sh $(Build.SourcesDirectory)/*
-      displayName: Disk Usage
+        displayName: Disk Usage
 
     # Publish product output directory for consumption by tests.
     - template: /eng/pipelines/common/upload-artifact-step.yml
