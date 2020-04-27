@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\runtimes\android-$(TargetArchitecture)</RuntimePackDir>
-    <MonoRuntimeDir>$(ArtifactsDir)bin\mono\Android.$(TargetArchitecture).$(Configuration)</MonoRuntimeDir>
     <BundleDir>$(MSBuildThisFileDirectory)\bin\bundle</BundleDir>
   </PropertyGroup>
 
@@ -26,7 +25,6 @@
       <AppBinaries Include="bin\*.*"/>
       <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
       <BclBinaries Include="$(RuntimePackDir)\native\*.*" />
-      <MonoRuntimeBinaries Include="$(MonoRuntimeDir)\*.*" />
     </ItemGroup>
     <Error Condition="'$(AndroidAbi)'==''" Text="Unknown $(TargetArchitecture), only x64 and arm64 are supported for this sample" />
     <Error Condition="'$(ANDROID_SDK_ROOT)' == ''" Text="ANDROID_SDK_ROOT should point to a valid Android SDK location" />

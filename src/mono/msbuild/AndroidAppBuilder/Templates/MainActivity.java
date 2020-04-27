@@ -16,7 +16,7 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
 
         AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
-        dlgAlert.setMessage("Use `adb shell am instrument -w ...` to run the tests");
+        dlgAlert.setMessage("Use `adb shell am instrument -w " + getApplicationContext().getPackageName() + "net.dot.MonoRunner` to run the tests.");
         dlgAlert.create().show();
     }
 }

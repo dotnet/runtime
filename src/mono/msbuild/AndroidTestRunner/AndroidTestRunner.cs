@@ -85,5 +85,5 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
     public override TextWriter? Logger => null;
 
     public override string TestsResultsFinalPath => 
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Logs.txt");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "testResults.xml");
 }

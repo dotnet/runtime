@@ -54,7 +54,10 @@ internal class Utils
             }
         }
 
-        Process process = Process.Start(processStartInfo)!;
+        Process? process = Process.Start(processStartInfo);
+        if (process == null)
+            throw new ArgumentException("Process.Start({path} {args}) returned null process");
+
         process.ErrorDataReceived += (sender, e) =>
         {
             if (!silent)
@@ -75,10 +78,9 @@ internal class Utils
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
+
         if (!ignoreErrors && process.ExitCode != 0)
-        {
             throw new Exception("Error: " + errorBuilder);
-        }
 
         return outputBuilder.ToString().Trim('\r','\n');
     }

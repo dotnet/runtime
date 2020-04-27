@@ -80,8 +80,9 @@ public class ApkBuilder
 
         // 1. Build libruntime-android.so` via cmake
 
-        string monoRuntimeLib = Directory.GetFiles(appDir)
-            .First(f => Path.GetFileName(f) == "libmonosgen-2.0.a");
+        string monoRuntimeLib = Path.Combine(appDir, "libmonosgen-2.0.a");
+        if (!File.Exists(monoRuntimeLib))
+            throw new ArgumentException($"libmonosgen-2.0.a was not found in {appDir}");
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
