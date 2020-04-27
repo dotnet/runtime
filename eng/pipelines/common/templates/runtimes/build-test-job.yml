@@ -113,6 +113,8 @@ jobs:
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      -script: du -sh $(Build.SourcesDirectory)/*
 
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
