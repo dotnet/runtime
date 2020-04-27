@@ -35,6 +35,7 @@ namespace System.Configuration
 
             Assembly exeAssembly = null;
 
+            var externalConfigPath = AppContext.GetData("APP_CONTEXT_CONFIGURATION_FILE") as string;
             if (exePath != null)
             {
                 // Exe path was specified, use it
@@ -58,7 +59,7 @@ namespace System.Configuration
                     // used for local paths and "file://" for UNCs. Simply removing the prefix will make
                     // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
                     // "/home").
-                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.ApplicationConfigBase, exeAssembly.ManifestModule.Name);
+                    string configBasePath = Path.Combine(AppContext.BaseDirectory, exeAssembly.ManifestModule.Name);;
                     Uri uri = new Uri(configBasePath);
 
                     Debug.Assert(uri.IsFile);
@@ -75,7 +76,14 @@ namespace System.Configuration
                 }
             }
 
-            if (!string.IsNullOrEmpty(ApplicationUri))
+            if (!string.IsNullOrEmpty(externalConfigPath))
+            {
+                var externalConfigUri = new Uri(externalConfigPath);
+                if (externalConfigUri.IsFile)
+                {
+                    ApplicationConfigUri = externalConfigUri.LocalPath;
+                }
+            } else if (!string.IsNullOrEmpty(ApplicationUri))
             {
                 ApplicationConfigUri = ApplicationUri + ConfigExtension;
             }
