@@ -16,6 +16,10 @@
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
     <TargetsForTfmSpecificContentInPackage Condition="'$(HasMatchingContract)' == 'true'">$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
+  <!-- Work around ApiCompat breaking change https://github.com/dotnet/arcade/issues/5361 -->
+  <ItemGroup Condition="'$(RunApiCompat)' == 'true'">
+    <_DependencyDirectories Include="$(IntermediateOutputPath)" />
+  </ItemGroup>
   <!-- Add a ProjectReference to the reference assembly project for ApiCompat. -->
   <!-- This also ensures that it is built when the current project gets packaged. -->
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
