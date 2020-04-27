@@ -273,8 +273,9 @@
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
     <NETCoreAppRuntimePackPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'lib-runtime-packs'))</NETCoreAppRuntimePackPath>
-    <NETCoreAppRuntimePackLibPath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'lib', '$(NETCoreAppFramework)'))</NETCoreAppRuntimePackLibPath>
-    <NETCoreAppRuntimePackNativePath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)', 'native'))</NETCoreAppRuntimePackNativePath>
+    <NETCoreAppRuntimePackRIDPath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackPath)', 'runtimes', '$(PackageRID)'))</NETCoreAppRuntimePackRIDPath>
+    <NETCoreAppRuntimePackLibPath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackRIDPath)' 'lib', '$(NETCoreAppFramework)'))</NETCoreAppRuntimePackLibPath>
+    <NETCoreAppRuntimePackNativePath>$([MSBuild]::NormalizeDirectory('$(NETCoreAppRuntimePackRIDPath)', 'native'))</NETCoreAppRuntimePackNativePath>
     <RuntimePackTargetFrameworkPath>runtimes/$(PackageRID)</RuntimePackTargetFrameworkPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
