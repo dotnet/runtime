@@ -206,6 +206,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -455,6 +456,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
