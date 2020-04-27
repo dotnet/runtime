@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using System.Linq;
 using System.Text;
 
 namespace Mono.Linker
@@ -17,6 +20,23 @@ namespace Mono.Linker
 			FileName = fileName;
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
+		}
+
+		public static MessageOrigin? TryGetOrigin (IMemberDefinition sourceMethod, int ilOffset)
+		{
+			if (sourceMethod is MethodDefinition methodDef) {
+				if (!methodDef.DebugInformation.HasSequencePoints)
+					return null;
+
+				SequencePoint correspondingSequencePoint = methodDef.DebugInformation.SequencePoints
+					.Where (s => s.Offset <= ilOffset)?.First ();
+				if (correspondingSequencePoint == null)
+					return null;
+
+				return new MessageOrigin (correspondingSequencePoint.Document.Url, correspondingSequencePoint.StartLine, correspondingSequencePoint.StartColumn);
+			}
+
+			return null;
 		}
 
 		public override string ToString ()

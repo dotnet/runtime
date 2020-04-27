@@ -83,7 +83,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (WriteToParameterOnInstanceMethod), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private void WriteToParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
 			Type type)
@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithDefaultConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (WriteToParameterOnStaticMethod), new Type[] { typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private static void WriteToParameterOnStaticMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
 			Type type)
@@ -99,7 +99,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithDefaultConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (LongWriteToParameterOnInstanceMethod), new Type[] { typeof (int), typeof (int), typeof (int), typeof (int), typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private void LongWriteToParameterOnInstanceMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
@@ -108,7 +108,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type = ReturnThingsWithDefaultConstructor ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (LongWriteToParameterOnStaticMethod), new Type[] { typeof (int), typeof (int), typeof (int), typeof (int), typeof (Type) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Type), "type")]
 		private static void LongWriteToParameterOnStaticMethod (
 			int a, int b, int c, int d,
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
