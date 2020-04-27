@@ -164,13 +164,13 @@ namespace System.Net.Sockets
                 {
                     case AddressFamily.InterNetwork:
                         _rightEndPoint = new IPEndPoint(
-                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer) & 0x0FFFFFFFF),
+                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
                             SocketAddressPal.GetPort(buffer));
                         break;
 
                     case AddressFamily.InterNetworkV6:
                         Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                        SocketAddressPal.GetIPv6Address(buffer, address, out uint scope);
+                        SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
                         _rightEndPoint = new IPEndPoint(
                             new IPAddress(address, scope),
                             SocketAddressPal.GetPort(buffer));
@@ -190,25 +190,22 @@ namespace System.Net.Sockets
                     {
                         // Local and Remote EP may be different sizes for something like UDS.
                         bufferLength = buffer.Length;
-                        fixed (byte* bufferPtr = buffer)
+                        if (SocketPal.GetPeerName(handle, buffer, ref bufferLength) != SocketError.Success)
                         {
-                            if (SocketPal.GetPeerName(handle, bufferPtr, &bufferLength) != SocketError.Success)
-                            {
-                                return;
-                            }
+                            return;
                         }
 
                         switch (_addressFamily)
                         {
                             case AddressFamily.InterNetwork:
                             _remoteEndPoint = new IPEndPoint(
-                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer) & 0x0FFFFFFFF),
+                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
                                 SocketAddressPal.GetPort(buffer));
                             break;
 
                             case AddressFamily.InterNetworkV6:
                                 Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                                SocketAddressPal.GetIPv6Address(buffer, address, out uint scope);
+                                SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
                                 _remoteEndPoint = new IPEndPoint(
                                     new IPAddress(address, scope),
                                     SocketAddressPal.GetPort(buffer));

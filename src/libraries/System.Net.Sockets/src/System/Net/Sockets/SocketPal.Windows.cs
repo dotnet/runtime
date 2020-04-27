@@ -156,16 +156,13 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError GetPeerName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, Span<byte> buffer, ref int nameLen)
         {
-            SocketError errorCode = Interop.Winsock.getpeername(handle, buffer, ref nameLen);
-            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
-        }
-
-        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte* buffer, int* nameLen)
-        {
-            SocketError errorCode = Interop.Winsock.getpeername(handle, buffer, nameLen);
-            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            fixed (byte* rawBuffer = buffer)
+            {
+                SocketError errorCode = Interop.Winsock.getpeername(handle, rawBuffer, ref nameLen);
+                return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            }
         }
 
         public static SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, byte[] buffer, int nameLen)

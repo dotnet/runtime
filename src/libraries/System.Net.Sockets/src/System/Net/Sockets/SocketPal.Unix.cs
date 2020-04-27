@@ -862,7 +862,7 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte[] buffer, ref int nameLen)
+        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, Span<byte> buffer, ref int nameLen)
         {
             Interop.Error err;
             int addrLen = nameLen;
@@ -872,12 +872,6 @@ namespace System.Net.Sockets
             }
 
             nameLen = addrLen;
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
-        }
-
-        public static unsafe SocketError GetPeerName(SafeSocketHandle handle, byte* buffer, int* nameLen)
-        {
-            Interop.Error err = Interop.Sys.GetPeerName(handle, buffer, nameLen);
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
