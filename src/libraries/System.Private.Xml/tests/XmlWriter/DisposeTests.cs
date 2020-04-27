@@ -182,8 +182,8 @@ namespace System.Xml.Tests
                 Assert.Equal(stream2.GetBuffer(), stream3.GetBuffer());
 
                 Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream1.GetBuffer(), stream1.Length));
-                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream2.GetBuffer(), stream1.Length));
-                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream3.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream2.GetBuffer(), stream2.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream3.GetBuffer(), stream3.Length));
             }
         }
 
