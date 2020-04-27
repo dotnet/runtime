@@ -23,6 +23,10 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  # If true, tests were built in two phases
+  # We will depend on both the TargetGeneric tests which are for AnyOS AnyCPU
+  # as well as the TargetSpecific test.  Both sets of tests will be run
+  testBuildPhased : false
 
 ### Test run job
 
@@ -58,6 +62,12 @@ jobs:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        # Also depend on AnyOS AnyCPU tests
+        - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+        - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -190,6 +200,16 @@ jobs:
 
     # Download and unzip managed test artifacts
     - ${{ if ne(parameters.corefxTests, true) }}:
+      # First download and unzip AnyOS AnyCPU test (if needed)
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: '$(managedTestArtifactRootFolderPath)'
+            artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+            artifactName: '$(managedGenericTestArtifactName)'
+            displayName: 'generic managed test artifacts'
+
+      # Download and unzip target specific tests
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'

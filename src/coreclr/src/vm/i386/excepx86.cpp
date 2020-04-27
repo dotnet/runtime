@@ -1078,35 +1078,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-        // Check if we are dealing with AV or not and if we are,
-        // ensure that this is a real AV and not managed AV exception
-        BOOL fIsThrownExceptionAV = FALSE;
-        if ((pExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION) &&
-            (MscorlibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable()))
-        {
-            // Its an AV - set the flag
-            fIsThrownExceptionAV = TRUE;
-        }
-
-        // Did we get an AV?
-        if (fIsThrownExceptionAV == TRUE)
-        {
-            // Get the escalation policy action for handling AV
-            EPolicyAction actionAV = GetEEPolicy()->GetActionOnFailure(FAIL_AccessViolation);
-
-            // Valid actions are: eNoAction (default behviour) or eRudeExitProcess
-            _ASSERTE(((actionAV == eNoAction) || (actionAV == eRudeExitProcess)));
-            if (actionAV == eRudeExitProcess)
-            {
-                LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: AccessViolation handler found and doing RudeExitProcess due to escalation policy (eRudeExitProcess)\n"));
-
-                // EEPolicy::HandleFatalError will help us RudeExit the process.
-                // RudeExitProcess due to AV is to prevent a security risk - we are ripping
-                // at the boundary, without looking for the handlers.
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
-            }
-        }
-
         // If we're out of memory, then we figure there's probably not memory to maintain a stack trace, so we skip it.
         // If we've got a stack overflow, then we figure the stack will be so huge as to make tracking the stack trace
         // impracticle, so we skip it.
@@ -1692,7 +1663,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     {
         if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
         {
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)pEstablisherFrame);
+            EEPolicy::HandleStackOverflow();
 
             // VC's unhandled exception filter plays with stack.  It VirtualAlloc's a new stack, and
             // then launch Watson from the new stack.  When Watson asks CLR to save required data, we
@@ -2786,7 +2757,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // that won't be reflected via the IL stub's MethodDesc.
             pFuncWithCEAttribute = GetUserMethodForILStub(pThread, (UINT_PTR)pStack, pFunc, &pILStubFrame);
         }
-        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute, FALSE);
+        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute);
     }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
