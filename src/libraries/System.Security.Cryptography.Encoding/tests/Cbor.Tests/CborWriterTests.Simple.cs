@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteSingle(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteDouble(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = "f6".HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteNull();
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteBoolean(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteSimpleValue(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
     }
 }

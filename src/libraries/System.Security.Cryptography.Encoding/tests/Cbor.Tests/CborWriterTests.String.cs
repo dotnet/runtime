@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] input = hexInput.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteByteString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             using var writer = new CborWriter();
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteTextString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Fact]

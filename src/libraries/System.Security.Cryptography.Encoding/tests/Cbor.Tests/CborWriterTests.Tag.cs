@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteTag((CborTag)tag);
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 writer.WriteTag((CborTag)tag);
             }
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 writer.WriteTag((CborTag)tag);
             }
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
 
             Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
         }
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteDateTimeOffset(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             writer.WriteBigInteger(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             decimal value = decimal.Parse(stringValue, Globalization.CultureInfo.InvariantCulture);
             using var writer = new CborWriter();
             writer.WriteDecimal(value);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 

@@ -225,7 +225,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        public byte[] ToArray()
+        public byte[] GetEncoding() => GetSpanEncoding().ToArray();
+
+        public bool TryWriteEncoding(Span<byte> destination, out int bytesWritten)
+        {
+            ReadOnlySpan<byte> encoding = GetSpanEncoding();
+
+            if (encoding.Length > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            encoding.CopyTo(destination);
+            bytesWritten = encoding.Length;
+            return true;
+        }
+
+        private ReadOnlySpan<byte> GetSpanEncoding()
         {
             CheckDisposed();
 
@@ -234,7 +251,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
             }
 
-            return (_offset == 0) ? Array.Empty<byte>() : _buffer.AsSpan(0, _offset).ToArray();
+            return (_offset == 0) ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _offset);
         }
 
         private readonly struct StackFrame
