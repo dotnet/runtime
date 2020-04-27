@@ -1684,7 +1684,7 @@
     <value>Derived attribute's use has to be required if base attribute's use is required.</value>
   </data>
   <data name="Sch_AttributeRestrictionInvalidFromWildcard" xml:space="preserve">
-    <value>The {base type definition} must have an {attribute wildcard} and the {target namespace} of the R's {attribute declaration} must be valid with respect to that wildcard.</value>
+    <value>The base type definition must have an attribute wildcard and the target namespace of the attribute declaration in the 'redefine' must be valid with respect to that wildcard.</value>
   </data>
   <data name="Sch_NoDerivedAttribute" xml:space="preserve">
     <value>The base attribute '{0}' whose use = 'required' does not have a corresponding derived attribute while redefining attribute group '{1}'.</value>
