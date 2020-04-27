@@ -109,8 +109,6 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private static readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
-
         public static void Startup()
         {
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
@@ -874,7 +872,7 @@ namespace Internal.JitInterface
             {
                 if (impl.OwningType.IsValueType)
                 {
-                    impl = _unboxingThunkFactory.GetUnboxingMethod(impl);
+                    impl = getUnboxingThunk(impl);
                 }
 
                 return ObjectToHandle(impl);
