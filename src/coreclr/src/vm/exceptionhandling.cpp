@@ -893,7 +893,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
-            EEPolicy::HandleStackOverflow(SOD_ManagedFrameHandler, (void*)MemoryStackFp);
+            EEPolicy::HandleStackOverflow();
             FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }
@@ -1049,49 +1049,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             }
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-        {
-            // Switch to COOP mode since we are going to work
-            // with throwable
-            GCX_COOP();
-            if (pTracker->GetThrowable() != NULL)
-            {
-                BOOL fIsThrownExceptionAV = FALSE;
-                OBJECTREF oThrowable = NULL;
-                GCPROTECT_BEGIN(oThrowable);
-                oThrowable = pTracker->GetThrowable();
-
-                // Check if we are dealing with AV or not and if we are,
-                // ensure that this is a real AV and not managed AV exception
-                if ((pExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION) &&
-                    (MscorlibBinder::GetException(kAccessViolationException) == oThrowable->GetMethodTable()))
-                {
-                    // Its an AV - set the flag
-                    fIsThrownExceptionAV = TRUE;
-                }
-
-                GCPROTECT_END();
-
-                // Did we get an AV?
-                if (fIsThrownExceptionAV == TRUE)
-                {
-                    // Get the escalation policy action for handling AV
-                    EPolicyAction actionAV = GetEEPolicy()->GetActionOnFailure(FAIL_AccessViolation);
-
-                    // Valid actions are: eNoAction (default behviour) or eRudeExitProcess
-                    _ASSERTE(((actionAV == eNoAction) || (actionAV == eRudeExitProcess)));
-                    if (actionAV == eRudeExitProcess)
-                    {
-                        LOG((LF_EH, LL_INFO100, "ProcessCLRException: AccessViolation handler found and doing RudeExitProcess due to escalation policy (eRudeExitProcess)\n"));
-
-                        // EEPolicy::HandleFatalError will help us RudeExit the process.
-                        // RudeExitProcess due to AV is to prevent a security risk - we are ripping
-                        // at the boundary, without looking for the handlers.
-                        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
-                    }
-                }
-            }
-        }
 
 #ifndef TARGET_UNIX // Watson is on Windows only
         // Setup bucketing details for nested exceptions (rethrow and non-rethrow) only if we are in the first pass

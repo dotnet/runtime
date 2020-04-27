@@ -7337,8 +7337,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
         // For Whidbey, by default only swallow certain exceptions.  If reverting back to Everett's
         // behavior (swallowing all unhandled exception), then swallow all unhandled exception.
         //
-        if (SwallowUnhandledExceptions() ||
-            IsExceptionOfType(kThreadAbortException, pException))
+        if (IsExceptionOfType(kThreadAbortException, pException))
         {
             // Do nothing to swallow the exception
         }
