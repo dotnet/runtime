@@ -48,15 +48,15 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
-            string version = "2017-04-17";
-            string blob = "BlockBlob";
+            const string Version = "2017-04-17";
+            const string Blob = "BlockBlob";
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("x-ms-version", version);
-                    client.DefaultRequestHeaders.Add("x-ms-blob-type", blob);
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("x-ms-version", Version);
+                    client.DefaultRequestHeaders.Add("x-ms-blob-type", Blob);
                     var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
                 }
@@ -66,9 +66,9 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
 
                 string headerValue = requestData.GetSingleHeaderValue("x-ms-blob-type");
-                Assert.Equal(blob, headerValue);
+                Assert.Equal(Blob, headerValue);
                 headerValue = requestData.GetSingleHeaderValue("x-ms-version");
-                Assert.Equal(version, version);
+                Assert.Equal(Version, Version);
             });
         }
 
