@@ -27,7 +27,8 @@ public class AndroidAppBuilderTask : Task
     /// <summary>
     /// Path to store build artifacts
     /// </summary>
-    public string? OutputDirectory { get; set; }
+    [Required]
+    public string OutputDirectory { get; set; } = ""!;
 
     /// <summary>
     /// Target arch, can be 'x86', 'x86_64', 'armeabi', 'armeabi-v7a' or 'arm64-v8a'
@@ -41,9 +42,6 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string AndroidNdk { get; set; } = ""!;
     
-    /// <summary>
-    /// Minimal Android API (21 by default)
-    /// </summary>
     public string MinApiLevel { get; set; } = "21"!;
     
     public string? BuildApiLevel { get; set; }
@@ -61,18 +59,9 @@ public class AndroidAppBuilderTask : Task
         Utils.Logger = Log;
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
-        {
             throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
-        }
 
-        string binDir = Path.Combine(AppDir, $"bin-{ProjectName}-{Abi}");
-        if (!string.IsNullOrEmpty(OutputDirectory))
-        {
-            binDir = OutputDirectory;
-        }
-        Directory.CreateDirectory(binDir);
-
-        (ApkBundlePath, ApkPackageId) = ApkBuilder.BuildApk(ProjectName, binDir, AppDir, MainLibraryFileName, MonoRuntimeHeaders,
+        (ApkBundlePath, ApkPackageId) = ApkBuilder.BuildApk(ProjectName, OutputDirectory, AppDir, MainLibraryFileName, MonoRuntimeHeaders,
             AndroidSdk, AndroidNdk, Abi, MinApiLevel, BuildApiLevel, BuildToolsVersion);
         
         return true;

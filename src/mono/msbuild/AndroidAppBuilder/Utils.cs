@@ -42,16 +42,12 @@ internal class Utils
         };
 
         if (workingDir != null)
-        {
             processStartInfo.WorkingDirectory = workingDir;
-        }
 
         if (envVars != null)
         {
             foreach (KeyValuePair<string, string> envVar in envVars)
-            {
                 processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
-            }
         }
 
         Process? process = Process.Start(processStartInfo);
@@ -89,24 +85,20 @@ internal class Utils
     {
         var dir = new DirectoryInfo(sourceDirName);
         DirectoryInfo[] dirs = dir.GetDirectories();
+
         if (!Directory.Exists(destDirName))
-        {
             Directory.CreateDirectory(destDirName);
-        }
+
         FileInfo[] files = dir.GetFiles();
         foreach (FileInfo file in files)
         {
             if (predicate(file.FullName))
-            {
                 file.CopyTo(Path.Combine(destDirName, file.Name), false);
-            }
         }
         foreach (DirectoryInfo subdir in dirs)
         {
             if (subdir.FullName != destDirName)
-            {
                 DirectoryCopy(subdir.FullName, Path.Combine(destDirName, subdir.Name), predicate);
-            }
         }
     }
 
@@ -115,16 +107,12 @@ internal class Utils
     public static void LogInfo(string? msg)
     {
         if (msg != null)
-        {
             Logger?.LogMessage(MessageImportance.High, msg);
-        }
     }
 
     public static void LogError(string? msg)
     {
         if (msg != null)
-        {
             Logger?.LogError(msg);
-        }
     }
 }

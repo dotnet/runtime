@@ -7,7 +7,7 @@ public class ApkBuilder
 {
     public static (string apk, string packageId) BuildApk(
         string appName,
-        string workplace,
+        string ouputDir,
         string appDir,
         string entryPointLib,
         string monoRuntimeHeaders,
@@ -47,13 +47,13 @@ public class ApkBuilder
         if (!Directory.Exists(buildToolsFolder))
             throw new ArgumentException($"{buildToolsFolder} was not found.");
 
-        Directory.CreateDirectory(workplace);
-        Directory.CreateDirectory(Path.Combine(workplace, "bin"));
-        Directory.CreateDirectory(Path.Combine(workplace, "obj"));
-        Directory.CreateDirectory(Path.Combine(workplace, "assets"));
+        Directory.CreateDirectory(ouputDir);
+        Directory.CreateDirectory(Path.Combine(ouputDir, "bin"));
+        Directory.CreateDirectory(Path.Combine(ouputDir, "obj"));
+        Directory.CreateDirectory(Path.Combine(ouputDir, "assets"));
         
-        // Copy AppDir to workplace/assets (ignore native files)
-        Utils.DirectoryCopy(appDir, Path.Combine(workplace, "assets"), file =>
+        // Copy AppDir to ouputDir/assets (ignore native files)
+        Utils.DirectoryCopy(appDir, Path.Combine(ouputDir, "assets"), file =>
         {
             var extension = Path.GetExtension(file);
             // ignore native files, those go to lib/%abi%
@@ -88,20 +88,20 @@ public class ApkBuilder
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
-        File.WriteAllText(Path.Combine(workplace, "CMakeLists.txt"), cmakeLists);
+        File.WriteAllText(Path.Combine(ouputDir, "CMakeLists.txt"), cmakeLists);
 
         string runtimeAndroidSrc = Utils.GetEmbeddedResource("runtime-android.c")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
-        File.WriteAllText(Path.Combine(workplace, "runtime-android.c"), runtimeAndroidSrc);
+        File.WriteAllText(Path.Combine(ouputDir, "runtime-android.c"), runtimeAndroidSrc);
         
-        Utils.RunProcess(cmake, workingDir: workplace,
+        Utils.RunProcess(cmake, workingDir: ouputDir,
             args: $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI={abi} -DANDROID_STL=none " + 
             "-DANDROID_NATIVE_API_LEVEL={minApiLevel} -B runtime-android");
-        Utils.RunProcess("make", workingDir: Path.Combine(workplace, "runtime-android"));
+        Utils.RunProcess("make", workingDir: Path.Combine(ouputDir, "runtime-android"));
 
         // 2. Compile Java files
 
-        string javaSrcFolder = Path.Combine(workplace, "src", "net", "dot");
+        string javaSrcFolder = Path.Combine(ouputDir, "src", "net", "dot");
         Directory.CreateDirectory(javaSrcFolder);
 
         string packageId = $"net.dot.{appName}";
@@ -110,53 +110,54 @@ public class ApkBuilder
             Utils.GetEmbeddedResource("MainActivity.java"));
         File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), 
             Utils.GetEmbeddedResource("MonoRunner.java"));
-        File.WriteAllText(Path.Combine(workplace, "AndroidManifest.xml"), 
+        File.WriteAllText(Path.Combine(ouputDir, "AndroidManifest.xml"), 
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
                 .Replace("%MinSdkLevel%", minApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MainActivity.java"), workingDir: workplace);
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MonoRunner.java"), workingDir: workplace);
-        Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: workplace);
+        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MainActivity.java"), workingDir: ouputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MonoRunner.java"), workingDir: ouputDir);
+        Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: ouputDir);
 
         // 3. Generate APK
 
-        string apkFile = Path.Combine(workplace, "bin", $"{appName}.unaligned.apk");
-        Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: workplace);
+        string apkFile = Path.Combine(ouputDir, "bin", $"{appName}.unaligned.apk");
+        Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: ouputDir);
         
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(workplace, "runtime-android", "libruntime-android.so"));
+        dynamicLibs.Add(Path.Combine(ouputDir, "runtime-android", "libruntime-android.so"));
         dynamicLibs.AddRange(Directory.GetFiles(appDir, "*.so"));
 
         // add all *.so files to lib/%abi%/
-        Directory.CreateDirectory(Path.Combine(workplace, "lib", abi));
+        Directory.CreateDirectory(Path.Combine(ouputDir, "lib", abi));
         foreach (var dynamicLib in dynamicLibs)
         {
             string destRelative = Path.Combine("lib", abi, Path.GetFileName(dynamicLib));
-            File.Copy(dynamicLib, Path.Combine(workplace, destRelative), true);
-            Utils.RunProcess(aapt, $"add {apkFile} {destRelative}", workingDir: workplace);
+            File.Copy(dynamicLib, Path.Combine(ouputDir, destRelative), true);
+            Utils.RunProcess(aapt, $"add {apkFile} {destRelative}", workingDir: ouputDir);
         }
-        Utils.RunProcess(aapt, $"add {apkFile} classes.dex", workingDir: workplace);
+        Utils.RunProcess(aapt, $"add {apkFile} classes.dex", workingDir: ouputDir);
 
-        // 4. Generate key
+        // 4. Align APK
+
+        string alignedApk = Path.Combine(ouputDir, "bin", $"{appName}.apk");
+        Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: ouputDir);
+
+        // 5. Generate key
         
-        string signingKey = Path.Combine(workplace, "debug.keystore");
+        string signingKey = Path.Combine(ouputDir, "debug.keystore");
         if (!File.Exists(signingKey))
         {
             Utils.RunProcess(keytool, "-genkey -v -keystore debug.keystore -storepass android -alias " +
-                "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt -dname \"CN=Android Debug,O=Android,C=US\"", workingDir: workplace, silent: true);
+                "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
+                "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: ouputDir, silent: true);
         }
-
-        // 5. Align APK
-
-        string alignedApk = Path.Combine(workplace, "bin", $"{appName}.apk");
-        Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: workplace);
 
         // 6. Sign APK
 
-        Utils.RunProcess(apksigner, $"sign --min-sdk-version {minApiLevel} --ks debug.keystore --ks-pass pass:android " +
-            $"--key-pass pass:android {alignedApk}", workingDir: workplace);
+        Utils.RunProcess(apksigner, $"sign --min-sdk-version {minApiLevel} --ks debug.keystore " + 
+            $"--ks-pass pass:android --key-pass pass:android {alignedApk}", workingDir: ouputDir);
 
         return (alignedApk, packageId);
     }
