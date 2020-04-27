@@ -46,35 +46,10 @@ bool hostpolicy_resolver::try_get_dir(
     const std::vector<pal::string_t>& probe_realpaths,
     pal::string_t* impl_dir)
 {
-    // Get the expected directory that would contain hostpolicy.
-    pal::string_t expected;
-    if (get_app(fx_definitions).get_runtime_config().get_is_framework_dependent())
-    {
-        // The hostpolicy is required to be in the root framework's location
-        expected.assign(get_root_framework(fx_definitions).get_dir());
-        assert(pal::directory_exists(expected));
-    }
-    else
-    {
-        // Native apps can be activated by muxer, native exe host or "corehost"
-        // 1. When activated with dotnet.exe or corehost.exe, check for hostpolicy in the deps dir or
-        //    app dir.
-        // 2. When activated with native exe, the standalone host, check own directory.
-        assert(mode != host_mode_t::invalid);
-        switch (mode)
-        {
-        case host_mode_t::apphost:
-        case host_mode_t::libhost:
-            expected = dotnet_root;
-            break;
+    // static apphost is not supposed to be used in a framework-dependent app
+    assert(!get_app(fx_definitions).get_runtime_config().get_is_framework_dependent());
+    assert(mode == host_mode_t::apphost);
 
-        default:
-            expected = get_directory(specified_deps_file.empty() ? app_candidate : specified_deps_file);
-            break;
-        }
-    }
-
-    // Assume the internal hostpolicy is in the expected location.
-    impl_dir->assign(expected);
+    impl_dir->assign(dotnet_root);
     return true;
 }
