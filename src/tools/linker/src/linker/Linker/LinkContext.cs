@@ -281,7 +281,7 @@ namespace Mono.Linker
 					RegisterAssembly (assembly);
 
 				return assembly;
-			} catch (Exception e) {
+			} catch (Exception e) when (!(e is AssemblyResolutionException)) {
 				throw new AssemblyResolutionException (reference, e);
 			}
 		}
@@ -332,10 +332,15 @@ namespace Mono.Linker
 			List<AssemblyDefinition> references = new List<AssemblyDefinition> ();
 			if (assembly == null)
 				return references;
+
 			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
-				AssemblyDefinition definition = Resolve (reference);
-				if (definition != null)
-					references.Add (definition);
+				try {
+					AssemblyDefinition definition = Resolve (reference);
+					if (definition != null)
+						references.Add (definition);
+				} catch (Exception e) {
+					throw new LoadException ($"Assembly '{assembly.FullName}' reference '{reference.FullName}' could not be resolved", e);
+				}
 			}
 			return references;
 		}
