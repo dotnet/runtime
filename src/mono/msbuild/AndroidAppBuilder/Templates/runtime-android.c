@@ -192,5 +192,6 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     char file_dir[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     bundle_path = file_dir;
+    setenv ("HOME", bundle_path, true);
     return mono_mobile_runtime_init ();
 }

@@ -44,14 +44,11 @@ public class MonoRunner extends Instrumentation
         Context context = getContext();
         AssetManager am = context.getAssets();
         String filesDir = context.getFilesDir().getAbsolutePath();
-        String libsDir = filesDir + "/assemblies";
 
-        // copy assets from bundle to file system
-        new File(libsDir).mkdir();
-        copyAssetDir(am, "", libsDir);
+        copyAssetDir(am, "", filesDir);
 
         // retcode is what Main() returns in C#
-        int retcode = initRuntime(libsDir);
+        int retcode = initRuntime(filesDir);
         WriteLineToInstrumentation("[Mono] Main() returned " + retcode);
         runOnMainSync (new Runnable() {
             public void run() {

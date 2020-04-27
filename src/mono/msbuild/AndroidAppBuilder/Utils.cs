@@ -83,7 +83,7 @@ internal class Utils
         return outputBuilder.ToString().Trim('\r','\n');
     }
 
-    public static void DirectoryCopy(string sourceDirName, string destDirName, Func<string, bool, bool> predicate)
+    public static void DirectoryCopy(string sourceDirName, string destDirName, Func<string, bool> predicate)
     {
         var dir = new DirectoryInfo(sourceDirName);
         DirectoryInfo[] dirs = dir.GetDirectories();
@@ -94,14 +94,14 @@ internal class Utils
         FileInfo[] files = dir.GetFiles();
         foreach (FileInfo file in files)
         {
-            if (predicate(file.FullName, false))
+            if (predicate(file.FullName))
             {
                 file.CopyTo(Path.Combine(destDirName, file.Name), false);
             }
         }
         foreach (DirectoryInfo subdir in dirs)
         {
-            if (subdir.FullName != destDirName && predicate(subdir.FullName, true))
+            if (subdir.FullName != destDirName)
             {
                 DirectoryCopy(subdir.FullName, Path.Combine(destDirName, subdir.Name), predicate);
             }

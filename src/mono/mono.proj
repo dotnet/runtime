@@ -940,6 +940,9 @@
     <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidAppBuilder\AndroidAppBuilder.csproj"
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AndroidTestRunner\AndroidTestRunner.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
   </Target>
 
   <!-- Ordering matters! Overwriting the Build target. -->

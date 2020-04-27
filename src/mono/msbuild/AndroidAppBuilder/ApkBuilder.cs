@@ -53,17 +53,14 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(workplace, "assets"));
         
         // Copy AppDir to workplace/assets (ignore native files)
-        Utils.DirectoryCopy(appDir, Path.Combine(workplace, "assets"), (file, isDir) =>
+        Utils.DirectoryCopy(appDir, Path.Combine(workplace, "assets"), file =>
         {
-            if (!isDir)
+            var extension = Path.GetExtension(file);
+            // ignore native files, those go to lib/%abi%
+            if (extension == ".so" || extension == ".a")
             {
-                var extension = Path.GetExtension(file);
-                // ignore native files, those go to lib/%abi%
-                if (extension == ".so" || extension == ".a")
-                {
-                    // ignore ".pdb" and ".dbg" to make APK smaller
-                    return false;
-                }
+                // ignore ".pdb" and ".dbg" to make APK smaller
+                return false;
             }
             return true;
         });
