@@ -245,25 +245,25 @@ namespace CoreXml.Test.XLinq
 
         public override void Flush()
         {
-            Assert.False(_isAsync, "Sync operation not allowed");
+            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Flush is called");
             base.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Async operation not allowed");
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Flush is called");
             return Task.CompletedTask;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            Assert.False(_isAsync, "Sync operation not allowed");
+            Assert.False(_isAsync, "Stream is in asynchronous mode when synchronous Write is called");
             base.Write(buffer, offset, count);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Async operation not allowed");
+            Assert.True(_isAsync, "Stream is not in asynchronous mode when asynchronous Write is called");
             return Task.CompletedTask;
         }
     }

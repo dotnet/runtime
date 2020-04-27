@@ -127,7 +127,7 @@ namespace System.Xml.Tests
         [Fact]
         public static async Task AsyncWriter_DisposeAsync_ShouldCall_FlushAsyncWriteAsyncOnly_StreamWriter()
         {
-            using (var stream = new ForceAsyncSyncStream())
+            using (var stream = new AsyncOnlyStream())
             await using (var writer = XmlWriter.Create(stream, new XmlWriterSettings() { Async = true }))
             {
                 await writer.WriteStartDocumentAsync();
@@ -155,7 +155,6 @@ namespace System.Xml.Tests
                     await asyncWriter.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
                     await asyncWriter.WriteEndElementAsync();
                     await asyncWriter.WriteEndElementAsync();
-                    Console.WriteLine(asyncWriter.Settings.Encoding);
                 }
 
                 await using (var asyncWriter = XmlWriter.Create(stream2, settings))
@@ -182,13 +181,13 @@ namespace System.Xml.Tests
                 Assert.Equal(stream1.GetBuffer(), stream2.GetBuffer());
                 Assert.Equal(stream2.GetBuffer(), stream3.GetBuffer());
 
-                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream1.GetBuffer(), stream1.Length));
-                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream2.GetBuffer(), stream1.Length));
-                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", readAsString(stream3.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream1.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream2.GetBuffer(), stream1.Length));
+                Assert.Equal(@"<?xml version=""1.0"" encoding=""utf-8""?><root><test abc=""1"" /></root>", ReadAsString(stream3.GetBuffer(), stream1.Length));
             }
         }
 
-        private static string readAsString(byte[] bytes, long length) => new UTF8Encoding().GetString(bytes, 0, (int)length);
+        private static string ReadAsString(byte[] bytes, long length) => Encoding.UTF8.GetString(bytes, 0, (int)length);
 
         [Fact]
         public static async Task AsyncWriterDispose_ShouldCall_FlushAsyncWriteAsyncOnly_TextWriter()
@@ -239,7 +238,7 @@ namespace System.Xml.Tests
         {
             public override void Flush()
             {
-                Assert.True(false, "Sync operation not allowed");
+                throw new InvalidOperationException("Sync operations are not allowed.");
             }
 
             public override Task FlushAsync()
@@ -249,7 +248,7 @@ namespace System.Xml.Tests
 
             public override void Write(char[] buffer, int offset, int count)
             {
-                Assert.True(false, "Sync operation not allowed");
+                throw new InvalidOperationException("Sync operations are not allowed.");
             }
 
             public override Task WriteAsync(char[] buffer, int offset, int count)
@@ -258,11 +257,11 @@ namespace System.Xml.Tests
             }
         }
 
-        internal class ForceAsyncSyncStream : MemoryStream
+        internal class AsyncOnlyStream : MemoryStream
         {
             public override void Flush()
             {
-                Assert.True(false, "Sync operation not allowed");
+                throw new InvalidOperationException("Sync operations are not allowed.");
             }
 
             public override Task FlushAsync(CancellationToken cancellationToken)
@@ -272,7 +271,7 @@ namespace System.Xml.Tests
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                Assert.True(false, "Sync operation not allowed");
+                throw new InvalidOperationException("Sync operations are not allowed.");
             }
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
