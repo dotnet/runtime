@@ -7848,12 +7848,6 @@ mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error)
 	return mono_string_to_utf8_checked_internal (MONO_HANDLE_RAW (s), error);
 }
 
-mono_unichar2*
-mono_string_handle_to_utf16(MonoStringHandle s)
-{
-    return mono_string_to_utf16(MONO_HANDLE_RAW(s));
-}
-
 /**
  * mono_string_to_utf8_ignore:
  * \param s a MonoString
