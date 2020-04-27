@@ -59,7 +59,7 @@
     <Error Condition="'$(ANDROID_SDK_ROOT)' == ''" Text="ANDROID_SDK_ROOT should point to a valid Android SDK location" />
     <Message Importance="High" Text="Uninstalling app if it exists (throws an error if it doesn't but it can be ignored):"/>
     <Exec Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
-    <Exec Command="$(AdbTool) install -r bin/bundle/bin/HelloAndroid.apk" />
+    <Exec Command="$(AdbTool) install bin/bundle/bin/HelloAndroid.apk" />
     <Exec Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
     <!--Exec Command="$(AdbTool) logcat" /-->
   </Target>
