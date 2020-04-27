@@ -22,7 +22,6 @@ set(SOURCES
     ../host_context.cpp
     ../sdk_info.cpp
     ../sdk_resolver.cpp
-    ./hostpolicy_resolver.cpp
 )
 
 set(HEADERS
@@ -42,4 +41,5 @@ set(HEADERS
 )
 
 set(SKIP_VERSIONING 1)
+set(BUILD_OBJECT_LIBRARY 1)
 include(../../lib_static.cmake)

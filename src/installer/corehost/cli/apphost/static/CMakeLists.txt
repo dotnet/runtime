@@ -18,10 +18,12 @@ endif()
 set(SKIP_VERSIONING 1)
 
 include_directories(..)
+include_directories(../../json)
 
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_iface.cpp
+    ./hostpolicy_resolver.cpp
 )
 
 set(HEADERS

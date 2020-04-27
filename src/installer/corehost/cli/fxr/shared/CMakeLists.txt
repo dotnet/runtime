@@ -15,6 +15,18 @@ set(SOURCES
     ./hostpolicy_resolver.cpp
 )
 
+set(HEADERS
+    ../command_line.h
+    ../corehost_init.h
+    ../fx_muxer.h
+    ../fx_resolver.h
+    ../framework_info.h
+    ../host_context.h
+    ../sdk_info.h
+    ../sdk_resolver.h
+    ../hostpolicy_resolver.h
+)
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         hostfxr.def)
@@ -38,18 +50,6 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
     endif(CLR_CMAKE_HOST_SUNOS)
 endif(CLR_CMAKE_TARGET_WIN32)
-
-set(HEADERS
-    ../command_line.h
-    ../corehost_init.h
-    ../fx_muxer.h
-    ../fx_resolver.h
-    ../framework_info.h
-    ../host_context.h
-    ../hostpolicy_resolver.h
-    ../sdk_info.h
-    ../sdk_resolver.h
-)
 
 include(../../lib.cmake)
 
