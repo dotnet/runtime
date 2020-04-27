@@ -3,24 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 internal static partial class Interop
 {
     internal static partial class Globalization
     {
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#else
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
-#endif
+        [DllImport("__Internal", EntryPoint = "GlobalizationNative_LoadICU")]
         internal static extern int LoadICU();
 
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#else
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
-#endif
+        [DllImport("__Internal", EntryPoint = "GlobalizationNative_GetICUVersion")]
         internal static extern int GetICUVersion();
     }
 }

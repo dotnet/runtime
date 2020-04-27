@@ -3,30 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 internal static partial class Interop
 {
     internal static partial class Globalization
     {
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#else
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCase")]
-#endif
         internal static extern unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
 
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#else
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCaseInvariant")]
-#endif
         internal static extern unsafe void ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
-#if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#else
+
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCaseTurkish")]
-#endif
         internal static extern unsafe void ChangeCaseTurkish(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
     }
 }

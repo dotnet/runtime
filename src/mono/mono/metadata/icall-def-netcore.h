@@ -1,4 +1,4 @@
-ICALL_TYPE(SYSGLOB, "Interop/Globalization", SYSGLOB_1)
+/*ICALL_TYPE(SYSGLOB, "Interop/Globalization", SYSGLOB_1)
 HANDLES(SYSGLOB_1, "ChangeCase", ves_icall_System_GlobalizationNative_ChangeCase, void, 5, (guint16_ref, gint32, guint16_ref, gint32, MonoBoolean))
 HANDLES(SYSGLOB_2, "ChangeCaseInvariant", ves_icall_System_GlobalizationNative_ChangeCaseInvariant, void, 5, (guint16_ref, gint32, guint16_ref, gint32, MonoBoolean))
 HANDLES(SYSGLOB_3, "ChangeCaseTurkish", ves_icall_System_GlobalizationNative_ChangeCaseTurkish, void, 5, (guint16_ref, gint32, guint16_ref, gint32, MonoBoolean))
@@ -27,12 +27,12 @@ HANDLES(SYSGLOB_25, "IndexOf", ves_icall_System_GlobalizationNative_IndexOf, gin
 HANDLES(SYSGLOB_26, "IndexOfOrdinalIgnoreCase", ves_icall_System_GlobalizationNative_IndexOfOrdinalIgnoreCase, gint32, 5, (guint16_ref, gint32, guint16_ref, gint32, gint32))
 HANDLES(SYSGLOB_27, "IsNormalized", ves_icall_System_GlobalizationNative_IsNormalized, gint32, 3, (gint32, guint16_ref, gint32))
 HANDLES(SYSGLOB_28, "IsPredefinedLocale", ves_icall_System_GlobalizationNative_IsPredefinedLocale, gint32, 1, (MonoString))
-HANDLES(SYSGLOB_29, "LastIndexOf", ves_icall_System_GlobalizationNative_LastIndexOf, gint32, 6, (gpointer, guint16_ref, gint32, guint16_ref, gint32, gint32))
+HANDLES(SYSGLOB_29, "LastIndexOf", ves_icall_System_GlobalizationNative_LastIndexOf, gint32, 7, (gpointer, guint16_ref, gint32, guint16_ref, gint32, gint32, gint32_ref))
 HANDLES(SYSGLOB_30, "LoadICU", ves_icall_System_GlobalizationNative_LoadICU, gint32, 0, ())
 HANDLES(SYSGLOB_31, "NormalizeString", ves_icall_System_GlobalizationNative_NormalizeString, gint32, 5, (gint32, guint16_ref, gint32, guint16_ref, gint32))
 HANDLES(SYSGLOB_32, "StartsWith", ves_icall_System_GlobalizationNative_StartsWith, gint32, 6, (gpointer, guint16_ref, gint32, guint16_ref, gint32, gint32))
 HANDLES(SYSGLOB_33, "ToAscii", ves_icall_System_GlobalizationNative_ToAscii, gint32, 5, (guint32, guint16_ref, gint32, guint16_ref, gint32))
-HANDLES(SYSGLOB_34, "ToUnicode", ves_icall_System_GlobalizationNative_ToUnicode, gint32, 5, (guint32, guint16_ref, gint32, guint16_ref, gint32))
+HANDLES(SYSGLOB_34, "ToUnicode", ves_icall_System_GlobalizationNative_ToUnicode, gint32, 5, (guint32, guint16_ref, gint32, guint16_ref, gint32))*/
 
 
 ICALL_TYPE(SAFEWAITHANDLE, "Microsoft.Win32.SafeHandles.SafeWaitHandle", SAFEWAITHANDLE_1) // && UNIX

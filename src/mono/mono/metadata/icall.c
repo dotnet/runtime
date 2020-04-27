@@ -3562,6 +3562,7 @@ ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType (MonoError *error)
 
 #endif /* ENABLE_NETCORE */
 #ifdef ENABLE_NETCORE
+/*
 void
 ves_icall_System_GlobalizationNative_ChangeCase (guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoBoolean bToUpper, MonoError *error)
 {
@@ -3756,9 +3757,9 @@ ves_icall_System_GlobalizationNative_IsPredefinedLocale (MonoStringHandle locale
 }
 
 gint32
-ves_icall_System_GlobalizationNative_LastIndexOf (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, MonoError* error)
+ves_icall_System_GlobalizationNative_LastIndexOf (gpointer sortHandle, guint16_ref lpTarget, gint32 cwTargetLength, guint16_ref lpSource, gint32 cwSourceLength, gint32 options, gint32_ref pMatchedLength, MonoError* error)
 {
-    return GlobalizationNative_LastIndexOf (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
+    return GlobalizationNative_LastIndexOf (sortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, pMatchedLength);
 }
 
 gint32
@@ -3789,8 +3790,7 @@ gint32
 ves_icall_System_GlobalizationNative_ToUnicode (guint32 flags, guint16_ref src, gint32 srcLen, guint16_ref dstBuffer, gint32 dstBufferCapacity, MonoError* error)
 {
     return GlobalizationNative_ToUnicode (flags, src, srcLen, dstBuffer, dstBufferCapacity);
-}
-
+}*/
 #endif
 
 void
