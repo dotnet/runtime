@@ -1087,24 +1087,6 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (strcmp(privateKey, "GCSegmentSize") == 0)
-    {
-        *value = g_pConfig->GetSegmentSize();
-        return true;
-    }
-
-    if (strcmp(privateKey, "GCgen0size") == 0)
-    {
-        *value = g_pConfig->GetGCgen0size();
-        return true;
-    }
-
-    if (strcmp(privateKey, "GCHeapHardLimit") == 0)
-    {
-        *value = g_pConfig->GetGCHeapHardLimit();
-        return true;
-    }
-
     if (strcmp(privateKey, "GCLOHThreshold") == 0)
     {
         *value = g_pConfig->GetGCLOHThreshold();

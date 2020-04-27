@@ -792,6 +792,8 @@ public:
 #define GTF_VAR_CAST        0x01000000 // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
 #define GTF_VAR_ITERATOR    0x00800000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x00400000 // GT_LCL_VAR -- this node has been cloned or is a clone
+#define GTF_VAR_CONTEXT     0x00200000 // GT_LCL_VAR -- this node is part of a runtime lookup
+
                                        // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
 #define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.

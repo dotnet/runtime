@@ -734,7 +734,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(acos(10))) {
+  volatile double x = 10;
+  if (!isnan(acos(x))) {
     exit(1);
   }
   exit(0);
@@ -746,7 +747,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(asin(10))) {
+  volatile double arg = 10;
+  if (!isnan(asin(arg))) {
     exit(1);
   }
   exit(0);
@@ -758,29 +760,37 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  double infinity = 1.0 / 0.0;
-  if (pow(1.0, infinity) != 1.0 || pow(1.0, -infinity) != 1.0) {
+  volatile double base = 1.0;
+  volatile double infinity = 1.0 / 0.0;
+  if (pow(base, infinity) != 1.0 || pow(base, -infinity) != 1.0) {
     exit(1);
   }
-  if (pow(-1.0, infinity) != 1.0 || pow(-1.0, -infinity) != 1.0) {
+  if (pow(-base, infinity) != 1.0 || pow(-base, -infinity) != 1.0) {
     exit(1);
   }
-  if (pow(0.0, infinity) != 0.0) {
+
+  base = 0.0;
+  if (pow(base, infinity) != 0.0) {
     exit(1);
   }
-  if (pow(0.0, -infinity) != infinity) {
+  if (pow(base, -infinity) != infinity) {
     exit(1);
   }
-  if (pow(-1.1, infinity) != infinity || pow(1.1, infinity) != infinity) {
+
+  base = 1.1;
+  if (pow(-base, infinity) != infinity || pow(base, infinity) != infinity) {
     exit(1);
   }
-  if (pow(-1.1, -infinity) != 0.0 || pow(1.1, -infinity) != 0.0) {
+  if (pow(-base, -infinity) != 0.0 || pow(base, -infinity) != 0.0) {
     exit(1);
   }
-  if (pow(-0.0, -1) != -infinity) {
+
+  base = 0.0;
+  volatile int iexp = 1;
+  if (pow(-base, -iexp) != -infinity) {
     exit(1);
   }
-  if (pow(0.0, -1) != infinity) {
+  if (pow(base, -iexp) != infinity) {
     exit(1);
   }
   exit(0);
@@ -793,8 +803,10 @@ check_cxx_source_runs("
 
 int main(int argc, char **argv) {
   double result;
+  volatile double base = 3.2e-10;
+  volatile double exp = 1 - 5e14;
 
-  result = pow(-3.2e-10, -5e14 + 1);
+  result = pow(-base, exp);
   if (result != -1.0 / 0.0) {
     exit(1);
   }
@@ -808,8 +820,10 @@ check_cxx_source_runs("
 
 int main(int argc, char **argv) {
     double result;
+    volatile double base = 3.5;
+    volatile double exp = 3e100;
 
-    result = pow(-3.5, 3e100);
+    result = pow(-base, exp);
     if (result != 1.0 / 0.0) {
         exit(1);
     }
@@ -824,23 +838,25 @@ check_cxx_source_runs("
 int main(void) {
   double pi = 3.14159265358979323846;
   double result;
+  volatile double y = 0.0;
+  volatile double x = 0.0;
 
-  result = atan2(0.0, -0.0);
+  result = atan2(y, -x);
   if (fabs(pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2(-0.0, -0.0);
+  result = atan2(-y, -x);
   if (fabs(-pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2 (-0.0, 0.0);
+  result = atan2 (-y, x);
   if (result != 0.0 || copysign (1.0, result) > 0) {
     exit(1);
   }
 
-  result = atan2 (0.0, 0.0);
+  result = atan2 (y, x);
   if (result != 0.0 || copysign (1.0, result) < 0) {
     exit(1);
   }
@@ -900,7 +916,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(log(-10000))) {
+  volatile int arg = 10000;
+  if (!isnan(log(-arg))) {
     exit(1);
   }
   exit(0);
@@ -912,7 +929,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(log10(-10000))) {
+  volatile int arg = 10000;
+  if (!isnan(log10(-arg))) {
     exit(1);
   }
   exit(0);

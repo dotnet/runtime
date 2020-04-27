@@ -1296,6 +1296,15 @@ AGAIN:
                     return true;
                 }
                 break;
+
+            case GT_CNS_STR:
+                if ((op1->AsStrCon()->gtSconCPX == op2->AsStrCon()->gtSconCPX) &&
+                    (op1->AsStrCon()->gtScpHnd == op2->AsStrCon()->gtScpHnd))
+                {
+                    return true;
+                }
+                break;
+
 #if 0
             // TODO-CQ: Enable this in the future
         case GT_CNS_LNG:
@@ -9947,6 +9956,13 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     --msgLength;
                     break;
                 }
+                if (tree->gtFlags & GTF_VAR_CONTEXT)
+                {
+                    printf("!");
+                    --msgLength;
+                    break;
+                }
+
                 goto DASH;
 
             case GT_EQ:
@@ -11344,8 +11360,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (tree->AsField()->gtFldObj && !topOnly)
             {
-                gtDispVN(tree);
-                printf("\n");
                 gtDispChild(tree->AsField()->gtFldObj, indentStack, IIArcBottom);
             }
 
@@ -12478,11 +12492,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree*             op2TunneledHandle  = nullptr;
         CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
-        unsigned             runtimeLookupCount = 0;
 
         // Try and find class handles from op1 and op2
-        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &runtimeLookupCount, &op1TunneledHandle);
-        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &runtimeLookupCount, &op2TunneledHandle);
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &op1TunneledHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &op2TunneledHandle);
 
         // If we have both class handles, try and resolve the type equality test completely.
         bool resolveFailed = false;
@@ -12501,11 +12514,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
                 JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
                 GenTree* result = gtNewIconNode(compareResult);
-
-                // Any runtime lookups that fed into this compare are
-                // now dead code, so they no longer require the runtime context.
-                assert(lvaGenericsContextUseCount >= runtimeLookupCount);
-                lvaGenericsContextUseCount -= runtimeLookupCount;
                 return result;
             }
             else
@@ -12668,15 +12676,12 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 //
 // Arguments:
 //    tree - tree that passes the handle to the helper
-//    runtimeLookupCount [optional, in/out] - incremented if tree was a runtime lookup
 //    handleTree [optional, out] - set to the literal operand tree for indirect handles
 //
 // Returns:
 //    The compile time class handle if known.
 //
-CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
-                                                         unsigned* runtimeLookupCount,
-                                                         GenTree** handleTree)
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree, GenTree** handleTree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -12696,11 +12701,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     else if (tree->OperGet() == GT_RUNTIMELOOKUP)
     {
         result = tree->AsRuntimeLookup()->GetClassHandle();
-
-        if (runtimeLookupCount != nullptr)
-        {
-            *runtimeLookupCount = *runtimeLookupCount + 1;
-        }
     }
     // Or something reached indirectly
     else if (tree->gtOper == GT_IND)
@@ -17128,7 +17128,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     // We only return the HWIntrinsicNode if SSE is supported, since it is possible for
                     // the user to disable the SSE HWIntrinsic support via the COMPlus configuration knobs
                     // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_Zero, baseType, size);
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector128_get_Zero, baseType, size);
                 }
                 return nullptr;
             case TYP_SIMD32:
@@ -17137,7 +17137,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     // We only return the HWIntrinsicNode if AVX is supported, since it is possible for
                     // the user to disable the AVX HWIntrinsic support via the COMPlus configuration knobs
                     // even though the hardware vector types are still available.
-                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector256_Zero, baseType, size);
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Vector256_get_Zero, baseType, size);
                 }
                 return nullptr;
             default:

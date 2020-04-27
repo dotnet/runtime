@@ -1983,12 +1983,13 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
     // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextUseCount++;
+    lvaGenericsContextInUse = true;
 
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
         // this Object
         ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
 
         // Vtable pointer of this object
         ctxTree = gtNewOperNode(GT_IND, TYP_I_IMPL, ctxTree);
@@ -2000,6 +2001,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
 
         ctxTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL); // Exact method descriptor as passed in as last arg
+        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
 }
@@ -4434,7 +4436,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
         }
     }
-#if defined(TARGET_XARCH) // We currently only support BSWAP on x86
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
     {
         if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
@@ -4442,7 +4444,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
         }
     }
-#endif // !defined(TARGET_XARCH)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
@@ -8259,7 +8261,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The "this" pointer
 
-    if (!(mflags & CORINFO_FLG_STATIC) && !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
+    if (((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
+        !((opcode == CEE_NEWOBJ) && (newobjThis == nullptr)))
     {
         GenTree* obj;
 
@@ -18613,7 +18616,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //
 //   Checks for various inline blocking conditions and makes notes in
 //   the inline info arg table about the properties of the actual. These
-//   properties are used later by impFetchArg to determine how best to
+//   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,

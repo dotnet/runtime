@@ -726,8 +726,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Count:
-        case NI_Vector256_Count:
+        case NI_Vector128_get_Count:
+        case NI_Vector256_get_Count:
         {
             assert(sig->numArgs == 0);
 
@@ -786,7 +786,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Zero:
+        case NI_Vector128_get_Zero:
         {
             assert(sig->numArgs == 0);
 
@@ -831,7 +831,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector256_Zero:
+        case NI_Vector256_get_Zero:
         {
             assert(sig->numArgs == 0);
 

@@ -139,7 +139,7 @@ namespace System.Xml.Schema
         private static readonly XmlSchemaDatatype s_dtStringArray = s_dtCDATA.DeriveByList(null);
 
         //Error message constants
-        private const string Quote = "'";
+        private const char Quote = '\'';
 
         //Empty arrays
         private static readonly XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();

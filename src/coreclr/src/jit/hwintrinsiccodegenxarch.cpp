@@ -1231,8 +1231,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Vector128_Zero:
-        case NI_Vector256_Zero:
+        case NI_Vector128_get_Zero:
+        case NI_Vector256_get_Zero:
         {
             assert(op1 == nullptr);
             emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);

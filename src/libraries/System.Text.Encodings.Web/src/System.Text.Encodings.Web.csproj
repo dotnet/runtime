@@ -27,15 +27,12 @@
     <Compile Include="System\Text\Encodings\Web\Ssse3Helper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
-      <Link>System\Text\UnicodeDebug.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
-      <Link>System\Text\UnicodeUtility.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
+             Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
+             Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
