@@ -2610,6 +2610,23 @@ public:
                                                  NamedIntrinsic hwIntrinsicID,
                                                  var_types      baseType,
                                                  unsigned       size);
+
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    {
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, baseType, size);
+        node->gtFlags |= GTF_SIMDASHW_OP;
+        return node;
+    }
+
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
                                                    GenTree*       op1,
