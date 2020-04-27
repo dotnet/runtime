@@ -74,13 +74,13 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (state.Current.ObjectState < StackFrameObjectState.MetadataPropertyValue)
+                if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (shouldReadPreservedReferences)
                     {
                         if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                         {
-                            if (state.Current.ObjectState == StackFrameObjectState.MetadataRefReadEndObject)
+                            if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
                                 value = (T)state.Current.ReturnValue!;
                                 return true;
@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    state.Current.ObjectState = StackFrameObjectState.MetadataPropertyValue;
+                    state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)

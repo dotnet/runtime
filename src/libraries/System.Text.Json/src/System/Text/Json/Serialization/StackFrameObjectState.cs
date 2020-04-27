@@ -14,21 +14,22 @@ namespace System.Text.Json
 
         StartToken,
 
-        MetadataTryReadName, // Try to move the reader to the the first $id or $ref.
-        MetadataReadName, // Read the first $id or $ref.
+        ReadAheadNameOrEndObject, // Try to move the reader to the the first $id, $ref, or the EndObject token.
+        ReadNameOrEndObject, // Read the first $id, $ref, or the EndObject token.
 
-        MetadataTryReadIdValue, // Try to move the reader to the value for $id.
-        MetadataTryReadRefValue, // Try to move the reader to the value for $ref.
-        MetadataReadIdValue, // Read value for $id.
-        MetadataReadRefValue, // Read value for $ref.
-        MetadataRefTryReadEndObject, // Try to move the reader to the EndObject for $ref.
-        MetadataRefReadEndObject, // Read the EndObject for $ref.
+        ReadAheadIdValue, // Try to move the reader to the value for $id.
+        ReadAheadRefValue, // Try to move the reader to the value for $ref.
+        ReadIdValue, // Read value for $id.
+        ReadRefValue, // Read value for $ref.
+        ReadAheadRefEndObject, // Try to move the reader to the EndObject for $ref.
+        ReadRefEndObject, // Read the EndObject for $ref.
 
-        MetadataTryReadValuesName, // Try to move the reader to the $values property name.
-        MetadataReadValuesName, // Read $values property name.
-        MetadataTryReadValuesStartArray, // Try to move the reader to the StartArray for $values.
-        MetadataReadValuesStartArray, // Read the StartArray for $values.
-        MetadataPropertyValue, // Whether all metadata properties has been read.
+        ReadAheadValuesName, // Try to move the reader to the $values property name.
+        ReadValuesName, // Read $values property name.
+        ReadAheadValuesStartArray, // Try to move the reader to the StartArray for $values.
+        ReadValuesStartArray, // Read the StartArray for $values.
+
+        PropertyValue, // Whether all metadata properties has been read.
 
         CreatedObject,
         ReadElements,
