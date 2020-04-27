@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security;
+using System.Runtime.CompilerServices;
+using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -66,7 +67,7 @@ namespace System.Numerics
                               _modulus, _modulus.Length + 1);
             }
 
-            private static unsafe int DivMul(uint[] left, int leftLength,
+            private static int DivMul(uint[] left, int leftLength,
                                              uint[] right, int rightLength,
                                              uint[] bits, int k)
             {
@@ -88,20 +89,21 @@ namespace System.Numerics
                 {
                     leftLength -= k;
 
-                    fixed (uint* l = left, r = right, b = bits)
+                    ref uint l = ref GetArrayDataReference(left);
+                    ref uint r = ref GetArrayDataReference(right);
+                    ref uint b = ref GetArrayDataReference(bits);
+
+                    if (leftLength < rightLength)
                     {
-                        if (leftLength < rightLength)
-                        {
-                            Multiply(r, rightLength,
-                                     l + k, leftLength,
-                                     b, leftLength + rightLength);
-                        }
-                        else
-                        {
-                            Multiply(l + k, leftLength,
-                                     r, rightLength,
-                                     b, leftLength + rightLength);
-                        }
+                        Multiply(ref r, rightLength,
+                                    ref Unsafe.Add(ref l, k), leftLength,
+                                    ref b, leftLength + rightLength);
+                    }
+                    else
+                    {
+                        Multiply(ref Unsafe.Add(ref l, k), leftLength,
+                                    ref r, rightLength,
+                                    ref b, leftLength + rightLength);
                     }
 
                     return ActualLength(bits, leftLength + rightLength);
@@ -110,7 +112,7 @@ namespace System.Numerics
                 return 0;
             }
 
-            private static unsafe int SubMod(uint[] left, int leftLength,
+            private static int SubMod(uint[] left, int leftLength,
                                              uint[] right, int rightLength,
                                              uint[] modulus, int k)
             {
@@ -129,16 +131,17 @@ namespace System.Numerics
                 if (rightLength > k)
                     rightLength = k;
 
-                fixed (uint* l = left, r = right, m = modulus)
-                {
-                    SubtractSelf(l, leftLength, r, rightLength);
-                    leftLength = ActualLength(left, leftLength);
+                ref uint l = ref GetArrayDataReference(left);
+                ref uint r = ref GetArrayDataReference(right);
+                ref uint m = ref GetArrayDataReference(modulus);
 
-                    while (Compare(l, leftLength, m, modulus.Length) >= 0)
-                    {
-                        SubtractSelf(l, leftLength, m, modulus.Length);
-                        leftLength = ActualLength(left, leftLength);
-                    }
+                SubtractSelf(ref l, leftLength, ref r, rightLength);
+                leftLength = ActualLength(left, leftLength);
+
+                while (Compare(ref l, leftLength, ref m, modulus.Length) >= 0)
+                {
+                    SubtractSelf(ref l, leftLength, ref m, modulus.Length);
+                    leftLength = ActualLength(left, leftLength);
                 }
 
                 Array.Clear(left, leftLength, left.Length - leftLength);

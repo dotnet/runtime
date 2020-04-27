@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security;
+using System.Runtime.CompilerServices;
+using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -44,7 +45,7 @@ namespace System.Numerics
                 Array.Copy(value, _bits, _length);
             }
 
-            public unsafe void MultiplySelf(ref BitsBuffer value,
+            public void MultiplySelf(ref BitsBuffer value,
                                             ref BitsBuffer temp)
             {
                 Debug.Assert(temp._length == 0);
@@ -53,26 +54,27 @@ namespace System.Numerics
                 // Executes a multiplication for this and value, writes the
                 // result to temp. Switches this and temp arrays afterwards.
 
-                fixed (uint* b = _bits, v = value._bits, t = temp._bits)
+                ref uint b = ref GetArrayDataReference(_bits);
+                ref uint v = ref GetArrayDataReference(value._bits);
+                ref uint t = ref GetArrayDataReference(temp._bits);
+
+                if (_length < value._length)
                 {
-                    if (_length < value._length)
-                    {
-                        Multiply(v, value._length,
-                                 b, _length,
-                                 t, _length + value._length);
-                    }
-                    else
-                    {
-                        Multiply(b, _length,
-                                 v, value._length,
-                                 t, _length + value._length);
-                    }
+                    Multiply(ref v, value._length,
+                                ref b, _length,
+                                ref t, _length + value._length);
+                }
+                else
+                {
+                    Multiply(ref b, _length,
+                                ref v, value._length,
+                                ref t, _length + value._length);
                 }
 
                 Apply(ref temp, _length + value._length);
             }
 
-            public unsafe void SquareSelf(ref BitsBuffer temp)
+            public void SquareSelf(ref BitsBuffer temp)
             {
                 Debug.Assert(temp._length == 0);
                 Debug.Assert(_length + _length <= temp._bits.Length);
@@ -80,11 +82,11 @@ namespace System.Numerics
                 // Executes a square for this, writes the result to temp.
                 // Switches this and temp arrays afterwards.
 
-                fixed (uint* b = _bits, t = temp._bits)
-                {
-                    Square(b, _length,
-                           t, _length + _length);
-                }
+                ref uint b = ref GetArrayDataReference(_bits);
+                ref uint t = ref GetArrayDataReference(temp._bits);
+
+                Square(ref b, _length,
+                           ref t, _length + _length);
 
                 Apply(ref temp, _length + _length);
             }
@@ -106,12 +108,9 @@ namespace System.Numerics
 
                 if (_length >= modulus.Length)
                 {
-                    fixed (uint* b = _bits, m = modulus)
-                    {
-                        Divide(b, _length,
-                               m, modulus.Length,
-                               null, 0);
-                    }
+                    Divide(ref GetArrayDataReference(_bits), _length,
+                               ref GetArrayDataReference(modulus), modulus.Length,
+                               ref Unsafe.AsRef<uint>(null), 0);
 
                     _length = ActualLength(_bits, modulus.Length);
                 }
@@ -124,12 +123,9 @@ namespace System.Numerics
 
                 if (_length >= modulus._length)
                 {
-                    fixed (uint* b = _bits, m = modulus._bits)
-                    {
-                        Divide(b, _length,
-                               m, modulus._length,
-                               null, 0);
-                    }
+                    Divide(ref GetArrayDataReference(_bits), _length,
+                            ref GetArrayDataReference(modulus._bits), modulus._length,
+                            ref Unsafe.AsRef<uint>(null), 0);
 
                     _length = ActualLength(_bits, modulus._length);
                 }

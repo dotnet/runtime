@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security;
+using System.Runtime.CompilerServices;
+using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -20,45 +21,51 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length + 1];
 
-            long digit = (long)left[0] + right;
-            bits[0] = unchecked((uint)digit);
-            long carry = digit >> 32;
-
-            for (int i = 1; i < left.Length; i++)
-            {
-                digit = left[i] + carry;
-                bits[i] = unchecked((uint)digit);
-                carry = digit >> 32;
-            }
-            bits[left.Length] = (uint)carry;
+            Add(ref GetArrayDataReference(left), left.Length,
+                right,
+                ref GetArrayDataReference(bits));
 
             return bits;
         }
 
-        public static unsafe uint[] Add(uint[] left, uint[] right)
+        private static void Add(ref uint left, int leftLength,
+                                uint right,
+                                ref uint bits)
+        {
+            long digit = (long)left + right;
+            bits = unchecked((uint)digit);
+            long carry = digit >> 32;
+
+            for (int i = 1; i < leftLength; i++)
+            {
+                digit = Unsafe.Add(ref left, i) + carry;
+                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
+                carry = digit >> 32;
+            }
+            Unsafe.Add(ref bits, leftLength) = (uint)carry;
+        }
+
+        public static uint[] Add(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
             Debug.Assert(left.Length >= right.Length);
 
-            // Switching to unsafe pointers helps sparing
+            // Switching to managed pointers helps sparing
             // some nasty index calculations...
 
             uint[] bits = new uint[left.Length + 1];
 
-            fixed (uint* l = left, r = right, b = &bits[0])
-            {
-                Add(l, left.Length,
-                    r, right.Length,
-                    b, bits.Length);
-            }
+            Add(ref GetArrayDataReference(left), left.Length,
+                ref GetArrayDataReference(right), right.Length,
+                ref GetArrayDataReference(bits), bits.Length);
 
             return bits;
         }
 
-        private static unsafe void Add(uint* left, int leftLength,
-                                       uint* right, int rightLength,
-                                       uint* bits, int bitsLength)
+        private static void Add(ref uint left, int leftLength,
+                                       ref uint right, int rightLength,
+                                       ref uint bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -75,21 +82,21 @@ namespace System.Numerics
 
             for (; i < rightLength; i++)
             {
-                long digit = (left[i] + carry) + right[i];
-                bits[i] = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref left, i) + carry) + Unsafe.Add(ref right, i);
+                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < leftLength; i++)
             {
-                long digit = left[i] + carry;
-                bits[i] = unchecked((uint)digit);
+                long digit = Unsafe.Add(ref left, i) + carry;
+                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            bits[i] = (uint)carry;
+            Unsafe.Add(ref bits, i) = (uint)carry;
         }
 
-        private static unsafe void AddSelf(uint* left, int leftLength,
-                                           uint* right, int rightLength)
+        private static void AddSelf(ref uint left, int leftLength,
+                                           ref uint right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -101,17 +108,19 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-
+            ref uint leftElement = ref left;
             for (; i < rightLength; i++)
             {
-                long digit = (left[i] + carry) + right[i];
-                left[i] = unchecked((uint)digit);
+                leftElement = ref Unsafe.Add(ref left, i);
+                long digit = (leftElement + carry) + Unsafe.Add(ref right, i);
+                leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < leftLength; i++)
             {
-                long digit = left[i] + carry;
-                left[i] = (uint)digit;
+                leftElement = ref Unsafe.Add(ref left, i);
+                long digit = leftElement + carry;
+                leftElement = (uint)digit;
                 carry = digit >> 32;
             }
 
@@ -130,50 +139,56 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length];
 
-            long digit = (long)left[0] - right;
-            bits[0] = unchecked((uint)digit);
-            long carry = digit >> 32;
-
-            for (int i = 1; i < left.Length; i++)
-            {
-                digit = left[i] + carry;
-                bits[i] = unchecked((uint)digit);
-                carry = digit >> 32;
-            }
+            Subtract(ref GetArrayDataReference(left), left.Length,
+                     right,
+                     ref GetArrayDataReference(bits));
 
             return bits;
         }
 
-        public static unsafe uint[] Subtract(uint[] left, uint[] right)
+        private static void Subtract(ref uint left, int leftLength,
+                                     uint right,
+                                     ref uint bits)
+        {
+            long digit = (long)left - right;
+            bits = unchecked((uint)digit);
+            long carry = digit >> 32;
+
+            for (int i = 1; i < leftLength; i++)
+            {
+                digit = Unsafe.Add(ref left, i) + carry;
+                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
+                carry = digit >> 32;
+            }
+        }
+
+        public static uint[] Subtract(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(Compare(left, right) >= 0);
 
-            // Switching to unsafe pointers helps sparing
+            // Switching to managed pointers helps sparing
             // some nasty index calculations...
 
             uint[] bits = new uint[left.Length];
 
-            fixed (uint* l = left, r = right, b = bits)
-            {
-                Subtract(l, left.Length,
-                         r, right.Length,
-                         b, bits.Length);
-            }
+            Subtract(ref GetArrayDataReference(left), left.Length,
+                     ref GetArrayDataReference(right), right.Length,
+                     ref GetArrayDataReference(bits), bits.Length);
 
             return bits;
         }
 
-        private static unsafe void Subtract(uint* left, int leftLength,
-                                            uint* right, int rightLength,
-                                            uint* bits, int bitsLength)
+        private static void Subtract(ref uint left, int leftLength,
+                                            ref uint right, int rightLength,
+                                            ref uint bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
             Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(Compare(left, leftLength, right, rightLength) >= 0);
+            Debug.Assert(Compare(ref left, leftLength, ref right, rightLength) >= 0);
             Debug.Assert(bitsLength == leftLength);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
@@ -186,27 +201,27 @@ namespace System.Numerics
 
             for (; i < rightLength; i++)
             {
-                long digit = (left[i] + carry) - right[i];
-                bits[i] = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref left, i) + carry) - Unsafe.Add(ref right, i);
+                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < leftLength; i++)
             {
-                long digit = left[i] + carry;
-                bits[i] = (uint)digit;
+                long digit = Unsafe.Add(ref left, i) + carry;
+                Unsafe.Add(ref bits, i) = (uint)digit;
                 carry = digit >> 32;
             }
 
             Debug.Assert(carry == 0);
         }
 
-        private static unsafe void SubtractSelf(uint* left, int leftLength,
-                                                uint* right, int rightLength)
+        private static void SubtractSelf(ref uint left, int leftLength,
+                                                ref uint right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
             Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(Compare(left, leftLength, right, rightLength) >= 0);
+            Debug.Assert(Compare(ref left, leftLength, ref right, rightLength) >= 0);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
             // Same as above, but we're writing the result directly to a and
@@ -214,17 +229,19 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-
+            ref uint leftElement = ref left;
             for (; i < rightLength; i++)
             {
-                long digit = (left[i] + carry) - right[i];
-                left[i] = unchecked((uint)digit);
+                leftElement = ref Unsafe.Add(ref left, i);
+                long digit = (leftElement + carry) - Unsafe.Add(ref right, i);
+                leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < leftLength; i++)
             {
-                long digit = left[i] + carry;
-                left[i] = (uint)digit;
+                leftElement = ref Unsafe.Add(ref left, i);
+                long digit = leftElement + carry;
+                leftElement = (uint)digit;
                 carry = digit >> 32;
             }
 
@@ -252,8 +269,8 @@ namespace System.Numerics
             return 0;
         }
 
-        private static unsafe int Compare(uint* left, int leftLength,
-                                          uint* right, int rightLength)
+        private static int Compare(ref uint left, int leftLength,
+                                          ref uint right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -265,9 +282,9 @@ namespace System.Numerics
 
             for (int i = leftLength - 1; i >= 0; i--)
             {
-                if (left[i] < right[i])
+                if (Unsafe.Add(ref left, i) < Unsafe.Add(ref right, i))
                     return -1;
-                if (left[i] > right[i])
+                if (Unsafe.Add(ref left, i) > Unsafe.Add(ref right, i))
                     return 1;
             }
 
