@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
@@ -243,6 +244,14 @@ namespace System.Numerics
                 return (int)Popcnt.PopCount(value);
             }
 
+            if (AdvSimd.IsSupported && AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+                Vector64<uint> input = Vector64.CreateScalar(value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return (int)AdvSimd.Extract(aggregated, 0);
+            }
+
             return SoftwareFallback(value);
 
             static int SoftwareFallback(uint value)
@@ -272,6 +281,14 @@ namespace System.Numerics
             if (Popcnt.X64.IsSupported)
             {
                 return (int)Popcnt.X64.PopCount(value);
+            }
+
+            if (AdvSimd.IsSupported && AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+                Vector128<ulong> input = Vector128.CreateScalar(value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return (int)AdvSimd.Extract(aggregated, 0);
             }
 
 #if TARGET_32BIT
