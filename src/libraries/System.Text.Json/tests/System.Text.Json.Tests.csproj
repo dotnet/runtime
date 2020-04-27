@@ -70,6 +70,7 @@
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\ExceptionTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
+    <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
@@ -77,7 +78,6 @@
     <Compile Include="Serialization\NullableTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
-    <Compile Include="Serialization\OpenGenericTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
