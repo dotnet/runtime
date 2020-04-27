@@ -2671,7 +2671,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         varDsc->lvIsUnsafeBuffer = true;
     }
 #ifdef DEBUG
-    if (doExtraSuperPmiQueries)
+    if (JitConfig.EnableExtraSuperPmiQueries())
     {
         makeExtraStructQueries(typeHnd, 2);
     }
@@ -2688,7 +2688,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 //
 void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level)
 {
-    if (level == 0)
+    if (level <= 0)
     {
         return;
     }

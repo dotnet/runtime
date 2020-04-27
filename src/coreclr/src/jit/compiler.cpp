@@ -5203,8 +5203,6 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     forceFrameJIT = (void*)&me; // let us see the this pointer in fastchecked build
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
-
-    doExtraSuperPmiQueries = JitConfig.EnableExtraSuperPmiQueries();
 #endif
 
 #if defined(DEBUG) || defined(INLINE_DATA)
