@@ -7,11 +7,14 @@
     <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
@@ -120,61 +123,9 @@
        <Link>Common\System\Net\ArrayBuffer.cs</Link>
      </Compile>
   </ItemGroup>
-  <!-- SocketsHttpHandler implementation -->
+
+  <!-- Header support -->
   <ItemGroup>
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionCloseReadStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditWaiter.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ConnectionException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpBaseStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionBase.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionKind.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPoolManager.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionResponseContent.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
-      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
-      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
       <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
     </Compile>
@@ -249,6 +200,63 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
+    </Compile>
+  </ItemGroup>  
+
+  <!-- SocketsHttpHandler implementation -->
+  <ItemGroup Condition=" '$(TargetsBrowser)' != 'true'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionCloseReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditWaiter.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ConnectionException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpBaseStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionBase.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionKind.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPoolManager.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionResponseContent.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
+      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
+      <Link>Common\System\Net\ContextFlagsPal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs</Link>
@@ -392,6 +400,106 @@
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <!-- Browser specific implementation -->
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+      <Link>Common\System\CharArrayHelpers.cs</Link>
+    </Compile>  
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
+      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
+      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+    </Compile>  
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Unix.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Unix.cs</Link>
+    </Compile>        
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+    
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
+
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+
+    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpMessageHandler.cs" />
+
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs">
+      <Link>Common\Interop\Browser\Interop.Runtime.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.JSException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.JSObject.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.TypedArray.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.Array.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs</Link>
+    </Compile> 
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.CoreObject.cs</Link>
+    </Compile>
+   <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.HostObject.cs</Link>
+    </Compile>
+   <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs">
+      <Link>Common\Interop\Browser\Interop.JavaScript.Function.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs">
+      <Link>Common\Interop\Browser\Interop.Runtime.AnyRef.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Interfaces.cs">
+      <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.HttpHandlerService.cs">
+      <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
+    </Compile>
+  </ItemGroup>
+
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
