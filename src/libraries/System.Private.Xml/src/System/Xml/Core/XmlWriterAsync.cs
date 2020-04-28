@@ -19,7 +19,7 @@ namespace System.Xml
 {
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents
     // that conform to the W3C Extensible Markup Language (XML) 1.0 specification and the Namespaces in XML specification.
-    public abstract partial class XmlWriter : IDisposable
+    public abstract partial class XmlWriter : IDisposable, IAsyncDisposable
     {
         // Write methods
         // Writes out the XML declaration with the version "1.0".
@@ -598,6 +598,22 @@ namespace System.Xml
             {
                 await WriteAttributeStringAsync("xmlns", prefix, XmlReservedNs.NsXmlNs, ns).ConfigureAwait(false);
             }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            if (WriteState != WriteState.Closed)
+            {
+                Dispose(true);
+            }
+            return default;
         }
     }
 }
