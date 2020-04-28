@@ -1,0 +1,76 @@
+From d8a94684e2a9a584080757a324c4c42183f6d11a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Laban?= <jerome.laban@nventive.com>
+Date: Mon, 29 Apr 2019 11:54:21 -0400
+Subject: [PATCH] Invalid double dlopen failure fix
+
+Fixes #8511
+---
+ src/support.js        | 27 ++++++++++++++++++++++-----
+ tests/test_browser.py | 10 ++++++++++
+ 2 files changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/src/support.js b/src/support.js
+index 68360e406..419e4cbb5 100644
+--- a/src/support.js
++++ b/src/support.js
+@@ -302,14 +302,31 @@ function loadDynamicLibrary(lib, flags) {
+     dso.module = libModule;supp
+   }
+ 
++  function cleanupOnError() {
++    var lib_record = LDSO.loadedLibs[handle];
++    delete LDSO.loadedLibNames[lib_record.name];
++    delete LDSO.loadedLibs[handle];
++  }
++
+   if (flags.loadAsync) {
+-    return getLibModule().then(function(libModule) {
+-      moduleLoaded(libModule);
+-      return handle;
+-    })
++    return getLibModule()
++      .catch(function (e) {
++        cleanupOnError();
++        throw e;
++      })
++      .then(function (libModule) {
++        moduleLoaded(libModule);
++        return handle;
++      })
+   }
+ 
+-  moduleLoaded(getLibModule());
++  try {
++    moduleLoaded(getLibModule());
++  }
++  catch (e) {
++    cleanupOnError();
++    throw e;
++  }
+   return handle;
+ }
+ 
+diff --git a/tests/test_browser.py b/tests/test_browser.py
+index 7836141db..eeb7ad2ff 100644
+--- a/tests/test_browser.py
++++ b/tests/test_browser.py
+@@ -2408,6 +2408,16 @@ void *getBindBuffer() {
+           REPORT_RESULT(3);
+           return 3;
+         }
++        void *invalid_handle = dlopen("/invalid.so", 0);
++        if (invalid_handle) {
++          REPORT_RESULT(4);
++          return 4;
++        }
++        void *invalid_handle2 = dlopen("/invalid.so", 0);
++        if (invalid_handle2) {
++          REPORT_RESULT(5);
++          return 5;
++        }
+         REPORT_RESULT(0);
+         return 0;
+       }
+-- 
+2.17.1.windows.2
+

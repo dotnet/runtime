@@ -1,0 +1,69 @@
+<linker>
+  <assembly fullname="mscorlib">
+	<type fullname="System.Threading.PlatformHelper">
+	  <!-- IsSingleProcessor is a field -->
+	  <!-- Not true in threaded mode
+	  <method signature="System.Int32 get_ProcessorCount()" body="stub" value="1"/>
+	  -->
+	</type>
+    <type fullname="System.IntPtr">
+	  <method signature="System.Int32 get_Size()" body="stub" value="4"/>
+	</type>
+    <type fullname="System.UIntPtr">
+	  <method signature="System.Int32 get_Size()" body="stub" value="4"/>
+	</type>
+    <type fullname="System.Numerics.Vector">
+      <method signature="System.Boolean get_IsHardwareAccelerated()" body="stub"/>
+    </type>
+	<type fullname="System.BitConverter">
+	  <field name="IsLittleEndian" value="true"/>
+	</type>
+  </assembly>
+
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Numerics.Vector">
+      <method signature="System.Boolean get_IsHardwareAccelerated()" body="stub"/>
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sse">
+	  <method signature="System.Boolean get_IsSupported()" body="stub"/>
+	</type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sse2">
+	  <method signature="System.Boolean get_IsSupported()" body="stub"/>
+	</type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx">
+	  <method signature="System.Boolean get_IsSupported()" body="stub"/>
+	</type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx2">
+	  <method signature="System.Boolean get_IsSupported()" body="stub"/>
+	</type>
+	<type fullname="System.Environment">
+	  <!-- Not true in threaded mode
+		   <method signature="System.Boolean get_IsSingleProcessor()" body="stub" value="true"/>
+		   <method signature="System.Int32 get_ProcessorCount()" body="stub" value="1"/>
+		   -->
+	</type>
+    <type fullname="System.IntPtr">
+	  <method signature="System.Int32 get_Size()" body="stub" value="4"/>
+	</type>
+    <type fullname="System.UIntPtr">
+	  <method signature="System.Int32 get_Size()" body="stub" value="4"/>
+	</type>
+	<type fullname="System.BitConverter">
+	  <field name="IsLittleEndian" value="true"/>
+	</type>
+	<type fullname="System.Globalization.GlobalizationMode">
+	  <method signature="System.Boolean get_Invariant()" body="stub" value="true"/> 
+	</type>
+	<type fullname="System.Globalization.CompareInfo">
+	  <!-- Keeps CultureInfo::get_LCID alive -->
+	  <method signature="System.Void OnSerializing(System.Runtime.Serialization.StreamingContext)" body="remove"/>
+	</type>
+  </assembly>
+
+  <assembly fullname="System.Console">
+	<type fullname="System.SR">
+	  <!-- Keeps resource manager alive -->
+	  <method signature="System.Boolean UsingResourceKeys()" body="stub" value="true"/>
+	</type>
+  </assembly>
+</linker>
