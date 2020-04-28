@@ -50,14 +50,13 @@
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
-      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
@@ -102,12 +101,8 @@
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
-          Condition="'$(RuntimeFlavor)' == 'Mono'">
+          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <ItemGroup>
-      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
