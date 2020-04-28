@@ -333,9 +333,12 @@ namespace System.Threading.Tasks
                     }
                 }
             }
-            // Otherwise, the final state of this task does not match the desired
-            // continuation activation criteria; cancel it to denote this.
-            else continuationTask.InternalCancel();
+            else
+            {
+                // Otherwise, the final state of this task does not match the desired
+                // continuation activation criteria; cancel it to denote this.
+                continuationTask.InternalCancel();
+            }
         }
 
         internal override Delegate[]? GetDelegateContinuationsForDebugger()

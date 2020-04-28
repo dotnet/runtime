@@ -2896,30 +2896,26 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Cancels the <see cref="Task"/>.
         /// </summary>
-        /// <returns>true if the task was successfully canceled; otherwise, false.</returns>
-        internal bool InternalCancel()
+        internal void InternalCancel()
         {
             Debug.Assert((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) == 0, "Task.InternalCancel() did not expect promise-style task");
 
-            bool bPopSucceeded = false;
-
             TaskSchedulerException? tse = null;
+            bool popped = false;
 
             // If started, and running in a task context, we can try to pop the chore.
             if ((m_stateFlags & TASK_STATE_STARTED) != 0)
             {
                 TaskScheduler? ts = m_taskScheduler;
-
                 try
                 {
-                    bPopSucceeded = (ts != null) && ts.TryDequeue(this);
+                    popped = (ts != null) && ts.TryDequeue(this);
                 }
                 catch (Exception e)
                 {
                     // TryDequeue threw. We don't know whether the task was properly dequeued or not. So we must let the rest of
                     // the cancellation logic run its course (record the request, attempt atomic state transition and do cleanup where appropriate)
                     // Here we will only record a TaskSchedulerException, which will later be thrown at function exit.
-
                     tse = new TaskSchedulerException(e);
                 }
             }
@@ -2936,7 +2932,7 @@ namespace System.Threading.Tasks
             // Note that we do not check for TASK_STATE_COMPLETION_RESERVED.  That only applies to promise-style
             // tasks, and a promise-style task should not enter into this codepath.
             bool mustCleanup = false;
-            if (bPopSucceeded)
+            if (popped)
             {
                 // Include TASK_STATE_DELEGATE_INVOKED in "illegal" bits to protect against the situation where
                 // TS.TryDequeue() returns true but the task is still left on the queue.
@@ -2956,9 +2952,9 @@ namespace System.Threading.Tasks
             }
 
             if (tse != null)
+            {
                 throw tse;
-
-            return mustCleanup;
+            }
         }
 
         // Breaks out logic for recording a cancellation request
