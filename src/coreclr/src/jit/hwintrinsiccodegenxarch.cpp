@@ -1942,16 +1942,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
-    if (op3->isContained() || op3->isUsedFromSpillTemp())
-    {
-        // 213 form: op1 = (op2 * op1) + [op3]
-
-        op1Reg = op1->GetRegNum();
-        op2Reg = op2->GetRegNum();
-
-        isCommutative = !copiesUpperBits;
-    }
-    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         // 132 form: op1 = (op1 * op3) + [op2]
 
@@ -1971,7 +1962,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        // 213 form: op1 = (op2 * op1) + op3
+        // 213 form: op1 = (op2 * op1) + [op3]
 
         op1Reg = op1->GetRegNum();
         op2Reg = op2->GetRegNum();
