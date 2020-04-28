@@ -6,6 +6,7 @@ parameters:
   container: ''
   testGroup: ''
   liveRuntimeBuildConfig: ''
+  testBuildPhase: ''
 
   # When set to a non-empty value (Debug / Release), it determines libraries
   # build configuration to use for the tests. Setting this property implies
@@ -51,13 +52,24 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
+    # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-
+      ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'      
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+        name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
+        displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -110,7 +122,7 @@ jobs:
         displayName: 'CoreCLR product build'
     
     # Build managed test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) ${{ parameters.testBuildPhase }} skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
 
@@ -119,24 +131,32 @@ jobs:
       parameters:
         rootFolder: $(managedTestArtifactRootFolderPath)
         includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(managedTestArtifactName)
-        displayName: 'managed test components'
+        ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+          archiveExtension: $(archiveExtension)
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          artifactName: $(managedTestArtifactName)
+          displayName: 'managed test components'
+        ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+          artifactName: $(managedGenericTestArtifactName)
+          displayName: 'managed test components (generic)'
 
 
     # Publish .packages/microsoft.net.sdk.il needed for traversing
     # test projects during the copynativeonly command in run test job.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(microsoftNetSdkIlFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(microsoftNetSdkIlArtifactName)
-        displayName: 'Microsoft.NET.Sdk.IL package'
+    - ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(microsoftNetSdkIlFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(microsoftNetSdkIlArtifactName)
+          displayName: 'Microsoft.NET.Sdk.IL package'
 
 
     # Publish Logs
@@ -144,6 +164,9 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        ${{ if ne(parameters.testBuildPhase, 'targetGeneric') }}:
+          artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        ${{ if eq(parameters.testBuildPhase, 'targetGeneric') }}:
+          artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_Lib${{ parameters.liveLibrariesBuildConfig }}_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

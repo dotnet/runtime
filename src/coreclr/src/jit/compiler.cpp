@@ -2695,6 +2695,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compTailCallOpt = true;
 #endif // FEATURE_TAILCALL_OPT
 
+#if FEATURE_FASTTAILCALL
+    // By default fast tail calls are enabled.
+    opts.compFastTailCalls = true;
+#endif // FEATURE_FASTTAILCALL
+
     if (compIsForInlining())
     {
         return;
@@ -3034,6 +3039,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compTailCallLoopOpt = false;
     }
 #endif
+
+#if FEATURE_FASTTAILCALL
+    if (JitConfig.FastTailCalls() == 0)
+    {
+        opts.compFastTailCalls = false;
+    }
+#endif // FEATURE_FASTTAILCALL
 
     opts.compScopeInfo = opts.compDbgInfo;
 
@@ -5881,6 +5893,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
+
+    info.compHasNextCallRetAddr = false;
 
     switch (methodInfo->args.getCallConv())
     {
@@ -8985,9 +8999,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_FRAME_VAR_DEATH]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER)
                     {
-                        chars += printf("[CALL_M_TAILCALL_VIA_HELPER]");
+                        chars += printf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");
                     }
 #if FEATURE_TAILCALL_OPT
                     if (call->gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL)

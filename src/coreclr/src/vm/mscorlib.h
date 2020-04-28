@@ -727,6 +727,9 @@ DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, No
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer, SM_Int_IntPtr_RetIntPtr)
+DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      FREE_TAILCALL_ARG_BUFFER, FreeTailCallArgBuffer, SM_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
@@ -768,6 +771,31 @@ DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
 DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 #endif
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
+
+DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
+DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, PREV,                          Prev)
+DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
+DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
+
+DEFINE_CLASS(TAIL_CALL_TLS,            CompilerServices,              TailCallTls)
+DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
+DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
+DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_SIZE,               _argBufferSize)
+DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_GC_DESC,            _argBufferGCDesc)
+DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER_INLINE,             _argBufferInline)
+
+DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
+DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
+DEFINE_FIELD_U(TailCallAwareReturnAddress, PortableTailCallFrame, TailCallAwareReturnAddress)
+DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
+
+DEFINE_CLASS_U(CompilerServices,           TailCallTls,           TailCallTls)
+DEFINE_FIELD_U(Frame,                      TailCallTls,           m_frame)
+DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
+DEFINE_FIELD_U(_argBufferSize,             TailCallTls,           m_argBufferSize)
+DEFINE_FIELD_U(_argBufferGCDesc,           TailCallTls,           m_argBufferGCDesc)
+DEFINE_FIELD_U(_argBufferInline,           TailCallTls,           m_argBufferInline)
+
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
@@ -1033,6 +1061,7 @@ DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinne
 #ifdef TARGET_64BIT
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT_ADDR,              GetStubContextAddr,             SM_RetIntPtr)
 #endif // TARGET_64BIT
+DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 

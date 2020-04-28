@@ -3272,38 +3272,30 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 
         case STATUS_ACCESS_VIOLATION:
             {
-                // We have a config key, InsecurelyTreatAVsAsNullReference, that ensures we always translate to
-                // NullReferenceException instead of doing the new AV translation logic.
-                if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy())
-                {
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                    // If we got the exception on a redirect function it means the original exception happened in managed code:
-                    if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
-                        return (DWORD) kNullReferenceException;
+                // If we got the exception on a redirect function it means the original exception happened in managed code:
+                if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
+                    return (DWORD) kNullReferenceException;
 
-                    if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
-                    {
-                        return (DWORD) kNullReferenceException;
-                    }
+                if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
+                {
+                    return (DWORD) kNullReferenceException;
+                }
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
-                    // If the IP of the AV is not in managed code, then its an AccessViolationException.
-                    if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
-
-                    // If the address accessed is above 64k (Windows) or page size (PAL), then its an AccessViolationException.
-                    // Note: Win9x is a little different... it never gives you the proper address of the read or write that caused
-                    // the fault. It always gives -1, so we can't use it as part of the decision... just give
-                    // NullReferenceException instead.
-                    if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
+                // If the IP of the AV is not in managed code, then its an AccessViolationException.
+                if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
+                {
+                    return (DWORD) kAccessViolationException;
                 }
 
-            return (DWORD) kNullReferenceException;
+                // If the address accessed is above 64k (Windows) or page size (Unix), then its an AccessViolationException.
+                if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
+                {
+                    return (DWORD) kAccessViolationException;
+                }
+
+                return (DWORD) kNullReferenceException;
             }
 
         case STATUS_ARRAY_BOUNDS_EXCEEDED:
@@ -4607,12 +4599,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         return UserBreakpointFilter(ep);
     }
 
-    // If host policy or config file says "swallow"...
-    if (SwallowUnhandledExceptions())
-    {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
     // If the exception is of a type that is always swallowed (ThreadAbort, AppDomainUnload)...
     if (ExceptionIsAlwaysSwallowed(ep))
     {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
@@ -5789,7 +5775,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
 #ifdef _DEBUG
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
-        !(swallowing && (SwallowUnhandledExceptions() || ExceptionIsAlwaysSwallowed(pExceptionInfo))) &&
+        !(swallowing && ExceptionIsAlwaysSwallowed(pExceptionInfo)) &&
         !(location == ClassInitUnhandledException && pThread->IsRudeAbortInitiated()))
         _ASSERTE(!"BreakOnUnCaughtException");
 #endif
@@ -5800,28 +5786,20 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     if (swallowing)
     {
-        // The default handling for versions v1.0 and v1.1 was to swallow unhandled exceptions.
-        //  With v2.0, the default is to let them go unhandled.  Hosts & config files can modify the default
-        //  to retain the v1.1 behaviour.
-        // Should we swallow this exception, or let it continue up and be unhandled?
-        if (!SwallowUnhandledExceptions())
-        {
-            // No, don't swallow unhandled exceptions...
-
-            // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
-            if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
-            {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
-                return EXCEPTION_EXECUTE_HANDLER;
-            }
-
-            #ifdef _DEBUG
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
-                _ASSERTE(!"BreakOnUnCaughtException");
-            #endif
-
-            // ...so, continue search. i.e. let the exception go unhandled.
-            return EXCEPTION_CONTINUE_SEARCH;
+        // No, don't swallow unhandled exceptions...
+        // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
+        if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
+        {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
+            return EXCEPTION_EXECUTE_HANDLER;
         }
+
+        #ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
+            _ASSERTE(!"BreakOnUnCaughtException");
+        #endif
+
+        // ...so, continue search. i.e. let the exception go unhandled.
+        return EXCEPTION_CONTINUE_SEARCH;
     }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -11236,23 +11214,14 @@ BOOL CEHelper::IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc)
 // Given a MethodDesc and CorruptionSeverity, this method will return a
 // BOOL indicating if the method can handle those kinds of CEs or not.
 /* static */
-BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity)
 {
     BOOL fCanMethodHandleSeverity = FALSE;
 
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS; // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
-        // First pass requires THROWS and in 2nd we need to be due to the AppX check below where GetFusionAssemblyName can throw.
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11295,20 +11264,11 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
 //
 // This method accounts for both corrupting and non-corrupting exceptions.
 /* static */
-BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc)
 {
     CONTRACTL
     {
-        // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS/THROWS
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS;
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11351,7 +11311,7 @@ BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodD
             LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Exception is corrupting.\n"));
 
             // Check if the method can handle the severity specified in the exception object.
-            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity, fCalculateSecurityInfo);
+            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity);
         }
         else
         {

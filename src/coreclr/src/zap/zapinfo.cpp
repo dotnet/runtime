@@ -1717,14 +1717,14 @@ void ZapInfo::embedGenericSignature(CORINFO_LOOKUP * pLookup)
     }
 }
 
-void* ZapInfo::getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags)
+bool ZapInfo::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    void * pStub = m_pEEJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    if (pStub == NULL)
-        return NULL;
-    return m_pImage->GetWrappers()->GetStub(pStub);
+    ThrowHR(E_NOTIMPL);
+    return false;
 }
 
 bool ZapInfo::convertPInvokeCalliToCall(

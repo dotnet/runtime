@@ -1132,6 +1132,28 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
     return result;
 }
 
+//------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                               GenTree*                ctxTree,
+                                                               void*                   compileTimeHandle)
+{
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+
+    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+}
+
 //------------------------------------------------------------------------
 // gtNewAllocObjNode: A little helper to create an object allocation node.
 //
