@@ -859,7 +859,7 @@ public:
 
     virtual BOOL TraceManager(Thread * pThread, TraceDestination * pTrace, T_CONTEXT * pContext, BYTE ** ppRetAddr);
 
-    static bool IsTailCallStubHelper(PCODE code);
+    static bool IsTailCallJitHelper(PCODE code);
 #endif // DACCESS_COMPILE
 
 #if defined(_DEBUG)

@@ -1727,6 +1727,16 @@ void* ZapInfo::getTailCallCopyArgsThunk (
     return m_pImage->GetWrappers()->GetStub(pStub);
 }
 
+bool ZapInfo::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
+{
+    ThrowHR(E_NOTIMPL);
+    return false;
+}
+
 bool ZapInfo::convertPInvokeCalliToCall(
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert)

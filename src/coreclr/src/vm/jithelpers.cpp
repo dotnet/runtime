@@ -4538,7 +4538,7 @@ void DoJITFailFast ()
                        GetClrInstanceId());
     }
 
-    TerminateProcess(GetCurrentProcess(), STATUS_STACK_BUFFER_OVERRUN);
+    CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
 #endif // !TARGET_UNIX
 }
 

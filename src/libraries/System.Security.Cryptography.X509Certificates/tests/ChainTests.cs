@@ -1063,6 +1063,145 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
             }
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void BuildChainForFraudulentCertificate()
+        {
+            // This certificate is a misissued certificate for a "high-value"
+            // domain, mail.google.com. Windows and macOS give this certificate
+            // special distrust treatment beyond normal revocation, resulting
+            // in ExplicitDistrust. OpenSSL relies on normal revocation routines
+            // to distrust this certificate, so we skip this test on Linux.
+
+            byte[] certBytes = Convert.FromBase64String(@"
+MIIF7jCCBNagAwIBAgIQBH7L6fylX3vQnq424QyuHjANBgkqhkiG9w0BAQUFADCB
+lzELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExha2Ug
+Q2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExho
+dHRwOi8vd3d3LnVzZXJ0cnVzdC5jb20xHzAdBgNVBAMTFlVUTi1VU0VSRmlyc3Qt
+SGFyZHdhcmUwHhcNMTEwMzE1MDAwMDAwWhcNMTQwMzE0MjM1OTU5WjCB3zELMAkG
+A1UEBhMCVVMxDjAMBgNVBBETBTM4NDc3MRAwDgYDVQQIEwdGbG9yaWRhMRAwDgYD
+VQQHEwdFbmdsaXNoMRcwFQYDVQQJEw5TZWEgVmlsbGFnZSAxMDEUMBIGA1UEChML
+R29vZ2xlIEx0ZC4xEzARBgNVBAsTClRlY2ggRGVwdC4xKDAmBgNVBAsTH0hvc3Rl
+ZCBieSBHVEkgR3JvdXAgQ29ycG9yYXRpb24xFDASBgNVBAsTC1BsYXRpbnVtU1NM
+MRgwFgYDVQQDEw9tYWlsLmdvb2dsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IB
+DwAwggEKAoIBAQCwc/DyBO7CokbKNCqqu2Aj0RF2Hx860GWDTppFqENwhXbwH4cA
+Ah9uOxcXxLXpGUaikiWNYiq0YzAfuYX4NeEWWnZJzFBIUzlZidaEAvua7BvHUdV2
+lZDUOiq4pt4CTQb7ze2lRkFfVXTl7H5A3FCcteQ1XR5oIPjp3qNqKL9B0qGz4iWN
+DBvKPZMMGK7fxbz9vIK6aADXFjJxn2W1EdpoWdCmV2Qbyf6Y5fWlZerh2+70s52z
+juqHrhbSHqB8fGk/KRaFAVOnbPFgq92i/CVH1DLREt33SBLg/Jyid5jpiZm4+Djx
+jAbCeiM2bZudzTDIxzQXHrt9Qsir5xUW9nO1AgMBAAGjggHqMIIB5jAfBgNVHSME
+GDAWgBShcl8mGyiYQ5VdBzfVhZadS9LDRTAdBgNVHQ4EFgQUGCqiyNR6P3utBIu9
+b54QRhN4cZ0wDgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwHQYDVR0lBBYw
+FAYIKwYBBQUHAwEGCCsGAQUFBwMCMEYGA1UdIAQ/MD0wOwYMKwYBBAGyMQECAQME
+MCswKQYIKwYBBQUHAgEWHWh0dHBzOi8vc2VjdXJlLmNvbW9kby5jb20vQ1BTMHsG
+A1UdHwR0MHIwOKA2oDSGMmh0dHA6Ly9jcmwuY29tb2RvY2EuY29tL1VUTi1VU0VS
+Rmlyc3QtSGFyZHdhcmUuY3JsMDagNKAyhjBodHRwOi8vY3JsLmNvbW9kby5uZXQv
+VVROLVVTRVJGaXJzdC1IYXJkd2FyZS5jcmwwcQYIKwYBBQUHAQEEZTBjMDsGCCsG
+AQUFBzAChi9odHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9VVE5BZGRUcnVzdFNlcnZl
+ckNBLmNydDAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuY29tb2RvY2EuY29tMC8G
+A1UdEQQoMCaCD21haWwuZ29vZ2xlLmNvbYITd3d3Lm1haWwuZ29vZ2xlLmNvbTAN
+BgkqhkiG9w0BAQUFAAOCAQEAZwYICifFk24C8t4XP9DTG3z/tc16x3fHvt8Syhne
+sBNXDAORxHlSz3+3XlUghEnd9dApLw4E2lmeDhOf9MAym/+hESQql6PyPz0qa6it
+jBl1lQ4dJf1PxHoVwx3HE0DIDb6XYHKm/iW+j+zVpobDIVxZUtlqC1yfS961+ezi
+9MXMYlN2iWXkKdq3v5bgYI0NtwlV1kBVHcHyliF1r4mGH12BlykoHinXlsEgAzJ7
+ADtqNxdao7MabzI7bvGjXaurzCrLMAwfNSOLaURc6qwoYO2ra2Oe9pK8vZpaJkzF
+mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
+
+            using (X509Certificate2 cert = new X509Certificate2(certBytes))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                Assert.False(chain.Build(cert));
+
+                X509ChainElement certElement = chain.ChainElements
+                    .OfType<X509ChainElement>()
+                    .Single(e => e.Certificate.Subject == cert.Subject);
+
+                const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
+                X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
+                Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void BuildChainForCertificateSignedWithDisallowedKey()
+        {
+            // The intermediate certificate is from the now defunct CA DigiNotar.
+            // This intermediate is disallowed on the macOS on Windows platforms
+            // which result in an ExplicitDistrust result. OpenSSL does not treat
+            // this intermediate differently, and distributions have removed the
+            // root CA from the trust store anyway, resulting in a partial chain.
+            // Since OpenSSL isn't going out of its way to give the CA or its
+            // intermediates any special distrust, we skip this test on Linux.
+
+            byte[] intermediateBytes = Convert.FromBase64String(@"
+MIIDzTCCAzagAwIBAgIERpwssDANBgkqhkiG9w0BAQUFADCBwzELMAkGA1UEBhMC
+VVMxFDASBgNVBAoTC0VudHJ1c3QubmV0MTswOQYDVQQLEzJ3d3cuZW50cnVzdC5u
+ZXQvQ1BTIGluY29ycC4gYnkgcmVmLiAobGltaXRzIGxpYWIuKTElMCMGA1UECxMc
+KGMpIDE5OTkgRW50cnVzdC5uZXQgTGltaXRlZDE6MDgGA1UEAxMxRW50cnVzdC5u
+ZXQgU2VjdXJlIFNlcnZlciBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTAeFw0wNzA3
+MjYxNTU5MDBaFw0xMzA4MjYxNjI5MDBaMGgxCzAJBgNVBAYTAk5MMRIwEAYDVQQK
+EwlEaWdpTm90YXIxIzAhBgNVBAMTGkRpZ2lOb3RhciBTZXJ2aWNlcyAxMDI0IENB
+MSAwHgYJKoZIhvcNAQkBFhFpbmZvQGRpZ2lub3Rhci5ubDCBnzANBgkqhkiG9w0B
+AQEFAAOBjQAwgYkCgYEA2ptNXTz50eKLxsYIIMXZHkjsZlhneWIrQWP0iY1o2q+4
+lDaLGSSkoJPSmQ+yrS01Tc0vauH5mxkrvAQafi09UmTN8T5nD4ku6PJPrqYIoYX+
+oakJ5sarPkP8r3oDkdqmOaZh7phPGKjTs69mgumfvN1y+QYEvRLZGCTnq5NTi1kC
+AwEAAaOCASYwggEiMBIGA1UdEwEB/wQIMAYBAf8CAQAwJwYDVR0lBCAwHgYIKwYB
+BQUHAwEGCCsGAQUFBwMCBggrBgEFBQcDBDARBgNVHSAECjAIMAYGBFUdIAAwMwYI
+KwYBBQUHAQEEJzAlMCMGCCsGAQUFBzABhhdodHRwOi8vb2NzcC5lbnRydXN0Lm5l
+dDAzBgNVHR8ELDAqMCigJqAkhiJodHRwOi8vY3JsLmVudHJ1c3QubmV0L3NlcnZl
+cjEuY3JsMB0GA1UdDgQWBBT+3JRJDG/vXH/G8RKZTxZJrfuCZTALBgNVHQ8EBAMC
+AQYwHwYDVR0jBBgwFoAU8BdiE1U9s/8KAGv7UISX8+1i0BowGQYJKoZIhvZ9B0EA
+BAwwChsEVjcuMQMCAIEwDQYJKoZIhvcNAQEFBQADgYEAY3RqN6k/lpxmyFisCcnv
+9WWUf6MCxDgxvV0jh+zUVrLJsm7kBQb87PX6iHBZ1O7m3bV6oKNgLwIMq94SXa/w
+NUuqikeRGvWFLELHHe+VQ7NeuJWTpdrFKKqtci0xrZlrbP+MISevrZqRK8fdWMNu
+B8WfedLHjFW/TMcnXlEWKz4=");
+            byte[] leafBytes = Convert.FromBase64String(@"
+MIID3zCCA0igAwIBAgIRAK91OcqDBdcxtsg6T03CzCQwDQYJKoZIhvcNAQEFBQAw
+aDELMAkGA1UEBhMCTkwxEjAQBgNVBAoTCURpZ2lOb3RhcjEjMCEGA1UEAxMaRGln
+aU5vdGFyIFNlcnZpY2VzIDEwMjQgQ0ExIDAeBgkqhkiG9w0BCQEWEWluZm9AZGln
+aW5vdGFyLm5sMB4XDTA5MDQyNDExMTUyNVoXDTEzMDQyMzExMTUyNVowgckxCzAJ
+BgNVBAYTAk5MMSwwKgYDVQQKEyNDdXJyZW5jZSBTZXJ2aWNlcyBCLlYuICgwMDMw
+MTkzNjE0KTEuMCwGA1UEBxMlQW1zdGVyZGFtIEJlZXRob3ZlbnN0cmFhdCAzMDAg
+ICgwMDAwKTEoMCYGA1UECxMfU1NMIFNlcnZlcmNlcnRpZmljYWF0IC0gWmllIENQ
+UzEaMBgGA1UEBRMRUlAwNzAwMDEwMDIyOTkxNjExFjAUBgNVBAMTDSouY3VycmVu
+Y2UubmwwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAK7b2TiO+0EuQnHlFl8Z
+h2R6yEUIhvnpjQOHLnvN+7QicZ2Qe44sMk1hWdxvILwtdBBRN1jBkQh2zcB17fqm
+bbGEb6E/i1sN1w1cFs3M1PJ+zTdgRACZ9yUl2Yh3C0PQqgI6tDmONvb1hqAdKgU4
+dlFwUK1cz/YAzgg3HkEi2eB3AgMBAAGjggElMIIBITAfBgNVHSMEGDAWgBT+3JRJ
+DG/vXH/G8RKZTxZJrfuCZTAJBgNVHRMEAjAAMIHDBgNVHSAEgbswgbgwgbUGC2CE
+EAGHaQEBAQoBMIGlMCcGCCsGAQUFBwIBFhtodHRwOi8vd3d3LmRpZ2lub3Rhci5u
+bC9jcHMwegYIKwYBBQUHAgIwbhpsQ29uZGl0aW9ucywgYXMgbWVudGlvbmVkIG9u
+IG91ciB3ZWJzaXRlICh3d3cuZGlnaW5vdGFyLm5sKSwgYXJlIGFwcGxpY2FibGUg
+dG8gYWxsIG91ciBwcm9kdWN0cyBhbmQgc2VydmljZXMuMA4GA1UdDwEB/wQEAwIE
+sDAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDQYJKoZIhvcNAQEFBQAD
+gYEAGZH8mFA+TMlGMqXifNKs713LQ8bWv4j7bNNBsySUROa0+uhhKtGhh8089Cnn
+lWOt5PxA7mHNbkGVwPbvPwg32LedZ6nRgpjHE8BJe57z2YmoawxLhxtzLyhOzfe8
+yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
+
+            using (X509Certificate2 intermediateCert = new X509Certificate2(intermediateBytes))
+            using (X509Certificate2 cert = new X509Certificate2(leafBytes))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+                Assert.False(chain.Build(cert));
+
+                X509ChainElement certElement = chain.ChainElements
+                    .OfType<X509ChainElement>()
+                    .Single(e => e.Certificate.Subject == intermediateCert.Subject);
+
+                const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.ExplicitDistrust;
+                X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
+                Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
+            }
+        }
+
         internal static X509ChainStatusFlags AllStatusFlags(this X509Chain chain)
         {
             return chain.ChainStatus.Aggregate(

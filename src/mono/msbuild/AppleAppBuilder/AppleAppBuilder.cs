@@ -139,7 +139,7 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
-        if (UseLlvm && !string.IsNullOrEmpty(LlvmPath))
+        if (UseLlvm && string.IsNullOrEmpty(LlvmPath))
         {
             // otherwise we might accidentally use some random llc/opt from PATH (installed with clang)
             throw new ArgumentException($"LlvmPath shoun't be empty when UseLlvm is set");

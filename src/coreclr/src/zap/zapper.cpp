@@ -1114,7 +1114,7 @@ IMetaDataAssemblyEmit * Zapper::CreateAssemblyEmitter()
 
     // Hardwire the metadata version to be the current runtime version so that the ngen image
     // does not change when the directory runtime is installed in different directory (e.g. v2.0.x86chk vs. v2.0.80826).
-    BSTRHolder strVersion(SysAllocString(W("v")VER_PRODUCTVERSION_NO_QFE_STR_L));
+    BSTRHolder strVersion(SysAllocString(CLR_METADATA_VERSION_L));
     VARIANT versionOption;
     V_VT(&versionOption) = VT_BSTR;
     V_BSTR(&versionOption) = strVersion;

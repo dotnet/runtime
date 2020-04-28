@@ -15,7 +15,7 @@
 #include "stdafx.h"                     // Standard header.
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
-#include "ndpversion.h"
+#include "clrversion.h"
 #include "../dlls/mscorrc/resource.h"
 #include "ex.h"
 #if !defined(FEATURE_CORESYSTEM)
@@ -203,7 +203,7 @@ int UtilMessageBoxNonLocalizedVA(
         {
             StackSString message;
 
-            message.Printf(W(".NET Runtime version : %s - "), VER_FILEVERSION_STR_L);
+            message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
             if (lpTitle)
                 message.Append(lpTitle);
             if (!formattedMessage.IsEmpty())

@@ -370,7 +370,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
                     ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
-                    if (pStubResolver->IsCLRToNativeInteropStub())
+                    if (pStubResolver->GetStubType() == ILStubResolver::CLRToNativeInteropStub)
                     {
                         MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
                         if (pTargetMD != NULL)

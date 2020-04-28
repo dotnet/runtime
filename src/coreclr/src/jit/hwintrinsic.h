@@ -223,6 +223,30 @@ enum class FloatComparisonMode : unsigned char
     // _CMP_TRUE_US
     UnorderedTrueSignaling = 31,
 };
+
+enum class FloatRoundingMode : unsigned char
+{
+    // _MM_FROUND_TO_NEAREST_INT
+    ToNearestInteger = 0x00,
+
+    // _MM_FROUND_TO_NEG_INF
+    ToNegativeInfinity = 0x01,
+
+    // _MM_FROUND_TO_POS_INF
+    ToPositiveInfinity = 0x02,
+
+    // _MM_FROUND_TO_ZERO
+    ToZero = 0x03,
+
+    // _MM_FROUND_CUR_DIRECTION
+    CurrentDirection = 0x04,
+
+    // _MM_FROUND_RAISE_EXC
+    RaiseException = 0x00,
+
+    // _MM_FROUND_NO_EXC
+    NoException = 0x08,
+};
 #endif // TARGET_XARCH
 
 struct HWIntrinsicInfo
@@ -230,14 +254,11 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-#ifdef TARGET_XARCH
-    int ival;
-#endif
-    unsigned            simdSize;
-    int                 numArgs;
-    instruction         ins[10];
-    HWIntrinsicCategory category;
-    HWIntrinsicFlag     flags;
+    unsigned               simdSize;
+    int                    numArgs;
+    instruction            ins[10];
+    HWIntrinsicCategory    category;
+    HWIntrinsicFlag        flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
@@ -289,7 +310,162 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
     static int lookupIval(NamedIntrinsic id)
     {
-        return lookup(id).ival;
+        switch (id)
+        {
+            case NI_SSE_CompareEqual:
+            case NI_SSE_CompareScalarEqual:
+            case NI_SSE2_CompareEqual:
+            case NI_SSE2_CompareScalarEqual:
+            case NI_AVX_CompareEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedEqualNonSignaling);
+            }
+
+            case NI_SSE_CompareGreaterThan:
+            case NI_SSE_CompareScalarGreaterThan:
+            case NI_SSE2_CompareGreaterThan:
+            case NI_SSE2_CompareScalarGreaterThan:
+            case NI_SSE_CompareLessThan:
+            case NI_SSE_CompareScalarLessThan:
+            case NI_SSE2_CompareLessThan:
+            case NI_SSE2_CompareScalarLessThan:
+            case NI_AVX_CompareLessThan:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+            }
+
+            case NI_SSE_CompareGreaterThanOrEqual:
+            case NI_SSE_CompareScalarGreaterThanOrEqual:
+            case NI_SSE2_CompareGreaterThanOrEqual:
+            case NI_SSE2_CompareScalarGreaterThanOrEqual:
+            case NI_SSE_CompareLessThanOrEqual:
+            case NI_SSE_CompareScalarLessThanOrEqual:
+            case NI_SSE2_CompareLessThanOrEqual:
+            case NI_SSE2_CompareScalarLessThanOrEqual:
+            case NI_AVX_CompareLessThanOrEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+            }
+
+            case NI_SSE_CompareNotEqual:
+            case NI_SSE_CompareScalarNotEqual:
+            case NI_SSE2_CompareNotEqual:
+            case NI_SSE2_CompareScalarNotEqual:
+            case NI_AVX_CompareNotEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNotEqualNonSignaling);
+            }
+
+            case NI_SSE_CompareNotGreaterThan:
+            case NI_SSE_CompareScalarNotGreaterThan:
+            case NI_SSE2_CompareNotGreaterThan:
+            case NI_SSE2_CompareScalarNotGreaterThan:
+            case NI_SSE_CompareNotLessThan:
+            case NI_SSE_CompareScalarNotLessThan:
+            case NI_SSE2_CompareNotLessThan:
+            case NI_SSE2_CompareScalarNotLessThan:
+            case NI_AVX_CompareNotLessThan:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
+            }
+
+            case NI_SSE_CompareNotGreaterThanOrEqual:
+            case NI_SSE_CompareScalarNotGreaterThanOrEqual:
+            case NI_SSE2_CompareNotGreaterThanOrEqual:
+            case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+            case NI_SSE_CompareNotLessThanOrEqual:
+            case NI_SSE_CompareScalarNotLessThanOrEqual:
+            case NI_SSE2_CompareNotLessThanOrEqual:
+            case NI_SSE2_CompareScalarNotLessThanOrEqual:
+            case NI_AVX_CompareNotLessThanOrEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
+            }
+
+            case NI_SSE_CompareOrdered:
+            case NI_SSE_CompareScalarOrdered:
+            case NI_SSE2_CompareOrdered:
+            case NI_SSE2_CompareScalarOrdered:
+            case NI_AVX_CompareOrdered:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedNonSignaling);
+            }
+
+            case NI_SSE_CompareUnordered:
+            case NI_SSE_CompareScalarUnordered:
+            case NI_SSE2_CompareUnordered:
+            case NI_SSE2_CompareScalarUnordered:
+            case NI_AVX_CompareUnordered:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNonSignaling);
+            }
+
+            case NI_SSE41_Ceiling:
+            case NI_SSE41_CeilingScalar:
+            case NI_SSE41_RoundToPositiveInfinity:
+            case NI_SSE41_RoundToPositiveInfinityScalar:
+            case NI_AVX_Ceiling:
+            case NI_AVX_RoundToPositiveInfinity:
+            {
+                return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
+            }
+
+            case NI_SSE41_Floor:
+            case NI_SSE41_FloorScalar:
+            case NI_SSE41_RoundToNegativeInfinity:
+            case NI_SSE41_RoundToNegativeInfinityScalar:
+            case NI_AVX_Floor:
+            case NI_AVX_RoundToNegativeInfinity:
+            {
+                return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
+            }
+
+            case NI_SSE41_RoundCurrentDirection:
+            case NI_SSE41_RoundCurrentDirectionScalar:
+            case NI_AVX_RoundCurrentDirection:
+            {
+                return static_cast<int>(FloatRoundingMode::CurrentDirection);
+            }
+
+            case NI_SSE41_RoundToNearestInteger:
+            case NI_SSE41_RoundToNearestIntegerScalar:
+            case NI_AVX_RoundToNearestInteger:
+            {
+                return static_cast<int>(FloatRoundingMode::ToNearestInteger);
+            }
+
+            case NI_SSE41_RoundToZero:
+            case NI_SSE41_RoundToZeroScalar:
+            case NI_AVX_RoundToZero:
+            {
+                return static_cast<int>(FloatRoundingMode::ToZero);
+            }
+
+            case NI_AVX_CompareGreaterThan:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
+            }
+
+            case NI_AVX_CompareGreaterThanOrEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
+            }
+
+            case NI_AVX_CompareNotGreaterThan:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
+            }
+
+            case NI_AVX_CompareNotGreaterThanOrEqual:
+            {
+                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
+            }
+
+            default:
+            {
+                return -1;
+            }
+        }
     }
 #endif
 

@@ -32,7 +32,7 @@
 //
 
 #if MONO_FEATURE_SRE
-using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -53,7 +53,9 @@ namespace System.Reflection.Emit
 #pragma warning restore 649
         #endregion
 
-        private Hashtable? fields, ctors, methods;
+        private Dictionary<FieldInfo, FieldInfo>? fields;
+        private Dictionary<ConstructorInfo, ConstructorInfo>? ctors;
+        private Dictionary<MethodInfo, MethodInfo>? methods;
 
         internal TypeBuilderInstantiation()
         {
@@ -167,28 +169,28 @@ namespace System.Reflection.Emit
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
             if (methods == null)
-                methods = new Hashtable();
+                methods = new Dictionary<MethodInfo, MethodInfo>();
             if (!methods.ContainsKey(fromNoninstanciated))
                 methods[fromNoninstanciated] = new MethodOnTypeBuilderInst(this, fromNoninstanciated);
-            return (MethodInfo)methods[fromNoninstanciated]!;
+            return methods[fromNoninstanciated]!;
         }
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
             if (ctors == null)
-                ctors = new Hashtable();
+                ctors = new Dictionary<ConstructorInfo, ConstructorInfo>();
             if (!ctors.ContainsKey(fromNoninstanciated))
                 ctors[fromNoninstanciated] = new ConstructorOnTypeBuilderInst(this, fromNoninstanciated);
-            return (ConstructorInfo)ctors[fromNoninstanciated]!;
+            return ctors[fromNoninstanciated]!;
         }
 
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
             if (fields == null)
-                fields = new Hashtable();
+                fields = new Dictionary<FieldInfo, FieldInfo>();
             if (!fields.ContainsKey(fromNoninstanciated))
                 fields[fromNoninstanciated] = new FieldOnTypeBuilderInst(this, fromNoninstanciated);
-            return (FieldInfo)fields[fromNoninstanciated]!;
+            return fields[fromNoninstanciated]!;
         }
 
         public override MethodInfo[] GetMethods(BindingFlags bf)

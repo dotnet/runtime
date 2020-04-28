@@ -39,7 +39,7 @@ void Compiler::lvaInit()
     /* We haven't allocated stack variables yet */
     lvaRefCountState = RCS_INVALID;
 
-    lvaGenericsContextUseCount = 0;
+    lvaGenericsContextInUse = false;
 
     lvaTrackedToVarNumSize = 0;
     lvaTrackedToVarNum     = nullptr;
@@ -72,6 +72,7 @@ void Compiler::lvaInit()
     lvaStubArgumentVar  = BAD_VAR_NUM;
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
+    lvaRetAddrVar       = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
@@ -3606,6 +3607,8 @@ var_types LclVarDsc::lvaArgType()
 //     eligible for assertion prop, single defs, and tracking which blocks
 //     hold uses.
 //
+//     Looks for uses of generic context and sets lvaGenericsContextInUse.
+//
 //     In checked builds:
 //
 //     Verifies that local accesses are consistenly typed.
@@ -3710,6 +3713,17 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     }
 
     /* This must be a local variable reference */
+
+    // See if this is a generics context use.
+    if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+    {
+        assert(tree->OperIs(GT_LCL_VAR));
+        if (!lvaGenericsContextInUse)
+        {
+            JITDUMP("-- generic context in use at [%06u]\n", dspTreeID(tree));
+            lvaGenericsContextInUse = true;
+        }
+    }
 
     assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
     unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
@@ -4009,24 +4023,26 @@ void Compiler::lvaMarkLocalVars()
         return;
     }
 
+    const bool reportParamTypeArg = lvaReportParamTypeArg();
+
+    // Update bookkeeping on the generic context.
+    if (lvaKeepAliveAndReportThis())
+    {
+        lvaGetDesc(0u)->lvImplicitlyReferenced = reportParamTypeArg;
+    }
+    else if (lvaReportParamTypeArg())
+    {
+        // We should have a context arg.
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
+        lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
+    }
+
 #if ASSERTION_PROP
     assert(opts.OptimizationEnabled());
 
     // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
     optAddCopies();
 #endif
-
-    if (lvaKeepAliveAndReportThis())
-    {
-        lvaTable[0].lvImplicitlyReferenced = 1;
-        // This isn't strictly needed as we will make a copy of the param-type-arg
-        // in the prolog. However, this ensures that the LclVarDsc corresponding to
-        // info.compTypeCtxtArg is valid.
-    }
-    else if (lvaReportParamTypeArg())
-    {
-        lvaTable[info.compTypeCtxtArg].lvImplicitlyReferenced = 1;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -4046,7 +4062,10 @@ void Compiler::lvaMarkLocalVars()
 //    In fast-jitting modes where we don't ref count locals, this bypasses
 //    actual counting, and makes all locals implicitly referenced on first
 //    compute. It asserts all locals are implicitly referenced on recompute.
-
+//
+//    When optimizing we also recompute lvaGenericsContextInUse based
+//    on specially flagged LCL_VAR appearances.
+//
 void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
@@ -4141,6 +4160,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         varDsc->lvSingleDef = varDsc->lvIsParam;
     }
 
+    // Remember current state of generic context use, and prepare
+    // to compute new state.
+    const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
+    lvaGenericsContextInUse               = false;
+
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
@@ -4176,6 +4200,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                         {
                             varDsc->incRefCnts(weight, this);
                         }
+
+                        if ((node->gtFlags & GTF_VAR_CONTEXT) != 0)
+                        {
+                            assert(node->OperIs(GT_LCL_VAR));
+                            lvaGenericsContextInUse = true;
+                        }
                         break;
                     }
 
@@ -4188,6 +4218,21 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             lvaMarkLocalVars(block, isRecompute);
         }
+    }
+
+    if (oldLvaGenericsContextInUse && !lvaGenericsContextInUse)
+    {
+        // Context was in use but no longer is. This can happen
+        // if we're able to optimize, so just leave a note.
+        JITDUMP("\n** Generics context no longer in use\n");
+    }
+    else if (lvaGenericsContextInUse && !oldLvaGenericsContextInUse)
+    {
+        // Context was not in use but now is.
+        //
+        // Changing from unused->used should never happen; creation of any new IR
+        // for context use should also be settting lvaGenericsContextInUse.
+        assert(!"unexpected new use of generics context");
     }
 
     JITDUMP("\n*** lvaComputeRefCounts -- implicit counts ***\n");
@@ -4950,6 +4995,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 
 #endif // FEATURE_FIXED_OUT_ARGS
+
+#ifdef TARGET_ARM64
+    // We normally add alignment below the locals between them and the outgoing
+    // arg space area. When we store fp/lr at the bottom, however, this will be
+    // below the alignment. So we should not apply the alignment adjustment to
+    // them. On ARM64 it turns out we always store these at +0 and +8 of the FP,
+    // so instead of dealing with skipping adjustment just for them we just set
+    // them here always.
+    assert(codeGen->isFramePointerUsed());
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = REGSIZE_BYTES;
+    }
+#endif
 }
 
 #ifdef TARGET_ARM
@@ -5665,6 +5724,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_XARCH
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs;
+    }
 
     // If we are an OSR method, we "inherit" the frame of the original method,
     // and the stack is already double aligned on entry (since the return adddress push
@@ -5725,7 +5788,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#else  // !TARGET_ARM64
+#else // !TARGET_ARM64
+#ifdef TARGET_ARM
+    // On ARM32 LR is part of the pushed registers and is always stored at the
+    // top.
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs - REGSIZE_BYTES;
+    }
+#endif
+
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 #endif // !TARGET_ARM64
 
@@ -6086,7 +6158,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
-                false)
+                lclNum == lvaRetAddrVar)
             {
                 assert(varDsc->lvStkOffs != BAD_STK_OFFS);
                 continue;

@@ -10,12 +10,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs">
-      <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
+             Link="Common\System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="AdapterSwitches.cs" />
     <Compile Include="ColumnBinding.cs" />
     <Compile Include="DbBindings.cs" />

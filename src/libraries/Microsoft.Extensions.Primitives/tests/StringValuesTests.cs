@@ -345,6 +345,57 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(e2.MoveNext());
         }
 
+        [Fact]
+        public void Indexer()
+        {
+            StringValues sv;
+
+            // Default empty
+            sv = default;
+            Assert.Throws<IndexOutOfRangeException>(() => sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // Empty with null string ctor
+            sv = new StringValues((string)null);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // Empty with null string[] ctor
+            sv = new StringValues((string[])null);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // Empty with array
+            sv = Array.Empty<string>();
+            Assert.Throws<IndexOutOfRangeException>(() => sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // One element with string
+            sv = "hello";
+            Assert.Equal("hello", sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[1]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // One element with string[]
+            sv = new string[] { "hello" };
+            Assert.Equal("hello", sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[1]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // One element with string[] containing null
+            sv = new string[] { null };
+            Assert.Null(sv[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[1]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+
+            // Two elements with string[]
+            sv = new string[] { "hello", "world" };
+            Assert.Equal("hello", sv[0]);
+            Assert.Equal("world", sv[1]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[2]);
+            Assert.Throws<IndexOutOfRangeException>(() => sv[-1]);
+        }
+
         [Theory]
         [MemberData(nameof(FilledStringValuesWithExpected))]
         public void IndexOf(StringValues stringValues, string[] expected)
