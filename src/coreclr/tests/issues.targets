@@ -1481,11 +1481,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578217/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
-
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18144/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
