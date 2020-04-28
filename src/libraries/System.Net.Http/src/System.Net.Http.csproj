@@ -699,43 +699,30 @@
   <!-- Browser specific implementation -->
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
 
-    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
-      <Link>Common\System\CharArrayHelpers.cs</Link>
-    </Compile>  
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
-      <Link>Common\System\StringExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
-      <Link>Common\System\Net\SecurityProtocol.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
-    </Compile>
-
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
-    </Compile>  
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Unix.cs">
-      <Link>Common\System\Net\Security\CertificateHelper.Unix.cs</Link>
-    </Compile>        
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
+             Link="Common\System\CharArrayHelpers.cs" />
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
+             Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs"
+             Link="Common\System\Net\UriScheme.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs"
+             Link="Common\System\Net\Security\CertificateHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Unix.cs"
+             Link="Common\System\Net\Security\CertificateHelper.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="System\System\Threading\Tasks\TaskToApm.cs" />
     
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
@@ -747,51 +734,34 @@
 
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpMessageHandler.cs" />
 
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs">
-      <Link>Common\Interop\Browser\Interop.Runtime.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.JSException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.JSObject.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.TypedArray.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.Array.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs</Link>
-    </Compile> 
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.CoreObject.cs</Link>
-    </Compile>
-   <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.HostObject.cs</Link>
-    </Compile>
-   <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs">
-      <Link>Common\Interop\Browser\Interop.JavaScript.Function.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs">
-      <Link>Common\Interop\Browser\Interop.Runtime.AnyRef.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Interfaces.cs">
-      <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs"
+             Link="Common\Interop\Browser\Interop.Runtime.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.JSException.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.JSObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.TypedArray.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.CoreObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.HostObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs"
+             Link="Common\Interop\Browser\Interop.JavaScript.Function.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs"
+             Link="Common\Interop\Browser\Interop.Runtime.AnyRef.cs" />
 
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.HttpHandlerService.cs">
-      <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.HttpHandlerService.cs"
+             Link="Common\Interop\Browser\Interop.HttpHandlerService.cs" />
   </ItemGroup>  
 </Project>
