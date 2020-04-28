@@ -6,12 +6,21 @@ TARGET_ARCH=$2
 TARGET=
 SCHEME_SDK=
 
-if [ "$TARGET_ARCH" == "arm64" ]; then
+if [ "$TARGET_ARCH" == "arm" ]; then
     TARGET=ios-device
     SCHEME_SDK=Release-iphoneos
-else
+elif [ "$TARGET_ARCH" == "arm64" ]; then
+    TARGET=ios-device
+    SCHEME_SDK=Release-iphoneos
+elif [ "$TARGET_ARCH" == "x64" ]; then
     TARGET=ios-simulator-64
     SCHEME_SDK=Release-iphonesimulator
+elif [ "$TARGET_ARCH" == "x86" ]; then
+    TARGET=ios-simulator-32
+    SCHEME_SDK=Release-iphonesimulator
+else
+    echo "Unknown architecture: $TARGET_ARCH"
+    exit 1
 fi
 
 # Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
