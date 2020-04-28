@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -30,8 +29,8 @@ internal static partial class Interop
         public class BrowserHttpHandlerService : IHttpHandlerService, IDisposable
         {
 
-            private static JSObject fetch;
-            private static JSObject window;
+            private static JSObject? fetch;
+            private static JSObject? window;
 
             /// <summary>
             /// Gets whether the current Browser supports streaming responses
@@ -72,6 +71,11 @@ internal static partial class Interop
 
             private async Task doFetch(TaskCompletionSource<HttpResponseMessage> tcs, HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                if (request == null)
+                {
+                    throw new ArgumentNullException(nameof(request));
+                }
+
                 try
                 {
                     var requestObject = new JSObject();
@@ -135,7 +139,7 @@ internal static partial class Interop
                         requestObject.SetObjectProperty("headers", jsHeaders);
                     }
 
-                    WasmHttpReadStream wasmHttpReadStream = null;
+                    WasmHttpReadStream? wasmHttpReadStream = null;
 
                     JSObject abortController = new HostObject("AbortController");
                     JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
@@ -154,12 +158,14 @@ internal static partial class Interop
                     }));
 
                     var args = new Interop.JavaScript.Array();
-                    args.Push(request.RequestUri.ToString());
-                    args.Push(requestObject);
+                    if (request.RequestUri != null) {
+                        args.Push(request.RequestUri.ToString());
+                        args.Push(requestObject);
+                    }
 
                     requestObject.Dispose();
 
-                    var response = fetch.Invoke("apply", window, args) as Task<object>;
+                    var response = fetch?.Invoke("apply", window, args) as Task<object>;
                     args.Dispose();
                     if (response == null)
                         throw new Exception("Internal error marshalling the response Promise from `fetch`.");
@@ -168,17 +174,9 @@ internal static partial class Interop
 
                     var status = new WasmFetchResponse((JSObject)t, abortController, abortCts, abortRegistration);
 
-                    //Console.WriteLine($"bodyUsed: {status.IsBodyUsed}");
-                    //Console.WriteLine($"ok: {status.IsOK}");
-                    //Console.WriteLine($"redirected: {status.IsRedirected}");
-                    //Console.WriteLine($"status: {status.Status}");
-                    //Console.WriteLine($"statusText: {status.StatusText}");
-                    //Console.WriteLine($"type: {status.ResponseType}");
-                    //Console.WriteLine($"url: {status.Url}");
-
                     HttpResponseMessage httpresponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
 
-                    var streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out var streamingEnabledValue) && (bool)streamingEnabledValue;
+                    var streamingEnabled = request.Properties.TryGetValue ("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
                     httpresponse.Content = StreamingSupported && streamingEnabled
                         ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
@@ -198,7 +196,7 @@ internal static partial class Interop
                         {
                             using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
                             {
-                                JSObject nextResult = null;
+                                JSObject? nextResult = null;
                                 try
                                 {
                                     nextResult = (JSObject)entriesIterator.Invoke("next");
@@ -248,8 +246,8 @@ internal static partial class Interop
 
                 public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
                 {
-                    this.fetchResponse = fetchResponse;
-                    this.abortController = abortController;
+                    this.fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse), $"{nameof(fetchResponse)} cannot be null");
+                    this.abortController = abortController ?? throw new ArgumentNullException(nameof(abortController), $"{nameof(abortController)} cannot be null"); ;
                     this.abortCts = abortCts;
                     this.abortRegistration = abortRegistration;
                 }
@@ -292,22 +290,19 @@ internal static partial class Interop
                     // Free any unmanaged objects here.
                     //
                     fetchResponse?.Dispose();
-                    fetchResponse = null;
-
                     abortController?.Dispose();
-                    abortController = null;
                 }
 
             }
 
             private class BrowserHttpContent : HttpContent
             {
-                private byte[] _data;
+                private byte[]? _data;
                 private WasmFetchResponse _status;
 
                 public BrowserHttpContent(WasmFetchResponse status)
                 {
-                    _status = status;
+                    _status = status ?? throw new ArgumentNullException(nameof(status), $"{nameof(status)} cannot be null");
                 }
 
                 private async Task<byte[]> GetResponseData()
@@ -323,8 +318,6 @@ internal static partial class Interop
                         {
                             _data = dataBinView.ToArray();
                             _status.Dispose();
-                            _status = null;
-
                         }
                     }
 
@@ -337,7 +330,7 @@ internal static partial class Interop
                     return new MemoryStream(data, writable: false);
                 }
 
-                protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+                protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
                 {
                     var data = await GetResponseData().ConfigureAwait(true);
                     await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(true);
@@ -364,10 +357,10 @@ internal static partial class Interop
 
             private class WasmHttpReadStream : Stream
             {
-                private WasmFetchResponse _status;
-                private JSObject _reader;
+                private WasmFetchResponse? _status;
+                private JSObject? _reader;
 
-                private byte[] _bufferedBytes;
+                private byte[]? _bufferedBytes;
                 private int _position;
 
                 public WasmHttpReadStream(WasmFetchResponse status)
@@ -437,7 +430,7 @@ internal static partial class Interop
                                 _reader.Dispose();
                                 _reader = null;
 
-                                _status.Dispose();
+                                _status?.Dispose();
                                 _status = null;
                                 return 0;
                             }
