@@ -25,12 +25,12 @@ Install the following packages:
 - automake
 - icu4c
 - libtool
-- openssl 1.1 or newer
+- openssl 1.1
 - pkg-config
 - python3
 
 The lines to install all the packages above using Homebrew.
 
 ```
-brew install cmake autoconf automake icu4c libtool openssl pkg-config python3
+brew install cmake autoconf automake icu4c libtool openssl@1.1 pkg-config python3
 ```
