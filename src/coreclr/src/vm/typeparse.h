@@ -49,8 +49,7 @@ DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     ICLRPrivBinder * pPrivHostBinder,
-    BOOL       bThrowIfNotFound,
-    SString *  pssOuterTypeName);
+    BOOL       bThrowIfNotFound);
 
 class TypeName
 {
@@ -337,7 +336,6 @@ public:
         BOOL bIgnoreCase,
         BOOL bProhibitAssemblyQualifiedName,
         Assembly* pRequestingAssembly,
-        BOOL bLoadTypeFromPartialNameHack,
         OBJECTREF *pKeepAlive,
         ICLRPrivBinder * pPrivHostBinder = nullptr);
 
@@ -403,7 +401,6 @@ private:
 
         Assembly* pRequestingAssembly,
         ICLRPrivBinder * pPrivHostBinder,
-        BOOL bLoadTypeFromPartialNameHack,
         OBJECTREF *pKeepAlive);
 
     //----------------------------------------------------------------------------------------------------------------

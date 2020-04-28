@@ -356,59 +356,7 @@ HRESULT CEECompileInfo::LoadTypeRefWinRT(
 {
     STANDARD_VM_CONTRACT;
 
-    HRESULT hr = S_OK;
-
-    ReleaseHolder<IAssemblyName> pAssemblyName;
-
-    COOPERATIVE_TRANSITION_BEGIN();
-
-    EX_TRY
-    {
-        Assembly *pAssembly;
-
-        mdToken tkResolutionScope;
-        if(FAILED(pAssemblyImport->GetResolutionScopeOfTypeRef(ref, &tkResolutionScope)))
-            hr = S_FALSE;
-        else if(TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
-        {
-            DWORD dwAssemblyRefFlags;
-            IfFailThrow(pAssemblyImport->GetAssemblyRefProps(tkResolutionScope, NULL, NULL,
-                                                     NULL, NULL,
-                                                     NULL, NULL, &dwAssemblyRefFlags));
-            if (IsAfContentType_WindowsRuntime(dwAssemblyRefFlags))
-            {
-                LPCSTR psznamespace;
-                LPCSTR pszname;
-                IfFailThrow(pAssemblyImport->GetNameOfTypeRef(ref, &psznamespace, &pszname));
-                AssemblySpec spec;
-                spec.InitializeSpec(tkResolutionScope, pAssemblyImport, NULL);
-                spec.SetWindowsRuntimeType(psznamespace, pszname);
-
-                _ASSERTE(spec.HasBindableIdentity());
-
-                pAssembly = spec.LoadAssembly(FILE_LOADED);
-
-                //
-                // Return the module handle
-                //
-
-                *pHandle = CORINFO_ASSEMBLY_HANDLE(pAssembly);
-            }
-            else
-            {
-                hr = S_FALSE;
-            }
-        }
-        else
-        {
-            hr = S_FALSE;
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    COOPERATIVE_TRANSITION_END();
-
-    return hr;
+    return E_NOTIMPL;
 }
 #endif
 

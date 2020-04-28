@@ -986,82 +986,10 @@ void AssemblySpec::ParseEncodedName()
 #ifdef FEATURE_COMINTEROP
     if (IsContentType_WindowsRuntime())
     {
-        StackSString ssEncodedName(SString::Utf8, m_pAssemblyName);
-        ssEncodedName.Normalize();
-
-        SString::Iterator itBang = ssEncodedName.Begin();
-        if (ssEncodedName.Find(itBang, SL(W("!"))))
-        {
-            StackSString ssAssemblyName(ssEncodedName, ssEncodedName.Begin(), itBang - ssEncodedName.Begin());
-            StackSString ssTypeName(ssEncodedName, ++itBang, ssEncodedName.End() - itBang);
-            SetName(ssAssemblyName);
-            SetWindowsRuntimeType(ssTypeName);
-        }
+        _ASSERTE(false);
     }
 #endif
 }
-
-void AssemblySpec::SetWindowsRuntimeType(
-    LPCUTF8 szNamespace,
-    LPCUTF8 szClassName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-#ifdef FEATURE_COMINTEROP
-    // Release already allocated string
-    if (m_ownedFlags & WINRT_TYPE_NAME_OWNED)
-    {
-        if (m_szWinRtTypeNamespace != nullptr)
-            delete [] m_szWinRtTypeNamespace;
-        if (m_szWinRtTypeClassName != nullptr)
-            delete [] m_szWinRtTypeClassName;
-    }
-    m_szWinRtTypeNamespace = szNamespace;
-    m_szWinRtTypeClassName = szClassName;
-
-    m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-#else
-    // Classic (non-phone) CoreCLR does not support WinRT interop; this should never be called with a non-empty type name
-    _ASSERTE((szNamespace == NULL) && (szClassName == NULL));
-#endif
-}
-
-void AssemblySpec::SetWindowsRuntimeType(
-    SString const & _ssTypeName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Release already allocated string
-    if (m_ownedFlags & WINRT_TYPE_NAME_OWNED)
-    {
-        if (m_szWinRtTypeNamespace != nullptr)
-            delete[] m_szWinRtTypeNamespace;
-        if (m_szWinRtTypeClassName != nullptr)
-            delete[] m_szWinRtTypeClassName;
-        m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-    }
-
-    SString ssTypeName;
-    _ssTypeName.ConvertToUTF8(ssTypeName);
-
-    LPUTF8 szTypeName = (LPUTF8)ssTypeName.GetUTF8NoConvert();
-    ns::SplitInline(szTypeName, m_szWinRtTypeNamespace, m_szWinRtTypeClassName);
-    m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-    // Make a copy of the type name strings
-    CloneFields(WINRT_TYPE_NAME_OWNED);
-}
-
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {

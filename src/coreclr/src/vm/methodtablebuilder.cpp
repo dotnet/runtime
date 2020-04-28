@@ -10263,26 +10263,6 @@ MethodTableBuilder::SetupMethodTable2(
             EnsureOptionalFieldsAreAllocated(pClass, m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
 #endif // FEATURE_COMINTEROP
         }
-
-#ifdef FEATURE_COMINTEROP
-        if (pMT->GetAssembly()->IsManagedWinMD())
-        {
-            // We need to mark classes that are implementations of managed WinRT runtime classes with
-            // the "exported to WinRT" flag. It's not quite possible to tell which ones these are by
-            // reading metadata so we ask the adapter.
-
-            IWinMDImport *pWinMDImport = pMT->GetAssembly()->GetManifestWinMDImport();
-            _ASSERTE(pWinMDImport != NULL);
-
-            BOOL bResult;
-            IfFailThrow(pWinMDImport->IsRuntimeClassImplementation(GetCl(), &bResult));
-
-            if (bResult)
-            {
-                COMPlusThrowHR(COR_E_TYPELOAD);
-            }
-        }
-#endif // FEATURE_COMINTEROP
     }
     else
     {
@@ -11061,30 +11041,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
                 // 1. Redirected interfaces
                 // 2. Mscorlib-declared [WindowsRuntimeImport] interfaces
                 bmtProp->fNeedsRCWPerTypeData = GetHalfBakedClass()->IsProjectedFromWinRT();
-            }
-        }
-    }
-    else if (bmtGenerics->HasInstantiation() && pModule->GetAssembly()->IsWinMD())
-    {
-        // 5. WinRT types with variance
-        if (bmtGenerics->pVarianceInfo != NULL)
-        {
-            bmtProp->fNeedsRCWPerTypeData = true;
-        }
-        else if (IsInterface())
-        {
-            // 6. Windows.Foundation.Collections.IIterator`1
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (SUCCEEDED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-                if (strcmp(pszFullyQualifiedName, g_WinRTIIteratorClassName) == 0)
-                {
-                    bmtProp->fNeedsRCWPerTypeData = true;
-                }
             }
         }
     }

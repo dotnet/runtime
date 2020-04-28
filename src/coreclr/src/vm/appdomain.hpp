@@ -34,10 +34,6 @@
 #include "multicorejit.h"
 #endif
 
-#ifdef FEATURE_COMINTEROP
-#include "..\md\winmd\inc\adapter.h"
-#endif // FEATURE_COMINTEROP
-
 #include "appxutil.h"
 
 #include "tieredcompilation.h"

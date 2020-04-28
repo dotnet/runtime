@@ -437,10 +437,6 @@ HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid);
 MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
-// Try to load a WinRT type.
-TypeHandle LoadWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound, ICLRPrivBinder* loadBinder = nullptr);
-
-//--------------------------------------------------------------------------------
 // Try to get the class from IInspectable.
 TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable, bool *pfSupportsIReference, bool *pfSupportsIReferenceArray);
 

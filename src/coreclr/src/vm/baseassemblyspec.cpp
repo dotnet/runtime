@@ -69,26 +69,6 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
         m_wszCodeBase = temp;
     }
 
-    if ((~m_ownedFlags & WINRT_TYPE_NAME_OWNED)) {
-        if (m_szWinRtTypeNamespace)
-        {
-            S_UINT32 len = S_UINT32((DWORD) strlen(m_szWinRtTypeNamespace)) + S_UINT32(1);
-            if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-            LPSTR temp = (LPSTR)alloc->Alloc(len*S_UINT32(sizeof(CHAR)));
-            strcpy_s(temp, len.Value(), m_szWinRtTypeNamespace);
-            m_szWinRtTypeNamespace = temp;
-        }
-
-        if (m_szWinRtTypeClassName)
-        {
-            S_UINT32 len = S_UINT32((DWORD) strlen(m_szWinRtTypeClassName)) + S_UINT32(1);
-            if(len.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-            LPSTR temp = (LPSTR)alloc->Alloc(len*S_UINT32(sizeof(CHAR)));
-            strcpy_s(temp, len.Value(), m_szWinRtTypeClassName);
-            m_szWinRtTypeClassName = temp;
-        }
-    }
-
     _ASSERTE(hash == Hash());
 
 }
@@ -375,25 +355,9 @@ void BaseAssemblySpec::GetEncodedName(SString & ssEncodedName) const
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-    } CONTRACTL_END
+    } CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime() && GetWinRtTypeClassName() != NULL)
-    {
-        ssEncodedName.SetUTF8(GetName());
-        ssEncodedName.Append(SL(W("!")));
-        if (GetWinRtTypeNamespace() != NULL)
-        {
-            ssEncodedName.AppendUTF8(GetWinRtTypeNamespace());
-            ssEncodedName.Append(SL(W(".")));
-        }
-        ssEncodedName.AppendUTF8(GetWinRtTypeClassName());
-    }
-    else
-#endif
-    {
-        ssEncodedName.SetUTF8(m_pAssemblyName);
-    }
+    ssEncodedName.SetUTF8(m_pAssemblyName);
 }
 
 VOID BaseAssemblySpec::SetName(SString const & ssName)

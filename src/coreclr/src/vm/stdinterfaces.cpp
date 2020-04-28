@@ -2757,29 +2757,9 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
 
         MethodTable* pMT = gc.TargetObj->GetMethodTable();
 
-
-        // Get the MethodTable for Windows.Foundation.IStringable.
-        StackSString strIStringable(SString::Utf8, W("Windows.Foundation.IStringable"));
-        MethodTable *pMTIStringable = LoadWinRTType(&strIStringable, /* bThrowIfNotFound = */ FALSE).GetMethodTable();
-
-        if (pMT != NULL && pMTIStringable != NULL && pMT->ImplementsInterface(pMTIStringable))
-        {
-            // Find the ToString() method of the interface.
-            pToStringMD = MemberLoader::FindMethod(
-                pMTIStringable,
-                "ToString",
-                &gsig_IM_RetStr);
-
-            _ASSERTE(pToStringMD != NULL);
-        }
-        else
-        {
-            // The object does not implement IStringable interface we need to call the default implementation using Object.ToString() call.
-            pToStringMD = MscorlibBinder::GetMethod(METHOD__OBJECT__TO_STRING);
-            _ASSERTE(pToStringMD != NULL);
-        }
-
-
+        // The object does not implement IStringable interface we need to call the default implementation using Object.ToString() call.
+        pToStringMD = MscorlibBinder::GetMethod(METHOD__OBJECT__TO_STRING);
+        _ASSERTE(pToStringMD != NULL);
 
         PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pToStringMD, gc.TargetObj);
         DECLARE_ARGHOLDER_ARRAY(args, 1);

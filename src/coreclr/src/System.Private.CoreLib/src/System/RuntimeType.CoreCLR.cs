@@ -1672,7 +1672,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)

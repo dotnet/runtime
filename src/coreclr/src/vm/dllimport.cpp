@@ -4323,7 +4323,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
         if (pTargetMD->IsInterface())
         {
-            _ASSERTE(!pTargetMD->GetAssembly()->IsWinMD());
             hr = pTargetMD->GetCustomAttribute(
                 WellKnownAttribute::ManagedToNativeComInteropStub,
                 &pBytes,

@@ -2166,8 +2166,6 @@ protected:
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
-            LPCSTR              szWinRtNamespace = NULL,
-            LPCSTR              szWinRtClassName = NULL,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
             ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL

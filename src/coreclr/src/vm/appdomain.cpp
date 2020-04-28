@@ -3944,9 +3944,6 @@ static void NormalizeAssemblySpecForNativeDependencies(AssemblySpec * pSpec)
     pContext->usMinorVersion = (USHORT)-1;
     pContext->usBuildNumber = (USHORT)-1;
     pContext->usRevisionNumber = (USHORT)-1;
-
-    // Ignore the WinRT type while considering if two assemblies have the same identity.
-    pSpec->SetWindowsRuntimeType(NULL, NULL);
 }
 
 void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid)
@@ -4627,17 +4624,12 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     BinderTracing::AssemblyBindOperation bindOperation(pSpec);
 
-#if defined(FEATURE_COMINTEROP)
-    // Handle WinRT assemblies in the classic/hybrid scenario. If this is an AppX process,
-    // then this case will be handled by the previous block as part of the full set of
-    // available binding hosts.
+    // WinRT assemblies are not supported as direct references.
     if (pSpec->IsContentType_WindowsRuntime())
     {
         EEFileLoadException::Throw(pSpec, COR_E_PLATFORMNOTSUPPORTED);
     }
-    else
-#endif // FEATURE_COMINTEROP
-    if (pSpec->HasUniqueIdentity())
+    else if (pSpec->HasUniqueIdentity())
     {
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;

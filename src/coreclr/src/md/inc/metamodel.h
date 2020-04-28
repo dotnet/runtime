@@ -2127,6 +2127,23 @@ public:
 };  //class CMiniMdTemplate<Impl>
 
 
+//-----------------------------------------------------------------------------------------------------
+// A common interface unifying RegMeta and MDInternalRO, giving the adapter a common interface to
+// access the raw metadata.
+//-----------------------------------------------------------------------------------------------------
+
+// {4F8EE8A3-24F8-4241-BC75-C8CAEC0255B5}
+EXTERN_GUID(IID_IMDCommon, 0x4f8ee8a3, 0x24f8, 0x4241, 0xbc, 0x75, 0xc8, 0xca, 0xec, 0x2, 0x55, 0xb5);
+
+#undef  INTERFACE
+#define INTERFACE IID_IMDCommon
+DECLARE_INTERFACE_(IMDCommon, IUnknown)
+{
+    STDMETHOD_(IMetaModelCommon*, GetMetaModelCommon)() PURE;
+    STDMETHOD_(IMetaModelCommonRO*, GetMetaModelCommonRO)() PURE;
+    STDMETHOD(GetVersionString)(LPCSTR *pszVersionString) PURE;
+};
+
 
 #undef SETP
 #undef _GETCDTKN

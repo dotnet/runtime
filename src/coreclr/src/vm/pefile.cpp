@@ -1539,8 +1539,6 @@ PEFile::LoadAssembly(
     AssemblySpec spec;
 
     spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(GetAssembly()));
-    if (szWinRtTypeClassName != NULL)
-        spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }

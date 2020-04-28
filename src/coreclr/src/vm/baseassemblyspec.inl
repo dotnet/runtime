@@ -49,10 +49,6 @@ inline BaseAssemblySpec::~BaseAssemblySpec()
         delete [] m_wszCodeBase;
     if (m_ownedFlags & LOCALE_OWNED)
         delete [] m_context.szLocale;
-    if (m_szWinRtTypeClassName && (m_ownedFlags & WINRT_TYPE_NAME_OWNED))
-        delete [] m_szWinRtTypeClassName;
-    if (m_szWinRtTypeNamespace && (m_ownedFlags & WINRT_TYPE_NAME_OWNED))
-        delete [] m_szWinRtTypeNamespace;
 }
 
 inline HRESULT BaseAssemblySpec::Init(LPCSTR pAssemblyName,
@@ -133,32 +129,6 @@ inline VOID BaseAssemblySpec::CloneFields(int ownedFlags)
         m_ownedFlags |= CODEBASE_OWNED;
     }
 
-    if ((~m_ownedFlags & WINRT_TYPE_NAME_OWNED) && (ownedFlags & WINRT_TYPE_NAME_OWNED)) {
-
-	NewArrayHolder<CHAR> nameTemp, namespaceTemp;
-
-        if (m_szWinRtTypeClassName) {
-
-            size_t nameLen = strlen(m_szWinRtTypeClassName) + 1;
-            nameTemp = new CHAR [nameLen];
-            strcpy_s(nameTemp, nameLen, m_szWinRtTypeClassName);
-        }
-
-        if (m_szWinRtTypeNamespace){
-
-            size_t namespaceLen = strlen(m_szWinRtTypeNamespace) + 1;
-            namespaceTemp = new CHAR [namespaceLen];
-            strcpy_s(namespaceTemp, namespaceLen, m_szWinRtTypeNamespace);
-        }
-
-	m_szWinRtTypeClassName = nameTemp.Extract();
-        m_szWinRtTypeNamespace = namespaceTemp.Extract();
-        if (m_szWinRtTypeClassName != NULL || m_szWinRtTypeNamespace != NULL)
-        {
-            m_ownedFlags |= WINRT_TYPE_NAME_OWNED;
-        }
-    }
-
     _ASSERTE(hash == Hash());
 }
 
@@ -209,24 +179,6 @@ inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHe
         m_wszCodeBase = temp;
     }
 
-    if ((~m_ownedFlags & WINRT_TYPE_NAME_OWNED) && (flags & WINRT_TYPE_NAME_OWNED)) {
-        if (m_szWinRtTypeNamespace)
-        {
-            size_t len = strlen(m_szWinRtTypeNamespace) + 1;
-            LPSTR temp = (LPSTR)pamTracker->Track( pHeap->AllocMem(S_SIZE_T(len*sizeof(CHAR))) );
-            strcpy_s(temp, len, m_szWinRtTypeNamespace);
-            m_szWinRtTypeNamespace = temp;
-        }
-
-        if (m_szWinRtTypeClassName)
-        {
-            size_t len = strlen(m_szWinRtTypeClassName) + 1;
-            LPSTR temp = (LPSTR)pamTracker->Track( pHeap->AllocMem(S_SIZE_T(len*sizeof(CHAR))) );
-            strcpy_s(temp, len, m_szWinRtTypeClassName);
-            m_szWinRtTypeClassName = temp;
-        }
-    }
-
     _ASSERTE(hash == Hash());
 
 }
@@ -251,8 +203,6 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
     m_ownedFlags = 0;
 
     m_wszCodeBase=pSpec->m_wszCodeBase;
-    m_szWinRtTypeNamespace = pSpec->m_szWinRtTypeNamespace;
-    m_szWinRtTypeClassName = pSpec->m_szWinRtTypeClassName;
 
     m_context = pSpec->m_context;
 
@@ -314,19 +264,6 @@ inline DWORD BaseAssemblySpec::Hash()
     if (m_context.szLocale)
         hash ^= HashStringA(m_context.szLocale);
     hash = _rotl(hash, 4);
-
-    if (m_szWinRtTypeNamespace)
-    {
-        hash ^= HashStringA(m_szWinRtTypeNamespace);
-        hash = _rotl(hash, 4);
-    }
-
-    if (m_szWinRtTypeClassName)
-    {
-        hash ^= HashStringA(m_szWinRtTypeClassName);
-        hash = _rotl(hash, 4);
-    }
-
 
     return hash;
 }

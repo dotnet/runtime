@@ -1824,12 +1824,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         COMPlusThrow(kThreadAbortException);
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
-#ifdef FEATURE_COMINTEROP
-    if ((hr == RO_E_METADATA_NAME_NOT_FOUND) || (hr == CLR_E_BIND_TYPE_NOT_FOUND))
-    {   // These error codes behave like FileNotFound, but are exposed as TypeLoadException
-        EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), pInnerException);
-    }
-#endif //FEATURE_COMINTEROP
 
     StackSString name;
     pSpec->GetFileOrDisplayName(0, name);

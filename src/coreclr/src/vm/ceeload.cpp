@@ -3333,11 +3333,6 @@ BOOL Module::IsInCurrentVersionBubble()
     if (IsReadyToRunCompilation())
         return IsLargeVersionBubbleEnabled();
 
-#ifdef FEATURE_COMINTEROP
-    if (g_fNGenWinMDResilient)
-        return !GetAssembly()->IsWinMD();
-#endif
-
     return TRUE;
 #else // FEATURE_NATIVE_IMAGE_GENERATION
     return TRUE;
@@ -4591,7 +4586,7 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
         {
             // Find out if THIS reference is satisfied
             // Specify fDoNotUtilizeExtraChecks to prevent recursion
-            Assembly *pAssemblyCandidate = this->GetAssemblyIfLoaded(foundAssemblyDef, NULL, NULL, pImportFoundNativeImage, TRUE /*fDoNotUtilizeExtraChecks*/);
+            Assembly *pAssemblyCandidate = this->GetAssemblyIfLoaded(foundAssemblyDef, pImportFoundNativeImage, TRUE /*fDoNotUtilizeExtraChecks*/);
 
             // This extended check is designed only to find assemblies loaded via an AssemblySpecBindingCache based binder. Verify that's what we found.
             if(pAssemblyCandidate != NULL)
@@ -4620,8 +4615,6 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
 Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
-    LPCSTR              szWinRtNamespace,   // = NULL
-    LPCSTR              szWinRtClassName,   // = NULL
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     ICLRPrivBinder      *pBindingContextForLoadedAssembly // = NULL
@@ -4640,8 +4633,7 @@ Module::GetAssemblyIfLoaded(
     CONTRACT_END;
 
     Assembly * pAssembly = NULL;
-    BOOL fCanUseRidMap = ((pMDImportOverride == NULL) &&
-                          (szWinRtNamespace == NULL));
+    BOOL fCanUseRidMap = pMDImportOverride == NULL;
 
 #ifdef _DEBUG
     fCanUseRidMap = fCanUseRidMap && (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GetAssemblyIfLoadedIgnoreRidMap) == 0);
@@ -4689,14 +4681,6 @@ Module::GetAssemblyIfLoaded(
             {
                 continue;
             }
-
-#ifdef FEATURE_COMINTEROP
-            if (szWinRtNamespace != NULL)
-            {
-                // Never attemt to search the assembly spec binding cache for this form of WinRT assembly reference.
-                continue;
-            }
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
             {
@@ -4757,8 +4741,6 @@ Module::GetAssemblyIfLoaded(
         // This restricts the scenario to a somewhat restricted case.
 
         BOOL eligibleForAdditionalChecks = TRUE;
-        if (szWinRtNamespace != NULL)
-            eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
 
         AssemblySpec specSearchAssemblyRef;
 
@@ -4979,10 +4961,6 @@ DomainAssembly * Module::LoadAssembly(
         {
             spec.SetBindingContext(pBindingContext);
         }
-        if (szWinRtTypeClassName != NULL)
-        {
-            spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
-        }
         pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED);
     }
 
@@ -4992,7 +4970,7 @@ DomainAssembly * Module::LoadAssembly(
             !fHasBindableIdentity ||                        // GetAssemblyIfLoaded will not find non-bindable assemblies
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find mscorlib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, NULL, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
         // Note: We cannot cache WinRT AssemblyRef, because it is meaningless without the TypeRef context
         if (pDomainAssembly->GetCurrentAssembly() != NULL)
@@ -7542,27 +7520,6 @@ void Module::ExpandAll(DataImage *image)
 
             if (t.IsNull()) // Skip this type
                 continue;
-
-#ifdef FEATURE_COMINTEROP
-            if (!g_fNGenWinMDResilient && TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
-            {
-                DWORD dwAssemblyRefFlags;
-                IfFailThrow(pInternalImport->GetAssemblyRefProps(tkResolutionScope, NULL, NULL, NULL, NULL, NULL, NULL, &dwAssemblyRefFlags));
-
-                if (IsAfContentType_WindowsRuntime(dwAssemblyRefFlags))
-                {
-                    Assembly *pAssembly = t.GetAssembly();
-                    PEAssembly *pPEAssembly = pAssembly->GetManifestFile();
-                    AssemblySpec refSpec;
-                    refSpec.InitializeSpec(tkResolutionScope, pInternalImport);
-                    LPCSTR psznamespace;
-                    LPCSTR pszname;
-                    pInternalImport->GetNameOfTypeRef(tk, &psznamespace, &pszname);
-                    refSpec.SetWindowsRuntimeType(psznamespace, pszname);
-                    GetAppDomain()->ToCompilationDomain()->AddDependency(&refSpec,pPEAssembly);
-                }
-            }
-#endif // FEATURE_COMINTEROP
         }
     }
 

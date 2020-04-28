@@ -30,7 +30,6 @@ set(MDRUNTIME_HEADERS
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/recordpool.h
-  ../inc/winmdinterfaces.h
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h

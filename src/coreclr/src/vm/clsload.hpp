@@ -759,9 +759,7 @@ private:
 
     VOID AddAvailableClassHaveLock(Module *          pModule,
                                    mdTypeDef         classdef,
-                                   AllocMemTracker * pamTracker,
-                                   LPCSTR            szWinRtNamespacePrefix,
-                                   DWORD             cchWinRtNamespacePrefix);
+                                   AllocMemTracker * pamTracker);
 
     VOID AddExportedTypeDontHaveLock(Module *pManifestModule,
                                      mdExportedType cl,

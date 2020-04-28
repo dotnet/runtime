@@ -54,8 +54,6 @@ class AssemblySpec  : public BaseAssemblySpec
     // functions that take special care (and thus are allowed to use the function) are listed below
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
-                LPCSTR              szWinRtNamespace,
-                LPCSTR              szWinRtClassName,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
                 ICLRPrivBinder      *pBindingContextForLoadedAssembly);
@@ -234,9 +232,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void ParseEncodedName();
 
-    void SetWindowsRuntimeType(LPCUTF8 szNamespace, LPCUTF8 szClassName);
-    void SetWindowsRuntimeType(SString const & _ssTypeName);
-
     inline HRESULT SetContentType(AssemblyContentType type)
     {
         LIMITED_METHOD_CONTRACT;
@@ -263,12 +258,7 @@ class AssemblySpec  : public BaseAssemblySpec
     inline bool HasBindableIdentity() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-#ifdef FEATURE_COMINTEROP
-        return (HasUniqueIdentity() ||
-                (IsContentType_WindowsRuntime() && (GetWinRtTypeClassName() != NULL)));
-#else
         return TRUE;
-#endif
     }
 
     inline BOOL CanUseWithBindingCache() const

@@ -679,17 +679,10 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
 
 
 #ifdef FEATURE_COMINTEROP
-    if (pAssembly->IsWinMD())
-    {
-        // ignore classic COM interop CA on .winmd
-        hr = S_FALSE;
-    }
-    else
-    {
-        // If the ComCompatibleVersionAttribute is set, then use the version
-        // number in the attribute when generating the GUID.
-        IfFailGo(pAssembly->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ComCompatibleVersion, (const void**)&pbData, &cbData));
-    }
+    // If the ComCompatibleVersionAttribute is set, then use the version
+    // number in the attribute when generating the GUID.
+    IfFailGo(pAssembly->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ComCompatibleVersion, (const void**)&pbData, &cbData));
+
 
     if (hr == S_OK && cbData >= (2 + 4 * sizeof(INT32)))
     {
@@ -2765,11 +2758,8 @@ HRESULT GetTypeLibVersionForAssembly(
     const BYTE *pbData = nullptr;
     ULONG cbData = 0;
 
-    if (!pAssembly->IsWinMD())
-    {
-        // Check to see if the TypeLibVersionAttribute is set.
-        IfFailRet(pAssembly->GetManifestImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
-    }
+    // Check to see if the TypeLibVersionAttribute is set.
+    IfFailRet(pAssembly->GetManifestImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
 
     // For attribute contents, see https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
     if (cbData >= (2 + 2 * sizeof(UINT32)))
@@ -3034,28 +3024,6 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
         // declaring interface must be InterfaceIsIUnknown or InterfaceIsDual
         if (pMT->GetComInterfaceType() == ifDispatch)
             return FALSE;
-
-        Assembly * pAssembly = pMT->GetAssembly();
-        if (pAssembly->IsWinMD() && !pAssembly->IsManagedWinMD())
-        {
-            //
-            // Internal interfaces defined in native winmds can only ever be implemented by native components.
-            // Managed classes won't be able to implement the internal interfaces, and so the reverse COM stubs
-            // are not needed for them.
-            //
-            if (IsTdNotPublic(pMT->GetClass()->GetProtection()))
-            {
-                //
-                // However, we do need CCWs for internal interfaces that define protected members of inheritable classes
-                // (for example, Windows.UI.Xaml.Application implements both IApplication, which we don't need
-                // a CCW for and IApplicationOverrides, which we do need).
-                //
-                if (!pMT->GetWriteableData()->IsOverridingInterface())
-                {
-                    return FALSE;
-                }
-            }
-        }
     }
     else
     {
@@ -4328,31 +4296,6 @@ void InitializeComInterop()
     IntializeInteropLogging();
 #endif //_DEBUG
 #endif //CROSSGEN_COMPILE
-}
-
-// Try to load a WinRT type.
-TypeHandle LoadWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound, ICLRPrivBinder* loadBinder /* =nullptr */)
-{
-    CONTRACT (TypeHandle)
-    {
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    TypeHandle typeHandle;
-
-    SString ssAssemblyName(SString::Utf8Literal, "WindowsRuntimeAssemblyName, ContentType=WindowsRuntime");
-    DomainAssembly *pAssembly = LoadDomainAssembly(&ssAssemblyName, nullptr,
-                                                   loadBinder,
-                                                   bThrowIfNotFound, ssTypeName);
-    if (pAssembly != NULL)
-    {
-        typeHandle = TypeName::GetTypeFromAssembly(*ssTypeName, pAssembly->GetAssembly(), bThrowIfNotFound);
-    }
-
-    RETURN typeHandle;
 }
 
 #ifndef CROSSGEN_COMPILE

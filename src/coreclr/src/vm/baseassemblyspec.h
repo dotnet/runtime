@@ -27,8 +27,6 @@ protected:
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     LPCWSTR                     m_wszCodeBase;         // URL to the code
-    LPCSTR                      m_szWinRtTypeNamespace;
-    LPCSTR                      m_szWinRtTypeClassName;
     int                         m_ownedFlags;
     ICLRPrivBinder             *m_pBindingContext;
 
@@ -40,7 +38,7 @@ public:
         CODE_BASE_OWNED             = 0x04,
         LOCALE_OWNED                = 0x08,
         CODEBASE_OWNED              = 0x10,
-        WINRT_TYPE_NAME_OWNED       = 0x20,
+        // unused                   = 0x20,
         // Set if ParseName() returned illegal textual identity.
         // Cannot process the string any further.
         BAD_NAME_OWNED              = 0x40,
@@ -111,20 +109,6 @@ public:
     BOOL HasPublicKeyToken() const;
     BOOL IsMscorlibSatellite() const;
     BOOL IsMscorlib();
-
-    //
-    // Windows Runtime functions that could not be refactored out to AssemblySpec
-    //
-    inline LPCSTR GetWinRtTypeNamespace() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_szWinRtTypeNamespace;
-    }
-    inline LPCSTR GetWinRtTypeClassName() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_szWinRtTypeClassName;
-    }
 
     //****************************************************************************************
     //
