@@ -835,13 +835,13 @@ namespace System.Diagnostics.Tests
                     }
 
                     DateTime now = DateTime.UtcNow;
-                    if (start.Millisecond + Helpers.PassingTestTimeoutMilliseconds <= now.Millisecond)
+                    if (start.Ticks + (Helpers.PassingTestTimeoutMilliseconds * 10_000) <= now.Ticks)
                     {
                         Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
                         Helpers.DumpAllProcesses();
-                    }
 
-                    Assert.True(start.Millisecond + Helpers.PassingTestTimeoutMilliseconds > now.Millisecond);
+                        Assert.True(false, "test timed out");
+                    }
                 }
 
                 // Call Process.Kill.
