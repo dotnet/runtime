@@ -66,7 +66,7 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
 
     protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
-    protected override string? IgnoreFilesDirectory => Environment.CurrentDirectory;
+    protected override string? IgnoreFilesDirectory => null;
 
     public string BundleIdentifier => "net.dot." + s_MainTestName;
 
