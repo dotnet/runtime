@@ -933,6 +933,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             if (node->gtSIMDBaseType != TYP_DOUBLE)
             {
+                assert(varTypeIsIntegral(node->gtSIMDBaseType));
                 break;
             }
 
@@ -960,12 +961,14 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_SSE2_CompareLessThan:
+        case NI_SSE42_CompareLessThan:
         case NI_AVX2_CompareLessThan:
         {
             if (node->gtSIMDBaseType == TYP_DOUBLE)
             {
                 break;
             }
+            assert(varTypeIsIntegral(node->gtSIMDBaseType));
 
             // this isn't actually supported in hardware so we need to swap the operands around
             std::swap(node->gtOp1, node->gtOp2);

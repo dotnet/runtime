@@ -946,7 +946,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
             }
             else if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
             {
-                hwIntrinsic = NI_SSE42_CompareGreaterThan;
+                hwIntrinsic =
+                    (intrinsic == NI_VectorT128_GreaterThan) ? NI_SSE42_CompareGreaterThan : NI_SSE42_CompareLessThan;
             }
             else
             {
