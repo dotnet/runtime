@@ -89,6 +89,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Assert.Equal(expected.ByteArrayToHex(), bytes.ByteArrayToHex());
                         break;
 
+                    case string[] expectedChunks when CborWriterTests.Helpers.IsIndefiniteLengthByteString(expectedChunks):
+                        byte[][] expectedByteChunks = expectedChunks.Skip(1).Select(ch => ch.HexToByteArray()).ToArray();
+                        VerifyValue(reader, expectedByteChunks, expectDefiniteLengthCollections);
+                        break;
+
                     case string[] expectedChunks:
                         Assert.Equal(CborReaderState.StartTextString, reader.PeekState());
                         reader.ReadStartTextStringIndefiniteLength();
