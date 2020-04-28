@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
-
 namespace System.Globalization
 {
     internal static partial class GlobalizationMode
@@ -19,7 +17,11 @@ namespace System.Globalization
             bool invariantEnabled = GetInvariantSwitchValue();
             if (!invariantEnabled)
             {
-                if (!LoadIcu())
+                if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
+                {
+                    LoadAppLocalIcu(icuSuffixAndVersion, suffixWithSeparator: true);
+                }
+                else if (Interop.Globalization.LoadICU() == 0)
                 {
                     string message = "Couldn't find a valid ICU package installed on the system. " +
                                     "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
@@ -29,43 +31,27 @@ namespace System.Globalization
             return invariantEnabled;
         }
 
-        private static bool LoadIcu()
+        private static void LoadAppLocalIcuCore(ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {
-            if (!TryGetAppLocalIcuSwitchValue(out ReadOnlySpan<char> version, out ReadOnlySpan<char> suffix))
-            {
-                return Interop.Globalization.LoadICU() != 0;
-            }
 
 #if TARGET_OSX
-            string extension = ".dylib";
+            const string extension = ".dylib";
             bool versionAtEnd = false;
 #else
-            string extension = "so.";
+            string extension = version.Length > 0 ? "so." : "so";
             bool versionAtEnd = true;
 #endif
-
-            // Append '.' to suffix since in Unix the version is separated by '.'
-            int suffixLength = suffix.Length + 1;
-            Span<char> suffixWithSeparator = stackalloc char[suffixLength];
-            suffix.CopyTo(suffixWithSeparator);
-            suffixWithSeparator[suffixLength - 1] = '.';
-
-            Assembly assembly = Assembly.GetExecutingAssembly();
 
 #if !TARGET_OSX
             // In Linux we need to load libicudata first because libicuuc and libicui18n depend on it. In order for the loader to find
             // it on the same path, we load it before loading the other two libraries.
-            string icudataBase = "libicudata";
-            LoadLibrary(CreateLibraryName(icudataBase, suffixWithSeparator, extension, version, versionAtEnd), assembly, failOnLoadFailure: true);
+            LoadLibrary(CreateLibraryName("libicudata", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
 #endif
 
-            string icuucBase = "libicuuc";
-            string icuinBase = "libicui18n";
-            IntPtr icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffixWithSeparator, extension, version, versionAtEnd), assembly, failOnLoadFailure: true);
-            IntPtr icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffixWithSeparator, extension, version, versionAtEnd), assembly, failOnLoadFailure: true);
+            IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+            IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
 
-            Interop.Globalization.InitICU(icuucLib, icuinLib, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
-            return true;
+            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }
     }
 }

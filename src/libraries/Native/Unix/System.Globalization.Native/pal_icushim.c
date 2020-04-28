@@ -23,8 +23,8 @@
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
-// 20 for the actual suffix, 1 for _ and 1 for '\0'
-#define SYMBOL_CUSTOM_SUFFIX_SIZE 22
+// 35 for the actual suffix, 1 for _ and 1 for '\0'
+#define SYMBOL_CUSTOM_SUFFIX_SIZE 37
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
@@ -421,10 +421,12 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
     if (suffix != NULL)
     {
+        assert(strlen(suffix) + 1 <= SYMBOL_CUSTOM_SUFFIX_SIZE);
+
 #if defined(TARGET_WINDOWS)
-    sprintf_s(symbolSuffix, SYMBOL_CUSTOM_SUFFIX_SIZE, "_%s", suffix);
+        sprintf_s(symbolSuffix, SYMBOL_CUSTOM_SUFFIX_SIZE, "_%s", suffix);
 #else
-    sprintf(symbolSuffix, "_%s", suffix);
+        sprintf(symbolSuffix, "_%s", suffix);
 #endif
     }
 

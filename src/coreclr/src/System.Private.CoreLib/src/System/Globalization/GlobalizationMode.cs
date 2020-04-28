@@ -13,44 +13,8 @@ namespace System.Globalization
         private static bool GetInvariantSwitchValue() =>
             GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
-        private static bool TryGetAppLocalIcuSwitchValue(out ReadOnlySpan<char> version, out ReadOnlySpan<char> icuSuffix)
-        {
-            icuSuffix = default;
-
-            if (!TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out string? value))
-            {
-                version = default;
-                return false;
-            }
-
-            // Custom built ICU can have a suffix on the name, i.e: libicuucmyapp.so.67.1
-            // So users would set the runtime switch as: myapp:67.1
-
-            int indexOfSeparator = value.IndexOf(':', StringComparison.Ordinal);
-            if (indexOfSeparator != -1)
-            {
-                ReadOnlySpan<char> valueAsSpan = value.AsSpan();
-                icuSuffix = valueAsSpan.Slice(0, indexOfSeparator);
-
-                if (icuSuffix.Length > 20)
-                {
-                    Environment.FailFast($"The resolved \"{icuSuffix.ToString()}\" suffix from System.Globalization.AppLocalIcu switch has to be < 20 chars long.");
-                }
-
-                version = valueAsSpan.Slice(icuSuffix.Length + 1);
-            }
-            else
-            {
-                version = value;
-            }
-
-            if (version.Length > 33)
-            {
-                Environment.FailFast($"The resolved version \"{version.ToString()}\" from System.Globalization.AppLocalIcu switch has to be < 33 chars long.");
-            }
-
-            return true;
-        }
+        private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
+            TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
 
         // GetSwitchValue calls CLRConfig first to detect if the switch is defined in the config file.
         // if the switch is defined we just use the value of this switch. otherwise, we'll try to get the switch
@@ -84,40 +48,57 @@ namespace System.Globalization
             return true;
         }
 
-        private static string CreateLibraryName(ReadOnlySpan<char> baseName, ReadOnlySpan<char> suffix, ReadOnlySpan<char> extension, ReadOnlySpan<char> version, bool versionAtEnd = false)
+        private static void LoadAppLocalIcu(string icuSuffixAndVersion, bool suffixWithSeparator = false)
         {
-            int length = baseName.Length + suffix.Length + version.Length + extension.Length;
+            ReadOnlySpan<char> icuSuffix = default;
+            ReadOnlySpan<char> version = default;
 
-            // We validate that suffix and version are not larger than 53 characters.
-            Span<char> result = stackalloc char[length];
-            baseName.CopyTo(result);
-
-            Span<char> secondPart = result.Slice(baseName.Length);
-            suffix.CopyTo(secondPart);
-
-            Span<char> middle = secondPart.Slice(suffix.Length);
-
-            if (!versionAtEnd)
+            // Custom built ICU can have a suffix on the name, i.e: libicuucmyapp.so.67.1
+            // So users would set the runtime switch as: myapp:67.1
+            int indexOfSeparator = icuSuffixAndVersion.IndexOf(':');
+            if (indexOfSeparator >= 0)
             {
-                version.CopyTo(middle);
+                icuSuffix = icuSuffixAndVersion.AsSpan().Slice(0, indexOfSeparator);
 
-                Span<char> end = middle.Slice(version.Length);
-                extension.CopyTo(end);
+                if (icuSuffix.Length > 35)
+                {
+                    Environment.FailFast($"The resolved \"{icuSuffix.ToString()}\" suffix from System.Globalization.AppLocalIcu switch has to be < 20 chars long.");
+                }
+
+                if (icuSuffix.Length + 1 <= icuSuffixAndVersion.Length)
+                    version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
             }
             else
             {
-                extension.CopyTo(middle);
-
-                Span<char> end = middle.Slice(extension.Length);
-                version.CopyTo(end);
+                version = icuSuffixAndVersion;
             }
 
-            return result.ToString();
+            if (version.Length > 33)
+            {
+                Environment.FailFast($"The resolved version \"{version.ToString()}\" from System.Globalization.AppLocalIcu switch has to be < 33 chars long.");
+            }
+
+            if (suffixWithSeparator)
+            {
+                int suffixLength = icuSuffix.Length + 1;
+                Span<char> finalSuffix = stackalloc char[suffixLength];
+                icuSuffix.CopyTo(finalSuffix);
+                finalSuffix[suffixLength - 1] = '.';
+                LoadAppLocalIcuCore(version, finalSuffix);
+                return;
+            }
+
+            LoadAppLocalIcuCore(version, icuSuffix);
         }
 
-        private static IntPtr LoadLibrary(string library, Assembly assembly, bool failOnLoadFailure)
+        private static string CreateLibraryName(ReadOnlySpan<char> baseName, ReadOnlySpan<char> suffix, ReadOnlySpan<char> extension, ReadOnlySpan<char> version, bool versionAtEnd = false) =>
+            versionAtEnd ?
+                string.Concat(baseName, suffix, extension, version) :
+                string.Concat(baseName, suffix, version, extension);
+
+        private static IntPtr LoadLibrary(string library, bool failOnLoadFailure)
         {
-            if (!NativeLibrary.TryLoad(library, assembly, DllImportSearchPath.ApplicationDirectory, out IntPtr lib) && failOnLoadFailure)
+            if (!NativeLibrary.TryLoad(library, typeof(object).Assembly, DllImportSearchPath.ApplicationDirectory, out IntPtr lib) && failOnLoadFailure)
             {
                 Environment.FailFast($"Failed to load app-local ICU: {library}");
             }

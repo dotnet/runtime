@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
-using System.Runtime.InteropServices;
-
 namespace System.Globalization
 {
     internal static partial class GlobalizationMode
@@ -19,43 +16,46 @@ namespace System.Globalization
 
         private static bool LoadIcu()
         {
-            if (!TryGetAppLocalIcuSwitchValue(out ReadOnlySpan<char> version, out ReadOnlySpan<char> suffix))
+            if (!TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
             {
                 return Interop.Globalization.LoadICU() != 0;
             }
 
-            string extension = ".dll";
-            string icuucBase = "icuuc";
-            string icuinBase = "icuin";
+            LoadAppLocalIcu(icuSuffixAndVersion);
+            return true;
+        }
+
+        private static void LoadAppLocalIcuCore(ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
+        {
+            const string extension = ".dll";
+            const string icuucBase = "icuuc";
+            const string icuinBase = "icuin";
             IntPtr icuucLib = IntPtr.Zero;
             IntPtr icuinLib = IntPtr.Zero;
-            Assembly assembly = Assembly.GetExecutingAssembly();
 
-            int index = version.ToString().IndexOf('.', StringComparison.Ordinal);
-
-            if (index != -1)
+            int index = version.IndexOf('.');
+            if (index > 0)
             {
                 ReadOnlySpan<char> truncatedVersion = version.Slice(0, index);
-                icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, truncatedVersion), assembly, failOnLoadFailure: false);
+                icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, truncatedVersion), failOnLoadFailure: false);
 
                 if (icuucLib != IntPtr.Zero)
                 {
-                    icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, truncatedVersion), assembly, failOnLoadFailure: false);
+                    icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, truncatedVersion), failOnLoadFailure: false);
                 }
             }
 
             if (icuucLib == IntPtr.Zero)
             {
-                icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, version), assembly, failOnLoadFailure: true);
+                icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, version), failOnLoadFailure: true);
             }
 
             if (icuinLib == IntPtr.Zero)
             {
-                icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, version), assembly, failOnLoadFailure: true);
+                icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, version), failOnLoadFailure: true);
             }
 
-            Interop.Globalization.InitICU(icuucLib, icuinLib, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
-            return true;
+            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }
     }
 }
