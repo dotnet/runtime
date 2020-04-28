@@ -5,6 +5,8 @@
 #nullable enable
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing.Text;
 using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
@@ -17,30 +19,33 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private byte[] _buffer = null!;
         private int _offset = 0;
 
+        private Stack<StackFrame>? _nestedDataItems;
+
         // remaining number of data items in current cbor context
         // with null representing indefinite length data items.
         // The root context ony permits one data item to be written.
-        private uint? _remainingDataItems = 1;
-        private Stack<StackFrame>? _nestedDataItems;
+        private int? _definiteLength = 1;
+        private int _itemsWritten = 0; // number of items written in the current context
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if writer is expecting a tagged value
-
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
         private int? _currentValueOffset = null;
         private SortedSet<(int Offset, int KeyLength, int TotalLength)>? _keyValueEncodingRanges = null;
 
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax)
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool patchIndefiniteLengthItems = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
             ConformanceLevel = conformanceLevel;
+            PatchIndefiniteLengthItems = patchIndefiniteLengthItems;
         }
 
+        public bool PatchIndefiniteLengthItems { get; }
         public CborConformanceLevel ConformanceLevel { get; }
         public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
-        public bool IsWriteCompleted => _remainingDataItems == 0 && (_nestedDataItems?.Count ?? 0) == 0;
+        public bool IsWriteCompleted => (_nestedDataItems?.Count ?? 0) == 0 && _itemsWritten == _definiteLength;
 
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {
@@ -85,6 +90,35 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
+        public byte[] GetEncoding() => GetSpanEncoding().ToArray();
+
+        public bool TryWriteEncoding(Span<byte> destination, out int bytesWritten)
+        {
+            ReadOnlySpan<byte> encoding = GetSpanEncoding();
+
+            if (encoding.Length > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            encoding.CopyTo(destination);
+            bytesWritten = encoding.Length;
+            return true;
+        }
+
+        private ReadOnlySpan<byte> GetSpanEncoding()
+        {
+            CheckDisposed();
+
+            if (!IsWriteCompleted)
+            {
+                throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
+            }
+
+            return (_offset == 0) ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _offset);
+        }
+
         private void EnsureWriteCapacity(int pendingCount)
         {
             CheckDisposed();
@@ -111,12 +145,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private void PushDataItem(CborMajorType type, uint? expectedNestedItems)
+        private void PushDataItem(CborMajorType type, int? definiteLength)
         {
             _nestedDataItems ??= new Stack<StackFrame>();
-            _nestedDataItems.Push(new StackFrame(type, _frameOffset, _remainingDataItems, _currentKeyOffset, _currentValueOffset, _keyValueEncodingRanges));
+            _nestedDataItems.Push(new StackFrame(type, _frameOffset, _definiteLength, _itemsWritten, _currentKeyOffset, _currentValueOffset, _keyValueEncodingRanges));
             _frameOffset = _offset;
-            _remainingDataItems = expectedNestedItems;
+            _definiteLength = definiteLength;
+            _itemsWritten = 0;
             _currentKeyOffset = (type == CborMajorType.Map) ? (int?)_offset : null;
             _currentValueOffset = null;
             _keyValueEncodingRanges = null;
@@ -124,9 +159,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void PopDataItem(CborMajorType expectedType)
         {
+            // Validate that the pop operation can be performed
+
             if (_nestedDataItems is null || _nestedDataItems.Count == 0)
             {
-                throw new InvalidOperationException("No active CBOR nested data item to pop");
+                throw new InvalidOperationException("No active CBOR nested data item to pop.");
             }
 
             StackFrame frame = _nestedDataItems.Peek();
@@ -141,22 +178,37 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Tagged CBOR value context is incomplete.");
             }
 
-            if (_remainingDataItems > 0)
+            if (_definiteLength - _itemsWritten > 0)
             {
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
+
+            // Perform encoding fixups that require the current context and must be done before popping
+            // NB key sorting must happen before indefinite-length patching
 
             if (expectedType == CborMajorType.Map && CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
                 SortKeyValuePairEncodings();
             }
 
+            if (_definiteLength == null)
+            {
+                CompleteIndefiniteLengthCollection(expectedType);
+            }
+
+            // pop writer state
             _nestedDataItems.Pop();
             _frameOffset = frame.FrameOffset;
-            _remainingDataItems = frame.RemainingDataItems;
+            _definiteLength = frame.DefiniteLength;
+            _itemsWritten = frame.ItemsWritten;
             _currentKeyOffset = frame.CurrentKeyOffset;
             _currentValueOffset = frame.CurrentValueOffset;
             _keyValueEncodingRanges = frame.KeyValueEncodingRanges;
+        }
+
+        private bool IsMajorTypeContext(CborMajorType type)
+        {
+            return _nestedDataItems?.Count > 0 && _nestedDataItems.Peek().MajorType == type;
         }
 
         private void AdvanceDataItemCounters()
@@ -173,13 +225,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
             }
 
-            _remainingDataItems--;
+            _itemsWritten++;
             _isTagContext = false;
         }
 
         private void WriteInitialByte(CborInitialByte initialByte)
         {
-            if (_remainingDataItems == 0)
+            if (_definiteLength - _itemsWritten == 0)
             {
                 throw new InvalidOperationException("Adding a CBOR data item to the current context exceeds its definite length.");
             }
@@ -225,44 +277,47 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        public byte[] GetEncoding() => GetSpanEncoding().ToArray();
-
-        public bool TryWriteEncoding(Span<byte> destination, out int bytesWritten)
+        private void CompleteIndefiniteLengthCollection(CborMajorType type)
         {
-            ReadOnlySpan<byte> encoding = GetSpanEncoding();
+            Debug.Assert(_definiteLength == null);
 
-            if (encoding.Length > destination.Length)
+            if (PatchIndefiniteLengthItems)
             {
-                bytesWritten = 0;
-                return false;
+                switch (type)
+                {
+                    case CborMajorType.ByteString:
+                    case CborMajorType.TextString:
+                        PatchIndefiniteLengthString(type);
+                        break;
+                    case CborMajorType.Array:
+                        PatchIndefiniteLengthCollection(CborMajorType.Array, _itemsWritten);
+                        break;
+                    case CborMajorType.Map:
+                        Debug.Assert(_itemsWritten % 2 == 0);
+                        PatchIndefiniteLengthCollection(CborMajorType.Map, _itemsWritten / 2);
+                        break;
+                    default:
+                        Debug.Fail("Invalid CBOR major type pushed to stack.");
+                        throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                }
             }
-
-            encoding.CopyTo(destination);
-            bytesWritten = encoding.Length;
-            return true;
-        }
-
-        private ReadOnlySpan<byte> GetSpanEncoding()
-        {
-            CheckDisposed();
-
-            if (!IsWriteCompleted)
+            else
             {
-                throw new InvalidOperationException("Buffer contains incomplete CBOR document.");
+                // no patching, so just append the break byte at the end of the existing encoding
+                EnsureWriteCapacity(1);
+                _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
             }
-
-            return (_offset == 0) ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _offset);
         }
 
         private readonly struct StackFrame
         {
-            public StackFrame(CborMajorType type, int frameOffset, uint? remainingDataItems,
-                              int? currentKeyOffset, int? currentValueOffset,
-                              SortedSet<(int, int, int)>? keyValueEncodingRanges)
+            public StackFrame(CborMajorType type, int frameOffset, int? definiteLength, int itemsWritten,
+                              int? currentKeyOffset, int? currentValueOffset, SortedSet<(int, int, int)>? keyValueEncodingRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
-                RemainingDataItems = remainingDataItems;
+                DefiniteLength = definiteLength;
+                ItemsWritten = itemsWritten;
                 CurrentKeyOffset = currentKeyOffset;
                 CurrentValueOffset = currentValueOffset;
                 KeyValueEncodingRanges = keyValueEncodingRanges;
@@ -270,7 +325,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public CborMajorType MajorType { get; }
             public int FrameOffset { get; }
-            public uint? RemainingDataItems { get; }
+            public int? DefiniteLength { get; }
+            public int ItemsWritten { get; }
 
             public int? CurrentKeyOffset { get; }
             public int? CurrentValueOffset { get; }

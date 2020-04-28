@@ -19,6 +19,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public const string EncodedPrefixIdentifier = "_encodedValue";
 
+            public const string HexByteStringIdentifier = "_hex";
+
             // Since we inject test data using attributes, meed to represent both arrays and maps using object arrays.
             // To distinguish between the two types, we prepend map representations using a string constant.
             public static bool IsCborMapRepresentation(object[] values)
@@ -38,6 +40,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 return values.Length == 2 && values[0] is CborTag;
             }
 
+            public static bool IsIndefiniteLengthByteString(string[] values)
+            {
+                return values.Length % 2 == 1 && values[0] == HexByteStringIdentifier;
+            }
+
             public static void WriteValue(CborWriter writer, object value, bool useDefiniteLengthCollections = true)
             {
                 switch (value)
@@ -55,6 +62,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case DateTimeOffset d: writer.WriteDateTimeOffset(d); break;
                     case byte[] b: writer.WriteByteString(b); break;
                     case byte[][] chunks: WriteChunkedByteString(writer, chunks); break;
+                    case string[] chunks when IsIndefiniteLengthByteString(chunks):
+                        byte[][] byteChunks = chunks.Skip(1).Select(ch => ch.HexToByteArray()).ToArray();
+                        WriteChunkedByteString(writer, byteChunks);
+                        break;
+
                     case string[] chunks: WriteChunkedTextString(writer, chunks); break;
                     case object[] nested when IsCborMapRepresentation(nested): WriteMap(writer, nested, useDefiniteLengthCollections); break;
                     case object[] nested when IsEncodedValueRepresentation(nested):

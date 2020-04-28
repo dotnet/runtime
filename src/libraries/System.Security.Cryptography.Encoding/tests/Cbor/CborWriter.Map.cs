@@ -15,46 +15,36 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartMap(int definiteLength)
         {
-            if (definiteLength < 0)
+            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
             {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength), "must be non-negative integer.");
+                throw new ArgumentOutOfRangeException(nameof(definiteLength));
             }
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
-            PushDataItem(CborMajorType.Map, 2 * (uint)definiteLength);
+            PushDataItem(CborMajorType.Map, definiteLength: checked(2 * definiteLength));
         }
 
         public void WriteEndMap()
         {
-            if (_currentValueOffset != null)
+            if (_itemsWritten % 2 == 1)
             {
                 throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
             }
 
-            bool isDefiniteLengthMap = _remainingDataItems.HasValue;
-
             PopDataItem(CborMajorType.Map);
-
-            if (!isDefiniteLengthMap)
-            {
-                // append break byte
-                EnsureWriteCapacity(1);
-                _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
-            }
-
             AdvanceDataItemCounters();
         }
 
         public void WriteStartMapIndefiniteLength()
         {
-            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (!PatchIndefiniteLengthItems && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
                 throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
             }
 
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Map, expectedNestedItems: null);
+            PushDataItem(CborMajorType.Map, definiteLength: null);
             _currentKeyOffset = _offset;
             _currentValueOffset = null;
         }

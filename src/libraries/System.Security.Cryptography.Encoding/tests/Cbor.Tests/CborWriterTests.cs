@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void ToArray_OnInCompleteValue_ShouldThrowInvalidOperationExceptoin()
+        public static void GetEncoding_OnInCompleteValue_ShouldThrowInvalidOperationExceptoin()
         {
             using var writer = new CborWriter();
             Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
@@ -34,7 +34,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteInt64(42);
+            int bytesWritten = writer.BytesWritten;
             Assert.Throws<InvalidOperationException>(() => writer.WriteTextString("lorem ipsum"));
+            Assert.Equal(bytesWritten, writer.BytesWritten);
         }
 
         [Fact]

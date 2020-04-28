@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Additional pairs generated using http://cbor.me/
 
         public const string Map = Helpers.MapPrefixIdentifier;
+        public const string Hex = Helpers.HexByteStringIdentifier;
 
         [Theory]
         [InlineData(new object[] { Map }, "a0")]
@@ -72,6 +73,47 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(new object[] { Map }, "a0")]
+        [InlineData(new object[] { Map, 1, 2, 3, 4 }, "a201020304")]
+        [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "a56161614161626142616361436164614461656145")]
+        [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "a3616161412002404101")]
+        public static void WriteMap_IndefiniteLengthWithPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+            byte[] actualEncoding = writer.GetEncoding();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
+        [InlineData(new object[] { Map, "a", 1, "b", new object[] { Map, 2, 3 } }, "a26161016162a10203")]
+        [InlineData(new object[] { Map, "a", new object[] { Map, 2, 3 }, "b", new object[] { Map, "x", -1, "y", new object[] { Map, "z", 0 } } }, "a26161a102036162a26178206179a1617a00")]
+        [InlineData(new object[] { Map, new object[] { Map, "x", 2 }, 42 }, "a1a1617802182a")] // using maps as keys
+        public static void WriteMap_IndefiniteLengthWithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+            byte[] actualEncoding = writer.GetEncoding();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
+        [InlineData(new object[] { Map, 3, 4, 1, 2 }, "a201020304")]
+        [InlineData(new object[] { Map, "d", "D", "e", "E", "a", "A", "b", "B", "c", "C" }, "a56161614161626142616361436164614461656145")]
+        [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "a3200240410161616141")]
+        [InlineData(new object[] { Map, new object[] { Map, 3, 4, 1, 2 }, 0, new object[] { 1, 2, 3 }, 0, new string[] { "a", "b" }, 0, new string[] { Hex, "ab", "" }, 00 }, "a441ab00626162008301020300a20102030400")]
+        public static void WriteMap_IndefiniteLengthWithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
+    {
+        byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+        using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, patchIndefiniteLengthItems: true);
+        Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+        byte[] actualEncoding = writer.GetEncoding();
+        AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+    }
+
+    [Theory]
         [InlineData(new object[] { Map, "a", 1, "b", new object[] { 2, 3 } }, "a26161016162820203")]
         [InlineData(new object[] { Map, "a", new object[] { 2, 3, "b", new object[] { Map, "x", -1, "y", new object[] { "z", 0 } } } }, "a161618402036162a2617820617982617a00")]
         [InlineData(new object[] { "a", new object[] { Map, "b", "c" } }, "826161a161626163")]
