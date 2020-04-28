@@ -257,7 +257,7 @@ namespace System.Threading.Tasks
     }
 
     /// <summary>Provides the standard implementation of a task continuation.</summary>
-    internal class StandardTaskContinuation : TaskContinuation
+    internal sealed class ContinueWithTaskContinuation : TaskContinuation
     {
         /// <summary>The unstarted continuation task.</summary>
         internal readonly Task m_task;
@@ -270,7 +270,7 @@ namespace System.Threading.Tasks
         /// <param name="task">The task to be activated.</param>
         /// <param name="options">The continuation options.</param>
         /// <param name="scheduler">The scheduler to use for the continuation.</param>
-        internal StandardTaskContinuation(Task task, TaskContinuationOptions options, TaskScheduler scheduler)
+        internal ContinueWithTaskContinuation(Task task, TaskContinuationOptions options, TaskScheduler scheduler)
         {
             Debug.Assert(task != null, "TaskContinuation ctor: task is null");
             Debug.Assert(scheduler != null, "TaskContinuation ctor: scheduler is null");

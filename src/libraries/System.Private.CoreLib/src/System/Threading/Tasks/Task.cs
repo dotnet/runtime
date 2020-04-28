@@ -3259,7 +3259,7 @@ namespace System.Threading.Tasks
                         // The continuation was unregistered and null'd out, so just skip it.
                         continue;
                     }
-                    else if (currentContinuation is StandardTaskContinuation stc)
+                    else if (currentContinuation is ContinueWithTaskContinuation stc)
                     {
                         if ((stc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                         {
@@ -4197,7 +4197,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new StandardTaskContinuation(continuationTask, options, scheduler);
+            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)
