@@ -70,7 +70,7 @@ inline BOOL RunningOnWin8()
 
 inline BOOL WinRTSupported()
 {
-    return FALSE;
+    return RunningOnWin8();
 }
 #else
 inline BOOL WinRTSupported()
@@ -79,7 +79,16 @@ inline BOOL WinRTSupported()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    return FALSE;
+#ifdef CROSSGEN_COMPILE
+    return TRUE;
+#endif
+
+    if (gWinRTStatus == WINRT_STATUS_UNINITED)
+    {
+        InitWinRTStatus();
+    }
+
+    return gWinRTStatus == WINRT_STATUS_SUPPORTED;
 }
 #endif // FEATURE_CORESYSTEM
 
