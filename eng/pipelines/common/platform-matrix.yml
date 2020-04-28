@@ -40,6 +40,7 @@ jobs:
       container:
         image: ubuntu-16.04-cross-20200413125008-09ec757
         registry: mcr
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
