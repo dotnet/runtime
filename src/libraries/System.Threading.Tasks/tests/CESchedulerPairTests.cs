@@ -496,6 +496,7 @@ namespace System.Threading.Tasks.Tests
         /// EH
         /// </summary>
         [Theory]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         [InlineData(true)]
         [InlineData(false)]
         public static void TestConcurrentExclusiveChain(bool syncContinuations)
