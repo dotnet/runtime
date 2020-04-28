@@ -888,7 +888,7 @@ HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
 
     BEGIN_QCALL;
 
-    // This returns the base address - this will work for either HMODULE or HCORMODULES
+    // This returns the base address - this will work for either HMODULE
     // Other modules should have zero base
     PEFile *pPEFile = pModule->GetFile();
     if (!pPEFile->IsDynamic() && !pPEFile->IsResource())
