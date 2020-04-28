@@ -3558,16 +3558,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     ComMethodTable *pItfComMT = ComMethodTable::ComMethodTableFromIP((IUnknown*)ppVtable);
     if (!pItfComMT->IsLayoutComplete())
     {
-        MethodTable *pClassMT;
-        if (pItfComMT->IsWinRTFactoryInterface() || pItfComMT->IsWinRTStaticInterface())
-        {
-            // use the runtime class instead of the factory class
-            pClassMT = pTemplate->GetWinRTRuntimeClass();
-        }
-        else
-        {
-            pClassMT = pTemplate->GetClassType().GetMethodTable();
-        }
+        MethodTable *pClassMT = pTemplate->GetClassType().GetMethodTable();
         if (!pItfComMT->LayOutInterfaceMethodTable(pClassMT))
             RETURN NULL;
     }
@@ -4436,19 +4427,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         }
 
         MethodDesc *pClassMD = NULL;
-        if (IsWinRTFactoryInterface())
-        {
-            // lookup the .ctor corresponding this factory interface method
-            pClassMD = ComCall::GetCtorForWinRTFactoryMethod(pClsMT, pIntfMD);
-            _ASSERTE(pClassMD->IsCtor());
-        }
-        else if (IsWinRTStaticInterface())
-        {
-            // lookup the static method corresponding this factory interface method
-            pClassMD = ComCall::GetStaticForWinRTFactoryMethod(pClsMT, pIntfMD);
-            _ASSERTE(pClassMD->IsStatic());
-        }
-        else if (pClsMT != NULL)
+        if (pClsMT != NULL)
         {
             DispatchSlot impl(pClsMT->FindDispatchSlotForInterfaceMD(pIntfMD, FALSE /* throwOnConflict */));
             pClassMD = impl.GetMethodDesc();
@@ -4805,8 +4784,6 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::InterfaceProps &ComCallWrapperT
     InterfaceProps &props = *m_Interfaces.Append();
 
     props.m_pItfMT = pItfMT;
-    props.m_dwIsFactoryInterface = false;
-    props.m_dwIsStaticInterface = false;
 
     return props;
 }
@@ -5577,25 +5554,12 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
         pItfComMT = m_pParent->GetComMTForItf(pItfMT);
         if (pItfComMT != NULL)
         {
-            if (pItfComMT->IsWinRTTrivialAggregate())
+            // if the parent COM MT is not a trivial aggregate, simple MethodTable slot check is enough
+            if (!m_thClass.GetMethodTable()->ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
             {
-                // if the parent COM MT is a trivial aggregate, we must verify that the same is true at this level
-                if (!m_thClass.GetMethodTable()->HasSameInterfaceImplementationAsParent(pItfMT, pParentMT))
-                {
-                    // the interface is implemented by parent but this class reimplemented/overrode
-                    // its method(s) so we will need to build a new COM vtable for it
-                    pItfComMT = NULL;
-                }
-            }
-            else
-            {
-                // if the parent COM MT is not a trivial aggregate, simple MethodTable slot check is enough
-                if (!m_thClass.GetMethodTable()->ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
-                {
-                    // the interface is implemented by parent but this class reimplemented
-                    // its method(s) so we will need to build a new COM vtable for it
-                    pItfComMT = NULL;
-                }
+                // the interface is implemented by parent but this class reimplemented
+                // its method(s) so we will need to build a new COM vtable for it
+                pItfComMT = NULL;
             }
         }
     }
@@ -5746,11 +5710,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         {
             MethodTable *pItfMT = it.GetInterface();
             ComMethodTable *pItfComMT = pTemplate->InitializeForInterface(pParentMT, pItfMT, it.GetIndex());
-
-            if (it.IsFactoryInterface())
-                pItfComMT->SetIsWinRTFactoryInterface();
-            else if (it.IsStaticInterface())
-                pItfComMT->SetIsWinRTStaticInterface();
         }
 
         // Cache the template in class.

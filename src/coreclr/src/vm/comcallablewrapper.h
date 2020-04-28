@@ -254,9 +254,6 @@ public:
         struct InterfaceProps
         {
             MethodTable *m_pItfMT;
-
-            DWORD m_dwIsFactoryInterface    : 1;
-            DWORD m_dwIsStaticInterface     : 1;
         };
 
         StackSArray<InterfaceProps> m_Interfaces;
@@ -301,18 +298,6 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             m_Index = (COUNT_T)-1;
-        }
-
-        BOOL IsFactoryInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsFactoryInterface;
-        }
-
-        BOOL IsStaticInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsStaticInterface;
         }
     };
 
@@ -526,9 +511,9 @@ enum Masks
     // enum_unused                      = 0x00001000,
     enum_IsBasic                        = 0x00002000,
     // enum_unused                      = 0x00004000,
-    enum_IsWinRTTrivialAggregate        = 0x00008000,
-    enum_IsWinRTFactoryInterface        = 0x00010000,
-    enum_IsWinRTStaticInterface         = 0x00020000,
+    // enum_unused                      = 0x00008000,
+    // enum_unused                      = 0x00010000,
+    // enum_unused                      = 0x00020000,
     // enum_unused                      = 0x00040000,
 };
 
@@ -629,36 +614,6 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
         return (m_Flags & enum_IsBasic) != 0;
-    }
-
-    BOOL IsWinRTTrivialAggregate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTTrivialAggregate) != 0;
-    }
-
-    BOOL IsWinRTFactoryInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTFactoryInterface) != 0;
-    }
-
-    BOOL IsWinRTStaticInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTStaticInterface) != 0;
-    }
-
-    VOID SetIsWinRTFactoryInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_IsWinRTFactoryInterface;
-    }
-
-    VOID SetIsWinRTStaticInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_IsWinRTStaticInterface;
     }
 
     BOOL HasInvisibleParent()
