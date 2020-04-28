@@ -2671,7 +2671,49 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         compGSReorderStackLayout = true;
         varDsc->lvIsUnsafeBuffer = true;
     }
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        makeExtraStructQueries(typeHnd, 2);
+    }
+#endif // DEBUG
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// makeExtraStructQueries: Query the information for the given struct handle.
+//
+// Arguments:
+//    structHandle -- The handle for the struct type we're querying.
+//    level        -- How many more levels to recurse.
+//
+void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level)
+{
+    if (level <= 0)
+    {
+        return;
+    }
+    assert(structHandle != NO_CLASS_HANDLE);
+    (void)typGetObjLayout(structHandle);
+    unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
+    for (unsigned int i = 0; i < fieldCnt; i++)
+    {
+        CORINFO_FIELD_HANDLE fieldHandle      = info.compCompHnd->getFieldInClass(structHandle, i);
+        unsigned             fldOffset        = info.compCompHnd->getFieldOffset(fieldHandle);
+        CORINFO_CLASS_HANDLE fieldClassHandle = NO_CLASS_HANDLE;
+        CorInfoType          fieldCorType     = info.compCompHnd->getFieldType(fieldHandle, &fieldClassHandle);
+        var_types            fieldVarType     = JITtype2varType(fieldCorType);
+        if (fieldClassHandle != NO_CLASS_HANDLE)
+        {
+            if (varTypeIsStruct(fieldVarType))
+            {
+                fieldVarType = impNormStructType(fieldClassHandle);
+                makeExtraStructQueries(fieldClassHandle, level - 1);
+            }
+        }
+    }
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // lvaSetStructUsedAsVarArg: update hfa information for vararg struct args

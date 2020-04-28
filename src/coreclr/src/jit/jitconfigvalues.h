@@ -361,6 +361,10 @@ CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1
 CONFIG_STRING(JitMeasureNowayAssertFile,
               W("JitMeasureNowayAssertFile")) // Set to file to write noway_assert usage to a file (if not
                                               // set: stdout). Only valid if MEASURE_NOWAY is defined.
+#if defined(DEBUG)
+CONFIG_INTEGER(EnableExtraSuperPmiQueries, W("EnableExtraSuperPmiQueries"), 0) // Make extra queries to somewhat
+                                                                               // future-proof SuperPmi method contexts.
+#endif                                                                         // DEBUG
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
