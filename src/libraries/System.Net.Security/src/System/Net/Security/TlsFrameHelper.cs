@@ -6,7 +6,7 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-         // SSL3/TLS protocol frames definitions.
+    // SSL3/TLS protocol frames definitions.
     internal enum TlsContentType : byte
     {
         ChangeCipherSpec = 20,
@@ -153,7 +153,7 @@ namespace System.Net.Security
                 return - 1;
             }
 
-            return ((frame[3] << 8) | frame[4]) + 5;
+            return ((frame[3] << 8) | frame[4]) + HeaderSize;
         }
 
         public static bool TryGetHandshakeInfo(ReadOnlySpan<byte> frame, ref TlsFrameHandshakeInfo info)
@@ -162,8 +162,6 @@ namespace System.Net.Security
             {
                 return false;
             }
-
-        //    info = default;
 
             // This will not fail since we have enough data.
             TryGetFrameHeader(frame, ref info.Header);

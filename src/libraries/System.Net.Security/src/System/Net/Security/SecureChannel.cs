@@ -652,7 +652,7 @@ namespace System.Net.Security
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
                 tempCollection.Add(_sslAuthenticationOptions.ServerCertificate!);
                 // We pass string.Empty here to maintain strict compatability with .NET Framework.
-                localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(_sslAuthenticationOptions.TargetHost ?? string.Empty, tempCollection, null, Array.Empty<string>());
+                localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
                 if (NetEventSource.IsEnabled)
                     NetEventSource.Info(this, "Use delegate selected Cert");
             }

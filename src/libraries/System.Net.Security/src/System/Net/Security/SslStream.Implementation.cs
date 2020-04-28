@@ -271,14 +271,14 @@ namespace System.Net.Security
                     {
                         if (_lastFrame.Header.Type == TlsContentType.Handshake && message.Size == 0)
                         {
-                            // If we failed without OS sending out alert, inject one here to be consisnet across platforms.
-                       //     Console.WriteLine("Alert fixup for {0}", message.Status.ErrorCode);
+                            // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                             byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
                             await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
                         }
                         else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
                         {
+                            // Improve generic message and show details if we failed because of TLS Alert.
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastAlertDescription.ToString()), message.GetException());
                         }
 
@@ -336,7 +336,6 @@ namespace System.Net.Security
             }
 
             TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
-
             if (_lastFrame.Header.Length < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
@@ -360,12 +359,11 @@ namespace System.Net.Security
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
-
-                if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello &&
+                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                     _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
                 {
                     // Process SNI from Client Hello message
+                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
                     _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
                 }
             }
