@@ -6,15 +6,14 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
-  runtimeFlavor: 'coreClr'
   jobParameters: {}
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
       runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
