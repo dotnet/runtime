@@ -23,7 +23,8 @@ else
     exit 1
 fi
 
-# Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
+# "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
+
 APP_BUNDLE=$EXECUTION_DIR/Bundle/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
