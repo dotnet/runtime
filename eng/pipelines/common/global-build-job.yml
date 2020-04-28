@@ -28,7 +28,7 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
