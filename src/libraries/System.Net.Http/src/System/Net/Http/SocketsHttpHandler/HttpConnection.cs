@@ -461,7 +461,7 @@ namespace System.Net.Http
                             s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
-                            request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, cancellationToken);
+                            request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
                     }
                 }
 
@@ -793,11 +793,11 @@ namespace System.Net.Http
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
-            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer, CancellationToken cancellationToken)
+            HttpRequestMessage request, Task<bool> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer, bool async, CancellationToken cancellationToken)
         {
             // Wait until we receive a trigger notification that it's ok to continue sending content.
             // This will come either when the timer fires or when we receive a response status line from the server.
-            bool sendRequestContent = await allowExpect100ToContinueTask.ConfigureAwait(false); // TODO: decide what to do about this
+            bool sendRequestContent = await allowExpect100ToContinueTask.ConfigureAwait(false);
 
             // Clean up the timer; it's no longer needed.
             expect100Timer.Dispose();
@@ -806,7 +806,7 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
-                await SendRequestContentAsync(request, stream, async: true, cancellationToken).ConfigureAwait(false); // TODO: is async: true correct here?
+                await SendRequestContentAsync(request, stream, async, cancellationToken).ConfigureAwait(false);
             }
             else
             {
