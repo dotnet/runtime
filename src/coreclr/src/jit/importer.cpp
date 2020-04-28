@@ -4143,7 +4143,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA) && supportSIMDTypes())
                 {
                     assert(varTypeIsFloating(callType));
 
