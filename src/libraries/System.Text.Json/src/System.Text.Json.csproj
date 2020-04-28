@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
@@ -101,6 +100,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonDocumentConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverter.cs" />
@@ -140,6 +140,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTTypeToConvert.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonIncludeAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />

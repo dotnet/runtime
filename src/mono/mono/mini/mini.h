@@ -313,7 +313,12 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
+#ifdef TARGET_ARM64
+// FIXME: enable for Arm64
+#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#endif
 
 #else
 
@@ -1539,9 +1544,11 @@ typedef struct {
 
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset, method_index;
+	guint32 aot_method_flags;
 	/* For llvm */
 	guint32 got_access_count;
 	gpointer llvmonly_init_cond;
+	gpointer llvm_dummy_info_var, llvm_info_var;
 	/* Symbol used to refer to this method in generated assembly */
 	char *asm_symbol;
 	char *asm_debug_symbol;
@@ -2814,11 +2821,11 @@ typedef enum {
 	//     pclmul
 	//     aes
 	//     sse3
-	//       ssse3
+	//       ssse3     (doesn't include 'pclmul' and 'aes')
 	//         sse4.1
 	//           sse4.2
 	//             popcnt
-	//             avx
+	//             avx     (doesn't include 'popcnt')
 	//               avx2
 	//               fma
 	// lzcnt
@@ -2829,17 +2836,22 @@ typedef enum {
 	MONO_CPU_X86_PCLMUL_COMBINED      = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_PCLMUL,
 	MONO_CPU_X86_AES_COMBINED         = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_AES,
 	MONO_CPU_X86_SSE3_COMBINED        = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_SSE3,
-	MONO_CPU_X86_SSSE3_COMBINED       = MONO_CPU_X86_SSE3_COMBINED  | MONO_CPU_X86_PCLMUL | MONO_CPU_X86_AES | MONO_CPU_X86_SSSE3,
+	MONO_CPU_X86_SSSE3_COMBINED       = MONO_CPU_X86_SSE3_COMBINED  | MONO_CPU_X86_SSSE3,
 	MONO_CPU_X86_SSE41_COMBINED       = MONO_CPU_X86_SSSE3_COMBINED | MONO_CPU_X86_SSE41,
 	MONO_CPU_X86_SSE42_COMBINED       = MONO_CPU_X86_SSE41_COMBINED | MONO_CPU_X86_SSE42,
 	MONO_CPU_X86_POPCNT_COMBINED      = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_POPCNT,
 	MONO_CPU_X86_AVX_COMBINED         = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_AVX,
-	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_POPCNT | MONO_CPU_X86_AVX2,
-	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
-	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2,
+	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_AVX2,
+	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_FMA,
+	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2   | MONO_CPU_X86_PCLMUL 
+									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
+#endif
+#ifdef TARGET_ARM64
+	MONO_CPU_ARM64_BASE   = 1 << 1,
+	MONO_CPU_ARM64_CRC    = 1 << 2,
 #endif
 } MonoCPUFeatures;
 
@@ -2935,7 +2947,27 @@ typedef enum {
 	SIMD_OP_SSE_PSIGND,
 	SIMD_OP_SSE_PMADDUBSW,
 	SIMD_OP_SSE_PMULHRSW,
-	SIMD_OP_SSE_LDDQU
+	SIMD_OP_SSE_LDDQU,
+	SIMD_OP_SSE_TESTC,
+	SIMD_OP_SSE_TESTNZ,
+	SIMD_OP_SSE_TESTZ,
+	SIMD_OP_SSE_PACKUSDW,
+	SIMD_OP_SSE_PHMINPOSUW,
+	SIMD_OP_AES_IMC,
+	SIMD_OP_AES_ENC,
+	SIMD_OP_AES_ENCLAST,
+	SIMD_OP_AES_DEC,
+	SIMD_OP_AES_DECLAST,
+	SIMD_OP_ARM64_CRC32B,
+	SIMD_OP_ARM64_CRC32H,
+	SIMD_OP_ARM64_CRC32W,
+	SIMD_OP_ARM64_CRC32X,
+	SIMD_OP_ARM64_CRC32CB,
+	SIMD_OP_ARM64_CRC32CH,
+	SIMD_OP_ARM64_CRC32CW,
+	SIMD_OP_ARM64_CRC32CX,
+	SIMD_OP_ARM64_RBIT32,
+	SIMD_OP_ARM64_RBIT64
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);

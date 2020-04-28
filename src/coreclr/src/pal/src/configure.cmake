@@ -8,7 +8,7 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
-  set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
+  set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
 endif()

@@ -11,6 +11,47 @@
 #include "runtimedetails.h"
 #include "lightweightmap.h"
 
+// MemoryTracker: a very simple allocator and tracker of allocated memory, so it can be deleted when needed.
+class MemoryTracker
+{
+public:
+    MemoryTracker() : m_pHead(nullptr) {}
+    ~MemoryTracker() { freeAll(); }
+
+    void* allocate(size_t sizeInBytes)
+    {
+        BYTE* pNew = new BYTE[sizeInBytes];
+        m_pHead = new MemoryNode(pNew, m_pHead);    // Prepend this new one to the tracked memory list.
+        return pNew;
+    }
+
+private:
+
+    MemoryTracker(const MemoryTracker&) = delete; // no copy ctor
+
+    void freeAll()
+    {
+        for (MemoryNode* p = m_pHead; p != nullptr; )
+        {
+            MemoryNode* pNext = p->m_pNext;
+            delete p;
+            p = pNext;
+        }
+        m_pHead = nullptr;
+    }
+
+    struct MemoryNode
+    {
+        MemoryNode(BYTE* pMem, MemoryNode* pNext) : m_pMem(pMem), m_pNext(pNext) {}
+        ~MemoryNode() { delete[] m_pMem; }
+
+        BYTE*       m_pMem;
+        MemoryNode* m_pNext;
+    };
+
+    MemoryNode* m_pHead;
+};
+
 class CompileResult
 {
 public:
@@ -168,6 +209,8 @@ public:
 
     void dumpToConsole();
 
+    void* allocateMemory(size_t sizeInBytes);
+
     void recAssert(const char* buff);
     void dmpAssertLog(DWORD key, DWORD value);
     const char* repAssert();
@@ -307,6 +350,7 @@ public:
     LightWeightMap<DWORDLONG, DWORD>* CallTargetTypes;
 
 private:
+    MemoryTracker*          memoryTracker;
     Capture_AllocMemDetails allocMemDets;
     allocGCInfoDetails      allocGCInfoDets;
 };

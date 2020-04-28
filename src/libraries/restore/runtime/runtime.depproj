@@ -17,16 +17,14 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-  </ItemGroup>
 
-  <ItemGroup>
     <!-- System.Data.SqlClient is not live-built anymore -->
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
     <!-- Exclude live-built dependencies -->
@@ -44,9 +42,6 @@
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
-      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
-
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
 
@@ -73,28 +68,42 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
+  <Target Name="SetupRuntimePackNative"
+          Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
+          AfterTargets="AfterResolveReferences">
+    <ItemGroup>
+      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
+      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
+        <DestinationSubDirectory>cross/</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
+        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+    </ItemGroup>
+  </Target>
+
   <Target Name="OverrideRuntimeCoreCLR"
-          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeMono"
-          DependsOnTargets="ResolveMonoFilesFromLocalBuild"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(MonoFiles)" />
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' != 'true'">
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild">
+  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)/IL/*.*" />
     </ItemGroup>
@@ -110,5 +119,15 @@
         <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName).ni%(Extension)')' == '%(FileName)%(Extension)'" />
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
+  </Target>
+
+  <!-- Strip away placeholder tfms and TargetFrameworkSuffix. -->
+  <Target Name="StripTargetFrameworkSuffixFromTargetFrameworks"
+          Condition="'$(TargetFrameworks)' != ''"
+          BeforeTargets="_GetRestoreTargetFrameworksOutput;_GetRestoreTargetFrameworksAsItems">
+    <PropertyGroup>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '_[^;]+;?', ''))</TargetFrameworks>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '-[^;]+', ''))</TargetFrameworks>
+    </PropertyGroup>
   </Target>
 </Project>

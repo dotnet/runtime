@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 #include "pch.h"
 #include "Component.Contracts.NullableTesting.h"
+#include "winrt/Windows.Foundation.h"
+
 
 namespace winrt::Component::Contracts::implementation
 {

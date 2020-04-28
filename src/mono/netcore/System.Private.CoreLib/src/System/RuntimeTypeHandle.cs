@@ -28,9 +28,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using System.Reflection;
 using System.Threading;
 
 namespace System
@@ -187,10 +188,10 @@ namespace System
         internal static extern bool IsComObject(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, object o);
+        internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool HasReferences(RuntimeType type);
+        internal static extern bool HasReferences(RuntimeType? type);
 
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
@@ -280,9 +281,9 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
+        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
 
-        internal static RuntimeType GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
+        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
                                                   bool loadTypeFromPartialName)
         {
             if (typeName == null)
@@ -311,7 +312,7 @@ namespace System
                         throw;
                     return null;
                 }
-                return (RuntimeType)a.GetType(typeName.Substring(0, idx), throwOnError, ignoreCase);
+                return (RuntimeType?)a.GetType(typeName.Substring(0, idx), throwOnError, ignoreCase);
             }
 
             RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
@@ -320,7 +321,7 @@ namespace System
             return t;
         }
 
-        internal static IntPtr[] CopyRuntimeTypeHandles(RuntimeTypeHandle[] inHandles, out int length)
+        internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
             {

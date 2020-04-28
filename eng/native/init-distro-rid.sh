@@ -20,14 +20,6 @@
 # If -portablebuild=false is passed a non-portable rid will be created for any
 # distro.
 #
-# Below is the list of current non-portable platforms.
-#
-# Builds from the following *must* be non-portable:
-#
-#   |    OS     |           Expected RID            |
-#   -------------------------------------------------
-#   |  freeBSD  |        freebsd.(version)-x64      |
-#
 # It is important to note that the function does not return anything, but it
 # exports __DistroRid, if there is a non-portable distro rid to be used.
 #
@@ -70,8 +62,11 @@ initNonPortableDistroRid()
     fi
 
     if [ "$targetOs" = "FreeBSD" ]; then
-        __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
-        nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        if (( isPortable == 0 )); then
+            # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
+            __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
+            nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        fi
     elif getprop ro.product.system.model 2>&1 | grep -qi android; then
         __android_sdk_version=$(getprop ro.build.version.sdk)
         nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
@@ -164,12 +159,18 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
+            elif [ "$targetOs" = "tvOS" ]; then
+                distroRid="tvos-$buildArch"
             elif [ "$targetOs" = "iOS" ]; then
                 distroRid="ios-$buildArch"
             elif [ "$targetOs" = "Android" ]; then
                 distroRid="android-$buildArch"
+            elif [ "$targetOs" = "WebAssembly" ]; then
+                distroRid="wasm-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
+            elif [ "$targetOs" = "SunOS" ]; then
+                distroRid="sunos-$buildArch"
             fi
         fi
 

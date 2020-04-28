@@ -1,10 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
+    Don't include host resolver or host policy in iOS or Android runtime packs, because there is no
+    shared framework on those platforms.
+  -->
+  <PropertyGroup>
+    <ExcludeHostAssets Condition="'$(TargetOS)' == 'iOS'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(TargetOS)' == 'tvOS'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(TargetOS)' == 'Android'">true</ExcludeHostAssets>
+  </PropertyGroup>
+  <!--
     Include HostPolicy and HostResolver based on legacy packages. This can be collapsed once the
     legacy packages are no longer used.
   -->
-  <Import Project="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.props" />
-  <Import Project="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.props" />
+  <Import Condition="'$(ExcludeHostAssets)' != 'true'" Project="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.props" />
+  <Import Condition="'$(ExcludeHostAssets)' != 'true'" Project="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.props" />
 
 </Project>

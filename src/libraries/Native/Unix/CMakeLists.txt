@@ -5,7 +5,7 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
-if(CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     # CMake 3.14.5 contains bug fixes for iOS
     cmake_minimum_required(VERSION 3.14.5)
 endif()
@@ -30,12 +30,15 @@ add_compile_options(-Wno-empty-translation-unit)
 add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
+add_compile_options(-Wno-unknown-pragmas)
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wthread-safety)
     add_compile_options(-Wno-thread-safety-analysis)
+elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    add_compile_options(-Wno-stringop-truncation)
 endif()
 
 # Suppress warnings-as-errors in release branches to reduce servicing churn
@@ -61,6 +64,9 @@ elseif (CLR_CMAKE_TARGET_ARCH_I386)
     add_definitions(-DTARGET_32BIT=1)
     add_definitions(-DTARGET_X86)
     add_definitions(-D_FILE_OFFSET_BITS=64)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_WASM)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     add_definitions(-DTARGET_64BIT=1)
     add_definitions(-DTARGET_ARM64)
@@ -134,7 +140,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -149,7 +155,6 @@ endif ()
 
 if(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    add_link_options(-fuse-ld=lld)
 endif(CLR_CMAKE_TARGET_FREEBSD)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
@@ -159,13 +164,19 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
             add_link_options(-Wl,-bind_at_load)
         else()
             add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-            add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+            if(CLR_CMAKE_TARGET_SUNOS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+            else()
+                # -z,now is required for full relro.
+                # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
+                add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+            endif()
         endif()
     endif()
 
@@ -179,10 +190,8 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
-endif()
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -198,6 +207,11 @@ elseif(CLR_CMAKE_TARGET_IOS)
     #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_TVOS)
+    #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    #add_subdirectory(System.Globalization.Native) # TODO: reenable
+    # System.Security.Cryptography.Native is intentionally disabled on tvOS
+    # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
     add_subdirectory(System.Globalization.Native)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
@@ -208,6 +222,6 @@ else()
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

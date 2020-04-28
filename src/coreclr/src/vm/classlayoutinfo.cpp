@@ -611,7 +611,6 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // Set some defaults based on the parent type of this type (if one exists).
     _ASSERTE(!(fHasNonTrivialParent && !(pParentMT->HasLayout())));
 
-    pEEClassLayoutInfoOut->SetIsBlittable(fHasNonTrivialParent ? pParentMT->IsBlittable() : TRUE);
     pEEClassLayoutInfoOut->SetIsZeroSized(FALSE);
     pEEClassLayoutInfoOut->SetHasExplicitSize(FALSE);
     pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;
@@ -663,6 +662,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         DEBUGARG(szName)
         );
 
+    // Type is blittable only if parent is also blittable
+    isBlittable = isBlittable && (fHasNonTrivialParent ? pParentMT->IsBlittable() : TRUE);
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));

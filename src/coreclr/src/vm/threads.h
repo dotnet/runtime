@@ -3412,7 +3412,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(VOID *pvHijackAddr, ExecutionState *esb);
+    void    HijackThread(ReturnKind returnKind, ExecutionState *esb);
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address

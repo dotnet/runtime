@@ -1275,8 +1275,8 @@ INST1(sha1m,   "sha1m",  0, 0, IF_DV_3F,   0x5E002000)
 INST1(sha1p,   "sha1p",  0, 0, IF_DV_3F,   0x5E001000)
                                    //  sha1m   Qd, Sn Vm.4S         DV_3F  01011110000mmmmm 000100nnnnnddddd   5E00 0000   Qd Sn Vm.4S   (vector)
 
-INST1(sha1h,   "sha1h",  0, 0, IF_DR_2J,   0x5E280800)
-                                   //  sha1h   Sd, Sn               DR_2H  0101111000101000 000010nnnnnddddd   5E28 0800   Sn Sn
+INST1(sha1h,   "sha1h",  0, 0, IF_DV_2U,   0x5E280800)
+                                   //  sha1h   Sd, Sn               DV_2U  0101111000101000 000010nnnnnddddd   5E28 0800   Sn Sn
 
 INST1(sha1su0, "sha1su0",  0, 0, IF_DV_3F,  0x5E003000)
                                    //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S   (vector)

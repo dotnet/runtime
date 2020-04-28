@@ -14,10 +14,10 @@ namespace System
     {
         private static readonly char[] SPECIAL_CHARS = { ',', '[', ']', '&', '*', '+', '\\' };
 
-        internal static Type GetType(
+        internal static Type? GetType(
             string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
@@ -25,7 +25,7 @@ namespace System
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            ParsedName pname = ParseName(typeName, false, 0, out int end_pos);
+            ParsedName? pname = ParseName(typeName, false, 0, out int end_pos);
             if (pname == null)
             {
                 if (throwOnError)
@@ -36,16 +36,16 @@ namespace System
             return ConstructType(pname, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        private static Type ConstructType(
+        private static Type? ConstructType(
             ParsedName pname,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
             // Resolve assembly
-            Assembly assembly = null;
+            Assembly? assembly = null;
             if (pname.AssemblyName != null)
             {
                 assembly = ResolveAssembly(pname.AssemblyName, assemblyResolver, throwOnError, ref stackMark);
@@ -55,21 +55,21 @@ namespace System
             }
 
             // Resolve base type
-            Type? type = ResolveType(assembly, pname.Names, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            Type? type = ResolveType(assembly!, pname.Names!, typeResolver, throwOnError, ignoreCase, ref stackMark);
             if (type == null)
                 return null;
 
             // Resolve type arguments
             if (pname.TypeArguments != null)
             {
-                var args = new Type[pname.TypeArguments.Count];
+                var args = new Type?[pname.TypeArguments.Count];
                 for (int i = 0; i < pname.TypeArguments.Count; ++i)
                 {
                     args[i] = ConstructType(pname.TypeArguments[i], assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
                     if (args[i] == null)
                         return null;
                 }
-                type = type.MakeGenericType(args);
+                type = type.MakeGenericType(args!);
             }
 
             // Resolve modifiers
@@ -105,7 +105,7 @@ namespace System
             return type;
         }
 
-        private static Assembly ResolveAssembly(string name, Func<AssemblyName, Assembly> assemblyResolver, bool throwOnError,
+        private static Assembly? ResolveAssembly(string name, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError,
                                          ref StackCrawlMark stackMark)
         {
             var aname = new AssemblyName(name);
@@ -137,9 +137,9 @@ namespace System
             }
         }
 
-        private static Type ResolveType(Assembly assembly, List<string> names, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+        private static Type? ResolveType(Assembly assembly, List<string> names, Func<Assembly, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Type type = null;
+            Type? type = null;
 
             string name = EscapeTypeName(names[0]);
             // Resolve the top level type.
@@ -218,10 +218,10 @@ namespace System
 
         private class ParsedName
         {
-            public List<string> Names;
-            public List<ParsedName> TypeArguments;
-            public List<int> Modifiers;
-            public string AssemblyName;
+            public List<string>? Names;
+            public List<ParsedName>? TypeArguments;
+            public List<int>? Modifiers;
+            public string? AssemblyName;
 
             /* For debugging
             public override string ToString () {
@@ -251,7 +251,7 @@ namespace System
         // Entries to the Names list are unescaped to internal form while AssemblyName is not, in an effort to maintain
         // consistency with our native parser. Since this function is just called recursively, that should also be true
         // for ParsedNames in TypeArguments.
-        private static ParsedName ParseName(string name, bool recursed, int pos, out int end_pos)
+        private static ParsedName? ParseName(string name, bool recursed, int pos, out int end_pos)
         {
             end_pos = 0;
 

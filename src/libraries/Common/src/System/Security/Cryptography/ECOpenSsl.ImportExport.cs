@@ -114,8 +114,8 @@ namespace System.Security.Cryptography
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
                 oid,
-                parameters.Q.X!, parameters.Q.X!.Length,
-                parameters.Q.Y!, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length);
 
             return key;
@@ -126,8 +126,8 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsPrime);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X!.Length,
-                parameters.Q.Y, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Prime!, parameters.Curve.Prime!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,
@@ -146,8 +146,8 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsCharacteristic2);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X!.Length,
-                parameters.Q.Y, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,

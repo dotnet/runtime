@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Data.Odbc.Tests
 {
@@ -15,7 +15,19 @@ namespace System.Data.Odbc.Tests
         public IntegrationTestBase()
         {
             connection = new OdbcConnection(ConnectionStrings.WorkingConnection);
-            connection.Open();
+            try
+            {
+                connection.Open();
+            }
+            catch (OdbcException e) when (e.ErrorCode == unchecked((int)0x80131937)) // Data source name not found and no default driver specified
+            {
+                throw new SkipTestException(e.Message);
+            }
+            catch (DllNotFoundException e)
+            {
+                throw new SkipTestException(e.Message);
+            }
+
             transaction = connection.BeginTransaction();
             command = connection.CreateCommand();
             command.Transaction = transaction;

@@ -17,17 +17,17 @@ namespace System.Threading
                 throw new ApplicationException(SR.Arg_SynchronizationLockException);
         }
 
-        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew) =>
+        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew) =>
             Handle = CreateMutex_internal(initiallyOwned, name, out createdNew);
 
-        private static unsafe IntPtr CreateMutex_internal(bool initiallyOwned, string name, out bool created)
+        private static unsafe IntPtr CreateMutex_internal(bool initiallyOwned, string? name, out bool created)
         {
             fixed (char* fixed_name = name)
                 return CreateMutex_icall(initiallyOwned, fixed_name,
                     name?.Length ?? 0, out created);
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex result)
+        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

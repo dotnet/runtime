@@ -40,9 +40,9 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        private static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
             Debug.Assert(startIndex >= 0 && startIndex < source.Length);
 
@@ -73,7 +73,7 @@ namespace System.Globalization
 
             if (valueCount == 0)
             {
-                return fromBeginning ? 0 : sourceCount - 1;
+                return fromBeginning ? 0 : sourceCount;
             }
 
             if (sourceCount < valueCount)

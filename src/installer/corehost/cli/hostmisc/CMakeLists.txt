@@ -6,6 +6,9 @@ project(hostmisc)
 
 set(DOTNET_PROJECT_NAME "hostmisc")
 
+include(configure.cmake)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     trace.cpp
@@ -29,8 +32,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         longfile.h)
 else()
     list(APPEND SOURCES
-        pal.unix.cpp
-        ${VERSION_FILE_PATH})
+        pal.unix.cpp)
 endif()
 
 set(SKIP_VERSIONING 1)

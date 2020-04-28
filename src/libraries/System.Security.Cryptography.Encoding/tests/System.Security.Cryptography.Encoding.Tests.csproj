@@ -50,6 +50,7 @@
     <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.Helpers.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.Map.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.SkipValue.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.Special.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.Helpers.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="Cbor.Tests\CborWriterTests.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.Map.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.Special.cs" />
+    <Compile Include="Cbor\CborReader.SkipValue.cs" />
     <Compile Include="Cbor\CborReader.Special.cs" />
     <Compile Include="Cbor\CborTag.cs" />
     <Compile Include="Cbor\CborInitialByte.cs" />

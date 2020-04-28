@@ -18,17 +18,7 @@ namespace System.Net.Http.Headers
 
         private ObjectCollection<NameValueHeaderValue>? _parameters;
 
-        public ICollection<NameValueHeaderValue> Parameters
-        {
-            get
-            {
-                if (_parameters == null)
-                {
-                    _parameters = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _parameters;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
 
         public NameValueWithParametersHeaderValue(string name)
             : base(name)
@@ -95,7 +85,7 @@ namespace System.Net.Http.Headers
                 .ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out NameValueWithParametersHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out NameValueWithParametersHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

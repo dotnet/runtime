@@ -87,6 +87,10 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
+if [[ "$build_arch" == "wasm" ]]; then
+    cmake_command="emcmake $cmake_command"
+fi
+
 # Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
 $cmake_command \
   -G "$generator" \

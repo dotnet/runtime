@@ -3231,7 +3231,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
-            _ASSERT(ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature)) == pModule);
+            _ASSERT(ReadyToRunInfo::IsNativeImageSharedBy(pModule, ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature))));
 #endif
             dictionaryIndex = (dictionaryIndexAndSlot >> 16);
         }
@@ -4781,34 +4781,47 @@ HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDL
 HCIMPLEND
 
 /*************************************************************/
-HCIMPL0(VOID, JIT_PollGC)
+// Slow helper to tailcall from the fast one
+NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
 {
     BEGIN_PRESERVE_LAST_ERROR;
 
     FCALL_CONTRACT;
-
     FC_GC_POLL_NOT_NEEDED();
 
-    Thread  *thread = GetThread();
-    if (thread->CatchAtSafePointOpportunistic())    // Does someone want this thread stopped?
-    {
-        HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
+    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
 #ifdef _DEBUG
-        BOOL GCOnTransition = FALSE;
-        if (g_pConfig->FastGCStressLevel()) {
-            GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-        }
-#endif // _DEBUG
-        CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GC_ON_TRANSITIONS (GCOnTransition);
-        }
-#endif // _DEBUG
-        HELPER_METHOD_FRAME_END();
+    BOOL GCOnTransition = FALSE;
+    if (g_pConfig->FastGCStressLevel()) {
+        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
     }
-
+#endif // _DEBUG
+    CommonTripThread();         // Indicate we are at a GC safe point
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GC_ON_TRANSITIONS (GCOnTransition);
+    }
+#endif // _DEBUG
+    HELPER_METHOD_FRAME_END();
     END_PRESERVE_LAST_ERROR;
+}
+HCIMPLEND
+
+HCIMPL0(VOID, JIT_PollGC)
+{
+    FCALL_CONTRACT;
+
+    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
+    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+        return;
+
+    // Does someone want this thread stopped?
+    if (!GetThread()->CatchAtSafePointOpportunistic())
+        return;
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    HCCALL0(JIT_PollGC_Framed);
 }
 HCIMPLEND
 
@@ -5383,8 +5396,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
     if (thread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
 
-    thread->DisablePreemptiveGC();
     frame->currentThread = thread;
+
+    thread->DisablePreemptiveGC();
+}
+
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
+{
+    frame->currentThread->RareDisablePreemptiveGC();
 }
 
 EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
@@ -5397,13 +5416,17 @@ EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
     if (thread != NULL
         && !thread->PreemptiveGCDisabled())
     {
+        frame->currentThread = thread;
+
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
         {
-            frame->currentThread = thread;
             return;
         }
+
+        JIT_ReversePInvokeEnterRare2(frame);
+        return;
     }
 
     JIT_ReversePInvokeEnterRare(frame);

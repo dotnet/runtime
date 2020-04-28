@@ -9,15 +9,15 @@ namespace System.Runtime.InteropServices
     public partial struct GCHandle
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalAlloc(object value, GCHandleType type);
+        private static extern IntPtr InternalAlloc(object? value, GCHandleType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InternalFree(IntPtr handle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern object InternalGet(IntPtr handle);
+        private static extern object? InternalGet(IntPtr handle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InternalSet(IntPtr handle, object value);
+        private static extern void InternalSet(IntPtr handle, object? value);
     }
 }

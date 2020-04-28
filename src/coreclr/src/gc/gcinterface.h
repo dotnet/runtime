@@ -47,7 +47,7 @@ typedef enum
 {
     walk_for_gc = 1,
     walk_for_bgc = 2,
-    walk_for_loh = 3
+    walk_for_uoh = 3
 } walk_surv_type;
 
 // Different operations that can be done by GCToEEInterface::StompWriteBarrier
@@ -819,7 +819,8 @@ public:
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) = 0;
 
     // Walks the survivors and get the relocation information if objects have moved.
-    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type) = 0;
+    // gen_number is used when type == walk_for_uoh, otherwise ignored
+    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1) = 0;
 
     // Walks the finalization queue.
     virtual void DiagWalkFinalizeQueue(void* gc_context, fq_walk_fn fn) = 0;

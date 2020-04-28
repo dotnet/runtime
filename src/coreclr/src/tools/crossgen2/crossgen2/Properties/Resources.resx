@@ -144,6 +144,18 @@
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>
+  <data name="InstructionSets" xml:space="preserve">
+    <value>Instruction set(s) to use for compilation</value>
+  </data>
+  <data name="InstructionSetMustNotBe" xml:space="preserve">
+    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
+  </data>
+  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
+    <value>Instruction set(s) specified without also specifying input-bubble</value>
+  </data>
+  <data name="InstructionSetInvalidImplication" xml:space="preserve">
+    <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
+  </data>
   <data name="UnrootedInputFilesToCompile" xml:space="preserve">
     <value>"Input files without automatic rooting of all methods</value>
   </data>

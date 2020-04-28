@@ -69,7 +69,7 @@ namespace ReadyToRun.SuperIlc
                 yield return "-O";
             }
 
-            if (_options.LargeBubble || _options.Composite)
+            if (_options.LargeBubble)
             {
                 yield return "--inputbubble";
             }
@@ -84,27 +84,35 @@ namespace ReadyToRun.SuperIlc
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
-            HashSet<string> uniqueFolders = new HashSet<string>(
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? StringComparer.OrdinalIgnoreCase
-                : StringComparer.Ordinal);
+            string frameworkFolder = "";
+            if (_options.Framework || _options.UseFramework)
+            {
+                frameworkFolder = GetOutputPath(_options.CoreRootDirectory.FullName);
+                foreach (string frameworkRef in ResolveReferences(new string[] { frameworkFolder }, 'r'))
+                {
+                    yield return frameworkRef;
+                }
+            }
+
+            StringComparer pathComparer = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            HashSet<string> uniqueFolders = new HashSet<string>(pathComparer);
+
             foreach (string assemblyFileName in assemblyFileNames)
             {
                 uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
             }
 
             uniqueFolders.UnionWith(_referenceFolders);
+            uniqueFolders.Remove(frameworkFolder);
 
-            foreach (string reference in ResolveReferences(uniqueFolders))
+            foreach (string reference in ResolveReferences(uniqueFolders, _options.Composite ? 'u' : 'r'))
             {
                 yield return reference;
             }
         }
 
-        private IEnumerable<string> ResolveReferences(IEnumerable<string> folders)
+        private IEnumerable<string> ResolveReferences(IEnumerable<string> folders, char referenceOption)
         {
-            char referenceOption = (_options.Composite ? 'u' : 'r');
-
             foreach (string referenceFolder in folders)
             {
                 foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))

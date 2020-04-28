@@ -32,7 +32,6 @@
 // (C) 2001, 2002 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -45,7 +44,7 @@ namespace System.Reflection.Emit
         internal Type type;
         internal bool is_pinned;
         internal ushort position;
-        private string name;
+        private string? name;
         #endregion
 
         internal ILGenerator ilgen;
@@ -94,7 +93,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal string Name
+        internal string? Name
         {
             get { return name; }
         }

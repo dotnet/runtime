@@ -30,7 +30,6 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -46,21 +45,21 @@ namespace System.Reflection.Emit
         private PropertyAttributes attrs;
         private string name;
         private Type type;
-        private Type[] parameters;
-        private CustomAttributeBuilder[] cattrs;
-        private object def_value;
-        private MethodBuilder set_method;
-        private MethodBuilder get_method;
+        private Type[]? parameters;
+        private CustomAttributeBuilder[]? cattrs;
+        private object? def_value;
+        private MethodBuilder? set_method;
+        private MethodBuilder? get_method;
         private int table_idx = 0;
         internal TypeBuilder typeb;
-        private Type[] returnModReq;
-        private Type[] returnModOpt;
-        private Type[][] paramModReq;
-        private Type[][] paramModOpt;
+        private Type[]? returnModReq;
+        private Type[]? returnModOpt;
+        private Type[][]? paramModReq;
+        private Type[][]? paramModOpt;
         private CallingConventions callingConvention;
 #pragma warning restore 169, 414
 
-        internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnModReq, Type[] returnModOpt, Type[] parameterTypes, Type[][] paramModReq, Type[][] paramModOpt)
+        internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;
             this.attrs = attributes;
@@ -121,7 +120,7 @@ namespace System.Reflection.Emit
 
         public override MethodInfo[] GetAccessors(bool nonPublic)
         {
-            return null;
+            return null!; // FIXME: coreclr throws
         }
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -131,7 +130,7 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             return get_method;
         }
@@ -139,17 +138,17 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             return set_method;
         }
 
-        public override object GetValue(object obj, object[] index)
+        public override object? GetValue(object? obj, object?[]? index)
         {
             throw not_supported();
         }
 
-        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw not_supported();
         }
@@ -157,7 +156,7 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
-        public void SetConstant(object defaultValue)
+        public void SetConstant(object? defaultValue)
         {
             typeb.check_not_created();
             def_value = defaultValue;
@@ -168,7 +167,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
             typeb.check_not_created();
-            string attrname = customBuilder.Ctor.ReflectedType.FullName;
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
             {
                 attrs |= PropertyAttributes.SpecialName;
@@ -210,12 +209,12 @@ namespace System.Reflection.Emit
             set_method = mdBuilder;
         }
 
-        public override void SetValue(object obj, object value, object[] index)
+        public override void SetValue(object? obj, object? value, object?[]? index)
         {
             throw not_supported();
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw not_supported();
         }

@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if !MONO_FEATURE_SRE
 
 using System.Globalization;
@@ -35,42 +34,42 @@ namespace System.Reflection.Emit
 {
 	public sealed class DynamicMethod : MethodInfo
 	{
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, bool restrictedSkipVisibility)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes, bool restrictedSkipVisibility)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, Module m)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes, Module m)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, Type owner)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes, Type owner)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility)
+		public DynamicMethod (string name, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility)
+		public DynamicMethod (string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility)
 		{
 			throw new PlatformNotSupportedException ();
 		}
 
-		public DynamicMethod (string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility)
+		public DynamicMethod (string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility)
 		{
 			throw new PlatformNotSupportedException ();
 		}
@@ -87,7 +86,7 @@ namespace System.Reflection.Emit
 			}
 		}
 
-		public override Type DeclaringType {
+		public override Type? DeclaringType {
 			get {
 				throw new PlatformNotSupportedException ();
 			}
@@ -113,7 +112,7 @@ namespace System.Reflection.Emit
 			}
 		}
 
-		public override Type ReturnType {
+		public override Type? ReturnType {
 			get {
 				throw new PlatformNotSupportedException ();
 			}
@@ -143,11 +142,11 @@ namespace System.Reflection.Emit
 		public override MethodImplAttributes GetMethodImplementationFlags () { throw new PlatformNotSupportedException (); }
 		public override MethodInfo GetBaseDefinition () { throw new PlatformNotSupportedException (); }
 
-		public override object Invoke (object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) { throw new PlatformNotSupportedException (); }
+		public override object? Invoke (object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) { throw new PlatformNotSupportedException (); }
 
 		public override bool IsDefined (Type attributeType, bool inherit) { throw new PlatformNotSupportedException (); }
 
-		public ParameterBuilder DefineParameter (int position, ParameterAttributes attributes, string parameterName) => throw new PlatformNotSupportedException ();
+		public ParameterBuilder? DefineParameter (int position, ParameterAttributes attributes, string? parameterName) => throw new PlatformNotSupportedException ();
 		public DynamicILInfo GetDynamicILInfo () => throw new PlatformNotSupportedException ();
 	}
 }

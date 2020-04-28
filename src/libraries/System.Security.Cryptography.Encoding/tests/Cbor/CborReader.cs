@@ -32,8 +32,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         DoublePrecisionFloat,
         SpecialValue,
         Finished,
-        FormatError,
         EndOfData,
+        FormatError,
     }
 
     internal partial class CborReader
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
                 CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
-                _ => CborReaderState.FormatError,
+                _ => throw new Exception("CborReader internal error. Invalid major type."),
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
@@ -172,6 +172,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         return CborReaderState.SpecialValue;
                 }
             }
+        }
+
+        public ReadOnlyMemory<byte> ReadEncodedValue()
+        {
+            // keep a snapshot of the initial buffer state
+            ReadOnlyMemory<byte> initialBuffer = _buffer;
+            int initialBytesRead = _bytesRead;
+
+            // call skip to read and validate the next value
+            SkipValue();
+
+            // return the slice corresponding to the consumed value
+            return initialBuffer.Slice(0, _bytesRead - initialBytesRead);
         }
 
         private CborInitialByte PeekInitialByte()

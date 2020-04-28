@@ -174,7 +174,7 @@ namespace
         public:
             using key_t = void*;
             static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return (key_t)e->Identity; }
-            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)key; }
+            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key; }
             static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
         };
 
@@ -479,6 +479,32 @@ namespace
         args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*objsEnumPROTECTED);
         CALL_MANAGED_METHOD_NORET(args);
+    }
+
+    int CallICustomQueryInterface(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** ppObject)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(ppObject != NULL);
+        }
+        CONTRACTL_END;
+
+        int result;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(&iid);
+        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
+        CALL_MANAGED_METHOD(result, int, args);
+
+        return result;
     }
 
     bool TryGetOrCreateComInterfaceForObjectInternal(
@@ -1023,6 +1049,73 @@ namespace InteropLibImports
         return hr;
     }
 
+    TryInvokeICustomQueryInterfaceResult TryInvokeICustomQueryInterface(
+        _In_ InteropLib::OBJECTHANDLE handle,
+        _In_ REFGUID iid,
+        _Outptr_result_maybenull_ void** obj) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+            PRECONDITION(obj != NULL);
+        }
+        CONTRACTL_END;
+
+        *obj = NULL;
+
+        // If this is a GC thread, then someone is trying to query for something
+        // at a time when we can't run managed code.
+        if (IsGCThread())
+            return TryInvokeICustomQueryInterfaceResult::OnGCThread;
+
+        // Ideally the BEGIN_EXTERNAL_ENTRYPOINT/END_EXTERNAL_ENTRYPOINT pairs
+        // would be used here. However, this code path can be entered from within
+        // and from outside the runtime.
+        MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
+        if (CURRENT_THREAD == NULL)
+        {
+            CURRENT_THREAD = SetupThreadNoThrow();
+
+            // If we failed to set up a new thread, we are going to indicate
+            // there was a general failure to invoke instead of failing fast.
+            if (CURRENT_THREAD == NULL)
+                return TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        }
+
+        HRESULT hr;
+        auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        EX_TRY_THREAD(CURRENT_THREAD)
+        {
+            // Switch to Cooperative mode since object references
+            // are being manipulated.
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF objRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            // Get the target of the external object's reference.
+            ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+            gc.objRef = ObjectFromHandle(objectHandle);
+
+            result = (TryInvokeICustomQueryInterfaceResult)CallICustomQueryInterface(&gc.objRef, iid, obj);
+
+            GCPROTECT_END();
+        }
+        EX_CATCH_HRESULT(hr);
+
+        // Assert valid value.
+        _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result
+            && result <= TryInvokeICustomQueryInterfaceResult::Max);
+
+        return result;
+    }
+
     struct RuntimeCallContext
     {
         // Iterators for all known external objects.
@@ -1316,6 +1409,15 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     if (!g_IsGlobalComWrappersRegistered)
         return false;
 
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    {
+        GCX_PREEMP();
+
+        HRESULT hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+        _ASSERTE(hr == S_OK);
+    }
+
     // Switch to Cooperative mode since object references
     // are being manipulated.
     {
@@ -1332,7 +1434,7 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateObjectForComInstanceInternal(
             NULL /*comWrappersImpl*/,
-            externalComObject,
+            identity,
             (CreateObjectFlags)flags,
             unwrapIfManagedObjectWrapper,
             NULL /*wrapperMaybe*/,
