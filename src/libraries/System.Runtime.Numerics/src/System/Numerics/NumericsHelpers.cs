@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Numerics
@@ -107,22 +108,27 @@ namespace System.Numerics
 
         // Do an in-place two's complement. "Dangerous" because it causes
         // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeTwosComplement(uint[] d)
+        public static void DangerousMakeTwosComplement(Span<uint> d)
         {
-            if (d != null && d.Length > 0)
+            if (d.Length > 0)
             {
-                d[0] = unchecked(~d[0] + 1);
+                ref uint firstElement = ref MemoryMarshal.GetReference(d);
+                firstElement = unchecked(~firstElement + 1);
 
+                ref uint lookup = ref firstElement;
                 int i = 1;
+
                 // first do complement and +1 as long as carry is needed
-                for (; d[i - 1] == 0 && i < d.Length; i++)
+                for (; Unsafe.Add(ref firstElement, i - 1) == 0 && i < d.Length; i++)
                 {
-                    d[i] = unchecked(~d[i] + 1);
+                    lookup = ref Unsafe.Add(ref firstElement, i);
+                    lookup = unchecked(~lookup + 1);
                 }
                 // now ones complement is sufficient
                 for (; i < d.Length; i++)
                 {
-                    d[i] = ~d[i];
+                    lookup = ref Unsafe.Add(ref firstElement, i);
+                    lookup = ~lookup;
                 }
             }
         }

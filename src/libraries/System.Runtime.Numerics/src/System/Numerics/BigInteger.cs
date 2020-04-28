@@ -5,6 +5,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -17,6 +19,9 @@ namespace System.Numerics
         private const int kcbitUlong = 64;
         private const int DecimalScaleFactorMask = 0x00FF0000;
         private const int DecimalSignMask = unchecked((int)0x80000000);
+
+        //Used to create Span with single element
+        private static uint s_zero = 0;
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
@@ -1412,27 +1417,28 @@ namespace System.Numerics
 
         /// <summary>
         /// Return the value of this BigInteger as a little-endian twos-complement
-        /// uint array, using the fewest number of uints possible. If the value is zero,
+        /// uint span, using the fewest number of uints possible. If the value is zero,
         /// return an array of one uint whose element is 0.
         /// </summary>
         /// <returns></returns>
-        private uint[] ToUInt32Array()
+        private ReadOnlySpan<uint> ToUInt32Array()
         {
-            if (_bits == null && _sign == 0)
-                return new uint[] { 0 };
+            if (_bits is null && _sign == 0)
+                return CreateReadOnlySpan(ref s_zero, 1);
 
-            uint[] dwords;
+            ReadOnlySpan<uint> dwords;
             uint highDWord;
 
-            if (_bits == null)
+            if (_bits is null)
             {
-                dwords = new uint[] { unchecked((uint)_sign) };
+                dwords = CreateReadOnlySpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
             {
-                dwords = (uint[])_bits.Clone();
-                NumericsHelpers.DangerousMakeTwosComplement(dwords);  // Mutates dwords
+                Span<uint> dwordsMutable = (uint[])_bits.Clone();
+                NumericsHelpers.DangerousMakeTwosComplement(dwordsMutable);  // Mutates dwords
+                dwords = dwordsMutable;
                 highDWord = uint.MaxValue;
             }
             else
@@ -1445,15 +1451,18 @@ namespace System.Numerics
             int msb;
             for (msb = dwords.Length - 1; msb > 0; msb--)
             {
-                if (dwords[msb] != highDWord) break;
+                if (Unsafe.Add(ref GetReference(dwords), msb) != highDWord) break;
             }
             // Ensure high bit is 0 if positive, 1 if negative
-            bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
+            bool needExtraByte = (Unsafe.Add(ref GetReference(dwords), msb) & 0x80000000) != (highDWord & 0x80000000);
 
-            uint[] trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(dwords, trimmed, msb + 1);
+            Span<uint> trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
+            dwords = dwords.Slice(0, msb + 1);
+            dwords.CopyTo(trimmed);
 
-            if (needExtraByte) trimmed[trimmed.Length - 1] = highDWord;
+            if (needExtraByte)
+                Unsafe.Add(ref GetReference(trimmed), trimmed.Length - 1) = highDWord;
+
             return trimmed;
         }
 
@@ -1821,16 +1830,16 @@ namespace System.Numerics
                 return left._sign & right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            ReadOnlySpan<uint> x = left.ToUInt32Array();
+            ReadOnlySpan<uint> y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? x[i] : xExtend;
-                uint yu = (i < y.Length) ? y[i] : yExtend;
+                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
+                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
                 z[i] = xu & yu;
             }
             return new BigInteger(z);
@@ -1848,16 +1857,16 @@ namespace System.Numerics
                 return left._sign | right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            ReadOnlySpan<uint> x = left.ToUInt32Array();
+            ReadOnlySpan<uint> y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? x[i] : xExtend;
-                uint yu = (i < y.Length) ? y[i] : yExtend;
+                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
+                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
                 z[i] = xu | yu;
             }
             return new BigInteger(z);
@@ -1870,16 +1879,16 @@ namespace System.Numerics
                 return left._sign ^ right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            ReadOnlySpan<uint> x = left.ToUInt32Array();
+            ReadOnlySpan<uint> y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? x[i] : xExtend;
-                uint yu = (i < y.Length) ? y[i] : yExtend;
+                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
+                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
                 z[i] = xu ^ yu;
             }
 
