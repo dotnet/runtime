@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, eventParams);
         }
 
-        private unsafe byte[]? GenerateMetadata(
+        internal unsafe byte[]? GenerateMetadata(
             int eventId,
             string eventName,
             long keywords,
