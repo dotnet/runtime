@@ -70,9 +70,8 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
-          - script: |
-              brew install icu4c openssl pkg-config
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
