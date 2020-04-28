@@ -1061,6 +1061,21 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/** ">
+             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackStressTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackStressTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackStressTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackStressTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1152,6 +1167,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_il_r/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/more_tailcalls.sh">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/newarr/newarr/**">
@@ -1478,6 +1496,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27678/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35384/GitHub_35384/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_4044/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1588,6 +1609,21 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
+        </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/getappdomainstaticaddress/**">
+             <Issue>needs triage</Issue>
+         </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+             <Issue>needs triage</Issue>
+         </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/profiler/gc/gc/**">
+             <Issue>needs triage</Issue>
+         </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/metadatagetdispenser/**">
+             <Issue>needs triage</Issue>
+        </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/rejit.sh">
+             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke/**">
             <Issue>needs triage</Issue>
