@@ -382,9 +382,9 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(jsonLoadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
-                Assert.Equal(e, jsonError);
+                Assert.Equal(e.InnerException, jsonError);
             }
 
             Assert.NotNull(provider);
@@ -410,9 +410,9 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
-                Assert.Equal(e, error);
+                Assert.Equal(e.InnerException, error);
             }
 
             Assert.NotNull(provider);
@@ -439,9 +439,9 @@ IniKey1=IniValue2");
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (FormatException e)
+            catch (InvalidDataException e)
             {
-                Assert.Equal(e, error);
+                Assert.Equal(e.InnerException, error);
             }
             Assert.NotNull(provider);
         }
