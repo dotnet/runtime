@@ -260,6 +260,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector128{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<byte> Create(byte value)
         {
             if (Avx2.IsSupported)
@@ -318,6 +319,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128d _mm_set1_pd</remarks>
         /// <returns>A new <see cref="Vector128{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<double> Create(double value)
         {
             if (Sse3.IsSupported)
@@ -354,6 +356,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector128{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<short> Create(short value)
         {
             if (Avx2.IsSupported)
@@ -397,6 +400,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector128{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<int> Create(int value)
         {
             if (Avx2.IsSupported)
@@ -432,6 +436,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<long> Create(long value)
         {
             if (Sse2.X64.IsSupported)
@@ -468,6 +473,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector128<sbyte> Create(sbyte value)
         {
             if (Avx2.IsSupported)
@@ -526,6 +532,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128 _mm_set1_ps</remarks>
         /// <returns>A new <see cref="Vector128{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector128<float> Create(float value)
         {
             if (Avx2.IsSupported)
@@ -568,6 +575,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector128<ushort> Create(ushort value)
         {
             if (Avx2.IsSupported)
@@ -612,6 +620,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector128<uint> Create(uint value)
         {
             if (Avx2.IsSupported)
@@ -648,6 +657,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector128{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector128<ulong> Create(ulong value)
         {
             if (Sse2.X64.IsSupported)

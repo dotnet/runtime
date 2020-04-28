@@ -553,6 +553,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_get_AllBitsSet:
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
             case NI_Vector64_Create:
+            case NI_Vector128_Create:
                 // TODO: Fix the case where imm = int.MaxValue
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
