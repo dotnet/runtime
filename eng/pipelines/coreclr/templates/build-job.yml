@@ -118,6 +118,12 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
+    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg)
@@ -127,8 +133,10 @@ jobs:
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
-      - script: du -sh $(Build.SourcesDirectory)/*
-        displayName: Disk Usage
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)

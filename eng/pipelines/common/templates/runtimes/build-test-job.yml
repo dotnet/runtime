@@ -108,14 +108,22 @@ jobs:
         artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
         artifactName: '$(coreClrProductArtifactName)'
         displayName: 'CoreCLR product build'
+
+    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
     
     # Build managed test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
     - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
-      - script: du -sh $(Build.SourcesDirectory)/*
-        displayName: Disk Usage
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
 
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml

@@ -82,6 +82,12 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
+        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage before Build
+
         - script: $(_buildScript)
                 -subset $(_subset)
                 $(_buildArguments)
@@ -89,8 +95,10 @@ jobs:
           displayName: Restore and Build Product
 
         - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
-          - script: du -sh $(Build.SourcesDirectory)/*
-            displayName: Disk Usage
+          - script: |
+              du -sh $(Build.SourcesDirectory)/*
+              df -h
+            displayName: Disk Usage after Build
 
         - ${{ if eq(parameters.runTests, false) }}:
           - ${{ if ne(parameters.isOfficialBuild, true) }}:            
