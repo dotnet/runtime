@@ -15,7 +15,7 @@ elif [ "$1" = "OSX" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-    brew install icu4c openssl autoconf automake libtool pkg-config python3
+    brew install autoconf automake icu4c libtool openssl pkg-config python3
     if [ "$?" != "0" ]; then
         exit 1;
     fi
