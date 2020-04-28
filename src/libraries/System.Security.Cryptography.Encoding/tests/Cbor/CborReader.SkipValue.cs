@@ -9,21 +9,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        public void SkipValue() => SkipToAncestor(0);
-        public void SkipToParent()
+        // flag used to temporarily disable conformance level checks,
+        // e.g. during a skip operation over nonconforming encodings.
+        private bool _isConformanceLevelCheckEnabled = true;
+
+        public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
+        public void SkipToParent(bool validateConformance = false)
         {
             if ((_nestedDataItems?.Count ?? 0) == 0)
             {
                 throw new InvalidOperationException("CBOR reader is at the root context.");
             }
 
-            SkipToAncestor(1);
+            SkipToAncestor(1, validateConformance);
         }
 
-        private void SkipToAncestor(int depth)
+        private void SkipToAncestor(int depth, bool validateConformance)
         {
             Debug.Assert(0 <= depth && depth <= (_nestedDataItems?.Count ?? 0));
             Checkpoint checkpoint = CreateCheckpoint();
+            _isConformanceLevelCheckEnabled = validateConformance;
 
             try
             {
@@ -36,6 +41,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 RestoreCheckpoint(in checkpoint);
                 throw;
+            }
+            finally
+            {
+                _isConformanceLevelCheckEnabled = false;
             }
         }
 

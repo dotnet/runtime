@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
 
-            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            if (_isConformanceLevelCheckEnabled && !CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
             {
                 throw new FormatException("Tagged items are not permitted under the current conformance level.");
             }
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborTag tag = PeekTagCore(out int additionalBytes);
 
-            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel))
+            if (!CborConformanceLevelHelpers.AllowsTags(ConformanceLevel) && _isConformanceLevelCheckEnabled)
             {
                 throw new FormatException("Tagged items are not permitted under the current conformance level.");
             }

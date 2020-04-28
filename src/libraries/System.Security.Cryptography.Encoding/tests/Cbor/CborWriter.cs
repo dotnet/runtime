@@ -6,7 +6,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing.Text;
 using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
@@ -49,7 +48,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {
-            ValidateEncoding(encodedValue);
+            ValidateEncoding(encodedValue, ConformanceLevel);
             ReadOnlySpan<byte> encodedValueSpan = encodedValue.Span;
             EnsureWriteCapacity(encodedValueSpan.Length);
 
@@ -70,13 +69,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             AdvanceDataItemCounters();
 
-            static void ValidateEncoding(ReadOnlyMemory<byte> encodedValue)
+            static void ValidateEncoding(ReadOnlyMemory<byte> encodedValue, CborConformanceLevel conformanceLevel)
             {
-                var reader = new CborReader(encodedValue);
+                var reader = new CborReader(encodedValue, conformanceLevel: conformanceLevel);
 
                 try
                 {
-                    reader.SkipValue();
+                    reader.SkipValue(validateConformance: true);
                 }
                 catch (FormatException e)
                 {

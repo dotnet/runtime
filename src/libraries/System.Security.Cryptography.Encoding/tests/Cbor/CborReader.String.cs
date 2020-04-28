@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
                     throw new FormatException("Indefinite-length items not support under the current conformance level.");
                 }
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
                     throw new FormatException("Indefinite-length items not support under the current conformance level.");
                 }
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
                     throw new FormatException("Indefinite-length items not support under the current conformance level.");
                 }
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
                     throw new FormatException("Indefinite-length items not support under the current conformance level.");
                 }
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
                 throw new FormatException("Indefinite-length items not support under the current conformance level.");
             }
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
                 throw new FormatException("Indefinite-length items not support under the current conformance level.");
             }
@@ -351,8 +351,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + byteLength);
 
-            // force any utf8 decoding errors if text string
-            if (type == CborMajorType.TextString)
+            // Force any UTF8 decoding errors if text string
+            if (_isConformanceLevelCheckEnabled && type == CborMajorType.TextString)
             {
                 ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
                 ValidateUtf8AndGetCharCount(encodedSlice);

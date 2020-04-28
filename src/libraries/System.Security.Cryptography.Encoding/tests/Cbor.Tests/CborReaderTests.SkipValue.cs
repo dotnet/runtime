@@ -79,17 +79,65 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        public static void SkipValue_InvalidUtf8_ShouldThrowFormatException(string hexEncoding)
+        public static void SkipValue_InvalidUtf8_ShouldSucceed(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
+            reader.SkipValue();
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData("61ff")]
+        [InlineData("62f090")]
+        public static void SkipValue_ValidationEnabled_InvalidUtf8_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue(validateConformance: true));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<DecoderFallbackException>(exn.InnerException);
 
             Assert.Equal(encoding.Length, reader.BytesRemaining);
         }
+
+        [Theory]
+        [MemberData(nameof(NonConformingSkipValueEncodings))]
+        internal static void SkipValue_NonConformingValues_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+
+            reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [MemberData(nameof(NonConformingSkipValueEncodings))]
+        internal static void SkipValue_ValidationEnabled_NonConformingValues_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+
+            Assert.Throws<FormatException>(() => reader.SkipValue(validateConformance: true));
+        }
+
+        public static IEnumerable<object[]> NonConformingSkipValueEncodings =>
+            new (CborConformanceLevel Level, string Encoding)[]
+            {
+                (CborConformanceLevel.Ctap2Canonical, "1801"), // non-canonical integer representation
+                (CborConformanceLevel.Rfc7049Canonical, "5fff"), // indefinite-length byte string
+                (CborConformanceLevel.Rfc7049Canonical, "7fff"), // indefinite-length text string
+                (CborConformanceLevel.Rfc7049Canonical, "9fff"), // indefinite-length array
+                (CborConformanceLevel.Rfc7049Canonical, "bfff"), // indefinite-length map
+                (CborConformanceLevel.Strict, "a201020103"), // duplicate keys in map
+                (CborConformanceLevel.Rfc7049Canonical, "a201020103"), // duplicate keys in map
+                (CborConformanceLevel.Ctap2Canonical, "a202020101"), // unsorted keys in map
+                (CborConformanceLevel.Ctap2Canonical, "c001"), // tagged value
+            }.Select(l => new object[] { l.Level, l.Encoding });
 
         [Fact]
         public static void SkipValue_NestedFormatException_ShouldPreserveOriginalReaderState()

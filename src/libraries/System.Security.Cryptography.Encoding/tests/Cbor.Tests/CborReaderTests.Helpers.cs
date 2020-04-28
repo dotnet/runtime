@@ -267,9 +267,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 "4201",
                 "61",
                 "6261",
-                // invalid utf8 strings
-                "61ff",
-                "62f090",
                 // indefinite-length strings with missing break byte
                 "5f41ab40",
                 "7f62616260",

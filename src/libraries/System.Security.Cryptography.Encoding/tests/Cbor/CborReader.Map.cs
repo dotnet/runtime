@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
                     throw new FormatException("Indefinite-length items not support under the current conformance level.");
                 }
@@ -80,11 +80,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _bytesRead - _currentKeyOffset.Value);
 
-            if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
             {
                 ValidateSortedKeyEncoding(currentKeyRange);
             }
-            else if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+            else if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
                 ValidateKeyUniqueness(currentKeyRange);
             }
