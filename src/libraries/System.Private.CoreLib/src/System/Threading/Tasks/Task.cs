@@ -2957,6 +2957,27 @@ namespace System.Threading.Tasks
             }
         }
 
+        /// <summary>
+        /// Cancels a ContinueWith task as part of determining to see whether the continuation should run.
+        /// This is only valid if the ContinueWith has a default token associated with it.
+        /// </summary>
+        internal void InternalCancelContinueWithInitialState()
+        {
+            // There isn't a cancellation token assigned to the task, which means the task is still going to be in its
+            // initial state.  The only way it could have transitioned is if:
+            // - it was Start'd, which isn't valid for a continuation
+            // - it was canceled, which won't have happened without a token
+            // - it was run as a continuation, which won't have happened because this method is only invoked once
+            // As a result, we can take an optimized path that avoids inflating contingent properties.
+            const int IllegalFlags = TASK_STATE_STARTED | TASK_STATE_COMPLETED_MASK | TASK_STATE_DELEGATE_INVOKED;
+            Debug.Assert((m_stateFlags & IllegalFlags) == 0, "The continuation was in an invalid state.");
+            Debug.Assert((m_stateFlags & TASK_STATE_WAITINGFORACTIVATION) != 0, "Expected continuation to be waiting for activation");
+            Debug.Assert(m_contingentProperties is null || m_contingentProperties.m_cancellationToken == default);
+
+            m_stateFlags |= TASK_STATE_CANCELED; // no synchronization necessary, per above comment
+            CancellationCleanupLogic();
+        }
+
         // Breaks out logic for recording a cancellation request
         internal void RecordInternalCancellationRequest()
         {
