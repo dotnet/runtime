@@ -1157,6 +1157,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructPacking/StructPacking/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)Interop/NativeLibrary/Callback/CallbackStressTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1169,7 +1172,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_il_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/more_tailcalls.sh">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/newarr/newarr/**">
@@ -1427,6 +1430,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/_il_reldeep_array_nz/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_dbgjumps4/**">
             <Issue>https://github.com/dotnet/runtime/issues/34379</Issue>
         </ExcludeList>
@@ -1475,6 +1481,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578217/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+
+
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18144/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1683,11 +1694,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1866,6 +1875,43 @@
 	    <Issue>needs triage</Issue>
 	</ExcludeList>
 	<ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_ro/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_ro/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/stubs_do/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/**">
+	    <Issue>needs triage</Issue>
+	</ExcludeList>
+	<ExcludeList Include = "$(XunitTestBinBase)tracing/eventsource/eventsourcetrace/eventsourcetrace/**">
 	    <Issue>needs triage</Issue>
 	</ExcludeList>
     </ItemGroup>
