@@ -487,7 +487,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
-            // mvni won't take 8B/16B, so hard-code the size and reinterpret the bits. The behaviour is the same.
+            // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:
             case NI_Vector64_get_AllBitsSet:
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
