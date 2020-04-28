@@ -246,7 +246,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (targetReg != op1Reg)
                     {
-                        GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                        GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
                     }
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 }
@@ -263,7 +263,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (targetReg != op1Reg)
                 {
-                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
                 }
 
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
