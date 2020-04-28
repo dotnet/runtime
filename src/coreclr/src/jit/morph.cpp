@@ -2640,7 +2640,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
     if (call->IsVirtualStub())
     {
-        if (!call->IsTailCallViaHelper())
+        if (!call->IsTailCallViaJitHelper())
         {
             GenTree* stubAddrArg = fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
@@ -2652,7 +2652,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         else
         {
             // If it is a VSD call getting dispatched via tail call helper,
-            // fgMorphTailCallViaHelper() would materialize stub addr as an additional
+            // fgMorphTailCallViaJitHelper() would materialize stub addr as an additional
             // parameter added to the original arg list and hence no need to
             // add as a non-standard arg.
         }
@@ -3230,8 +3230,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             isRegArg = (nonStdRegNum != REG_STK);
         }
-#if defined(TARGET_X86)
-        else if (call->IsTailCallViaHelper())
+        else if (call->IsTailCallViaJitHelper())
         {
             // We have already (before calling fgMorphArgs()) appended the 4 special args
             // required by the x86 tailcall helper. These args are required to go on the
@@ -3242,7 +3241,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 isRegArg = false;
             }
         }
-#endif // defined(TARGET_X86)
 
         // Now we know if the argument goes in registers or not and how big it is.
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -4828,7 +4826,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             const bool isTailCallLastUse = call->IsTailCall();
             const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
             const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
-            if (!call->IsTailCallViaHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
+            if (!call->IsTailCallViaJitHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
             {
                 varDsc->setLvRefCnt(0, RCS_EARLY);
                 args->SetNode(lcl);
@@ -6671,21 +6669,25 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 {
 #if FEATURE_FASTTAILCALL
+
+    if (!opts.compFastTailCalls)
+    {
+        if (failReason)
+        {
+            *failReason = "Configuration doesn't allow fast tail calls";
+        }
+        return false;
+    }
+
     // To reach here means that the return types of the caller and callee are tail call compatible.
     // In the case of structs that can be returned in a register, compRetNativeType is set to the actual return type.
-    //
-    // In an implicit tail call case callSig may not be available but it is guaranteed to be available
-    // for explicit tail call cases.  The reason implicit tail case callSig may not be available is that
-    // a call node might be marked as an in-line candidate and could fail to be in-lined. In which case
-    // fgInline() will replace return value place holder with call node using gtCloneExpr() which is
-    // currently not copying/setting callSig.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (callee->IsTailPrefixedCall())
     {
         assert(impTailCallRetTypeCompatible(info.compRetNativeType, info.compMethodInfo->args.retTypeClass,
-                                            (var_types)callee->gtReturnType, callee->callSig->retTypeClass));
+                                            (var_types)callee->gtReturnType, callee->gtRetClsHnd));
     }
 #endif
 
@@ -6997,6 +6999,31 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     }
 #endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
+    if (compLocallocUsed)
+    {
+        reportFastTailCallDecision("Localloc used");
+        return false;
+    }
+
+#ifdef TARGET_AMD64
+    // Needed for Jit64 compat.
+    // In future, enabling fast tail calls from methods that need GS cookie
+    // check would require codegen side work to emit GS cookie check before a
+    // tail call.
+    if (getNeedsGSSecurityCookie())
+    {
+        reportFastTailCallDecision("GS Security cookie check required");
+        return false;
+    }
+#endif
+
+    // If the NextCallReturnAddress intrinsic is used we should do normal calls.
+    if (info.compHasNextCallRetAddr)
+    {
+        reportFastTailCallDecision("Uses NextCallReturnAddress intrinsic");
+        return false;
+    }
+
     if (callee->HasRetBufArg()) // RetBuf
     {
         // If callee has RetBuf param, caller too must have it.
@@ -7098,12 +7125,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-    if (compLocallocUsed || compLocallocOptimized)
-    {
-        failTailCall("Localloc used");
-        return nullptr;
-    }
-
     // Heuristic: regular calls to noreturn methods can sometimes be
     // merged, so if we have multiple such calls, we defer tail calling.
     //
@@ -7115,18 +7136,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Defer tail calling throw helper; anticipating merge");
         return nullptr;
     }
-
-#ifdef TARGET_AMD64
-    // Needed for Jit64 compat.
-    // In future, enabling tail calls from methods that need GS cookie check
-    // would require codegen side work to emit GS cookie check before a tail
-    // call.
-    if (getNeedsGSSecurityCookie())
-    {
-        failTailCall("GS Security cookie check");
-        return nullptr;
-    }
-#endif
 
 #ifdef DEBUG
     if (opts.compGcChecks && (info.compRetType == TYP_REF))
@@ -7244,62 +7253,68 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     const char* failReason      = nullptr;
     bool        canFastTailCall = fgCanFastTailCall(call, &failReason);
-    void*       pfnCopyArgs     = nullptr;
-    // Some tailcalls can (or will) only be done as fast tailcalls.
+
+    CORINFO_TAILCALL_HELPERS tailCallHelpers;
+    bool                     tailCallViaJitHelper = false;
     if (!canFastTailCall)
     {
         if (call->IsImplicitTailCall())
         {
+            // Implicit or opportunistic tail calls are always dispatched via fast tail call
+            // mechanism and never via tail call helper for perf.
             failTailCall(failReason);
             return nullptr;
         }
 
-        // Call is tail. prefixed and cannot be dispatched as a fast tail call.
+        assert(call->IsTailPrefixedCall());
+        assert(call->tailCallInfo != nullptr);
 
+        // We do not currently handle non-standard args except for VSD stubs.
         if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
         {
-            // Methods with non-standard args will have indirection cell or cookie param passed
-            // in callee trash register (e.g. R11). Tail call helper doesn't preserve it before
-            // tail calling the target method and hence ".tail" prefix on such calls needs to be
-            // ignored.
-            //
-            // Exception to the above rule: although Virtual Stub Dispatch (VSD) calls require
-            // extra stub param (e.g. in R11 on Amd64), they can still be called via tail call helper.
-            // This is done by by adding stubAddr as an additional arg before the original list of
-            // args. For more details see fgMorphTailCallViaHelper() and CreateTailCallCopyArgsThunk()
-            // in Stublinkerx86.cpp.
             failTailCall(
                 "Method with non-standard args passed in callee trash register cannot be tail called via helper");
             return nullptr;
         }
 
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
-        // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
-        // So, bail out if we can't make fast tail call.
-        failTailCall(failReason);
-        return nullptr;
-#elif !defined(TARGET_X86)
-        // Ok, now we are _almost_ there. Since this needs helper make sure we
-        // can get the required copy thunk.
-        CorInfoHelperTailCallSpecialHandling handling = CORINFO_TAILCALL_NORMAL;
-        if (call->IsVirtualStub())
+        // On x86 we have a faster mechanism than the general one which we use
+        // in almost all cases. See fgCanTailCallViaJitHelper for more information.
+        if (fgCanTailCallViaJitHelper())
         {
-            handling = CORINFO_TAILCALL_STUB_DISPATCH_ARG;
+            tailCallViaJitHelper = true;
         }
-
-        pfnCopyArgs = info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, handling);
-        if (pfnCopyArgs == nullptr)
+        else
         {
-            if (info.compMatchedVM)
+            // Make sure we can get the helpers. We do this last as the runtime
+            // will likely be required to generate these.
+            CORINFO_RESOLVED_TOKEN* token = nullptr;
+            CORINFO_SIG_INFO*       sig   = call->tailCallInfo->GetSig();
+            unsigned                flags = 0;
+            if (!call->tailCallInfo->IsCalli())
             {
-                failTailCall("TailCallCopyArgsThunk not available.");
-                return nullptr;
+                token = call->tailCallInfo->GetToken();
+                if (call->tailCallInfo->IsCallvirt())
+                {
+                    flags |= CORINFO_TAILCALL_IS_CALLVIRT;
+                }
             }
 
-            // If we don't have a matched VM, we won't get valid results when asking for a thunk.
-            pfnCopyArgs = UlongToPtr(0xCA11CA11); // "callcall"
+            if (call->gtCallThisArg != nullptr)
+            {
+                var_types thisArgType = call->gtCallThisArg->GetNode()->TypeGet();
+                if (thisArgType != TYP_REF)
+                {
+                    flags |= CORINFO_TAILCALL_THIS_ARG_IS_BYREF;
+                }
+            }
+
+            if (!info.compCompHnd->getTailCallHelpers(token, sig, (CORINFO_GET_TAILCALL_HELPERS_FLAGS)flags,
+                                                      &tailCallHelpers))
+            {
+                failTailCall("Tail call help not available");
+                return nullptr;
+            }
         }
-#endif
     }
 
     // Check if we can make the tailcall a loop.
@@ -7339,15 +7354,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     info.compCompHnd->reportTailCallDecision(nullptr,
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
-
     // Now actually morph the call.
     compTailCallUsed = true;
     // This will prevent inlining this call.
     call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL;
-    if (!canFastTailCall)
+    if (tailCallViaJitHelper)
     {
-        call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_VIA_HELPER;
+        call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
     }
+
 #if FEATURE_TAILCALL_OPT
     if (fastTailCallToLoop)
     {
@@ -7362,11 +7377,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #if FEATURE_TAILCALL_OPT
     call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
 #endif
-
-    // Store the call type for later to introduce the correct placeholder.
-    var_types origCallType = call->TypeGet();
-    // Avoid potential extra work for the return (for example, vzeroupper)
-    call->gtType = TYP_VOID;
 
 #ifdef DEBUG
     if (verbose)
@@ -7398,18 +7408,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
         compCurBB->bbJumpKind = BBJ_RETURN;
-    }
-
-    // Do some target-specific transformations (before we process the args, etc.)
-    // This is needed only for tail prefixed calls that cannot be dispatched as
-    // fast calls.
-    if (call->IsTailCallViaHelper())
-    {
-        fgMorphTailCallViaHelper(call, pfnCopyArgs);
-
-        // Force re-evaluating the argInfo. fgMorphTailCallViaHelper will modify the
-        // argument list, invalidating the argInfo.
-        call->fgArgInfo = nullptr;
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -7456,116 +7454,715 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         assert(treeWithCall == call);
     }
 #endif
-    Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
-    JITDUMP("Remove all stmts after the call.\n");
-    while (nextMorphStmt != nullptr)
+    // Store the call type for later to introduce the correct placeholder.
+    var_types origCallType = call->TypeGet();
+
+    GenTree* result;
+    if (!canFastTailCall && !tailCallViaJitHelper)
     {
-        Statement* stmtToRemove = nextMorphStmt;
-        nextMorphStmt           = stmtToRemove->GetNextStmt();
-        fgRemoveStmt(compCurBB, stmtToRemove);
-    }
-
-    bool     isRootReplaced = false;
-    GenTree* root           = fgMorphStmt->GetRootNode();
-
-    if (root != call)
-    {
-        JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
-        isRootReplaced = true;
-        fgMorphStmt->SetRootNode(call);
-    }
-
-    // Tail call via helper: The VM can't use return address hijacking if we're
-    // not going to return and the helper doesn't have enough info to safely poll,
-    // so we poll before the tail call, if the block isn't already safe.  Since
-    // tail call via helper is a slow mechanism it doen't matter whether we emit
-    // GC poll.  This is done to be in parity with Jit64. Also this avoids GC info
-    // size increase if all most all methods are expected to be tail calls (e.g. F#).
-    //
-    // Note that we can avoid emitting GC-poll if we know that the current BB is
-    // dominated by a Gc-SafePoint block.  But we don't have dominator info at this
-    // point.  One option is to just add a place holder node for GC-poll (e.g. GT_GCPOLL)
-    // here and remove it in lowering if the block is dominated by a GC-SafePoint.  For
-    // now it not clear whether optimizing slow tail calls is worth the effort.  As a
-    // low cost check, we check whether the first and current basic blocks are
-    // GC-SafePoints.
-    //
-    // Fast Tail call as epilog+jmp - No need to insert GC-poll. Instead, fgSetBlockOrder()
-    // is going to mark the method as fully interruptible if the block containing this tail
-    // call is reachable without executing any call.
-    if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
-        !fgCreateGCPoll(GCPOLL_INLINE, compCurBB))
-    {
-        // We didn't insert a poll block, so we need to morph the call now
-        // (Normally it will get morphed when we get to the split poll block)
-        GenTree* temp = fgMorphCall(call);
-        noway_assert(temp == call);
-    }
-
-    // Tail call via helper: we just call CORINFO_HELP_TAILCALL, and it jumps to
-    // the target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-    //
-    // Fast tail call: in case of fast tail calls, we need a jmp epilog and
-    // hence mark it as BBJ_RETURN with BBF_JMP flag set.
-    noway_assert(compCurBB->bbJumpKind == BBJ_RETURN);
-
-    if (canFastTailCall)
-    {
-        compCurBB->bbFlags |= BBF_HAS_JMP;
+        // For tailcall via CORINFO_TAILCALL_HELPERS we transform into regular
+        // calls with (to the JIT) regular control flow so we do not need to do
+        // much special handling.
+        result = fgMorphTailCallViaHelpers(call, tailCallHelpers);
     }
     else
     {
-        compCurBB->bbJumpKind = BBJ_THROW;
-    }
-
-    if (isRootReplaced)
-    {
-        // We have replaced the root node of this stmt and deleted the rest,
-        // but we still have the deleted, dead nodes on the `fgMorph*` stack
-        // if the root node was an `ASG`, `RET` or `CAST`.
-        // Return a zero con node to exit morphing of the old trees without asserts
-        // and forbid POST_ORDER morphing doing something wrong with our call.
-        var_types callType;
-        if (varTypeIsStruct(origCallType))
+        // Otherwise we will transform into something that does not return. For
+        // fast tailcalls a "jump" and for tailcall via JIT helper a call to a
+        // JIT helper that does not return. So peel off everything after the
+        // call.
+        Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
+        JITDUMP("Remove all stmts after the call.\n");
+        while (nextMorphStmt != nullptr)
         {
-            CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
-            Compiler::structPassingKind howToReturnStruct;
-            callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
-            assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
-            if (howToReturnStruct == SPK_ByValue)
-            {
-                callType = TYP_I_IMPL;
-            }
-            else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
-            {
-                callType = TYP_FLOAT;
-            }
-            assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
+            Statement* stmtToRemove = nextMorphStmt;
+            nextMorphStmt           = stmtToRemove->GetNextStmt();
+            fgRemoveStmt(compCurBB, stmtToRemove);
+        }
+
+        bool     isRootReplaced = false;
+        GenTree* root           = fgMorphStmt->GetRootNode();
+
+        if (root != call)
+        {
+            JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
+            isRootReplaced = true;
+            fgMorphStmt->SetRootNode(call);
+        }
+
+        // Avoid potential extra work for the return (for example, vzeroupper)
+        call->gtType = TYP_VOID;
+
+        // Do some target-specific transformations (before we process the args,
+        // etc.) for the JIT helper case.
+        if (tailCallViaJitHelper)
+        {
+            fgMorphTailCallViaJitHelper(call);
+
+            // Force re-evaluating the argInfo. fgMorphTailCallViaJitHelper will modify the
+            // argument list, invalidating the argInfo.
+            call->fgArgInfo = nullptr;
+        }
+
+        // Tail call via JIT helper: The VM can't use return address hijacking
+        // if we're not going to return and the helper doesn't have enough info
+        // to safely poll, so we poll before the tail call, if the block isn't
+        // already safe. Since tail call via helper is a slow mechanism it
+        // doen't matter whether we emit GC poll. his is done to be in parity
+        // with Jit64. Also this avoids GC info size increase if all most all
+        // methods are expected to be tail calls (e.g. F#).
+        //
+        // Note that we can avoid emitting GC-poll if we know that the current
+        // BB is dominated by a Gc-SafePoint block. But we don't have dominator
+        // info at this point. One option is to just add a place holder node for
+        // GC-poll (e.g. GT_GCPOLL) here and remove it in lowering if the block
+        // is dominated by a GC-SafePoint. For now it not clear whether
+        // optimizing slow tail calls is worth the effort. As a low cost check,
+        // we check whether the first and current basic blocks are
+        // GC-SafePoints.
+        //
+        // Fast Tail call as epilog+jmp - No need to insert GC-poll. Instead,
+        // fgSetBlockOrder() is going to mark the method as fully interruptible
+        // if the block containing this tail call is reachable without executing
+        // any call.
+        if (canFastTailCall || (fgFirstBB->bbFlags & BBF_GC_SAFE_POINT) || (compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
+            !fgCreateGCPoll(GCPOLL_INLINE, compCurBB))
+        {
+            // We didn't insert a poll block, so we need to morph the call now
+            // (Normally it will get morphed when we get to the split poll block)
+            GenTree* temp = fgMorphCall(call);
+            noway_assert(temp == call);
+        }
+
+        // Fast tail call: in case of fast tail calls, we need a jmp epilog and
+        // hence mark it as BBJ_RETURN with BBF_JMP flag set.
+        noway_assert(compCurBB->bbJumpKind == BBJ_RETURN);
+        if (canFastTailCall)
+        {
+            compCurBB->bbFlags |= BBF_HAS_JMP;
         }
         else
         {
-            callType = origCallType;
+            // We call CORINFO_HELP_TAILCALL which does not return, so we will
+            // not need epilogue.
+            compCurBB->bbJumpKind = BBJ_THROW;
         }
-        GenTree* zero = gtNewZeroConNode(callType);
-        return fgMorphTree(zero);
+
+        if (isRootReplaced)
+        {
+            // We have replaced the root node of this stmt and deleted the rest,
+            // but we still have the deleted, dead nodes on the `fgMorph*` stack
+            // if the root node was an `ASG`, `RET` or `CAST`.
+            // Return a zero con node to exit morphing of the old trees without asserts
+            // and forbid POST_ORDER morphing doing something wrong with our call.
+            var_types callType;
+            if (varTypeIsStruct(origCallType))
+            {
+                CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
+                Compiler::structPassingKind howToReturnStruct;
+                callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+                assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
+                if (howToReturnStruct == SPK_ByValue)
+                {
+                    callType = TYP_I_IMPL;
+                }
+                else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
+                {
+                    callType = TYP_FLOAT;
+                }
+                assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
+            }
+            else
+            {
+                callType = origCallType;
+            }
+            GenTree* zero = gtNewZeroConNode(callType);
+            result        = fgMorphTree(zero);
+        }
+        else
+        {
+            result = call;
+        }
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// fgMorphTailCallViaHelpers: Transform the given GT_CALL tree for tailcall code
+// generation.
+//
+// Arguments:
+//     call - The call to transform
+//     helpers - The tailcall helpers provided by the runtime.
+//
+// Return Value:
+//    Returns the transformed node.
+//
+// Notes:
+//   This transforms
+//     GT_CALL
+//         {callTarget}
+//         {this}
+//         {args}
+//   into
+//     GT_COMMA
+//       GT_CALL StoreArgsStub
+//         {callTarget}         (depending on flags provided by the runtime)
+//         {this}               (as a regular arg)
+//         {args}
+//       GT_COMMA
+//         GT_CALL Dispatcher
+//           GT_ADDR ReturnAddress
+//           {CallTargetStub}
+//           GT_ADDR ReturnValue
+//         GT_LCL ReturnValue
+// whenever the call node returns a value. If the call node does not return a
+// value the last comma will not be there.
+//
+GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help)
+{
+    // R2R requires different handling but we don't support tailcall via
+    // helpers in R2R yet, so just leave it for now.
+    // TODO: R2R: TailCallViaHelper
+    assert(!opts.IsReadyToRun());
+
+    JITDUMP("fgMorphTailCallViaHelpers (before):\n");
+    DISPTREE(call);
+
+    // Don't support tail calling helper methods
+    assert(call->gtCallType != CT_HELPER);
+
+    // We come this route only for tail prefixed calls that cannot be dispatched as
+    // fast tail calls
+    assert(!call->IsImplicitTailCall());
+    assert(!fgCanFastTailCall(call, nullptr));
+
+    // If VSD then get rid of arg to VSD since we turn this into a direct call.
+    // The extra arg will be the first arg so this needs to be done before we
+    // handle the retbuf below.
+    if (call->IsVirtualStub())
+    {
+        JITDUMP("This is a VSD\n");
+// X86/ARM32 do not include the stub arg in the arg list.
+#if !defined(TARGET_X86) && !defined(TARGET_ARM)
+        call->gtCallArgs = call->gtCallArgs->GetNext();
+        // We changed args so recompute info.
+        call->fgArgInfo = nullptr;
+#endif
+
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    }
+
+    GenTree* callDispatcherAndGetResult = fgCreateCallDispatcherAndGetResult(call, help.hCallTarget, help.hDispatcher);
+
+    // Change the call to a call to the StoreArgs stub.
+    if (call->HasRetBufArg())
+    {
+        JITDUMP("Removing retbuf");
+        call->gtCallArgs = call->gtCallArgs->GetNext();
+        call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
+
+        // We changed args so recompute info.
+        call->fgArgInfo = nullptr;
+    }
+
+    // We may need to pass the target, for instance for calli or generic methods
+    // where we pass instantiating stub.
+    if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
+    {
+        // If asked to store target and we have a type arg we will store
+        // instantiating stub, so in that case we should not pass the type arg.
+        if (call->tailCallInfo->GetSig()->hasTypeArg())
+        {
+            JITDUMP("Removing type arg");
+
+            assert(call->gtCallArgs != nullptr);
+            if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+            {
+                // Generic context is first arg
+                call->gtCallArgs = call->gtCallArgs->GetNext();
+            }
+            else
+            {
+                // Generic context is last arg
+                GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
+                while ((*lastArgSlot)->GetNext() != nullptr)
+                {
+                    lastArgSlot = &(*lastArgSlot)->NextRef();
+                }
+
+                *lastArgSlot = nullptr;
+            }
+            call->fgArgInfo = nullptr;
+        }
+
+        JITDUMP("Adding target since VM requested it\n");
+        GenTree* target;
+        if (call->tailCallInfo->IsCalli())
+        {
+            noway_assert(call->gtCallType == CT_INDIRECT && call->gtCallAddr != nullptr);
+            target = call->gtCallAddr;
+        }
+        else
+        {
+            CORINFO_CALL_INFO callInfo;
+            unsigned          flags = CORINFO_CALLINFO_LDFTN;
+            if (call->tailCallInfo->IsCallvirt())
+            {
+                flags |= CORINFO_CALLINFO_CALLVIRT;
+            }
+
+            eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
+
+            if (!call->tailCallInfo->IsCallvirt() ||
+                ((callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) != 0) ||
+                ((callInfo.methodFlags & CORINFO_FLG_VIRTUAL) == 0))
+            {
+                target = getMethodPointerTree(call->tailCallInfo->GetToken(), &callInfo);
+            }
+            else
+            {
+                assert(call->gtCallThisArg != nullptr);
+                // TODO: Proper cloning of the this pointer.
+                target = getVirtMethodPointerTree(gtCloneExpr(call->gtCallThisArg->GetNode()),
+                                                  call->tailCallInfo->GetToken(), &callInfo);
+            }
+        }
+
+        // Insert target as last arg
+        GenTreeCall::Use** newArgSlot = &call->gtCallArgs;
+        while (*newArgSlot != nullptr)
+        {
+            newArgSlot = &(*newArgSlot)->NextRef();
+        }
+
+        *newArgSlot = gtNewCallArgs(target);
+
+        call->fgArgInfo = nullptr;
+    }
+
+    // Put 'this' in normal param list
+    if (call->gtCallThisArg != nullptr)
+    {
+        JITDUMP("Moving this pointer into arg list\n");
+        GenTree* thisPtr    = nullptr;
+        GenTree* objp       = call->gtCallThisArg->GetNode();
+        call->gtCallThisArg = nullptr;
+
+        if (call->NeedsNullCheck())
+        {
+            // clone "this" if "this" has no side effects.
+            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
+            {
+                thisPtr = gtClone(objp, true);
+            }
+
+            var_types vt = objp->TypeGet();
+            if (thisPtr == nullptr)
+            {
+                // create a temp if either "this" has side effects or "this" is too complex to clone.
+
+                // tmp = "this"
+                unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
+                GenTree* asg    = gtNewTempAssign(lclNum, objp);
+
+                // COMMA(tmp = "this", deref(tmp))
+                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
+                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
+
+                // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
+                thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
+            }
+            else
+            {
+                // thisPtr = COMMA(deref("this"), "this")
+                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
+            }
+
+            call->gtFlags &= ~GTF_CALL_NULLCHECK;
+        }
+        else
+        {
+            thisPtr = objp;
+        }
+
+        // During rationalization tmp="this" and null check will be materialized
+        // in the right execution order.
+        assert(thisPtr != nullptr);
+        call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
+        call->fgArgInfo  = nullptr;
+    }
+
+    // This is now a direct call to the store args stub and not a tailcall.
+    call->gtCallType    = CT_USER_FUNC;
+    call->gtCallMethHnd = help.hStoreArgs;
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
+    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+
+    // The store-args stub returns no value.
+    call->gtRetClsHnd  = nullptr;
+    call->gtType       = TYP_VOID;
+    call->gtReturnType = TYP_VOID;
+
+    GenTree* finalTree =
+        gtNewOperNode(GT_COMMA, callDispatcherAndGetResult->TypeGet(), call, callDispatcherAndGetResult);
+
+    finalTree = fgMorphTree(finalTree);
+
+    JITDUMP("fgMorphTailCallViaHelpers (after):\n");
+    DISPTREE(finalTree);
+    return finalTree;
+}
+
+//------------------------------------------------------------------------
+// fgCreateCallDispatcherAndGetResult: Given a call
+// CALL
+//   {callTarget}
+//   {retbuf}
+//   {this}
+//   {args}
+// create a similarly typed node that calls the tailcall dispatcher and returns
+// the result, as in the following:
+// COMMA
+//   CALL TailCallDispatcher
+//     ADDR ReturnAddress
+//     &CallTargetFunc
+//     ADDR RetValue
+//   RetValue
+// If the call has type TYP_VOID, only create the CALL node.
+//
+// Arguments:
+//    origCall - the call
+//    callTargetStubHnd - the handle of the CallTarget function (this is a special
+//    IL stub created by the runtime)
+//    dispatcherHnd - the handle of the tailcall dispatcher function
+//
+// Return Value:
+//    A node that can be used in place of the original call.
+//
+GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
+                                                      CORINFO_METHOD_HANDLE callTargetStubHnd,
+                                                      CORINFO_METHOD_HANDLE dispatcherHnd)
+{
+    GenTreeCall* callDispatcherNode =
+        gtNewCallNode(CT_USER_FUNC, dispatcherHnd, TYP_VOID, nullptr, fgMorphStmt->GetILOffsetX());
+    // The dispatcher has signature
+    // void DispatchTailCalls(void* callersRetAddrSlot, void* callTarget, void* retValue)
+
+    // Add return value arg.
+    GenTree*     retValArg;
+    GenTree*     retVal    = nullptr;
+    unsigned int newRetLcl = BAD_VAR_NUM;
+
+    // Use existing retbuf if there is one.
+    if (origCall->HasRetBufArg())
+    {
+        JITDUMP("Transferring retbuf\n");
+        GenTree* retBufArg = origCall->gtCallArgs->GetNode();
+        assert((info.compRetBuffArg != BAD_VAR_NUM) && retBufArg->OperIsLocal() &&
+               (retBufArg->AsLclVarCommon()->GetLclNum() == info.compRetBuffArg));
+
+        retValArg = retBufArg;
+        if (origCall->gtType != TYP_VOID)
+        {
+            retVal = gtClone(retValArg);
+        }
+    }
+    else if (origCall->gtType != TYP_VOID)
+    {
+        JITDUMP("Creating a new temp for the return value\n");
+        newRetLcl = lvaGrabTemp(false DEBUGARG("Return value for tail call dispatcher"));
+        if (varTypeIsStruct(origCall->gtType))
+        {
+            lvaSetStruct(newRetLcl, origCall->gtRetClsHnd, false);
+        }
+        else
+        {
+            // Since we pass a reference to the return value to the dispatcher
+            // we need to use the real return type so we can normalize it on
+            // load when we return it.
+            lvaTable[newRetLcl].lvType = (var_types)origCall->gtReturnType;
+        }
+
+        lvaSetVarAddrExposed(newRetLcl);
+
+        retValArg =
+            gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
+        retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
+
+        if (varTypeIsStruct(origCall->gtType))
+        {
+            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd);
+        }
     }
     else
     {
-        return call;
+        JITDUMP("No return value so using null pointer as arg\n");
+        retValArg = gtNewZeroConNode(TYP_I_IMPL);
     }
+
+    callDispatcherNode->gtCallArgs = gtPrependNewCallArg(retValArg, callDispatcherNode->gtCallArgs);
+
+    // Add callTarget
+    callDispatcherNode->gtCallArgs =
+        gtPrependNewCallArg(new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, callTargetStubHnd),
+                            callDispatcherNode->gtCallArgs);
+
+    // Add the caller's return address slot.
+    if (lvaRetAddrVar == BAD_VAR_NUM)
+    {
+        lvaRetAddrVar                  = lvaGrabTemp(false DEBUGARG("Return address"));
+        lvaTable[lvaRetAddrVar].lvType = TYP_I_IMPL;
+        lvaSetVarAddrExposed(lvaRetAddrVar);
+    }
+
+    GenTree* retAddrSlot           = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
+    callDispatcherNode->gtCallArgs = gtPrependNewCallArg(retAddrSlot, callDispatcherNode->gtCallArgs);
+
+    if (origCall->gtType == TYP_VOID)
+    {
+        return callDispatcherNode;
+    }
+
+    assert(retVal != nullptr);
+    GenTree* comma = gtNewOperNode(GT_COMMA, origCall->TypeGet(), callDispatcherNode, retVal);
+    // The JIT seems to want to CSE this comma and messes up multi-reg ret
+    // values in the process. Just avoid CSE'ing this tree entirely in that
+    // case.
+    if (origCall->HasMultiRegRetVal())
+    {
+        comma->gtFlags |= GTF_DONT_CSE;
+    }
+
+    return comma;
+}
+
+//------------------------------------------------------------------------
+// getMethodPointerTree: get a method pointer tree
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pCallInfo - the call info of the call
+//
+// Return Value:
+//    A node representing the method pointer
+//
+GenTree* Compiler::getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+{
+    switch (pCallInfo->kind)
+    {
+        case CORINFO_CALL:
+            return new (this, GT_FTN_ADDR) GenTreeFptrVal(TYP_I_IMPL, pCallInfo->hMethod);
+        case CORINFO_CALL_CODE_POINTER:
+            return getLookupTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+        default:
+            noway_assert(!"unknown call kind");
+            return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------
+// getLookupTree: get a lookup tree
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pLookup - the lookup to get the tree for
+//    handleFlags - flags to set on the result node
+//    compileTimeHandle - compile-time handle corresponding to the lookup
+//
+// Return Value:
+//    A node representing the lookup tree
+//
+GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                 CORINFO_LOOKUP*         pLookup,
+                                 unsigned                handleFlags,
+                                 void*                   compileTimeHandle)
+{
+    if (!pLookup->lookupKind.needsRuntimeLookup)
+    {
+        // No runtime lookup is required.
+        // Access is direct or memory-indirect (of a fixed address) reference
+
+        CORINFO_GENERIC_HANDLE handle       = nullptr;
+        void*                  pIndirection = nullptr;
+        assert(pLookup->constLookup.accessType != IAT_PPVALUE && pLookup->constLookup.accessType != IAT_RELPVALUE);
+
+        if (pLookup->constLookup.accessType == IAT_VALUE)
+        {
+            handle = pLookup->constLookup.handle;
+        }
+        else if (pLookup->constLookup.accessType == IAT_PVALUE)
+        {
+            pIndirection = pLookup->constLookup.addr;
+        }
+
+        return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+    }
+
+    return getRuntimeLookupTree(pResolvedToken, pLookup, compileTimeHandle);
+}
+
+//------------------------------------------------------------------------
+// getRuntimeLookupTree: get a tree for a runtime lookup
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pLookup - the lookup to get the tree for
+//    compileTimeHandle - compile-time handle corresponding to the lookup
+//
+// Return Value:
+//    A node representing the runtime lookup tree
+//
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                        CORINFO_LOOKUP*         pLookup,
+                                        void*                   compileTimeHandle)
+{
+    assert(!compIsForInlining());
+
+    CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
+
+    // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
+    // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
+    if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || pRuntimeLookup->testForNull ||
+        pRuntimeLookup->testForFixup)
+    {
+        // If the first condition is true, runtime lookup tree is available only via the run-time helper function.
+        // TODO-CQ If the second or third condition is true, we are always using the slow path since we can't
+        // introduce control flow at this point. See impRuntimeLookupToTree for the logic to avoid calling the helper.
+        // The long-term solution is to introduce a new node representing a runtime lookup, create instances
+        // of that node both in the importer and here, and expand the node in lower (introducing control flow if
+        // necessary).
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
+                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
+                                                compileTimeHandle);
+    }
+
+    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+
+    ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
+
+    auto cloneTree = [&](GenTree** tree DEBUGARG(const char* reason)) {
+        if (!((*tree)->gtFlags & GTF_GLOB_EFFECT))
+        {
+            GenTree* clone = gtClone(*tree, true);
+
+            if (clone)
+            {
+                return clone;
+            }
+        }
+
+        unsigned temp = lvaGrabTemp(true DEBUGARG(reason));
+        stmts.Push(gtNewTempAssign(temp, *tree));
+        *tree = gtNewLclvNode(temp, lvaGetActualType(temp));
+        return gtNewLclvNode(temp, lvaGetActualType(temp));
+    };
+
+    // Apply repeated indirections
+    for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
+    {
+        GenTree* preInd = nullptr;
+        if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
+        {
+            preInd = cloneTree(&result DEBUGARG("getRuntimeLookupTree indirectOffset"));
+        }
+
+        if (i != 0)
+        {
+            result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
+            result->gtFlags |= GTF_IND_NONFAULTING;
+            result->gtFlags |= GTF_IND_INVARIANT;
+        }
+
+        if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
+        {
+            result = gtNewOperNode(GT_ADD, TYP_I_IMPL, preInd, result);
+        }
+
+        if (pRuntimeLookup->offsets[i] != 0)
+        {
+            result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
+        }
+    }
+
+    assert(!pRuntimeLookup->testForNull);
+    if (pRuntimeLookup->indirections > 0)
+    {
+        assert(!pRuntimeLookup->testForFixup);
+        result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
+        result->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
+    // Produces GT_COMMA(stmt1, GT_COMMA(stmt2, ... GT_COMMA(stmtN, result)))
+
+    while (!stmts.Empty())
+    {
+        result = gtNewOperNode(GT_COMMA, TYP_I_IMPL, stmts.Pop(), result);
+    }
+
+    DISPTREE(result);
+    return result;
+}
+
+//------------------------------------------------------------------------
+// getVirtMethodPointerTree: get a tree for a virtual method pointer
+//
+// Arguments:
+//    thisPtr - tree representing `this` pointer
+//    pResolvedToken - pointer to the resolved token of the method
+//    pCallInfo - pointer to call info
+//
+// Return Value:
+//    A node representing the virtual method pointer
+
+GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
+                                            CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                            CORINFO_CALL_INFO*      pCallInfo)
+{
+    GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
+    GenTree* exactMethodDesc = getTokenHandleTree(pResolvedToken, false);
+
+    GenTreeCall::Use* helpArgs = gtNewCallArgs(thisPtr, exactTypeDesc, exactMethodDesc);
+    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, helpArgs);
+}
+
+//------------------------------------------------------------------------
+// getTokenHandleTree: get a handle tree for a token
+//
+// Arguments:
+//    pResolvedToken - token to get a handle for
+//    parent - whether parent should be imported
+//
+// Return Value:
+//    A node representing the virtual method pointer
+
+GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
+{
+    CORINFO_GENERICHANDLE_RESULT embedInfo;
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent ? TRUE : FALSE, &embedInfo);
+
+    GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
+                                    embedInfo.compileTimeHandle);
+
+    // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
+    if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
+    {
+        result = gtNewRuntimeLookup(embedInfo.compileTimeHandle, embedInfo.handleType, result);
+    }
+
+    return result;
 }
 
 /*****************************************************************************
  *
- *  Transform the given GT_CALL tree for tail call code generation.
+ *  Transform the given GT_CALL tree for tail call via JIT helper.
  */
-void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
+void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 {
-#if defined(TARGET_UNIX)
-    noway_assert(!"Slow tail calls not supported on non-Windows platforms.");
-#endif
-
-    JITDUMP("fgMorphTailCallViaHelper (before):\n");
+    JITDUMP("fgMorphTailCallViaJitHelper (before):\n");
     DISPTREE(call);
 
     // The runtime requires that we perform a null check on the `this` argument before
@@ -7575,194 +8172,10 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
     if (call->IsVirtualStub())
     {
         call->gtFlags |= GTF_CALL_NULLCHECK;
-
-#if defined(TARGET_AMD64)
-        // If we already inited arg info here then we will have added the VSD
-        // arg on AMD64. So we remove it here as we will handle this case
-        // specially below.
-        fgArgInfo* argInfo = call->fgArgInfo;
-        assert(argInfo != nullptr);
-
-        GenTreeCall::Use* vsdArg = nullptr;
-
-        for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
-        {
-            fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
-            if (arg->isNonStandard)
-            {
-                // The only supported nonstandard arg for slow tailcalls is
-                // VSD arg.
-                assert(vsdArg == nullptr);
-                vsdArg = arg->use;
-#ifndef DEBUG
-                break;
-#endif
-            }
-        }
-
-        assert(vsdArg != nullptr);
-        // Find the arg in the linked list keeping track of the pointer to it so
-        // we can unlink it.
-        GenTreeCall::Use** ptr = &call->gtCallArgs;
-        while ((*ptr) != vsdArg)
-        {
-            ptr = &(*ptr)->NextRef();
-        }
-
-        *ptr = vsdArg->GetNext();
-#endif
     }
-
-#if defined(TARGET_ARM)
-    // For the helper-assisted tail calls, we need to push all the arguments
-    // into a single list, and then add a few extra at the beginning
-
-    // Check for PInvoke call types that we don't handle in codegen yet.
-    assert(!call->IsUnmanaged());
-    assert(call->IsVirtual() || (call->gtCallType != CT_INDIRECT) || (call->gtCallCookie == NULL));
-
-    // First move the this pointer (if any) onto the regular arg list
-    GenTree* thisPtr = NULL;
-    if (call->gtCallThisArg != nullptr)
-    {
-        GenTree* objp       = call->gtCallThisArg->GetNode();
-        call->gtCallThisArg = nullptr;
-
-        if ((call->gtFlags & GTF_CALL_NULLCHECK) || call->IsVirtualVtable())
-        {
-            thisPtr      = gtClone(objp, true);
-            var_types vt = objp->TypeGet();
-            if (thisPtr == NULL)
-            {
-                // Too complex, so use a temp
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
-                GenTree* asg    = gtNewTempAssign(lclNum, objp);
-                if (!call->IsVirtualVtable())
-                {
-                    // Add an indirection to get the nullcheck
-                    GenTree* tmp       = gtNewLclvNode(lclNum, vt);
-                    GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
-                    asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
-                }
-                objp    = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
-                thisPtr = gtNewLclvNode(lclNum, vt);
-            }
-            else if (!call->IsVirtualVtable())
-            {
-                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
-                objp               = gtNewOperNode(GT_COMMA, vt, nullcheck, objp);
-                thisPtr            = gtClone(thisPtr, true);
-            }
-
-            call->gtFlags &= ~GTF_CALL_NULLCHECK;
-        }
-
-        call->gtCallArgs = gtPrependNewCallArg(objp, call->gtCallArgs);
-    }
-
-    // Add the extra VSD parameter if needed
-    if (call->IsVirtualStub())
-    {
-        GenTree* stubAddrArg = fgGetStubAddrArg(call);
-
-        // We don't need this arg to be in the normal stub register, so
-        // clear out the register assignment.
-        assert(stubAddrArg->GetRegNum() == virtualStubParamInfo->GetReg());
-        stubAddrArg->SetRegNum(REG_NA);
-
-        // And push the stub address onto the list of arguments
-        call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
-    }
-    else if (call->IsVirtualVtable())
-    {
-        noway_assert(thisPtr != NULL);
-
-        GenTree* add  = gtNewOperNode(GT_ADD, TYP_I_IMPL, thisPtr, gtNewIconNode(VPTR_OFFS, TYP_I_IMPL));
-        GenTree* vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-        vtbl->gtFlags |= GTF_EXCEPT;
-
-        unsigned vtabOffsOfIndirection;
-        unsigned vtabOffsAfterIndirection;
-        bool     isRelative;
-        info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection, &vtabOffsAfterIndirection,
-                                                &isRelative);
-
-        /* Get the appropriate vtable chunk */
-
-        if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
-        {
-            add = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, gtNewIconNode(vtabOffsOfIndirection, TYP_I_IMPL));
-
-            GenTree* indOffTree = nullptr;
-
-            if (isRelative)
-            {
-                indOffTree = impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                          nullptr DEBUGARG("virtual table call"));
-            }
-
-            vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-
-            if (isRelative)
-            {
-                vtbl = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, indOffTree);
-            }
-        }
-
-        /* Now the appropriate vtable slot */
-
-        add = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, gtNewIconNode(vtabOffsAfterIndirection, TYP_I_IMPL));
-
-        GenTree* indOffTree = nullptr;
-
-        if (isRelative)
-        {
-            indOffTree = impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("virtual table call 2"));
-        }
-
-        vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-
-        if (isRelative)
-        {
-            vtbl = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, indOffTree);
-        }
-
-        // Switch this to a plain indirect call
-        call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
-        assert(!call->IsVirtual());
-        call->gtCallType = CT_INDIRECT;
-
-        call->gtCallAddr   = vtbl;
-        call->gtCallCookie = NULL;
-        call->gtFlags |= GTF_EXCEPT;
-    }
-
-    // Now inject a placeholder for the real call target that codegen will generate
-    GenTree* arg     = gtNewIconNode(0, TYP_I_IMPL);
-    call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-
-    // Lastly inject the pointer for the copy routine
-    noway_assert(pfnCopyArgs != nullptr);
-    arg              = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
-    call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-
-    // It is now a varargs tail call
-    call->gtCallMoreFlags |= GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
-    call->gtFlags &= ~GTF_CALL_POP_ARGS;
-
-#elif defined(TARGET_XARCH)
 
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
-    //
-    // For AMD64, the tailcall helper (JIT_TailCall) is defined as:
-    //
-    //      JIT_TailCall(void* copyRoutine, void* callTarget, <function args>)
-    //
-    // We need to add "copyRoutine" and "callTarget" extra params at the beginning.
-    // But callTarget is determined by the Lower phase. Therefore, we add a placeholder arg
-    // for callTarget here which will be replaced later with callTarget in tail call lowering.
     //
     // For x86, the tailcall helper is defined as:
     //
@@ -7834,7 +8247,6 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
         GenTree* objp       = call->gtCallThisArg->GetNode();
         call->gtCallThisArg = nullptr;
 
-#ifdef TARGET_X86
         if ((call->IsDelegateInvoke() || call->IsVirtualVtable()) && !objp->IsLocal())
         {
             // tmp = "this"
@@ -7848,7 +8260,6 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 
             objp = thisPtr;
         }
-#endif // TARGET_X86
 
         if (call->NeedsNullCheck())
         {
@@ -7895,36 +8306,6 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
         call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
     }
 
-#if defined(TARGET_AMD64)
-
-    // Add the extra VSD parameter to arg list in case of VSD calls.
-    // Tail call arg copying thunk will move this extra VSD parameter
-    // to R11 before tail calling VSD stub. See CreateTailCallCopyArgsThunk()
-    // in Stublinkerx86.cpp for more details.
-    if (call->IsVirtualStub())
-    {
-        GenTree* stubAddrArg = fgGetStubAddrArg(call);
-
-        // We don't need this arg to be in the normal stub register, so
-        // clear out the register assignment.
-        assert(stubAddrArg->GetRegNum() == virtualStubParamInfo->GetReg());
-        stubAddrArg->SetRegNum(REG_NA);
-
-        // And push the stub address onto the list of arguments
-        call->gtCallArgs = gtPrependNewCallArg(stubAddrArg, call->gtCallArgs);
-    }
-
-    // Now inject a placeholder for the real call target that Lower phase will generate.
-    GenTree* arg     = gtNewIconNode(0, TYP_I_IMPL);
-    call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-
-    // Inject the pointer for the copy routine to be used for struct copying
-    noway_assert(pfnCopyArgs != nullptr);
-    arg              = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
-    call->gtCallArgs = gtPrependNewCallArg(arg, call->gtCallArgs);
-
-#else // !TARGET_AMD64
-
     // Find the end of the argument list. ppArg will point at the last pointer; setting *ppArg will
     // append to the list.
     GenTreeCall::Use** ppArg = &call->gtCallArgs;
@@ -7958,20 +8339,14 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
     GenTree* arg0 = gtNewIconNode(7, TYP_I_IMPL);
     *ppArg        = gtNewCallArgs(arg0);
 
-#endif // !TARGET_AMD64
-
-    // It is now a varargs tail call dispatched via helper.
-    call->gtCallMoreFlags |= GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
+    // It is now a varargs tail call.
+    call->gtCallMoreFlags |= GTF_CALL_M_VARARGS;
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
-
-#elif defined(TARGET_ARM64)
-    NYI_ARM64("Tail calls via stub are unsupported on this platform.");
-#endif // TARGET_ARM64
 
     // The function is responsible for doing explicit null check when it is necessary.
     assert(!call->NeedsNullCheck());
 
-    JITDUMP("fgMorphTailCallViaHelper (after):\n");
+    JITDUMP("fgMorphTailCallViaJitHelper (after):\n");
     DISPTREE(call);
 }
 
@@ -15521,49 +15896,42 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
         // Has fgMorphStmt been sneakily changed ?
 
-        if (stmt->GetRootNode() != oldTree)
+        if ((stmt->GetRootNode() != oldTree) || (block != compCurBB))
         {
-            /* This must be tailcall. Ignore 'morphedTree' and carry on with
-               the tail-call node */
+            if (stmt->GetRootNode() != oldTree)
+            {
+                /* This must be tailcall. Ignore 'morphedTree' and carry on with
+                the tail-call node */
 
-            morphedTree = stmt->GetRootNode();
-            noway_assert(compTailCallUsed);
-            noway_assert((morphedTree->gtOper == GT_CALL) && morphedTree->AsCall()->IsTailCall());
-            noway_assert(stmt->GetNextStmt() == nullptr);
-
-            GenTreeCall* call = morphedTree->AsCall();
-            // Could either be
-            //   - a tail call dispatched via helper in which case block will be ending with BBJ_THROW or
-            //   - a fast call made as jmp in which case block will be ending with BBJ_RETURN and marked as containing
-            //     a jmp.
-            noway_assert((call->IsTailCallViaHelper() && (compCurBB->bbJumpKind == BBJ_THROW)) ||
-                         (call->IsFastTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN) &&
-                          (compCurBB->bbFlags & BBF_HAS_JMP)));
-        }
-        else if ((block != compCurBB) && ((oldTree->gtOper == GT_CALL) && oldTree->AsCall()->IsTailCall()))
-        {
-            /* This must be a tail call that caused a GCPoll to get
-               injected.  We haven't actually morphed the call yet
-               but the flag still got set, clear it here...  */
-            CLANG_FORMAT_COMMENT_ANCHOR;
+                morphedTree = stmt->GetRootNode();
+            }
+            else
+            {
+                /* This must be a tailcall that caused a GCPoll to get
+                injected. We haven't actually morphed the call yet
+                but the flag still got set, clear it here...  */
+                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
-            oldTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+                morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
 #endif
+            }
 
             noway_assert(compTailCallUsed);
-            noway_assert((oldTree->gtOper == GT_CALL) && oldTree->AsCall()->IsTailCall());
-            noway_assert(stmt->GetNextStmt() == nullptr);
-
+            noway_assert(morphedTree->gtOper == GT_CALL);
             GenTreeCall* call = morphedTree->AsCall();
-
-            // Could either be
-            //   - a tail call dispatched via helper in which case block will be ending with BBJ_THROW or
-            //   - a fast call made as jmp in which case block will be ending with BBJ_RETURN and marked as containing
-            //     a jmp.
-            noway_assert((call->IsTailCallViaHelper() && (compCurBB->bbJumpKind == BBJ_THROW)) ||
-                         (call->IsFastTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN) &&
-                          (compCurBB->bbFlags & BBF_HAS_JMP)));
+            // Could be
+            //   - a fast call made as jmp in which case block will be ending with
+            //   BBJ_RETURN (as we need epilog) and marked as containing a jmp.
+            //   - a tailcall dispatched via JIT helper, on x86, in which case
+            //   block will be ending with BBJ_THROW.
+            //   - a tail call dispatched via runtime help (IL stubs), in which
+            //   case there will not be any tailcall and the block will be ending
+            //   with BBJ_RETURN (as normal control flow)
+            noway_assert((call->IsFastTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN) &&
+                          ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
+                         (call->IsTailCallViaJitHelper() && (compCurBB->bbJumpKind == BBJ_THROW)) ||
+                         (!call->IsTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN)));
         }
 
 #ifdef DEBUG
@@ -15919,10 +16287,6 @@ void Compiler::fgSetOptions()
     }
 
     /* Assume we won't need an explicit stack frame if this is allowed */
-
-    // CORINFO_HELP_TAILCALL won't work with localloc because of the restoring of
-    // the callee-saved registers.
-    noway_assert(!compTailCallUsed || !compLocallocUsed);
 
     if (compLocallocUsed)
     {
@@ -17886,6 +18250,27 @@ bool Compiler::fgCheckStmtAfterTailCall()
         }
     }
     return nextMorphStmt == nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgCanTailCallViaJitHelper: check whether we can use the faster tailcall
+// JIT helper on x86.
+//
+// Return Value:
+//    'true' if we can; or 'false' if we should use the generic tailcall mechanism.
+//
+bool Compiler::fgCanTailCallViaJitHelper()
+{
+#ifndef TARGET_X86
+    // On anything except X86 we have no faster mechanism available.
+    return false;
+#else
+    // The JIT helper does not properly handle the case where localloc was used.
+    if (compLocallocUsed)
+        return false;
+
+    return true;
+#endif
 }
 
 static const int      numberOfTrackedFlags               = 5;

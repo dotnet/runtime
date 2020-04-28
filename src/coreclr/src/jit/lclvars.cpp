@@ -72,6 +72,7 @@ void Compiler::lvaInit()
     lvaStubArgumentVar  = BAD_VAR_NUM;
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
+    lvaRetAddrVar       = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
@@ -4994,6 +4995,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 
 #endif // FEATURE_FIXED_OUT_ARGS
+
+#ifdef TARGET_ARM64
+    // We normally add alignment below the locals between them and the outgoing
+    // arg space area. When we store fp/lr at the bottom, however, this will be
+    // below the alignment. So we should not apply the alignment adjustment to
+    // them. On ARM64 it turns out we always store these at +0 and +8 of the FP,
+    // so instead of dealing with skipping adjustment just for them we just set
+    // them here always.
+    assert(codeGen->isFramePointerUsed());
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = REGSIZE_BYTES;
+    }
+#endif
 }
 
 #ifdef TARGET_ARM
@@ -5709,6 +5724,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_XARCH
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs;
+    }
 
     // If we are an OSR method, we "inherit" the frame of the original method,
     // and the stack is already double aligned on entry (since the return adddress push
@@ -5769,7 +5788,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#else  // !TARGET_ARM64
+#else // !TARGET_ARM64
+#ifdef TARGET_ARM
+    // On ARM32 LR is part of the pushed registers and is always stored at the
+    // top.
+    if (lvaRetAddrVar != BAD_VAR_NUM)
+    {
+        lvaTable[lvaRetAddrVar].lvStkOffs = stkOffs - REGSIZE_BYTES;
+    }
+#endif
+
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 #endif // !TARGET_ARM64
 
@@ -6130,7 +6158,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
-                false)
+                lclNum == lvaRetAddrVar)
             {
                 assert(varDsc->lvStkOffs != BAD_STK_OFFS);
                 continue;

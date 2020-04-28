@@ -883,6 +883,12 @@ void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
 // return a thunk that will copy the arguments for the given signature.
 void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
 
+bool getTailCallHelpers(
+    CORINFO_RESOLVED_TOKEN* callToken,
+    CORINFO_SIG_INFO* sig,
+    CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+    CORINFO_TAILCALL_HELPERS* pResult);
+
 bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert);
 
 // get a block of memory for the code, readonly data, and read-write data

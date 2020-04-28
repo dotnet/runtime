@@ -441,6 +441,20 @@ public:
         Agnostic_CORINFO_SIG_INFO Sig;
         DWORD                     flags;
     };
+    struct Agnostic_GetTailCallHelpers
+    {
+        Agnostic_CORINFO_RESOLVED_TOKEN callToken;
+        Agnostic_CORINFO_SIG_INFO sig;
+        DWORD flags;
+    };
+    struct Agnostic_CORINFO_TAILCALL_HELPERS
+    {
+        bool result;
+        DWORD flags;
+        DWORDLONG hStoreArgs;
+        DWORDLONG hCallTarget;
+        DWORDLONG hDispatcher;
+    };
     struct Agnostic_GetArgClass_Value
     {
         DWORDLONG result;
@@ -1259,6 +1273,18 @@ public:
     void dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value);
     void* repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
 
+    void recGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
+    void dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value);
+    bool repGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
+
     void recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result);
     void dmpGetMethodDefFromMethod(DWORDLONG key, DWORD value);
     mdMethodDef repGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
@@ -1320,7 +1346,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 177
+// Highest packet number: 178
 // *************************************************************************************
 enum mcPackets
 {
@@ -1439,6 +1465,7 @@ enum mcPackets
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
     Packet_GetTailCallCopyArgsThunk                      = 87,
+    Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
