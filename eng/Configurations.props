@@ -37,7 +37,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier.ToString().ToLowerInvariant)</RuntimeRID>
+    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</RuntimeRID>
     <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</RuntimeRID>
     <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(RuntimeRID)' != ''">$(RuntimeRID.Remove($(RuntimeRID.LastIndexOf('-'))))</RuntimeOS>
 
