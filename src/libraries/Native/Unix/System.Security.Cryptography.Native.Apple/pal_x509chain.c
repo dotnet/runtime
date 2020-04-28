@@ -183,7 +183,8 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // 10.15 introduced new status code value which is not reported by Windows. Ignoring for now.
     }
     else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
-             CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")))
+             CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")) ||
+             CFEqual(keyString, CFSTR("WeakSignature")))
     {
         // Because we won't report this out of a chain built by .NET on Windows,
         // don't report it here.
