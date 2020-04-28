@@ -1205,7 +1205,7 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
         [Fact]
         public static void BuildChainForCertificateWithMD5Signature()
         {
-            byte[] rootCert = Convert.FromBase64String(@"
+            byte[] issuerCert = Convert.FromBase64String(@"
 MIIDgzCCAmsCFGTFpNWP/ick4s4VCF1MafVWpWr+MA0GCSqGSIb3DQEBCwUAMH0x
 CzAJBgNVBAYTAlVTMR0wGwYDVQQIDBREaXN0cmljdCBvZiBDb2x1bWJpYTETMBEG
 A1UEBwwKV2FzaGluZ3RvbjEQMA4GA1UECgwHVGVzdCBDQTEUMBIGA1UECwwLRGV2
@@ -1252,15 +1252,14 @@ ueIjvYVDoXZMqRa7vZjaMA+8szK9lgm2dzSfa3xFKCIT7Twfq6FKGJ7o4TRbopmr
 lHBlkA0wrbydD3FzxYHUJgx0HGO6CcyAzXJLhZVbuBW4expq4Qhi0jDV4d8Otskv
 LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
 
-            using (X509Certificate2 root = new X509Certificate2(rootCert))
+            using (X509Certificate2 issuer = new X509Certificate2(issuerCert))
             using (X509Certificate2 cert = new X509Certificate2(md5SignedLeafCert))
             using (ChainHolder chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
-                chain.ChainPolicy.CustomTrustStore.Add(root);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.ExtraStore.Add(issuer);
 
                 // Should not throw, don't care about the validity of the chain.
                 chain.Build(cert);
