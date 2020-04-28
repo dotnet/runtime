@@ -124,6 +124,77 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void SkipToParent_SimpleArray_HappyPath(int skipOffset)
+        {
+            byte[] encoding = "83010203".HexToByteArray(); // [1, 2, 3]
+            var reader = new CborReader(encoding);
+
+            reader.ReadStartArray();
+            for (int i = 0; i < skipOffset; i++)
+            {
+                reader.ReadInt32();
+            }
+
+            reader.SkipToParent();
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void SkipToParent_NestedArray_HappyPath(int skipOffset)
+        {
+            byte[] encoding = "8283010203a0".HexToByteArray(); // [[1, 2, 3], { }]
+            var reader = new CborReader(encoding);
+
+            reader.ReadStartArray();
+            reader.ReadStartArray();
+            for (int i = 0; i < skipOffset; i++)
+            {
+                reader.ReadInt32();
+            }
+
+            reader.SkipToParent();
+            Assert.Equal(CborReaderState.StartMap, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void SkipToParent_NestedKey_HappyPath(int skipOffset)
+        {
+            byte[] encoding = "a17f616161626163ff80".HexToByteArray(); // { (_ "a", "b", "c") : [] }
+            var reader = new CborReader(encoding);
+
+            reader.ReadStartMap();
+            reader.ReadStartTextStringIndefiniteLength();
+            for (int i = 0; i < skipOffset; i++)
+            {
+                reader.ReadTextString();
+            }
+
+            reader.SkipToParent();
+            Assert.Equal(CborReaderState.StartArray, reader.PeekState());
+        }
+
+        [Fact]
+        public static void SkipToParent_RootContext_ShouldThrowInvalidOperationException()
+        {
+            byte[] encoding = "01".HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<InvalidOperationException>(() => reader.SkipToParent());
+            reader.ReadInt32();
+            Assert.Throws<InvalidOperationException>(() => reader.SkipToParent());
+        }
+
+        [Theory]
         [InlineData(50_000)]
         public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow(int depth)
         {
