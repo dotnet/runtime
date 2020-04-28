@@ -443,14 +443,6 @@ class StubLinkerCPU : public StubLinker
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
 
-#ifdef TARGET_AMD64
-
-        static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                                  MethodDesc* pMD,
-                                                  CorInfoHelperTailCallSpecialHandling flags);
-
-#endif // TARGET_AMD64
-
     private:
         VOID X86EmitSubEspWorker(INT32 imm32);
 

@@ -924,9 +924,6 @@ public:
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
                        void **            ppIndirection);         /* OUT */
 
-    void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
-                                   CorInfoHelperTailCallSpecialHandling flags);
-
     bool getTailCallHelpersInternal(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,
@@ -1613,22 +1610,6 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
-
-// Helper for RtlVirtualUnwind-based tail calls
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-// The Stub-linker generated assembly routine to copy arguments from the va_list
-// into the CONTEXT and the stack.
-//
-typedef size_t (*pfnCopyArgs)(va_list, _CONTEXT *, DWORD_PTR *, size_t);
-
-// Forward declaration from Frames.h
-class TailCallFrame;
-
-// The shared stub return location
-EXTERN_C void JIT_TailCallHelperStub_ReturnAddress();
-
-#endif // TARGET_AMD64 || TARGET_ARM
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 

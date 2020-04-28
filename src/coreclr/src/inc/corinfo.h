@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 108808e4-71b3-4573-8371-323323c4fb80 */
-    0x108808e4,
-    0x71b3,
-    0x4573,
-    {0x83, 0x71, 0x32, 0x33, 0x23, 0xc4, 0xfb, 0x80}
+SELECTANY const GUID JITEEVersionIdentifier = { /* bb6ea6c3-ce5a-4543-86b7-c9c88f9ec780 */
+    0xbb6ea6c3,
+    0xce5a,
+    0x4543,
+    { 0x86, 0xb7, 0xc9, 0xc8, 0x8f, 0x9e, 0xc7, 0x80 }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1074,15 +1074,6 @@ enum CorInfoIndirectCallReason
 
     CORINFO_INDIRECT_CALL_COUNT
 };
-
-// When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-// calling convention/argument passing/handling details to the helper
-enum CorInfoHelperTailCallSpecialHandling
-{
-    CORINFO_TAILCALL_NORMAL =               0x00000000,
-    CORINFO_TAILCALL_STUB_DISPATCH_ARG =    0x00000001,
-};
-
 
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
@@ -3139,12 +3130,6 @@ public:
     virtual void MethodCompileComplete(
                 CORINFO_METHOD_HANDLE methHnd
                 ) = 0;
-
-    // return a thunk that will copy the arguments for the given signature.
-    virtual void* getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags
-                    ) = 0;
 
     // Obtain tailcall help for the specified call site.
     virtual bool getTailCallHelpers(
