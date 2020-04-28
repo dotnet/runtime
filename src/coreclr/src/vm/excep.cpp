@@ -2811,7 +2811,6 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
 {
     STATIC_CONTRACT_THROWS;
@@ -3273,38 +3272,30 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 
         case STATUS_ACCESS_VIOLATION:
             {
-                // We have a config key, InsecurelyTreatAVsAsNullReference, that ensures we always translate to
-                // NullReferenceException instead of doing the new AV translation logic.
-                if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy())
-                {
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                    // If we got the exception on a redirect function it means the original exception happened in managed code:
-                    if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
-                        return (DWORD) kNullReferenceException;
+                // If we got the exception on a redirect function it means the original exception happened in managed code:
+                if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
+                    return (DWORD) kNullReferenceException;
 
-                    if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
-                    {
-                        return (DWORD) kNullReferenceException;
-                    }
+                if (pExceptionRecord->ExceptionAddress == (LPVOID)GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION))
+                {
+                    return (DWORD) kNullReferenceException;
+                }
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
-                    // If the IP of the AV is not in managed code, then its an AccessViolationException.
-                    if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
-
-                    // If the address accessed is above 64k (Windows) or page size (PAL), then its an AccessViolationException.
-                    // Note: Win9x is a little different... it never gives you the proper address of the read or write that caused
-                    // the fault. It always gives -1, so we can't use it as part of the decision... just give
-                    // NullReferenceException instead.
-                    if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
-                    {
-                        return (DWORD) kAccessViolationException;
-                    }
+                // If the IP of the AV is not in managed code, then its an AccessViolationException.
+                if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
+                {
+                    return (DWORD) kAccessViolationException;
                 }
 
-            return (DWORD) kNullReferenceException;
+                // If the address accessed is above 64k (Windows) or page size (Unix), then its an AccessViolationException.
+                if (pExceptionRecord->ExceptionInformation[1] >= NULL_AREA_SIZE)
+                {
+                    return (DWORD) kAccessViolationException;
+                }
+
+                return (DWORD) kNullReferenceException;
             }
 
         case STATUS_ARRAY_BOUNDS_EXCEEDED:
@@ -4032,9 +4023,12 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 GCX_PREEMP();
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
+#ifdef HOST_WINDOWS
+                CreateCrashDumpIfEnabled();
+#endif
                 RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
-                                        0);
+                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                                       0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
         }
@@ -4216,6 +4210,161 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
     UNREACHABLE();
 } // LONG WatsonLastChance()
 
+//===========================================================================================
+//
+// Windows crash dump (createdump) support
+//
+
+#ifdef HOST_WINDOWS
+
+// Crash dump generating program arguments if enabled.
+LPCWSTR g_createDumpCommandLine = nullptr;
+
+static void 
+BuildCreateDumpCommandLine(
+    SString& commandLine,
+    LPCWSTR dumpName,
+    int dumpType,
+    bool diag)
+{
+    const char* DumpGeneratorName = "createdump.exe";
+
+    PathString coreclrPath;
+    if (WszGetModuleFileName(GetCLRModule(), coreclrPath))
+    {
+        SString::CIterator lastBackslash = coreclrPath.End();
+        if (coreclrPath.FindBack(lastBackslash, W('\\')))
+        {
+            commandLine.Set(coreclrPath, coreclrPath.Begin(), lastBackslash + 1);
+        }
+    }
+
+    commandLine.AppendPrintf("%s %d", DumpGeneratorName, GetCurrentProcessId());
+
+    if (dumpName != nullptr)
+    {
+        commandLine.AppendPrintf(" --name %S", dumpName);
+    }
+
+    const char* dumpTypeOption = nullptr;
+    switch (dumpType)
+    {
+        case 1:
+            dumpTypeOption = "--normal";
+            break;
+        case 2:
+            dumpTypeOption = "--withheap";
+            break;
+        case 3:
+            dumpTypeOption = "--triage";
+            break;
+        case 4:
+            dumpTypeOption = "--full";
+            break;
+    }
+
+    if (dumpTypeOption != nullptr)
+    {
+        commandLine.AppendPrintf(" %s", dumpTypeOption);
+    }
+
+    if (diag)
+    {
+        commandLine.AppendPrintf(" --diag");
+    }
+}
+
+static bool
+LaunchCreateDump(LPCWSTR lpCommandLine)
+{
+    bool fSuccess = false;
+
+    EX_TRY
+    {
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(sa);
+        sa.lpSecurityDescriptor = NULL;
+        sa.bInheritHandle = FALSE;
+
+        STARTUPINFO StartupInfo;
+        memset(&StartupInfo, 0, sizeof(StartupInfo));
+        StartupInfo.cb = sizeof(StartupInfo);
+
+        PROCESS_INFORMATION processInformation;
+        if (WszCreateProcess(NULL, lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &processInformation))
+        {
+            WaitForSingleObject(processInformation.hProcess, INFINITE);
+            fSuccess = true;
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return fSuccess;
+}
+
+void
+CreateCrashDumpIfEnabled()
+{
+    // If enabled, launch the create minidump utility and wait until it completes
+    if (g_createDumpCommandLine != nullptr)
+    {
+        LaunchCreateDump(g_createDumpCommandLine);
+    }
+}
+
+bool
+GenerateCrashDump(
+    LPCWSTR dumpName,
+    int dumpType,
+    bool diag)
+{
+    SString commandLine;
+    if (dumpType < 1 || dumpType > 4)
+    {
+        return false;
+    }
+    if (dumpName != nullptr && dumpName[0] == '\0')
+    {
+        dumpName = nullptr;
+    }
+    BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
+    return LaunchCreateDump(commandLine);
+}
+
+void
+InitializeCrashDump()
+{
+    bool enabled = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_DbgEnableMiniDump);
+    if (enabled)
+    {
+        LPCWSTR dumpName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpName);
+        int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
+        bool diag = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_CreateDumpDiagnostics);
+
+        SString commandLine;
+        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
+        g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
+    }
+}
+
+#endif // HOST_WINDOWS
+
+//************************************************************************************
+// Create crash dump if enabled and terminate process. Generates crash dumps for both
+// Windows and Linux if enabled. For Linux, it happens in TerminateProcess in the PAL.
+//************************************************************************************
+
+void CrashDumpAndTerminateProcess(UINT exitCode)
+{
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+    TerminateProcess(GetCurrentProcess(), exitCode);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // This is just a simple helper to do some basic checking to see if an exception is intercepted.
@@ -4342,8 +4491,8 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
                        GetClrInstanceId());
     }
 
-    // Otherwise, we termintate the process.
-    TerminateProcess(GetCurrentProcess(), STATUS_BREAKPOINT);
+    // Otherwise, we terminate the process.
+    CrashDumpAndTerminateProcess(STATUS_BREAKPOINT);
 
     // Shouldn't get here ...
     return EXCEPTION_CONTINUE_EXECUTION;
@@ -4448,12 +4597,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
     if (code == STATUS_SINGLE_STEP || code == STATUS_BREAKPOINT)
     {
         return UserBreakpointFilter(ep);
-    }
-
-    // If host policy or config file says "swallow"...
-    if (SwallowUnhandledExceptions())
-    {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
-        return EXCEPTION_EXECUTE_HANDLER;
     }
 
     // If the exception is of a type that is always swallowed (ThreadAbort, AppDomainUnload)...
@@ -4921,12 +5064,6 @@ lDone: ;
     }
     PAL_ENDTRY;
 
-    //if (param.fIgnore)
-    //{
-        // VC's try/catch ignores breakpoint or single step exceptions.  We can not continue running.
-    //    TerminateProcess(GetCurrentProcess(), pExceptionInfo->ExceptionRecord->ExceptionCode);
-    //}
-
     return param.retval;
 } // LONG InternalUnhandledExceptionFilter_Worker()
 
@@ -4972,6 +5109,10 @@ LONG InternalUnhandledExceptionFilter(
     {   // done.
         return retval;
     }
+
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
 
     BOOL fShouldOurUEFDisplayUI = ShouldOurUEFDisplayUI(pExceptionInfo);
 
@@ -5634,7 +5775,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
 #ifdef _DEBUG
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
-        !(swallowing && (SwallowUnhandledExceptions() || ExceptionIsAlwaysSwallowed(pExceptionInfo))) &&
+        !(swallowing && ExceptionIsAlwaysSwallowed(pExceptionInfo)) &&
         !(location == ClassInitUnhandledException && pThread->IsRudeAbortInitiated()))
         _ASSERTE(!"BreakOnUnCaughtException");
 #endif
@@ -5645,28 +5786,20 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     if (swallowing)
     {
-        // The default handling for versions v1.0 and v1.1 was to swallow unhandled exceptions.
-        //  With v2.0, the default is to let them go unhandled.  Hosts & config files can modify the default
-        //  to retain the v1.1 behaviour.
-        // Should we swallow this exception, or let it continue up and be unhandled?
-        if (!SwallowUnhandledExceptions())
-        {
-            // No, don't swallow unhandled exceptions...
-
-            // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
-            if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
-            {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
-                return EXCEPTION_EXECUTE_HANDLER;
-            }
-
-            #ifdef _DEBUG
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
-                _ASSERTE(!"BreakOnUnCaughtException");
-            #endif
-
-            // ...so, continue search. i.e. let the exception go unhandled.
-            return EXCEPTION_CONTINUE_SEARCH;
+        // No, don't swallow unhandled exceptions...
+        // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
+        if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
+        {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
+            return EXCEPTION_EXECUTE_HANDLER;
         }
+
+        #ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
+            _ASSERTE(!"BreakOnUnCaughtException");
+        #endif
+
+        // ...so, continue search. i.e. let the exception go unhandled.
+        return EXCEPTION_CONTINUE_SEARCH;
     }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -5714,15 +5847,6 @@ LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVO
 {
     return ThreadBaseExceptionFilter_Worker(pExceptionInfo, pvParam, /*swallowing=*/true);
 }
-
-//    This was the filter for new managed threads in v1.0 and v1.1.  Now used
-//     for delegate invoke, various things in the thread pool, and the
-//     class init handler.
-LONG ThreadBaseExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam)
-{
-    return ThreadBaseExceptionFilter_Worker(pExceptionInfo, pvParam, /*swallowing=*/false);
-}
-
 
 //    This is the filter that we install when transitioning an AppDomain at the base of a managed
 //     thread.  Nothing interesting will get swallowed after us.  So we never decide to continue
@@ -11090,23 +11214,14 @@ BOOL CEHelper::IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc)
 // Given a MethodDesc and CorruptionSeverity, this method will return a
 // BOOL indicating if the method can handle those kinds of CEs or not.
 /* static */
-BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity)
 {
     BOOL fCanMethodHandleSeverity = FALSE;
 
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS; // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
-        // First pass requires THROWS and in 2nd we need to be due to the AppX check below where GetFusionAssemblyName can throw.
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11149,20 +11264,11 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
 //
 // This method accounts for both corrupting and non-corrupting exceptions.
 /* static */
-BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo /*= TRUE*/)
+BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc)
 {
     CONTRACTL
     {
-        // CEHelper::CanMethodHandleCE will invoke Security::IsMethodCritical that could endup invoking MethodTable::LoadEnclosingMethodTable that is GC_TRIGGERS/THROWS
-        if (fCalculateSecurityInfo)
-        {
-            GC_TRIGGERS;
-        }
-        else
-        {
-            // See comment in COMPlusUnwindCallback for details.
-            GC_NOTRIGGER;
-        }
+        GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
         PRECONDITION(pMethodDesc != NULL);
@@ -11205,7 +11311,7 @@ BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodD
             LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Exception is corrupting.\n"));
 
             // Check if the method can handle the severity specified in the exception object.
-            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity, fCalculateSecurityInfo);
+            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity);
         }
         else
         {

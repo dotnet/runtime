@@ -663,7 +663,7 @@
       <_MonoAotCrossConfigureParams Include="--enable-hybrid-suspend=no" />
       <_MonoAotCrossConfigureParams Include="--target=wasm32-unknown-none" />
       <_MonoAotCrossConfigureParams Include="--with-cross-offsets=$(MonoObjDir)cross/offsets-wasm32-unknown-none.h" />
-      <!-- FIXME: LLVM -->
+      <_MonoAotCrossConfigureParams Include="--with-llvm=$(MonoLLVMDir)" />
 
       <_MonoAotCrossCFLAGS Include="-O2" />
       <_MonoAotCrossCFLAGS Include="-g" />

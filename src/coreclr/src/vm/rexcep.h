@@ -319,10 +319,10 @@ DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E
 
 #ifdef FEATURE_COMINTEROP
 // Jupiter needs some HRESULTs mapped to exceptions in .NET Framework assemblies other than mscorlib.
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_MarkupNS, XamlParseException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_XAMLPARSEFAILED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotAvailableException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_ELEMENTNOTAVAILABLE)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotEnabledException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_ELEMENTNOTENABLED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_DirectUINS, LayoutCycleException, "System.Runtime.WindowsRuntime.UI.Xaml", ECMA_PUBLICKEY_STR, false, E_LAYOUTCYCLE)
+DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_MarkupNS, XamlParseException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_XAMLPARSEFAILED)
+DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotAvailableException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_ELEMENTNOTAVAILABLE)
+DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotEnabledException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_ELEMENTNOTENABLED)
+DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_DirectUINS, LayoutCycleException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_LAYOUTCYCLE)
 #endif // FEATURE_COMINTEROP
 
 

@@ -91,6 +91,7 @@ CORINFO_SIG_INFO*,,void*
 CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN,void*
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO,void*
+CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS,void*
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*,void*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*,void*
@@ -127,6 +128,7 @@ InfoAccessType,,int
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS,,int
 CORINFO_CALLINFO_FLAGS,,int
+CORINFO_GET_TAILCALL_HELPERS_FLAGS,,int
 CorJitAllocMemFlag,,int
 CorJitFuncKind,,int
 CorJitResult,,int
@@ -313,6 +315,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     void* getTailCallCopyArgsThunk (CORINFO_SIG_INFO       *pSig, CorInfoHelperTailCallSpecialHandling flags);
+    bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );

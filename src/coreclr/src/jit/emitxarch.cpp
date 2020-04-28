@@ -1937,13 +1937,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
         /* Is this a stack parameter reference? */
 
-        if (emitComp->lvaIsParameter(var)
+        if ((emitComp->lvaIsParameter(var)
 #if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
-            && !emitComp->lvaIsRegArgument(var)
+             && !emitComp->lvaIsRegArgument(var)
 #endif // !TARGET_AMD64 || UNIX_AMD64_ABI
-                )
+                 ) ||
+            (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
         {
-            /* If no EBP frame, arguments are off of ESP, above temps */
+            /* If no EBP frame, arguments and ret addr are off of ESP, above temps */
 
             if (!EBPbased)
             {

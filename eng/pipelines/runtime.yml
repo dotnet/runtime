@@ -399,7 +399,6 @@ jobs:
     - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_x64
-    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -512,7 +511,6 @@ jobs:
     - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_x64
-    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -528,6 +526,7 @@ jobs:
     - iOS_arm64
     - OSX_x64
     - Linux_x64
+    - Browser_wasm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -583,6 +582,21 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      testBuildPhase: targetGeneric
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
     - Linux_arm 
     - Windows_NT_x86
     - Windows_NT_arm
@@ -590,6 +604,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
+      testBuildPhase: targetSpecific
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -611,6 +626,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      testBuildPhase: targetSpecific
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -634,6 +650,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
+      testBuildPhased: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -653,6 +670,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      testBuildPhased: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),

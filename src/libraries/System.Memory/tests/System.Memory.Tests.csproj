@@ -15,9 +15,11 @@
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
+             Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
+             Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
@@ -169,9 +171,8 @@
     <Compile Include="ReadOnlySpan\ToArray.cs" />
     <Compile Include="ReadOnlySpan\ToString.cs" />
     <Compile Include="ReadOnlySpan\ToUpperLower.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>ReadOnlySpan\StringTests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
+             Link="ReadOnlySpan\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />
@@ -260,11 +261,9 @@
     <Compile Include="Base64\Base64TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
-      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs">
-      <Link>Common\System\MutableDecimal.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
+             Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\MutableDecimal.cs"
+             Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
 </Project>

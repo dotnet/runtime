@@ -7,15 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs">
-      <Link>Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs">
-      <Link>Common\src\Extensions\Logging\NullExternalScopeProvider.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs">
-      <Link>Common\src\Extensions\Logging\NullScope.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs"
+             Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs"
+             Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
+             Link="Common\src\Extensions\Logging\NullScope.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

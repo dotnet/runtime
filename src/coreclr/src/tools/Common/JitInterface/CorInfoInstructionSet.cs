@@ -396,12 +396,14 @@ namespace Internal.JitInterface
         public struct InstructionSetInfo
         {
             public readonly string Name;
+            public readonly string ManagedName;
             public readonly InstructionSet InstructionSet;
             public readonly bool Specifiable;
 
-            public InstructionSetInfo(string name, InstructionSet instructionSet, bool specifiable)
+            public InstructionSetInfo(string name, string managedName, InstructionSet instructionSet, bool specifiable)
             {
                 Name = name;
+                ManagedName = managedName;
                 InstructionSet = instructionSet;
                 Specifiable = specifiable;
             }
@@ -413,55 +415,55 @@ namespace Internal.JitInterface
             {
 
                 case TargetArchitecture.ARM64:
-                    yield return new InstructionSetInfo("base", InstructionSet.ARM64_ArmBase, true);
-                    yield return new InstructionSetInfo("neon", InstructionSet.ARM64_AdvSimd, true);
-                    yield return new InstructionSetInfo("aes", InstructionSet.ARM64_Aes, true);
-                    yield return new InstructionSetInfo("crc", InstructionSet.ARM64_Crc32, true);
-                    yield return new InstructionSetInfo("sha1", InstructionSet.ARM64_Sha1, true);
-                    yield return new InstructionSetInfo("sha2", InstructionSet.ARM64_Sha256, true);
-                    yield return new InstructionSetInfo("lse", InstructionSet.ARM64_Atomics, true);
-                    yield return new InstructionSetInfo("Vector64", InstructionSet.ARM64_Vector64, false);
-                    yield return new InstructionSetInfo("Vector128", InstructionSet.ARM64_Vector128, false);
+                    yield return new InstructionSetInfo("base", "ArmBase", InstructionSet.ARM64_ArmBase, true);
+                    yield return new InstructionSetInfo("neon", "AdvSimd", InstructionSet.ARM64_AdvSimd, true);
+                    yield return new InstructionSetInfo("aes", "Aes", InstructionSet.ARM64_Aes, true);
+                    yield return new InstructionSetInfo("crc", "Crc32", InstructionSet.ARM64_Crc32, true);
+                    yield return new InstructionSetInfo("sha1", "Sha1", InstructionSet.ARM64_Sha1, true);
+                    yield return new InstructionSetInfo("sha2", "Sha256", InstructionSet.ARM64_Sha256, true);
+                    yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
+                    yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
+                    yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     break;
 
                 case TargetArchitecture.X64:
-                    yield return new InstructionSetInfo("sse", InstructionSet.X64_SSE, true);
-                    yield return new InstructionSetInfo("sse2", InstructionSet.X64_SSE2, true);
-                    yield return new InstructionSetInfo("sse3", InstructionSet.X64_SSE3, true);
-                    yield return new InstructionSetInfo("ssse3", InstructionSet.X64_SSSE3, true);
-                    yield return new InstructionSetInfo("sse4.1", InstructionSet.X64_SSE41, true);
-                    yield return new InstructionSetInfo("sse4.2", InstructionSet.X64_SSE42, true);
-                    yield return new InstructionSetInfo("avx", InstructionSet.X64_AVX, true);
-                    yield return new InstructionSetInfo("avx2", InstructionSet.X64_AVX2, true);
-                    yield return new InstructionSetInfo("aes", InstructionSet.X64_AES, true);
-                    yield return new InstructionSetInfo("bmi", InstructionSet.X64_BMI1, true);
-                    yield return new InstructionSetInfo("bmi2", InstructionSet.X64_BMI2, true);
-                    yield return new InstructionSetInfo("fma", InstructionSet.X64_FMA, true);
-                    yield return new InstructionSetInfo("lzcnt", InstructionSet.X64_LZCNT, true);
-                    yield return new InstructionSetInfo("pclmul", InstructionSet.X64_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("popcnt", InstructionSet.X64_POPCNT, true);
-                    yield return new InstructionSetInfo("Vector128", InstructionSet.X64_Vector128, false);
-                    yield return new InstructionSetInfo("Vector256", InstructionSet.X64_Vector256, false);
+                    yield return new InstructionSetInfo("sse", "Sse", InstructionSet.X64_SSE, true);
+                    yield return new InstructionSetInfo("sse2", "Sse2", InstructionSet.X64_SSE2, true);
+                    yield return new InstructionSetInfo("sse3", "Sse3", InstructionSet.X64_SSE3, true);
+                    yield return new InstructionSetInfo("ssse3", "Ssse3", InstructionSet.X64_SSSE3, true);
+                    yield return new InstructionSetInfo("sse4.1", "Sse41", InstructionSet.X64_SSE41, true);
+                    yield return new InstructionSetInfo("sse4.2", "Sse42", InstructionSet.X64_SSE42, true);
+                    yield return new InstructionSetInfo("avx", "Avx", InstructionSet.X64_AVX, true);
+                    yield return new InstructionSetInfo("avx2", "Avx2", InstructionSet.X64_AVX2, true);
+                    yield return new InstructionSetInfo("aes", "Aes", InstructionSet.X64_AES, true);
+                    yield return new InstructionSetInfo("bmi", "Bmi1", InstructionSet.X64_BMI1, true);
+                    yield return new InstructionSetInfo("bmi2", "Bmi2", InstructionSet.X64_BMI2, true);
+                    yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X64_FMA, true);
+                    yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X64_LZCNT, true);
+                    yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X64_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X64_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
                     break;
 
                 case TargetArchitecture.X86:
-                    yield return new InstructionSetInfo("sse", InstructionSet.X86_SSE, true);
-                    yield return new InstructionSetInfo("sse2", InstructionSet.X86_SSE2, true);
-                    yield return new InstructionSetInfo("sse3", InstructionSet.X86_SSE3, true);
-                    yield return new InstructionSetInfo("ssse3", InstructionSet.X86_SSSE3, true);
-                    yield return new InstructionSetInfo("sse4.1", InstructionSet.X86_SSE41, true);
-                    yield return new InstructionSetInfo("sse4.2", InstructionSet.X86_SSE42, true);
-                    yield return new InstructionSetInfo("avx", InstructionSet.X86_AVX, true);
-                    yield return new InstructionSetInfo("avx2", InstructionSet.X86_AVX2, true);
-                    yield return new InstructionSetInfo("aes", InstructionSet.X86_AES, true);
-                    yield return new InstructionSetInfo("bmi", InstructionSet.X86_BMI1, true);
-                    yield return new InstructionSetInfo("bmi2", InstructionSet.X86_BMI2, true);
-                    yield return new InstructionSetInfo("fma", InstructionSet.X86_FMA, true);
-                    yield return new InstructionSetInfo("lzcnt", InstructionSet.X86_LZCNT, true);
-                    yield return new InstructionSetInfo("pclmul", InstructionSet.X86_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("popcnt", InstructionSet.X86_POPCNT, true);
-                    yield return new InstructionSetInfo("Vector128", InstructionSet.X86_Vector128, false);
-                    yield return new InstructionSetInfo("Vector256", InstructionSet.X86_Vector256, false);
+                    yield return new InstructionSetInfo("sse", "Sse", InstructionSet.X86_SSE, true);
+                    yield return new InstructionSetInfo("sse2", "Sse2", InstructionSet.X86_SSE2, true);
+                    yield return new InstructionSetInfo("sse3", "Sse3", InstructionSet.X86_SSE3, true);
+                    yield return new InstructionSetInfo("ssse3", "Ssse3", InstructionSet.X86_SSSE3, true);
+                    yield return new InstructionSetInfo("sse4.1", "Sse41", InstructionSet.X86_SSE41, true);
+                    yield return new InstructionSetInfo("sse4.2", "Sse42", InstructionSet.X86_SSE42, true);
+                    yield return new InstructionSetInfo("avx", "Avx", InstructionSet.X86_AVX, true);
+                    yield return new InstructionSetInfo("avx2", "Avx2", InstructionSet.X86_AVX2, true);
+                    yield return new InstructionSetInfo("aes", "Aes", InstructionSet.X86_AES, true);
+                    yield return new InstructionSetInfo("bmi", "Bmi1", InstructionSet.X86_BMI1, true);
+                    yield return new InstructionSetInfo("bmi2", "Bmi2", InstructionSet.X86_BMI2, true);
+                    yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X86_FMA, true);
+                    yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X86_LZCNT, true);
+                    yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X86_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X86_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
                     break;
 
             }

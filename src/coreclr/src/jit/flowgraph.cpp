@@ -1106,10 +1106,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
     assert(!fgCheapPredsValid);
 
-    flowList* flow;
-
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
+    //
+    // If we are initializing preds, we rely on the fact that we are adding references in increasing
+    // order of blockPred->bbNum to avoid searching the list.
     //
     // TODO-Throughput: Inserting an edge for a block in sorted order requires searching every existing edge.
     // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
@@ -1117,17 +1118,47 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
     // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a flDupCount
     // count of duplication. This also necessitates walking the flow list for every edge we add.
-
+    //
+    flowList*  flow  = nullptr;
     flowList** listp = &block->bbPreds;
-    while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+
+    if (initializingPreds)
     {
-        listp = &(*listp)->flNext;
+        // List is sorted order and we're adding references in
+        // increasing blockPred->bbNum order. The only possible
+        // dup list entry is the last one.
+        //
+        flowList* flowLast = block->bbLastPred;
+        if (flowLast != nullptr)
+        {
+            listp = &flowLast->flNext;
+
+            assert(flowLast->flBlock->bbNum <= blockPred->bbNum);
+
+            if (flowLast->flBlock == blockPred)
+            {
+                flow = flowLast;
+            }
+        }
+    }
+    else
+    {
+        // References are added randomly, so we have to search.
+        //
+        while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+        {
+            listp = &(*listp)->flNext;
+        }
+
+        if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+        {
+            flow = *listp;
+        }
     }
 
-    if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+    if (flow != nullptr)
     {
         // The predecessor block already exists in the flow list; simply add to its duplicate count.
-        flow = *listp;
         noway_assert(flow->flDupCount > 0);
         flow->flDupCount++;
     }
@@ -1149,6 +1180,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
         flow->flBlock    = blockPred;
         flow->flDupCount = 1;
+
+        if (initializingPreds)
+        {
+            block->bbLastPred = flow;
+        }
 
         if (fgHaveValidEdgeWeights)
         {
@@ -2986,6 +3022,9 @@ void Compiler::fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred)
     }
 }
 
+//------------------------------------------------------------------------
+// fgRemovePreds - remove all pred information from blocks
+//
 void Compiler::fgRemovePreds()
 {
     C_ASSERT(offsetof(BasicBlock, bbPreds) ==
@@ -3001,10 +3040,13 @@ void Compiler::fgRemovePreds()
     fgCheapPredsValid  = false;
 }
 
-/*****************************************************************************
- *
- *  Function called to compute the bbPreds lists.
- */
+//------------------------------------------------------------------------
+// fgComputePreds - compute the bbPreds lists
+//
+// Notes:
+//   Resets and then fills in the list of predecessors for each basic
+//   block. Assumes blocks (via bbNext) are in increasing bbNum order.
+//
 void Compiler::fgComputePreds()
 {
     noway_assert(fgFirstBB);
@@ -3020,20 +3062,19 @@ void Compiler::fgComputePreds()
     }
 #endif // DEBUG
 
-    // reset the refs count for each basic block
-
-    for (block = fgFirstBB; block; block = block->bbNext)
+    // Reset everything pred related
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        block->bbRefs = 0;
+        block->bbPreds    = nullptr;
+        block->bbLastPred = nullptr;
+        block->bbRefs     = 0;
     }
 
-    /* the first block is always reachable! */
+    // the first block is always reachable
     fgFirstBB->bbRefs = 1;
 
-    /* Treat the initial block as a jump target */
+    // Treat the initial block as a jump target
     fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
-    fgRemovePreds();
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
@@ -6948,7 +6989,7 @@ PhaseStatus Compiler::fgImport()
         if ((block->bbFlags & BBF_IMPORTED) != 0)
         {
             // Assume if we generate any IR for the block we generate IR for the entire block.
-            if (!block->isEmpty())
+            if (block->firstStmt() != nullptr)
             {
                 IL_OFFSET beginOffset = block->bbCodeOffs;
                 IL_OFFSET endOffset   = block->bbCodeOffsEnd;

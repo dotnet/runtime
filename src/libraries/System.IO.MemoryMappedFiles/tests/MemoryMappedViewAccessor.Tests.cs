@@ -491,11 +491,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
-            MemoryMappedFile mmf;
-            Assert.False(mmfWeak.TryGetTarget(out mmf));
-
-            MemoryMappedViewAccessor mmva;
-            Assert.False(mmvaWeak.TryGetTarget(out mmva));
+            if (PlatformDetection.IsPreciseGcSupported)
+            {
+                Assert.False(mmfWeak.TryGetTarget(out _));
+                Assert.False(mmvaWeak.TryGetTarget(out _));
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

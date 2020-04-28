@@ -75,11 +75,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
-#ifdef TARGET_UNIX
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
-#endif
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
             case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:

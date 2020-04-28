@@ -522,12 +522,14 @@ namespace Internal.JitInterface
         public struct InstructionSetInfo
         {
             public readonly string Name;
+            public readonly string ManagedName;
             public readonly InstructionSet InstructionSet;
             public readonly bool Specifiable;
 
-            public InstructionSetInfo(string name, InstructionSet instructionSet, bool specifiable)
+            public InstructionSetInfo(string name, string managedName, InstructionSet instructionSet, bool specifiable)
             {
                 Name = name;
+                ManagedName = managedName;
                 InstructionSet = instructionSet;
                 Specifiable = specifiable;
             }
@@ -548,9 +550,10 @@ namespace Internal.JitInterface
                     if (instructionSet.Architecture != architecture) continue;
                     bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.CommandLineName);
                     string name = instructionSet.PublicName;
+                    string managedName = instructionSet.ManagedName;
                     string specifiable = instructionSetIsSpecifiable ? "true" : "false";
                     string instructionSetString = $"InstructionSet.{architecture}_{instructionSet.JitName}";
-                    tr.WriteLine($"                    yield return new InstructionSetInfo(\"{name}\", {instructionSetString}, {specifiable});");
+                    tr.WriteLine($"                    yield return new InstructionSetInfo(\"{name}\", \"{managedName}\", {instructionSetString}, {specifiable});");
                 }
                 tr.WriteLine("                    break;");
             }

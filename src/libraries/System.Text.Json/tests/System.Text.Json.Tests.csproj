@@ -5,9 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs">
-      <Link>CommonTest\System\IO\WrappedMemoryStream.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs"
+             Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -71,6 +70,7 @@
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\ExceptionTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
+    <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
@@ -78,7 +78,6 @@
     <Compile Include="Serialization\NullableTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
-    <Compile Include="Serialization\OpenGenericTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
@@ -133,12 +132,12 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+    <Compile Include="..\src\System\Text\Json\BitStack.cs"
+             Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
+             Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
