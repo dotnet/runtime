@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <DefaultReferenceExclusions Include="System.IO.Pipelines" />
     <ReferenceFromRuntime Include="System.IO.Pipelines" />
@@ -40,7 +40,7 @@
     <Compile Include="StreamPipeWriterTests.cs" />
     <Compile Include="Infrastructure\ThrowAfterNWritesStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="PipeLengthTests.cs" />
     <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />

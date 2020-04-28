@@ -11,7 +11,7 @@
     <Compile Include="System.Reflection.Metadata.Manual.cs" />
     <None Include="ReferenceSourceExcludeApi.txt" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
   </ItemGroup>
@@ -21,7 +21,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Text.Encoding" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <ProjectReference Include="..\..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
   </ItemGroup>
 </Project>

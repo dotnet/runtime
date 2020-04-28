@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="ServicePointManagerTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="TlsSystemDefault.cs" />
   </ItemGroup>
 </Project>

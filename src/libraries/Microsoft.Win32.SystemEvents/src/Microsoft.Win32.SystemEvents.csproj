@@ -116,11 +116,11 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs"
              Link="Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />

@@ -12,12 +12,12 @@
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
+    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.CollectionOfObject.cs" />
@@ -188,7 +188,7 @@
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
              Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />

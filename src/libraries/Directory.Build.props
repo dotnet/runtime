@@ -182,7 +182,7 @@
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(TargetOS)' == 'Windows_NT'" />
+    <DebugType Condition="$(TargetFramework.StartsWith('net4')) and '$(TargetOS)' == 'Windows_NT'" />
 
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>

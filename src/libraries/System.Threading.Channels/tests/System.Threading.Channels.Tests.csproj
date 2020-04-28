@@ -5,9 +5,9 @@
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />
     <Compile Include="ChannelClosedExceptionTests.cs" />
-    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="ChannelTestBase.cs" />
-    <Compile Include="ChannelTestBase.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ChannelTestBase.netcoreapp.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="ChannelTests.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="UnboundedChannelTests.cs" />

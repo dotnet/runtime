@@ -139,7 +139,7 @@
     <Compile Include="..\src\System\Text\Json\BitStack.cs"
              Link="BitStack.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
              Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>

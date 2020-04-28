@@ -6,11 +6,11 @@
   <ItemGroup>
     <Compile Include="System.Text.Json.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="mscorlib" />
     <Reference Include="netstandard" />
     <Reference Include="System.Memory" />

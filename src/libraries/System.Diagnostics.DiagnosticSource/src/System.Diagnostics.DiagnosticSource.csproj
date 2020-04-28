@@ -54,20 +54,20 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Runtime.Remoting" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition=" !$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netfx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetFrameworkCurrent)'">
@@ -82,7 +82,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
     <Reference Include="mscorlib" />

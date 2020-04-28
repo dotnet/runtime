@@ -15,7 +15,7 @@
     <Compile Include="FormatterTests.cs" />
     <Compile Include="PlatformExtensions.cs" />
     <Compile Include="SerializationBinderTests.cs" />
-    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="SerializationGuardTests.cs" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
@@ -28,11 +28,11 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
              Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Reference Include="System.Text.Json" />
   </ItemGroup>
 </Project>

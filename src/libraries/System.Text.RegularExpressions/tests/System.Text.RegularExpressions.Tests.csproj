@@ -34,7 +34,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs"
              Link="System\Text\RegularExpressions\RegexParseError.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp'))">
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />
