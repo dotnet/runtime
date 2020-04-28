@@ -16,8 +16,6 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <!-- TODO-NULLABLE: Remove once netstandard has annotations for Debug.Assert, string.IsNullOrEmpty, etc. -->
-    <NoWarn Condition="'$(TargetsNetFx)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(NoWarn);nullable</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
