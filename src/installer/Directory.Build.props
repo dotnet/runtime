@@ -30,10 +30,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
     <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
     <NETCoreAppFrameworkBrandName>.NET $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
