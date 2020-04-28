@@ -826,6 +826,7 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
+      runtimeDisplayName: mono
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
