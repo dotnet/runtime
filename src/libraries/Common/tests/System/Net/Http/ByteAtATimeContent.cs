@@ -27,20 +27,8 @@ namespace System.Net.Http.Functional.Tests
 
 #if NETCOREAPP
         protected override void SerializeToStream(Stream stream, TransportContext context,
-            CancellationToken cancellationToken)
-        {
-            _waitToSend.GetAwaiter().GetResult();
-            _startedSend.SetResult(true);
-
-            var buffer = new byte[1];
-            for (int i = 0; i < _length; i++)
-            {
-                buffer[0] = (byte)i;
-                stream.Write(buffer);
-                stream.Flush();
-                Thread.Sleep(_millisecondDelayBetweenBytes);
-            }
-        }
+            CancellationToken cancellationToken) =>
+            SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
 #endif
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
