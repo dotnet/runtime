@@ -449,6 +449,41 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            {
+                if (intrin.op1->isContainedFltOrDblImmed())
+                {
+                    // fmov reg, #imm8
+                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
+                }
+                else if (varTypeIsFloating(intrin.baseType))
+                {
+                    if (targetReg != op1Reg)
+                    {
+                        // fmov reg1, reg2
+                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
+                    }
+                }
+                else
+                {
+                    if (intrin.op1->isContainedIntOrIImmed())
+                    {
+                        // movi/movni reg, #imm8
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                    }
+                    else
+                    {
+                        // ins reg1[0], reg2
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    INS_OPTS_NONE);
+                    }
+                }
+            }
+            break;
+
             default:
                 unreached();
         }

@@ -914,7 +914,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+        case NI_Vector64_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
+            if (intrin.op1->IsCnsIntOrI())
+            {
+                const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
 
+                if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(intrin.baseType)))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
+            else if (intrin.op1->IsCnsFltOrDbl())
+            {
+                assert(varTypeIsFloating(intrin.baseType));
+
+                const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+
+                if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+            }
+            break;
         default:
             unreached();
     }

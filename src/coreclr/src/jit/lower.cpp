@@ -1616,7 +1616,7 @@ void Lowering::LowerCall(GenTree* node)
         }
     }
 
-    if (call->IsTailCallViaHelper())
+    if (call->IsTailCallViaJitHelper())
     {
         // Either controlExpr or gtCallAddr must contain real call target.
         if (controlExpr == nullptr)
@@ -1626,7 +1626,7 @@ void Lowering::LowerCall(GenTree* node)
             controlExpr = call->gtCallAddr;
         }
 
-        controlExpr = LowerTailCallViaHelper(call, controlExpr);
+        controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
     if (controlExpr != nullptr)
@@ -1637,7 +1637,7 @@ void Lowering::LowerCall(GenTree* node)
         DISPRANGE(controlExprRange);
 
         GenTree* insertionPoint = call;
-        if (!call->IsTailCallViaHelper())
+        if (!call->IsTailCallViaJitHelper())
         {
             // The controlExpr should go before the gtCallCookie and the gtCallAddr, if they exist
             //
@@ -1994,10 +1994,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
 #else // !FEATURE_FASTTAILCALL
 
-    // Platform choose not to implement fast tail call mechanism.
-    // In such a case we should never be reaching this method as
-    // the expectation is that IsTailCallViaHelper() will always
-    // be true on such a platform.
+    // Platform does not implement fast tail call mechanism. This cannot be
+    // reached because we always choose to do a tailcall via helper on those
+    // platforms (or no tailcall at all).
     unreached();
 #endif
 }
@@ -2082,16 +2081,11 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 }
 
 //------------------------------------------------------------------------
-// LowerTailCallViaHelper: lower a call via the tailcall helper. Morph
-// has already inserted tailcall helper special arguments. This function
-// inserts actual data for some placeholders.
+// LowerTailCallViaJitHelper: lower a call via the tailcall JIT helper. Morph
+// has already inserted tailcall helper special arguments. This function inserts
+// actual data for some placeholders. This function is only used on x86.
 //
-// For ARM32, AMD64, lower
-//      tail.call(void* copyRoutine, void* dummyArg, ...)
-// as
-//      Jit_TailCall(void* copyRoutine, void* callTarget, ...)
-//
-// For x86, lower
+// Lower
 //      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)
 // as
 //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void*
@@ -2107,7 +2101,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 // Return Value:
 //    Returns control expression tree for making a call to helper Jit_TailCall.
 //
-GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget)
+GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTarget)
 {
     // Tail call restrictions i.e. conditions under which tail prefix is ignored.
     // Most of these checks are already done by importer or fgMorphTailCall().
@@ -2116,12 +2110,8 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
-#ifdef TARGET_AMD64
-    assert(!comp->getNeedsGSSecurityCookie()); // jit64 compat: tail calls from methods that need GS check
-#endif                                         // TARGET_AMD64
-
     // We expect to see a call that meets the following conditions
-    assert(call->IsTailCallViaHelper());
+    assert(call->IsTailCallViaJitHelper());
     assert(callTarget != nullptr);
 
     // The TailCall helper call never returns to the caller and is not GC interruptible.
@@ -2151,38 +2141,6 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
     // The callTarget tree needs to be sequenced.
     LIR::Range callTargetRange = LIR::SeqTree(comp, callTarget);
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-    // For ARM32 and AMD64, first argument is CopyRoutine and second argument is a place holder node.
-    fgArgTabEntry* argEntry;
-
-#ifdef DEBUG
-    argEntry = comp->gtArgEntryByArgNum(call, 0);
-    assert(argEntry != nullptr);
-    assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
-    GenTree* firstArg = argEntry->GetNode()->AsUnOp()->gtGetOp1();
-    assert(firstArg->gtOper == GT_CNS_INT);
-#endif
-
-    // Replace second arg by callTarget.
-    argEntry = comp->gtArgEntryByArgNum(call, 1);
-    assert(argEntry != nullptr);
-    assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
-    GenTree* secondArg = argEntry->GetNode()->AsUnOp()->gtGetOp1();
-
-    ContainCheckRange(callTargetRange);
-    BlockRange().InsertAfter(secondArg, std::move(callTargetRange));
-
-    bool               isClosed;
-    LIR::ReadOnlyRange secondArgRange = BlockRange().GetTreeRange(secondArg, &isClosed);
-    assert(isClosed);
-
-    BlockRange().Remove(std::move(secondArgRange));
-
-    argEntry->GetNode()->AsUnOp()->gtOp1 = callTarget;
-
-#elif defined(TARGET_X86)
 
     // Verify the special args are what we expect, and replace the dummy args with real values.
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
@@ -2237,21 +2195,17 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     assert(arg3->gtOper == GT_CNS_INT);
 #endif // DEBUG
 
-#else
-    NYI("LowerTailCallViaHelper");
-#endif // TARGET*
-
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
     call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_TAILCALL);
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
 
     // Lower this as if it were a pure helper call.
-    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER);
+    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
     GenTree* result = LowerDirectCall(call);
 
     // Now add back tail call flags for identifying this node as tail call dispatched via helper.
-    call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
+    call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
 
 #ifdef PROFILING_SUPPORTED
     // Insert profiler tail call hook if needed.
@@ -2261,8 +2215,6 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
         InsertProfTailCallHook(call, nullptr);
     }
 #endif // PROFILING_SUPPORTED
-
-    assert(call->IsTailCallViaHelper());
 
     return result;
 }
@@ -3040,7 +2992,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
     // Don't support tail calling helper methods.
     // But we might encounter tail calls dispatched via JIT helper appear as a tail call to helper.
-    noway_assert(!call->IsTailCall() || call->IsTailCallViaHelper() || call->gtCallType == CT_USER_FUNC);
+    noway_assert(!call->IsTailCall() || call->IsTailCallViaJitHelper() || call->gtCallType == CT_USER_FUNC);
 
     // Non-virtual direct/indirect calls: Work out if the address of the
     // call is known at JIT time.  If not it is either an indirect call
@@ -3106,8 +3058,11 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     switch (accessType)
     {
         case IAT_VALUE:
-            // Non-virtual direct call to known address
-            if (!IsCallTargetInRange(addr) || call->IsTailCallViaHelper())
+            // Non-virtual direct call to known address.
+            // For JIT helper based tailcall (only used on x86) the target
+            // address is passed as an arg to the helper so we want a node for
+            // it.
+            if (!IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
             {
                 result = AddrGen(addr);
             }
@@ -3166,16 +3121,9 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
             (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL)) == (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL));
 
     GenTree* thisArgNode;
-    if (call->IsTailCallViaHelper())
+    if (call->IsTailCallViaJitHelper())
     {
-#ifdef TARGET_X86 // x86 tailcall via helper follows normal calling convention, but with extra stack args.
-        const unsigned argNum = 0;
-#else  // !TARGET_X86
-        // In case of helper dispatched tail calls, "thisptr" will be the third arg.
-        // The first two args are: real call target and addr of args copy routine.
-        const unsigned    argNum  = 2;
-#endif // !TARGET_X86
-
+        const unsigned argNum          = 0;
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
         thisArgNode                    = thisArgTabEntry->GetNode();
     }
@@ -3192,8 +3140,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     unsigned lclNum;
 
-#ifdef TARGET_X86
-    if (call->IsTailCallViaHelper() && originalThisExpr->IsLocal())
+    if (call->IsTailCallViaJitHelper() && originalThisExpr->IsLocal())
     {
         // For ordering purposes for the special tailcall arguments on x86, we forced the
         // 'this' pointer in this case to a local in Compiler::fgMorphTailCall().
@@ -3204,7 +3151,6 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
     }
     else
-#endif // TARGET_X86
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
 
@@ -3971,25 +3917,10 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-    // If this is a tail call via helper, thisPtr will be the third argument.
-    int       thisPtrArgNum;
-    regNumber thisPtrArgReg;
-
-#ifndef TARGET_X86 // x86 tailcall via helper follows normal calling convention, but with extra stack args.
-    if (call->IsTailCallViaHelper())
-    {
-        thisPtrArgNum = 2;
-        thisPtrArgReg = REG_ARG_2;
-    }
-    else
-#endif // !TARGET_X86
-    {
-        thisPtrArgNum = 0;
-        thisPtrArgReg = comp->codeGen->genGetThisArgReg(call);
-    }
+    regNumber thisPtrArgReg = comp->codeGen->genGetThisArgReg(call);
 
     // get a reference to the thisPtr being passed
-    fgArgTabEntry* argEntry = comp->gtArgEntryByArgNum(call, thisPtrArgNum);
+    fgArgTabEntry* argEntry = comp->gtArgEntryByArgNum(call, 0);
     assert(argEntry->GetRegNum() == thisPtrArgReg);
     assert(argEntry->GetNode()->OperIs(GT_PUTARG_REG));
     GenTree* thisPtr = argEntry->GetNode()->AsUnOp()->gtGetOp1();
@@ -4170,17 +4101,14 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // accessed via an indirection.
         GenTree* addr = AddrGen(stubAddr);
 
-#ifdef TARGET_X86
         // On x86, for tailcall via helper, the JIT_TailCall helper takes the stubAddr as
         // the target address, and we set a flag that it's a VSD call. The helper then
         // handles any necessary indirection.
-        if (call->IsTailCallViaHelper())
+        if (call->IsTailCallViaJitHelper())
         {
             result = addr;
         }
-#endif // TARGET_X86
-
-        if (result == nullptr)
+        else
         {
             result = Ind(addr);
         }

@@ -66,6 +66,8 @@
 #include "perfmap.h"
 #endif
 
+#include "tailcallhelp.h"
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -2203,12 +2205,22 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result = 0;
+    unsigned result;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
+    result = getClassGClayoutStatic(VMClsHnd, gcPtrs);
 
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+
+unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
+{
+    unsigned result = 0;
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
     if (VMClsHnd.IsNativeValueType())
@@ -2265,8 +2277,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -13750,6 +13760,84 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
 #endif // (TARGET_AMD64 || TARGET_ARM) && !TARGET_UNIX
 
     return ftn;
+}
+
+bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
+                                         CORINFO_SIG_INFO* sig,
+                                         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                         CORINFO_TAILCALL_HELPERS* pResult)
+{
+    MethodDesc* pTargetMD = NULL;
+
+    if (callToken != NULL)
+    {
+        pTargetMD = (MethodDesc*)callToken->hMethod;
+        _ASSERTE(pTargetMD != NULL);
+
+        if (pTargetMD->IsWrapperStub())
+        {
+            pTargetMD = pTargetMD->GetWrappedMethodDesc();
+        }
+
+        // We currently do not handle generating the proper call to managed
+        // varargs methods.
+        if (pTargetMD->IsVarArg())
+        {
+            return false;
+        }
+    }
+
+    SigTypeContext typeCtx;
+    GetTypeContext(&sig->sigInst, &typeCtx);
+
+    MetaSig msig(sig->pSig, sig->cbSig, GetModule(sig->scope), &typeCtx);
+
+    bool isCallvirt = (flags & CORINFO_TAILCALL_IS_CALLVIRT) != 0;
+    bool isThisArgByRef = (flags & CORINFO_TAILCALL_THIS_ARG_IS_BYREF) != 0;
+
+    MethodDesc* pStoreArgsMD;
+    MethodDesc* pCallTargetMD;
+    bool needsTarget;
+
+    TailCallHelp::CreateTailCallHelperStubs(
+        m_pMethodBeingCompiled, pTargetMD,
+        msig, isCallvirt, isThisArgByRef,
+        &pStoreArgsMD, &needsTarget,
+        &pCallTargetMD);
+
+    unsigned outFlags = 0;
+    if (needsTarget)
+    {
+        outFlags |= CORINFO_TAILCALL_STORE_TARGET;
+    }
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    return true;
+}
+
+bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
+                                 CORINFO_SIG_INFO* sig,
+                                 CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                 CORINFO_TAILCALL_HELPERS* pResult)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool success = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    success = getTailCallHelpersInternal(callToken, sig, flags, pResult);
+
+    EE_TO_JIT_TRANSITION();
+
+    return success;
 }
 
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)

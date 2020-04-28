@@ -286,8 +286,16 @@ namespace System.Runtime.CompilerServices
 
         [DllImport(RuntimeHelpers.QCall)]
         private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
-    }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void FreeTailCallArgBuffer();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+    }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
     internal class RawData
@@ -421,4 +429,24 @@ namespace System.Runtime.CompilerServices
             }
         }
     }
+
+    // Helper structs used for tail calls via helper.
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct PortableTailCallFrame
+    {
+        public PortableTailCallFrame* Prev;
+        public IntPtr TailCallAwareReturnAddress;
+        public IntPtr NextCall;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TailCallTls
+    {
+        public PortableTailCallFrame* Frame;
+        public IntPtr ArgBuffer;
+        private IntPtr _argBufferSize;
+        private IntPtr _argBufferGCDesc;
+        private fixed byte _argBufferInline[64];
+    }
+
 }
