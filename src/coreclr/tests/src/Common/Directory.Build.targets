@@ -65,10 +65,6 @@
 
       <!-- Used by the coreroot_determinism test -->
       <RunTimeArtifactsIncludeFolders Include="R2RTest/" />
-
-      <!-- Used for ARM / ARM64 cross-compilation -->
-      <RunTimeArtifactsIncludeFolders Include="x86/" />
-      <RunTimeArtifactsIncludeFolders Include="x64/" />
     </ItemGroup>
 
     <ItemGroup>
