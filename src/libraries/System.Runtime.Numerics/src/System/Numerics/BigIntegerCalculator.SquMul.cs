@@ -94,52 +94,62 @@ namespace System.Numerics
                 int n2 = n << 1;
 
                 // ... split value like a = (a_1 << n) + a_0
-                ref uint valueLow = ref value;
-                int valueLowLength = n;
-                ref uint valueHigh = ref Unsafe.Add(ref value, n);
-                int valueHighLength = valueLength - n;
+                Span<uint> valueLow = CreateSpan(ref value, n);
+                Span<uint> valueHigh = CreateSpan(ref Unsafe.Add(ref value, n), valueLength - n);
 
                 // ... prepare our result array (to reuse its memory)
-                ref uint bitsLow = ref bits;
-                int bitsLowLength = n2;
-                ref uint bitsHigh = ref Unsafe.Add(ref bits, n2);
-                int bitsHighLength = bitsLength - n2;
+                Span<uint> bitsLow = CreateSpan(ref bits, n2);
+                Span<uint> bitsHigh = CreateSpan(ref Unsafe.Add(ref bits, n2), bitsLength - n2);
 
                 // ... compute z_0 = a_0 * a_0 (squaring again!)
-                Square(ref valueLow, valueLowLength,
-                       ref bitsLow, bitsLowLength);
+                Square(ref GetReference(valueLow), valueLow.Length,
+                       ref GetReference(bitsLow), bitsLow.Length);
 
                 // ... compute z_2 = a_1 * a_1 (squaring again!)
-                Square(ref valueHigh, valueHighLength,
-                       ref bitsHigh, bitsHighLength);
+                Square(ref GetReference(valueHigh), valueHigh.Length,
+                       ref GetReference(bitsHigh), bitsHigh.Length);
 
-                int foldLength = valueHighLength + 1;
+                int foldLength = valueHigh.Length + 1;
                 int coreLength = foldLength + foldLength;
 
-                bool stackAllocRequired = coreLength < AllocationThreshold;
-                Span<uint> fold = stackAllocRequired ? stackalloc uint[foldLength] : new uint[foldLength];
-                Span<uint> core = stackAllocRequired ? stackalloc uint[coreLength] : new uint[coreLength];
+                Span<uint> result = CreateSpan(ref Unsafe.Add(ref bits, n), bitsLength - n);
 
-                if (stackAllocRequired)
+                if (coreLength < AllocationThreshold)
                 {
-                    fold.Clear();
-                    core.Clear();
+                    SquareFinal(valueHigh, valueLow,
+                                ZeroMem(stackalloc uint[foldLength]), ZeroMem(stackalloc uint[coreLength]),
+                                bitsHigh, bitsLow,
+                                result);
+                }
+                else
+                {
+                    SquareFinal(valueHigh, valueLow,
+                                new uint[foldLength], new uint[coreLength],
+                                bitsHigh, bitsLow,
+                                result);
                 }
 
-                // ... compute z_a = a_1 + a_0 (call it fold...)
-                Add(ref valueHigh, valueHighLength,
-                    ref valueLow, valueLowLength,
-                    ref GetReference(fold), foldLength);
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static void SquareFinal(Span<uint> valueHigh, Span<uint> valueLow,
+                                        Span<uint> fold, Span<uint> core,
+                                        Span<uint> bitsHigh, Span<uint> bitsLow,
+                                        Span<uint> result)
+                {
+                    // ... compute z_a = a_1 + a_0 (call it fold...)
+                    Add(ref GetReference(valueHigh), valueHigh.Length,
+                        ref GetReference(valueLow), valueLow.Length,
+                        ref GetReference(fold), fold.Length);
 
-                // ... compute z_1 = z_a * z_a - z_0 - z_2
-                Square(ref GetReference(fold), foldLength,
-                        ref GetReference(core), coreLength);
-                SubtractCore(ref bitsHigh, bitsHighLength,
-                                ref bitsLow, bitsLowLength,
-                                ref GetReference(core), coreLength);
+                    // ... compute z_1 = z_a * z_a - z_0 - z_2
+                    Square(ref GetReference(fold), fold.Length,
+                            ref GetReference(core), core.Length);
+                    SubtractCore(ref GetReference(bitsHigh), bitsHigh.Length,
+                                    ref GetReference(bitsLow), bitsLow.Length,
+                                    ref GetReference(core), core.Length);
 
-                // ... and finally merge the result! :-)
-                AddSelf(ref Unsafe.Add(ref bits, n), bitsLength - n, ref GetReference(core), coreLength);
+                    // ... and finally merge the result! :-)
+                    AddSelf(ref GetReference(result), result.Length, ref GetReference(core), core.Length);
+                }
             }
         }
 
@@ -195,6 +205,13 @@ namespace System.Numerics
 
         // Mutable for unit testing...
         private static int MultiplyThreshold = 32;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<uint> ZeroMem(Span<uint> memory)
+        {
+            memory.Clear();
+            return memory;
+        }
 
         private static void Multiply(ref uint left, int leftLength,
                                             ref uint right, int rightLength,
@@ -256,69 +273,75 @@ namespace System.Numerics
                 int n2 = n << 1;
 
                 // ... split left like a = (a_1 << n) + a_0
-                ref uint leftLow = ref left;
-                int leftLowLength = n;
-                ref uint leftHigh = ref Unsafe.Add(ref left, n);
-                int leftHighLength = leftLength - n;
+                Span<uint> leftLow = CreateSpan(ref left, n);
+                Span<uint> leftHigh = CreateSpan(ref Unsafe.Add(ref left, n), leftLength - n);
 
                 // ... split right like b = (b_1 << n) + b_0
-                ref uint rightLow = ref right;
-                int rightLowLength = n;
-                ref uint rightHigh = ref Unsafe.Add(ref right, n);
-                int rightHighLength = rightLength - n;
+                Span<uint> rightLow = CreateSpan(ref right, n);
+                Span<uint> rightHigh = CreateSpan(ref Unsafe.Add(ref right, n), rightLength - n);
 
                 // ... prepare our result array (to reuse its memory)
-                ref uint bitsLow = ref bits;
-                int bitsLowLength = n2;
-                ref uint bitsHigh = ref Unsafe.Add(ref bits, n2);
-                int bitsHighLength = bitsLength - n2;
+                Span<uint> bitsLow = CreateSpan(ref bits, n2);
+                Span<uint> bitsHigh = CreateSpan(ref Unsafe.Add(ref bits, n2), bitsLength - n2);
 
                 // ... compute z_0 = a_0 * b_0 (multiply again)
-                Multiply(ref leftLow, leftLowLength,
-                         ref rightLow, rightLowLength,
-                         ref bitsLow, bitsLowLength);
+                Multiply(ref GetReference(leftLow), leftLow.Length,
+                         ref GetReference(rightLow), rightLow.Length,
+                         ref GetReference(bitsLow), bitsLow.Length);
 
                 // ... compute z_2 = a_1 * b_1 (multiply again)
-                Multiply(ref leftHigh, leftHighLength,
-                         ref rightHigh, rightHighLength,
-                         ref bitsHigh, bitsHighLength);
+                Multiply(ref GetReference(leftHigh), leftHigh.Length,
+                         ref GetReference(rightHigh), rightHigh.Length,
+                         ref GetReference(bitsHigh), bitsHigh.Length);
 
-                int leftFoldLength = leftHighLength + 1;
-                int rightFoldLength = rightHighLength + 1;
+                int leftFoldLength = leftHigh.Length + 1;
+                int rightFoldLength = rightHigh.Length + 1;
                 int coreLength = leftFoldLength + rightFoldLength;
 
-                bool stackAllocRequired = coreLength < AllocationThreshold;
-                Span<uint> leftFold = stackAllocRequired ? stackalloc uint[leftFoldLength] : new uint[leftFoldLength];
-                Span<uint> rightFold = stackAllocRequired ? stackalloc uint[rightFoldLength] : new uint[rightFoldLength];
-                Span<uint> core = stackAllocRequired ? stackalloc uint[coreLength] : new uint[coreLength];
+                Span<uint> result = CreateSpan(ref Unsafe.Add(ref bits, n), bitsLength - n);
 
-                if (stackAllocRequired)
+                if (coreLength < AllocationThreshold)
                 {
-                    leftFold.Clear();
-                    rightFold.Clear();
-                    core.Clear();
+                    MultiplyFinal(leftHigh, leftLow, ZeroMem(stackalloc uint[leftFoldLength]),
+                                    rightHigh, rightLow, ZeroMem(stackalloc uint[rightFoldLength]),
+                                    bitsHigh, bitsLow, ZeroMem(stackalloc uint[coreLength]),
+                                    result);
+                }
+                else
+                {
+                    MultiplyFinal(leftHigh, leftLow, new uint[leftFoldLength],
+                                    rightHigh, rightLow, new uint[rightFoldLength],
+                                    bitsHigh, bitsLow, new uint[coreLength],
+                                    result);
                 }
 
-                // ... compute z_a = a_1 + a_0 (call it fold...)
-                Add(ref leftHigh, leftHighLength,
-                    ref leftLow, leftLowLength,
-                    ref GetReference(leftFold), leftFoldLength);
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static void MultiplyFinal(Span<uint> leftHigh, Span<uint> leftLow, Span<uint> leftFold,
+                                            Span<uint> rightHigh, Span<uint> rightLow, Span<uint> rightFold,
+                                            Span<uint> bitsHigh, Span<uint> bitsLow, Span<uint> core,
+                                            Span<uint> result)
+                {
+                    // ... compute z_a = a_1 + a_0 (call it fold...)
+                    Add(ref GetReference(leftHigh), leftHigh.Length,
+                        ref GetReference(leftLow), leftLow.Length,
+                        ref GetReference(leftFold), leftFold.Length);
 
-                // ... compute z_b = b_1 + b_0 (call it fold...)
-                Add(ref rightHigh, rightHighLength,
-                    ref rightLow, rightLowLength,
-                    ref GetReference(rightFold), rightFoldLength);
+                    // ... compute z_b = b_1 + b_0 (call it fold...)
+                    Add(ref GetReference(rightHigh), rightHigh.Length,
+                        ref GetReference(rightLow), rightLow.Length,
+                        ref GetReference(rightFold), rightFold.Length);
 
-                // ... compute z_1 = z_a * z_b - z_0 - z_2
-                Multiply(ref GetReference(leftFold), leftFoldLength,
-                            ref GetReference(rightFold), rightFoldLength,
-                            ref GetReference(core), coreLength);
-                SubtractCore(ref bitsHigh, bitsHighLength,
-                                ref bitsLow, bitsLowLength,
-                                ref GetReference(core), coreLength);
+                    // ... compute z_1 = z_a * z_b - z_0 - z_2
+                    Multiply(ref GetReference(leftFold), leftFold.Length,
+                                ref GetReference(rightFold), rightFold.Length,
+                                ref GetReference(core), core.Length);
+                    SubtractCore(ref GetReference(bitsHigh), bitsHigh.Length,
+                                    ref GetReference(bitsLow), bitsLow.Length,
+                                    ref GetReference(core), core.Length);
 
-                // ... and finally merge the result! :-)
-                AddSelf(ref Unsafe.Add(ref bits, n), bitsLength - n, ref GetReference(core), coreLength);
+                    // ... and finally merge the result! :-)
+                    AddSelf(ref GetReference(result), result.Length, ref GetReference(core), core.Length);
+                }
             }
         }
 
