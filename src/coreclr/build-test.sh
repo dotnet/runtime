@@ -181,7 +181,7 @@ precompile_coreroot_fx()
     local totalPrecompiled=0
     local failedToPrecompile=0
     local compositeCommandLine="$overlayDir/corerun"
-    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" ${__BinDir}/crossgen2/crossgen2.dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
