@@ -1449,6 +1449,16 @@ void* interceptor_ICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfo
     return original_ICorJitInfo->getTailCallCopyArgsThunk(pSig, flags);
 }
 
+bool interceptor_ICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
+{
+    mcs->AddCall("getTailCallHelpers");
+    return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.

@@ -161,7 +161,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // The header store did not contain the header.  Add the raw string.
-                _headerStore.Add(descriptor, _forceHeaderStoreItems ? new HeaderStoreItemInfo { RawValue = currentValue } : (object)value);
+                _headerStore.Add(descriptor, _forceHeaderStoreItems ? new HeaderStoreItemInfo { RawValue = value } : (object)value);
             }
 
             return true;

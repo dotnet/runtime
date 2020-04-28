@@ -18,14 +18,6 @@
 
 extern "C" UINT_PTR STDCALL GetCurrentIP();
 
-enum StackOverflowDetector
-{
-    SOD_ManagedFrameHandler,
-    SOD_UnmanagedFrameHandler,
-    SOD_SOTolerantTransitor,
-    SOD_SOIntolerantTransitor,
-};
-
 // EEPolicy maintains actions for resource failure and timeout
 class EEPolicy
 {
@@ -39,84 +31,7 @@ public:
         TA_Rude
     };
 
-    enum AppDomainUnloadTypes
-    {
-        ADU_Safe,
-        ADU_Rude
-    };
-
-    EEPolicy ();
-
-    HRESULT SetTimeout(EClrOperation operation, DWORD timeout);
-
-    DWORD GetTimeout(EClrOperation operation)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return m_Timeout[operation];
-    }
-
-    HRESULT SetActionOnTimeout(EClrOperation operation, EPolicyAction action);
-    EPolicyAction GetActionOnTimeout(EClrOperation operation, Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return GetFinalAction(m_ActionOnTimeout[operation], pThread);
-    }
-
-    void NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action);
-
-    HRESULT SetTimeoutAndAction(EClrOperation operation, DWORD timeout, EPolicyAction action);
-
-    HRESULT SetDefaultAction(EClrOperation operation, EPolicyAction action);
-    EPolicyAction GetDefaultAction(EClrOperation operation, Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(static_cast<UINT>(operation) < MaxClrOperation);
-        return GetFinalAction(m_DefaultAction[operation], pThread);
-    }
-
-    void NotifyHostOnDefaultAction(EClrOperation operation, EPolicyAction action);
-
-    HRESULT SetActionOnFailure(EClrFailure failure, EPolicyAction action);
-
-    // Generally GetActionOnFailure should be used so that a host can get notification.
-    // But if we have notified host on the same failure, but we need to check escalation again,
-    // GetActionOnFailureNoHostNotification can be used.
-    EPolicyAction GetActionOnFailure(EClrFailure failure);
-    EPolicyAction GetActionOnFailureNoHostNotification(EClrFailure failure);
-
-    // get and set unhandled exception policy
-    HRESULT SetUnhandledExceptionPolicy(EClrUnhandledException policy)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (policy != eRuntimeDeterminedPolicy && policy != eHostDeterminedPolicy)
-        {
-            return E_INVALIDARG;
-        }
-        else
-        {
-            m_unhandledExceptionPolicy = policy;
-            return S_OK;
-        }
-    }
-    EClrUnhandledException GetUnhandledExceptionPolicy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_unhandledExceptionPolicy;
-    }
-
-    static EPolicyAction DetermineResourceConstraintAction(Thread *pThread);
-
-    static void PerformResourceConstraintAction(Thread *pThread, EPolicyAction action, UINT exitCode, BOOL haveStack);
-
-    static void HandleOutOfMemory();
-
-    static void HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame);
-
-    static void HandleSoftStackOverflow(BOOL fSkipDebugger = FALSE);
-
-    static void HandleStackOverflowAfterCatch();
+    static void HandleStackOverflow();
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
@@ -124,44 +39,9 @@ public:
 
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
-    static void HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode);
-
-    static void HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, LPCWSTR pInnerExceptionAsString);
-
 private:
-    DWORD m_Timeout[MaxClrOperation];
-    EPolicyAction m_ActionOnTimeout[MaxClrOperation];
-    EPolicyAction m_DefaultAction[MaxClrOperation];
-    EPolicyAction m_ActionOnFailure[MaxClrFailure];
-    EClrUnhandledException m_unhandledExceptionPolicy;
-
-    // TODO: Support multiple methods to set policy: hosting, config, managed api.
-
-    // Return BOOL if action is acceptable for operation.
-    BOOL IsValidActionForOperation(EClrOperation operation, EPolicyAction action);
-    BOOL IsValidActionForTimeout(EClrOperation operation, EPolicyAction action);
-    BOOL IsValidActionForFailure(EClrFailure failure, EPolicyAction action);
-    EPolicyAction GetFinalAction(EPolicyAction action, Thread *pThread);
-
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
-
-    // IMPORTANT NOTE: only the following two functions should be calling ExitProcessViaShim.
-    // - CorHost2::ExitProcess
-    // - SafeExitProcess
-    friend class CorHost2;
-    friend void SafeExitProcess(UINT , BOOL , ShutdownCompleteAction);
-
-    static void ExitProcessViaShim(UINT exitCode);
 };
-
-void InitEEPolicy();
-
-extern BYTE g_EEPolicyInstance[];
-
-inline EEPolicy* GetEEPolicy()
-{
-    return (EEPolicy*)&g_EEPolicyInstance;
-}
 
 //
 // Use EEPOLICY_HANDLE_FATAL_ERROR when you have a situtation where the Runtime's internal state would be

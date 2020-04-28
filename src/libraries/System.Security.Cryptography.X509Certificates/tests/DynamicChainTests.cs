@@ -202,6 +202,86 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void BasicConstraints_ExceedMaximumPathLength()
+        {
+            X509Extension[] rootExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: true,
+                    pathLengthConstraint: 0,
+                    critical: true)
+            };
+
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: true,
+                    hasPathLengthConstraint: true,
+                    pathLengthConstraint: 0,
+                    critical: true)
+            };
+
+            TestDataGenerator.MakeTestChain4(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert1,
+                out X509Certificate2 intermediateCert2,
+                out X509Certificate2 rootCert,
+                rootExtensions: rootExtensions,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert1)
+            using (intermediateCert2)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert1);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert2);
+
+                Assert.False(chain.Build(endEntityCert));
+                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
+        public static void BasicConstraints_ViolatesCaFalse()
+        {
+            X509Extension[] intermediateExtensions = new [] {
+                new X509BasicConstraintsExtension(
+                    certificateAuthority: false,
+                    hasPathLengthConstraint: false,
+                    pathLengthConstraint: 0,
+                    critical: true)
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+
+                Assert.False(chain.Build(endEntityCert));
+                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())

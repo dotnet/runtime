@@ -6,30 +6,22 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Shared code with src assembly -->
-    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs">
-      <Link>SharedSource\StringParsingHelpers.Addresses.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Connections.cs">
-      <Link>SharedSource\StringParsingHelpers.Connections.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Dns.cs">
-      <Link>SharedSource\StringParsingHelpers.Dns.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Misc.cs">
-      <Link>SharedSource\StringParsingHelpers.Misc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Statistics.cs">
-      <Link>SharedSource\StringParsingHelpers.Statistics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkFiles.cs">
-      <Link>SharedSource\NetworkFiles.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.Unix.cs">
-      <Link>SharedSource\SimpleTcpConnectionInformation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs">
-      <Link>SharedSource\SimpleGatewayIPAddressInformation.cs</Link>
-    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs"
+             Link="SharedSource\StringParsingHelpers.Addresses.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Connections.cs"
+             Link="SharedSource\StringParsingHelpers.Connections.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Dns.cs"
+             Link="SharedSource\StringParsingHelpers.Dns.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Misc.cs"
+             Link="SharedSource\StringParsingHelpers.Misc.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Statistics.cs"
+             Link="SharedSource\StringParsingHelpers.Statistics.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkFiles.cs"
+             Link="SharedSource\NetworkFiles.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.Unix.cs"
+             Link="SharedSource\SimpleTcpConnectionInformation.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs"
+             Link="SharedSource\SimpleGatewayIPAddressInformation.cs" />
     <!-- Tests -->
     <Compile Include="AddressParsingTests.cs" />
     <Compile Include="DnsParsingTests.cs" />
@@ -47,24 +39,18 @@
     <Compile Include="ConnectionsParsingTests.cs" />
     <Compile Include="StatisticsParsingTests.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs">
-      <Link>Common\System\Net\TestLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs">
-      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs">
-      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs">
-      <Link>Common\System\Net\Capability.Sockets.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\StringParser.cs">
-      <Link>Common\System\IO\StringParser.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs">
-      <Link>Common\System\IO\RowConfigReader.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
+             Link="Common\System\Net\TestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
+             Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
+             Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs"
+             Link="Common\System\Net\Capability.Sockets.cs" />
+    <Compile Include="$(CommonPath)System\IO\StringParser.cs"
+             Link="Common\System\IO\StringParser.cs" />
+    <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
+             Link="Common\System\IO\RowConfigReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LoggingTest.cs" />

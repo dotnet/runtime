@@ -4,55 +4,49 @@
 using System;
 using System.Reflection;
 
-public class TestData
-{
-    public virtual Guid InputGuid { get; set; }
-}
-
 class Test35000
 {
+    public class TestData0
+    {
+        public virtual object MyMethod(int a, int b, int c, int d, int e, int f, int g, int h) { return null; }
+    }
+
+    public class TestData1 : TestData0
+    {
+        public override object MyMethod(int a, int b, int c, int d, int e, int f, int g, int h) { return null; }
+    }
+
     static int Main(string[] args)
     {
-        bool success = false;
+        var method = typeof(TestData0).GetMethod(nameof(TestData0.MyMethod));
+        var func = (Func<TestData0, int, int, int, int, int, int, int, int, object>)Delegate.CreateDelegate(typeof(Func<TestData0, int, int, int, int, int, int, int, int, object>), null, method);
 
-        PropertyInfo property = typeof(TestData).GetProperty(nameof(TestData.InputGuid),
-            BindingFlags.Instance | BindingFlags.Public);
+        TestData0 data = new TestData0();
+        TestData0 data1 = new TestData1();
 
-        Func<object, object> func = GetFunc(property);
+        int nullRefCount = 0;
 
-        TestData data = new TestData();
+        const int LoopCount = 10;
 
-        data.InputGuid = Guid.NewGuid();
-
-        object value1 = func(data);
-        object value3 = func(data);
-
-        try
+        for (int j = 0; j < LoopCount; j++)
         {
-            object value2 = func(null);
+            for (int i = 0; i < 50; i++)
+            {
+                func(data, 1, 2, 3, 4, 5, 6, 7, 8);
+                func(data1, 1, 2, 3, 4, 5, 6, 7, 8);
+            }
+
+            try
+            {
+                func(null, 1, 2, 3, 4, 5, 6, 7, 8);
+            }
+            catch (NullReferenceException e)
+            {
+                nullRefCount++;
+                Console.WriteLine(e);
+            }
         }
-        catch (NullReferenceException e)
-        {
-            Console.WriteLine(e);
-            success = true;
-        }
 
-        return success ? 100 : 101;
-    }
-
-    public static Func<object, object> GetFunc(PropertyInfo propertyInfo)
-    {
-        var method = typeof(Test35000).GetMethod(nameof(CreateFunc));
-
-        return (Func<object, object>)method
-            .MakeGenericMethod(propertyInfo.DeclaringType, propertyInfo.PropertyType)
-            .Invoke(null, new object[] { propertyInfo.GetMethod });
-    }
-
-    public static Func<object, object> CreateFunc<TTarget, TValue>(MethodInfo methodInfo)
-    {
-
-        var func = (Func<TTarget, TValue>)Delegate.CreateDelegate(typeof(Func<TTarget, TValue>), null, methodInfo);
-        return (object o) => func((TTarget)o);
+        return (nullRefCount == LoopCount) ? 100 : 101;
     }
 }

@@ -7,12 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
-      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs" />
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -141,6 +141,8 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
 
+        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
+
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
         {
@@ -1884,7 +1886,7 @@ namespace Internal.JitInterface
 
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                                md = getUnboxingThunk(md);
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
@@ -1905,6 +1907,11 @@ namespace Internal.JitInterface
 
                 pResult.lookup.constLookup = CreateConstLookupToSymbol(symbolNode);
             }
+        }
+
+        private MethodDesc getUnboxingThunk(MethodDesc method)
+        {
+            return s_unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)

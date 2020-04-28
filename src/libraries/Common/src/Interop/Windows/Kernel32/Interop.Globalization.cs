@@ -53,7 +53,7 @@ internal static partial class Interop
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int LocaleNameToLCID(string lpName, uint dwFlags);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int LCMapStringEx(
                     string? lpLocaleName,
                     uint dwMapFlags,

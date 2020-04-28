@@ -650,6 +650,14 @@ CONFIG_DWORD_INFO_EX(INTERNAL_VirtualCallStubResetCacheIncr, W("VirtualCallStubR
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DisableWatsonForManagedExceptions, W("DisableWatsonForManagedExceptions"), 0, "Disable Watson and debugger launching for managed exceptions")
 
 ///
+/// Dump generation
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgEnableMiniDump, W("DbgEnableMiniDump"), 0, "Enable unhandled exception crash dump generation")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_DbgMiniDumpName, W("DbgMiniDumpName"), "Crash dump name")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgMiniDumpType, W("DbgMiniDumpType"), 0, "Crash dump type: 1 normal, 2 withheap, 3 triage, 4 full")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostics"), 0, "Enable crash dump generation diagnostic logging")
+
+///
 /// Zap
 ///
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_ZapBBInstr, W("ZapBBInstr"), "", CLRConfig::EEConfig_default)
@@ -749,8 +757,6 @@ CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1,
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_IgnoreDllMainReturn, W("IgnoreDllMainReturn"), 0, "Don't check the return value of DllMain if this is set", CLRConfig::ConfigFile_ApplicationFirst)
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_legacyNullReferenceExceptionPolicy, W("legacyNullReferenceExceptionPolicy"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_legacyUnhandledExceptionPolicy, W("legacyUnhandledExceptionPolicy"), "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStackDepth, W("MaxStackDepth"), "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxThreadRecord, W("MaxThreadRecord"), "")

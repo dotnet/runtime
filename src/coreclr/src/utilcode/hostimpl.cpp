@@ -75,3 +75,9 @@ void GetLastThrownObjectExceptionFromThread(Exception** ppException)
 {
     *ppException = NULL;
 }
+
+#ifdef HOST_WINDOWS
+void CreateCrashDumpIfEnabled()
+{
+}
+#endif

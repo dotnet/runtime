@@ -99,6 +99,10 @@
     <OutputRid Condition="'$(TargetOS)' == 'Browser'">browser-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
   </PropertyGroup>
