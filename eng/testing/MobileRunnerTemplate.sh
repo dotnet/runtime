@@ -2,9 +2,30 @@
 
 EXECUTION_DIR=$(dirname $0)
 TEST_NAME=$1
-SIMULATOR_NAME="iPhone 11"
+TARGET_ARCH=$2
+TARGET=
+SCHEME_SDK=
 
-# TODO: to be replaced with xharness cli tool
+if [ "$TARGET_ARCH" == "arm" ]; then
+    TARGET=ios-device
+    SCHEME_SDK=Release-iphoneos
+elif [ "$TARGET_ARCH" == "arm64" ]; then
+    TARGET=ios-device
+    SCHEME_SDK=Release-iphoneos
+elif [ "$TARGET_ARCH" == "x64" ]; then
+    TARGET=ios-simulator-64
+    SCHEME_SDK=Release-iphonesimulator
+elif [ "$TARGET_ARCH" == "x86" ]; then
+    TARGET=ios-simulator-32
+    SCHEME_SDK=Release-iphonesimulator
+else
+    echo "Unknown architecture: $TARGET_ARCH"
+    exit 1
+fi
+
+# "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
+
+APP_BUNDLE=$EXECUTION_DIR/Bundle/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/runonsim.lock
@@ -18,20 +39,10 @@ while true; do
     fi
 done
 
-# Release here is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
-AppBundlePath=$EXECUTION_DIR/Bundle/$TEST_NAME/Release-iphonesimulator/$TEST_NAME.app
+XHARNESS_OUT="$EXECUTION_DIR/Bundle/xharness-output"
 
-# kill a simulator if it exists
-xcrun simctl shutdown "$SIMULATOR_NAME" || true
+dotnet xharness ios test --app="$APP_BUNDLE" \
+    --targets=$TARGET \
+    --output-directory=$XHARNESS_OUT
 
-# boot it again
-xcrun simctl boot "$SIMULATOR_NAME"
-
-# open UI (this step is not neccessary)
-open -a Simulator
-
-# install the *.app bundle
-xcrun simctl install "$SIMULATOR_NAME" "$SIMULATOR_NAME"
-
-# launch the app, redirect logs to console and quite once tests are completed
-xcrun simctl launch --console booted net.dot.$TEST_NAME testlib:$TEST_NAME.dll --auto-exit
+echo "Xharness artifacts: $XHARNESS_OUT"
