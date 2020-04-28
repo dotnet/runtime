@@ -22,22 +22,20 @@ namespace System.Numerics
 
             uint[] quotient = new uint[left.Length];
 
-            Divide(ref GetArrayDataReference(left), left.Length,
-                    right,
-                    ref GetArrayDataReference(quotient), out remainder);
+            Divide(left, right, ref GetArrayDataReference(quotient), out remainder);
 
             return quotient;
         }
 
-        private static void Divide(ref uint left, int leftLength,
+        private static void Divide(ReadOnlySpan<uint> left,
                                         uint right,
                                         ref uint quotient,
                                         out uint remainder)
         {
             ulong carry = 0UL;
-            for (int i = leftLength - 1; i >= 0; i--)
+            for (int i = left.Length - 1; i >= 0; i--)
             {
-                ulong value = (carry << 32) | Unsafe.Add(ref left, i);
+                ulong value = (carry << 32) | Unsafe.Add(ref GetReference(left), i);
                 ulong digit = value / right;
                 Unsafe.Add(ref quotient, i) = (uint)digit;
                 carry = value - digit * right;
@@ -54,43 +52,32 @@ namespace System.Numerics
 
             uint[] quotient = new uint[left.Length];
 
-            Divide(ref GetArrayDataReference(left), left.Length,
-                    right,
-                    ref GetArrayDataReference(quotient));
+            Divide(left, right, ref GetArrayDataReference(quotient));
 
             return quotient;
         }
 
-        private static void Divide(ref uint left, int leftLength,
-                                    uint right,
-                                    ref uint quotient)
+        private static void Divide(ReadOnlySpan<uint> left, uint right, ref uint quotient)
         {
             ulong carry = 0UL;
-            for (int i = leftLength - 1; i >= 0; i--)
+            for (int i = left.Length - 1; i >= 0; i--)
             {
-                ulong value = (carry << 32) | Unsafe.Add(ref left, i);
+                ulong value = (carry << 32) | Unsafe.Add(ref GetReference(left), i);
                 ulong digit = value / right;
                 Unsafe.Add(ref quotient, i) = (uint)digit;
                 carry = value - digit * right;
             }
         }
 
-        public static uint Remainder(uint[] left, uint right)
+        public static uint Remainder(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the remainder.
-            return Remainder(ref GetArrayDataReference(left), left.Length, right);
-        }
-
-        private static uint Remainder(ref uint left, int leftLength,
-                                        uint right)
-        {
             ulong carry = 0UL;
-            for (int i = leftLength - 1; i >= 0; i--)
+            for (int i = left.Length - 1; i >= 0; i--)
             {
-                ulong value = (carry << 32) | Unsafe.Add(ref left, i);
+                ulong value = (carry << 32) | Unsafe.Add(ref GetReference(left), i);
                 carry = value % right;
             }
 
@@ -114,9 +101,7 @@ namespace System.Numerics
             uint[] localLeft = CreateCopy(left);
             uint[] bits = new uint[left.Length - right.Length + 1];
 
-            Divide(ref GetArrayDataReference(localLeft), localLeft.Length,
-                       ref GetArrayDataReference(right), right.Length,
-                       ref GetArrayDataReference(bits), bits.Length);
+            Divide(localLeft, right, bits);
 
             remainder = localLeft;
 
@@ -133,19 +118,16 @@ namespace System.Numerics
 
             // Same as above, but only returning the quotient.
 
-            // NOTE: left will get overwritten, we need a local copy
-
-            uint[] localLeft = CreateCopy(left);
             uint[] bits = new uint[left.Length - right.Length + 1];
 
-            Divide(ref GetArrayDataReference(localLeft), localLeft.Length,
-                       ref GetArrayDataReference(right), right.Length,
-                       ref GetArrayDataReference(bits), bits.Length);
+            // NOTE: left will get overwritten, we need a local copy
+
+            Divide(CreateCopy(left), right, bits);
 
             return bits;
         }
 
-        public static unsafe uint[] Remainder(uint[] left, uint[] right)
+        public static uint[] Remainder(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -159,30 +141,26 @@ namespace System.Numerics
 
             uint[] localLeft = CreateCopy(left);
 
-            Divide(ref GetArrayDataReference(localLeft), localLeft.Length,
-                    ref GetArrayDataReference(right), right.Length,
-                    ref Unsafe.AsRef<uint>(null), 0);
+            Divide(localLeft, right, default);
 
             return localLeft;
         }
 
-        private static void Divide(ref uint left, int leftLength,
-                                          ref uint right, int rightLength,
-                                          ref uint bits, int bitsLength)
+        private static void Divide(Span<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(leftLength >= 1);
-            Debug.Assert(rightLength >= 1);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(bitsLength == leftLength - rightLength + 1
-                || bitsLength == 0);
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(bits.Length == left.Length - right.Length + 1
+                || bits.Length == 0);
 
             // Executes the "grammar-school" algorithm for computing q = a / b.
             // Before calculating q_i, we get more bits into the highest bit
             // block of the divisor. Thus, guessing digits of the quotient
             // will be more precise. Additionally we'll get r = a % b.
 
-            uint divHi = Unsafe.Add(ref right, rightLength - 1);
-            uint divLo = rightLength > 1 ? Unsafe.Add(ref right, rightLength - 2) : 0;
+            uint divHi = Unsafe.Add(ref GetReference(right), right.Length - 1);
+            uint divLo = right.Length > 1 ? Unsafe.Add(ref GetReference(right), right.Length - 2) : 0;
 
             // We measure the leading zeros of the divisor
             int shift = LeadingZeros(divHi);
@@ -191,7 +169,7 @@ namespace System.Numerics
             // And, we make sure the most significant bit is set
             if (shift > 0)
             {
-                uint divNx = rightLength > 2 ? Unsafe.Add(ref right, rightLength - 3) : 0;
+                uint divNx = right.Length > 2 ? Unsafe.Add(ref GetReference(right), right.Length - 3) : 0;
 
                 divHi = (divHi << shift) | (divLo >> backShift);
                 divLo = (divLo << shift) | (divNx >> backShift);
@@ -199,18 +177,18 @@ namespace System.Numerics
 
             // Then, we divide all of the bits as we would do it using
             // pen and paper: guessing the next digit, subtracting, ...
-            for (int i = leftLength; i >= rightLength; i--)
+            for (int i = left.Length; i >= right.Length; i--)
             {
-                int n = i - rightLength;
-                uint t = i < leftLength ? Unsafe.Add(ref left, i) : 0;
+                int n = i - right.Length;
+                uint t = i < left.Length ? Unsafe.Add(ref GetReference(left), i) : 0;
 
-                ulong valHi = ((ulong)t << 32) | Unsafe.Add(ref left, i - 1);
-                uint valLo = i > 1 ? Unsafe.Add(ref left, i - 2) : 0;
+                ulong valHi = ((ulong)t << 32) | Unsafe.Add(ref GetReference(left), i - 1);
+                uint valLo = i > 1 ? Unsafe.Add(ref GetReference(left), i - 2) : 0;
 
                 // We shifted the divisor, we shift the dividend too
                 if (shift > 0)
                 {
-                    uint valNx = i > 2 ? Unsafe.Add(ref left, i - 3) : 0;
+                    uint valNx = i > 2 ? Unsafe.Add(ref GetReference(left), i - 3) : 0;
 
                     valHi = (valHi << shift) | (valLo >> backShift);
                     valLo = (valLo << shift) | (valNx >> backShift);
@@ -229,15 +207,13 @@ namespace System.Numerics
                 if (digit > 0)
                 {
                     // Now it's time to subtract our current quotient
-                    uint carry = SubtractDivisor(ref Unsafe.Add(ref left, n), leftLength - n,
-                                                 ref right, rightLength, digit);
+                    uint carry = SubtractDivisor(left.Slice(n), right, digit);
                     if (carry != t)
                     {
                         Debug.Assert(carry == t + 1);
 
                         // Our guess was still exactly one too high
-                        carry = AddDivisor(ref Unsafe.Add(ref left, n), leftLength - n,
-                                           ref right, rightLength);
+                        carry = AddDivisor(left.Slice(n), right);
                         --digit;
 
                         Debug.Assert(carry == 1);
@@ -245,28 +221,27 @@ namespace System.Numerics
                 }
 
                 // We have the digit!
-                if (bitsLength != 0)
-                    Unsafe.Add(ref bits, n) = (uint)digit;
-                if (i < leftLength)
-                    Unsafe.Add(ref left, i) = 0;
+                if (!bits.IsEmpty)
+                    Unsafe.Add(ref GetReference(bits), n) = (uint)digit;
+                if (i < left.Length)
+                    Unsafe.Add(ref GetReference(left), i) = 0;
             }
         }
 
-        private static uint AddDivisor(ref uint left, int leftLength,
-                                              ref uint right, int rightLength)
+        private static uint AddDivisor(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
 
             // Repairs the dividend, if the last subtract was too much
 
             ulong carry = 0UL;
 
-            for (int i = 0; i < rightLength; i++)
+            for (int i = 0; i < right.Length; i++)
             {
-                ref uint leftElement = ref Unsafe.Add(ref left, i);
-                ulong digit = (leftElement + carry) + Unsafe.Add(ref right, i);
+                ref uint leftElement = ref Unsafe.Add(ref GetReference(left), i);
+                ulong digit = (leftElement + carry) + Unsafe.Add(ref GetReference(right), i);
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
@@ -274,13 +249,11 @@ namespace System.Numerics
             return (uint)carry;
         }
 
-        private static uint SubtractDivisor(ref uint left, int leftLength,
-                                                   ref uint right, int rightLength,
-                                                   ulong q)
+        private static uint SubtractDivisor(Span<uint> left, ReadOnlySpan<uint> right, ulong q)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
             Debug.Assert(q <= 0xFFFFFFFF);
 
             // Combines a subtract and a multiply operation, which is naturally
@@ -288,12 +261,12 @@ namespace System.Numerics
 
             ulong carry = 0UL;
 
-            for (int i = 0; i < rightLength; i++)
+            for (int i = 0; i < right.Length; i++)
             {
-                carry += Unsafe.Add(ref right, i) * q;
+                carry += Unsafe.Add(ref GetReference(right), i) * q;
                 uint digit = unchecked((uint)carry);
                 carry = carry >> 32;
-                ref uint leftElement = ref Unsafe.Add(ref left, i);
+                ref uint leftElement = ref Unsafe.Add(ref GetReference(left), i);
                 if (leftElement < digit)
                     ++carry;
                 leftElement = unchecked(leftElement - digit);

@@ -99,7 +99,7 @@ namespace System.Numerics
                 _length = reducer.Reduce(_bits, _length);
             }
 
-            public unsafe void Reduce(uint[] modulus)
+            public void Reduce(uint[] modulus)
             {
                 Debug.Assert(modulus != null);
 
@@ -108,24 +108,20 @@ namespace System.Numerics
 
                 if (_length >= modulus.Length)
                 {
-                    Divide(ref GetArrayDataReference(_bits), _length,
-                               ref GetArrayDataReference(modulus), modulus.Length,
-                               ref Unsafe.AsRef<uint>(null), 0);
+                    Divide(new Span<uint>(_bits, 0, _length), modulus, default);
 
                     _length = ActualLength(_bits, modulus.Length);
                 }
             }
 
-            public unsafe void Reduce(ref BitsBuffer modulus)
+            public void Reduce(ref BitsBuffer modulus)
             {
                 // Executes a modulo operation using the divide operation.
                 // Thus, no need of any switching here, happens in-line.
 
                 if (_length >= modulus._length)
                 {
-                    Divide(ref GetArrayDataReference(_bits), _length,
-                            ref GetArrayDataReference(modulus._bits), modulus._length,
-                            ref Unsafe.AsRef<uint>(null), 0);
+                    Divide(new Span<uint>(_bits, 0, _length), new Span<uint>(modulus._bits, 0, modulus._length), default);
 
                     _length = ActualLength(_bits, modulus._length);
                 }
