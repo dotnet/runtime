@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         private KeyEncodingComparer? _keyComparer;
 
-        public uint? ReadStartMap()
+        public int? ReadStartMap()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Map);
 
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 AdvanceBuffer(1 + additionalBytes);
                 PushDataItem(CborMajorType.Map, 2 * (uint)mapSize);
-                return (uint)mapSize;
+                return (int)mapSize;
             }
         }
 

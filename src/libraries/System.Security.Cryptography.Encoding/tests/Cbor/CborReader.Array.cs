@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        public uint? ReadStartArray()
+        public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
 
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 AdvanceBuffer(1 + additionalBytes);
                 PushDataItem(CborMajorType.Array, (uint)arrayLength);
-                return (uint)arrayLength;
+                return (int)arrayLength;
             }
         }
 

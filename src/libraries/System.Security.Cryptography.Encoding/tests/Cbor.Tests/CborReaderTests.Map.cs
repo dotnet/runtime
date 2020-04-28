@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Null(length);
         }
 
@@ -103,9 +103,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding, level);
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.NotNull(length);
-            Assert.Equal(0u, length!.Value);
+            Assert.Equal(0, length!.Value);
             reader.ReadEndMap();
         }
 
@@ -259,7 +259,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -289,7 +289,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64(); // key
 
                 // value
-                ulong? nestedLength = reader.ReadStartMap();
+                int? nestedLength = reader.ReadStartMap();
                 Assert.Equal(1, (int)nestedLength!.Value);
                 reader.ReadInt64();
                 reader.ReadInt64();
@@ -309,8 +309,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
-            Assert.Equal(expectedLength, (int)length!.Value);
+            int? length = reader.ReadStartMap();
+            Assert.Equal(expectedLength, length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
             {
@@ -331,15 +331,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
             {
                 reader.ReadInt64(); // key
 
-                ulong? nestedLength = reader.ReadStartMap();
-                Assert.Equal(1, (int)nestedLength!.Value);
+                int? nestedLength = reader.ReadStartMap();
+                Assert.Equal(1, nestedLength!.Value);
                 reader.ReadInt64();
                 reader.ReadInt64();
                 reader.ReadEndMap();
@@ -376,7 +376,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
@@ -459,15 +459,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            uint? length = reader.ReadStartMap();
+            int? length = reader.ReadStartMap();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
             {
                 reader.ReadInt64(); // key
 
-                ulong? innerLength = reader.ReadStartArray();
-                Assert.Equal(1, (int)innerLength!.Value);
+                int? innerLength = reader.ReadStartArray();
+                Assert.Equal(1, innerLength!.Value);
                 reader.ReadInt64();
                 reader.ReadEndArray();
             }
