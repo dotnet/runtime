@@ -817,7 +817,7 @@ namespace System.Diagnostics.Tests
         {
             // In this test, we kill a process in a way the Process instance
             // is not aware the process has terminated when we invoke Process.Kill.
-
+            DateTime start = DateTime.UtcNow;
             using (Process nonChildProcess = CreateNonChildProcess())
             {
                 // Kill the process.
@@ -833,6 +833,15 @@ namespace System.Diagnostics.Tests
                         // process still exists, wait some time.
                         await Task.Delay(100);
                     }
+
+                    DateTime now = DateTime.UtcNow;
+                    if (start.Millisecond + Helpers.PassingTestTimeoutMilliseconds <= now.Millisecond)
+                    {
+                        Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
+                        Helpers.DumpAllProcesses();
+                    }
+
+                    Assert.True(start.Millisecond + Helpers.PassingTestTimeoutMilliseconds > now.Millisecond);
                 }
 
                 // Call Process.Kill.
