@@ -50,10 +50,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { Map, 1, 2, 3, 4 }, "bf01020304ff")]
         [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "bf6161614161626142616361436164614461656145ff")]
         [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "bf616161412002404101ff")]
-        public static void WriteMap_IndefiniteLength_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteMap_IndefiniteLength_NoPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -63,10 +63,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { Map, "a", 1, "b", new object[] { Map, 2, 3 } }, "bf6161016162bf0203ffff")]
         [InlineData(new object[] { Map, "a", new object[] { Map, 2, 3 }, "b", new object[] { Map, "x", -1, "y", new object[] { Map, "z", 0 } } }, "bf6161bf0203ff6162bf6178206179bf617a00ffffff")]
         [InlineData(new object[] { Map, new object[] { Map, "x", 2 }, 42 }, "bfbf617802ff182aff")] // using maps as keys
-        public static void WriteMap_IndefiniteLength_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteMap_IndefiniteLength_NoPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -77,10 +77,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { Map, 1, 2, 3, 4 }, "a201020304")]
         [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "a56161614161626142616361436164614461656145")]
         [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "a3616161412002404101")]
-        public static void WriteMap_IndefiniteLengthWithPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteMap_IndefiniteLength_WithPatching_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            using var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -90,10 +90,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { Map, "a", 1, "b", new object[] { Map, 2, 3 } }, "a26161016162a10203")]
         [InlineData(new object[] { Map, "a", new object[] { Map, 2, 3 }, "b", new object[] { Map, "x", -1, "y", new object[] { Map, "z", 0 } } }, "a26161a102036162a26178206179a1617a00")]
         [InlineData(new object[] { Map, new object[] { Map, "x", 2 }, 42 }, "a1a1617802182a")] // using maps as keys
-        public static void WriteMap_IndefiniteLengthWithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteMap_IndefiniteLength_WithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            using var writer = new CborWriter();
             Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
             byte[] actualEncoding = writer.GetEncoding();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -104,10 +104,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { Map, "d", "D", "e", "E", "a", "A", "b", "B", "c", "C" }, "a56161614161626142616361436164614461656145")]
         [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "a3200240410161616141")]
         [InlineData(new object[] { Map, new object[] { Map, 3, 4, 1, 2 }, 0, new object[] { 1, 2, 3 }, 0, new string[] { "a", "b" }, 0, new string[] { Hex, "ab", "" }, 00 }, "a441ab00626162008301020300a20102030400")]
-        public static void WriteMap_IndefiniteLengthWithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteMap_IndefiniteLength_WithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
     {
         byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-        using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical, patchIndefiniteLengthItems: true);
+        using var writer = new CborWriter(CborConformanceLevel.Ctap2Canonical);
         Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
         byte[] actualEncoding = writer.GetEncoding();
         AssertHelper.HexEqual(expectedEncoding, actualEncoding);
@@ -378,24 +378,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             writer.WriteStartArray(definiteLength: 0);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        internal static void WriteMap_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
-        {
-            using var writer = new CborWriter(level);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartMapIndefiniteLength());
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        [InlineData(CborConformanceLevel.Strict)]
-        internal static void WriteMap_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
-        {
-            using var writer = new CborWriter(level);
-            writer.WriteStartMapIndefiniteLength();
         }
     }
 }

@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public static void WriteEncodedValue_ContextScenaria_HappyPath(object value, bool useDefiniteLength, string hexExpectedEncoding)
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: !useDefiniteLength);
 
             Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLength);
 
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthTextString_HappyPath()
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
             writer.WriteStartTextStringIndefiniteLength();
             writer.WriteTextString("foo");
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Fact]
         public static void WriteEncodedValue_IndefiniteLengthByteString_HappyPath()
         {
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
             writer.WriteStartByteStringIndefiniteLength();
             writer.WriteByteString(new byte[] { 1, 1, 1 });
@@ -209,6 +209,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         internal static void InvalidConformanceLevel_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel level)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceLevel: level));
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        internal static void EncodeIndefiniteLengths_UnsupportedConformanceLevel_ShouldThrowArgumentException(CborConformanceLevel level)
+        {
+            Assert.Throws<ArgumentException>(() => new CborWriter(level, encodeIndefiniteLengths: true));
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });

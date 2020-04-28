@@ -37,11 +37,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartMapIndefiniteLength()
         {
-            if (!PatchIndefiniteLengthItems && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
-            {
-                throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
-            }
-
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Map, definiteLength: null);

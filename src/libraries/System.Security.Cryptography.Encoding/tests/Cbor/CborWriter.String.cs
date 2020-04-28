@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
             EnsureWriteCapacity(value.Length);
 
-            if (PatchIndefiniteLengthItems && IsMajorTypeContext(CborMajorType.ByteString))
+            if (!EncodeIndefiniteLengths && IsMajorTypeContext(CborMajorType.ByteString))
             {
                 // operation is writing chunk of an indefinite-length string
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
 
-            if (PatchIndefiniteLengthItems && IsMajorTypeContext(CborMajorType.TextString))
+            if (!EncodeIndefiniteLengths && IsMajorTypeContext(CborMajorType.TextString))
             {
                 // operation is writing chunk of an indefinite-length string
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
@@ -66,13 +66,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartByteStringIndefiniteLength()
         {
-            if (PatchIndefiniteLengthItems)
+            if (!EncodeIndefiniteLengths)
             {
+                // Writer does not allow indefinite-length encodings.
+                // We need to keep track of chunk offsets to convert to
+                // a definite-length encoding once writing is complete.
                 _currentIndefiniteLengthStringRanges ??= new List<(int, int)>();
-            }
-            else if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
-            {
-                throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
             }
 
             EnsureWriteCapacity(1);
@@ -88,13 +87,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteStartTextStringIndefiniteLength()
         {
-            if (PatchIndefiniteLengthItems)
+            if (!EncodeIndefiniteLengths)
             {
+                // Writer does not allow indefinite-length encodings.
+                // We need to keep track of chunk offsets to convert to
+                // a definite-length encoding once writing is complete.
                 _currentIndefiniteLengthStringRanges ??= new List<(int, int)>();
-            }
-            else if (CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
-            {
-                throw new InvalidOperationException("Indefinite-length items are not permitted under the current conformance level.");
             }
 
             EnsureWriteCapacity(1);

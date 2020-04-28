@@ -32,15 +32,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private int? _currentValueOffset = null;
         private SortedSet<(int Offset, int KeyLength, int TotalLength)>? _keyValueEncodingRanges = null;
 
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool patchIndefiniteLengthItems = false)
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
+            if (encodeIndefiniteLengths && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(conformanceLevel))
+            {
+                throw new ArgumentException($"Conformance level {conformanceLevel} does not allow indefinite length encodings.", nameof(encodeIndefiniteLengths));
+            }
+
             ConformanceLevel = conformanceLevel;
-            PatchIndefiniteLengthItems = patchIndefiniteLengthItems;
+            EncodeIndefiniteLengths = encodeIndefiniteLengths;
         }
 
-        public bool PatchIndefiniteLengthItems { get; }
+        public bool EncodeIndefiniteLengths { get; }
         public CborConformanceLevel ConformanceLevel { get; }
         public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
@@ -280,8 +285,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_definiteLength == null);
 
-            if (PatchIndefiniteLengthItems)
+            if (EncodeIndefiniteLengths)
             {
+                // using indefinite-length encoding, append a break byte to the existing encoding
+                EnsureWriteCapacity(1);
+                _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+            }
+            else
+            {
+                // indefinite-length not allowed, convert the encoding into definite-length
                 switch (type)
                 {
                     case CborMajorType.ByteString:
@@ -299,12 +311,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Debug.Fail("Invalid CBOR major type pushed to stack.");
                         throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
                 }
-            }
-            else
-            {
-                // no patching, so just append the break byte at the end of the existing encoding
-                EnsureWriteCapacity(1);
-                _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
             }
         }
 

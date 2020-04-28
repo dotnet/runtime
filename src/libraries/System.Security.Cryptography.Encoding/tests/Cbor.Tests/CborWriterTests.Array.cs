@@ -52,11 +52,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "9f0120604107ff")]
         [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "9f656c6f72656d65697073756d65646f6c6f72ff")]
         [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "9ff4f6faffc00000fb7ff0000000000000ff")]
-        public static void WriteArray_IndefiniteLength_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteArray_IndefiniteLength_NoPatching_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
 
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
             byte[] actualEncoding = writer.GetEncoding();
@@ -67,11 +67,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { new object[] { } }, "9f9fffff")]
         [InlineData(new object[] { 1, new object[] { 2, 3 }, new object[] { 4, 5 } }, "9f019f0203ff9f0405ffff")]
         [InlineData(new object[] { "", new object[] { new object[] { }, new object[] { 1, new byte[] { 10 } } } }, "9f609f9fff9f01410affffff")]
-        public static void WriteArray_IndefiniteLength_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteArray_IndefiniteLength_NoPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
 
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
             byte[] actualEncoding = writer.GetEncoding();
@@ -86,11 +86,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "840120604107")]
         [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "83656c6f72656d65697073756d65646f6c6f72")]
         [InlineData(new object?[] { false, null, float.NaN, double.PositiveInfinity }, "84f4f6faffc00000fb7ff0000000000000")]
-        public static void WriteArray_IndefiniteLengthWithPatching_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteArray_IndefiniteLength_WithPatching_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
 
-            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            using var writer = new CborWriter();
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
             byte[] actualEncoding = writer.GetEncoding();
@@ -101,11 +101,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new object[] { new object[] { } }, "8180")]
         [InlineData(new object[] { 1, new object[] { 2, 3 }, new object[] { 4, 5 } }, "8301820203820405")]
         [InlineData(new object[] { "", new object[] { new object[] { }, new object[] { 1, new byte[] { 10 } } } }, "826082808201410a")]
-        public static void WriteArray_IndefiniteLengthWithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        public static void WriteArray_IndefiniteLength_WithPatching_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
 
-            using var writer = new CborWriter(patchIndefiniteLengthItems: true);
+            using var writer = new CborWriter();
             Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
 
             byte[] actualEncoding = writer.GetEncoding();
@@ -219,24 +219,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             writer.WriteStartMap(definiteLength: 0);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical)]
-        [InlineData(CborConformanceLevel.Ctap2Canonical)]
-        internal static void WriteArray_IndefiniteLength_UnsupportedConformanceLevel_ShouldThrowInvalidOperationException(CborConformanceLevel level)
-        {
-            using var writer = new CborWriter(level);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArrayIndefiniteLength());
-        }
-
-        [Theory]
-        [InlineData(CborConformanceLevel.Lax)]
-        [InlineData(CborConformanceLevel.Strict)]
-        internal static void WriteArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level)
-        {
-            using var writer = new CborWriter(level);
-            writer.WriteStartArrayIndefiniteLength();
         }
     }
 }
