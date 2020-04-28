@@ -173,7 +173,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 0);
             Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(Compare(ref GetReference(left), left.Length, ref GetReference(right), right.Length) >= 0);
+            Debug.Assert(Compare(left, right) >= 0);
             Debug.Assert(bits.Length == left.Length);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
@@ -205,7 +205,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 0);
             Debug.Assert(right.Length >= 0);
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(Compare(ref GetReference(left), left.Length, ref GetReference(right), right.Length) >= 0);
+            Debug.Assert(Compare(left, right) >= 0);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
             // Same as above, but we're writing the result directly to a and
@@ -230,49 +230,6 @@ namespace System.Numerics
             }
 
             Debug.Assert(carry == 0);
-        }
-
-        public static int Compare(uint[] left, uint[] right)
-        {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
-
-            if (left.Length < right.Length)
-                return -1;
-            if (left.Length > right.Length)
-                return 1;
-
-            for (int i = left.Length - 1; i >= 0; i--)
-            {
-                if (left[i] < right[i])
-                    return -1;
-                if (left[i] > right[i])
-                    return 1;
-            }
-
-            return 0;
-        }
-
-        private static int Compare(ref uint left, int leftLength,
-                                          ref uint right, int rightLength)
-        {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-
-            if (leftLength < rightLength)
-                return -1;
-            if (leftLength > rightLength)
-                return 1;
-
-            for (int i = leftLength - 1; i >= 0; i--)
-            {
-                if (Unsafe.Add(ref left, i) < Unsafe.Add(ref right, i))
-                    return -1;
-                if (Unsafe.Add(ref left, i) > Unsafe.Add(ref right, i))
-                    return 1;
-            }
-
-            return 0;
         }
     }
 }

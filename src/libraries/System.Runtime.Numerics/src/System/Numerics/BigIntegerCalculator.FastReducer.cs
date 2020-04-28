@@ -138,7 +138,7 @@ namespace System.Numerics
                 SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref r, rightLength));
                 leftLength = ActualLength(left, leftLength);
 
-                while (Compare(ref l, leftLength, ref m, modulus.Length) >= 0)
+                while (Compare(CreateSpan(ref l, leftLength), CreateSpan(ref m, modulus.Length)) >= 0)
                 {
                     SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref m, modulus.Length));
                     leftLength = ActualLength(left, leftLength);
