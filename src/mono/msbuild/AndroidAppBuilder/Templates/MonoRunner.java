@@ -44,11 +44,12 @@ public class MonoRunner extends Instrumentation
         Context context = getContext();
         AssetManager am = context.getAssets();
         String filesDir = context.getFilesDir().getAbsolutePath();
+        String cacheDir = context.getCacheDir().getAbsolutePath ();
 
         copyAssetDir(am, "", filesDir);
 
         // retcode is what Main() returns in C#
-        int retcode = initRuntime(filesDir);
+        int retcode = initRuntime(filesDir, cacheDir);
         WriteLineToInstrumentation("[Mono] Main() returned " + retcode);
         runOnMainSync (new Runnable() {
             public void run() {
@@ -93,5 +94,5 @@ public class MonoRunner extends Instrumentation
         out.close();
     }
 
-    native int initRuntime(String libsDir);
+    native int initRuntime(String libsDir, String cacheDir);
 }
