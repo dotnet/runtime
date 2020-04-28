@@ -1717,16 +1717,6 @@ void ZapInfo::embedGenericSignature(CORINFO_LOOKUP * pLookup)
     }
 }
 
-void* ZapInfo::getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags)
-{
-    void * pStub = m_pEEJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    if (pStub == NULL)
-        return NULL;
-    return m_pImage->GetWrappers()->GetStub(pStub);
-}
-
 bool ZapInfo::getTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,

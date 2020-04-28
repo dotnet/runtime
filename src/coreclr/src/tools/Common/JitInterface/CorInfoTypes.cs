@@ -756,14 +756,6 @@ namespace Internal.JitInterface
         public void* pArg5;
     }
 
-    // When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-    // calling convention/argument passing/handling details to the helper
-    public enum CorInfoHelperTailCallSpecialHandling
-    {
-        CORINFO_TAILCALL_NORMAL = 0x00000000,
-        CORINFO_TAILCALL_STUB_DISPATCH_ARG = 0x00000001,
-    }
-
     /*****************************************************************************/
     // These are flags passed to ICorJitInfo::allocMem
     // to guide the memory allocation for the code, readonly data, and read-write data
