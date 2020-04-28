@@ -74,9 +74,6 @@ jobs:
           - script: |
               brew install pkgconfig icu4c openssl
               brew link --force icu4c
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
-              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
             displayName: Install Build Dependencies
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
