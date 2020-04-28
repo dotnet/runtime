@@ -38,6 +38,10 @@ while true; do
     fi
 done
 
+XHARNESS_OUT="$EXECUTION_DIR/Bundle/xharness-output"
+
 dotnet xharness ios test --app="$APP_BUNDLE" \
     --targets=$TARGET \
-    --output-directory="$EXECUTION_DIR/Bundle/xharness-output"
+    --output-directory=$XHARNESS_OUT
+
+echo "Xharness artifacts: $XHARNESS_OUT"
