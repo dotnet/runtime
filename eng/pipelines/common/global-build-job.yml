@@ -25,11 +25,11 @@ jobs:
     variables: ${{ parameters.variables }}
 
     steps:
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
-
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
