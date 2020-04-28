@@ -109,7 +109,7 @@ jobs:
         artifactName: '$(coreClrProductArtifactName)'
         displayName: 'CoreCLR product build'
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -119,7 +119,7 @@ jobs:
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

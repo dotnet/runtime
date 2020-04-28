@@ -97,7 +97,7 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -111,7 +111,7 @@ jobs:
       - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

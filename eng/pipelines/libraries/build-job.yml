@@ -82,7 +82,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
@@ -94,7 +94,7 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

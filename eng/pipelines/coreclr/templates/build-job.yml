@@ -118,7 +118,7 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -132,7 +132,7 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

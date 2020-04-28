@@ -431,7 +431,7 @@ jobs:
         displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
-  - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h
@@ -440,7 +440,7 @@ jobs:
   - script: $(BaseJobBuildCommand)
     displayName: Build
 
-  - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h

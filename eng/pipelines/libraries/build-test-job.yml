@@ -55,7 +55,7 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
 
-        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
@@ -67,7 +67,7 @@ jobs:
                 $(_archiveTestsParameter)
           displayName: Restore and Build
 
-        - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

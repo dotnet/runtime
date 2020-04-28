@@ -37,7 +37,7 @@ jobs:
 
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -47,7 +47,7 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
       displayName: Build product
 
-    - ${{ if or(or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')), eq(parameters.osGroup, 'tvOS')) }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
