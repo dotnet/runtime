@@ -21,28 +21,26 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length + 1];
 
-            Add(ref GetArrayDataReference(left), left.Length,
-                right,
-                ref GetArrayDataReference(bits));
+            Add(left, right, ref GetArrayDataReference(bits));
 
             return bits;
         }
 
-        private static void Add(ref uint left, int leftLength,
+        private static void Add(ReadOnlySpan<uint> left,
                                 uint right,
                                 ref uint bits)
         {
-            long digit = (long)left + right;
+            long digit = (long)GetReference(left) + right;
             bits = unchecked((uint)digit);
             long carry = digit >> 32;
 
-            for (int i = 1; i < leftLength; i++)
+            for (int i = 1; i < left.Length; i++)
             {
-                digit = Unsafe.Add(ref left, i) + carry;
+                digit = Unsafe.Add(ref GetReference(left), i) + carry;
                 Unsafe.Add(ref bits, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            Unsafe.Add(ref bits, leftLength) = (uint)carry;
+            Unsafe.Add(ref bits, left.Length) = (uint)carry;
         }
 
         public static uint[] Add(uint[] left, uint[] right)
@@ -56,21 +54,17 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length + 1];
 
-            Add(ref GetArrayDataReference(left), left.Length,
-                ref GetArrayDataReference(right), right.Length,
-                ref GetArrayDataReference(bits), bits.Length);
+            Add(left, right, bits);
 
             return bits;
         }
 
-        private static void Add(ref uint left, int leftLength,
-                                       ref uint right, int rightLength,
-                                       ref uint bits, int bitsLength)
+        private static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(bitsLength == leftLength + 1);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(bits.Length == left.Length + 1);
 
             // Executes the "grammar-school" algorithm for computing z = a + b.
             // While calculating z_i = a_i + b_i we take care of overflow:
@@ -80,27 +74,26 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            for (; i < rightLength; i++)
+            for (; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref left, i) + carry) + Unsafe.Add(ref right, i);
-                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref GetReference(left), i) + carry) + Unsafe.Add(ref GetReference(right), i);
+                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; i < leftLength; i++)
+            for (; i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref left, i) + carry;
-                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
+                long digit = Unsafe.Add(ref GetReference(left), i) + carry;
+                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            Unsafe.Add(ref bits, i) = (uint)carry;
+            Unsafe.Add(ref GetReference(bits), i) = (uint)carry;
         }
 
-        private static void AddSelf(ref uint left, int leftLength,
-                                           ref uint right, int rightLength)
+        private static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
 
             // Executes the "grammar-school" algorithm for computing z = a + b.
             // Same as above, but we're writing the result directly to a and
@@ -108,17 +101,17 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-            ref uint leftElement = ref left;
-            for (; i < rightLength; i++)
+            ref uint leftElement = ref NullRef;
+            for (; i < right.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref left, i);
-                long digit = (leftElement + carry) + Unsafe.Add(ref right, i);
+                leftElement = ref Unsafe.Add(ref GetReference(left), i);
+                long digit = (leftElement + carry) + Unsafe.Add(ref GetReference(right), i);
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; carry != 0 && i < leftLength; i++)
+            for (; carry != 0 && i < left.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref left, i);
+                leftElement = ref Unsafe.Add(ref GetReference(left), i);
                 long digit = leftElement + carry;
                 leftElement = (uint)digit;
                 carry = digit >> 32;
@@ -139,24 +132,20 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length];
 
-            Subtract(ref GetArrayDataReference(left), left.Length,
-                     right,
-                     ref GetArrayDataReference(bits));
+            Subtract(left, right, ref GetArrayDataReference(bits));
 
             return bits;
         }
 
-        private static void Subtract(ref uint left, int leftLength,
-                                     uint right,
-                                     ref uint bits)
+        private static void Subtract(ReadOnlySpan<uint> left, uint right, ref uint bits)
         {
-            long digit = (long)left - right;
+            long digit = (long)GetReference(left) - right;
             bits = unchecked((uint)digit);
             long carry = digit >> 32;
 
-            for (int i = 1; i < leftLength; i++)
+            for (int i = 1; i < left.Length; i++)
             {
-                digit = Unsafe.Add(ref left, i) + carry;
+                digit = Unsafe.Add(ref GetReference(left), i) + carry;
                 Unsafe.Add(ref bits, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
@@ -174,22 +163,18 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length];
 
-            Subtract(ref GetArrayDataReference(left), left.Length,
-                     ref GetArrayDataReference(right), right.Length,
-                     ref GetArrayDataReference(bits), bits.Length);
+            Subtract(left, right, bits);
 
             return bits;
         }
 
-        private static void Subtract(ref uint left, int leftLength,
-                                            ref uint right, int rightLength,
-                                            ref uint bits, int bitsLength)
+        private static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(Compare(ref left, leftLength, ref right, rightLength) >= 0);
-            Debug.Assert(bitsLength == leftLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(Compare(ref GetReference(left), left.Length, ref GetReference(right), right.Length) >= 0);
+            Debug.Assert(bits.Length == left.Length);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
             // While calculating z_i = a_i - b_i we take care of overflow:
@@ -199,29 +184,28 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            for (; i < rightLength; i++)
+            for (; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref left, i) + carry) - Unsafe.Add(ref right, i);
-                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref GetReference(left), i) + carry) - Unsafe.Add(ref GetReference(right), i);
+                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; i < leftLength; i++)
+            for (; i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref left, i) + carry;
-                Unsafe.Add(ref bits, i) = (uint)digit;
+                long digit = Unsafe.Add(ref GetReference(left), i) + carry;
+                Unsafe.Add(ref GetReference(bits), i) = (uint)digit;
                 carry = digit >> 32;
             }
 
             Debug.Assert(carry == 0);
         }
 
-        private static void SubtractSelf(ref uint left, int leftLength,
-                                                ref uint right, int rightLength)
+        private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(Compare(ref left, leftLength, ref right, rightLength) >= 0);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(Compare(ref GetReference(left), left.Length, ref GetReference(right), right.Length) >= 0);
 
             // Executes the "grammar-school" algorithm for computing z = a - b.
             // Same as above, but we're writing the result directly to a and
@@ -229,17 +213,17 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-            ref uint leftElement = ref left;
-            for (; i < rightLength; i++)
+            ref uint leftElement = ref NullRef;
+            for (; i < right.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref left, i);
-                long digit = (leftElement + carry) - Unsafe.Add(ref right, i);
+                leftElement = ref Unsafe.Add(ref GetReference(left), i);
+                long digit = (leftElement + carry) - Unsafe.Add(ref GetReference(right), i);
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; carry != 0 && i < leftLength; i++)
+            for (; carry != 0 && i < left.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref left, i);
+                leftElement = ref Unsafe.Add(ref GetReference(left), i);
                 long digit = leftElement + carry;
                 leftElement = (uint)digit;
                 carry = digit >> 32;

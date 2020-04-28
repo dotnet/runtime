@@ -60,15 +60,15 @@ namespace System.Numerics
 
                 if (_length < value._length)
                 {
-                    Multiply(ref v, value._length,
-                                ref b, _length,
-                                ref t, _length + value._length);
+                    Multiply(CreateSpan(ref v, value._length),
+                                CreateSpan(ref b, _length),
+                                CreateSpan(ref t, _length + value._length));
                 }
                 else
                 {
-                    Multiply(ref b, _length,
-                                ref v, value._length,
-                                ref t, _length + value._length);
+                    Multiply(CreateSpan(ref b, _length),
+                                CreateSpan(ref v, value._length),
+                                CreateSpan(ref t, _length + value._length));
                 }
 
                 Apply(ref temp, _length + value._length);
@@ -85,8 +85,8 @@ namespace System.Numerics
                 ref uint b = ref GetArrayDataReference(_bits);
                 ref uint t = ref GetArrayDataReference(temp._bits);
 
-                Square(ref b, _length,
-                           ref t, _length + _length);
+                Square(CreateSpan(ref b, _length),
+                           CreateSpan(ref t, _length + _length));
 
                 Apply(ref temp, _length + _length);
             }

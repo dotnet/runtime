@@ -95,15 +95,15 @@ namespace System.Numerics
 
                     if (leftLength < rightLength)
                     {
-                        Multiply(ref r, rightLength,
-                                    ref Unsafe.Add(ref l, k), leftLength,
-                                    ref b, leftLength + rightLength);
+                        Multiply(CreateSpan(ref r, rightLength),
+                                    CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
+                                    CreateSpan(ref b, leftLength + rightLength));
                     }
                     else
                     {
-                        Multiply(ref Unsafe.Add(ref l, k), leftLength,
-                                    ref r, rightLength,
-                                    ref b, leftLength + rightLength);
+                        Multiply(CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
+                                    CreateSpan(ref r, rightLength),
+                                    CreateSpan(ref b, leftLength + rightLength));
                     }
 
                     return ActualLength(bits, leftLength + rightLength);
@@ -135,12 +135,12 @@ namespace System.Numerics
                 ref uint r = ref GetArrayDataReference(right);
                 ref uint m = ref GetArrayDataReference(modulus);
 
-                SubtractSelf(ref l, leftLength, ref r, rightLength);
+                SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref r, rightLength));
                 leftLength = ActualLength(left, leftLength);
 
                 while (Compare(ref l, leftLength, ref m, modulus.Length) >= 0)
                 {
-                    SubtractSelf(ref l, leftLength, ref m, modulus.Length);
+                    SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref m, modulus.Length));
                     leftLength = ActualLength(left, leftLength);
                 }
 

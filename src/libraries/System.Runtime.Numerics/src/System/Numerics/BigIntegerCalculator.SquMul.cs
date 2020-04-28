@@ -19,8 +19,7 @@ namespace System.Numerics
 
             uint[] bits = new uint[value.Length + value.Length];
 
-            Square(ref GetArrayDataReference(value), value.Length,
-                   ref GetArrayDataReference(bits), bits.Length);
+            Square(value, bits);
 
             return bits;
         }
@@ -29,11 +28,10 @@ namespace System.Numerics
         private static int SquareThreshold = 32;
         private static int AllocationThreshold = 256;
 
-        private static unsafe void Square(ref uint value, int valueLength,
-                                          ref uint bits, int bitsLength)
+        private static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {
-            Debug.Assert(valueLength >= 0);
-            Debug.Assert(bitsLength == valueLength + valueLength);
+            Debug.Assert(value.Length >= 0);
+            Debug.Assert(bits.Length == value.Length + value.Length);
 
             // Executes different algorithms for computing z = a * a
             // based on the actual length of a. If a is "small" enough
@@ -44,7 +42,7 @@ namespace System.Numerics
             // NOTE: useful thresholds needs some "empirical" testing,
             // which are smaller in DEBUG mode for testing purpose.
 
-            if (valueLength < SquareThreshold)
+            if (value.Length < SquareThreshold)
             {
                 // Squares the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
@@ -57,21 +55,21 @@ namespace System.Numerics
                 // = 2^64 - 1 (which perfectly matches with ulong!). But
                 // here we would need an UInt65... Hence, we split these
                 // operation and do some extra shifts.
-                ref uint elementPtr = ref value;
-                for (int i = 0; i < valueLength; i++)
+                ref uint elementPtr = ref NullRef;
+                for (int i = 0; i < value.Length; i++)
                 {
                     ulong carry = 0UL;
                     for (int j = 0; j < i; j++)
                     {
-                        elementPtr = ref Unsafe.Add(ref bits, i + j);
+                        elementPtr = ref Unsafe.Add(ref GetReference(bits), i + j);
                         ulong digit1 = elementPtr + carry;
-                        ulong digit2 = (ulong)Unsafe.Add(ref value, j) * Unsafe.Add(ref value, i);
+                        ulong digit2 = (ulong)Unsafe.Add(ref GetReference(value), j) * Unsafe.Add(ref GetReference(value), i);
                         elementPtr = unchecked((uint)(digit1 + (digit2 << 1)));
                         carry = (digit2 + (digit1 >> 1)) >> 31;
                     }
-                    elementPtr = ref Unsafe.Add(ref value, i);
+                    elementPtr = ref Unsafe.Add(ref GetReference(value), i);
                     ulong digits = (ulong)elementPtr * elementPtr + carry;
-                    elementPtr = ref Unsafe.Add(ref bits, i + i);
+                    elementPtr = ref Unsafe.Add(ref GetReference(bits), i + i);
                     elementPtr = unchecked((uint)digits);
                     Unsafe.Add(ref elementPtr, 1) = (uint)(digits >> 32);
                 }
@@ -90,29 +88,27 @@ namespace System.Numerics
                 // Say we want to compute z = a * a ...
 
                 // ... we need to determine our new length (just the half)
-                int n = valueLength >> 1;
+                int n = value.Length >> 1;
                 int n2 = n << 1;
 
                 // ... split value like a = (a_1 << n) + a_0
-                Span<uint> valueLow = CreateSpan(ref value, n);
-                Span<uint> valueHigh = CreateSpan(ref Unsafe.Add(ref value, n), valueLength - n);
+                ReadOnlySpan<uint> valueLow = value.Slice(0, n);
+                ReadOnlySpan<uint> valueHigh = value.Slice(n);
 
                 // ... prepare our result array (to reuse its memory)
-                Span<uint> bitsLow = CreateSpan(ref bits, n2);
-                Span<uint> bitsHigh = CreateSpan(ref Unsafe.Add(ref bits, n2), bitsLength - n2);
+                Span<uint> bitsLow = bits.Slice(0, n2);
+                Span<uint> bitsHigh = bits.Slice(n2);
 
                 // ... compute z_0 = a_0 * a_0 (squaring again!)
-                Square(ref GetReference(valueLow), valueLow.Length,
-                       ref GetReference(bitsLow), bitsLow.Length);
+                Square(valueLow, bitsLow);
 
                 // ... compute z_2 = a_1 * a_1 (squaring again!)
-                Square(ref GetReference(valueHigh), valueHigh.Length,
-                       ref GetReference(bitsHigh), bitsHigh.Length);
+                Square(valueHigh, bitsHigh);
 
                 int foldLength = valueHigh.Length + 1;
                 int coreLength = foldLength + foldLength;
 
-                Span<uint> result = CreateSpan(ref Unsafe.Add(ref bits, n), bitsLength - n);
+                Span<uint> result = bits.Slice(n);
 
                 if (coreLength < AllocationThreshold)
                 {
@@ -130,25 +126,21 @@ namespace System.Numerics
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static void SquareFinal(Span<uint> valueHigh, Span<uint> valueLow,
+                static void SquareFinal(ReadOnlySpan<uint> valueHigh, ReadOnlySpan<uint> valueLow,
                                         Span<uint> fold, Span<uint> core,
-                                        Span<uint> bitsHigh, Span<uint> bitsLow,
+                                        ReadOnlySpan<uint> bitsHigh, ReadOnlySpan<uint> bitsLow,
                                         Span<uint> result)
                 {
                     // ... compute z_a = a_1 + a_0 (call it fold...)
-                    Add(ref GetReference(valueHigh), valueHigh.Length,
-                        ref GetReference(valueLow), valueLow.Length,
-                        ref GetReference(fold), fold.Length);
+                    Add(valueHigh, valueLow, fold);
 
                     // ... compute z_1 = z_a * z_a - z_0 - z_2
-                    Square(ref GetReference(fold), fold.Length,
-                            ref GetReference(core), core.Length);
-                    SubtractCore(ref GetReference(bitsHigh), bitsHigh.Length,
-                                    ref GetReference(bitsLow), bitsLow.Length,
-                                    ref GetReference(core), core.Length);
+                    Square(fold, core);
+
+                    SubtractCore(bitsHigh, bitsLow, core);
 
                     // ... and finally merge the result! :-)
-                    AddSelf(ref GetReference(result), result.Length, ref GetReference(core), core.Length);
+                    AddSelf(result, core);
                 }
             }
         }
@@ -196,9 +188,7 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length + right.Length];
 
-            Multiply(ref GetArrayDataReference(left), left.Length,
-                     ref GetArrayDataReference(right), right.Length,
-                     ref GetArrayDataReference(bits), bits.Length);
+            Multiply(left, right, bits);
 
             return bits;
         }
@@ -206,21 +196,12 @@ namespace System.Numerics
         // Mutable for unit testing...
         private static int MultiplyThreshold = 32;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<uint> ZeroMem(Span<uint> memory)
+        private static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            memory.Clear();
-            return memory;
-        }
-
-        private static void Multiply(ref uint left, int leftLength,
-                                            ref uint right, int rightLength,
-                                            ref uint bits, int bitsLength)
-        {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(bitsLength == leftLength + rightLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(bits.Length == left.Length + right.Length);
 
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
@@ -231,7 +212,7 @@ namespace System.Numerics
             // NOTE: useful thresholds needs some "empirical" testing,
             // which are smaller in DEBUG mode for testing purpose.
 
-            if (rightLength < MultiplyThreshold)
+            if (right.Length < MultiplyThreshold)
             {
                 // Multiplies the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
@@ -240,19 +221,19 @@ namespace System.Numerics
                 // z_i+j + a_j * b_i + c <= 2(2^32 - 1) + (2^32 - 1)^2 =
                 // = 2^64 - 1 (which perfectly matches with ulong!).
 
-                ref uint elementPtr = ref left;
-                for (int i = 0; i < rightLength; i++)
+                ref uint elementPtr = ref NullRef;
+                for (int i = 0; i < right.Length; i++)
                 {
                     ulong carry = 0UL;
-                    for (int j = 0; j < leftLength; j++)
+                    for (int j = 0; j < left.Length; j++)
                     {
-                        elementPtr = ref Unsafe.Add(ref bits, i + j);
+                        elementPtr = ref Unsafe.Add(ref GetReference(bits), i + j);
                         ulong digits = elementPtr + carry
-                            + (ulong)Unsafe.Add(ref left, j) * Unsafe.Add(ref right, i);
+                            + (ulong)Unsafe.Add(ref GetReference(left), j) * Unsafe.Add(ref GetReference(right), i);
                         elementPtr = unchecked((uint)digits);
                         carry = digits >> 32;
                     }
-                    Unsafe.Add(ref bits, i + leftLength) = (uint)carry;
+                    Unsafe.Add(ref GetReference(bits), i + left.Length) = (uint)carry;
                 }
             }
             else
@@ -269,36 +250,32 @@ namespace System.Numerics
                 // Say we want to compute z = a * b ...
 
                 // ... we need to determine our new length (just the half)
-                int n = rightLength >> 1;
+                int n = right.Length >> 1;
                 int n2 = n << 1;
 
                 // ... split left like a = (a_1 << n) + a_0
-                Span<uint> leftLow = CreateSpan(ref left, n);
-                Span<uint> leftHigh = CreateSpan(ref Unsafe.Add(ref left, n), leftLength - n);
+                ReadOnlySpan<uint> leftLow = left.Slice(0, n);
+                ReadOnlySpan<uint> leftHigh = left.Slice(n);
 
                 // ... split right like b = (b_1 << n) + b_0
-                Span<uint> rightLow = CreateSpan(ref right, n);
-                Span<uint> rightHigh = CreateSpan(ref Unsafe.Add(ref right, n), rightLength - n);
+                ReadOnlySpan<uint> rightLow = right.Slice(0, n);
+                ReadOnlySpan<uint> rightHigh = right.Slice(n);
 
                 // ... prepare our result array (to reuse its memory)
-                Span<uint> bitsLow = CreateSpan(ref bits, n2);
-                Span<uint> bitsHigh = CreateSpan(ref Unsafe.Add(ref bits, n2), bitsLength - n2);
+                Span<uint> bitsLow = bits.Slice(0, n2);
+                Span<uint> bitsHigh = bits.Slice(n2);
 
                 // ... compute z_0 = a_0 * b_0 (multiply again)
-                Multiply(ref GetReference(leftLow), leftLow.Length,
-                         ref GetReference(rightLow), rightLow.Length,
-                         ref GetReference(bitsLow), bitsLow.Length);
+                Multiply(leftLow, rightLow, bitsLow);
 
                 // ... compute z_2 = a_1 * b_1 (multiply again)
-                Multiply(ref GetReference(leftHigh), leftHigh.Length,
-                         ref GetReference(rightHigh), rightHigh.Length,
-                         ref GetReference(bitsHigh), bitsHigh.Length);
+                Multiply(leftHigh, rightHigh, bitsHigh);
 
                 int leftFoldLength = leftHigh.Length + 1;
                 int rightFoldLength = rightHigh.Length + 1;
                 int coreLength = leftFoldLength + rightFoldLength;
 
-                Span<uint> result = CreateSpan(ref Unsafe.Add(ref bits, n), bitsLength - n);
+                Span<uint> result = bits.Slice(n);
 
                 if (coreLength < AllocationThreshold)
                 {
@@ -316,44 +293,34 @@ namespace System.Numerics
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static void MultiplyFinal(Span<uint> leftHigh, Span<uint> leftLow, Span<uint> leftFold,
-                                            Span<uint> rightHigh, Span<uint> rightLow, Span<uint> rightFold,
-                                            Span<uint> bitsHigh, Span<uint> bitsLow, Span<uint> core,
+                static void MultiplyFinal(ReadOnlySpan<uint> leftHigh, ReadOnlySpan<uint> leftLow, Span<uint> leftFold,
+                                            ReadOnlySpan<uint> rightHigh, ReadOnlySpan<uint> rightLow, Span<uint> rightFold,
+                                            ReadOnlySpan<uint> bitsHigh, ReadOnlySpan<uint> bitsLow, Span<uint> core,
                                             Span<uint> result)
                 {
                     // ... compute z_a = a_1 + a_0 (call it fold...)
-                    Add(ref GetReference(leftHigh), leftHigh.Length,
-                        ref GetReference(leftLow), leftLow.Length,
-                        ref GetReference(leftFold), leftFold.Length);
+                    Add(leftHigh, leftLow, leftFold);
 
                     // ... compute z_b = b_1 + b_0 (call it fold...)
-                    Add(ref GetReference(rightHigh), rightHigh.Length,
-                        ref GetReference(rightLow), rightLow.Length,
-                        ref GetReference(rightFold), rightFold.Length);
+                    Add(rightHigh, rightLow, rightFold);
 
                     // ... compute z_1 = z_a * z_b - z_0 - z_2
-                    Multiply(ref GetReference(leftFold), leftFold.Length,
-                                ref GetReference(rightFold), rightFold.Length,
-                                ref GetReference(core), core.Length);
-                    SubtractCore(ref GetReference(bitsHigh), bitsHigh.Length,
-                                    ref GetReference(bitsLow), bitsLow.Length,
-                                    ref GetReference(core), core.Length);
+                    Multiply(leftFold, rightFold, core);
+                    SubtractCore(bitsHigh, bitsLow, core);
 
                     // ... and finally merge the result! :-)
-                    AddSelf(ref GetReference(result), result.Length, ref GetReference(core), core.Length);
+                    AddSelf(result, core);
                 }
             }
         }
 
-        private static void SubtractCore(ref uint left, int leftLength,
-                                                ref uint right, int rightLength,
-                                                ref uint core, int coreLength)
+        private static void SubtractCore(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> core)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(coreLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(coreLength >= leftLength);
+            Debug.Assert(left.Length >= 0);
+            Debug.Assert(right.Length >= 0);
+            Debug.Assert(core.Length >= 0);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(core.Length >= left.Length);
 
             // Executes a special subtraction algorithm for the multiplication,
             // which needs to subtract two different values from a core value,
@@ -365,24 +332,24 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            ref uint elementPtr = ref left;
-            for (; i < rightLength; i++)
+            ref uint elementPtr = ref NullRef;
+            for (; i < right.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref core, i);
-                long digit = (elementPtr + carry) - Unsafe.Add(ref left, i) - Unsafe.Add(ref right, i);
+                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
+                long digit = (elementPtr + carry) - Unsafe.Add(ref GetReference(left), i) - Unsafe.Add(ref GetReference(right), i);
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; i < leftLength; i++)
+            for (; i < left.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref core, i);
-                long digit = (elementPtr + carry) - Unsafe.Add(ref left, i);
+                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
+                long digit = (elementPtr + carry) - Unsafe.Add(ref GetReference(left), i);
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for (; carry != 0 && i < coreLength; i++)
+            for (; carry != 0 && i < core.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref core, i);
+                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
                 long digit = elementPtr + carry;
                 elementPtr = (uint)digit;
                 carry = digit >> 32;
