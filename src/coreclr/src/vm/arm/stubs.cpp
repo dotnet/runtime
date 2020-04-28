@@ -1725,7 +1725,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         ThumbEmitProlog(1, 0, FALSE);
     }
 
-    ThumbEmitCallManagedMethod(pSharedMD, true);
+    ThumbEmitTailCallManagedMethod(pSharedMD);
 
     if (isRelative)
     {
