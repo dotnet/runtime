@@ -57,9 +57,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private (int Offset, int Length)? _previousKeyRange;
         private HashSet<(int Offset, int Length)>? _previousKeyRanges;
 
-        // stores a reusable List allocation for keeping ranges in the buffer
-        private List<(int Offset, int Length)>? _rangeListAllocation = null;
-
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
 
@@ -383,24 +380,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 throw new FormatException("Unexpected end of buffer.");
             }
-        }
-
-        private List<(int Offset, int Length)> AcquireRangeList()
-        {
-            List<(int Offset, int Length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
-
-            if (ranges != null)
-            {
-                ranges.Clear();
-                return ranges;
-            }
-
-            return new List<(int Offset, int Length)>();
-        }
-
-        private void ReturnRangeList(List<(int Offset, int Length)> ranges)
-        {
-            _rangeListAllocation = ranges;
         }
 
         private readonly struct StackFrame

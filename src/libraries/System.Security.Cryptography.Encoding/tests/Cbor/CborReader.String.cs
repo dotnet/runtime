@@ -6,12 +6,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
         private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        // stores a reusable List allocation for keeping ranges in the buffer
+        private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
         // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public byte[] ReadByteString()
@@ -209,7 +213,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             bytesWritten = concatenatedBufferSize;
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return true;
         }
 
@@ -239,7 +243,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             charsWritten = concatenatedStringSize;
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return true;
         }
 
@@ -260,7 +264,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Debug.Assert(target.IsEmpty);
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
         }
 
@@ -279,7 +283,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
-            ReturnRangeList(ranges);
+            ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
 
             static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source) input)
@@ -300,7 +304,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // performing validation and returning a list of ranges containing the individual chunk payloads
         private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
-            List<(int Offset, int Length)> ranges = AcquireRangeList();
+            List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
             ReadOnlySpan<byte> buffer = _buffer.Span;
             concatenatedBufferSize = 0;
 
@@ -368,6 +372,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 throw new FormatException("Text string payload is not a valid UTF8 string.", e);
             }
+        }
+
+        private List<(int Offset, int Length)> AcquireIndefiniteLengthStringRangeList()
+        {
+            List<(int Offset, int Length)>? ranges = Interlocked.Exchange(ref _indefiniteLengthStringRangeAllocation, null);
+
+            if (ranges != null)
+            {
+                ranges.Clear();
+                return ranges;
+            }
+
+            return new List<(int Offset, int Length)>();
+        }
+
+        private void ReturnIndefiniteLengthStringRangeList(List<(int Offset, int Length)> ranges)
+        {
+            _indefiniteLengthStringRangeAllocation = ranges;
         }
     }
 }
