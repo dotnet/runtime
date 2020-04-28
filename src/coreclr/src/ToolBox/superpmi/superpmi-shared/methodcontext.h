@@ -436,11 +436,6 @@ public:
         DWORDLONG ProfilerHandle;
         DWORD     bIndirectedHandles;
     };
-    struct Agnostic_GetTailCallCopyArgsThunk
-    {
-        Agnostic_CORINFO_SIG_INFO Sig;
-        DWORD                     flags;
-    };
     struct Agnostic_GetTailCallHelpers
     {
         Agnostic_CORINFO_RESOLVED_TOKEN callToken;
@@ -1269,10 +1264,6 @@ public:
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
     const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly);
 
-    void recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags, void* result);
-    void dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value);
-    void* repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
-
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,
@@ -1464,7 +1455,7 @@ enum mcPackets
     Packet_GetRelocTypeHint                              = 84,
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
-    Packet_GetTailCallCopyArgsThunk                      = 87,
+    Packet_GetTailCallCopyArgsThunk                      = 87, // Retired 4/27/2020
     Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,

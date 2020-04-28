@@ -4,15 +4,18 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
-    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn />
-    <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true'">$(NoWarn);nullable</NoWarn>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
+    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
+    <DefineConstants Condition="$(TargetFramework.StartsWith('netcoreapp'))">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <NoWarn Condition="!$(TargetFramework.StartsWith('netcoreapp'))">$(NoWarn);nullable</NoWarn>   
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"

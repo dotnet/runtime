@@ -3851,7 +3851,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // !TARGET_64BIT
         {
             // If this arg is never on the stack, go to the next one.
-            if (!regArgTab[argNum].stackArg)
+            if (!regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
             {
                 continue;
             }

@@ -5940,48 +5940,6 @@ const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
     return name;
 }
 
-void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*                    pSig,
-                                                CorInfoHelperTailCallSpecialHandling flags,
-                                                void*                                result)
-{
-    if (GetTailCallCopyArgsThunk == nullptr)
-        GetTailCallCopyArgsThunk = new LightWeightMap<Agnostic_GetTailCallCopyArgsThunk, DWORDLONG>();
-
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
-    key.flags = (DWORD)flags;
-
-    GetTailCallCopyArgsThunk->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-}
-
-void MethodContext::dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value)
-{
-    printf("GetTailCallCopyArgsThunk key sig%s flg-%08X",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.Sig).c_str(), key.flags);
-    printf(", value res-%016llX", value);
-}
-
-void* MethodContext::repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-{
-    AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
-
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
-    key.flags = (DWORD)flags;
-
-    AssertCodeMsg(GetTailCallCopyArgsThunk->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
-                  (DWORDLONG)key.Sig.retTypeClass);
-    void* result = (void*)GetTailCallCopyArgsThunk->Get(key);
-    cr->recAddressMap((void*)0x424242, (void*)result, 1);
-    DEBUG_REP(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-    return result;
-}
-
 void MethodContext::recGetTailCallHelpers(
     CORINFO_RESOLVED_TOKEN* callToken,
     CORINFO_SIG_INFO* sig,

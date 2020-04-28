@@ -62,9 +62,6 @@
 #endif
 
     IMPORT JIT_RareDisableHelperWorker
-    IMPORT DoJITFailFast
-    IMPORT s_gsCookie
-    IMPORT g_TrapReturningThreads
 
     ;; Imports for singleDomain statics helpers
     IMPORT JIT_GetSharedNonGCStaticBase_Helper
@@ -192,119 +189,6 @@ LReturnDone
         EPILOG_POP              {r4,r5,r7,pc}
 
         NESTED_END
-
-
-;;-----------------------------------------------------------------------------
-;; This helper routine is where returns for irregular tail calls end up
-:: so they can dynamically pop their stack arguments.
-;;-----------------------------------------------------------------------------
-;
-; Stack Layout (stack grows up, 0 at the top, offsets relative to frame pointer, r7):
-;
-; sp ->     callee stack arguments
-;           :
-;           :
-;    -0Ch   gsCookie
-; TailCallHelperFrame ->
-;    -08h   __VFN_table
-;    -04h   m_Next
-; r7 ->
-;    +00h   m_calleeSavedRgisters.r4
-;    +04h                        .r5
-;    +08h                        .r6
-;    +0Ch                        .r7
-;    +10h                        .r8
-;    +14h                        .r9
-;    +18h                        .r10
-; r11->
-;    +1Ch                        .r11
-;    +20h                        .r14 -or- m_ReturnAddress
-;
-; r6 -> GetThread()
-; r5 -> r6->m_pFrame (old Frame chain head)
-; r11 is used to preserve the ETW call stack
-
-    NESTED_ENTRY TailCallHelperStub
-        ;
-        ; This prolog is never executed, but we keep it here for reference
-        ; and for the unwind data it generates
-        ;
-
-        ; Spill callee saved registers and return address.
-        PROLOG_PUSH         {r4-r11,lr}
-
-        PROLOG_STACK_SAVE   r7
-
-        ;
-        ; This is the code that would have to run to setup this frame
-        ; like the C++ helper does before calling RtlRestoreContext
-        ;
-        ; Allocate space for the rest of the frame and GSCookie.
-        ; PROLOG_STACK_ALLOC  0x0C
-        ;
-        ; Set r11 for frame chain
-        ;add     r11, r7, 0x1C
-        ;
-        ; Set the vtable for TailCallFrame
-        ;bl      TCF_GETMETHODFRAMEVPTR
-        ;str     r0, [r7, #-8]
-        ;
-        ; Initialize the GSCookie within the Frame
-        ;ldr     r0, =s_gsCookie
-        ;str     r0, [r7, #-0x0C]
-        ;
-        ; Link the TailCallFrameinto the Frame chain
-        ; and initialize r5 & r6 for unlinking later
-        ;CALL_GETTHREAD
-        ;mov     r6, r0
-        ;ldr     r5, [r6, #Thread__m_pFrame]
-        ;str     r5, [r7, #-4]
-        ;sub     r0, r7, 8
-        ;str     r0, [r6, #Thread__m_pFrame]
-        ;
-        ; None of the previous stuff is ever executed,
-        ; but we keep it here for reference
-        ;
-
-        ;
-        ; Here's the pretend call (make it real so the unwinder
-        ; doesn't think we're in the prolog)
-        ;
-        bl      TailCallHelperStub
-        ;
-        ; with the real return address pointing to this real epilog
-        ;
-JIT_TailCallHelperStub_ReturnAddress
-        EXPORT JIT_TailCallHelperStub_ReturnAddress
-
-        ;
-        ; Our epilog (which also unlinks the StubHelperFrame)
-        ; Be careful not to trash the return registers
-        ;
-
-#ifdef _DEBUG
-        ldr     r3, =s_gsCookie
-        ldr     r3, [r3]
-        ldr     r2, [r7, #-0x0C]
-        cmp     r2, r3
-        beq     GoodGSCookie
-        bl      DoJITFailFast
-GoodGSCookie
-#endif ; _DEBUG
-
-        ;
-        ; unlink the TailCallFrame
-        ;
-        str     r5, [r6, #Thread__m_pFrame]
-
-        ;
-        ; epilog
-        ;
-        EPILOG_STACK_RESTORE    r7
-        EPILOG_POP              {r4-r11,lr}
-        EPILOG_RETURN
-
-    NESTED_END
 
 ; ------------------------------------------------------------------
 
