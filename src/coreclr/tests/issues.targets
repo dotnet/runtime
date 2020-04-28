@@ -1043,6 +1043,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
