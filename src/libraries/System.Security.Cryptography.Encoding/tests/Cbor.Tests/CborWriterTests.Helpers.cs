@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
                 else
                 {
-                    writer.WriteStartArrayIndefiniteLength();
+                    writer.WriteStartArray();
                 }
 
                 foreach (object value in values)
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
                 else
                 {
-                    writer.WriteStartMapIndefiniteLength();
+                    writer.WriteStartMap();
                 }
 
                 foreach (object value in keyValuePairs.Skip(1))
@@ -129,22 +129,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public static void WriteChunkedByteString(CborWriter writer, byte[][] chunks)
             {
-                writer.WriteStartByteStringIndefiniteLength();
+                writer.WriteStartByteString();
                 foreach (byte[] chunk in chunks)
                 {
                     writer.WriteByteString(chunk);
                 }
-                writer.WriteEndByteStringIndefiniteLength();
+                writer.WriteEndByteString();
             }
 
             public static void WriteChunkedTextString(CborWriter writer, string[] chunks)
             {
-                writer.WriteStartTextStringIndefiniteLength();
+                writer.WriteStartTextString();
                 foreach (string chunk in chunks)
                 {
                     writer.WriteTextString(chunk);
                 }
-                writer.WriteEndTextStringIndefiniteLength();
+                writer.WriteEndTextString();
             }
 
             public static void ExecOperation(CborWriter writer, string op)
@@ -154,12 +154,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case nameof(writer.WriteInt64): writer.WriteInt64(42); break;
                     case nameof(writer.WriteByteString): writer.WriteByteString(Array.Empty<byte>()); break;
                     case nameof(writer.WriteTextString): writer.WriteTextString(""); break;
-                    case nameof(writer.WriteStartTextStringIndefiniteLength): writer.WriteStartTextStringIndefiniteLength(); break;
-                    case nameof(writer.WriteStartByteStringIndefiniteLength): writer.WriteStartByteStringIndefiniteLength(); break;
-                    case nameof(writer.WriteStartArray): writer.WriteStartArrayIndefiniteLength(); break;
-                    case nameof(writer.WriteStartMap): writer.WriteStartMapIndefiniteLength(); break;
-                    case nameof(writer.WriteEndByteStringIndefiniteLength): writer.WriteEndByteStringIndefiniteLength(); break;
-                    case nameof(writer.WriteEndTextStringIndefiniteLength): writer.WriteEndTextStringIndefiniteLength(); break;
+                    case nameof(writer.WriteStartTextString): writer.WriteStartTextString(); break;
+                    case nameof(writer.WriteStartByteString): writer.WriteStartByteString(); break;
+                    case nameof(writer.WriteStartArray): writer.WriteStartArray(); break;
+                    case nameof(writer.WriteStartMap): writer.WriteStartMap(); break;
+                    case nameof(writer.WriteEndByteString): writer.WriteEndByteString(); break;
+                    case nameof(writer.WriteEndTextString): writer.WriteEndTextString(); break;
                     case nameof(writer.WriteEndArray): writer.WriteEndArray(); break;
                     case nameof(writer.WriteEndMap): writer.WriteEndMap(); break;
                     default: throw new Exception($"Unrecognized CborWriter operation name {op}");

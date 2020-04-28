@@ -113,53 +113,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteByteString))]
-        [InlineData(nameof(CborWriter.WriteStartTextStringIndefiniteLength))]
-        [InlineData(nameof(CborWriter.WriteStartByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteStartTextString))]
+        [InlineData(nameof(CborWriter.WriteStartByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
         public static void WriteTextString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndByteString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteTextString))]
-        [InlineData(nameof(CborWriter.WriteStartTextStringIndefiniteLength))]
-        [InlineData(nameof(CborWriter.WriteStartByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteStartTextString))]
+        [InlineData(nameof(CborWriter.WriteStartByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
-        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
     }

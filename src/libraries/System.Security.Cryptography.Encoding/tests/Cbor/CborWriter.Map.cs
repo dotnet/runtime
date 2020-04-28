@@ -24,6 +24,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.Map, definiteLength: checked(2 * definiteLength));
         }
 
+        public void WriteStartMap()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
+            PushDataItem(CborMajorType.Map, definiteLength: null);
+            _currentKeyOffset = _offset;
+            _currentValueOffset = null;
+        }
+
         public void WriteEndMap()
         {
             if (_itemsWritten % 2 == 1)
@@ -33,15 +42,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             PopDataItem(CborMajorType.Map);
             AdvanceDataItemCounters();
-        }
-
-        public void WriteStartMapIndefiniteLength()
-        {
-            EnsureWriteCapacity(1);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            PushDataItem(CborMajorType.Map, definiteLength: null);
-            _currentKeyOffset = _offset;
-            _currentValueOffset = null;
         }
 
         //

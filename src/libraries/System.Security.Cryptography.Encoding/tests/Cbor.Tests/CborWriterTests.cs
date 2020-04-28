@@ -149,10 +149,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             writer.WriteTextString("foo");
             writer.WriteEncodedValue("63626172".HexToByteArray());
-            writer.WriteEndTextStringIndefiniteLength();
+            writer.WriteEndTextString();
 
             byte[] encoding = writer.GetEncoding();
             Assert.Equal("7f63666f6f63626172ff", encoding.ByteArrayToHex().ToLower());
@@ -163,10 +163,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter(encodeIndefiniteLengths: true);
 
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             writer.WriteByteString(new byte[] { 1, 1, 1 });
             writer.WriteEncodedValue("43020202".HexToByteArray());
-            writer.WriteEndByteStringIndefiniteLength();
+            writer.WriteEndByteString();
 
             byte[] encoding = writer.GetEncoding();
             Assert.Equal("5f4301010143020202ff", encoding.ByteArrayToHex().ToLower());
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteEncodedValue_BadIndefiniteLengthStringValue_ShouldThrowInvalidOperationException()
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => writer.WriteEncodedValue(new byte[] { 0x01 }));
         }
 

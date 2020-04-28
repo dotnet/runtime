@@ -22,17 +22,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.Array, definiteLength);
         }
 
-        public void WriteEndArray()
-        {
-            PopDataItem(CborMajorType.Array);
-            AdvanceDataItemCounters();
-        }
-
-        public void WriteStartArrayIndefiniteLength()
+        public void WriteStartArray()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Array, definiteLength: null);
+        }
+
+        public void WriteEndArray()
+        {
+            PopDataItem(CborMajorType.Array);
+            AdvanceDataItemCounters();
         }
 
         private void PatchIndefiniteLengthCollection(CborMajorType majorType, int count)

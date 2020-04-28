@@ -321,7 +321,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void EndWriteMap_IndefiniteLength_OddItems_ShouldThrowInvalidOperationException(int length)
         {
             using var writer = new CborWriter();
-            writer.WriteStartMapIndefiniteLength();
+            writer.WriteStartMap();
 
             for (int i = 1; i < length; i++)
             {

@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
         }
 
-        public void WriteStartByteStringIndefiniteLength()
+        public void WriteStartByteString()
         {
             if (!EncodeIndefiniteLengths)
             {
@@ -79,13 +79,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.ByteString, definiteLength: null);
         }
 
-        public void WriteEndByteStringIndefiniteLength()
+        public void WriteEndByteString()
         {
             PopDataItem(CborMajorType.ByteString);
             AdvanceDataItemCounters();
         }
 
-        public void WriteStartTextStringIndefiniteLength()
+        public void WriteStartTextString()
         {
             if (!EncodeIndefiniteLengths)
             {
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.TextString, definiteLength: null);
         }
 
-        public void WriteEndTextStringIndefiniteLength()
+        public void WriteEndTextString()
         {
             PopDataItem(CborMajorType.TextString);
             AdvanceDataItemCounters();

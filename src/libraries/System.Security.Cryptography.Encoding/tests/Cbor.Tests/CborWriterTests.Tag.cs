@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
 
-            writer.WriteStartArrayIndefiniteLength();
+            writer.WriteStartArray();
             writer.WriteTag(CborTag.Uri);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
