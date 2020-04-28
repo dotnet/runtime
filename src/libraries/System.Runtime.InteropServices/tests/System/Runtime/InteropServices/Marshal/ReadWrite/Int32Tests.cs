@@ -129,6 +129,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         public void ReadInt32_ZeroPoint_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt32(IntPtr.Zero));
@@ -156,6 +157,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         public void WriteInt32_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt32(IntPtr.Zero, 0));

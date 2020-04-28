@@ -136,6 +136,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         public void ReadIntPtr_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadIntPtr(IntPtr.Zero));
@@ -163,6 +164,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         public void WriteIntPtr_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteIntPtr(IntPtr.Zero, (IntPtr)0));

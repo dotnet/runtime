@@ -9,6 +9,7 @@ namespace System.Threading.Tasks.Tests
     public class RunContinuationsAsynchronouslyTests
     {
         [Theory]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         [InlineData(false)]
         [InlineData(true)]
         public void Direct(bool useRunContinuationsAsynchronously)
@@ -25,6 +26,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         [InlineData(false)]
         [InlineData(true)]
         public void ViaWhenAll(bool useRunContinuationsAsynchronously)
@@ -33,6 +35,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         [InlineData(false)]
         [InlineData(true)]
         public void ViaWhenAny(bool useRunContinuationsAsynchronously)

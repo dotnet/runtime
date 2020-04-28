@@ -284,6 +284,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("<coming soon>", TestRuntimes.Mono)]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>
