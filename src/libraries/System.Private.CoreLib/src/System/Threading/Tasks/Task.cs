@@ -2967,11 +2967,11 @@ namespace System.Threading.Tasks
         // Breaks out logic for recording a cancellation request
         // This overload should only be used for promise tasks where no cancellation token
         // was supplied when the task was created.
-        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord)
+        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord, object? cancellationException)
         {
-            RecordInternalCancellationRequest();
-
             Debug.Assert((Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0, "Task.RecordInternalCancellationRequest(CancellationToken) only valid for promise-style task");
+
+            RecordInternalCancellationRequest();
             Debug.Assert(m_contingentProperties!.m_cancellationToken == default);
 
             // Store the supplied cancellation token as this task's token.
@@ -2980,14 +2980,6 @@ namespace System.Threading.Tasks
             {
                 m_contingentProperties.m_cancellationToken = tokenToRecord;
             }
-        }
-
-        // Breaks out logic for recording a cancellation request
-        // This overload should only be used for promise tasks where no cancellation token
-        // was supplied when the task was created.
-        internal void RecordInternalCancellationRequest(CancellationToken tokenToRecord, object? cancellationException)
-        {
-            RecordInternalCancellationRequest(tokenToRecord);
 
             // Store the supplied cancellation exception
             if (cancellationException != null)
