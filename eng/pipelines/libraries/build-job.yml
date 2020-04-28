@@ -73,7 +73,6 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'OSX') }}:
           - script: |
               brew install icu4c openssl pkg-config
-              brew link --force icu4c
             displayName: Install Build Dependencies
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:

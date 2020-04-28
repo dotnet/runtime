@@ -37,7 +37,6 @@ ICU (International Components for Unicode) is also required to build and run. It
 
 ```sh
 brew install icu4c
-brew link --force icu4c
 ```
 
 Build the Runtime and System.Private.CoreLib

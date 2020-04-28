@@ -29,7 +29,6 @@ jobs:
       - script: |
           $(setScriptToEchoAndFailOnNonZero) 
           brew install autoconf automake icu4c libtool openssl pkg-config python3
-          brew link --force icu4c
         displayName: Install Build Dependencies
 
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
