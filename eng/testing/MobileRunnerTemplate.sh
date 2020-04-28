@@ -31,5 +31,4 @@ done
 
 dotnet xharness ios test --app="$APP_BUNDLE" \
     --targets=$TARGET \
-    --output-directory="$EXECUTION_DIR/Bundle/xharness-output" \
-    --working-directory="$EXECUTION_DIR/Bundle/xharness-workingdir"
+    --output-directory="$EXECUTION_DIR/Bundle/xharness-output"
