@@ -491,9 +491,6 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs">
       <Link>Common\Interop\Browser\Interop.Runtime.AnyRef.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Interfaces.cs">
-      <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
-    </Compile>
 
     <Compile Include="$(CommonPath)Interop\Browser\Interop.HttpHandlerService.cs">
       <Link>Common\Interop\Browser\Interop.HttpHandlerService.cs</Link>
