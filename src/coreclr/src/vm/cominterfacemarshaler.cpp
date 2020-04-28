@@ -93,12 +93,6 @@ VOID COMInterfaceMarshaler::Init(IUnknown* pUnk, MethodTable* pClassMT, Thread *
     m_pThread = pThread;
 
     m_flags = flags;
-
-    if (!SupportsIInspectable())
-    {
-        if (!m_typeHandle.IsNull() && m_typeHandle.IsProjectedFromWinRT())
-            m_flags |= RCW::CF_SupportsIInspectable;
-    }
 }
 
 //--------------------------------------------------------------------------------
@@ -138,59 +132,6 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
             if(!m_typeHandle.IsNull())
                 return;
         }
-
-        // Note that the actual type may be a subtype of m_typeHandle if it's not sealed.
-        if ((m_typeHandle.IsNull() || !m_typeHandle.GetMethodTable()->IsSealed()) && WinRTSupported())
-        {
-            bool fInspectable = SupportsIInspectable();
-            EX_TRY
-            {
-                // QI for IInspectable first. m_fInspectable at this point contains information about the interface
-                // pointer that we could gather from the signature or API call. But, since an object can be acquired
-                // as a plain IUnknown and later started being treated as a WinRT object, we always eagerly QI for
-                // IInspectable as part of the IInspectable::GetRuntimeClassName call.  Also note that we may discover
-                // this IInspectable is really a IReference<T> or IReferenceArray<T> for WinRT-compatible T's.
-                TypeHandle typeHandle = GetClassFromIInspectable(pIncomingIP, &fInspectable, &m_fIReference, &m_fIReferenceArray);
-
-                if (!typeHandle.IsNull())
-                {
-                    // GetRuntimeClassName could return a interface or projected value type name
-                    if (m_fIReference || m_fIReferenceArray)
-                    {
-                        // this has already been pre-processed - it is the IReference/IReferenceArray generic argument
-                        m_typeHandle = typeHandle;
-                    }
-                    if (typeHandle.IsInterface())
-                    {
-                        m_itfTypeHandle = typeHandle;
-                    }
-                    else if (!typeHandle.IsValueType())
-                    {
-                        // if the type returned from GetRuntimeClassName is a class, it must be derived from __ComObject
-                        // or be a WinRT delegate for us to be able to build an RCW for it
-                        if (typeHandle.IsComObjectType() ||
-                            (!typeHandle.IsTypeDesc() && typeHandle.GetMethodTable()->IsDelegate() && typeHandle.IsProjectedFromWinRT()))
-                        {
-                            m_typeHandle = typeHandle;
-                        }
-                    }
-                }
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-
-            if (fInspectable)
-            {
-                m_flags |= RCW::CF_SupportsIInspectable;
-            }
-            else
-            {
-                _ASSERTE_MSG(m_typeHandle.IsNull() || !SupportsIInspectable(),
-                    "Acquired an object which should be IInspectable according to metadata but the QI failed.");
-            }
-        }
     }
 
     if (m_typeHandle.IsNull())
@@ -210,7 +151,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         MODE_COOPERATIVE;
         PRECONDITION(IsProtectedByGCFrame(pComObj));
         PRECONDITION(!m_typeHandle.IsNull());
-        PRECONDITION(m_typeHandle.IsComObjectType() || (m_typeHandle.GetMethodTable()->IsDelegate() && m_typeHandle.GetMethodTable()->IsProjectedFromWinRT()));
+        PRECONDITION(m_typeHandle.IsComObjectType());
         PRECONDITION(m_pThread == GetThread());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }

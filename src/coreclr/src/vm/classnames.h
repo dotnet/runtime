@@ -51,7 +51,6 @@
 #define g_WinRTIIteratorClassNameW W("Windows.Foundation.Collections.IIterator`1")
 #define g_ICommandName "System.Windows.Input.ICommand"
 #define g_ComObjectName "__ComObject"
-#define g_RuntimeClassName "RuntimeClass"
 #define g_INotifyCollectionChanged_WinRTName "System.Runtime.InteropServices.WindowsRuntime.INotifyCollectionChanged_WinRT"
 #define g_NotifyCollectionChangedToManagedAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedToManagedAdapter"
 #define g_NotifyCollectionChangedToWinRTAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedToWinRTAdapter"

@@ -382,7 +382,7 @@ void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF
 void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF* pRef);
 
 //-------------------------------------------------------------
-// check if a ComClassFactory/WinRTClassFactory has been setup for this class
+// check if a ComClassFactory has been setup for this class
 // if not set one up
 ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION

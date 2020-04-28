@@ -310,7 +310,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     // Com Import classes are special
     if (IsComImport()  && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
-        _ASSERTE(pParentMethodTable == g_pBaseCOMObject || pThisMT->IsWinRTObjectType());
+        _ASSERTE(pParentMethodTable == g_pBaseCOMObject);
         _ASSERTE(!(HasLayout()));
 
         // if the current class is imported

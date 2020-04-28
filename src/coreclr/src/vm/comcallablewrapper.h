@@ -151,8 +151,6 @@ private:
 //
 //--------------------------------------------------------------------------------
 
-class WinRTManagedClassFactory;
-
 //--------------------------------------------------------------------------------
 // COM callable wrappers for CLR objects
 //--------------------------------------------------------------------------------
@@ -273,7 +271,7 @@ public:
         InterfaceProps &AppendInterface(MethodTable *pItfMT);
 
     public:
-        CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact);
+        CCWInterfaceMapIterator(TypeHandle thClass);
 
         BOOL Next()
         {
@@ -411,7 +409,7 @@ public:
     BOOL IsSafeTypeForMarshalling();
 
     // Creates a new Template and caches it on the MethodTable or class factory.
-    static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass, WinRTManagedClassFactory *pClsFact = NULL);
+    static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass);
 
     // Creates a new Template for just one interface. Used for lazily created CCWs for interfaces with variance.
     static ComCallWrapperTemplate *CreateTemplateForInterface(MethodTable *pItfMT);
@@ -527,7 +525,7 @@ enum Masks
     enum_GuidGenerated                  = 0x00000400,
     // enum_unused                      = 0x00001000,
     enum_IsBasic                        = 0x00002000,
-    enum_IsWinRTDelegate                = 0x00004000,
+    // enum_unused                      = 0x00004000,
     enum_IsWinRTTrivialAggregate        = 0x00008000,
     enum_IsWinRTFactoryInterface        = 0x00010000,
     enum_IsWinRTStaticInterface         = 0x00020000,
@@ -631,12 +629,6 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
         return (m_Flags & enum_IsBasic) != 0;
-    }
-
-    BOOL IsWinRTDelegate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTDelegate) != 0;
     }
 
     BOOL IsWinRTTrivialAggregate()

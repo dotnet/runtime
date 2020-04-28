@@ -917,10 +917,6 @@ BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
         return FALSE;
     }
 
-    // Don't cache mscorlib-internal declarations of WinRT types.
-    if (IsSystem() && pMT->IsProjectedFromWinRT())
-        return FALSE;
-
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Don't cache in a module that's not the NGen target, since the result
     // won't be saved, and since the such a module might be read-only.

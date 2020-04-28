@@ -24,8 +24,6 @@
 #include "dumpcommon.h"
 #include "array.h"
 
-#include "generics.inl"
-
 /* static */
 TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 {
@@ -252,8 +250,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     BOOL fHasGuidInfo = FALSE;
     BOOL fHasCCWTemplate = FALSE;
-
-    Generics::DetermineCCWTemplateAndGUIDPresenceOnNonCanonicalMethodTable(pOldMT, fContainsGenericVariables, &fHasGuidInfo, &fHasCCWTemplate);
 
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;

@@ -85,7 +85,6 @@ GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
-GPTR_IMPL(MethodTable,      g_pBaseRuntimeClass);
 #endif
 
 #ifdef FEATURE_ICASTABLE

@@ -31,8 +31,6 @@ class ComPlusCall
         static PCODE       GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD);
 
         static ComPlusCallInfo *PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);
-        static MethodDesc *GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL *pComposition);
-        static MethodDesc *GetWinRTFactoryMethodForStatic(MethodDesc *pMDStatic);
 
 #ifdef TARGET_X86
         static void Init();

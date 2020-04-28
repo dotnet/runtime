@@ -625,16 +625,6 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyMetadataILHeader(PrepareCodeConfig
     COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
     if (ilHeader == NULL)
     {
-#ifdef FEATURE_COMINTEROP
-        // Abstract methods can be called through WinRT derivation if the deriving type
-        // is not implemented in managed code, and calls through the CCW to the abstract
-        // method. Throw a sensible exception in that case.
-        if (GetMethodTable()->IsExportedToWinRT() && IsAbstract())
-        {
-            COMPlusThrowHR(E_NOTIMPL);
-        }
-#endif // FEATURE_COMINTEROP
-
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
     }
 
@@ -1690,9 +1680,9 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
         CPUSTUBLINKER sl;
         _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
-        // The shuffle for an unboxing stub of a method that doesn't capture the 
+        // The shuffle for an unboxing stub of a method that doesn't capture the
         // type of the this pointer must be a no-op
-        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1)); 
+        _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg() || (portableShuffle.GetCount() == 1));
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
@@ -2171,7 +2161,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
-            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such 
+            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
             pCode = GetPrecompiledR2RCode(&config);

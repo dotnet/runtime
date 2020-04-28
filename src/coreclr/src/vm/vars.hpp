@@ -392,7 +392,6 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
-GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
 #endif
 
 #ifdef FEATURE_ICASTABLE

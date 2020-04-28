@@ -3121,16 +3121,9 @@ namespace System
         private extern void GetGUID(ref Guid result);
 
 #if FEATURE_COMINTEROP
-        internal override bool IsWindowsRuntimeObjectImpl() => IsWindowsRuntimeObjectType(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsWindowsRuntimeObjectType(RuntimeType type);
-
+        internal override bool IsWindowsRuntimeObjectImpl() => false;
 #if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-        internal override bool IsExportedToWindowsRuntimeImpl() => IsTypeExportedToWindowsRuntime(this);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
+        internal override bool IsExportedToWindowsRuntimeImpl() => false;
 #endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 

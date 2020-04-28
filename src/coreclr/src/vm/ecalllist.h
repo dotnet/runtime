@@ -203,10 +203,6 @@ FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("GetTypeFromCLSIDImpl", ReflectionInvocation::GetClassFromCLSID)
     FCFuncElement("GetTypeFromProgIDImpl", ReflectionInvocation::GetClassFromProgID)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    FCFuncElement("IsTypeExportedToWindowsRuntime", RuntimeTypeHandle::IsTypeExportedToWindowsRuntime)
-#endif
-    FCFuncElement("IsWindowsRuntimeObjectType", RuntimeTypeHandle::IsWindowsRuntimeObjectType)
 #endif // defined(FEATURE_COMINTEROP)
 FCFuncEnd()
 
@@ -1047,17 +1043,6 @@ FCFuncStart(gEventPipeInternalFuncs)
 FCFuncEnd()
 #endif // FEATURE_PERFTRACING
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gRuntimeClassFuncs)
-    FCFuncElement("GetRedirectedGetHashCodeMD", ComObject::GetRedirectedGetHashCodeMD)
-    FCFuncElement("RedirectGetHashCode", ComObject::RedirectGetHashCode)
-    FCFuncElement("GetRedirectedToStringMD", ComObject::GetRedirectedToStringMD)
-    FCFuncElement("RedirectToString", ComObject::RedirectToString)
-    FCFuncElement("GetRedirectedEqualsMD", ComObject::GetRedirectedEqualsMD)
-    FCFuncElement("RedirectEquals", ComObject::RedirectEquals)
-FCFuncEnd()
-#endif // ifdef FEATURE_COMINTEROP
-
 FCFuncStart(gWeakReferenceFuncs)
     FCFuncElement("Create", WeakReferenceNative::Create)
     FCFuncElement("Finalize", WeakReferenceNative::Finalize)
@@ -1238,9 +1223,6 @@ FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSa
 FCClassElement("RegisteredWaitHandleSafe", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("RuntimeClass", "System.Runtime.InteropServices.WindowsRuntime", gRuntimeClassFuncs)
-#endif // FEATURE_COMINTEROP
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)

@@ -456,12 +456,11 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         if (*pObjOut == NULL)
         {
             // Only pass in the class method table to the interface marshaler if
-            // it is a COM import (or COM import derived) class or a WinRT delegate.
+            // it is a COM import (or COM import derived) class.
             MethodTable *pComClassMT = NULL;
             if (pMTClass)
             {
-                if (pMTClass->IsComObjectType() ||
-                    (pMTClass->IsDelegate() && pMTClass->IsProjectedFromWinRT()))
+                if (pMTClass->IsComObjectType())
                 {
                     pComClassMT = pMTClass;
                 }
@@ -498,18 +497,10 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         else if (dwFlags & ObjFromComIP::REQUIRE_IINSPECTABLE)
         {
             MethodTable *pMT = (*pObjOut)->GetMethodTable();
-            if (pMT->IsDelegate() && pMT->IsProjectedFromWinRT())
-            {
-                // This is a WinRT delegate - WinRT delegate doesn't implement IInspectable but we allow unboxing a WinRT delegate
-                // from a IReference<T>
-            }
-            else
-            {
-                // Just call GetComIPFromObjectRef. We could be more efficient here but the code would get complicated
-                // which doesn't seem to be worth it. The function throws an exception if the QI/cast fails.
-                SafeComHolder<IUnknown> pInsp = GetComIPFromObjectRef(pObjOut, ComIpType_Inspectable, NULL);
-                _ASSERTE(pInsp != NULL);
-            }
+            // Just call GetComIPFromObjectRef. We could be more efficient here but the code would get complicated
+            // which doesn't seem to be worth it. The function throws an exception if the QI/cast fails.
+            SafeComHolder<IUnknown> pInsp = GetComIPFromObjectRef(pObjOut, ComIpType_Inspectable, NULL);
+            _ASSERTE(pInsp != NULL);
         }
     }
 }

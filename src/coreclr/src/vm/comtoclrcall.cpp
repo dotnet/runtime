@@ -336,16 +336,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
         // this method represents an interface method and not an IClassX method.
         *ppManagedTargetOut = pCMD->GetCallMethodDesc()->GetSingleCallableAddrOfCode();
     }
-    else if (pWrap->IsAggregated() && pWrap->GetComCallWrapperTemplate()->GetClassType().IsExportedToWinRT())
-    {
-        // we know the slot number for this method desc, grab the actual
-        // address from the vtable for this slot. The slot number should
-        // remain the same through out the heirarchy.
-        //
-        // This is the WinRT inheritance case where we want to always call the method as
-        // most recently implemented in the managed world.
-        *ppManagedTargetOut = pWrap->GetComCallWrapperTemplate()->GetClassType().GetMethodTable()->GetSlot(pCMD->GetSlot());
-    }
     else
     {
         // we know the slot number for this method desc, grab the actual
@@ -1007,20 +997,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
     // check whether this is a WinRT ctor/static/event method
     MethodDesc *pCallMD = GetCallMethodDesc();
     MethodTable *pCallMT = pCallMD->GetMethodTable();
-    if (pCallMT->IsProjectedFromWinRT() || pCallMT->IsExportedToWinRT())
-    {
-        m_flags |= enum_IsWinRTCall;
-
-        if (pMD->IsCtor())
-        {
-            m_flags |= enum_IsWinRTCtor;
-        }
-        else
-        {
-            if (pMD->IsStatic())
-                m_flags |= enum_IsWinRTStatic;
-        }
-    }
 
     if (!SystemDomain::GetCurrentDomain()->IsCompilationDomain())
     {
@@ -1176,18 +1152,10 @@ void ComCallMethodDesc::InitNativeInfo()
             }
 #endif
 
-            BOOL WinRTType = pMT->IsProjectedFromWinRT();
-
             // Look up the best fit mapping info via Assembly & Interface level attributes
             BOOL BestFit = TRUE;
             BOOL ThrowOnUnmappableChar = FALSE;
-
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-            // are not going to affect the marshaling behavior.
-            if (!WinRTType)
-            {
-                ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-            }
+            ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
             int numArgs = msig.NumFixedArgs();
 
@@ -1410,17 +1378,9 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
         MethodDesc *pMD = pCMD->GetCallMethodDesc();
         _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
-        MethodTable *pMT = pMD->GetMethodTable();
-        if (pMT->IsProjectedFromWinRT() || pMT->IsExportedToWinRT())
-        {
-            _ASSERTE(false && "WinRT stubs are not supported");
-        }
-        else
-        {
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-            // are not going to affect the marshaling behavior.
-            ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
-        }
+        // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
+        // are not going to affect the marshaling behavior.
+        ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
     }
 
     if (BestFit)

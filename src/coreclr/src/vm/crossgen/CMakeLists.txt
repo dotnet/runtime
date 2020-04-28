@@ -131,7 +131,6 @@ set(VM_CROSSGEN_HEADERS
   ../fieldmarshaler.h
   ../genericdict.h
   ../generics.h
-  ../generics.inl
   ../hash.h
   ../ilinstrumentation.h
   ../ilmarshalers.h

@@ -1159,12 +1159,6 @@ void AppDomain::CacheWinRTTypeByGuid(TypeHandle typeHandle)
                 // no other entry with the same GUID exists in the cache
                 CacheTypeByNameWorker(sGuid, vCacheVersion, typeHandle, bFlags);
             }
-            else if (typeHandle.AsMethodTable() != th.AsMethodTable() && th.IsProjectedFromWinRT())
-            {
-                // If we found a native WinRT type cached with the same GUID, replace it.
-                // Otherwise simply add the new mapping to the cache.
-                CacheTypeByNameWorker(sGuid, vCacheVersion, typeHandle, bFlags, TRUE);
-            }
         }
     }
 }

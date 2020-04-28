@@ -298,18 +298,15 @@ int GetLCIDParameterIndex(MethodDesc *pMD)
     const BYTE *    pVal;
     ULONG           cbVal;
 
-    if (!pMD->GetMethodTable()->IsProjectedFromWinRT()) //  ignore LCIDConversionAttribute on WinRT methods
+    // Check to see if the method has the LCIDConversionAttribute.
+    hr = pMD->GetCustomAttribute(WellKnownAttribute::LCIDConversion, (const void**)&pVal, &cbVal);
+    if (hr == S_OK)
     {
-        // Check to see if the method has the LCIDConversionAttribute.
-        hr = pMD->GetCustomAttribute(WellKnownAttribute::LCIDConversion, (const void**)&pVal, &cbVal);
-        if (hr == S_OK)
-        {
-            CustomAttributeParser caLCID(pVal, cbVal);
-            CaArg args[1];
-            args[0].Init(SERIALIZATION_TYPE_I4, 0);
-            IfFailGo(ParseKnownCaArgs(caLCID, args, lengthof(args)));
-            iLCIDParam = args[0].val.i4;
-        }
+        CustomAttributeParser caLCID(pVal, cbVal);
+        CaArg args[1];
+        args[0].Init(SERIALIZATION_TYPE_I4, 0);
+        IfFailGo(ParseKnownCaArgs(caLCID, args, lengthof(args)));
+        iLCIDParam = args[0].val.i4;
     }
 
 ErrExit:
@@ -418,22 +415,19 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
             if (!IsMdPublic(dwFlags))
                 return FALSE;
 
-            if (!pDeclaringMT->IsProjectedFromWinRT() && !pDeclaringMT->IsExportedToWinRT() && !pDeclaringMT->IsWinRTObjectType())
+            // Check to see if the associate has the ComVisible attribute set
+            hr = pModule->GetCustomAttribute(mdAssociate, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
+            if (hr == S_OK)
             {
-                // Check to see if the associate has the ComVisible attribute set (non-WinRT members only).
-                hr = pModule->GetCustomAttribute(mdAssociate, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
-                if (hr == S_OK)
-                {
-                    CustomAttributeParser cap(pVal, cbVal);
-                    if (FAILED(cap.SkipProlog()))
-                        return FALSE;
+                CustomAttributeParser cap(pVal, cbVal);
+                if (FAILED(cap.SkipProlog()))
+                    return FALSE;
 
-                    UINT8 u1;
-                    if (FAILED(cap.GetU1(&u1)))
-                        return FALSE;
+                UINT8 u1;
+                if (FAILED(cap.GetU1(&u1)))
+                    return FALSE;
 
-                    return (BOOL)u1;
-                }
+                return (BOOL)u1;
             }
             break;
 
@@ -442,22 +436,19 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
             break;
     }
 
-    if (!pDeclaringMT->IsProjectedFromWinRT() && !pDeclaringMT->IsExportedToWinRT() && !pDeclaringMT->IsWinRTObjectType())
+    // Check to see if the member has the ComVisible attribute set (non-WinRT members only).
+    hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
+    if (hr == S_OK)
     {
-        // Check to see if the member has the ComVisible attribute set (non-WinRT members only).
-        hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
-        if (hr == S_OK)
-        {
-            CustomAttributeParser cap(pVal, cbVal);
-            if (FAILED(cap.SkipProlog()))
-                return FALSE;
+        CustomAttributeParser cap(pVal, cbVal);
+        if (FAILED(cap.SkipProlog()))
+            return FALSE;
 
-            UINT8 u1;
-            if (FAILED(cap.GetU1(&u1)))
-                return FALSE;
+        UINT8 u1;
+        if (FAILED(cap.GetU1(&u1)))
+            return FALSE;
 
-            return (BOOL)u1;
-        }
+        return (BOOL)u1;
     }
 
     // The member is visible.
@@ -1102,28 +1093,24 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
     }
     CONTRACTL_END
 
-    // Ignore classic COM interop CA on WinRT types
-    if (!type.GetMethodTable()->IsWinRTObjectType() && !type.GetMethodTable()->IsExportedToWinRT())
-    {
-        CorClassIfaceAttr attrValueMaybe;
+    CorClassIfaceAttr attrValueMaybe;
 
-        // First look for the class interface attribute at the class level.
-        HRESULT hr = TryParseClassInterfaceAttribute(type.GetModule(), type.GetCl(), &attrValueMaybe);
+    // First look for the class interface attribute at the class level.
+    HRESULT hr = TryParseClassInterfaceAttribute(type.GetModule(), type.GetCl(), &attrValueMaybe);
+    if (FAILED(hr))
+        ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
+
+    if (hr == S_FALSE)
+    {
+        // Check the class interface attribute at the assembly level.
+        Assembly *pAssembly = type.GetAssembly();
+        hr = TryParseClassInterfaceAttribute(pAssembly->GetManifestModule(), pAssembly->GetManifestToken(), &attrValueMaybe);
         if (FAILED(hr))
             ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
-
-        if (hr == S_FALSE)
-        {
-            // Check the class interface attribute at the assembly level.
-            Assembly *pAssembly = type.GetAssembly();
-            hr = TryParseClassInterfaceAttribute(pAssembly->GetManifestModule(), pAssembly->GetManifestToken(), &attrValueMaybe);
-            if (FAILED(hr))
-                ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
-        }
-
-        if (hr == S_OK)
-            return attrValueMaybe;
     }
+
+    if (hr == S_OK)
+        return attrValueMaybe;
 
     return DEFAULT_CLASS_INTERFACE_TYPE;
 }
@@ -1882,29 +1869,6 @@ BOOL ClassSupportsIClassX(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    // WinRT delegates use IClassX
-    if (pMT->IsWinRTDelegate())
-        return TRUE;
-
-    if (pMT->IsWinRTObjectType() || pMT->IsExportedToWinRT())
-    {
-        // Other than that WinRT does not need IClassX so the goal is to return FALSE for
-        // anything that is guaranteed to not be a legacy classic COM interop scenario
-        return FALSE;
-    }
-
-    // If the class is decorated with an explicit ClassInterfaceAttribute, we're going to say yes.
-    if (S_OK == pMT->GetCustomAttribute(WellKnownAttribute::ClassInterface, NULL, NULL))
-        return TRUE;
-
-    MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-    while (it.Next())
-    {
-        MethodTable *pItfMT = it.GetInterfaceInfo()->GetApproxMethodTable(pMT->GetLoaderModule());
-        if (pItfMT->IsProjectedFromWinRT())
-            return FALSE;
-    }
-
     return TRUE;
 }
 
@@ -1923,7 +1887,6 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT)
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(pMT->IsComObjectType());
-        PRECONDITION(!pMT->IsProjectedFromWinRT());
     }
     CONTRACTL_END;
 
@@ -2036,12 +1999,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
     BOOL                bComVisible;
 
     PREFIX_ASSUME(pClassMT != NULL);
-
-    if (pClassMT->IsWinRTObjectType() || pClassMT->IsExportedToWinRT())
-    {
-        // there's no point executing the rest of the function for WinRT classes
-        return DefaultInterfaceType_IUnknown;
-    }
 
     if (pClassMT->IsComImport())
     {
@@ -2321,12 +2278,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
 
     // Reset the size of the interface list to 0.
     rItfList.Shrink(0);
-
-    if (pMT->IsWinRTObjectType() || pMT->IsExportedToWinRT())
-    {
-        // classic COM eventing is not supported in WinRT
-        return;
-    }
 
     // Starting at the specified class MT retrieve the COM source interfaces
     // of all the striped of the hierarchy.
@@ -2858,10 +2809,6 @@ static BOOL SpecialIsGenericTypeVisibleFromCom(TypeHandle hndType)
     if (pMT->IsInterface() && pMT->IsComImport())
         return TRUE;
 
-    // If the type is imported from WinRT (has the tdWindowsRuntime flag set), then it is visible from COM.
-    if (pMT->IsProjectedFromWinRT())
-        return TRUE;
-
     // If the type is an array, then it is not visible from COM.
     if (pMT->IsArray())
         return FALSE;
@@ -2972,18 +2919,6 @@ BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
         return FALSE;
     }
 
-    if (pMT->IsProjectedFromWinRT() && pMT->IsComImport() && pMD->IsPrivate())
-    {
-        // private WinRT method -> stub not needed
-        return FALSE;
-    }
-
-    if (pMT->IsWinRTObjectType())
-    {
-        // WinRT runtime class -> stub needed
-        return TRUE;
-    }
-
     GUID guid;
     pMT->GetGuid(&guid, FALSE);
 
@@ -3032,26 +2967,13 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
 
         if (pMT->IsDelegate())
         {
-            // the 'Invoke' method of a WinRT delegate needs stub
-            return (pMT->IsProjectedFromWinRT() &&
-                     pMD->HasSameMethodDefAs(COMDelegate::FindDelegateInvokeMethod(pMT)));
+            return FALSE;
         }
 
-        if (pMT->IsExportedToWinRT() && (pMD->IsCtor() || pMD->IsStatic()))
-        {
-            fIsAllowedCtorOrStatic = TRUE;
-        }
-        else
-        {
-            // declaring class must be AutoDual
-            if (pMT->GetComClassInterfaceType() != clsIfAutoDual)
-                return FALSE;
-        }
+        // declaring class must be AutoDual
+        if (pMT->GetComClassInterfaceType() != clsIfAutoDual)
+            return FALSE;
     }
-
-    // static methods and ctors are not exposed to COM except for WinRT
-    if (!fIsAllowedCtorOrStatic && (pMD->IsCtor() || pMD->IsStatic()))
-        return FALSE;
 
     // NGen can't compile stubs for var arg methods
     if (pMD->IsVarArg())
@@ -4197,20 +4119,17 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         MODE_ANY;
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
-        PRECONDITION(pClassMT->IsComObjectType() || pClassMT->IsExportedToWinRT());
+        PRECONDITION(pClassMT->IsComObjectType());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
-    if (!pClassMT->IsExportedToWinRT())
+    // Work our way up the hierachy until we find the first COM import type.
+    while (!pClassMT->IsComImport())
     {
-        // Work our way up the hierachy until we find the first COM import type.
-        while (!pClassMT->IsComImport())
-        {
-            pClassMT = pClassMT->GetParentMethodTable();
-            _ASSERTE(pClassMT != NULL);
-            _ASSERTE(pClassMT->IsComObjectType());
-        }
+        pClassMT = pClassMT->GetParentMethodTable();
+        _ASSERTE(pClassMT != NULL);
+        _ASSERTE(pClassMT->IsComObjectType());
     }
 
     // check if com data has been setup for this class
@@ -4218,41 +4137,16 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
 
     if (pClsFac == NULL)
     {
-        //
-        // Collectible types do not support WinRT interop
-        //
-        if (pClassMT->Collectible() && (pClassMT->IsExportedToWinRT() || pClassMT->IsProjectedFromWinRT()))
-        {
-            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleWinRT"));
-        }
-
         NewHolder<ClassFactoryBase> pNewFactory;
 
-        if (pClassMT->IsExportedToWinRT())
-        {
-            WinRTManagedClassFactory *pWinRTMngClsFac = new WinRTManagedClassFactory(pClassMT);
-            pNewFactory = pWinRTMngClsFac;
+        GUID guid;
+        pClassMT->GetGuid(&guid, TRUE);
 
-            pWinRTMngClsFac->Init();
-        }
-        else if (pClassMT->IsProjectedFromWinRT())
-        {
-            WinRTClassFactory *pWinRTClsFac = new WinRTClassFactory(pClassMT);
-            pNewFactory = pWinRTClsFac;
+        ComClassFactory *pComClsFac = ComClassFactoryCreator::Create(guid);
 
-            pWinRTClsFac->Init();
-        }
-        else
-        {
-            GUID guid;
-            pClassMT->GetGuid(&guid, TRUE);
+        pNewFactory = pComClsFac;
 
-            ComClassFactory *pComClsFac = ComClassFactoryCreator::Create(guid);
-
-            pNewFactory = pComClsFac;
-
-            pComClsFac->Init(NULL, NULL, pClassMT);
-        }
+        pComClsFac->Init(NULL, NULL, pClassMT);
 
         // store the class factory in EE Class
         if (!pClassMT->SetComClassFactory(pNewFactory))

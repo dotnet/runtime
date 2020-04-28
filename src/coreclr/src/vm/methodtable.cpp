@@ -5958,27 +5958,9 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
 
     if (pParent && pParent->IsComImport())
     {
-        if (pParent->IsProjectedFromWinRT())
-        {
-            // skip all Com Import classes
-            do
-            {
-                pParent = pParent->GetParentMethodTable();
-                _ASSERTE(pParent != NULL);
-            }while(pParent->IsComImport());
-
-            // Now we have either System.__ComObject or WindowsRuntime.RuntimeClass
-            if (pParent != g_pBaseCOMObject)
-            {
-                return pParent;
-            }
-        }
-        else
-        {
-            // Skip the single ComImport class we expect
-            _ASSERTE(pParent->GetParentMethodTable() != NULL);
-            pParent = pParent->GetParentMethodTable();
-        }
+        // Skip the single ComImport class we expect
+        _ASSERTE(pParent->GetParentMethodTable() != NULL);
+        pParent = pParent->GetParentMethodTable();
         _ASSERTE(!pParent->IsComImport());
 
         // Skip over System.__ComObject, expect System.MarshalByRefObject
@@ -5989,39 +5971,6 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
     }
 
     return pParent;
-}
-
-BOOL MethodTable::IsWinRTObjectType()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Try to determine if this object represents a WindowsRuntime object - i.e. is either
-    // ProjectedFromWinRT or derived from a class that is
-
-    if (!IsComObjectType())
-        return FALSE;
-
-    // Ideally we'd compute this once in BuildMethodTable and track it with another
-    // flag, but we're now out of bits on m_dwFlags, and this is used very rarely
-    // so for now we'll just recompute it when necessary.
-    MethodTable* pMT = this;
-    do
-    {
-        if (pMT->IsProjectedFromWinRT())
-        {
-            // Found a WinRT COM object
-            return TRUE;
-        }
-        if (pMT->IsComImport())
-        {
-            // Found a class that is actually imported from COM but not WinRT
-            // this is definitely a non-WinRT COM object
-            return FALSE;
-        }
-        pMT = pMT->GetParentMethodTable();
-    }while(pMT != NULL);
-
-    return FALSE;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -7452,14 +7401,13 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     _ASSERTE(pGuid != NULL);
     _ASSERTE(!this->IsArray());
 
-    // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
-    GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
     // We currently only cache guids on interfaces and WinRT delegates.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
-    if ((IsInterface() || IsWinRTDelegate()) && pInfo != NULL
-        && (!bClassic || !SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)))
+    if ((IsInterface()) && pInfo != NULL
+        && (!bClassic))
     {
         if (pInfo->m_bGeneratedFromName)
         {
@@ -7561,7 +7509,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     // Cache the guid in the type, if not already cached.
     // We currently only do this for interfaces.
     // Also, in classic mode do NOT cache GUID for redirected interfaces.
-    if ((IsInterface() || IsWinRTDelegate()) && (pInfo == NULL) && (*pGuid != GUID_NULL)
+    if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL)
 #ifdef FEATURE_COMINTEROP
         && !(bClassic
              && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
@@ -7574,7 +7522,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         PTR_LoaderAllocator pLoaderAllocator;
 
 #if FEATURE_COMINTEROP
-        if ((bClassic && !IsProjectedFromWinRT()) || !HasGuidInfo())
+        if ((bClassic) || !HasGuidInfo())
         {
             bStoreGuidInfoOnEEClass = true;
         }
@@ -7609,7 +7557,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         pInfo->m_bGeneratedFromName = bGenerated;
 
         // Set in in the interface method table.
-        if (bClassic && !IsProjectedFromWinRT())
+        if (bClassic)
         {
             // Set the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID.
             // The MethodTable may be NGENed and read-only - and there's no point in saving

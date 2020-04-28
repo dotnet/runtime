@@ -413,12 +413,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         }
 
         BOOL forComInterop = FALSE;
-#ifdef FEATURE_COMINTEROP
-        if (pExactMT->IsProjectedFromWinRT())
-        {
-            forComInterop = (pExactMT->IsInterface() || (pExactMT->IsDelegate() && COMDelegate::IsDelegateInvokeMethod(pGenericMDescInRepMT)));
-        }
-#endif // FEATURE_COMINTEROP
 
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets

@@ -2136,14 +2136,6 @@ public:
         if (IsCompilationDomain() || (m_Stage < STAGE_OPEN))
             return FALSE;
 
-        MethodTable *pMT = typeHandle.GetMethodTable();
-        if (pMT != NULL)
-        {
-            // Don't cache mscorlib-internal declarations of WinRT types.
-            if (pMT->GetModule()->IsSystem() && pMT->IsProjectedFromWinRT())
-                return FALSE;
-        }
-
         return TRUE;
     }
 #endif // !DACCESS_COMPILE

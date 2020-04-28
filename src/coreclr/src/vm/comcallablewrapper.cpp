@@ -341,12 +341,6 @@ bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
     Assembly *          pAssembly = pClass->GetAssembly();
     IDispatchImplType   DispImplType = SystemDefinedImpl;
 
-    if (pClass->IsWinRTObjectType() || pClass->IsExportedToWinRT())
-    {
-        // IDispatch is not supported in WinRT
-        return false;
-    }
-
     // First check for the IDispatchImplType custom attribute first.
     hr = pClass->GetCustomAttribute(WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
     if (hr == S_OK)
@@ -1787,23 +1781,13 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     CASE_IID_INLINE(  enum_IProvideClassInfo        ,0xB196B283,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07)  // hit4, !=
         {
-            // respond only if this is a classic COM interop scenario
-            MethodTable *pClassMT = GetMethodTable();
-            if (!pClassMT->IsExportedToWinRT() && !pClassMT->IsWinRTObjectType())
-            {
-                RETURN QIStandardInterface(enum_IProvideClassInfo);
-            }
+            RETURN QIStandardInterface(enum_IProvideClassInfo);
         }
         break;
 
     CASE_IID_INLINE(  enum_IConnectionPointContainer,0xB196B284,0xBAB4,0x101A,0xB6,0x9C,0x00,0xAA,0x00,0x34,0x1D,0x07)  // b196b284 101abab4 aa009cb6 071d3400
         {
-            // respond only if this is a classic COM interop scenario
-            MethodTable *pClassMT = GetMethodTable();
-            if (!pClassMT->IsExportedToWinRT() && !pClassMT->IsWinRTObjectType())
-            {
-                RETURN QIStandardInterface(enum_IConnectionPointContainer);
-            }
+            RETURN QIStandardInterface(enum_IConnectionPointContainer);
         }
         break;
 
@@ -2892,7 +2876,7 @@ static MethodTable *FindCovariantSubtype(MethodTable *pMT, REFIID riid)
     {
         // The internal base classes do not have guid. Skip them to avoid confusing exception being
         // thrown and swallowed inside GetGuidNoThrow.
-        if (thBaseClass != TypeHandle(g_pBaseCOMObject) && thBaseClass != TypeHandle(g_pBaseRuntimeClass))
+        if (thBaseClass != TypeHandle(g_pBaseCOMObject))
         {
             Instantiation newInst(&thBaseClass, 1);
             MethodTable *pItfMT = TypeHandle(pMT).Instantiate(newInst).AsMethodTable();
@@ -3095,7 +3079,7 @@ static IUnknown* GetComIPFromCCW_UsingVariance(ComCallWrapper *pWrap, REFIID rii
             //
             TypeHandle thClass = pWrap->GetComCallWrapperTemplate()->GetClassType();
 
-            ComCallWrapperTemplate::CCWInterfaceMapIterator it(thClass, NULL);
+            ComCallWrapperTemplate::CCWInterfaceMapIterator it(thClass);
             while (it.Next())
             {
                 MethodTable *pImplementedIntfMT = it.GetInterface();
@@ -3196,39 +3180,28 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
     if (imapIndex != -1)
     {
         MethodTable * pMT = pWrap->GetMethodTableOfObjectRef();
+        MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMapFrom(intfIndex);
 
-        // Check if this index is actually an interface implemented by us
-        // if it belongs to the base COM object then we can hand over the call
-        // to it
-        if (pMT->IsWinRTObjectType())
+        // If the number of slots is 0, then no need to proceed
+        if (intIt.GetInterface()->GetNumVirtuals() != 0)
         {
-            bDelegateToBase = pTemplate->GetComMTForIndex(intfIndex)->IsWinRTTrivialAggregate();
+            MethodDesc *pClsMD = NULL;
+
+            // Find the implementation for the first slot of the interface
+            DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0, FALSE /* throwOnConflict */));
+            CONSISTENCY_CHECK(!impl.IsNull());
+
+            // Get the MethodDesc for this slot in the class
+            pClsMD = impl.GetMethodDesc();
+
+            MethodTable * pClsMT = pClsMD->GetMethodTable();
+            bDelegateToBase = (pClsMT->IsInterface() || pClsMT->IsComImport()) ? TRUE : FALSE;
         }
         else
         {
-            MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMapFrom(intfIndex);
-
-            // If the number of slots is 0, then no need to proceed
-            if (intIt.GetInterface()->GetNumVirtuals() != 0)
-            {
-                MethodDesc *pClsMD = NULL;
-
-                // Find the implementation for the first slot of the interface
-                DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0, FALSE /* throwOnConflict */));
-                CONSISTENCY_CHECK(!impl.IsNull());
-
-                // Get the MethodDesc for this slot in the class
-                pClsMD = impl.GetMethodDesc();
-
-                MethodTable * pClsMT = pClsMD->GetMethodTable();
-                bDelegateToBase = (pClsMT->IsInterface() || pClsMT->IsComImport()) ? TRUE : FALSE;
-            }
-            else
-            {
-                // The interface has no methods so we cannot override it. Because of this
-                // it makes sense to delegate to the base COM component.
-                bDelegateToBase = TRUE;
-            }
+            // The interface has no methods so we cannot override it. Because of this
+            // it makes sense to delegate to the base COM component.
+            bDelegateToBase = TRUE;
         }
     }
 
@@ -3281,8 +3254,7 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
         // If the class that this IClassX's was generated for is marked
         // as ClassInterfaceType.AutoDual or AutoDisp, or it is a WinRT
         // delegate, then give out the IClassX IP.
-        if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp ||
-            pIntfComMT->IsWinRTDelegate())
+        if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
         {
             // Make sure the all the base classes of the class this IClassX corresponds to
             // are visible to COM.
@@ -3330,8 +3302,7 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
             // If the class that this IClassX's was generated for is marked
             // as ClassInterfaceType.AutoDual or AutoDisp, or it is a WinRT
             // delegate, then give out the IClassX IP.
-            if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp ||
-                pIntfComMT->IsWinRTDelegate())
+            if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
             {
                 // Make sure the all the base classes of the class this IClassX corresponds to
                 // are visible to COM.
@@ -3940,13 +3911,6 @@ void ComMethodTable::LayOutClassMethodTable()
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
-
-    if (IsWinRTDelegate())
-    {
-        // IClassX for WinRT delegates is a special interface
-        LayOutDelegateMethodTable();
-        return;
-    }
 
     GCX_PREEMP();
 
@@ -4632,117 +4596,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 // Lay out a ComMethodTable that represents a WinRT delegate interface.
 //--------------------------------------------------------------------------
 void ComMethodTable::LayOutDelegateMethodTable()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(IsWinRTDelegate());
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    MethodTable *pDelegateMT = m_pMT;
-    ULONG cbExtraSlots = GetNumExtraSlots(ifVtable);
-
-    BYTE *pMethodDescMemory = NULL;
-    IUnkVtable* pUnkVtable;
-    SLOT *pComVtable;
-
-    LOG((LF_INTEROP, LL_INFO1000, "LayOutDelegateMethodTable: %s, this: %p\n", pDelegateMT->GetDebugClassName(), this));
-
-    unsigned cbSlots = 1; // one slot for the Invoke method
-
-    //
-    // Allocate a temporary space to generate the vtable into.
-    //
-    S_UINT32 cbTempVtable = (S_UINT32(m_cbSlots) + S_UINT32(cbExtraSlots)) * S_UINT32(sizeof(SLOT));
-    cbTempVtable += S_UINT32(cbSlots) * S_UINT32((COMMETHOD_PREPAD + sizeof(ComCallMethodDesc)));
-
-    if (cbTempVtable.IsOverflow())
-        ThrowHR(COR_E_OVERFLOW);
-
-    NewArrayHolder<BYTE> pTempVtable = new BYTE[cbTempVtable.Value()];
-
-    pUnkVtable = (IUnkVtable *)pTempVtable.GetValue();
-    pComVtable = ((SLOT*)pUnkVtable) + cbExtraSlots;
-
-    // Method descs are at the end of the vtable
-    // m_cbSlots interfaces methods + IUnk methods
-    pMethodDescMemory = (BYTE *)&pComVtable[m_cbSlots];
-
-    // Setup IUnk vtable
-    pUnkVtable->m_qi        = (SLOT)Unknown_QueryInterface;
-    pUnkVtable->m_addref    = (SLOT)Unknown_AddRef;
-    pUnkVtable->m_release   = (SLOT)Unknown_Release;
-
-    // Some space for a CALL xx xx xx xx stub is reserved before the beginning of the MethodDesc
-    ComCallMethodDescHolder NewMDHolder = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
-    MethodDesc* pInvokeMD = ((DelegateEEClass *)(pDelegateMT->GetClass()))->GetInvokeMethod();
-
-    if (pInvokeMD->IsSharedByGenericInstantiations())
-    {
-        // we need an exact MD to represent the call
-        pInvokeMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pDelegateMT, pInvokeMD);
-    }
-
-    NewMDHolder.GetValue()->InitMethod(pInvokeMD, NULL);
-    _ASSERTE(cbSlots == 1);
-
-    {
-        // Take the lock and copy data from the temporary vtable to this instance
-        CrstHolder ch(&g_CreateWrapperTemplateCrst);
-
-        if (IsLayoutComplete())
-            return;
-
-        // IUnk vtable follows the header
-        CopyMemory(this + 1, pUnkVtable, cbTempVtable.Value());
-
-        // Finish by emitting stubs and initializing the slots
-        pUnkVtable = (IUnkVtable *)(this + 1);
-        pComVtable = ((SLOT *)pUnkVtable) + cbExtraSlots;
-
-        // Method descs are at the end of the vtable
-        // m_cbSlots delegate methods + IUnk methods
-        pMethodDescMemory = (BYTE *)&pComVtable[m_cbSlots];
-
-        ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
-        emitCOMStubCall(pNewMD, GetEEFuncEntryPoint(ComCallPreStub));
-
-        FillInComVtableSlot(pComVtable, 0, pNewMD);
-        _ASSERTE(cbSlots == 1);
-
-        // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
-        NewMDHolder.SuppressRelease();
-    }
-
-#ifdef PROFILING_SUPPORTED
-    // Notify profiler of the CCW, so it can avoid double-counting.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackCCW());
-#if defined(_DEBUG)
-        WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-        GuidToLPWSTR(m_IID, rIID, lengthof(rIID));
-        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%ls, vTbl:%#08x\n",
-             pDelegateMT->GetDebugClassName(), rIID, pUnkVtable));
-#else
-        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%#x, IID:{%08x-...}, vTbl:%#08x\n",
-             pDelegateMT, m_IID.Data1, pUnkVtable));
-#endif
-        g_profControlBlock.pProfInterface->COMClassicVTableCreated((ClassID) TypeHandle(pDelegateMT).AsPtr(),
-                                                                   m_IID,
-                                                                   pUnkVtable,
-                                                                   m_cbSlots+cbExtraSlots);
-        END_PIN_PROFILER();
-   }
-#endif // PROFILING_SUPPORTED
-
-    LOG((LF_INTEROP, LL_INFO1000, "LayOutDelegateMethodTable: %s, this: %p [DONE]\n", pDelegateMT->GetDebugClassName(), this));
-}
+{}
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
@@ -4913,7 +4767,7 @@ void ComCallWrapperTemplate::IIDToInterfaceTemplateCache::InsertInterfaceTemplat
 //---------------------------------------------------------
 // ComCallWrapperTemplate::CCWInterfaceMapIterator
 //---------------------------------------------------------
-ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact)
+ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHandle thClass)
 {
     CONTRACTL
     {
@@ -4932,30 +4786,6 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     {
         MethodTable *pItfMT = it.GetInterface();
         AppendInterface(pItfMT);
-    }
-
-    // add factory and static interfaces
-    if (pClsFact != NULL)
-    {
-        SArray<MethodTable *> *pExtraInterfaces = pClsFact->GetFactoryInterfaces();
-        if (pExtraInterfaces != NULL)
-        {
-            COUNT_T NumInterfaces = pExtraInterfaces->GetCount();
-            for (COUNT_T i = 0; i < NumInterfaces; i++)
-            {
-                AppendInterface((*pExtraInterfaces)[i]).m_dwIsFactoryInterface = true;
-            }
-        }
-
-        pExtraInterfaces = pClsFact->GetStaticInterfaces();
-        if (pExtraInterfaces != NULL)
-        {
-            COUNT_T NumInterfaces = pExtraInterfaces->GetCount();
-            for (COUNT_T i = 0; i < NumInterfaces; i++)
-            {
-                AppendInterface((*pExtraInterfaces)[i]).m_dwIsStaticInterface = true;
-            }
-        }
     }
 
     Reset();
@@ -5087,16 +4917,7 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
     MethodTable *pMT = m_thClass.GetMethodTable();
 
     // We haven't set it up yet, generate one.
-    ComMethodTable* pClassComMT;
-    if (pMT->IsDelegate() && pMT->IsProjectedFromWinRT())
-    {
-        // WinRT delegates have a special class vtable
-        pClassComMT = CreateComMethodTableForDelegate(pMT);
-    }
-    else
-    {
-        pClassComMT = CreateComMethodTableForClass(pMT);
-    }
+    ComMethodTable* pClassComMT = CreateComMethodTableForClass(pMT);
     pClassComMT->AddRef();
 
     // Cache it.
@@ -5601,18 +5422,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     }
 #endif
 
-    MethodTable *pMT = m_thClass.GetMethodTable();
-    MethodTable *pParentMT = pMT->GetParentMethodTable();
-    if (pParentMT != NULL && pParentMT->IsProjectedFromWinRT())
-    {
-        // Determine if this class has overriden any methods on the interface. If not, we'll
-        // set a flag so when a QI comes, we will return directly the base WinRT object.
-        if (pMT->HasSameInterfaceImplementationAsParent(pInterfaceMT, pParentMT))
-        {
-            pComMT->m_Flags |= enum_IsWinRTTrivialAggregate;
-        }
-    }
-
     LOG((LF_INTEROP, LL_INFO1000, "---------- end of CreateComMethodTableForInterface %s -----------\n", pItfClass->GetDebugClassName()));
 
     pComMT.SuppressRelease();
@@ -5727,7 +5536,7 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForDelegate(MethodTa
     pComMT->m_cbSlots = cbTotalSlots; // number of slots not counting IUnknown methods.
 
     // Set the flags.
-    pComMT->m_Flags = enum_ClassVtableMask | clsIfNone | enum_ComVisible | enum_IsWinRTDelegate;
+    pComMT->m_Flags = enum_ClassVtableMask | clsIfNone | enum_ComVisible;
 
     MethodTable *pMTForIID = pDelegateMT;
     pMTForIID->GetGuid(&pComMT->m_IID, TRUE);
@@ -5830,7 +5639,7 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
 //  create a template wrapper, which is cached in the class
 //  used for initializing other wrappers for instances of the class
 //--------------------------------------------------------------------------
-ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClass, WinRTManagedClassFactory *pClsFact /* = NULL */)
+ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClass)
 {
     CONTRACT (ComCallWrapperTemplate*)
     {
@@ -5845,7 +5654,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
     GCX_PREEMP();
 
-    if (pClsFact == NULL && !thClass.IsTypeDesc() && !thClass.AsMethodTable()->HasCCWTemplate())
+    if (!thClass.IsTypeDesc() && !thClass.AsMethodTable()->HasCCWTemplate())
     {
         // Canonicalize the class type because we are going to stick the template pointer to EEClass.
         thClass = thClass.GetCanonicalMethodTable();
@@ -5865,7 +5674,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
     }
 
     // Preload the policy for this interface
-    CCWInterfaceMapIterator it(thClass, pClsFact);
+    CCWInterfaceMapIterator it(thClass);
 
     // Num interfaces in the template.
     unsigned numInterfaces = it.GetCount();
@@ -5875,10 +5684,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         // Move this inside the scope so it is destroyed before its memory is.
         ComCallWrapperTemplateHolder pTemplate = NULL;
 
-        if (pClsFact != NULL)
-            pTemplate = pClsFact->GetComCallWrapperTemplate();
-        else
-            pTemplate = thClass.GetComCallWrapperTemplate();
+        pTemplate = thClass.GetComCallWrapperTemplate();
 
         if (pTemplate)
         {
@@ -5900,7 +5706,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pClassComMT = NULL;        // Defer setting this up.
         pTemplate->m_pBasicComMT = NULL;
         pTemplate->m_pDefaultItf = NULL;
-        pTemplate->m_pWinRTRuntimeClass = (pClsFact != NULL ? pClsFact->GetClass() : NULL);
+        pTemplate->m_pWinRTRuntimeClass = NULL;
         pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
         pTemplate->m_pIIDToInterfaceTemplateCache = NULL;
         pTemplate->m_flags = 0;
@@ -5947,31 +5753,15 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 pItfComMT->SetIsWinRTStaticInterface();
         }
 
-        if (pClsFact != NULL)
+        // Cache the template in class.
+        if (!thClass.SetComCallWrapperTemplate(pTemplate))
         {
-            // Cache the template in the class factory
-            if (!pClsFact->SetComCallWrapperTemplate(pTemplate))
-            {
-                // another thread beat us to it
-                pTemplate = pClsFact->GetComCallWrapperTemplate();
-                _ASSERTE(pTemplate != NULL);
+            // another thread beat us to it
+            pTemplate = thClass.GetComCallWrapperTemplate();
+            _ASSERTE(pTemplate != NULL);
 
-                pTemplate.SuppressRelease();
-                RETURN pTemplate;
-            }
-        }
-        else
-        {
-            // Cache the template in class.
-            if (!thClass.SetComCallWrapperTemplate(pTemplate))
-            {
-                // another thread beat us to it
-                pTemplate = thClass.GetComCallWrapperTemplate();
-                _ASSERTE(pTemplate != NULL);
-
-                pTemplate.SuppressRelease();
-                RETURN pTemplate;
-            }
+            pTemplate.SuppressRelease();
+            RETURN pTemplate;
         }
         pTemplate.SuppressRelease();
 

@@ -1787,28 +1787,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #ifdef FEATURE_COMINTEROP
             MethodTable* pDefaultMT = NULL;
 
-            // Look for marshaling of WinRT runtime classes
-            if ((m_pMT->IsProjectedFromWinRT() || m_pMT->IsExportedToWinRT()) && !m_pMT->HasExplicitGuid())
-            {
-                // The type loader guarantees that there are no WinRT interfaces without explicit GUID
-                _ASSERTE(!m_pMT->IsInterface());
-
-                // Make sure that this is really a legal runtime class and not a custom attribute or delegate
-                if (!m_pMT->IsLegalNonArrayWinRTType() || m_pMT->IsDelegate())
-                {
-                    m_resID = IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-
-                // This class must have a default interface that describes how it is marshaled
-                pDefaultMT = m_pMT->GetDefaultWinRTInterface();
-                if (pDefaultMT == NULL)
-                {
-                    m_resID = IDS_EE_BADMARSHAL_WINRT_MISSING_GUID;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-            }
-
             if (nativeType == NATIVE_TYPE_INTF)
             {
                 // whatever...
@@ -1820,58 +1798,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 if (COMDelegate::IsDelegate(m_pMT))
                 {
-                    if (IsWinRTScenario())
-                    {
-                        // In WinRT scenarios delegates must be WinRT delegates
-                        if (!m_pMT->IsProjectedFromWinRT())
-                        {
-                            m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
-                            IfFailGoto(E_FAIL, lFail);
-                        }
-                    }
-                    else
-                    {
-                        // UnmanagedType.Interface for delegates used to mean the .NET Framework _Delegate interface.
-                        // We don't support that interface in .NET Core, so we disallow marshalling as it here.
-                        // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
-                        // if they need an interface pointer.
-                        m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
+                    // UnmanagedType.Interface for delegates used to mean the .NET Framework _Delegate interface.
+                    // We don't support that interface in .NET Core, so we disallow marshalling as it here.
+                    // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
+                    // if they need an interface pointer.
+                    m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
+                    IfFailGoto(E_FAIL, lFail);
                 }
                 m_type = MARSHAL_TYPE_INTERFACE;
-            }
-            else if (pDefaultMT != NULL && nativeType == NATIVE_TYPE_DEFAULT)
-            {
-                // Pretend this is really marshaling as the default interface type
-
-                // Validate it's a WinRT interface with GUID
-                if (!pDefaultMT->IsInterface() ||
-                    (!pDefaultMT->IsProjectedFromWinRT() && !pDefaultMT->IsExportedToWinRT()) ||
-                    !pDefaultMT->HasExplicitGuid())
-                {
-                    m_resID = IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_WINRT_IFACE;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-
-                // Validate that it's one of the component interfaces of the class in the signature
-                if (!m_pMT->ImplementsEquivalentInterface(pDefaultMT))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_SUBTYPE;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-
-                // Make sure it's not an unexpected generic case (not clear we can actually get here in practice due
-                // to the above Implements check)
-                if (pDefaultMT->HasInstantiation() && !pDefaultMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-
-                // Store the marshal data just as if we were marshaling as this default interface type
-                m_type = MARSHAL_TYPE_INTERFACE;
-                m_pDefaultItfMT = pDefaultMT;
             }
             else
 #endif // FEATURE_COMINTEROP
@@ -2121,11 +2055,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         case NATIVE_TYPE_DEFAULT:
 #ifdef FEATURE_COMINTEROP
-                            if (IsWinRTScenario() || m_pMT->IsProjectedFromWinRT())
-                            {
-                                m_type = MARSHAL_TYPE_INTERFACE;
-                            }
-                            else if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
+                            if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
                             {
                                 // Default for COM marshalling for delegates used to mean the .NET Framework _Delegate interface.
                                 // We don't support that interface in .NET Core, so we disallow marshalling as it here.
@@ -3404,71 +3334,61 @@ void MarshalInfo::GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispI
             // Set the class method table.
             pInfo->thClass = th;
 
-            if (th.IsTypeDesc() || !th.AsMethodTable()->IsWinRTDelegate())
+            TypeHandle hndDefItfClass;
+            DefaultInterfaceType DefItfType;
+
+            if (!thItf.IsNull())
             {
-                // If this is not a WinRT delegate, retrieve the default interface method table.
-                TypeHandle hndDefItfClass;
-                DefaultInterfaceType DefItfType;
-
-                if (!thItf.IsNull())
+                hndDefItfClass = thItf;
+                DefItfType = DefaultInterfaceType_Explicit;
+            }
+            else
+            {
+                DefItfType = GetDefaultInterfaceForClassWrapper(th, &hndDefItfClass);
+            }
+            switch (DefItfType)
+            {
+                case DefaultInterfaceType_Explicit:
                 {
-                    hndDefItfClass = thItf;
-                    DefItfType = DefaultInterfaceType_Explicit;
+                    pInfo->thItf = hndDefItfClass;
+                    switch (hndDefItfClass.GetComInterfaceType())
+                    {
+                        case ifDispatch:
+                        case ifDual:
+                            pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
+                            break;
+
+                        case ifInspectable:
+                            pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
+                            break;
+                    }
+                    break;
                 }
-                else if (th.IsProjectedFromWinRT() || th.IsExportedToWinRT())
+
+                case DefaultInterfaceType_AutoDual:
                 {
-                    // WinRT classes use their WinRT default interface
-                    hndDefItfClass = th.GetMethodTable()->GetDefaultWinRTInterface();
-                    DefItfType = DefaultInterfaceType_Explicit;
+                    pInfo->thItf = hndDefItfClass;
+                    pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
+                    break;
                 }
-                else
+
+                case DefaultInterfaceType_IUnknown:
+                case DefaultInterfaceType_BaseComClass:
                 {
-                    DefItfType = GetDefaultInterfaceForClassWrapper(th, &hndDefItfClass);
+                    break;
                 }
-                switch (DefItfType)
+
+                case DefaultInterfaceType_AutoDispatch:
                 {
-                    case DefaultInterfaceType_Explicit:
-                    {
-                        pInfo->thItf = hndDefItfClass;
-                        switch (hndDefItfClass.GetComInterfaceType())
-                        {
-                            case ifDispatch:
-                            case ifDual:
-                                pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
-                                break;
+                    pInfo->thItf = hndDefItfClass;
+                    pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
+                    break;
+                }
 
-                            case ifInspectable:
-                                pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_INSP_ITF;
-                                break;
-                        }
-                        break;
-                    }
-
-                    case DefaultInterfaceType_AutoDual:
-                    {
-                        pInfo->thItf = hndDefItfClass;
-                        pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
-                        break;
-                    }
-
-                    case DefaultInterfaceType_IUnknown:
-                    case DefaultInterfaceType_BaseComClass:
-                    {
-                        break;
-                    }
-
-                    case DefaultInterfaceType_AutoDispatch:
-                    {
-                        pInfo->thItf = hndDefItfClass;
-                        pInfo->dwFlags |= ItfMarshalInfo::ITF_MARSHAL_DISP_ITF;
-                        break;
-                    }
-
-                    default:
-                    {
-                        _ASSERTE(!"Invalid default interface type!");
-                        break;
-                    }
+                default:
+                {
+                    _ASSERTE(!"Invalid default interface type!");
+                    break;
                 }
             }
         }

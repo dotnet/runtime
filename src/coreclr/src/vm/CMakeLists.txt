@@ -186,7 +186,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     gctoclreventsink.h
     gcheaputilities.h
     generics.h
-    generics.inl
     hash.h
     hillclimbing.h
     ilinstrumentation.h

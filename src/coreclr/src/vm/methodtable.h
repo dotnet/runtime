@@ -704,9 +704,6 @@ public:
     //-------------------------------------------------------------------
     // COM INTEROP
     //
-    BOOL IsProjectedFromWinRT();
-    BOOL IsExportedToWinRT();
-    BOOL IsWinRTDelegate();
 
 #ifdef FEATURE_COMINTEROP
     TypeHandle GetCoClassForInterface();
@@ -742,9 +739,6 @@ public:
     // Helper to get parent class skipping over COM class in
     // the hierarchy
     MethodTable* GetComPlusParentMethodTable();
-
-    // class is a WinRT object class (is itself or derives from a ProjectedFromWinRT class)
-    BOOL IsWinRTObjectType();
 
     DWORD IsComImport();
 
@@ -784,13 +778,6 @@ public:
     // NOTE: The current caller of this is ComInterop, and it makes calls
     // under its own lock to ensure not duplicates.
     InteropMethodTableData *GetComInteropData();
-
-#else // !FEATURE_COMINTEROP
-    BOOL IsWinRTObjectType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
 #endif // !FEATURE_COMINTEROP
 
     // class is a com object class

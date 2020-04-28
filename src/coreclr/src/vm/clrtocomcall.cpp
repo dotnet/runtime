@@ -152,66 +152,6 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     return pComInfo;
 }
 
-// static
-MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL *pComposition)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMDCtor));
-        PRECONDITION(pMDCtor->IsCtor());
-    }
-    CONTRACTL_END;
-    UNREACHABLE();
-    return nullptr;
-}
-
-// static
-MethodDesc *ComPlusCall::GetWinRTFactoryMethodForStatic(MethodDesc *pMDStatic)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMDStatic));
-        PRECONDITION(pMDStatic->IsStatic());
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pMDStatic->GetMethodTable();
-    _ASSERTE(pMT->IsProjectedFromWinRT());
-
-    // build the expected interface method signature
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
-    pMDStatic->GetSig(&pSig, &cSig);
-    SigParser ctorSig(pSig, cSig);
-
-    IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
-
-    // use the "has this" calling convention because we're looking for an instance method
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_HASTHIS);
-
-    // return type and parameter types are identical
-    ctorSig.GetSignature(&pSig, &cSig);
-    sigBuilder.AppendBlob((const PVOID)pSig, cSig);
-
-    pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
-
-    // ask the factory to find a matching method
-    WinRTClassFactory *pFactory = GetComClassFactory(pMT)->AsWinRTClassFactory();
-    MethodDesc *pMD = pFactory->FindStaticMethod(pMDStatic->GetName(), pSig, cSig, pMDStatic->GetModule());
-
-    if (pMD == NULL)
-    {
-        // @TODO: Do we want a richer exception message?
-        SString staticMethodName(SString::Utf8, pMDStatic->GetName());
-        COMPlusThrowNonLocalized(kMissingMethodException, staticMethodName.GetUnicode());
-    }
-
-    return pMD;
-}
-
 MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;

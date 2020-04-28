@@ -4969,24 +4969,6 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     }
 }
 
-#ifdef FEATURE_COMINTEROP
-// Instantiation of WinRT types defined in non-WinRT module. This check is required to generate marshaling stubs for
-// instantiations of shadow WinRT types like EventHandler<ITracingStatusChangedEventArgs> in mscorlib.
-static BOOL IsInstantationOfShadowWinRTType(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    Instantiation inst = pMT->GetInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        TypeHandle th = inst[i];
-        if (th.IsProjectedFromWinRT() && !th.GetModule()->IsWindowsRuntimeModule())
-            return TRUE;
-    }
-    return FALSE;
-}
-#endif
-
 void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
 {
     STANDARD_VM_CONTRACT;
@@ -5957,19 +5939,7 @@ static void SetStubMethodDescOnInteropMethodDesc(MethodDesc* pInteropMD, MethodD
         }
         else
         {
-#ifdef FEATURE_COMINTEROP
-            // We don't currently NGEN both the P/Invoke and WinRT stubs for WinRT delegates.
-            // If that changes, this function will need an extra parameter to tell what kind
-            // of stub is being passed.
-            if (pInteropMD->GetMethodTable()->IsWinRTDelegate())
-            {
-                pDelegateClass->m_pComPlusCallInfo->m_pStubMD.SetValue(pStubMD);
-            }
-            else
-#endif // FEATURE_COMINTEROP
-            {
-                pDelegateClass->m_pForwardStubMD = pStubMD;
-            }
+            pDelegateClass->m_pForwardStubMD = pStubMD;
         }
     }
     else
@@ -6085,34 +6055,17 @@ void CEEPreloader::GenerateMethodStubs(
             MethodTable* pMT = pMD->GetMethodTable();
             CONSISTENCY_CHECK(pMT->IsDelegate());
 
-            // we can filter out non-WinRT generic delegates right off the top
-            if (!pMD->HasClassOrMethodInstantiation() || pMT->IsProjectedFromWinRT()
-                )
+            if (!pMD->HasClassOrMethodInstantiation())
             {
                 if (COMDelegate::IsDelegateInvokeMethod(pMD)) // build forward stub
                 {
-#ifdef FEATURE_COMINTEROP
-                    if (pMT->IsProjectedFromWinRT() &&
-                        (!pMT->HasInstantiation() || pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))) // filter out shared generics
-                    {
-                        // Build the stub for all WinRT delegates, these will definitely be used for interop.
-                        if (pMT->IsLegalNonArrayWinRTType())
-                        {
-                            COMDelegate::PopulateComPlusCallInfo(pMT);
-                            pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
-                        }
-                    }
-                    else
-#endif // FEATURE_COMINTEROP
-                    {
-                        // Build the stub only if the delegate is decorated with UnmanagedFunctionPointerAttribute.
-                        // Forward delegate stubs are rare so we require this opt-in to avoid bloating NGEN images.
+                    // Build the stub only if the delegate is decorated with UnmanagedFunctionPointerAttribute.
+                    // Forward delegate stubs are rare so we require this opt-in to avoid bloating NGEN images.
 
-                        if (S_OK == pMT->GetMDImport()->GetCustomAttributeByName(
-                            pMT->GetCl(), g_UnmanagedFunctionPointerAttribute, NULL, NULL))
-                        {
-                            pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
-                        }
+                    if (S_OK == pMT->GetMDImport()->GetCustomAttributeByName(
+                        pMT->GetCl(), g_UnmanagedFunctionPointerAttribute, NULL, NULL))
+                    {
+                        pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
                     }
                 }
             }
@@ -6154,8 +6107,8 @@ void CEEPreloader::GenerateMethodStubs(
     //
     if (pMD->IsEEImpl() && COMDelegate::IsDelegateInvokeMethod(pMD))
     {
-        // Reverse P/Invoke is not supported for generic methods and WinRT delegates
-        if (!pMD->HasClassOrMethodInstantiation() && !pMD->GetMethodTable()->IsProjectedFromWinRT())
+        // Reverse P/Invoke is not supported for generic methods
+        if (!pMD->HasClassOrMethodInstantiation())
         {
             EX_TRY
             {

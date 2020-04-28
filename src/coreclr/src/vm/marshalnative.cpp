@@ -768,9 +768,6 @@ FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* 
 
     TypeHandle th = refClass->GetType();
 
-    if (th.GetMethodTable() != NULL && (th.IsProjectedFromWinRT() || th.IsExportedToWinRT()))
-        COMPlusThrowArgumentException(W("t"), W("Argument_ObjIsWinRTObject"));
-
     if (th.HasInstantiation())
         COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
@@ -1034,9 +1031,6 @@ FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, Refle
 
         TypeHandle th = refClass->GetType();
 
-        if (th.GetMethodTable() != NULL && (th.IsProjectedFromWinRT() || th.IsExportedToWinRT()))
-            COMPlusThrowArgumentException(W("t"), W("Argument_ObjIsWinRTObject"));
-
         if (th.HasInstantiation())
             COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
@@ -1077,10 +1071,6 @@ FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObject, IUnknown* pOuter, Obje
 
     if (oref == NULL)
         COMPlusThrowArgumentNull(W("o"));
-
-    MethodTable *pMT = oref->GetMethodTable();
-    if (pMT->IsWinRTObjectType() || pMT->IsExportedToWinRT())
-        COMPlusThrowArgumentException(W("o"), W("Argument_ObjIsWinRTObject"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -1840,22 +1830,7 @@ FCIMPL2(void, MarshalNative::InitializeManagedWinRTFactoryObject, Object *unsafe
 {
     FCALL_CONTRACT;
 
-    OBJECTREF orefThis = ObjectToOBJECTREF(unsafe_pThis);
-    REFLECTCLASSBASEREF orefType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(unsafe_pType);
-    HELPER_METHOD_FRAME_BEGIN_2(orefThis, orefType);
-
-    MethodTable *pMT = orefType->GetType().GetMethodTable();
-
-    // get the special "factory" template for the type
-    _ASSERTE(pMT->IsExportedToWinRT());
-    WinRTManagedClassFactory *pFactory = GetComClassFactory(pMT)->AsWinRTManagedClassFactory();
-
-    ComCallWrapperTemplate *pTemplate = pFactory->GetOrCreateComCallWrapperTemplate(orefThis->GetMethodTable());
-
-    // create a CCW for the factory object using the template
-    CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(&orefThis, pTemplate);
-
-    HELPER_METHOD_FRAME_END();
+    _ASSERTE(false);
 }
 FCIMPLEND
 
@@ -1875,30 +1850,9 @@ FCIMPL1(Object *, MarshalNative::GetNativeActivationFactory, ReflectClassBaseObj
 {
     FCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF orefType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(unsafe_pType);
-    OBJECTREF orefFactory = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(orefFactory, orefType);
+    _ASSERTE(false);
 
-    MethodTable *pMT = orefType->GetType().GetMethodTable();
-
-    // Must be a native WinRT type
-    _ASSERTE(pMT->IsProjectedFromWinRT());
-
-    //
-    // Get the activation factory instance for this WinRT type and create a RCW for it
-    //
-    GetNativeWinRTFactoryObject(
-        pMT,
-        GET_THREAD(),
-        NULL,               // No factory interface available at this point
-        TRUE,               // Create unique RCW - See comments for this function for more details
-        NULL,               // No callback necessary
-        &orefFactory        // return value
-        );
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(orefFactory);
+    return NULL;
 }
 FCIMPLEND
 

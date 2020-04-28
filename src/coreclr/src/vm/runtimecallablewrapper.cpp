@@ -745,37 +745,6 @@ IUnknown *AppXComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pf
 #endif //FEATURE_APPX
 
 //-------------------------------------------------------------
-MethodTable *WinRTClassFactory::GetTypeFromAttribute(IMDInternalImport *pImport, mdCustomAttribute tkAttribute)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // get raw custom attribute
-    const BYTE  *pbAttr = NULL;
-    ULONG cbAttr = 0;
-    IfFailThrowBF(pImport->GetCustomAttributeAsBlob(tkAttribute, (const void **)&pbAttr, &cbAttr), BFA_INVALID_TOKEN, m_pClassMT->GetModule());
-
-    CustomAttributeParser cap(pbAttr, cbAttr);
-    IfFailThrowBF(cap.ValidateProlog(), BFA_BAD_CA_HEADER, m_pClassMT->GetModule());
-
-    // retrieve the factory interface name
-    LPCUTF8 szName;
-    ULONG   cbName;
-    IfFailThrow(cap.GetNonNullString(&szName, &cbName));
-
-    // copy the name to a temporary buffer and NULL terminate it
-    StackSString ss(SString::Utf8, szName, cbName);
-
-    // load the factory interface
-    return TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), m_pClassMT->GetAssembly()).GetMethodTable();
-}
-
-//-------------------------------------------------------------
 // Returns true if the first parameter of the CA's method ctor is a System.Type
 static BOOL AttributeFirstParamIsSystemType(mdCustomAttribute tkAttribute, IMDInternalImport *pImport)
 {
@@ -856,135 +825,6 @@ static BOOL AttributeFirstParamIsSystemType(mdCustomAttribute tkAttribute, IMDIn
 
     return TRUE;
 }
-
-//-------------------------------------------------------------
-void WinRTClassFactory::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    COMPlusThrow(kPlatformNotSupportedException);
-}
-
-//-------------------------------------------------------------
-MethodDesc *WinRTClassFactory::FindFactoryMethod(PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    COUNT_T count = m_factoryInterfaces.GetCount();
-    for (UINT i = 0; i < count; i++)
-    {
-        MethodTable *pMT = m_factoryInterfaces[i];
-
-        MethodDesc *pMD = MemberLoader::FindMethod(pMT, "", pSig, cSig, pModule, MemberLoader::FM_IgnoreName);
-        if (pMD != NULL)
-        {
-            return pMD;
-        }
-    }
-
-    return NULL;
-}
-
-//-------------------------------------------------------------
-MethodDesc *WinRTClassFactory::FindStaticMethod(LPCUTF8 pszName, PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pszName));
-        PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    COUNT_T count = m_staticInterfaces.GetCount();
-    for (UINT i = 0; i < count; i++)
-    {
-        MethodTable *pMT = m_staticInterfaces[i];
-
-        MethodDesc *pMD = MemberLoader::FindMethod(pMT, pszName, pSig, cSig, pModule);
-        if (pMD != NULL)
-        {
-            return pMD;
-        }
-    }
-
-    return NULL;
-}
-
-//-------------------------------------------------------------
-void WinRTClassFactory::Cleanup()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_hClassName != NULL)
-    {
-        // HSTRING has been created, which means combase should have been loaded.
-        // Delay load will not fail.
-        _ASSERTE(WszGetModuleHandle(W("combase.dll")) != NULL);
-        CONTRACT_VIOLATION(ThrowsViolation);
-
-#ifndef CROSSGEN_COMPILE
-        WindowsDeleteString(m_hClassName);
-#endif
-    }
-    delete m_pWinRTOverrideInfo;
-    delete this;
-}
-
-//-------------------------------------------------------------
-void WinRTManagedClassFactory::Cleanup()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pCCWTemplate != NULL)
-    {
-        m_pCCWTemplate->Release();
-        m_pCCWTemplate = NULL;
-    }
-
-    WinRTClassFactory::Cleanup(); // deletes 'this'
-}
-#ifndef CROSSGEN_COMPILE
-//-------------------------------------------------------------
-ComCallWrapperTemplate *WinRTManagedClassFactory::GetOrCreateComCallWrapperTemplate(MethodTable *pFactoryMT)
-{
-    CONTRACT (ComCallWrapperTemplate *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pFactoryMT));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    if (m_pCCWTemplate == NULL)
-    {
-        ComCallWrapperTemplate::CreateTemplate(TypeHandle(pFactoryMT), this);
-    }
-
-    RETURN m_pCCWTemplate;
-}
-#endif // CROSSGEN_COMPILE
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -1976,13 +1816,6 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
         // WinRT objects always apply some GC pressure
         GCPressureSize pressureSize = GCPressureSize_WinRT_Base;
 
-        // if we have a strongly-typed non-delegate RCW, we may have read the GC pressure amount from metadata
-        if (pClassMT->IsProjectedFromWinRT() && !pClassMT->IsDelegate())
-        {
-            WinRTClassFactory *pFactory = GetComClassFactory(pClassMT)->AsWinRTClassFactory();
-            pressureSize = pFactory->GetGCPressure();
-        }
-
         pWrap->AddMemoryPressure(pressureSize);
     }
 
@@ -2902,16 +2735,6 @@ MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
     }
     CONTRACT_END;
 
-    if (!pMT->IsProjectedFromWinRT())
-    {
-        RETURN NULL;
-    }
-
-    if (pMT->HasVariance())
-    {
-        RETURN pMT;
-    }
-
     RETURN NULL;
 }
 
@@ -3264,17 +3087,7 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     if (pUnk == NULL)
         RETURN NULL;
 
-    bool fAllowOutOfContextCache = true;
-    if (!pMT->IsProjectedFromWinRT())
-    {
-        // This is not a WinRT interface and we could in theory use the out-of-context auxiliary cache,
-        // at worst we would just do
-        // fAllowOutOfContextCache = !IsURTAggregated()
-        // however such a change has some breaking potential (COM proxies would live much longer) and is
-        // considered to risky for an in-place release.
-
-        fAllowOutOfContextCache = false;
-    }
+    bool fAllowOutOfContextCache = false;
 
     // try to cache the interface pointer in the inline cache. This cache can only store interface pointers
     // returned from QI's in the same context where we created the RCW.
@@ -3852,20 +3665,17 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                 if (!pMT->FindDynamicallyAddedInterface(pIntfTable))
                 {
                     // It's not there.
-                    if (!pMT->IsWinRTObjectType())
+                    // Check if the object supports all of these interfaces only if this is a classic COM interop
+                    // scenario. This is a perf optimization (no need to QI for base interfaces if we don't really
+                    // need them just yet) and also has a usability aspect. If this SupportsInterface call failed
+                    // because one of the base interfaces is not supported, the exception we'd throw would contain
+                    // only the name of the "top level" interface which would confuse the developer.
+                    MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
+                    while (it.Next())
                     {
-                        // Check if the object supports all of these interfaces only if this is a classic COM interop
-                        // scenario. This is a perf optimization (no need to QI for base interfaces if we don't really
-                        // need them just yet) and also has a usability aspect. If this SupportsInterface call failed
-                        // because one of the base interfaces is not supported, the exception we'd throw would contain
-                        // only the name of the "top level" interface which would confuse the developer.
-                        MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
-                        while (it.Next())
-                        {
-                            bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
-                            if (!bSupportsItf)
-                                break;
-                        }
+                        bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
+                        if (!bSupportsItf)
+                            break;
                     }
 
                     // If the object supports all these interfaces, attempt to add the interface table
@@ -3938,31 +3748,15 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         // Retrieve the IID of the interface.
         MethodTable *pCOMItfMT = thCastTo.GetMethodTable();
 
-        if (pCOMItfMT->IsProjectedFromWinRT())
-        {
-            // pCOMItfMT could be a generic WinRT-illegal interface in which case GetGuid would throw a confusing BadImageFormatException
-            // so we swallow the exception and throw the generic InvalidCastException instead
-            if (FAILED(pCOMItfMT->GetGuidNoThrow(&iid, FALSE)))
-            {
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-            }
-        }
-        else
-        {
-            // keep calling the throwing GetGuid for non-WinRT interfaces (back compat)
-            pCOMItfMT->GetGuid(&iid, TRUE);
-        }
+        // keep calling the throwing GetGuid for non-WinRT interfaces (back compat)
+        pCOMItfMT->GetGuid(&iid, TRUE);
 
         // Query for the interface to determine the failure HRESULT.
         hr = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
 
         // If this function was called, it means the QI call failed in the past. If it
         // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
-        if (SUCCEEDED(hr) ||
-            // Also throw the generic exception if the QI failed with E_NOINTERFACE and this is
-            // a WinRT scenario - the user is very likely not interested in details like IID and
-            // HRESULT, they just want to get the "managed" experience.
-            (hr == E_NOINTERFACE && (thClass.GetMethodTable()->IsWinRTObjectType() || pCOMItfMT->IsProjectedFromWinRT())))
+        if (SUCCEEDED(hr))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
         }
@@ -4028,13 +3822,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     {
         // Validate that this function wasn't erroneously called.
         _ASSERTE(!thClass.CanCastTo(thCastTo));
-
-        if (thClass.GetMethodTable()->IsWinRTObjectType() || thCastTo.IsProjectedFromWinRT() || thCastTo.GetMethodTable()->IsWinRTObjectType())
-        {
-            // don't mention any "COM components" in the exception if we failed to cast a WinRT object or
-            // to a WinRT object, throw the simple generic InvalidCastException instead
-            COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-        }
 
         if (thCastTo.IsComObjectType())
         {
@@ -4140,396 +3927,6 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
 
     RETURN pIUnk;
 }
-
-//
-// Create override information based on interface lookup
-//
-WinRTOverrideInfo::WinRTOverrideInfo(EEClass *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    ::ZeroMemory(this, sizeof(WinRTOverrideInfo));
-
-    MethodTable *pMT = pClass->GetMethodTable();
-
-    _ASSERTE(IsTdClass(pClass->GetAttrClass()));
-    //
-    // Iterate through each implemented interface
-    // Note that the interface map is laid from parent to child
-    // So we start from the most derived class, and climb our way up to parent, instead of
-    // inspecting interface map directly
-    //
-    while (pMT != g_pBaseCOMObject)
-    {
-        MethodTable *pParentMT = pMT->GetParentMethodTable();
-        unsigned dwParentInterfaces = 0;
-        if (pParentMT)
-            dwParentInterfaces = pParentMT->GetNumInterfaces();
-
-        DWORD dwFound = 0;
-
-        //
-        // Scanning only current class only if the current class have more interface than parent
-        //
-        if (pMT->GetNumInterfaces() > dwParentInterfaces)
-        {
-            MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
-            while (!it.Finished())
-            {
-                MethodTable *pImplementedIntfMT = it.GetInterface();
-
-                // Only check private interfaces as they are exclusive
-                if (IsTdNotPublic(pImplementedIntfMT->GetAttrClass()) && pImplementedIntfMT->IsProjectedFromWinRT())
-                {
-                    if (m_pToStringMD == NULL)
-                    {
-                        m_pToStringMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "ToString",
-                            &gsig_IM_RetStr);
-                        if (m_pToStringMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (m_pGetHashCodeMD == NULL)
-                    {
-                        m_pGetHashCodeMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "GetHashCode",
-                            &gsig_IM_RetInt);
-                        if (m_pGetHashCodeMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (m_pEqualsMD == NULL)
-                    {
-                        m_pEqualsMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "Equals",
-                            &gsig_IM_Obj_RetBool);
-                        if (m_pEqualsMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (dwFound == 3)
-                        return;
-                }
-
-                it.Next();
-            }
-        }
-
-        //
-        // Parent has no more interfaces (including parents of parent). We are done
-        //
-        if (dwParentInterfaces == 0)
-            break;
-
-        pMT = pParentMT;
-    }
-}
-
-//
-// If WinRTOverrideInfo is not created, create one. Otherwise return existing one
-//
-WinRTOverrideInfo *WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(MethodTable *pMT)
-{
-    CONTRACT (WinRTOverrideInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    _ASSERTE(pMT != NULL);
-
-    EEClass *pClass = pMT->GetClass();
-
-    //
-    // Retrieve the WinRTOverrideInfo from WinRT class factory
-    // It is kind of sub-optimal but saves a EEClass field
-    //
-    WinRTClassFactory *pClassFactory = GetComClassFactory(pMT)->AsWinRTClassFactory();
-
-    WinRTOverrideInfo *pOverrideInfo = pClassFactory->GetWinRTOverrideInfo();
-    if (pOverrideInfo == NULL)
-    {
-        //
-        // Create the override information
-        //
-        NewHolder<WinRTOverrideInfo> pNewOverrideInfo = new WinRTOverrideInfo(pClass);
-
-        if (pNewOverrideInfo->m_pEqualsMD       == NULL &&
-            pNewOverrideInfo->m_pGetHashCodeMD  == NULL &&
-            pNewOverrideInfo->m_pToStringMD     == NULL)
-        {
-            // Special optimization for where there is no override found
-            pMT->SetSkipWinRTOverride();
-
-            RETURN NULL;
-        }
-        else
-        {
-            if (pClassFactory->SetWinRTOverrideInfo(pNewOverrideInfo))
-            {
-                // We win the race
-                pNewOverrideInfo.SuppressRelease();
-                RETURN pNewOverrideInfo;
-            }
-            else
-            {
-                // Lost the race - retrieve again
-                RETURN pClassFactory->GetWinRTOverrideInfo();
-            }
-        }
-    }
-
-    RETURN pOverrideInfo;
-}
-
-//
-// Redirection for ToString
-//
-NOINLINE static MethodDesc *GetRedirectedToStringMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedToStringMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pToStringMD != NULL)
-    {
-        pRetMD = pOverrideInfo->m_pToStringMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedToStringMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedToStringMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL2(StringObject *, ComObject::RedirectToString, Object *pThisUNSAFE, MethodDesc *pToStringMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    STRINGREF refString = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, refString);
-
-    // Note that this has to be virtual. Consider this case
-    //
-    // interface INativeA
-    // {
-
-    //     string ToString();
-    // }
-    //
-    // class NativeA : INativeA
-    // {
-    //     protected override ToString()
-    //     {
-    //         .override IA.ToString()
-    //     }
-    // }
-    //
-    // class Managed : NativeA
-    // {
-    //     override ToString();
-    // }
-    //
-    // If we call IA.ToString virtually, we'll land on INativeA.ToString() which is not correct.
-    // Calling it virtually will solve this problem
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pToStringMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(ToStringArgs, 1);
-    ToStringArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-
-    CALL_MANAGED_METHOD_RETREF(refString, STRINGREF, ToStringArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(refString);
-}
-FCIMPLEND
-
-//
-// Redirection for GetHashCode
-//
-NOINLINE static MethodDesc *GetRedirectedGetHashCodeMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedGetHashCodeMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pGetHashCodeMD != NULL)
-    {
-        pRetMD = pOverrideInfo->m_pGetHashCodeMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedGetHashCodeMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedGetHashCodeMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL2(int, ComObject::RedirectGetHashCode, Object *pThisUNSAFE, MethodDesc *pGetHashCodeMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    int hash = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    // Note that this has to be virtual. See RedirectToString for more details
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pGetHashCodeMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(GetHashCodeArgs, 1);
-    GetHashCodeArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-
-    CALL_MANAGED_METHOD(hash, int, GetHashCodeArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    return hash;
-}
-FCIMPLEND
-
-NOINLINE static MethodDesc *GetRedirectedEqualsMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedEqualsMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pEqualsMD!= NULL)
-    {
-        pRetMD = pOverrideInfo->m_pEqualsMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedEqualsMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedEqualsMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL3(FC_BOOL_RET, ComObject::RedirectEquals, Object *pThisUNSAFE, Object *pOtherUNSAFE, MethodDesc *pEqualsMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    OBJECTREF refOther = ObjectToOBJECTREF(pOtherUNSAFE);
-
-    CLR_BOOL ret = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, refOther);
-
-    // Note that this has to be virtual. See RedirectToString for more details
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pEqualsMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(EqualArgs, 2);
-    EqualArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-    EqualArgs[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(refOther);
-
-    CALL_MANAGED_METHOD(ret, CLR_BOOL, EqualArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
 #endif // #ifndef DACCESS_COMPILE
 
 #endif //#ifndef CROSSGEN_COMPILE

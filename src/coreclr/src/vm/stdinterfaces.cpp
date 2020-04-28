@@ -656,12 +656,6 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     SafeComHolder<ITypeInfo> pTIDef     = NULL;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
 
-    if (pClass->IsProjectedFromWinRT() || pClass->IsExportedToWinRT())
-    {
-        // ITypeInfo is not used in the WinRT world
-        return E_NOTIMPL;
-    }
-
     GCX_PREEMP();
 
     // Get the typeinfo.

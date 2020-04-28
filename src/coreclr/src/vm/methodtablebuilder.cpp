@@ -1509,11 +1509,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // that extends from another WinRT class (and so form a chain of WinRT classes
         // that ultimately extend from object).
         MethodTable* pMTParent = GetParentMethodTable();
-        if ((pMTParent == NULL) || !(
-                // is the parent valid?
-                (pMTParent == g_pObjectClass) ||
-                (GetHalfBakedClass()->IsProjectedFromWinRT() && pMTParent->IsProjectedFromWinRT())
-                ))
+        if ((pMTParent == NULL) || (pMTParent != g_pObjectClass))
         {
             BuildMethodTableThrowException(IDS_CLASSLOAD_CANTEXTEND);
         }
@@ -1527,11 +1523,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (pMTParent == g_pObjectClass)
         {
             // ComImport classes ultimately extend from our __ComObject or RuntimeClass class
-            MethodTable *pCOMMT = NULL;
-            if (GetHalfBakedClass()->IsProjectedFromWinRT())
-                pCOMMT = g_pBaseRuntimeClass;
-            else
-                pCOMMT = g_pBaseCOMObject;
+            MethodTable *pCOMMT = g_pBaseCOMObject;
 
             _ASSERTE(pCOMMT);
 
@@ -1548,15 +1540,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (GetHalfBakedClass()->IsProjectedFromWinRT() && IsValueClass() && !IsEnum())
-    {
-        // WinRT structures must have sequential layout
-        if (!GetHalfBakedClass()->HasSequentialLayout())
-        {
-            BuildMethodTableThrowException(IDS_EE_STRUCTLAYOUT_WINRT);
-        }
-    }
-
     // Check for special COM interop types.
     CheckForSpecialTypes();
 
@@ -2926,7 +2909,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             //@GENERICS:
             // Generic methods or methods in generic classes
-            // may not be part of a COM Import class (except for WinRT), PInvoke, internal call outside mscorlib.
+            // may not be part of a COM Import class, PInvoke, internal call outside mscorlib.
             if ((bmtGenerics->GetNumGenericArgs() != 0 || numGenericMethodArgs != 0) &&
                 (
 #ifdef FEATURE_COMINTEROP
@@ -2936,12 +2919,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 IsMdPinvokeImpl(dwMemberAttrs) ||
                 (IsMiInternalCall(dwImplFlags) && !GetModule()->IsSystem())))
             {
-#ifdef FEATURE_COMINTEROP
-                if (!GetHalfBakedClass()->IsProjectedFromWinRT())
-#endif // FEATURE_COMINTEROP
-                {
-                    BuildMethodTableThrowException(BFA_BAD_PLACE_FOR_GENERIC_METHOD);
-                }
+                BuildMethodTableThrowException(BFA_BAD_PLACE_FOR_GENERIC_METHOD);
             }
 
             // Generic methods may not be marked "runtime".  However note that
@@ -3012,26 +2990,12 @@ MethodTableBuilder::EnumerateClassMethods()
             {
 #ifdef FEATURE_COMINTEROP
                 if (fIsClassComImport
-                    || GetHalfBakedClass()->IsProjectedFromWinRT()
                     || bmtProp->fComEventItfType
                     )
                 {
                     // ComImport classes have methods which are just used
                     // for implementing all interfaces the class supports
                     type = METHOD_TYPE_COMINTEROP;
-
-                    // constructor is special
-                    if (IsMdRTSpecialName(dwMemberAttrs))
-                    {
-                        // Note: Method name (.ctor) will be checked in code:ValidateMethods
-
-                        // WinRT ctors are interop calls via stubs
-                        if (!GetHalfBakedClass()->IsProjectedFromWinRT())
-                        {
-                            // Ctor on a non-WinRT class
-                            type = METHOD_TYPE_FCALL;
-                        }
-                    }
                 }
                 else
 #endif //FEATURE_COMINTEROP
@@ -3109,11 +3073,9 @@ MethodTableBuilder::EnumerateClassMethods()
                 type = METHOD_TYPE_NORMAL;
             }
             else if (bmtGenerics->GetNumGenericArgs() != 0 &&
-                (bmtGenerics->fSharedByGenericInstantiations || !GetHalfBakedClass()->IsProjectedFromWinRT()))
+                (bmtGenerics->fSharedByGenericInstantiations))
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
-                // mcComInterop is only useful for unshared instantiated WinRT interfaces. If the interface is
-                // shared by multiple instantiations, the MD would be useless for interop anyway.
                 type = METHOD_TYPE_NORMAL;
             }
             else if (bmtProp->fIsMngStandardItf)
@@ -7427,23 +7389,6 @@ MethodTableBuilder::PlaceInterfaceMethods()
             }
         }
 
-#ifdef FEATURE_COMINTEROP
-        // WinRT types always use methodimpls to line up methods with interface implementations, so we do not want to allow implicit
-        // interface implementations to kick in.   This can especially cause problems with redirected interfaces, where the underlying
-        // runtimeclass doesn't actually implement the interfaces we claim it does.   For example, a WinRT class which implements both
-        // IVector<int> and ICalculator will be projected as implementing IList<int> and ICalculator.  In this case, we do not want the
-        // ICalculator Add(int) method to get lined up with the ICollection<int> Add method, since that will cause us to dispatch to the
-        // wrong underlying COM interface.
-        //
-        // There are a special WinRT types in mscorlib (notably DisposableRuntimeClass) which do implement interfaces in the normal way
-        // so we skip this check for them.  (Note that we can't use a methodimpl directly in mscorlib, since ComImport classes are
-        // forbidden from having implementation code by the C# compiler).
-        if (GetHalfBakedClass()->IsProjectedFromWinRT() && !GetModule()->IsSystem())
-        {
-            continue;
-        }
-#endif // FEATURE_COMINTEROP
-
         // For each method declared in this interface
         bmtInterfaceEntry::InterfaceSlotIterator itfSlotIt =
             pCurItfEntry->IterateInterfaceSlots(GetStackingAllocator());
@@ -9707,15 +9652,12 @@ void MethodTableBuilder::CheckForSystemTypes()
         else
         {
             bool bIsComObject = false;
-            bool bIsRuntimeClass = false;
 
             if (strcmp(name, g_ComObjectName) == 0 && strcmp(nameSpace, g_SystemNS) == 0)
                 bIsComObject = true;
 
-            if (strcmp(name, g_RuntimeClassName) == 0 && strcmp(nameSpace, g_WinRTNS) == 0)
-                bIsRuntimeClass = true;
 
-            if (bIsComObject || bIsRuntimeClass)
+            if (bIsComObject)
             {
                 // Make System.__ComObject/System.Runtime.InteropServices.WindowsRuntime.RuntimeClass a ComImport type
                 // We can't do it using attribute as C# won't allow putting code in ComImport types
@@ -9724,13 +9666,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 // COM objects need an optional field on the EEClass, so ensure this class instance has allocated
                 // the optional field descriptor.
                 EnsureOptionalFieldsAreAllocated(pClass, m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
-            }
-
-            if (bIsRuntimeClass)
-            {
-                // Note that we set it here to avoid type loader considering RuntimeClass as a normal WindowsImportType
-                // as functions in RuntimeClass doesn't go through COM interop
-                GetHalfBakedClass()->SetProjectedFromWinRT();
             }
         }
 #endif // FEATURE_COMINTEROP
@@ -10604,8 +10539,7 @@ MethodTableBuilder::SetupMethodTable2(
     // class
     // make sure any interface implementated by the COM Imported class
     // is overridden fully, (OR) not overridden at all..
-    // We relax this for WinRT where we want to be able to override individual methods.
-    if (bmtProp->fIsComObjectType && !pMT->IsWinRTObjectType())
+    if (bmtProp->fIsComObjectType)
     {
         MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMap();
         while (intIt.Next())
@@ -11036,17 +10970,12 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 #undef MNGSTDITF_END_INTERFACE
 
                 } while (FALSE);
-
-                // We want to allocate the per-type RCW data optional MethodTable field for
-                // 1. Redirected interfaces
-                // 2. Mscorlib-declared [WindowsRuntimeImport] interfaces
-                bmtProp->fNeedsRCWPerTypeData = GetHalfBakedClass()->IsProjectedFromWinRT();
             }
         }
     }
 
     // Check to see if the type is a COM event interface (classic COM interop only).
-    if (IsInterface() && !GetHalfBakedClass()->IsProjectedFromWinRT())
+    if (IsInterface())
     {
         HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::ComEventInterface, NULL, NULL);
         if (hr == S_OK)
@@ -11432,18 +11361,14 @@ VOID MethodTableBuilder::EnsureRIDMapsCanBeFilled()
 void MethodTableBuilder::GetCoClassAttribInfo()
 {
     STANDARD_VM_CONTRACT;
-
-    if (!GetHalfBakedClass()->IsProjectedFromWinRT()) // ignore classic COM interop CA on WinRT interfaces
+    // Retrieve the CoClassAttribute CA.
+    HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::CoClass, NULL, NULL);
+    if (hr == S_OK)
     {
-        // Retrieve the CoClassAttribute CA.
-        HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::CoClass, NULL, NULL);
-        if (hr == S_OK)
-        {
-            // COM class interfaces may lazily populate the m_pCoClassForIntf field of EEClass. This field is
-            // optional so we must ensure the optional field descriptor has been allocated.
-            EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
-            SetIsComClassInterface();
-        }
+        // COM class interfaces may lazily populate the m_pCoClassForIntf field of EEClass. This field is
+        // optional so we must ensure the optional field descriptor has been allocated.
+        EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+        SetIsComClassInterface();
     }
 }
 #endif // FEATURE_COMINTEROP

@@ -1479,8 +1479,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    _ASSERTE(!pMT->IsWinRTDelegate());
-
     dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
@@ -2919,8 +2917,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
 #ifdef FEATURE_COMINTEROP
     // We'll always force classic COM types to go down the slow path for security checks.
-    if ((pMT->IsComObjectType() && !pMT->IsWinRTObjectType()) ||
-        (pMT->IsComImport() && !pMT->IsProjectedFromWinRT()))
+    if (pMT->IsComObjectType() || pMT->IsComImport())
     {
         return NULL;
     }

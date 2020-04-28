@@ -555,20 +555,6 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (it.Next())
-        {
-            PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL &&
-                (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
-            {
-                // Don't return mscorlib-internal declarations of WinRT types.
-                if (!(pMT->GetModule()->IsSystem() && pMT->IsProjectedFromWinRT()))
-                {
-                    rgItfTables->Append(pMT);
-                }
-            }
-        }
     }
 
     void GetCachedInterfacePointers(BOOL bIInspectableOnly,
@@ -581,7 +567,7 @@ struct RCW
         {
             PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
             if (pMT != NULL &&
-                (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
+                (!bIInspectableOnly))
             {
                 TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
                 if (taUnk != NULL)
@@ -1083,8 +1069,6 @@ struct RCWPerTypeData
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
 class ComClassFactory;
-class WinRTClassFactory;
-class WinRTManagedClassFactory;
 
 class ClassFactoryBase
 {
@@ -1096,24 +1080,8 @@ public:
     ComClassFactory *AsComClassFactory()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT == NULL || (!m_pClassMT->IsProjectedFromWinRT() && !m_pClassMT->IsExportedToWinRT()));
         return (ComClassFactory *)this;
     }
-
-    WinRTClassFactory *AsWinRTClassFactory()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT->IsProjectedFromWinRT() || m_pClassMT->IsExportedToWinRT());
-        return (WinRTClassFactory *)this;
-    }
-
-    WinRTManagedClassFactory *AsWinRTManagedClassFactory()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT->IsExportedToWinRT());
-        return (WinRTManagedClassFactory *)this;
-    }
-
 protected:
     ClassFactoryBase(MethodTable *pClassMT = NULL)
         : m_pClassMT(pClassMT)
@@ -1211,20 +1179,6 @@ private:
     BOOL            m_bManagedVersion;
 };
 
-//
-// WinRT override information for ToString/GetHashCode/Equals
-//
-struct WinRTOverrideInfo
-{
-    MethodDesc *m_pToStringMD;
-    MethodDesc *m_pGetHashCodeMD;
-    MethodDesc *m_pEqualsMD;
-
-    WinRTOverrideInfo(EEClass *pClass);
-    static WinRTOverrideInfo *GetOrCreateWinRTOverrideInfo(MethodTable *pMT);
-    MethodDesc* GetIStringableToStringMD(MethodTable *pMT);
-};
-
 //--------------------------------------------------------------
 // Special ComClassFactory for AppX scenarios only
 // Call CoCreateInstanceFromApp to ensure compatibility
@@ -1270,144 +1224,7 @@ public :
             RETURN new ComClassFactory(rclsid);
     }
 };
-//-------------------------------------------------------------------------
-// Encapsulates data needed to instantiate WinRT runtime classes.
-class WinRTClassFactory : public ClassFactoryBase
-{
-public:
-    WinRTClassFactory(MethodTable *pClassMT)
-        : ClassFactoryBase(pClassMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_hClassName         = NULL;
-        m_pDefaultItfMT      = NULL;
-        m_pWinRTOverrideInfo = NULL;
-        m_GCPressure         = RCW::GCPressureSize_WinRT_Base;
-    }
-
-    //-------------------------------------------------------------
-    // Initialize this instance by parsing factory-related attributes.
-    void Init();
-
-    //-------------------------------------------------------------
-    // Returns a factory method that matches the given signature.
-    MethodDesc *FindFactoryMethod(PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule);
-
-    //-------------------------------------------------------------
-    // Returns a static interface method that matches the given signature.
-    MethodDesc *FindStaticMethod(LPCUTF8 pszName, PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule);
-
-    //-------------------------------------------------------------
-    // Function to clean up
-    void Cleanup();
-
-    // If true, the class can be activated only using the composition pattern
-    BOOL IsComposition()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !m_pClassMT->IsSealed();
-    }
-
-    MethodTable *GetClass()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pClassMT;
-    }
-
-    HSTRING GetClassName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hClassName;
-    }
-
-    SArray<MethodTable *> *GetFactoryInterfaces()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_factoryInterfaces;
-    }
-
-    SArray<MethodTable *> *GetStaticInterfaces()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_staticInterfaces;
-    }
-
-    MethodTable *GetDefaultInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return  m_pDefaultItfMT;
-    }
-
-    RCW::GCPressureSize GetGCPressure()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_GCPressure;
-    }
-
-    FORCEINLINE WinRTOverrideInfo *GetWinRTOverrideInfo ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTOverrideInfo;
-    }
-
-    BOOL SetWinRTOverrideInfo (WinRTOverrideInfo *pWinRTOverrideInfo)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (InterlockedCompareExchangeT(&m_pWinRTOverrideInfo, pWinRTOverrideInfo, NULL) == NULL);
-    }
-
-protected:
-    MethodTable *GetTypeFromAttribute(IMDInternalImport *pImport, mdCustomAttribute tkAttribute);
-
-    HSTRING m_hClassName;
-
-    InlineSArray<MethodTable *, 1> m_factoryInterfaces;
-    InlineSArray<MethodTable *, 1> m_staticInterfaces;
-
-    MethodTable *m_pDefaultItfMT;                           // Default interface of the class
-
-    WinRTOverrideInfo *m_pWinRTOverrideInfo;                // ToString/GetHashCode/GetValue override information
-
-    RCW::GCPressureSize m_GCPressure;                       // GC pressure size associated with instances of this class
-};
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-//-------------------------------------------------------------------------
-// Encapsulates data needed to instantiate WinRT runtime classes implemented
-// in managed code.
-class WinRTManagedClassFactory : public WinRTClassFactory
-{
-public:
-    WinRTManagedClassFactory(MethodTable *pClassMT)
-        : WinRTClassFactory(pClassMT)
-    {
-        m_pCCWTemplate = NULL;
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    //-------------------------------------------------------------
-    // Function to clean up
-    void Cleanup();
-
-    ComCallWrapperTemplate *GetComCallWrapperTemplate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCCWTemplate;
-    }
-
-    BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (InterlockedCompareExchangeT(&m_pCCWTemplate, pTemplate, NULL) == NULL);
-    }
-
-    ComCallWrapperTemplate *GetOrCreateComCallWrapperTemplate(MethodTable *pFactoryMT);
-
-protected:
-    ComCallWrapperTemplate *m_pCCWTemplate; // CCW template for the factory object
-};
 
 FORCEINLINE void NewRCWHolderRelease(RCW* p)
 {
