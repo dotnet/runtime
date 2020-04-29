@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Linq;
 using System.Threading;
 
 namespace System.Diagnostics
