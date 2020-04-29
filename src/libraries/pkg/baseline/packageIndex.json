@@ -7244,7 +7244,7 @@
   },
   "ModulesToPackages": {
     "sni.dll": "runtime.native.System.Data.SqlClient.sni",
-    "System.IO.Ports.Native": "runtime.native.System.IO.Ports"
+    "libSystem.IO.Ports.Native": "runtime.native.System.IO.Ports"
   },
   "MetaPackages": {
     "NETStandard.Library": [
