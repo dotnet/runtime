@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PrepareProjectReferencesDependsOn>
       AddRuntimeProjectReference;
       $(PrepareProjectReferencesDependsOn);
