@@ -25,8 +25,8 @@ namespace ILCompiler
         private readonly ConcurrentDictionary<TypeDesc, CompilationUnitSet> _layoutCompilationUnits = new ConcurrentDictionary<TypeDesc, CompilationUnitSet>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
-        private readonly Dictionary<ModuleDesc, int> _moduleCompilationUnits = new Dictionary<ModuleDesc, int>();
-        private int _maxCompilationUnitsKnown = 3;
+        private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
+        private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
 
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
@@ -77,24 +77,40 @@ namespace ILCompiler
             return _layoutCompilationUnits.GetOrAdd(type, TypeLayoutCompilationUnitsUncached);
         }
 
+        private enum CompilationUnitIndex
+        {
+            RESERVEDForHasMultipleInexactCompilationUnits = 0,
+            RESERVEDForHasMultipleCompilationUnits = 1,
+            First = 2,
+            Current = 2,
+            OutsideOfVersionBubble = 3,
+            FirstDynamicallyAssigned = 4,
+        }
+
         // Compilation Unit Index is the compilation unit of a given module. If the compilation unit
         // is unknown the module will be given an independent index from other modules, but 
         // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices 
-        // are >= 2, to allow for 0 to be a sentinel value.
-        private int ModuleToCompilationUnitIndex(ModuleDesc nonEcmaModule)
+        // are >= 2, to allow for 0 and 1 to be sentinel values.
+        private CompilationUnitIndex ModuleToCompilationUnitIndex(ModuleDesc nonEcmaModule)
         {
             EcmaModule module = (EcmaModule)nonEcmaModule;
             if (IsModuleInCompilationGroup(module))
-                return 2;
+                return CompilationUnitIndex.Current;
 
             if (!VersionsWithModule(module))
-                return 3;
+                return CompilationUnitIndex.OutsideOfVersionBubble;
             
+            // Assemblies within the version bubble, but not compiled as part of this compilation unit are given 
+            // unique seperate compilation units. The practical effect of this is that the compiler can assume that
+            // types which are entirely defined in one module can be laid out in an optimal fashion, but types
+            // which are laid out relying on multiple modules cannot have their type layout precisely known as
+            // it is unknown if the modules are bounding into a single composite image or into individual assemblies. 
             lock (_moduleCompilationUnits)
             {
-                if (!_moduleCompilationUnits.TryGetValue(module, out int compilationUnit))
+                if (!_moduleCompilationUnits.TryGetValue(module, out CompilationUnitIndex compilationUnit))
                 {
-                    compilationUnit = ++_maxCompilationUnitsKnown;
+                    compilationUnit = _nextCompilationUnit;
+                    _nextCompilationUnit = (CompilationUnitIndex)(((int)_nextCompilationUnit) + 1);
                     _moduleCompilationUnits.Add(module, compilationUnit);
                 }
 
@@ -102,10 +118,18 @@ namespace ILCompiler
             }
         }
 
-        // Indicate 
-        private bool IsCompilationUnitIndexExact(int compilationUnitIndex)
+        // Indicate whether or not the compiler can take a hard dependency on the meaning
+        // the compilation unit index.
+        private bool IsCompilationUnitIndexExact(CompilationUnitIndex compilationUnitIndex)
         {
-            if (compilationUnitIndex != 2)
+            // Currently the implementation is only allowed to assume 2 details.
+            // 1. That any assembly which is compiled with inputbubble set shall have its entire set of dependencies compiled as R2R
+            // 2. That any assembly which is compiled in the current process may be considered to be part of a single unit.
+            //
+            // At some point, the compiler could take new parameters to allow the compiler to know that assemblies not in the current compilation
+            // unit are to be compiled into composite images or into seperate binaries, and this helper function could return true for these other
+            // compilation unit shapes.
+            if (compilationUnitIndex != CompilationUnitIndex.Current)
                 return false;
             else
                 return true;
@@ -117,9 +141,9 @@ namespace ILCompiler
 
             public CompilationUnitSet(ReadyToRunCompilationModuleGroupBase compilationGroup, ModuleDesc module)
             {
-                int compilationIndex = compilationGroup.ModuleToCompilationUnitIndex(module);
-                _bits = new BitArray(compilationIndex + 1);
-                _bits.Set(compilationIndex, true);
+                CompilationUnitIndex compilationIndex = compilationGroup.ModuleToCompilationUnitIndex(module);
+                _bits = new BitArray(((int)compilationIndex) + 1);
+                _bits.Set((int)compilationIndex, true);
             }
 
             public bool HasMultipleInexactCompilationUnits
@@ -129,7 +153,7 @@ namespace ILCompiler
                     if (_bits == null)
                         return false;
 
-                    return _bits[0];
+                    return _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleInexactCompilationUnits];
                 }
             }
 
@@ -140,7 +164,7 @@ namespace ILCompiler
                     if (_bits == null)
                         return false;
                         
-                    return _bits[1];
+                    return _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleCompilationUnits];
                 }
             }
 
@@ -154,8 +178,8 @@ namespace ILCompiler
 
                 if (other.HasMultipleInexactCompilationUnits)
                 {
-                    _bits[0] = true;
-                    _bits[1] = true;
+                    _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleCompilationUnits] = true;
+                    _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleInexactCompilationUnits] = true;
                     return;
                 }
 
@@ -177,11 +201,11 @@ namespace ILCompiler
 
                 int inexactCompilationUnitCount = 0;
                 int compilationUnitCount = 0;
-                for (int i = 2; i < _bits.Length; i++)
+                for (int i = (int)CompilationUnitIndex.First; i < _bits.Length; i++)
                 {
                     if (_bits[i])
                     {
-                        if (!compilationGroup.IsCompilationUnitIndexExact(i))
+                        if (!compilationGroup.IsCompilationUnitIndexExact((CompilationUnitIndex)i))
                             inexactCompilationUnitCount++;
 
                         compilationUnitCount++;
@@ -189,12 +213,12 @@ namespace ILCompiler
                     if (compilationUnitCount == 2)
                     {
                         // Multiple compilation units found
-                        _bits[1] = true;
+                        _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleCompilationUnits] = true;
                     }
                     if (inexactCompilationUnitCount == 2)
                     {
                         // Multiple inexact compilation units involved
-                        _bits[0] = true;
+                        _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleInexactCompilationUnits] = true;
                         break;
                     }
                 }

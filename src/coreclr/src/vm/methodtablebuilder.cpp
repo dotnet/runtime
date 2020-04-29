@@ -11295,11 +11295,9 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
             return FALSE;
     }
 
-    bool needsAlign = false;
     if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||
         pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
     {
-        GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();
         return TRUE;
     }
 
