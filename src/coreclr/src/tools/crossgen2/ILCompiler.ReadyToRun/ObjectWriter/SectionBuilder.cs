@@ -4,15 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -482,7 +478,19 @@ namespace ILCompiler.PEWriter
 
             if (mapFileBuilder != null)
             {
-                mapFileBuilder.AddNode(new MapFileNode(sectionIndex, alignedOffset, objectData.Data.Length, name));
+                MapFileNode node = new MapFileNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
+                mapFileBuilder.AddNode(node);
+                if (objectData.Relocs != null)
+                {
+                    foreach (Relocation reloc in objectData.Relocs)
+                    {
+                        RelocType fileReloc = Relocation.GetFileRelocationType(reloc.RelocType);
+                        if (fileReloc != RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                        {
+                            mapFileBuilder.AddRelocation(node, fileReloc);
+                        }
+                    }
+                }
             }
 
             section.Content.WriteBytes(objectData.Data);
@@ -621,6 +629,14 @@ namespace ILCompiler.PEWriter
             int baseRVA = 0;
             List<ushort> offsetsAndTypes = null;
 
+            Section relocSection = FindSection(R2RPEBuilder.RelocSectionName);
+            if (relocSection != null)
+            {
+                relocSection.FilePosWhenPlaced = sectionLocation.PointerToRawData;
+                relocSection.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
+                builder = relocSection.Content;
+            }
+
             // Traverse relocations in all sections in their RVA order
             // By now, all "normal" sections with relocations should already have been laid out
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
@@ -630,7 +646,7 @@ namespace ILCompiler.PEWriter
                     for (int relocIndex = 0; relocIndex < placedObjectData.Relocs.Length; relocIndex++)
                     {
                         RelocType relocType = placedObjectData.Relocs[relocIndex].RelocType;
-                        RelocType fileRelocType = GetFileRelocationType(relocType);
+                        RelocType fileRelocType = Relocation.GetFileRelocationType(relocType);
                         if (fileRelocType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
                             int relocationRVA = section.RVAWhenPlaced + placedObjectData.Offset + placedObjectData.Relocs[relocIndex].Offset;
@@ -883,27 +899,6 @@ namespace ILCompiler.PEWriter
 
             // Flush remaining PE file blocks after the last relocation
             relocationHelper.CopyRestOfFile();
-        }
-
-        /// <summary>
-        /// Return file relocation type for the given relocation type. If the relocation
-        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
-        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
-        /// </summary>
-        /// <param name="relocationType">Relocation type</param>
-        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
-        private static RelocType GetFileRelocationType(RelocType relocationType)
-        {
-            switch (relocationType)
-            {
-                case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                case RelocType.IMAGE_REL_BASED_DIR64:
-                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
-                    return relocationType;
-                    
-                default:
-                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
-            }
         }
     }
 }
