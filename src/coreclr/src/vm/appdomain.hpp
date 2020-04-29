@@ -1098,12 +1098,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
-
-    OBJECTHANDLE CreateWinRTWeakHandle(OBJECTREF object, IWeakReference* pWinRTWeakReference)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateWinRTWeakHandle(m_handleStore, object, pWinRTWeakReference);
-    }
 #endif // FEATURE_COMINTEROP
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)

@@ -200,20 +200,6 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 
 // Special handle creation convenience functions
 
-#ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateWinRTWeakHandle(IGCHandleStore* store, OBJECTREF object, IWeakReference* pWinRTWeakReference)
-{
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_WINRT, (void*)pWinRTWeakReference);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
-}
-#endif // FEATURE_COMINTEROP
-
 // Creates a variable-strength handle
 inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
 {
@@ -361,33 +347,6 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
     DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
-
-#ifdef FEATURE_COMINTEROP
-inline void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    // Release the WinRT weak reference if we have one. We're assuming that this will not reenter the
-    // runtime, since if we are pointing at a managed object, we should not be using HNDTYPE_WEAK_WINRT
-    // but rather HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
-    void* pExtraInfo = GCHandleUtilities::GetGCHandleManager()->GetExtraInfoFromHandle(handle);
-    IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(pExtraInfo);
-    if (pWinRTWeakReference != nullptr)
-    {
-        pWinRTWeakReference->Release();
-    }
-
-    DiagHandleDestroyed(handle);
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, HNDTYPE_WEAK_WINRT);
-}
-#endif
 
 // Handle holders/wrappers
 
