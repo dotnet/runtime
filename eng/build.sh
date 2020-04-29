@@ -202,13 +202,34 @@ while [[ $# > 0 ]]; do
       ;;
 
      -runtimeconfiguration|-rc)
-      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      declare -l passedRuntimeConf=$2
+      case "$passedRuntimeConf" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeConf:0:1})${passedRuntimeConf:1}"
+          ;;
+        *)
+          echo "Unsupported runtime configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
       arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
 
      -librariesconfiguration|-lc)
-      arguments="$arguments /p:LibrariesConfiguration=$2"
+      declare -l passedLibConf=$2
+      case "$passedLibConf" in
+        debug|release)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedLibConf:0:1})${passedLibConf:1}"
+          ;;
+        *)
+          echo "Unsupported libraries configuration '$2'."
+          echo "The allowed values are Debug and Release."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:LibrariesConfiguration=$val"
       shift 2
       ;;
 
