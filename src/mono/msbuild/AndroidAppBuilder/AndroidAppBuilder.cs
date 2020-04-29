@@ -10,10 +10,7 @@ using Microsoft.Build.Utilities;
 public class AndroidAppBuilderTask : Task
 {
     [Required]
-    public string ProjectName { get; set; } = ""!;
-
-    [Required]
-    public string AppDir { get; set; } = ""!;
+    public string SourceDir { get; set; } = ""!;
 
     [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
@@ -25,24 +22,20 @@ public class AndroidAppBuilderTask : Task
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
-    /// Path to store build artifacts
-    /// </summary>
-    [Required]
-    public string OutputDirectory { get; set; } = ""!;
-
-    /// <summary>
     /// Target arch, can be 'x86', 'x86_64', 'armeabi', 'armeabi-v7a' or 'arm64-v8a'
     /// </summary>
     [Required]
     public string Abi { get; set; } = ""!;
 
-    [Required]
-    public string AndroidSdk { get; set; } = ""!;
+    public string? ProjectName { get; set; }
+
+    public string? OutputDir { get; set; }
+
+    public string? AndroidSdk { get; set; }
     
-    [Required]
-    public string AndroidNdk { get; set; } = ""!;
+    public string? AndroidNdk { get; set; }
     
-    public string MinApiLevel { get; set; } = "21"!;
+    public string? MinApiLevel { get; set; }
     
     public string? BuildApiLevel { get; set; }
     
@@ -58,11 +51,15 @@ public class AndroidAppBuilderTask : Task
     {
         Utils.Logger = Log;
 
-        if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
-            throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
-
-        (ApkBundlePath, ApkPackageId) = ApkBuilder.BuildApk(ProjectName, OutputDirectory, AppDir, MainLibraryFileName, MonoRuntimeHeaders,
-            AndroidSdk, AndroidNdk, Abi, MinApiLevel, BuildApiLevel, BuildToolsVersion);
+        var apkBuilder = new ApkBuilder();
+        apkBuilder.ProjectName = ProjectName;
+        apkBuilder.OutputDir = OutputDir;
+        apkBuilder.AndroidSdk = AndroidSdk;
+        apkBuilder.AndroidNdk = AndroidNdk;
+        apkBuilder.MinApiLevel = MinApiLevel;
+        apkBuilder.BuildApiLevel = BuildApiLevel;
+        apkBuilder.BuildToolsVersion = BuildToolsVersion;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
         
         return true;
     }

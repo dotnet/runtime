@@ -81,24 +81,20 @@ internal class Utils
         return outputBuilder.ToString().Trim('\r','\n');
     }
 
-    public static void DirectoryCopy(string sourceDirName, string destDirName, Func<string, bool> predicate)
+    public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {
-        var dir = new DirectoryInfo(sourceDirName);
-        DirectoryInfo[] dirs = dir.GetDirectories();
-
-        if (!Directory.Exists(destDirName))
-            Directory.CreateDirectory(destDirName);
-
-        FileInfo[] files = dir.GetFiles();
-        foreach (FileInfo file in files)
+        string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
+        foreach (string file in files)
         {
-            if (predicate(file.FullName))
-                file.CopyTo(Path.Combine(destDirName, file.Name), false);
-        }
-        foreach (DirectoryInfo subdir in dirs)
-        {
-            if (subdir.FullName != destDirName)
-                DirectoryCopy(subdir.FullName, Path.Combine(destDirName, subdir.Name), predicate);
+            if (!predicate(file))
+                continue;
+
+            string relativePath = Path.GetRelativePath(sourceDir, file);
+            string? relativeDir = Path.GetDirectoryName(relativePath);
+            if (!string.IsNullOrEmpty(relativeDir))
+                Directory.CreateDirectory(Path.Combine(destDir, relativeDir));
+
+            File.Copy(file, Path.Combine(destDir, relativePath), true);
         }
     }
 

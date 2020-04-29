@@ -132,21 +132,22 @@
       <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
     </PropertyGroup>
-    <!-- We need to copy additional stuff into $(OutDir)\Bundle
+    <!-- TEMP: We need to copy additional stuff into $(OutDir)\Bundle
          1) The whole BCL
          2) Test Runner (with xharness client-side lib)
       -->
     <ItemGroup>
       <TestBinaries Include="$(OutDir)\*.*"/>
       <AndroidTestRunnerBinaries Include="$(AndroidTestRunner)\*.*" />
-      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
-      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" /> <!-- we use static libmono.a -->
+      <BclBinaries Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.*" 
+                   Exclude="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\System.Runtime.WindowsRuntime.dll" />
+      <BclBinaries Include="$(RuntimePackDir)\native\*.*" Exclude="$(RuntimePackDir)\native\libmono.dylib" />
       
-      <!-- remove PDBs to save some space until we integrate ILLink -->
+      <!-- remove PDBs and DBGs to save some space until we integrate ILLink -->
       <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
+      <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.dbg" />
     </ItemGroup>
-    <Error Condition="'$(ANDROID_SDK_ROOT)'==''" Text="ANDROID_SDK_ROOT shouln't be empty" />
-    <Error Condition="'$(ANDROID_NDK_ROOT)'==''" Text="ANDROID_NDK_ROOT shouln't be empty" />
+
     <Error Condition="!Exists('$(AndroidTestRunner)')" Text="AndroidTestRunner=$(AndroidTestRunner) doesn't exist" />
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
@@ -154,24 +155,18 @@
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
-
-    <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
-         and produce an app bundle (with xcode project) -->
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(RuntimePackDir)\native\include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
-        OutputDirectory="$(BundleDir)"
-        AndroidSdk="$(ANDROID_SDK_ROOT)"
-        AndroidNdk="$(ANDROID_NDK_ROOT)"
-        AppDir="$(BundleDir)">
-        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+        OutputDir="$(BundleDir)"
+        SourceDir="$(BundleDir)">
+        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-    <Message Importance="High" Text="Apk: $(ApkBundlePath)"/>
-    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests.
