@@ -11,12 +11,12 @@ namespace System.Text.Json
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
-    internal sealed class JsonPropertyInfo<TTypeToConvert> : JsonPropertyInfo
+    internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
-        public Func<object, TTypeToConvert>? Get { get; private set; }
-        public Action<object, TTypeToConvert>? Set { get; private set; }
+        public Func<object, T>? Get { get; private set; }
+        public Action<object, T>? Set { get; private set; }
 
-        public JsonConverter<TTypeToConvert> Converter { get; internal set; } = null!;
+        public JsonConverter<T> Converter { get; internal set; } = null!;
 
         public override void Initialize(
             Type parentClassType,
@@ -46,14 +46,14 @@ namespace System.Text.Json
                 if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<TTypeToConvert>(propertyInfo);
+                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
                 }
 
                 MethodInfo? setMethod = propertyInfo.SetMethod;
                 if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<TTypeToConvert>(propertyInfo);
+                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
                 }
             }
             else
@@ -74,8 +74,8 @@ namespace System.Text.Json
             }
             set
             {
-                Debug.Assert(value is JsonConverter<TTypeToConvert>);
-                Converter = (JsonConverter<TTypeToConvert>)value;
+                Debug.Assert(value is JsonConverter<T>);
+                Converter = (JsonConverter<T>)value;
             }
         }
 
@@ -95,7 +95,7 @@ namespace System.Text.Json
             Debug.Assert(EscapedName.HasValue);
 
             bool success;
-            TTypeToConvert value = Get!(obj);
+            T value = Get!(obj);
             if (value == null)
             {
                 if (!IgnoreNullValues)
@@ -122,7 +122,7 @@ namespace System.Text.Json
         public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
             bool success;
-            TTypeToConvert value = Get!(obj);
+            T value = Get!(obj);
 
             if (value == null)
             {
@@ -144,7 +144,7 @@ namespace System.Text.Json
             {
                 if (!IgnoreNullValues)
                 {
-                    TTypeToConvert value = default;
+                    T value = default;
                     Set!(obj, value!);
                 }
 
@@ -156,7 +156,7 @@ namespace System.Text.Json
                 if (Converter.CanUseDirectReadOrWrite)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    TTypeToConvert fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
                     {
                         Set!(obj, fastvalue);
@@ -166,7 +166,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out TTypeToConvert value);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
                         if (!IgnoreNullValues || (!isNullToken && value != null))
@@ -186,7 +186,7 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
             {
-                value = default(TTypeToConvert)!;
+                value = default(T)!;
                 success = true;
             }
             else
@@ -199,7 +199,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out TTypeToConvert typedValue);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T typedValue);
                     value = typedValue;
                 }
             }
@@ -210,7 +210,7 @@ namespace System.Text.Json
         public override void SetValueAsObject(object obj, object? value)
         {
             Debug.Assert(HasSetter);
-            TTypeToConvert typedValue = (TTypeToConvert)value!;
+            T typedValue = (T)value!;
 
             if (typedValue != null || !IgnoreNullValues)
             {

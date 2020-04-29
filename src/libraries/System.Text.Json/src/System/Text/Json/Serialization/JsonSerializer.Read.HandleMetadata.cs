@@ -22,7 +22,7 @@ namespace System.Text.Json
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {
                 // Read the first metadata property name.
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadNameOrEndObject))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadNameOrEndObject))
                 {
                     return false;
                 }
@@ -100,14 +100,14 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadRefValue)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefValue))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefValue))
                 {
                     return false;
                 }
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadIdValue)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
                 {
                     return false;
                 }
@@ -153,7 +153,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadRefEndObject)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefEndObject))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadRefEndObject))
                 {
                     return false;
                 }
@@ -174,7 +174,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadValuesName)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesName))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesName))
                 {
                     return false;
                 }
@@ -202,7 +202,7 @@ namespace System.Text.Json
 
             if (state.Current.ObjectState == StackFrameObjectState.ReadAheadValuesStartArray)
             {
-                if (!ReadAheadMetataDataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesStartArray))
+                if (!ReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadValuesStartArray))
                 {
                     return false;
                 }
@@ -222,7 +222,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ReadAheadMetataDataAndSetState(ref Utf8JsonReader reader, ref ReadStack state, StackFrameObjectState nextState)
+        private static bool ReadAheadMetadataAndSetState(ref Utf8JsonReader reader, ref ReadStack state, StackFrameObjectState nextState)
         {
             state.Current.ObjectState = nextState;
             return reader.Read();

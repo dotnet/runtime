@@ -423,7 +423,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DeserializeNoDeserializationConstructor(Type type, ref Utf8JsonReader reader, ref ReadStack state)
+        public static void ThrowNotSupportedException_DeserializeNoConstructor(Type type, ref Utf8JsonReader reader, ref ReadStack state)
         {
             string message;
 
@@ -433,7 +433,7 @@ namespace System.Text.Json
             }
             else
             {
-                message = SR.Format(SR.DeserializeMissingDeserializationConstructor, nameof(JsonConstructorAttribute), type);
+                message = SR.Format(SR.DeserializeNoConstructor, nameof(JsonConstructorAttribute), type);
             }
 
             ThrowNotSupportedException(state, reader, new NotSupportedException(message));

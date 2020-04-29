@@ -40,9 +40,6 @@ namespace System.Text.Json.Serialization
 
         internal override JsonPropertyInfo CreateJsonPropertyInfo()
         {
-            // We should never get here.
-            Debug.Assert(false);
-
             throw new InvalidOperationException();
         }
 

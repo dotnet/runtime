@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     break;
                 default:
-                    Debug.Fail("This should never happen.");
+                    Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
                     throw new InvalidOperationException();
             }
 
@@ -98,8 +98,8 @@ namespace System.Text.Json.Serialization.Converters
                             arguments.Arg3 = ((JsonParameterInfo<TArg3>)parameterInfo).TypedDefaultValue!;
                             break;
                         default:
-                            Debug.Fail("We should never get here.");
-                            break;
+                            Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                            throw new InvalidOperationException();
                     }
                 }
             }
