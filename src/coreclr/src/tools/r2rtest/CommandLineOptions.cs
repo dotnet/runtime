@@ -45,6 +45,7 @@ namespace R2RTest
                         Framework(),
                         UseFramework(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
@@ -79,6 +80,7 @@ namespace R2RTest
                         Framework(),
                         UseFramework(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
@@ -103,6 +105,7 @@ namespace R2RTest
                         DegreeOfParallelism(),
                         Sequential(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         ReferencePath(),
@@ -216,6 +219,9 @@ namespace R2RTest
 
             Option Release() =>
                 new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+
+            Option Architecture() =>
+                new Option(new[] { "--architecture", "-a" }, "Build for a given CPU architecture (one of: x86, x64, arm, arm64)", new Argument<string>());
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());

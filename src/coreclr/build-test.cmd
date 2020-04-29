@@ -636,103 +636,32 @@ may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try a
 exit /b 1
 
 :PrecompileFX
-set __TotalPrecompiled=0
-set __FailedToPrecompile=0
-set __FailedAssemblies=
-set __CompositeOutputDir=%CORE_ROOT%\composite.out
-set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
+
+set __CompileFrameworkCmd=%CORE_ROOT%\corerun %CORE_ROOT%\R2RTest\R2RTest.dll
+set __CompileFrameworkCmd=%__CompileFrameworkCmd% compile-framework
+set __CompileFrameworkCmd=%__CompileFrameworkCmd% -cr "%CORE_ROOT%"
+set __CompileFrameworkCmd=%__CompileFrameworkCmd% --release
+set __CompileFrameworkCmd=%__CompileFrameworkCmd% --architecture %__BuildArch%
+set __CompileFrameworkCmd=%__CompileFrameworkCmd% --degree-of-parallelism %NUMBER_OF_PROCESSORS%
 
 if defined __CompositeBuildMode (
-    mkdir !__CompositeOutputDir!
-    echo --composite>>!__CompositeResponseFile!
-    echo -O>>!__CompositeResponseFile!
-    echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
+    set __CompileFrameworkCmd=!__CompileFrameworkCmd! --composite
+) else (
+    set __CompileFrameworkCmd=!__CompileFrameworkCmd! --large-bubble
 )
-
-for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%\netstandard.dll;%CORE_ROOT%\mscorlib.dll) do (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
-    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
-        if defined __CompositeBuildMode (
-            echo %%F>>!__CompositeResponseFile!
-        ) else (
-            call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-            echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-        )
-    )))))
-)
-
-echo Composite response line^: %__CompositeResponseFile%
-type "%__CompositeResponseFile%"
-
-if defined __CompositeBuildMode (
-    set __CompositeCommandLine="%CORE_ROOT%\corerun"
-    set __CompositeCommandLine=!__CompositeCommandLine! "%CORE_ROOT%\crossgen2\crossgen2.dll"
-    set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
-    echo Building composite R2R framework^: !__CompositeCommandLine!
-    !__CompositeCommandLine!
-    set __FailedToPrecompile=!ERRORLEVEL!
-    copy /Y "!__CompositeOutputDir!\*.*" "!CORE_ROOT!\"
-)
-
-if !__FailedToPrecompile! NEQ 0 (
-    @echo Failed assemblies:
-    FOR %%G IN (!__FailedAssemblies!) do echo   %%G
-)
-
-exit /b !__FailedToPrecompile!
-
-REM Compile the managed assemblies in Core_ROOT before running the tests
-:PrecompileAssembly
-
-set AssemblyPath=%1
-set AssemblyName=%2
-
-set __CrossgenExe="%__BinDir%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
-set __CrossgenExe=%__CrossgenExe%
-
-if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT%\corerun" "%__BinDir%\crossgen2\crossgen2.dll"
-)
-
-REM Intentionally avoid using the .dll extension to prevent
-REM subsequent compilations from picking it up as a reference
-set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
-set __CrossgenCmd=
 
 if defined __DoCrossgen (
-    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
+    set __CompileFrameworkCmd=!__CompileFrameworkCmd! --crossgen --nocrossgen2
+    set __FrameworkOutputFolder=!CORE_ROOT!\Crossgen-ret.out
 ) else (
-    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
+    set __FrameworkOutputFolder=!CORE_ROOT!\CPAOT-ret.out
 )
 
-echo %__CrossgenCmd%
-%__CrossgenCmd%
-set /a __exitCode = !errorlevel!
+echo Compiling framework: %__CompileFrameworkCmd%
+%__CompileFrameworkCmd%
 
-set /a "%~3+=1"
-
-if "%__exitCode%" == "-2146230517" (
-    echo %AssemblyPath% is not a managed assembly.
-    exit /b 0
-)
-
-if %__exitCode% neq 0 (
-    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
-    set /a "%~4+=1"
-    set "%~5=!%~5!,!AssemblyName!"
-    exit /b 0
-)
-
-REM Delete original .dll & replace it with the Crossgened .dll
-del %AssemblyPath%
-ren "%__CrossgenOutputFile%" %AssemblyName%
-
-echo Successfully precompiled %AssemblyPath%
-exit /b 0
+copy /Y "%__FrameworkOutputFolder%\*.dll" "%CORE_ROOT%\"
+exit /b %ERRORLEVEL%
 
 :Exit_Failure
 exit /b 1
