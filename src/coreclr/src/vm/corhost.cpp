@@ -675,13 +675,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             extern void ParseUseEntryPointFilter(LPCWSTR value);
             ParseUseEntryPointFilter(pPropertyValues[i]);
         }
-#ifdef FEATURE_COMINTEROP
-        else
-        if (wcscmp(pPropertyNames[i], W("APP_LOCAL_WINMETADATA")) == 0)
-        {
-            pwzAppLocalWinMD = pPropertyValues[i];
-        }
-#endif
     }
 
     pDomain->SetNativeDllSearchDirectories(pwzNativeDllSearchDirectories);
@@ -700,13 +693,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths,
             sAppNiPaths));
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (WinRTSupported())
-    {
-        pDomain->SetWinrtApplicationContext(pwzAppLocalWinMD);
-    }
-#endif
 
     *pAppDomainID=DefaultADID;
 

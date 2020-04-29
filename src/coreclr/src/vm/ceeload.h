@@ -1629,23 +1629,6 @@ private:
 
 #ifdef FEATURE_PREJIT
     PTR_NGenLayoutInfo      m_pNGenLayoutInfo;
-
-#if defined(FEATURE_COMINTEROP)
-        public:
-
-        #ifndef DACCESS_COMPILE
-            BOOL CanCacheWinRTTypeByGuid(MethodTable *pMT);
-            void CacheWinRTTypeByGuid(PTR_MethodTable pMT, PTR_GuidInfo pgi = NULL);
-        #endif // !DACCESS_COMPILE
-
-            PTR_MethodTable LookupTypeByGuid(const GUID & guid);
-            void GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids);
-
-        private:
-            PTR_GuidToMethodTableHashTable m_pGuidToTypeHash;   // A map from GUID to Type, for the "WinRT-interesting" types
-
-#endif // defined(FEATURE_COMINTEROP)
-
     // Module wide static fields information
     ModuleCtorInfo          m_ModuleCtorInfo;
 

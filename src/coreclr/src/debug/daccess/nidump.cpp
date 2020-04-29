@@ -3869,15 +3869,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                            false );
     }
 
-#ifdef FEATURE_COMINTEROP
-    TraverseGuidToMethodTableHash( module->m_pGuidToTypeHash,
-                            "m_pGuidToTypeHash",
-                            offsetof(Module, m_pGuidToTypeHash),
-                            fieldsize(Module, m_pGuidToTypeHash),
-                            true);
-
-#endif // FEATURE_COMINTEROP
-
     _ASSERTE(module->m_pProfilingBlobTable == NULL);
 
     DisplayWriteFieldFlag( m_nativeImageProfiling,
@@ -7983,7 +7974,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(),
                                                                           layout);
             }
         }

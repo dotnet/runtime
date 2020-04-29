@@ -1291,31 +1291,6 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRT(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRTSharedGeneric(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRTDelegate(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool ShouldCallWinRTInterface(object objSrc, IntPtr pCPCMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateInvokeMethod(Delegate pThis);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object GetWinRTFactoryObject(IntPtr pCPCMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetWinRTFactoryReturnValue(object pThis, IntPtr pCtorEntry);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetOuterInspectable(object pThis, IntPtr pCtorMD);
-
 #endif // FEATURE_COMINTEROP
 
         //-------------------------------------------------------

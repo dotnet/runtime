@@ -4020,10 +4020,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
                                       DataImage::ITEM_GUID_INFO);
 
                 Module *pModule = GetModule();
-                if (pModule->CanCacheWinRTTypeByGuid(this))
-                {
-                    pModule->CacheWinRTTypeByGuid(this, pGuidInfo);
-                }
             }
             else
             {
@@ -5715,20 +5711,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         case CLASS_DEPENDENCIES_LOADED:
             SetIsDependenciesLoaded();
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-            if (WinRTSupported() && g_fEEStarted)
-            {
-                _ASSERTE(GetAppDomain() != NULL);
-
-                AppDomain* pAppDomain = GetAppDomain();
-                if (pAppDomain->CanCacheWinRTTypeByGuid(this))
-                {
-                    pAppDomain->CacheWinRTTypeByGuid(this);
-                }
-            }
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
-
             break;
 
         case CLASS_LOADED:

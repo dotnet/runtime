@@ -641,14 +641,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
                 m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, pImport->GetCountWithTokenKind(mdtMemberRef)+1, pamTracker);
             }
         }
-
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_PREJIT)
-        if (IsCompilationProcess() && m_pGuidToTypeHash == NULL)
-        {
-            // only allocate this during NGEN-ing
-            m_pGuidToTypeHash = GuidToMethodTableHashTable::Create(this, GUID_TO_TYPE_HASH_BUCKETS, pamTracker);
-        }
-#endif // FEATURE_COMINTEROP
     }
 
     // this will be initialized a bit later.
@@ -895,95 +887,6 @@ void GuidToMethodTableHashTable::FixupEntry(DataImage *pImage, GuidToMethodTable
 }
 
 #endif // FEATURE_NATIVE_IMAGE_GENERATION && !DACCESS_COMPILE
-
-
-#ifdef FEATURE_PREJIT
-
-#ifndef DACCESS_COMPILE
-BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    // Don't cache WinRT types in collectible modules.
-    if (IsCollectible())
-    {
-        return FALSE;
-    }
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Don't cache in a module that's not the NGen target, since the result
-    // won't be saved, and since the such a module might be read-only.
-    if (GetAppDomain()->ToCompilationDomain()->GetTargetModule() != this)
-        return FALSE;
-#endif
-
-    return TRUE;
-}
-
-void Module::CacheWinRTTypeByGuid(PTR_MethodTable pMT, PTR_GuidInfo pgi /*= NULL*/)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->IsLegalNonArrayWinRTType());
-        PRECONDITION(pgi != NULL || pMT->GetGuidInfo() != NULL);
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    if (pgi == NULL)
-    {
-        pgi = pMT->GetGuidInfo();
-    }
-
-    AllocMemTracker amt;
-    m_pGuidToTypeHash->InsertValue(&pgi->m_Guid, pMT, TRUE, &amt);
-    amt.SuppressRelease();
-}
-
-#endif // !DACCESS_COMPILE
-
-PTR_MethodTable Module::LookupTypeByGuid(const GUID & guid)
-{
-    WRAPPER_NO_CONTRACT;
-    // Triton ni images do not have this hash.
-    if (m_pGuidToTypeHash != NULL)
-        return m_pGuidToTypeHash->GetValue(&guid, NULL);
-    else
-        return NULL;
-}
-
-void Module::GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // Triton ni images do not have this hash.
-    if (m_pGuidToTypeHash != NULL)
-    {
-        GuidToMethodTableHashTable::Iterator it(m_pGuidToTypeHash);
-        GuidToMethodTableEntry *pEntry;
-        while (m_pGuidToTypeHash->FindNext(&it, &pEntry))
-        {
-            pTypes->Append(pEntry->m_pMT);
-            pGuids->Append(*pEntry->m_Guid);
-        }
-    }
-}
-
-#endif // FEATURE_PREJIT
 
 #endif // FEATURE_COMINTEROP
 
@@ -8433,14 +8336,6 @@ void Module::Save(DataImage *image)
         m_pStubMethodHashTable->Save(image, profileData);
     }
 
-#ifdef FEATURE_COMINTEROP
-    // the type saving operations above had the side effect of populating m_pGuidToTypeHash
-    if (m_pGuidToTypeHash != NULL)
-    {
-        m_pGuidToTypeHash->Save(image, profileData);
-    }
-#endif // FEATURE_COMINTEROP
-
     // Compute and save the property name set
     PrecomputeMatchingProperties(image);
     image->StoreStructure(m_propertyNameSet,
@@ -9241,13 +9136,6 @@ void Module::Fixup(DataImage *image)
         image->FixupPointerField(this, offsetof(Module, m_pStubMethodHashTable));
         m_pStubMethodHashTable->Fixup(image);
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (m_pGuidToTypeHash) {
-        image->FixupPointerField(this, offsetof(Module, m_pGuidToTypeHash));
-        m_pGuidToTypeHash->Fixup(image);
-    }
-#endif // FEATURE_COMINTEROP
 
     image->EndRegion(CORINFO_REGION_COLD);
 

@@ -1687,31 +1687,6 @@ PCODE ILStubManager::GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallIn
     PCODE target = (PCODE)lpVtbl[pComPlusCallInfo->m_cachedComSlot];
     return target;
 }
-
-// This function should return the same result as StubHelpers::GetWinRTFactoryObject followed by
-// ILStubManager::GetCOMTarget. The difference is that it does not allocate managed memory, so it
-// does not trigger GC.
-//
-// The reason why GC (and potentially a stack walk for other purposes, such as exception handling)
-// would be problematic is that we are stopped at the first instruction of an IL stub which is
-// not a GC-safe point. Technically, the function still has the GC_TRIGGERS contract but we should
-// not see GC in practice here without allocating.
-//
-// Note that the GC suspension logic detects the debugger-is-attached-at-GC-unsafe-point case and
-// will back off and retry. This means that it suffices to ensure that this thread does not trigger
-// GC, allocations on other threads will wait and not cause major trouble.
-PCODE ILStubManager::GetWinRTFactoryTarget(ComPlusCallMethodDesc *pCMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    return NULL;
-}
 #endif // FEATURE_COMINTEROP
 
 #ifndef CROSSGEN_COMPILE
@@ -1828,27 +1803,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         {
             _ASSERTE(pMD->IsComPlusCall());
             ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
-
-            if (pCMD->IsStatic() || pCMD->IsCtor())
-            {
-                // pThis is not the object we'll be calling, we need to get the factory object instead
-                MethodTable *pMTOfTypeToCreate = pCMD->GetMethodTable();
-                pThis = OBJECTREFToObject(GetAppDomain()->LookupWinRTFactoryObject(pMTOfTypeToCreate, GetCurrentCtxCookie()));
-
-                if (pThis == NULL)
-                {
-                    // If we don't have an RCW of the factory object yet, don't create it. We would
-                    // risk triggering GC which is not safe here because the IL stub is not at a GC
-                    // safe point. Instead, query WinRT directly and release the factory immediately.
-                    target = GetWinRTFactoryTarget(pCMD);
-
-                    if (target != NULL)
-                    {
-                        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM WinRT factory RCW-does-not-exist-yet case 0x%x\n", target));
-                        trace->InitForUnmanaged(target);
-                    }
-                }
-            }
+            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
 
             if (pThis != NULL)
             {

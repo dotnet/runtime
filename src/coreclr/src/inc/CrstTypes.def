@@ -671,10 +671,6 @@ Crst MulticoreJitManager
     AcquiredBefore MulticoreJitHash ThreadStore
 End
 
-Crst WinRTFactoryCache
-    AcquiredBefore HandleTable
-End
-
 Crst SqmManager
 End
 

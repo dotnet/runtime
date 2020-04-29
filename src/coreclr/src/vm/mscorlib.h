@@ -953,14 +953,6 @@ DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,  
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_Obj_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT,                GetCOMIPFromRCW_WinRT,              SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT_SHARED_GENERIC, GetCOMIPFromRCW_WinRTSharedGeneric, SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT_DELEGATE,       GetCOMIPFromRCW_WinRTDelegate,      SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          SHOULD_CALL_WINRT_INTERFACE,              ShouldCallWinRTInterface,           SM_Obj_IntPtr_RetBool)
-DEFINE_METHOD(STUBHELPERS,          GET_WINRT_FACTORY_OBJECT,                 GetWinRTFactoryObject,              SM_IntPtr_RetObj)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_INVOKE_METHOD,               GetDelegateInvokeMethod,            SM_Delegate_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_WINRT_FACTORY_RETURN_VALUE,           GetWinRTFactoryReturnValue,         SM_Obj_IntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_OUTER_INSPECTABLE,                    GetOuterInspectable,                SM_Obj_IntPtr_RetIntPtr)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)

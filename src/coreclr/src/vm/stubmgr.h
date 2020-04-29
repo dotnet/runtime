@@ -714,7 +714,6 @@ class ILStubManager : public StubManager
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
     static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo);
-    static PCODE GetWinRTFactoryTarget(ComPlusCallMethodDesc *pCMD);
 #endif // FEATURE_COMINTEROP
 
     virtual BOOL TraceManager(Thread *thread,

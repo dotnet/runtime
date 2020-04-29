@@ -1141,7 +1141,6 @@ protected:
     CrstExplicitInit m_InteropDataCrst;         // Used for COM Interop compatiblilty
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_WinRTFactoryCacheCrst;   // For WinRT factory cache
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
@@ -1228,17 +1227,6 @@ public:
         }
     };
     friend class LoadLockHolder;
-    class WinRTFactoryCacheLockHolder : public CrstHolder
-    {
-    public:
-        WinRTFactoryCacheLockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_WinRTFactoryCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class WinRTFactoryCacheLockHolder;
-
 public:
     void InitVSD();
     RangeList *GetCollectibleVSDRanges() { return &m_collVSDRanges; }
@@ -1502,97 +1490,6 @@ struct FailedAssembly {
     }
 };
 
-#ifdef FEATURE_COMINTEROP
-
-// Cache used by COM Interop
-struct NameToTypeMapEntry
-{
-    // Host space representation of the key
-    struct Key
-    {
-        LPCWSTR m_wzName;     // The type name or registry string representation of the GUID "{<guid>}"
-        SIZE_T  m_cchName;    // wcslen(m_wzName) for faster hashtable lookup
-    };
-    struct DacKey
-    {
-        PTR_CWSTR m_wzName;   // The type name or registry string representation of the GUID "{<guid>}"
-        SIZE_T    m_cchName;  // wcslen(m_wzName) for faster hashtable lookup
-    } m_key;
-    TypeHandle m_typeHandle;  // Using TypeHandle instead of MethodTable* to avoid losing information when sharing method tables.
-    UINT m_nEpoch;            // tracks creation Epoch. This is incremented each time an external reader enumerate the cache
-    BYTE m_bFlags;
-};
-
-typedef DPTR(NameToTypeMapEntry) PTR_NameToTypeMapEntry;
-
-class NameToTypeMapTraits : public NoRemoveSHashTraits< DefaultSHashTraits<NameToTypeMapEntry> >
-{
-public:
-    typedef NameToTypeMapEntry::Key key_t;
-
-    static const NameToTypeMapEntry Null() { NameToTypeMapEntry e; e.m_key.m_wzName = NULL; e.m_key.m_cchName = 0; return e; }
-    static bool IsNull(const NameToTypeMapEntry &e) { return e.m_key.m_wzName == NULL; }
-    static const key_t GetKey(const NameToTypeMapEntry &e)
-    {
-        key_t key;
-        key.m_wzName = (LPCWSTR)(e.m_key.m_wzName); // this cast brings the string over to the host, in a DAC build
-        key.m_cchName = e.m_key.m_cchName;
-
-        return key;
-    }
-    static count_t Hash(const key_t &key) { WRAPPER_NO_CONTRACT; return HashStringN(key.m_wzName, key.m_cchName); }
-
-    static BOOL Equals(const key_t &lhs, const key_t &rhs)
-    {
-        WRAPPER_NO_CONTRACT;
-        return (lhs.m_cchName == rhs.m_cchName) && memcmp(lhs.m_wzName, rhs.m_wzName, lhs.m_cchName * sizeof(WCHAR)) == 0;
-    }
-
-    void OnDestructPerEntryCleanupAction(const NameToTypeMapEntry& e)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(e.m_key.m_cchName == wcslen(e.m_key.m_wzName));
-#ifndef DACCESS_COMPILE
-        delete [] e.m_key.m_wzName;
-#endif // DACCESS_COMPILE
-    }
-    static const bool s_DestructPerEntryCleanupAction = true;
-};
-
-typedef SHash<NameToTypeMapTraits> NameToTypeMapTable;
-
-typedef DPTR(NameToTypeMapTable) PTR_NameToTypeMapTable;
-
-struct WinRTFactoryCacheEntry
-{
-    typedef MethodTable *Key;
-    Key          key;                   // Type as KEY
-
-    CtxEntry    *m_pCtxEntry;           // Context entry - used to verify whether the cache is a match
-    OBJECTHANDLE m_ohFactoryObject;     // Handle to factory object
-};
-
-class WinRTFactoryCacheTraits : public DefaultSHashTraits<WinRTFactoryCacheEntry>
-{
-public:
-    typedef WinRTFactoryCacheEntry::Key key_t;
-    static const WinRTFactoryCacheEntry Null() { WinRTFactoryCacheEntry e; e.key = NULL; return e; }
-    static bool IsNull(const WinRTFactoryCacheEntry &e) { return e.key == NULL; }
-    static const WinRTFactoryCacheEntry::Key GetKey(const WinRTFactoryCacheEntry& e) { return e.key; }
-    static count_t Hash(WinRTFactoryCacheEntry::Key key) { return (count_t)((size_t)key); }
-    static BOOL Equals(WinRTFactoryCacheEntry::Key lhs, WinRTFactoryCacheEntry::Key rhs)
-    { return lhs == rhs; }
-    static const WinRTFactoryCacheEntry Deleted() { WinRTFactoryCacheEntry e; e.key = (MethodTable *)-1; return e; }
-    static bool IsDeleted(const WinRTFactoryCacheEntry &e) { return e.key == (MethodTable *)-1; }
-
-    static void OnDestructPerEntryCleanupAction(const WinRTFactoryCacheEntry& e);
-    static const bool s_DestructPerEntryCleanupAction = true;
-};
-
-typedef SHash<WinRTFactoryCacheTraits> WinRTFactoryCache;
-
-#endif // FEATURE_COMINTEROP
-
 class AppDomainIterator;
 
 const DWORD DefaultADID = 1;
@@ -1637,10 +1534,6 @@ public:
     //-----------------------------------------------------------------------------------------------------------------
     // Initializes an AppDomain. (this functions is not called from the SystemDomain)
     void Init();
-
-#if defined(FEATURE_COMINTEROP)
-    HRESULT SetWinrtApplicationContext(LPCWSTR pwzAppLocalWinMD);
-#endif // FEATURE_COMINTEROP
 
     bool MustForceTrivialWaitOperations();
     void SetForceTrivialWaitOperations();
@@ -2105,43 +1998,7 @@ public:
     void InsertClassForCLSID(MethodTable* pMT, BOOL fForceInsert = FALSE);
 
 #ifdef FEATURE_COMINTEROP
-private:
-    void CacheTypeByNameWorker(const SString &ssClassName, const UINT vCacheVersion, TypeHandle typeHandle, BYTE flags, BOOL bReplaceExisting = FALSE);
-    TypeHandle LookupTypeByNameWorker(const SString &ssClassName, UINT *pvCacheVersion, BYTE *pbFlags);
 public:
-    // Used by COM Interop for mapping WinRT runtime class names to real types.
-    void CacheTypeByName(const SString &ssClassName, const UINT vCacheVersion, TypeHandle typeHandle, BYTE flags, BOOL bReplaceExisting = FALSE);
-    TypeHandle LookupTypeByName(const SString &ssClassName, UINT *pvCacheVersion, BYTE *pbFlags);
-    PTR_MethodTable LookupTypeByGuid(const GUID & guid);
-
-#ifndef DACCESS_COMPILE
-    inline BOOL CanCacheWinRTTypeByGuid(TypeHandle typeHandle)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        // Only allow caching guid/types maps for types loaded during
-        // "normal" domain operation
-        if (IsCompilationDomain() || (m_Stage < STAGE_OPEN))
-            return FALSE;
-
-        return TRUE;
-    }
-#endif // !DACCESS_COMPILE
-
-    void CacheWinRTTypeByGuid(TypeHandle typeHandle);
-    void GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids, UINT minEpoch, UINT * pCurEpoch);
-
-    // Used by COM Interop for caching WinRT factory objects.
-    void CacheWinRTFactoryObject(MethodTable *pClassMT, OBJECTREF *refFactory, LPVOID lpCtxCookie);
-    OBJECTREF LookupWinRTFactoryObject(MethodTable *pClassMT, LPVOID lpCtxCookie);
-    void RemoveWinRTFactoryObjects(LPVOID pCtxCookie);
-
     MethodTable *LoadCOMClass(GUID clsid, BOOL bLoadRecord = FALSE, BOOL* pfAssemblyInReg = NULL);
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
 #endif // FEATURE_COMINTEROP
@@ -2456,15 +2313,6 @@ private:
     PtrHashMap          m_clsidHash;
 
 #ifdef FEATURE_COMINTEROP
-    // Hash table that maps WinRT class names to MethodTables.
-    PTR_NameToTypeMapTable m_pNameToTypeMap;
-    UINT                m_vNameToTypeMapVersion;
-
-    UINT                m_nEpoch; // incremented each time m_pNameToTypeMap is enumerated
-
-    // Hash table that remembers the last cached WinRT factory object per type per appdomain.
-    WinRTFactoryCache   *m_pWinRTFactoryCache;
-
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
 

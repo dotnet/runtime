@@ -3006,159 +3006,6 @@ static IUnknown *GetComIPFromCCW_VariantInterface(
     RETURN ComCallWrapper::GetComIPFromCCW(pWrap->GetSimpleWrapper()->GetClassWrapper(), riid, pIntfMT, flags);
 }
 
-// Like GetComIPFromCCW, but will try to find riid/pIntfMT among interfaces implemented by this
-// object that have variance. Assumes that call GetComIPFromCCW with same arguments has failed.
-static IUnknown* GetComIPFromCCW_UsingVariance(ComCallWrapper *pWrap, REFIID riid, MethodTable* pIntfMT, GetComIPFromCCW::flags flags)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pWrap));
-        PRECONDITION(pWrap->GetComCallWrapperTemplate()->SupportsVariantInterface());
-        PRECONDITION(!pWrap->GetComCallWrapperTemplate()->RepresentsVariantInterface());
-    }
-    CONTRACTL_END;
-
-    // try the fast per-ComCallWrapperTemplate cache first
-    ComCallWrapperTemplate::IIDToInterfaceTemplateCache *pCache = pWrap->GetComCallWrapperTemplate()->GetOrCreateIIDToInterfaceTemplateCache();
-
-    GUID local_iid;
-    const IID *piid = &riid;
-    if (InlineIsEqualGUID(riid, GUID_NULL))
-    {
-        // we have a fast IID -> ComCallWrapperTemplate cache so we need the IID first
-        _ASSERTE(pIntfMT != NULL);
-
-        if (FAILED(pIntfMT->GetGuidNoThrow(&local_iid, TRUE)))
-        {
-            return NULL;
-        }
-        piid = &local_iid;
-    }
-
-    ComCallWrapperTemplate *pIntfTemplate = NULL;
-    if (pCache->LookupInterfaceTemplate(*piid, &pIntfTemplate))
-    {
-        // we've seen a QI for this IID before
-        if (pIntfTemplate == NULL)
-        {
-            // and it failed, so we can return immediately
-            return NULL;
-        }
-
-        // make sure we pick up the MT stored in the ComMT because that's the WinRT one (for example
-        // IIterable<object>) against which GetComIPFromCCW_VariantInterface is comparing its MT argument
-        _ASSERTE(pIntfMT == NULL || pIntfMT == pIntfTemplate->GetComMTForIndex(0)->GetMethodTable());
-        pIntfMT = pIntfTemplate->GetComMTForIndex(0)->GetMethodTable();
-    }
-    else if (pIntfMT == NULL)
-    {
-        _ASSERTE(riid != GUID_NULL);
-
-        // Here we are, handling a QI for an IID that we don't recognize because the managed object we are wrapping
-        // does not implement that exact interface. However, it may implement another interface which is castable to
-        // what we are looking for via co- or contra-variance. The problem is that the IID computation algorithm is
-        // a one-way function so there's no way to deduce the interface while knowing only the IID.
-
-        // try the AD-wide cache
-        pIntfMT = GetAppDomain()->LookupTypeByGuid(riid);
-
-        if (pIntfMT == NULL)
-        {
-            // Now we should enumerate all types that are "related" to our object and try to find a match. This has
-            // a couple of issues. It can take a long time (imagine a type with n covariant generic parameters and
-            // us holding a type where these are instantantiated with classes, each with a hierarchy m levels deep
-            // - we are looking at loading m^n instantiations which may not be feasible and would make QI too slow).
-            // And it will not work for contravariance anyway (it's not quite possible to enumerate all subtypes of
-            // a given generic argument).
-            //
-            // We'll perform a simplified check which is limited only to covariance with one generic parameter (luckily
-            // all WinRT variant types currently fall into this bucket).
-            //
-            TypeHandle thClass = pWrap->GetComCallWrapperTemplate()->GetClassType();
-
-            ComCallWrapperTemplate::CCWInterfaceMapIterator it(thClass);
-            while (it.Next())
-            {
-                MethodTable *pImplementedIntfMT = it.GetInterface();
-                if (pImplementedIntfMT->HasVariance())
-                {
-                    pIntfMT = FindCovariantSubtype(pImplementedIntfMT, riid);
-                    if (pIntfMT != NULL)
-                        break;
-                }
-            }
-        }
-    }
-
-    if (pIntfMT == NULL || !pIntfMT->IsInterface())
-    {
-        // we did not recognize the IID - cache the negative result
-        pCache->InsertInterfaceTemplate(*piid, NULL);
-    }
-    else
-    {
-        if (pIntfTemplate == NULL)
-        {
-            // if we have an interface type but not the corresponding template so we have to do some extra work
-            MethodTable *pVariantIntfMT = NULL;
-            if (!pIntfMT->HasVariance())
-            {
-                // We may be passed a WinRT interface which does not have variance from .NET type system
-                // point of view. Simply replace it with the corresponding .NET type if it is the case.
-                pVariantIntfMT = RCW::GetVariantMethodTable(pIntfMT);
-            }
-            else
-            {
-                pVariantIntfMT = pIntfMT;
-            }
-
-            TypeHandle thClass = pWrap->GetComCallWrapperTemplate()->GetClassType();
-            if (pVariantIntfMT != NULL && thClass.CanCastTo(pVariantIntfMT))
-            {
-                _ASSERTE_MSG(!thClass.GetMethodTable()->ImplementsInterface(pVariantIntfMT), "This should have been taken care of by GetComIPFromCCW");
-
-                // At this point, conceptually we would like to add a new ComMethodTable to the ComCallWrapperTemplate
-                // representing pMT because we just discovered an interface that the unmanaged side is interested in.
-                // However, this does not fit very well to the overall CCW architecture and could use a lot of memory
-                // (each class that implements IEnumerable<T> may end up with a ComMethodTable for IEnumerable<object>
-                // for example) so we sacrifice a bit of run-time perf for this not-so-mainline scenario and create a
-                // CCW specifically for IEnumerable<object> that is shared by all CCWs.
-
-                // get the per-interface CCW template for pIntfMT
-                pIntfTemplate = ComCallWrapperTemplate::GetTemplate(pVariantIntfMT);
-            }
-
-            // cache the pIntfTemplate (may be NULL)
-            pCache->InsertInterfaceTemplate(*piid, pIntfTemplate);
-        }
-
-        if (pIntfTemplate != NULL)
-        {
-            // get a CCW for the template, associated with our object
-            CCWHolder pCCW;
-            {
-                GCX_COOP();
-                OBJECTREF oref = NULL;
-
-                GCPROTECT_BEGIN(oref);
-                {
-                    oref = pWrap->GetObjectRef();
-                    pCCW = ComCallWrapper::InlineGetWrapper(&oref, pIntfTemplate, pWrap);
-                }
-                GCPROTECT_END();
-            }
-
-            // and let the per-interface CCW handle the QI
-            return GetComIPFromCCW_VariantInterface(pCCW, riid, pIntfMT, flags, pIntfTemplate);
-        }
-    }
-
-    return NULL;
-}
-
 static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
     ComCallWrapper * pWrap,
     REFIID riid,
@@ -3519,16 +3366,6 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         // The first block has one slot for the IClassX vtable pointer
         //  and one slot for the basic vtable pointer.
         imapIndex += Slot_FirstInterface;
-    }
-    else if (pTemplate->SupportsVariantInterface())
-    {
-        // We haven't found an interface corresponding to the incoming pIntfMT/IID because we don't implement it.
-        // However, we could still implement an interface that is castable to pIntfMT/IID via co-/contra-variance.
-        IUnknown * pIntf = GetComIPFromCCW_UsingVariance(pWrap, riid, pIntfMT, flags);
-        if (pIntf != NULL)
-        {
-            RETURN pIntf;
-        }
     }
 
     // COM plus objects that extend from COM objects are special
@@ -5573,11 +5410,6 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
     m_rgpIPtr[dwIndex] = (SLOT*)(pItfComMT + 1);
     pItfComMT->AddRef();
 
-    if (pItfMT->HasVariance())
-    {
-        m_flags |= enum_SupportsVariantInterface;
-    }
-
     // update pItfMT in case code:CreateComMethodTableForInterface decided to redirect the interface
     pItfMT = pItfComMT->GetMethodTable();
     if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICUSTOM_QUERYINTERFACE))
@@ -5686,12 +5518,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         {
             // we will allow building IClassX for the class
             pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
-        if (pMT->IsArray() && !pMT->IsMultiDimArray())
-        {
-            // SZ arrays support covariant interfaces
-            pTemplate->m_flags |= enum_SupportsVariantInterface;
         }
 
         if (IsOleAutDispImplRequiredForClass(pMT))

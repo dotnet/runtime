@@ -349,12 +349,6 @@ public:
         return (m_flags & enum_SupportsIInspectable);
     }
 
-    BOOL SupportsVariantInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsVariantInterface);
-    }
-
     BOOL RepresentsVariantInterface()
     {
         LIMITED_METHOD_CONTRACT;
@@ -439,7 +433,6 @@ private:
         enum_SupportsIInspectable             = 0x80,
         enum_SupportsIClassX                  = 0x100,
 
-        enum_SupportsVariantInterface         = 0x200, // this is a template for a class that implements an interface with variance
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
 
         enum_UseOleAutDispatchImpl            = 0x800, // the class is decorated with IDispatchImplAttribute(CompatibleImpl)

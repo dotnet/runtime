@@ -969,14 +969,6 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("InternalGetCOMHRExceptionObject", StubHelpers::GetCOMHRExceptionObject)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
-    FCFuncElement("GetCOMIPFromRCW_WinRT", StubHelpers::GetCOMIPFromRCW_WinRT)
-    FCFuncElement("GetCOMIPFromRCW_WinRTSharedGeneric", StubHelpers::GetCOMIPFromRCW_WinRTSharedGeneric)
-    FCFuncElement("GetCOMIPFromRCW_WinRTDelegate", StubHelpers::GetCOMIPFromRCW_WinRTDelegate)
-    FCFuncElement("ShouldCallWinRTInterface", StubHelpers::ShouldCallWinRTInterface)
-    FCFuncElement("GetDelegateInvokeMethod", StubHelpers::GetDelegateInvokeMethod)
-    FCFuncElement("GetWinRTFactoryObject", StubHelpers::GetWinRTFactoryObject)
-    FCFuncElement("GetWinRTFactoryReturnValue", StubHelpers::GetWinRTFactoryReturnValue)
-    FCFuncElement("GetOuterInspectable", StubHelpers::GetOuterInspectable)
 #endif // FEATURE_COMINTEROP
 #ifdef PROFILING_SUPPORTED
     FCFuncElement("ProfilerBeginTransitionCallback", StubHelpers::ProfilerBeginTransitionCallback)
