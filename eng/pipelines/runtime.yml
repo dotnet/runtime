@@ -282,7 +282,6 @@ jobs:
     - iOS_x64
     - iOS_arm
     - iOS_arm64
-    - OSX_x64
     - Linux_x64
     - Linux_arm
     - Linux_arm64
@@ -297,9 +296,29 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono release
+# Only when libraries, mono, or the runtime tests changed
+# Currently only these architectures are needed for the runtime tests.
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+   - OSX_x64
+   jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
+
 
 #
 # Build Mono LLVM debug
