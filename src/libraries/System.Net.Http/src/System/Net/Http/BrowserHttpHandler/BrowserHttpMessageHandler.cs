@@ -15,7 +15,7 @@ namespace System.Net.Http
     internal partial class BrowserHttpMessageHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
-        internal Interop.Browser.IHttpHandlerService? wasmHandler;
+        internal Interop.Browser.BrowserHttpHandlerService? wasmHandler;
 
         public BrowserHttpMessageHandler()
         {

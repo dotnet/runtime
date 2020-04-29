@@ -20,13 +20,7 @@ internal static partial class Interop
 {
     internal static partial class Browser
     {
-        internal interface IHttpHandlerService
-        {
-            Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
-            void Dispose();
-        }
-
-        public class BrowserHttpHandlerService : IHttpHandlerService, IDisposable
+        public class BrowserHttpHandlerService : IDisposable
         {
 
             private static readonly JSObject? fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
@@ -47,9 +41,6 @@ internal static partial class Interop
             }
             public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                // There is a race condition on Safari as a result of using TaskCompletionSource that
-                // causes a stack exceeded error being thrown.  More information can be found here:
-                // https://devblogs.microsoft.com/premier-developer/the-danger-of-taskcompletionsourcet-class/
                 var tcs = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
                 using (cancellationToken.Register(() => tcs.TrySetCanceled()))
                 {
@@ -230,8 +221,8 @@ internal static partial class Interop
 
             private class WasmFetchResponse : IDisposable
             {
-                private JSObject fetchResponse;
-                private JSObject abortController;
+                private readonly JSObject fetchResponse;
+                private readonly JSObject abortController;
                 private readonly CancellationTokenSource abortCts;
                 private readonly CancellationTokenRegistration abortRegistration;
 
@@ -262,8 +253,6 @@ internal static partial class Interop
                 {
                     // Dispose of unmanaged resources.
                     Dispose(true);
-                    // Suppress finalization.
-                    GC.SuppressFinalize(this);
                 }
 
                 // Protected implementation of Dispose pattern.
@@ -286,10 +275,10 @@ internal static partial class Interop
 
             }
 
-            private class BrowserHttpContent : HttpContent
+            private sealed class BrowserHttpContent : HttpContent
             {
                 private byte[]? _data;
-                private WasmFetchResponse _status;
+                private readonly WasmFetchResponse _status;
 
                 public BrowserHttpContent(WasmFetchResponse status)
                 {
@@ -346,7 +335,7 @@ internal static partial class Interop
                 }
             }
 
-            private class WasmHttpReadStream : Stream
+            private sealed class WasmHttpReadStream : Stream
             {
                 private WasmFetchResponse? _status;
                 private JSObject? _reader;
@@ -486,39 +475,16 @@ internal static partial class Interop
                 }
             }
 
-            #region IDisposable Support
-            private bool disposedValue = false; // To detect redundant calls
+            #region IDisposable Members
 
             protected virtual void Dispose(bool disposing)
             {
-                if (!disposedValue)
-                {
-                    if (disposing)
-                    {
-                        // TODO: dispose managed state (managed objects).
-                    }
-
-                    // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                    // TODO: set large fields to null.
-
-                    disposedValue = true;
-                }
+                // Nothing to do in base class.
             }
 
-            // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-            // ~WebAssemblyHttpHandlerService()
-            // {
-            //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            //   Dispose(false);
-            // }
-
-            // This code added to correctly implement the disposable pattern.
             public void Dispose()
             {
-                // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
                 Dispose(true);
-                // TODO: uncomment the following line if the finalizer is overridden above.
-                // GC.SuppressFinalize(this);
             }
             #endregion
         }
