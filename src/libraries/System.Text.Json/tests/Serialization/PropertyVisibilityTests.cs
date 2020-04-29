@@ -208,14 +208,14 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithIgnoredPropertyNamingConflictPublic();
             string json = JsonSerializer.Serialize(obj);
 
-            Assert.Equal(@"{}", json);
+            Assert.Equal(@"{""MyString"":""ConflictingValue""}", json);
 
             // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflictPublic>(json);
 
             Assert.Equal("DefaultValue", obj.MyString);
-            Assert.Equal("ConflictingValue", obj.ConflictingString);
+            Assert.Equal("NewValue", obj.ConflictingString);
         }
 
         [Fact]
@@ -227,14 +227,14 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithIgnoredPropertyPolicyConflictPublic();
             string json = JsonSerializer.Serialize(obj, options);
 
-            Assert.Equal(@"{}", json);
+            Assert.Equal(@"{""myString"":""ConflictingValue""}", json);
 
             // Deserialize
             json = @"{""myString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflictPublic>(json, options);
 
             Assert.Equal("DefaultValue", obj.MyString);
-            Assert.Equal("ConflictingValue", obj.myString);
+            Assert.Equal("NewValue", obj.myString);
         }
 
         [Fact]
