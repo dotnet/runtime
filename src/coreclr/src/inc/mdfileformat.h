@@ -14,6 +14,9 @@
 #ifndef __MDFileFormat_h__
 #define __MDFileFormat_h__
 
+#include <metamodelpub.h>
+#include "utilcode.h"
+
 //*****************************************************************************
 // The signature ULONG is the first 4 bytes of the file format.  The second
 // signature string starts the header containing the stream list.  It is used

@@ -46,6 +46,10 @@
 #include "utilcode.h"
 #include "sbuffer.h"
 
+#ifndef _ASSERTE
+#define _ASSERTE(x)
+#endif
+
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
 // ==========================================================================================
