@@ -158,7 +158,8 @@ internal static partial class Interop
                     }));
 
                     var args = new Interop.JavaScript.Array();
-                    if (request.RequestUri != null) {
+                    if (request.RequestUri != null)
+                    {
                         args.Push(request.RequestUri.ToString());
                         args.Push(requestObject);
                     }
@@ -176,7 +177,7 @@ internal static partial class Interop
 
                     HttpResponseMessage httpresponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
 
-                    var streamingEnabled = request.Properties.TryGetValue ("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                    var streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
                     httpresponse.Content = StreamingSupported && streamingEnabled
                         ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
@@ -208,8 +209,6 @@ internal static partial class Interop
                                             var value = (string)resultValue[1];
                                             if (!httpresponse.Headers.TryAddWithoutValidation(name, value))
                                                 if (httpresponse.Content != null)
-                                                    // if (!httpresponse.Content.Headers.TryAddWithoutValidation(name, value))
-                                                    //     Console.WriteLine($"Warning: Can not add response header for name: {name} value: {value}");
                                                     httpresponse.Content.Headers.TryAddWithoutValidation(name, value);
                                         }
                                         nextResult?.Dispose();
