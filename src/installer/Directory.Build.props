@@ -76,8 +76,8 @@
     <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(RuntimeOS)' != ''">
-    <OutputRid>$(RuntimeOS)-$(TargetArchitecture)</OutputRid>
+  <PropertyGroup Condition="'$(OutputRid)' == '' and '$(HostRuntimeIdentifier)' != ''">
+    <OutputRid>$(HostRuntimeIdentifier.Remove($(HostRuntimeIdentifier.LastIndexOf('-'))))-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <!-- Portable -->
@@ -291,9 +291,9 @@
       </PropertyGroup>
       <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
         <HostMachineRidTargetsDebianPackages Condition="
-          $(RuntimeOS.StartsWith('debian')) or
-          $(RuntimeOS.StartsWith('ubuntu')) or
-          $(RuntimeOS.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
+          $(HostRuntimeIdentifier.StartsWith('debian')) or
+          $(HostRuntimeIdentifier.StartsWith('ubuntu')) or
+          $(HostRuntimeIdentifier.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
         <!-- If the build machine isn't known to be Debian-based, try to build RPM packages. -->
         <HostMachineRidTargetsRpmPackages Condition="'$(HostMachineRidTargetsDebianPackages)' != 'true'">true</HostMachineRidTargetsRpmPackages>
       </PropertyGroup>
