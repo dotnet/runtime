@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Numerics
@@ -112,23 +111,19 @@ namespace System.Numerics
         {
             if (d.Length > 0)
             {
-                ref uint firstElement = ref MemoryMarshal.GetReference(d);
-                firstElement = unchecked(~firstElement + 1);
+                d[0] = unchecked(~d[0] + 1);
 
-                ref uint lookup = ref firstElement;
                 int i = 1;
 
                 // first do complement and +1 as long as carry is needed
-                for (; Unsafe.Add(ref firstElement, i - 1) == 0 && i < d.Length; i++)
+                for (; d[i - 1] == 0 && i < d.Length; i++)
                 {
-                    lookup = ref Unsafe.Add(ref firstElement, i);
-                    lookup = unchecked(~lookup + 1);
+                    d[i] = unchecked(~d[i] + 1);
                 }
                 // now ones complement is sufficient
                 for (; i < d.Length; i++)
                 {
-                    lookup = ref Unsafe.Add(ref firstElement, i);
-                    lookup = ~lookup;
+                    d[i] = ~d[i];
                 }
             }
         }
