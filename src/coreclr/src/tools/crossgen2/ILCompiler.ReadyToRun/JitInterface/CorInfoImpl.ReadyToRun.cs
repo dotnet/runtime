@@ -1154,7 +1154,7 @@ namespace Internal.JitInterface
             }
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
-                && originalMethod.IsNativeCallable)
+                && originalMethod.IsUnmanagedCallersOnly)
             {
                 if (!originalMethod.Signature.IsStatic) // Must be a static method
                 {
@@ -1534,9 +1534,9 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsUnmanagedCallersOnly)
             {
-                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
             }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)

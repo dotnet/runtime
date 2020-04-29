@@ -5,7 +5,7 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
-    <Compile Include="NativeCallableTest.cs" />
+    <Compile Include="UnmanagedCallersOnlyTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->

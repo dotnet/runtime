@@ -271,7 +271,7 @@ namespace System.Globalization
         }
 
         // EnumCalendarInfoExEx callback itself.
-        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
@@ -424,7 +424,7 @@ namespace System.Globalization
             public List<int> calendars;      // list of calendars found so far
         }
 
-        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        // [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
             ref NlsEnumCalendarsData context = ref Unsafe.As<byte, NlsEnumCalendarsData>(ref *(byte*)lParam);
