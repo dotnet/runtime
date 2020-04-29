@@ -523,8 +523,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         opIntrinsic = (opIntrinsic == NI_VectorT128_op_Subtraction) ? NI_VectorT128_op_Addition
                                                                                     : NI_VectorT128_op_Subtraction;
                         hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, opType);
-                        return gtNewSimdAsHWIntrinsicNode(retType, op1, constVectorDup, hwIntrinsic, opType,
-                                                          simdSize);
+                        return gtNewSimdAsHWIntrinsicNode(retType, op1, constVectorDup, hwIntrinsic, opType, simdSize);
                     }
 
                     GenTree* op1Dup;
