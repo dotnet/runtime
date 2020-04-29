@@ -58,10 +58,11 @@ jobs:
 
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+      - ${{ if ne(parameters.testBuildPhased, true) }}:
+        - ${{ if eq(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if eq(parameters.testBuildPhased, true) }}:
         # Also depend on AnyOS AnyCPU tests
         - ${{ if eq(parameters.testGroup, 'innerloop') }}:
@@ -209,13 +210,14 @@ jobs:
             artifactName: '$(managedGenericTestArtifactName)'
             displayName: 'generic managed test artifacts'
 
-      # Download and unzip target specific tests
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
-          artifactName: '$(managedTestArtifactName)'
-          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+      # Download and unzip target specific tests (unless we build them below)
+      - ${{ if ne(parameters.testBuildPhased, true) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: '$(managedTestArtifactRootFolderPath)'
+            artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
+            artifactName: '$(managedTestArtifactName)'
+            displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
     # Download product binaries directory
@@ -235,6 +237,24 @@ jobs:
           artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
+
+
+    # Build target specific tests
+    - ${{ if ne(parameters.corefxTests, true) }}:
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        # Install test build dependencies
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+            displayName: Install native dependencies
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          # Necessary to install correct cmake version
+          - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+            displayName: Install native dependencies
+
+        # Build targetSpecific managed test components
+        - script: $(coreClrRepoRootDir)build-test$(scriptExt) targetSpecific skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+          displayName: Build managed test components
+
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
