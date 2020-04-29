@@ -162,10 +162,6 @@ namespace System.Net.Http
 
         private async Task<HttpResponseMessage> DoFetch(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
 
             var tcs = new TaskCompletionSource<HttpResponseMessage>();
 
