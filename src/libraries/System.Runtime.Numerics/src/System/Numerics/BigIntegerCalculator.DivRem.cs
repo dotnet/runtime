@@ -10,8 +10,7 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Divide(uint[] left, uint right,
-                                    out uint remainder)
+        public static uint[] Divide(uint[] left, uint right, out uint remainder)
         {
             Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
@@ -28,9 +27,9 @@ namespace System.Numerics
         }
 
         private static void Divide(ReadOnlySpan<uint> left,
-                                        uint right,
-                                        ref uint quotient,
-                                        out uint remainder)
+                                    uint right,
+                                    ref uint quotient,
+                                    out uint remainder)
         {
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
@@ -84,8 +83,7 @@ namespace System.Numerics
             return (uint)carry;
         }
 
-        public static uint[] Divide(uint[] left, uint[] right,
-                                           out uint[] remainder)
+        public static uint[] Divide(uint[] left, uint[] right, out uint[] remainder)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);

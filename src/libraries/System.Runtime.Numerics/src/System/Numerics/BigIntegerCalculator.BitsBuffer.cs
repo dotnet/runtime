@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
@@ -45,8 +44,7 @@ namespace System.Numerics
                 Array.Copy(value, _bits, _length);
             }
 
-            public void MultiplySelf(ref BitsBuffer value,
-                                            ref BitsBuffer temp)
+            public void MultiplySelf(ref BitsBuffer value, ref BitsBuffer temp)
             {
                 Debug.Assert(temp._length == 0);
                 Debug.Assert(_length + value._length <= temp._bits.Length);

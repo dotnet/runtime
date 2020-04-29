@@ -68,8 +68,8 @@ namespace System.Numerics
             }
 
             private static int DivMul(uint[] left, int leftLength,
-                                             uint[] right, int rightLength,
-                                             uint[] bits, int k)
+                                      uint[] right, int rightLength,
+                                      uint[] bits, int k)
             {
                 Debug.Assert(left != null);
                 Debug.Assert(left.Length >= leftLength);
@@ -96,14 +96,14 @@ namespace System.Numerics
                     if (leftLength < rightLength)
                     {
                         Multiply(CreateSpan(ref r, rightLength),
-                                    CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
-                                    CreateSpan(ref b, leftLength + rightLength));
+                                 CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
+                                 CreateSpan(ref b, leftLength + rightLength));
                     }
                     else
                     {
                         Multiply(CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
-                                    CreateSpan(ref r, rightLength),
-                                    CreateSpan(ref b, leftLength + rightLength));
+                                 CreateSpan(ref r, rightLength),
+                                 CreateSpan(ref b, leftLength + rightLength));
                     }
 
                     return ActualLength(bits, leftLength + rightLength);
@@ -113,8 +113,8 @@ namespace System.Numerics
             }
 
             private static int SubMod(uint[] left, int leftLength,
-                                             uint[] right, int rightLength,
-                                             uint[] modulus, int k)
+                                      uint[] right, int rightLength,
+                                      uint[] modulus, int k)
             {
                 Debug.Assert(left != null);
                 Debug.Assert(left.Length >= leftLength);

@@ -20,8 +20,8 @@ namespace System.Numerics
         private const int DecimalScaleFactorMask = 0x00FF0000;
         private const int DecimalSignMask = unchecked((int)0x80000000);
 
-        //Used to create Span with single element
-        private static uint s_zero = 0;
+        //Used to create Span with single element which is equal to zero
+        private static readonly uint[] s_zero = new uint[1];
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
@@ -1418,13 +1418,13 @@ namespace System.Numerics
         /// <summary>
         /// Return the value of this BigInteger as a little-endian twos-complement
         /// uint span, using the fewest number of uints possible. If the value is zero,
-        /// return an array of one uint whose element is 0.
+        /// return a span of one uint whose element is 0.
         /// </summary>
         /// <returns></returns>
         private ReadOnlySpan<uint> ToUInt32Array()
         {
             if (_bits is null && _sign == 0)
-                return CreateReadOnlySpan(ref s_zero, 1);
+                return s_zero;
 
             Span<uint> dwords;  //don't mutate after initialization!!!
             uint highDWord;
