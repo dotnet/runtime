@@ -6,8 +6,6 @@
     <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <!-- The members in ILLinkTrim.xml are only necessary when linking the shared framework. -->
-    <ILLinkStripResources>true</ILLinkStripResources>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
