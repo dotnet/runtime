@@ -1094,6 +1094,8 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
 
     // Step 2: propate overriding MethodImpls to applicable vtable slots if the declaring method has the attribute
 
+    MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+
     for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
     {
         MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
@@ -1138,6 +1140,8 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 // presence of the attribute.
                 pMT->SetSlot(j, pMT->GetSlot(i));
                 _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
+
+                hMTData->UpdateImplMethodDesc(pMD, j);
             }
         }
     }
