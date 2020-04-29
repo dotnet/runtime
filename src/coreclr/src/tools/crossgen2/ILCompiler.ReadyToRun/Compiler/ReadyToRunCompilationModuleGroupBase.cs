@@ -118,7 +118,7 @@ namespace ILCompiler
             }
         }
 
-        // Indicate whether or not the compiler can take a hard dependency on the meaning
+        // Indicate whether or not the compiler can take a hard dependency on the meaning of
         // the compilation unit index.
         private bool IsCompilationUnitIndexExact(CompilationUnitIndex compilationUnitIndex)
         {
