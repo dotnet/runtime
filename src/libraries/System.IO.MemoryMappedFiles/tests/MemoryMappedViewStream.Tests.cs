@@ -93,7 +93,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 {
                     if ((RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || PlatformDetection.IsInContainer) && (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
-                        throw new SkipTestException("Execute permission failing in container.");
+                        throw new SkipTestException("Insufficient execute permission.");
                     }
 
                     throw;
