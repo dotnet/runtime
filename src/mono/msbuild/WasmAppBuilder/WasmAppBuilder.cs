@@ -4,14 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Mono.Cecil;
 
 public class WasmAppBuilder : Task
 {
@@ -29,57 +30,36 @@ public class WasmAppBuilder : Task
 		return true;
 	}
 
-	static string MapType (TypeReference t) {
-		if (t.Name == "Void")
-			return "void";
-		else if (t.Name == "Double")
-			return "double";
-		else if (t.Name == "Single")
-			return "float";
-		else if (t.Name == "Int64")
-			return "int64_t";
-		else if (t.Name == "UInt64")
-			return "uint64_t";
-		else
-			return "int";
-	}
-
-	static string GenPInvokeDecl (PInvoke pinvoke) {
-		var sb = new StringBuilder ();
-		var method = pinvoke.Method;
-		sb.Append (MapType (method.ReturnType));
-		sb.Append ($" {pinvoke.EntryPoint} (");
-		int pindex = 0;
-		foreach (var p in method.Parameters) {
-			if (pindex > 0)
-				sb.Append (",");
-			sb.Append (MapType (method.Parameters [pindex].ParameterType));
-			pindex ++;
-		}
-		sb.Append (");");
-		return sb.ToString ();
-	}
-
 	void GenPInvokeTable (string[] pinvokeModules, string[] assemblies) {
-		Log.LogMessage (MessageImportance.Normal, $"Generating pinvoke table to '{PInvokeTablePath}'.");
-
 		var modules = new Dictionary<string, string> ();
 		foreach (var module in pinvokeModules)
 			modules [module] = module;
 
 		var pinvokes = new List<PInvoke> ();
-		foreach (var fname in assemblies) {
-			var a = AssemblyDefinition.ReadAssembly (fname);
 
-			foreach (var type in a.MainModule.Types) {
-				ProcessTypeForPInvoke (pinvokes, type);
-				foreach (var nested in type.NestedTypes)
-					ProcessTypeForPInvoke (pinvokes, nested);
-			}
+		var resolver = new PathAssemblyResolver (assemblies);
+		var mlc = new MetadataLoadContext (resolver, "System.Private.CoreLib");
+		foreach (var aname in assemblies) {
+			var a = mlc.LoadFromAssemblyPath (aname);
+			foreach (var type in a.GetTypes ())
+				CollectPInvokes (pinvokes, type);
 		}
+
+		Log.LogMessage (MessageImportance.Normal, $"Generating pinvoke table to '{PInvokeTablePath}'.");
 
 		using (var w = File.CreateText (PInvokeTablePath)) {
 			EmitPInvokeTable (w, modules, pinvokes);
+		}
+	}
+
+	void CollectPInvokes (List<PInvoke> pinvokes, Type type) {
+		foreach (var method in type.GetMethods (BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance)) {
+			if ((method.Attributes & MethodAttributes.PinvokeImpl) == 0)
+				continue;
+			var dllimport = method.CustomAttributes.First (attr => attr.AttributeType.Name == "DllImportAttribute");
+			var module = (string)dllimport.ConstructorArguments [0].Value;
+			var entrypoint = (string)dllimport.NamedArguments.First (arg => arg.MemberName == "EntryPoint").TypedValue.Value;
+			pinvokes.Add (new PInvoke (entrypoint, module, method));
 		}
 	}
 
@@ -119,19 +99,43 @@ public class WasmAppBuilder : Task
 		w.WriteLine ("};");
 	}
 
-	void ProcessTypeForPInvoke (List<PInvoke> pinvokes, TypeDefinition type) {
-		foreach (var method in type.Methods) {
-			var info = method.PInvokeInfo;
-			if (info == null)
-				continue;
-			pinvokes.Add (new PInvoke (info.EntryPoint, info.Module.Name, method));
+	string MapType (Type t) {
+		string name = t.Name;
+		if (name == "Void")
+			return "void";
+		else if (name == "Double")
+			return "double";
+		else if (name == "Single")
+			return "float";
+		else if (name == "Int64")
+			return "int64_t";
+		else if (name == "UInt64")
+			return "uint64_t";
+		else
+			return "int";
+	}
+
+	string GenPInvokeDecl (PInvoke pinvoke) {
+		var sb = new StringBuilder ();
+		var method = pinvoke.Method;
+		sb.Append (MapType (method.ReturnType));
+		sb.Append ($" {pinvoke.EntryPoint} (");
+		int pindex = 0;
+		var pars = method.GetParameters ();
+		foreach (var p in pars) {
+			if (pindex > 0)
+				sb.Append (",");
+			sb.Append (MapType (pars [pindex].ParameterType));
+			pindex ++;
 		}
+		sb.Append (");");
+		return sb.ToString ();
 	}
 }
 
 class PInvoke
 {
-	public PInvoke (string entry_point, string module, MethodReference method) {
+	public PInvoke (string entry_point, string module, MethodInfo method) {
 		EntryPoint = entry_point;
 		Module = module;
 		Method = method;
@@ -139,5 +143,5 @@ class PInvoke
 
 	public string EntryPoint;
 	public string Module;
-	public MethodReference Method;
+	public MethodInfo Method;
 }

@@ -14,7 +14,13 @@
 	<WasmPInvokeAssemblies Include="$(MonoArtifactsPath)/System.Private.CoreLib.dll"/>
   </ItemGroup>
 
-  <Target Name="BuildPInvokeTable">
+  <Target Name="CheckEnv">
+	<Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
+	<Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>
+	<Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
+
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
     <MakeDir Directories="$(MonoObjDir)wasm"/>
 	<WasmAppBuilder
 	  PInvokeModules="@(WasmPInvokeModules)"
@@ -24,7 +30,6 @@
   </Target>
 
   <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
-	<Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
 	<Exec Command="make -C $(MonoProjectRoot)wasm all BINDIR=$(ArtifactsBinDir) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 

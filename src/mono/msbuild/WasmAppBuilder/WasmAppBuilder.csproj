@@ -10,8 +10,7 @@
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
-    <!-- FIXME: Versions -->
-    <PackageReference Include="Mono.Cecil" Version="0.11.2" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="4.7.1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="WasmAppBuilder.cs" />
