@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -18,13 +17,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(object? value, JsonSerializerOptions options, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is IDictionary);
-
             string key = state.Current.JsonPropertyNameAsString!;
             ((IDictionary)state.Current.ReturnValue!)[key] = value;
         }
 
-        protected override void CreateCollection(ref ReadStack state)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
@@ -32,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!TypeToConvert.IsAssignableFrom(RuntimeType))
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = new Dictionary<string, object>();
@@ -41,14 +38,14 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (classInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert, ref reader, ref state);
                 }
 
                 TCollection returnValue = (TCollection)classInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = returnValue;
@@ -68,31 +65,41 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(state.Current.CollectionEnumerator is IDictionaryEnumerator);
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
             JsonConverter<object?> converter = GetValueConverter(ref state);
             do
             {
-                if (enumerator.Key is string key)
+                if (ShouldFlush(writer, ref state))
                 {
-                    key = GetKeyName(key, ref state, options);
-                    writer.WritePropertyName(key);
+                    state.Current.CollectionEnumerator = enumerator;
+                    return false;
+                }
 
-                    object? element = enumerator.Value;
-                    if (!converter.TryWrite(writer, element, options, ref state))
+                if (state.Current.PropertyState < StackFramePropertyState.Name)
+                {
+                    state.Current.PropertyState = StackFramePropertyState.Name;
+
+                    if (enumerator.Key is string key)
                     {
-                        state.Current.CollectionEnumerator = enumerator;
-                        return false;
+                        key = GetKeyName(key, ref state, options);
+                        writer.WritePropertyName(key);
                     }
+                    else
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.DeclaredJsonPropertyInfo!.RuntimePropertyType!);
+                    }
+                }
 
-                    state.Current.EndDictionaryElement();
-                }
-                else
+                object? element = enumerator.Value;
+                if (!converter.TryWrite(writer, element, options, ref state))
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.DeclaredJsonPropertyInfo!.RuntimePropertyType!);
+                    state.Current.CollectionEnumerator = enumerator;
+                    return false;
                 }
+
+                state.Current.EndDictionaryElement();
             } while (enumerator.MoveNext());
 
             return true;

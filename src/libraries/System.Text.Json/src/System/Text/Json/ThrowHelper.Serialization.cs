@@ -423,16 +423,27 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DeserializeNoDeserializationConstructor(Type invalidType)
+        public static void ThrowNotSupportedException_DeserializeNoDeserializationConstructor(Type type, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (invalidType.IsInterface)
+            string message;
+
+            if (type.IsInterface)
             {
-                throw new NotSupportedException(SR.Format(SR.DeserializePolymorphicInterface, invalidType));
+                message = SR.Format(SR.DeserializePolymorphicInterface, type);
             }
             else
             {
-                throw new NotSupportedException(SR.Format(SR.DeserializeMissingDeserializationConstructor, nameof(JsonConstructorAttribute), invalidType));
+                message = SR.Format(SR.DeserializeMissingDeserializationConstructor, nameof(JsonConstructorAttribute), type);
             }
+
+            ThrowNotSupportedException(state, reader, new NotSupportedException(message));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_CannotPopulateCollection(Type type, ref Utf8JsonReader reader, ref ReadStack state)
+        {
+            ThrowNotSupportedException(state, reader, new NotSupportedException(SR.Format(SR.CannotPopulateCollection, type)));
         }
 
         [DoesNotReturn]
