@@ -6825,10 +6825,10 @@ elif test x$host_linux = xyes; then
 
 	AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
 	if test x$have_sys_icu = xyes; then 
-		ICU_CFLAGS="-DTARGET_UNIX -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
+		ICU_CFLAGS="-DTARGET_UNIX -I/usr/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
 		AC_MSG_NOTICE($ICU_CFLAGS)
 		AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
-		ICU_SHIM_PATH='$(top_srcdir)'/../libraries/Native/Unix/System.Globalization.Native
+		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
 	fi
 	CPPFLAGS=$ORIG_CPPFLAGS
 fi
