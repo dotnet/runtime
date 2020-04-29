@@ -19,6 +19,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
+        case InstructionSet_X86Base:
+            return InstructionSet_X86Base_X64;
         case InstructionSet_SSE:
             return InstructionSet_SSE_X64;
         case InstructionSet_SSE2:
@@ -133,6 +135,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     else if (strcmp(className, "Lzcnt") == 0)
     {
         return InstructionSet_LZCNT;
+    }
+    else if (strcmp(className, "X86Base") == 0)
+    {
+        return InstructionSet_X86Base;
     }
 
     return InstructionSet_ILLEGAL;
@@ -374,6 +380,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }
@@ -405,6 +413,8 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
         {
             return true;
         }

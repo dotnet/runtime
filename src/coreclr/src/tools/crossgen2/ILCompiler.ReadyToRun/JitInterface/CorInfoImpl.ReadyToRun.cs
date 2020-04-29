@@ -141,6 +141,8 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
 
+        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
+
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
         {
@@ -1152,7 +1154,7 @@ namespace Internal.JitInterface
             }
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
-                && originalMethod.IsNativeCallable)
+                && originalMethod.IsUnmanagedCallersOnly)
             {
                 if (!originalMethod.Signature.IsStatic) // Must be a static method
                 {
@@ -1532,9 +1534,9 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsUnmanagedCallersOnly)
             {
-                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
             }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
@@ -1884,7 +1886,7 @@ namespace Internal.JitInterface
 
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = _unboxingThunkFactory.GetUnboxingMethod(md);
+                                md = getUnboxingThunk(md);
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
@@ -1905,6 +1907,11 @@ namespace Internal.JitInterface
 
                 pResult.lookup.constLookup = CreateConstLookupToSymbol(symbolNode);
             }
+        }
+
+        private MethodDesc getUnboxingThunk(MethodDesc method)
+        {
+            return s_unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)

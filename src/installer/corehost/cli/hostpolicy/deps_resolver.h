@@ -168,11 +168,6 @@ public:
         return m_fx_definitions;
     }
 
-    const pal::string_t& get_coreclr_library_version() const
-    {
-        return m_coreclr_library_version;
-    }
-
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
@@ -254,9 +249,6 @@ private:
 
     // Special entry for coreclr path
     pal::string_t m_coreclr_path;
-
-    // Special entry for coreclr library version
-    pal::string_t m_coreclr_library_version;
 
     // The filepaths for the app custom deps
     std::vector<pal::string_t> m_additional_deps_files;

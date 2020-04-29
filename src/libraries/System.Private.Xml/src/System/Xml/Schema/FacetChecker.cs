@@ -309,7 +309,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFixedFlags & RestrictionFlags.TotalDigits) != 0)
                 {
-                    if (!_datatype.IsEqual(_datatype.Restriction.TotalDigits, _derivedRestriction.TotalDigits))
+                    if (_datatype.Restriction.TotalDigits != _derivedRestriction.TotalDigits)
                     {
                         throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }

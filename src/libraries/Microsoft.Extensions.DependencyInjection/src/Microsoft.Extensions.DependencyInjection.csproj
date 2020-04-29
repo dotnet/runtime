@@ -9,7 +9,11 @@
 
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
-    <DefineConstants Condition="'$(TargetsNetFx)' == 'true' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
+  </PropertyGroup>
+  
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('net4')) AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>  
   </PropertyGroup>
 
   <ItemGroup>

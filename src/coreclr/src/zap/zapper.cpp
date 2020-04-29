@@ -1184,6 +1184,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     // .NET Core requires SSE2.
+    m_pOpt->m_compilerFlags.Set(InstructionSet_X86Base);
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
     m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
 #endif

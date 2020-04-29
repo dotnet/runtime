@@ -2229,6 +2229,24 @@ namespace System.Text.Json.Tests
             });
         }
 
+        [Theory]
+        [InlineData("{ \"object\": { \"1-1\": null, \"1-2\": \"12\", }, \"array\": [ 4, 8, 1, 9, 2 ] }")]
+        [InlineData("[ 5, 4, 3, 2, 1, ]")]
+        [InlineData("{ \"shape\": \"square\", \"size\": 10, \"color\": \"green\", }")]
+        public static void TrailingCommas(string json)
+        {
+            var options = new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true
+            };
+
+            using (JsonDocument doc = JsonDocument.Parse(json, options))
+            {
+                Assert.Equal(json, doc.RootElement.GetRawText());
+            }
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(json));
+        }
+
         [Fact]
         public static void GetPropertyByNullName()
         {

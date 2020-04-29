@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
-    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
-    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.1;netstandard2.0;netcoreapp3.0-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\HResults.cs" />

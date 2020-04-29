@@ -98,7 +98,7 @@
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)'=='iOS'">"$(RunScriptOutputPath)" $(AssemblyName)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)'=='iOS'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
@@ -141,26 +141,14 @@
       <!-- remove PDBs to save some space until we integrate ILLink -->
       <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
     </ItemGroup>
+    <Error Condition="$(TargetArchitecture.StartsWith('arm')) and '$(DevTeamProvisioning)' == ''" 
+           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
     <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
     <Copy SourceFiles="@(TestBinaries)" DestinationFolder="$(BundleDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
-
-    <!-- xharness expects 'xunit-excludes.txt' with xunit categories to ignore in the bundle -->
-    <ItemGroup>
-      <XunitIgnoreCategories Include="category=OuterLoop"/>
-      <XunitIgnoreCategories Include="category=failing"/>
-      <XunitIgnoreCategories Include="category=nonnetcoreapptests"/>
-      <XunitIgnoreCategories Include="category=nonosxtests"/>
-      <XunitIgnoreCategories Include="category=nonmonotests"/>
-    </ItemGroup>
-    <WriteLinesToFile
-        File="$(BundleDir)\xunit-excludes.txt"
-        Lines="@(XunitIgnoreCategories)"
-        Overwrite="true"
-        Encoding="Unicode"/>
 
     <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->

@@ -149,16 +149,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         ++fx_curr;
     }
 
-    pal::string_t clr_library_version;
-    if (resolver.is_framework_dependent())
-    {
-        clr_library_version = get_root_framework(fx_definitions).get_found_version();
-    }
-    else
-    {
-        clr_library_version = resolver.get_coreclr_library_version();
-    }
-
     // Build properties for CoreCLR instantiation
     pal::string_t app_base = resolver.get_app_dir();
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
@@ -168,7 +158,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::FxProductVersion, clr_library_version.c_str());
     coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
 
     bool set_app_paths = false;

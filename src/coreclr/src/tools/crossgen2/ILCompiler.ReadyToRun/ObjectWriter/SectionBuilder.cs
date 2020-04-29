@@ -442,8 +442,8 @@ namespace ILCompiler.PEWriter
         /// <param name="data">Block to add</param>
         /// <param name="sectionIndex">Section index</param>
         /// <param name="name">Node name to emit in the map file</param>
-        /// <param name="mapFile">Optional map file to emit</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, TextWriter mapFile)
+        /// <param name="mapFileBuilder">Optional map file to emit</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, MapFileBuilder mapFileBuilder)
         {
             Section section = _sections[sectionIndex];
 
@@ -480,9 +480,9 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (mapFile != null)
+            if (mapFileBuilder != null)
             {
-                mapFile.WriteLine($@"S{sectionIndex}+0x{alignedOffset:X4}..{(alignedOffset + objectData.Data.Length):X4}: {objectData.Data.Length:X4} * {name}");
+                mapFileBuilder.AddNode(new MapFileNode(sectionIndex, alignedOffset, objectData.Data.Length, name));
             }
 
             section.Content.WriteBytes(objectData.Data);
@@ -491,12 +491,12 @@ namespace ILCompiler.PEWriter
             {
                 foreach (ISymbolDefinitionNode symbol in objectData.DefinedSymbols)
                 {
-                    if (mapFile != null)
+                    if (mapFileBuilder != null)
                     {
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         symbol.AppendMangledName(GetNameMangler(), sb);
                         int sectionRelativeOffset = alignedOffset + symbol.Offset;
-                        mapFile.WriteLine($@"  +0x{sectionRelativeOffset:X4}: {sb.ToString()}");
+                        mapFileBuilder.AddSymbol(new MapFileSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
@@ -528,6 +528,14 @@ namespace ILCompiler.PEWriter
             }
 
             return sectionList;
+        }
+
+        public void AddSections(MapFileBuilder mapFileBuilder)
+        {
+            foreach (Section section in _sections)
+            {
+                mapFileBuilder.AddSection(section);
+            }
         }
 
         /// <summary>
