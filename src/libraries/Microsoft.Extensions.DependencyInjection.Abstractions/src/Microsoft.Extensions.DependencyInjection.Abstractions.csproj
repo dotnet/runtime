@@ -7,18 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
-      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilities.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilities.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs">
-      <Link>Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
+             Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilities.cs"
+             Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilities.cs" />
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs"
+             Link="Common\src\Extensions\ActivatorUtilities\ActivatorUtilitiesConstructorAttribute.cs" />
+    <Compile Include="$(CommonPath)Extensions\ActivatorUtilities\ObjectFactory.cs"
+             Link="Common\src\Extensions\ActivatorUtilities\ObjectFactory.cs" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -24,7 +23,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <returns>An empty array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>()
         {
             return ImmutableArray<T>.Empty;
@@ -36,7 +34,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item">The element to store in the array.</param>
         /// <returns>A 1-element array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>(T item)
         {
             T[] array = new[] { item };
@@ -50,7 +47,6 @@ namespace System.Collections.Immutable
         /// <param name="item1">The first element to store in the array.</param>
         /// <param name="item2">The second element to store in the array.</param>
         /// <returns>A 2-element array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>(T item1, T item2)
         {
             T[] array = new[] { item1, item2 };
@@ -65,7 +61,6 @@ namespace System.Collections.Immutable
         /// <param name="item2">The second element to store in the array.</param>
         /// <param name="item3">The third element to store in the array.</param>
         /// <returns>A 3-element array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>(T item1, T item2, T item3)
         {
             T[] array = new[] { item1, item2, item3 };
@@ -81,7 +76,6 @@ namespace System.Collections.Immutable
         /// <param name="item3">The third element to store in the array.</param>
         /// <param name="item4">The fourth element to store in the array.</param>
         /// <returns>A 4-element array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>(T item1, T item2, T item3, T item4)
         {
             T[] array = new[] { item1, item2, item3, item4 };
@@ -94,7 +88,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array.</returns>
-        [Pure]
         public static ImmutableArray<T> CreateRange<T>(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -142,7 +135,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array.</returns>
-        [Pure]
         public static ImmutableArray<T> Create<T>(params T[]? items)
         {
             if (items == null || items.Length == 0)
@@ -169,7 +161,6 @@ namespace System.Collections.Immutable
         /// This overload allows helper methods or custom builder classes to efficiently avoid paying a redundant
         /// tax for copying an array when the new array is a segment of an existing array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<T> Create<T>(T[] items, int start, int length)
         {
             Requires.NotNull(items, nameof(items));
@@ -202,7 +193,6 @@ namespace System.Collections.Immutable
         /// This overload allows helper methods or custom builder classes to efficiently avoid paying a redundant
         /// tax for copying an array when the new array is a segment of an existing array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<T> Create<T>(ImmutableArray<T> items, int start, int length)
         {
             Requires.Range(start >= 0 && start <= items.Length, nameof(start));
@@ -233,7 +223,6 @@ namespace System.Collections.Immutable
         /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from
         /// the source array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<TResult> CreateRange<TSource, TResult>(ImmutableArray<TSource> items, Func<TSource, TResult> selector)
         {
             Requires.NotNull(selector, nameof(selector));
@@ -266,7 +255,6 @@ namespace System.Collections.Immutable
         /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from the source array
         /// included in the resulting array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<TResult> CreateRange<TSource, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TResult> selector)
         {
             int itemsLength = items.Length;
@@ -300,7 +288,6 @@ namespace System.Collections.Immutable
         /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from
         /// the source array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, Func<TSource, TArg, TResult> selector, TArg arg)
         {
             Requires.NotNull(selector, nameof(selector));
@@ -334,7 +321,6 @@ namespace System.Collections.Immutable
         /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from the source array
         /// included in the resulting array.
         /// </remarks>
-        [Pure]
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TArg, TResult> selector, TArg arg)
         {
             int itemsLength = items.Length;
@@ -362,7 +348,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of elements stored in the array.</typeparam>
         /// <returns>A new builder.</returns>
-        [Pure]
         public static ImmutableArray<T>.Builder CreateBuilder<T>()
         {
             return Create<T>().ToBuilder();
@@ -374,7 +359,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of elements stored in the array.</typeparam>
         /// <param name="initialCapacity">The size of the initial array backing the builder.</param>
         /// <returns>A new builder.</returns>
-        [Pure]
         public static ImmutableArray<T>.Builder CreateBuilder<T>(int initialCapacity)
         {
             return new ImmutableArray<T>.Builder(initialCapacity);
@@ -386,7 +370,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>
         /// <param name="items">The sequence to enumerate.</param>
         /// <returns>An immutable array.</returns>
-        [Pure]
         public static ImmutableArray<TSource> ToImmutableArray<TSource>(this IEnumerable<TSource> items)
         {
             if (items is ImmutableArray<TSource>)
@@ -402,7 +385,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="builder">The builder to create the immutable array from.</param>
         /// <returns>An immutable array.</returns>
-        [Pure]
         public static ImmutableArray<TSource> ToImmutableArray<TSource>(this ImmutableArray<TSource>.Builder builder)
         {
             Requires.NotNull(builder, nameof(builder));
@@ -431,7 +413,6 @@ namespace System.Collections.Immutable
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
-        [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, T value)
         {
             return Array.BinarySearch<T>(array.array!, value);
@@ -462,7 +443,6 @@ namespace System.Collections.Immutable
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
-        [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, T value, IComparer<T>? comparer)
         {
             return Array.BinarySearch<T>(array.array!, value, comparer);
@@ -497,7 +477,6 @@ namespace System.Collections.Immutable
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="index"/> is less than the lower bound of <paramref name="array"/>. -or- <paramref name="length"/> is less than zero.
         /// </exception>
-        [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value)
         {
             return Array.BinarySearch<T>(array.array!, index, length, value);
@@ -538,7 +517,6 @@ namespace System.Collections.Immutable
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="index"/> is less than the lower bound of <paramref name="array"/>. -or- <paramref name="length"/> is less than zero.
         /// </exception>
-        [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value, IComparer<T>? comparer)
         {
             return Array.BinarySearch<T>(array.array!, index, length, value, comparer);

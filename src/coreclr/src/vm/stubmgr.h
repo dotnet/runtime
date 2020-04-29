@@ -838,6 +838,7 @@ class DelegateInvokeStubManager : public StubManager
 #endif
 };
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //---------------------------------------------------------------------------------------
 //
 // This is the stub manager to help the managed debugger step into a tail call.
@@ -859,7 +860,7 @@ public:
 
     virtual BOOL TraceManager(Thread * pThread, TraceDestination * pTrace, T_CONTEXT * pContext, BYTE ** ppRetAddr);
 
-    static bool IsTailCallStubHelper(PCODE code);
+    static bool IsTailCallJitHelper(PCODE code);
 #endif // DACCESS_COMPILE
 
 #if defined(_DEBUG)
@@ -878,6 +879,20 @@ protected:
     virtual LPCWSTR GetStubManagerName(PCODE addr) {LIMITED_METHOD_CONTRACT; return W("TailCallStub");}
 #endif // !DACCESS_COMPILE
 };
+#else // TARGET_X86 && UNIX_X86_ABI
+class TailCallStubManager
+{
+public:
+    static void Init()
+    {
+    }
+
+    static bool IsTailCallJitHelper(PCODE code)
+    {
+        return false;
+    }
+};
+#endif // TARGET_X86 && UNIX_X86_ABI
 
 //
 // Helpers for common value locations in stubs to make stub managers more portable

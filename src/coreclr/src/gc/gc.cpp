@@ -3564,9 +3564,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 
 size_t gcard_of ( uint8_t*);
 
-#define memref(i) *(uint8_t**)(i)
-
-//GC Flags
 #define GC_MARKED       (size_t)0x1
 #define slot(i, j) ((uint8_t**)(i))[(j)+1]
 
@@ -17655,22 +17652,21 @@ gc_heap* gc_heap::heap_of_gc (uint8_t* o)
 }
 
 // will find all heap objects (large and small)
-uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
+//
+// Callers of this method need to guarantee the interior pointer is within the heap range.
+// 
+// If you need it to be stricter, eg if you only want to find an object in ephemeral range, 
+// you should make sure interior is within that range before calling this method.
+uint8_t* gc_heap::find_object (uint8_t* interior)
 {
+    assert (interior != 0);
+
     if (!gen0_bricks_cleared)
     {
 #ifdef MULTIPLE_HEAPS
         assert (!"Should have already been done in server GC");
 #endif //MULTIPLE_HEAPS
-        gen0_bricks_cleared = TRUE;
-        //initialize brick table for gen 0
-        for (size_t b = brick_of (generation_allocation_start (generation_of (0)));
-             b < brick_of (align_on_brick
-                           (heap_segment_allocated (ephemeral_heap_segment)));
-             b++)
-        {
-            set_brick (b, -1);
-        }
+        clear_gen0_bricks();
     }
     //indicate that in the future this needs to be done during allocation
     gen0_must_clear_bricks = FFIND_DECAY;
@@ -17701,7 +17697,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
                 uint8_t* next_o = o + Align (size (o), align_const);
                 assert (next_o > o);
                 if ((o <= interior) && (interior < next_o))
-                return o;
+                    return o;
                 o = next_o;
             }
             return 0;
@@ -17711,7 +17707,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
             return 0;
         }
     }
-    else if (interior >= low)
+    else
     {
         heap_segment* seg = find_segment (interior, TRUE);
         if (seg)
@@ -17728,8 +17724,6 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
         else
             return 0;
     }
-    else
-        return 0;
 }
 
 #ifdef MULTIPLE_HEAPS
@@ -17848,15 +17842,6 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 }
 
 #endif //BACKGROUND_GC
-
-inline
-uint8_t* gc_heap::next_end (heap_segment* seg, uint8_t* f)
-{
-    if (seg == ephemeral_heap_segment)
-        return  f;
-    else
-        return  heap_segment_allocated (seg);
-}
 
 #define new_start() {if (ppstop <= start) {break;} else {parm = start}}
 #define ignore_start 0
@@ -18725,7 +18710,7 @@ gc_heap::ha_mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
             !((ref >= current_obj) && (ref < (current_obj + current_obj_size))))
         {
             gc_heap* hp = gc_heap::heap_of (ref);
-            current_obj = hp->find_object (ref, hp->lowest_address);
+            current_obj = hp->find_object (ref);
             current_obj_size = size (current_obj);
 
             internal_root_array[internal_root_array_index] = current_obj;
@@ -18784,7 +18769,6 @@ void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
 #ifdef MULTIPLE_HEAPS
     else if (o)
     {
-        //find the heap
         gc_heap* hp = heap_of (o);
         assert (hp);
         if ((o >= hp->gc_low) && (o < hp->gc_high))
@@ -19092,7 +19076,7 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     if (flags & GC_CALL_INTERIOR)
     {
-        o = hp->find_object (o, hp->background_saved_lowest_address);
+        o = hp->find_object (o);
         if (o == 0)
             return;
     }
@@ -19190,27 +19174,6 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
         dprintf(3,("background root %Ix", (size_t)*finger));
         (*fn) ((Object**)finger, pSC, 0);
         finger++;
-    }
-}
-
-inline
-void gc_heap::background_mark_through_object (uint8_t* oo THREAD_NUMBER_DCL)
-{
-    if (contain_pointers (oo))
-    {
-        size_t total_refs = 0;
-        size_t s = size (oo);
-        go_through_object_nostart (method_table(oo), oo, s, po,
-                          {
-                            uint8_t* o = *po;
-                            total_refs++;
-                            background_mark_object (o THREAD_NUMBER_ARG);
-                          }
-            );
-
-        dprintf (3,("Background marking through %Ix went through %Id refs",
-                          (size_t)oo,
-                           total_refs));
     }
 }
 
@@ -20476,25 +20439,21 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 }
 
 inline
-void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t* high)
+void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
 {
-    dprintf (3, ("Pinning %Ix", (size_t)o));
-    if ((o >= low) && (o < high))
-    {
-        dprintf(3,("^%Ix^", (size_t)o));
-        set_pinned (o);
+    dprintf (3, ("Pinning %Ix->%Ix", (size_t)ppObject, (size_t)o));
+    set_pinned (o);
 
 #ifdef FEATURE_EVENT_TRACE
-        if(EVENT_ENABLED(PinObjectAtGCTime))
-        {
-            fire_etw_pin_object_event(o, ppObject);
-        }
+    if(EVENT_ENABLED(PinObjectAtGCTime))
+    {
+        fire_etw_pin_object_event(o, ppObject);
+    }
 #endif // FEATURE_EVENT_TRACE
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-        num_pinned_objects++;
+    num_pinned_objects++;
 #endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-    }
 }
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
@@ -22224,7 +22183,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
         if (x >= end)
         {
-            assert (x == end);
+            if (!use_mark_list)
+            {
+                assert (x == end);
+            }
             assert (heap_segment_allocated (seg1) == end);
             heap_segment_allocated (seg1) = plug_end;
 
@@ -24531,8 +24493,6 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
 
     size_t  end_brick = brick_of (end_address - 1);
     relocate_args args;
-    args.low = gc_low;
-    args.high = gc_high;
     args.is_shortened = FALSE;
     args.pinned_plug_entry = 0;
     args.last_plug = 0;
@@ -27100,7 +27060,7 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     if (flags & GC_CALL_INTERIOR)
     {
-        o = hp->find_object (o, hp->background_saved_lowest_address);
+        o = hp->find_object (o);
         if (o == 0)
             return;
     }
@@ -33391,11 +33351,6 @@ void gc_heap::sweep_uoh_objects (int gen_num)
 
 void gc_heap::relocate_in_uoh_objects (int gen_num)
 {
-    relocate_args args;
-    args.low = gc_low;
-    args.high = gc_high;
-    args.last_plug = 0;
-
     generation* gen = generation_of (gen_num);
 
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -35392,9 +35347,6 @@ Object * GCHeap::NextObj (Object * object)
 // returns TRUE if the pointer is in one of the GC heaps.
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
-    // removed STATIC_CONTRACT_CAN_TAKE_LOCK here because find_segment
-    // no longer calls GCEvent::Wait which eventually takes a lock.
-
     uint8_t* object = (uint8_t*) vpObject;
 #ifndef FEATURE_BASICFREEZE
     if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
@@ -35405,7 +35357,6 @@ bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
     return !!hs;
 }
 
-// promote an object
 void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 {
     THREAD_NUMBER_FROM_CONTEXT;
@@ -35428,19 +35379,19 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     gc_heap* hp = gc_heap::heap_of (o);
 
+    if ((o < hp->gc_low) || (o >= hp->gc_high))
+    {
+        return;
+    }
+
     dprintf (3, ("Promote %Ix", (size_t)o));
 
     if (flags & GC_CALL_INTERIOR)
     {
-        if ((o < hp->gc_low) || (o >= hp->gc_high))
+        if ((o = hp->find_object (o)) == 0)
         {
             return;
         }
-        if ( (o = hp->find_object (o, hp->gc_low)) == 0)
-        {
-            return;
-        }
-
     }
 
 #ifdef FEATURE_CONSERVATIVE_GC
@@ -35460,17 +35411,14 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 #endif //_DEBUG
 
     if (flags & GC_CALL_PINNED)
-        hp->pin_object (o, (uint8_t**) ppObject, hp->gc_low, hp->gc_high);
+        hp->pin_object (o, (uint8_t**) ppObject);
 
 #ifdef STRESS_PINNING
     if ((++n_promote % 20) == 1)
-            hp->pin_object (o, (uint8_t**) ppObject, hp->gc_low, hp->gc_high);
+            hp->pin_object (o, (uint8_t**) ppObject);
 #endif //STRESS_PINNING
 
-    if ((o >= hp->gc_low) && (o < hp->gc_high))
-    {
-        hpt->mark_object_simple (&o THREAD_NUMBER_ARG);
-    }
+    hpt->mark_object_simple (&o THREAD_NUMBER_ARG);
 
     STRESS_LOG_ROOT_PROMOTE(ppObject, o, o ? header(o)->GetMethodTable() : NULL);
 }
@@ -35517,7 +35465,7 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
 
         if (gc_heap::loh_object_p (object))
         {
-            pheader = hp->find_object (object, 0);
+            pheader = hp->find_object (object);
             if (pheader == 0)
             {
                 return;
@@ -35910,7 +35858,7 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 
     if (o >= lowest && o < highest)
     {
-        o = hp->find_object (o, lowest);
+        o = hp->find_object (o);
     }
     else
     {
@@ -38151,13 +38099,12 @@ void initGCShadow()
 
 #define INVALIDGCVALUE (void*)((size_t)0xcccccccd)
 
-    // test to see if 'ptr' was only updated via the write barrier.
+// test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)
 {
     Object** shadow = (Object**) &g_GCShadow[((uint8_t*) ptr - g_gc_lowest_address)];
     if (*ptr != 0 && (uint8_t*) shadow < g_GCShadowEnd && *ptr != *shadow)
     {
-
         // If you get this assertion, someone updated a GC pointer in the heap without
         // using the write barrier.  To find out who, check the value of
         // dd_collection_count (dynamic_data_of (0)). Also
@@ -38180,7 +38127,6 @@ inline void testGCShadow(Object** ptr)
         // TODO: fixed to detect the race. We've only seen this race from VolatileWritePtr,
         // TODO: so elect not to fix jithelp.asm at this time. It should be done if we start hitting
         // TODO: erroneous asserts in here.
-
         if(*shadow!=INVALIDGCVALUE)
         {
 #ifdef FEATURE_BASICFREEZE

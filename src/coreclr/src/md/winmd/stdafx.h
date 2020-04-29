@@ -19,7 +19,6 @@
 #include <cor.h>
 #include <corpriv.h>
 
-#include <ndpversion.h>
 #include "nsutilpriv.h"
 
 #include "utsem.h"
