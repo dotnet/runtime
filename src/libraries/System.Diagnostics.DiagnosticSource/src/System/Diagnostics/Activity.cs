@@ -1161,7 +1161,7 @@ namespace System.Diagnostics
         private class LinkedList<T>
         {
             private LinkedListNode<T> _first;
-            private volatile LinkedListNode<T> _last;
+            private LinkedListNode<T> _last;
 
             public LinkedList(T firstValue) => _last =_first = new LinkedListNode<T>(firstValue);
 
@@ -1181,14 +1181,12 @@ namespace System.Diagnostics
             public void Add(T value)
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-                SpinWait sw = default;
 
-                while (Interlocked.CompareExchange(ref _last.Next, newNode, null) != null)
+                lock (_first)
                 {
-                    sw.SpinOnce();
+                    _last.Next = newNode;
+                    _last = newNode;
                 }
-
-                _last = newNode;
             }
 
             public IEnumerable<T> Enumerate()
