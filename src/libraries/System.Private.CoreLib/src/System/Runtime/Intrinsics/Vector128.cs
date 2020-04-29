@@ -763,24 +763,24 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(lo64, hi64).AsByte();                                         // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<byte> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                result = Arm.AdvSimd.Insert(result, 7, e7);
-                result = Arm.AdvSimd.Insert(result, 8, e8);
-                result = Arm.AdvSimd.Insert(result, 9, e9);
-                result = Arm.AdvSimd.Insert(result, 10, e10);
-                result = Arm.AdvSimd.Insert(result, 11, e11);
-                result = Arm.AdvSimd.Insert(result, 12, e12);
-                result = Arm.AdvSimd.Insert(result, 13, e13);
-                result = Arm.AdvSimd.Insert(result, 14, e14);
-                return Arm.AdvSimd.Insert(result, 15, e15);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                result = AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 8, e8);
+                result = AdvSimd.Insert(result, 9, e9);
+                result = AdvSimd.Insert(result, 10, e10);
+                result = AdvSimd.Insert(result, 11, e11);
+                result = AdvSimd.Insert(result, 12, e12);
+                result = AdvSimd.Insert(result, 13, e13);
+                result = AdvSimd.Insert(result, 14, e14);
+                return AdvSimd.Insert(result, 15, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -827,10 +827,10 @@ namespace System.Runtime.Intrinsics
                 return Sse.MoveLowToHigh(CreateScalarUnsafe(e0).AsSingle(), CreateScalarUnsafe(e1).AsSingle()).AsDouble();
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<double> result = CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             return SoftwareFallback(e0, e1);
@@ -873,16 +873,16 @@ namespace System.Runtime.Intrinsics
                 return Sse2.Insert(result, e7, 7);                                                  // < 0, 1, 2, 3, 4, 5, 6, 7 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<short> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                return Arm.AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -934,12 +934,12 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(lo64, hi64).AsInt32();                                        // < 0, 1, 2, 3 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<int> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                return Arm.AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -977,10 +977,10 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1));              // < 0, 1 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<long> result = CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             return SoftwareFallback(e0, e1);
@@ -1073,24 +1073,24 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(lo64, hi64).AsSByte();                                        // <  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<sbyte> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                result = Arm.AdvSimd.Insert(result, 7, e7);
-                result = Arm.AdvSimd.Insert(result, 8, e8);
-                result = Arm.AdvSimd.Insert(result, 9, e9);
-                result = Arm.AdvSimd.Insert(result, 10, e10);
-                result = Arm.AdvSimd.Insert(result, 11, e11);
-                result = Arm.AdvSimd.Insert(result, 12, e12);
-                result = Arm.AdvSimd.Insert(result, 13, e13);
-                result = Arm.AdvSimd.Insert(result, 14, e14);
-                return Arm.AdvSimd.Insert(result, 15, e15);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                result = AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 8, e8);
+                result = AdvSimd.Insert(result, 9, e9);
+                result = AdvSimd.Insert(result, 10, e10);
+                result = AdvSimd.Insert(result, 11, e11);
+                result = AdvSimd.Insert(result, 12, e12);
+                result = AdvSimd.Insert(result, 13, e13);
+                result = AdvSimd.Insert(result, 14, e14);
+                return AdvSimd.Insert(result, 15, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -1147,12 +1147,12 @@ namespace System.Runtime.Intrinsics
                 return Sse.MoveLowToHigh(lo64, hi64);                                               // < 0, 1, 2, 3 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<float> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                return Arm.AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -1198,16 +1198,16 @@ namespace System.Runtime.Intrinsics
                 return Sse2.Insert(result, e7, 7);                                                  // < 0, 1, 2, 3, 4, 5, 6, 7 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<ushort> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                return Arm.AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -1260,12 +1260,12 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(lo64, hi64).AsUInt32();                                       // < 0, 1, 2, 3 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<uint> result = CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                return Arm.AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -1304,10 +1304,10 @@ namespace System.Runtime.Intrinsics
                 return Sse2.UnpackLow(CreateScalarUnsafe(e0), CreateScalarUnsafe(e1));              // < 0, 1 >
             }
 
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector128<ulong> result = CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             return SoftwareFallback(e0, e1);

@@ -324,16 +324,16 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<byte> result = Vector64.CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                return Arm.AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
             }
 
             byte* pResult = stackalloc byte[8]
@@ -360,12 +360,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<short> result = Vector64.CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                return Arm.AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
             }
 
             short* pResult = stackalloc short[4]
@@ -386,10 +386,10 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<int> result = Vector64.CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             int* pResult = stackalloc int[2]
@@ -415,16 +415,16 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<sbyte> result = Vector64.CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                result = Arm.AdvSimd.Insert(result, 3, e3);
-                result = Arm.AdvSimd.Insert(result, 4, e4);
-                result = Arm.AdvSimd.Insert(result, 5, e5);
-                result = Arm.AdvSimd.Insert(result, 6, e6);
-                return Arm.AdvSimd.Insert(result, 7, e7);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                result = AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 4, e4);
+                result = AdvSimd.Insert(result, 5, e5);
+                result = AdvSimd.Insert(result, 6, e6);
+                return AdvSimd.Insert(result, 7, e7);
             }
 
             sbyte* pResult = stackalloc sbyte[8]
@@ -448,10 +448,10 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<float> result = Vector64.CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             float* pResult = stackalloc float[2]
@@ -473,12 +473,12 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<ushort> result = Vector64.CreateScalarUnsafe(e0);
-                result = Arm.AdvSimd.Insert(result, 1, e1);
-                result = Arm.AdvSimd.Insert(result, 2, e2);
-                return Arm.AdvSimd.Insert(result, 3, e3);
+                result = AdvSimd.Insert(result, 1, e1);
+                result = AdvSimd.Insert(result, 2, e2);
+                return AdvSimd.Insert(result, 3, e3);
             }
 
             ushort* pResult = stackalloc ushort[4]
@@ -500,10 +500,10 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
-            if (Arm.AdvSimd.IsSupported)
+            if (AdvSimd.IsSupported)
             {
                 Vector64<uint> result = Vector64.CreateScalarUnsafe(e0);
-                return Arm.AdvSimd.Insert(result, 1, e1);
+                return AdvSimd.Insert(result, 1, e1);
             }
 
             uint* pResult = stackalloc uint[2]

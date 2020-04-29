@@ -554,6 +554,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
             case NI_Vector64_Create:
             case NI_Vector128_Create:
+                assert(opt != INS_OPTS_NONE);
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     const double dataValue = intrin.op1->AsDblCon()->gtDconVal;

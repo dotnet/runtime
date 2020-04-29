@@ -2868,8 +2868,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
     bool     onesShift = (bsImm.immOnes == 1);
     unsigned bySh      = bsImm.immBY;         // Num Bytes to shift 0,1,2,3
-    INT64    val       = (INT64)bsImm.immVal; // 8-bit immediate
-    INT64    result    = val;
+    INT64    result    = (INT64)bsImm.immVal; // 8-bit immediate
 
     if (bySh > 0)
     {
