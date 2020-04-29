@@ -35,7 +35,7 @@ namespace System.Net.Http
 
         private readonly Dictionary<int, Http2Stream> _httpStreams;
 
-        private readonly SemaphoreSlim _writerLock;
+        private readonly AsyncMutex _writerLock;
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
 
@@ -109,7 +109,7 @@ namespace System.Net.Http
 
             _httpStreams = new Dictionary<int, Http2Stream>();
 
-            _writerLock = new SemaphoreSlim(1, 1);
+            _writerLock = new AsyncMutex();
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), int.MaxValue);
 
@@ -792,7 +792,7 @@ namespace System.Net.Http
             }
             catch
             {
-                _writerLock.Release();
+                _writerLock.Exit();
                 throw;
             }
         }
@@ -807,8 +807,8 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(flush)}={flush}");
 
-            // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
-            Debug.Assert(_writerLock.CurrentCount == 0);
+            // We can't validate that we hold the mutex, but we can at least validate that someone is holding it.
+            Debug.Assert(_writerLock.IsHeld);
 
             _outgoingBuffer.Commit(_currentWriteSize);
             _lastPendingWriterShouldFlush |= (flush == FlushTiming.AfterPendingWrites);
@@ -819,16 +819,16 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) Trace("");
 
-            // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
-            Debug.Assert(_writerLock.CurrentCount == 0);
+            // We can't validate that we hold the mutex, but we can at least validate that someone is holding it.
+            Debug.Assert(_writerLock.IsHeld);
 
             EndWrite(forceFlush: false);
         }
 
         private void EndWrite(bool forceFlush)
         {
-            // We can't validate that we hold the semaphore, but we can at least validate that someone is holding it.
-            Debug.Assert(_writerLock.CurrentCount == 0);
+            // We can't validate that we hold the mutex, but we can at least validate that someone is holding it.
+            Debug.Assert(_writerLock.IsHeld);
 
             try
             {
@@ -845,14 +845,18 @@ namespace System.Net.Http
             }
             finally
             {
-                _writerLock.Release();
+                _writerLock.Exit();
             }
         }
 
         private async ValueTask AcquireWriteLockAsync(CancellationToken cancellationToken)
         {
-            Task acquireLockTask = _writerLock.WaitAsync(cancellationToken);
-            if (!acquireLockTask.IsCompletedSuccessfully)
+            ValueTask acquireLockTask = _writerLock.EnterAsync(cancellationToken);
+            if (acquireLockTask.IsCompletedSuccessfully)
+            {
+                acquireLockTask.GetAwaiter().GetResult(); // to enable the value task sources to be pooled
+            }
+            else
             {
                 Interlocked.Increment(ref _pendingWriters);
 
@@ -873,7 +877,7 @@ namespace System.Net.Http
                         // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
                         // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
                         // cancellation was requested, and it's because of that cancellation that we need to flush.
-                        LogExceptions(FlushAsync());
+                        LogExceptions(FlushAsync(default));
                     }
 
                     throw;
@@ -885,7 +889,7 @@ namespace System.Net.Http
             // If the connection has been aborted, then fail now instead of trying to send more data.
             if (_abortException != null)
             {
-                _writerLock.Release();
+                _writerLock.Exit();
                 throw new IOException(SR.net_http_request_aborted, _abortException);
             }
         }
