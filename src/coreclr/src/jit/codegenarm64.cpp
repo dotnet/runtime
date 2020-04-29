@@ -5116,10 +5116,12 @@ void CodeGen::genArm64EmitterUnitTests()
         return;
     }
 
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     // Mark the "fake" instructions in the output.
     printf("*************** In genArm64EmitterUnitTests()\n");
 
     emitter* theEmitter = GetEmitter();
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     // We use this:
@@ -9134,7 +9136,9 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS
 
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     printf("*************** End of genArm64EmitterUnitTests()\n");
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
 }
 #endif // defined(DEBUG)
 
