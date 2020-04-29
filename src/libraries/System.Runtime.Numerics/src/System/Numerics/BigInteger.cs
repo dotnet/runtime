@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,14 +15,12 @@ namespace System.Numerics
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public readonly struct BigInteger : IFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>
     {
+        private const int AllocationThreshold = 256;
         private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
         private const int kcbitUint = 32;
         private const int kcbitUlong = 64;
         private const int DecimalScaleFactorMask = 0x00FF0000;
         private const int DecimalSignMask = unchecked((int)0x80000000);
-
-        //Used to create Span with single element which is equal to zero
-        private static readonly uint[] s_zero = new uint[1];
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
@@ -1416,53 +1415,51 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Return the value of this BigInteger as a little-endian twos-complement
-        /// uint span, using the fewest number of uints possible. If the value is zero,
-        /// return a span of one uint whose element is 0.
+        /// Converts the value of this BigInteger to a little-endian twos-complement
+        /// uint span allocated by the caller, and shrinks it to the fewest number of uints possible.
         /// </summary>
-        /// <returns></returns>
-        private ReadOnlySpan<uint> ToUInt32Array()
+        /// <param name="buffer">Pre-allocated buffer by the caller.</param>
+        private void CopyTo(ref Span<uint> buffer)
         {
-            if (_bits is null && _sign == 0)
-                return s_zero;
+            Debug.Assert(_bits is null || _sign == 0 ? buffer.Length == 2 : buffer.Length >= _bits.Length + 1);
 
-            Span<uint> dwords;  //don't mutate after initialization!!!
             uint highDWord;
 
             if (_bits is null)
             {
-                dwords = MemoryMarshal.CreateSpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
+                buffer[0] = unchecked((uint)_sign);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
             {
-                dwords = Unsafe.As<uint[]>(_bits.Clone());
-                NumericsHelpers.DangerousMakeTwosComplement(dwords);  // Mutates dwords
+                _bits.CopyTo(buffer);
+                NumericsHelpers.DangerousMakeTwosComplement(buffer[..^1]);  // Mutates dwords
                 highDWord = uint.MaxValue;
             }
             else
             {
-                dwords = _bits;
+                _bits.CopyTo(buffer);
                 highDWord = 0;
             }
 
             // Find highest significant byte
             int msb;
-            for (msb = dwords.Length - 1; msb > 0; msb--)
+            for (msb = buffer.Length - 2; msb > 0; msb--)
             {
-                if (dwords[msb] != highDWord) break;
+                if (buffer[msb] != highDWord) break;
             }
             // Ensure high bit is 0 if positive, 1 if negative
-            bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
-
-            Span<uint> trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
-            dwords = dwords.Slice(0, msb + 1);
-            dwords.CopyTo(trimmed);
+            bool needExtraByte = (buffer[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             if (needExtraByte)
-                trimmed[trimmed.Length - 1] = highDWord;
-
-            return trimmed;
+            {
+                buffer = buffer.Slice(0, msb + 2);
+                buffer[buffer.Length - 1] = highDWord;
+            }
+            else
+            {
+                buffer = buffer.Slice(0, msb + 1);
+            }
         }
 
         public override string ToString()
@@ -1817,6 +1814,41 @@ namespace System.Numerics
             return new decimal(lo, mi, hi, value._sign < 0, 0);
         }
 
+        private delegate void BitwiseOperation(ReadOnlySpan<uint> left, uint leftExtend,
+                                               ReadOnlySpan<uint> right, uint rightExtend,
+                                               uint[] result);
+
+        private static BigInteger DoBitwiseOperation(BigInteger left, BigInteger right, BitwiseOperation operation)
+        {
+            uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
+            uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
+
+            uint[]? leftBufferFromPool = null;
+            int size = (left._bits?.Length ?? 1) + 1;
+            Span<uint> x = size <= AllocationThreshold ?
+                           stackalloc uint[size]
+                           : leftBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
+            left.CopyTo(ref x);
+
+            uint[]? rightBufferFromPool = null;
+            size = (right._bits?.Length ?? 1) + 1;
+            Span<uint> y = size <= AllocationThreshold ?
+                           stackalloc uint[size]
+                           : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
+            right.CopyTo(ref y);
+
+            var result = new uint[Math.Max(x.Length, y.Length)];
+            operation(x, xExtend, y, yExtend, result);
+
+            if (leftBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(leftBufferFromPool);
+
+            if (rightBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(rightBufferFromPool);
+
+            return new BigInteger(result);
+        }
+
         public static BigInteger operator &(BigInteger left, BigInteger right)
         {
             if (left.IsZero || right.IsZero)
@@ -1824,24 +1856,24 @@ namespace System.Numerics
                 return Zero;
             }
 
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign & right._sign;
             }
 
-            ReadOnlySpan<uint> x = left.ToUInt32Array();
-            ReadOnlySpan<uint> y = right.ToUInt32Array();
-            uint[] z = new uint[Math.Max(x.Length, y.Length)];
-            uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
-            uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
+            return DoBitwiseOperation(left, right, BitwiseAnd);
 
-            for (int i = 0; i < z.Length; i++)
+            static void BitwiseAnd(ReadOnlySpan<uint> left, uint leftExtend,
+                                     ReadOnlySpan<uint> right, uint rightExtend,
+                                     uint[] result)
             {
-                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu & yu;
+                for (int i = 0; i < result.Length; i++)
+                {
+                    uint xu = ((uint)i < (uint)left.Length) ? left[i] : leftExtend;
+                    uint yu = ((uint)i < (uint)right.Length) ? right[i] : rightExtend;
+                    result[i] = xu & yu;
+                }
             }
-            return new BigInteger(z);
         }
 
         public static BigInteger operator |(BigInteger left, BigInteger right)
@@ -1851,47 +1883,46 @@ namespace System.Numerics
             if (right.IsZero)
                 return left;
 
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign | right._sign;
             }
 
-            ReadOnlySpan<uint> x = left.ToUInt32Array();
-            ReadOnlySpan<uint> y = right.ToUInt32Array();
-            uint[] z = new uint[Math.Max(x.Length, y.Length)];
-            uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
-            uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
+            return DoBitwiseOperation(left, right, BitwiseOr);
 
-            for (int i = 0; i < z.Length; i++)
+            static void BitwiseOr(ReadOnlySpan<uint> left, uint leftExtend,
+                                     ReadOnlySpan<uint> right, uint rightExtend,
+                                     uint[] result)
             {
-                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu | yu;
+                for (int i = 0; i < result.Length; i++)
+                {
+                    uint xu = ((uint)i < (uint)left.Length) ? left[i] : leftExtend;
+                    uint yu = ((uint)i < (uint)right.Length) ? right[i] : rightExtend;
+                    result[i] = xu | yu;
+                }
             }
-            return new BigInteger(z);
         }
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
         {
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign ^ right._sign;
             }
 
-            ReadOnlySpan<uint> x = left.ToUInt32Array();
-            ReadOnlySpan<uint> y = right.ToUInt32Array();
-            uint[] z = new uint[Math.Max(x.Length, y.Length)];
-            uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
-            uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
+            return DoBitwiseOperation(left, right, BitwiseXor);
 
-            for (int i = 0; i < z.Length; i++)
+            static void BitwiseXor(ReadOnlySpan<uint> left, uint leftExtend,
+                                     ReadOnlySpan<uint> right, uint rightExtend,
+                                     uint[] result)
             {
-                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu ^ yu;
+                for (int i = 0; i < result.Length; i++)
+                {
+                    uint xu = ((uint)i < (uint)left.Length) ? left[i] : leftExtend;
+                    uint yu = ((uint)i < (uint)right.Length) ? right[i] : rightExtend;
+                    result[i] = xu ^ yu;
+                }
             }
-
-            return new BigInteger(z);
         }
 
         public static BigInteger operator <<(BigInteger value, int shift)
