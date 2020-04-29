@@ -2596,7 +2596,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1);
                 srcCount += BuildDelayFreeUses(op2);
-                srcCount += BuildDelayFreeUses(op3);
+
+                // op3 should always be contained
+                assert(op3->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
                 buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
@@ -2615,14 +2617,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 GenTreeArgList* argList = intrinsicTree->gtGetOp1()->AsArgList()->Rest()->Rest()->Rest();
                 GenTree*        op4     = argList->Current();
-                GenTree*        op5     = argList->Rest()->Current();
 
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1);
                 srcCount += BuildDelayFreeUses(op2);
                 srcCount += BuildDelayFreeUses(op3);
                 srcCount += BuildDelayFreeUses(op4);
-                srcCount += BuildDelayFreeUses(op5);
+
+                // op5 should always be contained
+                assert(argList->Rest()->Current()->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
                 buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
