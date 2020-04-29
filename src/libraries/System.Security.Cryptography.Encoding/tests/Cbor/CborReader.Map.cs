@@ -6,12 +6,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        private KeyEncodingComparer? _keyComparer;
+        private KeyEncodingComparer? _keyEncodingComparer;
+        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
 
         public int? ReadStartMap()
         {
@@ -143,13 +145,44 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private HashSet<(int Offset, int Length)> GetPreviousKeyRanges()
         {
-            if (_previousKeyRanges == null)
-            {
-                _keyComparer ??= new KeyEncodingComparer(this);
-                _previousKeyRanges = new HashSet<(int Offset, int Length)>(_keyComparer);
-            }
+            return _previousKeyRanges ??= RequestKeyEncodingRangeSet();
 
-            return _previousKeyRanges;
+            HashSet<(int Offset, int Length)> RequestKeyEncodingRangeSet()
+            {
+                if (_pooledKeyEncodingRangeSets != null)
+                {
+                    HashSet<(int Offset, int Length)>? result;
+
+                    lock (_pooledKeyEncodingRangeSets)
+                    {
+                        _pooledKeyEncodingRangeSets.TryPop(out result);
+                    }
+
+                    if (result != null)
+                    {
+                        result.Clear();
+                        return result;
+                    }
+                }
+
+                _keyEncodingComparer ??= new KeyEncodingComparer(this);
+                return new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
+            }
+        }
+
+        private void ReturnKeyEncodingRangeSet()
+        {
+            HashSet<(int Offset, int Length)>? set = Interlocked.Exchange(ref _previousKeyRanges, null);
+
+            if (set != null)
+            {
+                _pooledKeyEncodingRangeSets ??= new Stack<HashSet<(int Offset, int Length)>>();
+
+                lock (_pooledKeyEncodingRangeSets)
+                {
+                    _pooledKeyEncodingRangeSets.Push(set);
+                }
+            }
         }
 
         private ReadOnlySpan<byte> GetKeyEncoding(in (int Offset, int Length) range)

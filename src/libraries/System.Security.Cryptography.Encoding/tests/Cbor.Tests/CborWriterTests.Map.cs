@@ -157,13 +157,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("a42000a30303020201010061610019010000", CborConformanceLevel.Lax)]
-        [InlineData("a42000a30303020201010061610019010000", CborConformanceLevel.Strict)]
-        [InlineData("a4200061610019010000a301010202030300", CborConformanceLevel.Rfc7049Canonical)]
-        [InlineData("a4190100002000616100a301010202030300", CborConformanceLevel.Ctap2Canonical)]
+        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceLevel.Lax)]
+        [InlineData("a52000a30303020201010061610019010000a20202010100", CborConformanceLevel.Strict)]
+        [InlineData("a5200061610019010000a20101020200a301010202030300", CborConformanceLevel.Rfc7049Canonical)]
+        [InlineData("a5190100002000616100a20101020200a301010202030300", CborConformanceLevel.Ctap2Canonical)]
         internal static void WriteMap_NestedValues_ShouldSortKeysAccordingToConformanceLevel(string expectedHexEncoding, CborConformanceLevel level)
         {
-            object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0 };
+            object[] value = new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 };
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter(level);
             Helpers.WriteValue(writer, value);

@@ -6,6 +6,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -13,7 +14,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         private static readonly ArrayPool<KeyValueEncodingRange> s_rangeBuffers = ArrayPool<KeyValueEncodingRange>.Create();
 
-        private KeyEncodingComparer? _keyValueComparer;
+        private KeyEncodingComparer? _keyComparer;
+        private Stack<HashSet<KeyValueEncodingRange>>? _pooledKeyValueEncodingRangeSets;
 
         public void WriteStartMap(int definiteLength)
         {
@@ -96,21 +98,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 ranges.Add(currentKeyRange);
             }
 
-            // reset state
+            // reset state to new key
             _currentKeyOffset = _offset;
             _currentValueOffset = null;
         }
 
         private void SortKeyValuePairEncodings()
         {
-            Debug.Assert(_keyValueEncodingRanges != null);
-            Debug.Assert(_keyValueComparer != null);
+            if (_keyValueEncodingRanges == null || _keyValueEncodingRanges.Count < 2)
+            {
+                return; // no need to sort empty or singleton maps
+            }
+
+            Debug.Assert(_keyComparer != null);
 
             // copy the key/value ranges to a temporary buffer and sort in-place
             KeyValueEncodingRange[] rangeBuffer = s_rangeBuffers.Rent(_keyValueEncodingRanges.Count);
             _keyValueEncodingRanges.CopyTo(rangeBuffer);
             Span<KeyValueEncodingRange> rangeSpan = rangeBuffer.AsSpan(0, _keyValueEncodingRanges.Count);
-            rangeSpan.Sort(_keyValueComparer);
+            rangeSpan.Sort(_keyComparer);
 
             // copy sorted ranges to temporary buffer
             int totalMapPayloadEncodingLength = _offset - _frameOffset;
@@ -131,6 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             s_bufferPool.Return(tempBuffer, clearArray: true);
             s_rangeBuffers.Return(rangeBuffer, clearArray: false);
+            ReturnKeyValueEncodingRange();
         }
 
         private ReadOnlySpan<byte> GetKeyEncoding(in KeyValueEncodingRange keyValueRange)
@@ -145,15 +152,44 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private HashSet<KeyValueEncodingRange> GetKeyValueEncodingRanges()
         {
-            // TODO consider pooling set allocations?
+            return _keyValueEncodingRanges ??= RequestKeyValueEncodingRangeSet();
 
-            if (_keyValueEncodingRanges == null)
+            HashSet<KeyValueEncodingRange> RequestKeyValueEncodingRangeSet()
             {
-                _keyValueComparer ??= new KeyEncodingComparer(this);
-                return _keyValueEncodingRanges = new HashSet<KeyValueEncodingRange>(_keyValueComparer);
-            }
+                if (_pooledKeyValueEncodingRangeSets != null)
+                {
+                    HashSet<KeyValueEncodingRange>? result;
 
-            return _keyValueEncodingRanges;
+                    lock (_pooledKeyValueEncodingRangeSets)
+                    {
+                        _pooledKeyValueEncodingRangeSets.TryPop(out result);
+                    }
+
+                    if (result != null)
+                    {
+                        result.Clear();
+                        return result;
+                    }
+                }
+
+                _keyComparer ??= new KeyEncodingComparer(this);
+                return new HashSet<KeyValueEncodingRange>(_keyComparer);
+            }
+        }
+
+        private void ReturnKeyValueEncodingRange()
+        {
+            HashSet<KeyValueEncodingRange>? set = Interlocked.Exchange(ref _keyValueEncodingRanges, null);
+
+            if (set != null)
+            {
+                _pooledKeyValueEncodingRangeSets ??= new Stack<HashSet<KeyValueEncodingRange>>();
+
+                lock (_pooledKeyValueEncodingRangeSets)
+                {
+                    _pooledKeyValueEncodingRangeSets.Push(set);
+                }
+            }
         }
 
         private readonly struct KeyValueEncodingRange

@@ -317,6 +317,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new FormatException("CBOR tag should be followed by a data item.");
             }
 
+            if (frame.MajorType == CborMajorType.Map)
+            {
+                ReturnKeyEncodingRangeSet();
+            }
+
             _nestedDataItems.Pop();
 
             _frameOffset = frame.FrameOffset;
