@@ -17,24 +17,7 @@ namespace R2RTest
     {
         public override CompilerIndex Index => CompilerIndex.Crossgen;
 
-        protected override string CompilerRelativePath
-        {
-            get
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    if (_options.ArchitectureIsArm)
-                    {
-                        return "x86";
-                    }
-                    if (_options.ArchitectureIsArm64)
-                    {
-                        return "x64";
-                    }
-                }
-                return ".";
-            }
-        }
+        protected override string CompilerRelativePath => _options.ArchitectureIsArm ? "x86" : _options.ArchitectureIsArm64 ? "x64" : ".";
 
         protected override string CompilerFileName => "crossgen".AppendOSExeSuffix();
 

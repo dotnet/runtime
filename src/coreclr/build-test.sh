@@ -147,115 +147,35 @@ generate_layout()
 precompile_coreroot_fx()
 {
     local overlayDir="$CORE_ROOT"
-    local compilerName=Crossgen
+    local compileFrameworkCmd="$overlayDir/corerun $overlayDir/R2RTest/R2RTest.dll"
+    local frameworkOutputFolder="$CORE_ROOT"
+    local dop=`getconf _NPROCESSORS_ONLN`
 
-    # Read the exclusion file for this platform
-    skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
-    skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
+    echo "DOP = $dop"
 
-    # Temporary output folder for Crossgen2-compiled assemblies
-    local outputDir="$overlayDir"/out
-
-    # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll
-
-    # Collect reference assemblies for Crossgen2
-    local crossgen2References=""
-
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        compilerName=Crossgen2
-
-        mkdir "$outputDir"
-
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-
-        for reference in "$overlayDir"/*.dll; do
-            crossgen2References+=" -r:${reference}"
-        done
-    fi
-
-    echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
-
-    local totalPrecompiled=0
-    local failedToPrecompile=0
-    local compositeCommandLine="$overlayDir/corerun"
-    compositeCommandLine+=" ${__BinDir}/crossgen2/crossgen2.dll"
-    compositeCommandLine+=" --composite"
-    compositeCommandLine+=" -O"
-    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
-    declare -a failedAssemblies
-
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
-    for fileToPrecompile in ${filesToPrecompile}; do
-        local filename="$fileToPrecompile"
-        if is_skip_crossgen_test "$(basename $filename)"; then
-            continue
-        fi
-
-        if [[ "$__CompositeBuildMode" != 0 ]]; then
-            compositeCommandLine+=" $filename"
-            continue
-        fi
-
-        local commandLine=""
-
-        if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
-        fi
-
-        if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="$overlayDir/corerun $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
-        fi
-
-        echo Precompiling "$filename"
-        $commandLine 1> "$filename".stdout 2> "$filename".stderr
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            if grep -q -e '0x80131018' "$filename".stderr; then
-                printf "\n\t$filename is not a managed assembly.\n\n"
-            else
-                echo Unable to precompile "$filename", exit code is "$exitCode".
-                echo Command-line: "$commandLine"
-                cat "$filename".stdout
-                cat "$filename".stderr
-                failedAssemblies+=($(basename -- "$filename"))
-                failedToPrecompile=$((failedToPrecompile+1))
-            fi
-        else
-            rm "$filename".{stdout,stderr}
-        fi
-
-        totalPrecompiled=$((totalPrecompiled+1))
-        echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
-    done
-
+    compileFrameworkCmd+=" compile-framework"
+    compileFrameworkCmd+=" -cr $overlayDir"
+    compileFrameworkCmd+=" --release"
+    compileFrameworkCmd+=" --architecture $__BuildArch"
+    compileFrameworkCmd+=" --degree-of-parallelism $dop"
+    
     if [[ "$__CompositeBuildMode" != 0 ]]; then
-        # Compile the entire framework in composite build mode
-        echo "Compiling composite R2R framework: $compositeCommandLine"
-        $compositeCommandLine
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            echo Unable to precompile composite framework, exit code is "$exitCode".
-            exit 1
-        fi
+        compileFrameworkCmd+=" --composite"
+    else
+        compileFrameworkCmd+=" --large-bubble"
     fi
 
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        # Copy the Crossgen-compiled assemblies back to CORE_ROOT
-        mv -f "$outputDir"/* "$overlayDir"/
-        rm -r "$outputDir"
+    if [[ "$__DoCrossgen" != 0 ]]; then
+        compileFrameworkCmd+=" --crossgen --nocrossgen2"
+        frameworkOutputFolder+="/Crossgen-ret.out"
+    else
+        frameworkOutputFolder+="/CPAOT-ret.out"
     fi
 
-    if [[ "$failedToPrecompile" != 0 ]]; then
-        echo Failed assemblies:
-        for assembly in "${failedAssemblies[@]}"; do
-            echo "  $assembly"
-        done
+    echo "Compiling framework: $compileFrameworkCmd"
+    $compileFrameworkCmd
 
-        exit 1
-    fi
+    mv -f "$frameworkOutputFolder"/*.dll "$overlayDir"/
 }
 
 declare -a skipCrossGenFiles
