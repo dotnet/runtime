@@ -443,12 +443,12 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
             CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
             // If the method is eligible for tiering but is being
             // called from a Preemptive GC Mode thread or the method
-            // has the NativeCallableAttribute then the Tiered Compilation
+            // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
             // should be disabled.
             if (shouldTier
                 && (callerGcMode == CallerGCMode::Preemptive
                     || (callerGcMode == CallerGCMode::Unknown
-                        && HasNativeCallableAttribute())))
+                        && HasUnmanagedCallersOnlyAttribute())))
             {
                 NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
                 if (codeVersion.IsDefaultVersion())
@@ -1806,14 +1806,14 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
-// It is specifically designed to work with the NativeCallableAttribute.
+// It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
 //=============================================================================
 static PCODE PreStubWorker_Preemptive(
     _In_ TransitionBlock* pTransitionBlock,
     _In_ MethodDesc* pMD,
     _In_opt_ Thread* currentThread)
 {
-    _ASSERTE(pMD->HasNativeCallableAttribute());
+    _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
     PCODE pbRetVal = NULL;
 
@@ -1835,7 +1835,7 @@ static PCODE PreStubWorker_Preemptive(
     MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
 
     // No GC frame is needed here since there should be no OBJECTREFs involved
-    // in this call due to NativeCallableAttribute semantics.
+    // in this call due to UnmanagedCallersOnlyAttribute semantics.
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;

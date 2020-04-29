@@ -1202,6 +1202,70 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
             }
         }
 
+        [Fact]
+        public static void BuildChainForCertificateWithMD5Signature()
+        {
+            byte[] issuerCert = Convert.FromBase64String(@"
+MIIDgzCCAmsCFGTFpNWP/ick4s4VCF1MafVWpWr+MA0GCSqGSIb3DQEBCwUAMH0x
+CzAJBgNVBAYTAlVTMR0wGwYDVQQIDBREaXN0cmljdCBvZiBDb2x1bWJpYTETMBEG
+A1UEBwwKV2FzaGluZ3RvbjEQMA4GA1UECgwHVGVzdCBDQTEUMBIGA1UECwwLRGV2
+ZWxvcG1lbnQxEjAQBgNVBAMMCVRlc3QgUm9vdDAgFw0yMDA0MjgwMDQwNDZaGA8y
+MTIwMDQwNDAwNDA0NlowfTELMAkGA1UEBhMCVVMxHTAbBgNVBAgMFERpc3RyaWN0
+IG9mIENvbHVtYmlhMRMwEQYDVQQHDApXYXNoaW5ndG9uMRAwDgYDVQQKDAdUZXN0
+IENBMRQwEgYDVQQLDAtEZXZlbG9wbWVudDESMBAGA1UEAwwJVGVzdCBSb290MIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsUBPPdECxj8DWbmjkhtnjxjd
+LZluHyRpb0+favXLuXHeFtTy/92wuHUSHTr45TGKDxI0qevMLaNqEiy9yBkjNPTz
+ctjZTHwbOhxuGEz3Mv2n3IJ7XoIPcn2ZQbhEcTDI/FeF06B+OQKNLigYMHR+L/qd
+KlNBpaUaGG0FNpZ0zGJl1n+CizECWOh3PYaVLKmIS9RjEmNmOMqP737u8W6d3sRZ
+vb6etsNKRmwRjpWUdk4/LzjSJSiNbIQv5c/cGSv6sXFKDixXxIugwreQ/F/JwJ3/
+x2xTIJt0nHSKbK8zVKIGkSmZ3+bdeve889Mjwu0kN7EW+labAuf8VwzQ0c9qUQID
+AQABMA0GCSqGSIb3DQEBCwUAA4IBAQAjGr0pZOxiCa+52S94WvR0WQVNMje3ZL+m
+f4/FyaaDUCqrNv8Tt4m3vYtr8bkT+0uC4rcYx5/9iwLzI6oK1+JddoprAQ+17ZPw
+Cg8ISgn8PuBzvaOQJxpc1nvWvvQpOiYxpsZPWABdE4xl3YAdcuu43x1mtFphn7Aw
+KFTcvxF03RVZPSuZ0k6l1WBRNZFJFoTo2XlhUiLXN4vjxIEDXTCyi/kOzlYu98kZ
+pzDlSoMBAu6CHSBygS51IaimM48qtdQjxZIYVZhFL9QaBa2zQ+qsEF0gz+mG0an9
+0BMCvSA9GZA0VBrQJjQLQLjv0rpZkw0i9FypOicu2Zv9d5UF+IXZ");
+
+            byte[] md5SignedLeafCert = Convert.FromBase64String(@"
+MIIEezCCA2OgAwIBAgIUf1ubwalzwcn4DQ2X5hUbYPqateowDQYJKoZIhvcNAQEE
+BQAwfTELMAkGA1UEBhMCVVMxHTAbBgNVBAgMFERpc3RyaWN0IG9mIENvbHVtYmlh
+MRMwEQYDVQQHDApXYXNoaW5ndG9uMRAwDgYDVQQKDAdUZXN0IENBMRQwEgYDVQQL
+DAtEZXZlbG9wbWVudDESMBAGA1UEAwwJVGVzdCBSb290MCAXDTIwMDQyODAwNDI1
+OFoYDzIxMTYwMjI1MDA0MjU4WjBoMQswCQYDVQQGEwJVUzEdMBsGA1UECAwURGlz
+dHJpY3Qgb2YgQ29sdW1iaWExEDAOBgNVBAoMB1Rlc3QgQ0ExFDASBgNVBAsMC0Rl
+dmVsb3BtZW50MRIwEAYDVQQDDAlUZXN0IExlYWYwggEiMA0GCSqGSIb3DQEBAQUA
+A4IBDwAwggEKAoIBAQDGHz60IeCSpN1qQbdLHO2VSlQbOn2fBV5qGK/82+a4xiZf
+xO0wZ6p9Tb7/rOnF7P7YlaOrY9zc6O5vPxatcv2FcZxwrR8zDnslWUg39WzFnz4M
+8eiiGBpxlbUfcUq8FvqfGQ6MxMAwA0kgUjegaVXN1Zgq+J+HcLSJm8EADNOD46nS
+TkTVXvEMCBmrl17LyYEnxLogUgWve9QMNz0+XpJq90MlygPmxuvUnWduDGnVgrJq
+blkwFqaLIh94vmc8rQJ9WSy+1FRknDoDcy3KveYW3ii9uD9B7YvXdmFVEjGXPcUv
+9aFoRiqq/E8oYUhWJXTr9omyA3iJawcn0Kkl3IT7AgMBAAGjggEEMIIBADAJBgNV
+HRMEAjAAMCwGCWCGSAGG+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZp
+Y2F0ZTAdBgNVHQ4EFgQUE9CCY2wzRzuH3lvEENkvBxDRFx8wgaUGA1UdIwSBnTCB
+mqGBgaR/MH0xCzAJBgNVBAYTAlVTMR0wGwYDVQQIDBREaXN0cmljdCBvZiBDb2x1
+bWJpYTETMBEGA1UEBwwKV2FzaGluZ3RvbjEQMA4GA1UECgwHVGVzdCBDQTEUMBIG
+A1UECwwLRGV2ZWxvcG1lbnQxEjAQBgNVBAMMCVRlc3QgUm9vdIIUZMWk1Y/+JyTi
+zhUIXUxp9Valav4wDQYJKoZIhvcNAQEEBQADggEBAGbrB50Gf9FQ1lTbtKQBlrpF
+M01/mHvqDioqjP6hcvDRMvxWcnX8kIq7Idb2uv1fByBPQdBTH2yzGc1adCXtBqrb
+ueIjvYVDoXZMqRa7vZjaMA+8szK9lgm2dzSfa3xFKCIT7Twfq6FKGJ7o4TRbopmr
+3MsjTMLjfGUnKdxtcYb/FGxB4NRdIyCaaRgtYOIFkOGgA3UTEAJuOAqwY8RdQywR
+lHBlkA0wrbydD3FzxYHUJgx0HGO6CcyAzXJLhZVbuBW4expq4Qhi0jDV4d8Otskv
+LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
+
+            using (X509Certificate2 issuer = new X509Certificate2(issuerCert))
+            using (X509Certificate2 cert = new X509Certificate2(md5SignedLeafCert))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                chain.ChainPolicy.ExtraStore.Add(issuer);
+
+                // Should not throw, don't care about the validity of the chain.
+                chain.Build(cert);
+            }
+        }
+
         internal static X509ChainStatusFlags AllStatusFlags(this X509Chain chain)
         {
             return chain.ChainStatus.Aggregate(

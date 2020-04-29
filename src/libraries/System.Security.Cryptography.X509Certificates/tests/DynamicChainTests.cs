@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
@@ -278,6 +279,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.False(chain.Build(endEntityCert));
                 Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
+            }
+        }
+
+        [Fact]
+        public static void TestLeafCertificateWithUnknownCriticalExtension()
+        {
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest certReq = new CertificateRequest(
+                    new X500DistinguishedName("CN=Cert"),
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                const string PrecertificatePoisonExtensionOid = "1.3.6.1.4.1.11129.2.4.3";
+                certReq.CertificateExtensions.Add(new X509Extension(
+                    new AsnEncodedData(
+                        new Oid(PrecertificatePoisonExtensionOid),
+                        new byte[] { 5, 0 }),
+                    critical: true));
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+
+                using (X509Certificate2 cert = certReq.CreateSelfSigned(notBefore, notAfter))
+                using (ChainHolder holder = new ChainHolder())
+                {
+                    X509Chain chain = holder.Chain;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    Assert.False(chain.Build(cert));
+
+                    X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
+                    const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
+                    X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
+                    Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
+                }
             }
         }
 

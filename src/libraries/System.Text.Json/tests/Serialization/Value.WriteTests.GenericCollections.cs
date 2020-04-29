@@ -187,10 +187,10 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
 
-            GenericICollectionWrapper<StringICollectionWrapper> input2 = new GenericICollectionWrapper<StringICollectionWrapper>
+            GenericICollectionWrapper<GenericICollectionWrapper<string>> input2 = new GenericICollectionWrapper<GenericICollectionWrapper<string>>
             {
-                new StringICollectionWrapper() { "1", "2" },
-                new StringICollectionWrapper() { "3", "4" }
+                new GenericICollectionWrapper<string>() { "1", "2" },
+                new GenericICollectionWrapper<string>() { "3", "4" }
             };
 
             json = JsonSerializer.Serialize(input2);
@@ -242,10 +242,11 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
 
-            GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper> input2 = new GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper>(new List<StringIReadOnlyCollectionWrapper>
+            GenericIReadOnlyCollectionWrapper<WrapperForIReadOnlyCollectionOfT<string>> input2 =
+                new GenericIReadOnlyCollectionWrapper<WrapperForIReadOnlyCollectionOfT<string>>(new List<WrapperForIReadOnlyCollectionOfT<string>>
             {
-                new StringIReadOnlyCollectionWrapper(new List<string> { "1", "2" }),
-                new StringIReadOnlyCollectionWrapper(new List<string> { "3", "4" })
+                new WrapperForIReadOnlyCollectionOfT<string>(new List<string> { "1", "2" }),
+                new WrapperForIReadOnlyCollectionOfT<string>(new List<string> { "3", "4" })
             });
 
             json = JsonSerializer.Serialize(input2);

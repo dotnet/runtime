@@ -823,8 +823,11 @@ namespace System.Xml
                     }
                     else
                     {
-                        // Write text to TextWriter
-                        writer.Write(bufChars, 1, bufPos - 1);
+                        if (bufPos - 1 > 0)
+                        {
+                            // Write text to TextWriter
+                            writer.Write(bufChars, 1, bufPos - 1);
+                        }
                     }
                 }
             }

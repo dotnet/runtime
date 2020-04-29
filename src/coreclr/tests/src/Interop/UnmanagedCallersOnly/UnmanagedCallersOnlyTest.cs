@@ -13,15 +13,15 @@ using TestLibrary;
 
 public class Program
 {
-    public static class NativeCallableDll
+    public static class UnmanagedCallersOnlyDll
     {
-        [DllImport(nameof(NativeCallableDll))]
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProc(IntPtr callbackProc, int n);
 
-        [DllImport(nameof(NativeCallableDll))]
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProcOnNewThread(IntPtr callbackProc, int n);
 
-        [DllImport(nameof(NativeCallableDll))]
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         // Returns -1 if exception was throw and caught.
         public static extern int CallManagedProcCatchException(IntPtr callbackProc, int n);
     }
@@ -33,22 +33,22 @@ public class Program
     {
         try
         {
-            TestNativeCallableValid();
-            TestNativeCallableValid_OnNewNativeThread();
-            TestNativeCallableValid_PrepareMethod();
+            TestUnmanagedCallersOnlyValid();
+            TestUnmanagedCallersOnlyValid_OnNewNativeThread();
+            TestUnmanagedCallersOnlyValid_PrepareMethod();
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
             NegativeTest_NonInstantiatedGenericArguments();
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
-            TestNativeCallableViaUnmanagedCalli();
+            TestUnmanagedCallersOnlyViaUnmanagedCalli();
 
             // Exception handling is only supported on Windows.
             if (TestLibrary.Utilities.IsWindows)
             {
-                TestNativeCallableValid_ThrowException();
-                TestNativeCallableViaUnmanagedCalli_ThrowException();
+                TestUnmanagedCallersOnlyValid_ThrowException();
+                TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
             }
 
             if (args.Length != 0 && args[0].Equals("calli"))
@@ -65,7 +65,7 @@ public class Program
         return 100;
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static int ManagedDoubleCallback(int n)
     {
         return DoubleImpl(n);
@@ -76,12 +76,12 @@ public class Program
         return 2 * n;
     }
 
-    public static void TestNativeCallableValid()
+    public static void TestUnmanagedCallersOnlyValid()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableValid)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid)}...");
 
         /*
-           void NativeCallable()
+           void UnmanagedCallersOnly()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -90,13 +90,13 @@ public class Program
 
                 IL_0008:  ldloc.0
                 IL_0009:  ldc.i4     <n> local
-                IL_000e:  call       bool NativeCallableDll::CallManagedProc(native int, int)
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProc(native int, int)
 
                 IL_0013:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallable", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnly", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -107,20 +107,20 @@ public class Program
 
         int n = 12345;
         il.Emit(OpCodes.Ldc_I4, n);
-        il.Emit(OpCodes.Call, typeof(NativeCallableDll).GetMethod("CallManagedProc"));
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProc"));
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        var testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         int expected = DoubleImpl(n);
         Assert.AreEqual(expected, testNativeMethod());
     }
 
-    public static void TestNativeCallableValid_OnNewNativeThread()
+    public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableValid_OnNewNativeThread)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_OnNewNativeThread)}...");
 
         /*
-           void NativeCallableOnNewNativeThread()
+           void UnmanagedCallersOnlyOnNewNativeThread()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -129,13 +129,13 @@ public class Program
 
                 IL_0008:  ldloc.0
                 IL_0009:  ldc.i4     <n> local
-                IL_000e:  call       bool NativeCallableDll::CallManagedProcOnNewThread(native int, int)
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProcOnNewThread(native int, int)
 
                 IL_0013:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableOnNewNativeThread", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnlyOnNewNativeThread", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -146,27 +146,27 @@ public class Program
 
         int n = 12345;
         il.Emit(OpCodes.Ldc_I4, n);
-        il.Emit(OpCodes.Call, typeof(NativeCallableDll).GetMethod("CallManagedProcOnNewThread"));
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProcOnNewThread"));
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        var testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         int expected = DoubleImpl(n);
         Assert.AreEqual(expected, testNativeMethod());
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static int ManagedCallback_Prepared(int n)
     {
         return DoubleImpl(n);
     }
 
-    // This test is about the interaction between Tiered Compilation and the NativeCallableAttribute.
-    public static void TestNativeCallableValid_PrepareMethod()
+    // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
+    public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableValid_PrepareMethod)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_PrepareMethod)}...");
 
         /*
-           void NativeCallableOnNewNativeThread()
+           void UnmanagedCallersOnlyOnNewNativeThread()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -175,13 +175,13 @@ public class Program
 
                 IL_0008:  ldloc.0
                 IL_0009:  ldc.i4     <n> local
-                IL_000e:  call       bool NativeCallableDll::CallManagedProcOnNewThread(native int, int)
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProcOnNewThread(native int, int)
 
                 IL_0013:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableValid_PrepareMethod", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnlyValid_PrepareMethod", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -196,9 +196,9 @@ public class Program
 
         int n = 12345;
         il.Emit(OpCodes.Ldc_I4, n);
-        il.Emit(OpCodes.Call, typeof(NativeCallableDll).GetMethod("CallManagedProcOnNewThread"));
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProcOnNewThread"));
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        var testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         // Call enough to attempt to trigger Tiered Compilation from a new thread.
         for (int i = 0; i < 100; ++i)
@@ -209,18 +209,18 @@ public class Program
 
     private const int CallbackThrowsErrorCode = 27;
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static int CallbackThrows(int val)
     {
         throw new Exception() { HResult = CallbackThrowsErrorCode };
     }
 
-    public static void TestNativeCallableValid_ThrowException()
+    public static void TestUnmanagedCallersOnlyValid_ThrowException()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableValid_ThrowException)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_ThrowException)}...");
 
         /*
-           void NativeCallableValid_ThrowException()
+           void UnmanagedCallersOnlyValid_ThrowException()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -229,13 +229,13 @@ public class Program
 
                 IL_0008:  ldloc.0
                 IL_0009:  ldc.i4     <n> local
-                IL_000e:  call       bool NativeCallableDll::CallManagedProcCatchException(native int, int)
+                IL_000e:  call       bool UnmanagedCallersOnlyDll::CallManagedProcCatchException(native int, int)
 
                 IL_0013:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableValid_ThrowException", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnlyValid_ThrowException", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -246,9 +246,9 @@ public class Program
 
         int n = 12345;
         il.Emit(OpCodes.Ldc_I4, n);
-        il.Emit(OpCodes.Call, typeof(NativeCallableDll).GetMethod("CallManagedProcCatchException"));
+        il.Emit(OpCodes.Call, typeof(UnmanagedCallersOnlyDll).GetMethod("CallManagedProcCatchException"));
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        var testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         // Method should have thrown and caught an exception.
         Assert.AreEqual(-1, testNativeMethod());
@@ -269,10 +269,10 @@ public class Program
         }
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public void CallbackNonStatic()
     {
-        Assert.Fail($"Instance functions with attribute {nameof(NativeCallableAttribute)} are invalid");
+        Assert.Fail($"Instance functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} are invalid");
     }
 
     public static void NegativeTest_NonStaticMethod()
@@ -280,7 +280,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_NonStaticMethod)}...");
 
         /*
-           void TestNativeCallableNonStatic()
+           void TestUnmanagedCallersOnlyNonStatic()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -289,8 +289,8 @@ public class Program
                 IL_0008:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableNonStatic", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonStatic", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -299,16 +299,16 @@ public class Program
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static void CallbackMethodNonBlittable(bool x1)
     {
-        Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} cannot have non-blittable arguments");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
     }
 
     public static void NegativeTest_NonBlittable()
@@ -316,7 +316,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_NonBlittable)}...");
 
         /*
-           void TestNativeCallableNonBlittable()
+           void TestUnmanagedCallersOnlyNonBlittable()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -325,8 +325,8 @@ public class Program
                 IL_0008:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableNonBlittable", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonBlittable", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -335,16 +335,16 @@ public class Program
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static void CallbackMethodGeneric<T>(T arg)
     {
-        Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} cannot have generic arguments");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have generic arguments");
     }
 
     public static void NegativeTest_NonInstantiatedGenericArguments()
@@ -352,7 +352,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_NonInstantiatedGenericArguments)}...");
 
         /*
-           void TestNativeCallableNonInstGenericArguments()
+           void TestUnmanagedCallersOnlyNonInstGenericArguments()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -361,8 +361,8 @@ public class Program
                 IL_0008:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableNonInstGenericArguments", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyNonInstGenericArguments", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -371,7 +371,7 @@ public class Program
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
@@ -382,7 +382,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_InstantiatedGenericArguments)}...");
 
         /*
-           void TestNativeCallableInstGenericArguments()
+           void TestUnmanagedCallersOnlyInstGenericArguments()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -391,8 +391,8 @@ public class Program
                 IL_0008:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableInstGenericArguments", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyInstGenericArguments", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -401,7 +401,7 @@ public class Program
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
@@ -409,10 +409,10 @@ public class Program
 
     public class GenericClass<T>
     {
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         public static void CallbackMethod(int n)
         {
-            Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} within a generic type are invalid");
+            Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} within a generic type are invalid");
         }
     }
 
@@ -421,7 +421,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_FromInstantiatedGenericClass)}...");
 
         /*
-           void TestNativeCallableInstGenericType()
+           void TestUnmanagedCallersOnlyInstGenericType()
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
@@ -430,8 +430,8 @@ public class Program
                 IL_0008:  ret
              }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableInstGenericClass", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyInstGenericClass", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -440,16 +440,16 @@ public class Program
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
-        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        var testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     public static void CallbackViaCalli(int val)
     {
-        Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} cannot be called via calli");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
     }
 
     public static void NegativeTest_ViaCalli()
@@ -457,7 +457,7 @@ public class Program
         Console.WriteLine($"{nameof(NegativeTest_ViaCalli)} function via calli instruction. The CLR _will_ crash.");
 
         /*
-           void TestNativeCallableViaCalli()
+           void TestUnmanagedCallersOnlyViaCalli()
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
@@ -472,8 +472,8 @@ public class Program
                 IL_0014:  ret
            }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableViaCalli", null, null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("TestUnmanagedCallersOnlyViaCalli", null, null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -488,7 +488,7 @@ public class Program
         il.Emit(OpCodes.Nop);
         il.Emit(OpCodes.Ret);
 
-        NativeMethodInvoker testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+        NativeMethodInvoker testNativeMethod = (NativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(NativeMethodInvoker));
 
         // It is not possible to catch the resulting ExecutionEngineException exception.
         // To observe the crashing behavior set a breakpoint in the ReversePInvokeBadTransition() function
@@ -496,18 +496,18 @@ public class Program
         testNativeMethod();
     }
 
-    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
     public static int CallbackViaUnmanagedCalli(int val)
     {
         return DoubleImpl(val);
     }
 
-    public static void TestNativeCallableViaUnmanagedCalli()
+    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableViaUnmanagedCalli)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli)}...");
 
         /*
-           void NativeCallableViaCalli()
+           void UnmanagedCallersOnlyViaCalli()
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
@@ -521,8 +521,8 @@ public class Program
                 IL_0014:  ret
            }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableViaUnmanagedCalli", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnlyViaUnmanagedCalli", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -538,24 +538,24 @@ public class Program
 
         il.Emit(OpCodes.Ret);
 
-        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         int expected = DoubleImpl(n);
         Assert.AreEqual(expected, testNativeMethod());
     }
 
-    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+    [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
     public static int CallbackViaUnmanagedCalliThrows(int val)
     {
         throw new Exception() { HResult = CallbackThrowsErrorCode };
     }
 
-    public static void TestNativeCallableViaUnmanagedCalli_ThrowException()
+    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException()
     {
-        Console.WriteLine($"Running {nameof(TestNativeCallableViaUnmanagedCalli_ThrowException)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException)}...");
 
         /*
-           void NativeCallableViaUnmanagedCalli_ThrowException()
+           void UnmanagedCallersOnlyViaUnmanagedCalli_ThrowException()
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
@@ -569,8 +569,8 @@ public class Program
                 IL_0014:  ret
            }
         */
-        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableViaUnmanagedCalli_ThrowException", typeof(int), null, typeof(Program).Module);
-        ILGenerator il = testNativeCallable.GetILGenerator();
+        DynamicMethod testUnmanagedCallersOnly = new DynamicMethod("UnmanagedCallersOnlyViaUnmanagedCalli_ThrowException", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testUnmanagedCallersOnly.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
 
@@ -586,7 +586,7 @@ public class Program
 
         il.Emit(OpCodes.Ret);
 
-        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testUnmanagedCallersOnly.CreateDelegate(typeof(IntNativeMethodInvoker));
 
         try
         {

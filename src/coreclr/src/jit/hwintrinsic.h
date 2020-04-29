@@ -659,9 +659,11 @@ private:
         op1 = node->gtGetOp1();
         op2 = node->gtGetOp2();
 
-        assert(op1 != nullptr);
-
-        if (op1->OperIsList())
+        if (op1 == nullptr)
+        {
+            numOperands = 0;
+        }
+        else if (op1->OperIsList())
         {
             assert(op2 == nullptr);
 

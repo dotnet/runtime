@@ -47,7 +47,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         public static int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                             IntPtr typeNameNative,
                                                             IntPtr methodNameNative,

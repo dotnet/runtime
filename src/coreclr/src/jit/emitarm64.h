@@ -438,6 +438,11 @@ static emitAttr optGetElemsize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'widen-arrangement' specified by the vector register arrangement
 static insOpts optWidenElemsize(insOpts arrangement);
 
+//  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
+//  arrangement
+//  of Long Pairwise instructions. Note that destination vector elements twice as long as the source vector elements.
+static insOpts optWidenDstArrangement(insOpts srcArrangement);
+
 //  For the given 'conversion' returns the 'dstsize' specified by the conversion option
 static emitAttr optGetDstsize(insOpts conversion);
 

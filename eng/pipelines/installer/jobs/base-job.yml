@@ -431,8 +431,20 @@ jobs:
         displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage before Build
+
   - script: $(BaseJobBuildCommand)
     displayName: Build
+
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - script: |
+        du -sh $(Build.SourcesDirectory)/*
+        df -h
+      displayName: Disk Usage after Build
 
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
