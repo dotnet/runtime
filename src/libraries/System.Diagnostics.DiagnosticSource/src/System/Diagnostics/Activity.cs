@@ -83,7 +83,7 @@ namespace System.Diagnostics
         private string? _displayName;
 
         /// <summary>
-        /// Gets or sets the relationship between the Activity, its parents, and its children in a Trace.
+        /// Gets the relationship between the Activity, its parents, and its children in a Trace.
         /// </summary>
         public ActivityKind Kind { get; private set; } = ActivityKind.Internal;
 
@@ -889,14 +889,26 @@ namespace System.Diagnostics
             else
                 activity._id = activity.GenerateHierarchicalId();
 
-            if (links != null && links.Any())
+            if (links != null)
             {
-                activity._links = new LinkedList<ActivityLink>(links);
+                using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        activity._links = new LinkedList<ActivityLink>(enumerator);
+                    }
+                }
             }
 
-            if (tags != null && tags.Any())
+            if (tags != null)
             {
-                activity._tags = new LinkedList<KeyValuePair<string, string?>>(tags);
+                using (IEnumerator<KeyValuePair<string, string?>> enumerator = tags.GetEnumerator())
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        activity._tags = new LinkedList<KeyValuePair<string, string?>>(enumerator);
+                    }
+                }
             }
 
             activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.DateTime;
@@ -1145,22 +1157,21 @@ namespace System.Diagnostics
             public LinkedListNode<T>? Next;
         }
 
+        // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
         private class LinkedList<T>
         {
             private LinkedListNode<T> _first;
-            private LinkedListNode<T> _last;
+            private volatile LinkedListNode<T> _last;
 
             public LinkedList(T firstValue) => _last =_first = new LinkedListNode<T>(firstValue);
 
-            public LinkedList(IEnumerable<T> list)
+            public LinkedList(IEnumerator<T> e)
             {
-                IEnumerator<T> enumerator = list.GetEnumerator();
-                Debug.Assert(enumerator.MoveNext());
-                _last =_first = new LinkedListNode<T>(enumerator.Current);
+                _last =_first = new LinkedListNode<T>(e.Current);
 
-                while (enumerator.MoveNext())
+                while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<T>(enumerator.Current);
+                    _last.Next = new LinkedListNode<T>(e.Current);
                     _last = _last.Next;
                 }
             }
@@ -1170,14 +1181,14 @@ namespace System.Diagnostics
             public void Add(T value)
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-                LinkedListNode<T> last;
+                SpinWait sw = default;
 
-                do
+                while (Interlocked.CompareExchange(ref _last.Next, newNode, null) != null)
                 {
-                    last = _last;
-                } while (!object.ReferenceEquals(Interlocked.CompareExchange(ref _last, newNode, last), last));
+                    sw.SpinOnce();
+                }
 
-                last.Next = newNode;
+                _last = newNode;
             }
 
             public IEnumerable<T> Enumerate()

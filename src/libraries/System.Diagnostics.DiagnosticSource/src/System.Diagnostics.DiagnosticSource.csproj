@@ -53,7 +53,6 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
-    <Reference Include="System.Linq" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
@@ -85,6 +84,5 @@
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
-    <Reference Include="System.Core" />
   </ItemGroup>
 </Project>
