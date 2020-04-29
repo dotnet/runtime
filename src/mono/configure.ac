@@ -6812,8 +6812,6 @@ if test x$target_osx = xyes; then
 		ICU_SHIM_PATH='$(top_srcdir)'/../libraries/Native/Unix/System.Globalization.Native
 	fi
 	CPPFLAGS=$ORIG_CPPFLAGS
-elif test x$host_win32 = xyes; then
-		echo "TODO"
 elif test x$host_linux = xyes; then
 	ORIG_CPPFLAGS=$CPPFLAGS
 	CPPFLAGS="$CPPFLAGS -I/usr/local/opt/icu4c/include  -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"		
