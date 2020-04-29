@@ -1297,18 +1297,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_LAYOUT_DEPENDS_ON_OTHER_MODULES;
     }
-
-    inline BOOL HasLayoutDependsOnOtherVersionBubbles()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_LAYOUT_DEPENDS_ON_OTHER_VERSIONBUBBLE;
-    }
-
-    inline void SetHasLayoutDependsOnOtherVersionBubbles()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= VMFLAG_LAYOUT_DEPENDS_ON_OTHER_VERSIONBUBBLE;
-    }
 #endif
 
     // Is this delegate? Returns false for System.Delegate and System.MulticastDelegate.
@@ -1713,10 +1701,7 @@ public:
 #endif
         VMFLAG_DELEGATE                        = 0x00000002,
 
-#ifdef FEATURE_READYTORUN
-        VMFLAG_LAYOUT_DEPENDS_ON_OTHER_VERSIONBUBBLE = 0x0000004,
-#endif
-        // VMFLAG_UNUSED                       = 0x00000018,
+        // VMFLAG_UNUSED                       = 0x0000001c,
 
         VMFLAG_FIXED_ADDRESS_VT_STATICS        = 0x00000020, // Value type Statics in this class will be pinned
         VMFLAG_HASLAYOUT                       = 0x00000040,

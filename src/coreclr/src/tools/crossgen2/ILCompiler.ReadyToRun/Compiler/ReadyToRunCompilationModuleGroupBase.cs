@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Internal.TypeSystem;
@@ -21,10 +22,11 @@ namespace ILCompiler
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
         private readonly bool _isCompositeBuildMode;
         private readonly bool _isInputBubble;
-        private readonly ConcurrentDictionary<TypeDesc, bool> _layoutDependsOnOtherModules = new ConcurrentDictionary<TypeDesc, bool>();
-        private readonly ConcurrentDictionary<TypeDesc, bool> _layoutDependsOnOtherVersionBubbles = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, CompilationUnitSet> _layoutCompilationUnits = new ConcurrentDictionary<TypeDesc, CompilationUnitSet>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly Dictionary<ModuleDesc, int> _moduleCompilationUnits = new Dictionary<ModuleDesc, int>();
+        private int _maxCompilationUnitsKnown = 3;
 
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
@@ -70,17 +72,135 @@ namespace ILCompiler
             return true;
         }
 
-        public virtual bool TypeLayoutDependsOnOtherModules(TypeDesc type)
+        public CompilationUnitSet TypeLayoutCompilationUnits(TypeDesc type)
         {
-            return _layoutDependsOnOtherModules.GetOrAdd(type, TypeLayoutDependsOnOtherModulesUncached);
+            return _layoutCompilationUnits.GetOrAdd(type, TypeLayoutCompilationUnitsUncached);
         }
 
-        public virtual bool TypeLayoutDependsOnOtherVersionBubbles(TypeDesc type)
+        // Compilation Unit Index is the compilation unit of a given module. If the compilation unit
+        // is unknown the module will be given an independent index from other modules, but 
+        // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices 
+        // are >= 2, to allow for 0 to be a sentinel value.
+        private int ModuleToCompilationUnitIndex(ModuleDesc nonEcmaModule)
         {
-            return _layoutDependsOnOtherVersionBubbles.GetOrAdd(type, TypeLayoutDependsOnOtherVersionBubblesUncached);
+            EcmaModule module = (EcmaModule)nonEcmaModule;
+            if (IsModuleInCompilationGroup(module))
+                return 2;
+
+            if (!VersionsWithModule(module))
+                return 3;
+            
+            lock (_moduleCompilationUnits)
+            {
+                if (!_moduleCompilationUnits.TryGetValue(module, out int compilationUnit))
+                {
+                    compilationUnit = ++_maxCompilationUnitsKnown;
+                    _moduleCompilationUnits.Add(module, compilationUnit);
+                }
+
+                return compilationUnit;
+            }
         }
 
-        private bool TypeLayoutDependsOnOtherModulesUncached(TypeDesc type)
+        // Indicate 
+        private bool IsCompilationUnitIndexExact(int compilationUnitIndex)
+        {
+            if (compilationUnitIndex != 2)
+                return false;
+            else
+                return true;
+        }
+
+        public struct CompilationUnitSet
+        {
+            private BitArray _bits;
+
+            public CompilationUnitSet(ReadyToRunCompilationModuleGroupBase compilationGroup, ModuleDesc module)
+            {
+                int compilationIndex = compilationGroup.ModuleToCompilationUnitIndex(module);
+                _bits = new BitArray(compilationIndex + 1);
+                _bits.Set(compilationIndex, true);
+            }
+
+            public bool HasMultipleInexactCompilationUnits
+            {
+                get
+                {
+                    if (_bits == null)
+                        return false;
+
+                    return _bits[0];
+                }
+            }
+
+            public bool HasMultipleCompilationUnits
+            {
+                get
+                {
+                    if (_bits == null)
+                        return false;
+                        
+                    return _bits[1];
+                }
+            }
+
+            public void UnionWith(ReadyToRunCompilationModuleGroupBase compilationGroup, CompilationUnitSet other)
+            {
+                if (other._bits == null)
+                    return;
+
+                if (HasMultipleInexactCompilationUnits)
+                    return;
+
+                if (other.HasMultipleInexactCompilationUnits)
+                {
+                    _bits[1] = true;
+                    return;
+                }
+
+                if (other._bits.Length > _bits.Length)
+                    _bits.Length = other._bits.Length;
+                
+                if (other._bits.Length < _bits.Length)
+                {
+                    for (int i = 0; i < other._bits.Length; i++)
+                    {
+                        if (other._bits[i])
+                            _bits[i] = true;
+                    }
+                }
+                else
+                {
+                    _bits.Or(other._bits);
+                }
+
+                int inexactCompilationUnitCount = 0;
+                int compilationUnitCount = 0;
+                for (int i = 2; i < _bits.Length; i++)
+                {
+                    if (_bits[i])
+                    {
+                        if (!compilationGroup.IsCompilationUnitIndexExact(i))
+                            inexactCompilationUnitCount++;
+
+                        compilationUnitCount++;
+                    }
+                    if (inexactCompilationUnitCount == 2)
+                    {
+                        // Multiple compilation units found
+                        _bits[1] = true;
+                    }
+                    if (inexactCompilationUnitCount > 1)
+                    {
+                        // Multiple inexact compilation units involved
+                        _bits[0] = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private CompilationUnitSet TypeLayoutCompilationUnitsUncached(TypeDesc type)
         {
             if (type.IsObject ||
                 type.IsPrimitive ||
@@ -89,15 +209,16 @@ namespace ILCompiler
                 type.IsFunctionPointer ||
                 type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
-                return false;
+                return default(CompilationUnitSet);
             }
 
             var defType = (MetadataType)type;
 
-            if (type.BaseType != null)
+            CompilationUnitSet moduleDependencySet = new CompilationUnitSet(this, defType.Module);
+
+            if ((type.BaseType != null) && !type.BaseType.IsObject)
             {
-                if (CompareTypeLayoutForModuleCheck((MetadataType)type.BaseType))
-                    return true;
+                moduleDependencySet.UnionWith(this, TypeLayoutCompilationUnits(type.BaseType));
             }
 
             foreach (FieldDesc field in defType.GetFields())
@@ -110,141 +231,27 @@ namespace ILCompiler
                 if (fieldType.IsValueType &&
                     !fieldType.IsPrimitive)
                 {
-                    if (CompareTypeLayoutForModuleCheck((MetadataType)fieldType))
-                    {
-                        return true;
-                    }
+                    moduleDependencySet.UnionWith(this, TypeLayoutCompilationUnits((MetadataType)fieldType));
                 }
             }
 
-            return false;
-
-            bool CompareTypeLayoutForModuleCheck(MetadataType otherType)
-            {
-                if (otherType.Module != defType.Module ||
-                    TypeLayoutDependsOnOtherModules(otherType))
-                {
-                    return true;
-                }
-                return false;
-            }
+            return moduleDependencySet;
         }
 
-        private bool ModuleInMatchingVersionBubble(ModuleDesc module1, ModuleDesc module2)
+        private bool ModuleMatchesCompilationUnitIndex(ModuleDesc module1, ModuleDesc module2)
         {
-            return VersionsWithModule(module1) == VersionsWithModule(module2);
+            return ModuleToCompilationUnitIndex(module1) == ModuleToCompilationUnitIndex(module2);
         }
 
         public bool NeedsAlignmentBetweenBaseTypeAndDerived(MetadataType baseType, MetadataType derivedType)
         {
-
-            if (!ModuleInMatchingVersionBubble(derivedType.Module, baseType.Module) ||
-                TypeLayoutDependsOnOtherVersionBubbles(baseType) ||
-                LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(baseType))
+            if (!ModuleMatchesCompilationUnitIndex(derivedType.Module, baseType.Module) ||
+                TypeLayoutCompilationUnits(baseType).HasMultipleCompilationUnits)
             {
                 return true;
             }
 
             return false;
-
-            bool LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(MetadataType type)
-            {
-                // Types without instantiations  do not depend on their type variables for layout
-                if (!type.HasInstantiation)
-                    return false;
-                
-                // Types that are not instantiated do not depend on their type variables for layout.
-                if (type.IsTypeDefinition)
-                    return false;
-
-                // If no part of the layout of this type depends on other modules, then there is no need
-                // to check for a type variable caused case
-                if (!TypeLayoutDependsOnOtherModules(type))
-                    return false;
-
-                foreach (var field in type.GetFields())
-                {
-                    var fieldType = field.FieldType;
-
-                    // non valuetypes are uninteresting for this check
-                    if (!fieldType.IsValueType)
-                        continue;
-
-                    // As primitive types are considered part of all version bubbles, they are also unconsidered
-                    if (fieldType.IsPrimitive)
-                        continue;
-
-                    var fieldTypeOnOpenType = field.GetTypicalFieldDefinition().FieldType;
-
-                    if (fieldType == fieldTypeOnOpenType)
-                    {
-                        // If the field type is the same, it isn't dependent on a type variable
-                        continue;
-                    }
-
-                    if (TypeLayoutDependsOnOtherModules(fieldType) || 
-                        ((MetadataType)fieldType).Module != type.Module)
-                    {
-                        // The layout of this field depends on other modules.
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        private bool TypeLayoutDependsOnOtherVersionBubblesUncached(TypeDesc type)
-        {
-            if (type.IsObject ||
-                type.IsPrimitive ||
-                type.IsEnum ||
-                type.IsPointer ||
-                type.IsFunctionPointer ||
-                type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-            {
-                return false;
-            }
-
-            var defType = (MetadataType)type;
-
-            if ((type.BaseType != null) && !type.BaseType.IsObject)
-            {
-                if (CompareTypeLayoutForVersionBubble((MetadataType)type.BaseType))
-                    return true;
-
-                if (NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: defType))
-                    return true;
-            }
-
-            foreach (FieldDesc field in defType.GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-
-                TypeDesc fieldType = field.FieldType;
-
-                if (fieldType.IsValueType &&
-                    !fieldType.IsPrimitive)
-                {
-                    if (CompareTypeLayoutForVersionBubble((MetadataType)fieldType))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-
-            bool CompareTypeLayoutForVersionBubble(MetadataType otherType)
-            {
-                if (!ModuleInMatchingVersionBubble(otherType.Module, defType.Module) ||
-                    TypeLayoutDependsOnOtherVersionBubbles(otherType))
-                {
-                    return true;
-                }
-                return false;
-            }
         }
 
         public sealed override bool VersionsWithModule(ModuleDesc module)

@@ -11227,94 +11227,15 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 
 #ifdef FEATURE_READYTORUN
 
-bool ModuleInMatchingVersionBubble(Module *pModule, Module *pSecondModule)
+bool ModulesAreDistributedAsAnIndivisibleUnit(Module* module1, Module* module2)
 {
-    STANDARD_VM_CONTRACT;
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation() &&
-        !pSecondModule->IsInCurrentVersionBubble())
-    {
-        return false;
-    }
-    else
-#else
-    {
-        if (!pModule->GetFile()->IsILImageReadyToRun())
-        {
-            // Non-R2R modules claim to be in the same version bubble as ALL other modules
-            return true;
-        }
-        if (!pModule->IsInSameVersionBubble(pSecondModule))
-        {
-            return false;
-        }
-    }
-#endif
-    return true;
-}
-
-bool LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(MethodTable *pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Types without instantiations  do not depend on their type variables for layout
-    if (!pMT->HasInstantiation())
-        return false;
+    if (module1 == module2)
+        return true;
     
-    // Types that are not instantiated do not depend on their type variables for layout.
-    if (pMT->IsGenericTypeDefinition())
-        return false;
-
-    // If no part of the layout of this type depends on other modules, then there is no need
-    // to check for a type variable caused case
-    if (!pMT->GetClass()->HasLayoutDependsOnOtherModules())
-        return false;
-
-    MethodTable *pMTTypical = ClassLoader::LoadTypeDefOrRefThrowing(
-            pMT->GetModule(),
-            pMT->GetCl(),
-            ClassLoader::ThrowIfNotFound,
-            ClassLoader::PermitUninstDefOrRef,
-            tdNoTypes,
-            CLASS_LOAD_APPROXPARENTS).AsMethodTable();
-
-    DWORD cParentInstanceFields;
-
-    MethodTable *pParentMT = pMT->GetParentMethodTable();
-    if (pParentMT != NULL)
+    bool nativeImagesIdentical = false;
+    if (module1->GetCompositeNativeImage() != NULL)
     {
-        cParentInstanceFields = pParentMT->GetClass()->GetNumInstanceFields();
-    }
-    else
-    {
-        cParentInstanceFields = 0;
-    }
-
-    DWORD numFields = pMT->GetNumInstanceFields() - cParentInstanceFields;
-    FieldDesc *pStartFieldMT = pMT->GetClass()->GetFieldDescList();
-    FieldDesc *pStartFieldMTTypical = pMTTypical->GetClass()->GetFieldDescList();
-    for (DWORD iField = 0; iField < numFields; iField++)
-    {
-        _ASSERTE(pStartFieldMT[iField].GetMemberDef() == pStartFieldMTTypical[iField].GetMemberDef());
-        if (pStartFieldMT[iField].GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-        {
-            // non valuetypes are uninteresting for this check
-            continue;
-        }
-
-        TypeHandle thField = pStartFieldMT[iField].GetApproxFieldTypeHandleThrowing();
-        // The field type is known to be a MethodTable as the GetFieldType call above returned ELEMENT_TYPE_VALUETYPE
-        MethodTable* pMTField = thField.AsMethodTable();
-        if (pMTField->GetClass()->HasLayoutDependsOnOtherModules() || pMTField->GetModule() != pMT->GetModule())
-        {
-            // The layout of this field depends on other modules. Check to see if the field type is the same
-            // as in the open type, if it isn't, this variation is caused by the valuetype instantiation
-            TypeHandle thTypicalField = pStartFieldMTTypical[iField].GetApproxFieldTypeHandleThrowing();
-            if (thField != thTypicalField)
-            {
-                return true;
-            }
-        }
+        return module1->GetCompositeNativeImage() == module2->GetCompositeNativeImage();
     }
 
     return false;
@@ -11331,37 +11252,18 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
     //
-    // Track whether field layout of this type depend on information outside its containing module and version bubble
+    // Track whether field layout of this type depend on information outside its containing module and compilation unit
     //
     // It is a stronger condition than MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble().
     // It has to remain fixed accross versioning changes in the module dependencies. In particular, it does
     // not take into account NonVersionable attribute. Otherwise, adding NonVersionable attribute to existing
     // type would be ReadyToRun incompatible change.
     //
-    bool dependencyDefinedInOtherModule = (pDependencyMT->GetModule() != GetModule());
-    bool dependsOnOtherModules = dependencyDefinedInOtherModule || pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules();
-
-    // If the dependency itself has dependency outside of its version bubble, this type will clearly also have a dependency 
-    // outside of its version bubble.
-    bool dependsOnOtherVersionBubbles = pDependencyMT->GetClass()->HasLayoutDependsOnOtherVersionBubbles();
-    if (!dependsOnOtherVersionBubbles)
-    {
-        // Now check to see if the dependency itself is defined within the version bubble.
-        // First, if the dependency was defined in the same module as this type, then we know it matches
-        // version bubbles.
-        if (dependencyDefinedInOtherModule)
-        {
-            // But if it doesn't, then check to see if the module that defined the dependency is
-            // in the same version bubble as this type.
-            dependsOnOtherVersionBubbles = !ModuleInMatchingVersionBubble(GetModule(), pDependencyMT->GetModule());
-        }
-    }
+    bool modulesDefinedInSameDistrubutionUnit = ModulesAreDistributedAsAnIndivisibleUnit(pDependencyMT->GetModule(), GetModule());
+    bool dependsOnOtherModules = modulesDefinedInSameDistrubutionUnit || pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules();
 
     if (dependsOnOtherModules)
         GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();
-
-    if (dependsOnOtherVersionBubbles)
-        GetHalfBakedClass()->SetHasLayoutDependsOnOtherVersionBubbles();
 }
 
 BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
@@ -11383,12 +11285,21 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (pParentMT == NULL || pParentMT == g_pObjectClass)
         return FALSE;
 
-    bool needsAlign = false;
-    if (!ModuleInMatchingVersionBubble(GetModule(), pParentMT->GetModule()) ||
-        pParentMT->GetClass()->HasLayoutDependsOnOtherVersionBubbles() ||
-        LayoutDependsOnTypeVariableInstantiationWhichDependsOnOtherModules(pParentMT))
+    // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
+    // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching
+    // ReadyToRun images with and without input bubble enabled.
+    if (!GetModule()->GetFile()->IsILImageReadyToRun())
     {
-        GetHalfBakedClass()->SetHasLayoutDependsOnOtherVersionBubbles();
+        // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
+        if (!IsReadyToRunCompilation())
+            return FALSE;
+    }
+
+    bool needsAlign = false;
+    if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||
+        pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
+    {
+        GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();
         return TRUE;
     }
 

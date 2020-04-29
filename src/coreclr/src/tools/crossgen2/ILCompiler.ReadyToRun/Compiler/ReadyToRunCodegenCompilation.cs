@@ -228,6 +228,7 @@ namespace ILCompiler
         private bool _generateMapFile;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
+        public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -257,6 +258,7 @@ namespace ILCompiler
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
+            CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set
@@ -387,13 +389,31 @@ namespace ILCompiler
             // This method is not expected to be called for value types
             Debug.Assert(!type.IsValueType);
 
-            while (!type.IsObject && type != null)
+            if (type.IsObject)
+                return true;
+
+            if (!IsLayoutFixedInCurrentVersionBubble(type))
             {
-                if (!IsLayoutFixedInCurrentVersionBubble(type))
-                {
+                return false;
+            }
+            
+            type = type.BaseType;
+
+            if (type != null)
+            {
+                // If there are multiple inexact compilation units in the layout of the type, then the exact offset
+                // of a derived given field is unknown as there may or may not be alignment inserted between a type and its base
+                if (CompilationModuleGroup.TypeLayoutCompilationUnits(type).HasMultipleInexactCompilationUnits)
                     return false;
+
+                while (!type.IsObject && type != null)
+                {
+                    if (!IsLayoutFixedInCurrentVersionBubble(type))
+                    {
+                        return false;
+                    }
+                    type = type.BaseType;
                 }
-                type = type.BaseType;
             }
 
             return true;
