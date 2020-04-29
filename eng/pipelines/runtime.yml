@@ -74,6 +74,8 @@ jobs:
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
+      - src/coreclr/tests
+      - src/coreclr/build-test.sh
       exclude:
       - eng/Version.Details.xml
       - '*.md'
