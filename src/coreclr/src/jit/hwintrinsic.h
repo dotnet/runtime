@@ -250,7 +250,7 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-    unsigned               simdSize;
+    int                    simdSize;
     int                    numArgs;
     instruction            ins[10];
     HWIntrinsicCategory    category;
@@ -468,7 +468,7 @@ struct HWIntrinsicInfo
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
     {
         bool succeeded = false;
-        if (lookup(id).simdSize != (unsigned)-1)
+        if (lookup(id).simdSize != -1)
         {
             *pSimdSize = lookup(id).simdSize;
             succeeded  = true;
