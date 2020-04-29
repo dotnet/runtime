@@ -37,9 +37,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</RuntimeRID>
-    <RuntimeRID Condition="'$(RuntimeRID)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</RuntimeRID>
-    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(RuntimeRID)' != ''">$(RuntimeRID.Remove($(RuntimeRID.LastIndexOf('-'))))</RuntimeOS>
+    <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</HostRuntimeIdentifier>
+    <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</HostRuntimeIdentifier>
+    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(HostRuntimeIdentifier)' != ''">$(HostRuntimeIdentifier.Remove($(HostRuntimeIdentifier.LastIndexOf('-'))))</RuntimeOS>
 
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
