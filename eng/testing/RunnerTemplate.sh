@@ -153,10 +153,12 @@ fi
 # ========================= BEGIN Test Execution =============================
 echo ----- start $(date) ===============  To repro directly: ===================================================== 
 echo pushd $EXECUTION_DIR
+echo 'echo "ulimit -i" is `ulimit -i`'
 [[RunCommandsEcho]]
 echo popd
 echo ===========================================================================================================
 pushd $EXECUTION_DIR
+echo ulimit -i is `ulimit -i`
 [[RunCommands]]
 test_exitcode=$?
 popd
