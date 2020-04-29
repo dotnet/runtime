@@ -236,14 +236,6 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfig)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
-
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
@@ -291,6 +283,14 @@ jobs:
       - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
+    # Overwrite coreclr runtime binaries with mono ones
+    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      - script: $(_msbuildCommand)
+                $(Build.SourcesDirectory)/src/mono/mono.proj
+                /t:PatchCoreClrCoreRoot
+                /p:Configuration=$(buildConfig)
+                /p:TargetArchitecture=$(archType)
+        displayName: "Patch dotnet with mono"
 
     # Send tests to Helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
