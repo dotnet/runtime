@@ -1,8 +1,0 @@
-<Project DefaultTargets="Build">
-
-  <Target Name="BuildWasmRuntimes">
-	<Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
-	<Exec Command="make -C $(MonoProjectRoot)wasm all BINDIR=$(ArtifactsBinDir) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration)" IgnoreStandardErrorWarningFormat="true"/>
-  </Target>
-
-</Project>

@@ -8,6 +8,7 @@ EMSDK_PATH?=emsdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)
 OBJDIR?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)
+PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
 
 all: build-native
 
@@ -51,8 +52,8 @@ emsdk_env.sh: | provision-wasm
 MONO_BIN_DIR=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 SYS_NATIVE_DIR=$(BINDIR)/native/netcoreapp5.0-Browser-$(CONFIG)-wasm/
-MONO_LIBS = $(ARTIFACTS_OBJ_DIR)/out/lib/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
-MONO_INCLUDE_DIR=$(ARTIFACTS_OBJ_DIR)/out/include/mono-2.0
+MONO_LIBS = $(MONO_OBJ_DIR)/out/lib/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
+MONO_INCLUDE_DIR=$(MONO_OBJ_DIR)/out/include/mono-2.0
 BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 
@@ -79,8 +80,8 @@ $(BUILDS_OBJ_DIR)/$(1)/:
 $(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
-$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c runtime/pinvoke-tables-default-netcore.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
+$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -DPINVOKE_TABLE=\"$(PINVOKE_TABLE)\" -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@

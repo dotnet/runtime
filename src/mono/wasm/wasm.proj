@@ -1,10 +1,32 @@
 <Project DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
+  <Import Project="Directory.Build.targets" />
 
-  <!-- This is included by the installer proj so it has to be in a separate file -->
-  <Import Project="wasm.targets"/>
+  <UsingTask TaskName="WasmAppBuilder"
+      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
+
+  <PropertyGroup>
+	<WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<WasmPInvokeModules Include="libSystem.Native"/>
+	<WasmPInvokeAssemblies Include="$(MonoArtifactsPath)/System.Private.CoreLib.dll"/>
+  </ItemGroup>
+
+  <Target Name="BuildPInvokeTable">
+    <MakeDir Directories="$(MonoObjDir)wasm"/>
+	<WasmAppBuilder
+	  PInvokeModules="@(WasmPInvokeModules)"
+	  PInvokeAssemblies="@(WasmPInvokeAssemblies)"
+	  PInvokeTablePath="$(WasmPInvokeTablePath)"
+	  />
+  </Target>
+
+  <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
+	<Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+	<Exec Command="make -C $(MonoProjectRoot)wasm all BINDIR=$(ArtifactsBinDir) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+  </Target>
 
   <Target Name="Build" DependsOnTargets="BuildWasmRuntimes"/>
-
-  <Import Project="Directory.Build.targets" />
 </Project>
