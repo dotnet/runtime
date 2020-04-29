@@ -3376,6 +3376,10 @@ public:
         m_fieldSeq = fieldSeq;
     }
 
+#ifdef TARGET_ARM
+    bool IsOffsetMisaligned() const;
+#endif // TARGET_ARM
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclFld() : GenTreeLclVarCommon()
     {

@@ -4366,7 +4366,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     }
     if (className != nullptr)
     {
-        JITDUMP("%s", className);
+        JITDUMP("%s.", className);
     }
     if (methodName != nullptr)
     {

@@ -55,67 +55,72 @@ enum HWIntrinsicFlag : unsigned int
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
-    HW_Flag_NoCodeGen = 0x8,
+    HW_Flag_NoCodeGen = 0x4,
 
     // Unfixed SIMD-size
     // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
-    HW_Flag_UnfixedSIMDSize = 0x10,
+    HW_Flag_UnfixedSIMDSize = 0x8,
 
     // Multi-instruction
     // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x20,
-
-    // NoContainment
-    // the intrinsic cannot be handled by comtainment,
-    // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x40,
-
-    // Copy Upper bits
-    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = 0x80,
+    HW_Flag_MultiIns = 0x10,
 
     // Select base type using the first argument type
-    HW_Flag_BaseTypeFromFirstArg = 0x100,
+    HW_Flag_BaseTypeFromFirstArg = 0x20,
+
+    // Select base type using the second argument type
+    HW_Flag_BaseTypeFromSecondArg = 0x40,
 
     // Indicates compFloatingPointUsed does not need to be set.
-    HW_Flag_NoFloatingPointUsed = 0x200,
+    HW_Flag_NoFloatingPointUsed = 0x80,
 
     // Maybe IMM
     // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = 0x400,
+    HW_Flag_MaybeIMM = 0x100,
 
     // NoJmpTable IMM
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
-    HW_Flag_NoJmpTableIMM = 0x800,
-
-    // Select base type using the second argument type
-    HW_Flag_BaseTypeFromSecondArg = 0x1000,
+    HW_Flag_NoJmpTableIMM = 0x200,
 
     // Special codegen
     // the intrinsics need special rules in CodeGen,
     // but may be table-driven in the front-end
-    HW_Flag_SpecialCodeGen = 0x2000,
-
-#if defined(TARGET_XARCH)
-    // No Read/Modify/Write Semantics
-    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = 0x4000,
-#elif defined(TARGET_ARM64)
-    // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x4000,
-#else
-#error Unsupported platform
-#endif
+    HW_Flag_SpecialCodeGen = 0x400,
 
     // Special import
     // the intrinsics need special rules in importer,
     // but may be table-driven in the back-end
-    HW_Flag_SpecialImport = 0x8000,
+    HW_Flag_SpecialImport = 0x800,
+
+// The below is for defining platform-specific flags
+#if defined(TARGET_XARCH)
+    // Copy Upper bits
+    // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
+    HW_Flag_CopyUpperBits = 0x1000,
 
     // Maybe Memory Load/Store
     // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = 0x10000,
-    HW_Flag_MaybeMemoryStore = 0x20000,
+    HW_Flag_MaybeMemoryLoad  = 0x2000,
+    HW_Flag_MaybeMemoryStore = 0x4000,
+
+    // No Read/Modify/Write Semantics
+    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
+    HW_Flag_NoRMWSemantics = 0x8000,
+
+    // NoContainment
+    // the intrinsic cannot be handled by comtainment,
+    // all the intrinsic that have explicit memory load/store semantics should have this flag
+    HW_Flag_NoContainment = 0x10000,
+
+#elif defined(TARGET_ARM64)
+    // The intrinsic has read/modify/write semantics in multiple-operands form.
+    HW_Flag_HasRMWSemantics = 0x1000,
+
+    // The intrinsic supports some sort of containment analysis.
+    HW_Flag_SupportsContainment = 0x2000,
+#else
+#error Unsupported platform
+#endif
 };
 
 #if defined(TARGET_XARCH)
@@ -225,12 +230,14 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-    int                    ival;
-    unsigned               simdSize;
-    int                    numArgs;
-    instruction            ins[10];
-    HWIntrinsicCategory    category;
-    HWIntrinsicFlag        flags;
+#ifdef TARGET_XARCH
+    int ival;
+#endif
+    unsigned            simdSize;
+    int                 numArgs;
+    instruction         ins[10];
+    HWIntrinsicCategory category;
+    HWIntrinsicFlag     flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
@@ -243,10 +250,17 @@ struct HWIntrinsicInfo
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
     static int lookupNumArgs(const GenTreeHWIntrinsic* node);
     static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
-    static int lookupImmUpperBound(NamedIntrinsic id);
 
+#if defined(TARGET_XARCH)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic);
+#elif defined(TARGET_ARM64)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType);
+#else
+#error Unsupported platform
+#endif
+
+    static bool isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType);
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
-    static bool isInImmRange(NamedIntrinsic id, int ival);
     static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
@@ -272,10 +286,12 @@ struct HWIntrinsicInfo
         return lookup(id).isa;
     }
 
+#ifdef TARGET_XARCH
     static int lookupIval(NamedIntrinsic id)
     {
         return lookup(id).ival;
     }
+#endif
 
     static unsigned lookupSimdSize(NamedIntrinsic id)
     {
@@ -342,13 +358,13 @@ struct HWIntrinsicInfo
     static bool SupportsContainment(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoContainment) == 0;
-    }
-
-    static bool CopiesUpperBits(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_CopyUpperBits) != 0;
+#elif defined(TARGET_ARM64)
+        return (flags & HW_Flag_SupportsContainment) != 0;
+#else
+#error Unsupported platform
+#endif
     }
 
     static bool BaseTypeFromFirstArg(NamedIntrinsic id)
@@ -369,6 +385,13 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_MaybeIMM) != 0;
     }
 
+#ifdef TARGET_XARCH
+    static bool CopiesUpperBits(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CopyUpperBits) != 0;
+    }
+
     static bool MaybeMemoryLoad(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -380,6 +403,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
+#endif
 
     static bool NoJmpTableImm(NamedIntrinsic id)
     {
@@ -417,6 +441,102 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SpecialImport) != 0;
     }
 };
+
+#ifdef TARGET_ARM64
+
+struct HWIntrinsic final
+{
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
+        : op1(nullptr), op2(nullptr), op3(nullptr), numOperands(0), baseType(TYP_UNDEF)
+    {
+        assert(node != nullptr);
+
+        id       = node->gtHWIntrinsicId;
+        category = HWIntrinsicInfo::lookupCategory(id);
+
+        assert(HWIntrinsicInfo::RequiresCodegen(id));
+
+        InitializeOperands(node);
+        InitializeBaseType(node);
+    }
+
+    bool IsTableDriven() const
+    {
+        // TODO-Arm64-Cleanup - make more categories to the table-driven framework
+        bool isTableDrivenCategory = category != HW_Category_Helper;
+        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+
+        return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    NamedIntrinsic      id;
+    HWIntrinsicCategory category;
+    GenTree*            op1;
+    GenTree*            op2;
+    GenTree*            op3;
+    int                 numOperands;
+    var_types           baseType;
+
+private:
+    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    {
+        op1 = node->gtGetOp1();
+        op2 = node->gtGetOp2();
+
+        assert(op1 != nullptr);
+
+        if (op1->OperIsList())
+        {
+            assert(op2 == nullptr);
+
+            GenTreeArgList* list = op1->AsArgList();
+            op1                  = list->Current();
+            list                 = list->Rest();
+            op2                  = list->Current();
+            list                 = list->Rest();
+            op3                  = list->Current();
+
+            assert(list->Rest() == nullptr);
+
+            numOperands = 3;
+        }
+        else if (op2 != nullptr)
+        {
+            numOperands = 2;
+        }
+        else
+        {
+            numOperands = 1;
+        }
+    }
+
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
+    {
+        baseType = node->gtSIMDBaseType;
+
+        if (baseType == TYP_UNKNOWN)
+        {
+            assert(category == HW_Category_Scalar);
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+        }
+    }
+};
+
+#endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
 
