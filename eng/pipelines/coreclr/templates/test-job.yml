@@ -24,7 +24,7 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- ${{ if and(ne(parameters.corefxTests, true), eq(parameters.osSubgroup, parameters.osSubgroup), eq(parameters.osGroup, parameters.osGroup)) }}:
+- ${{ if ne(parameters.corefxTests, true) }}:
   - template: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
@@ -45,8 +45,6 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     archType: ${{ parameters.archType }}
-    osGroup: ${{ parameters.osGroup }}
-    osSubgroup: ${{ parameters.osSubgroup }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
