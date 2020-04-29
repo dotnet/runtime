@@ -18,7 +18,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android or Browser"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, or SunOS"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -116,14 +116,14 @@ while [[ $# > 0 ]]; do
      -arch)
       declare -l passedArch=$2
       case "$passedArch" in
-      x64|x86|arm|armel|arm64|wasm)
-        arch=$passedArch
-        ;;
-      *)
-        echo "Unsupported target architecture '$2'."
-        echo "The allowed values are x86, x64, arm, armel, arm64, and wasm."
-        exit 1
-        ;;
+        x64|x86|arm|armel|arm64|wasm)
+          arch=$passedArch
+          ;;
+        *)
+          echo "Unsupported target architecture '$2'."
+          echo "The allowed values are x86, x64, arm, armel, arm64, and wasm."
+          exit 1
+          ;;
       esac
       shift 2
       ;;
@@ -131,16 +131,16 @@ while [[ $# > 0 ]]; do
      -configuration|-c)
       declare -l passedConfig=$2
       case "$passedConfig" in
-      debug|release|checked)
-        val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
-        arguments="$arguments -configuration $val"
-        ;;
-      *)
-        echo "Unsupported target configuration '$2'."
-        echo "The allowed values are Debug, Release, and Checked."
-        exit 1
-        ;;
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
+          ;;
+        *)
+          echo "Unsupported target configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
       esac
+      arguments="$arguments -configuration $val"
       shift 2
       ;;
 
@@ -153,16 +153,31 @@ while [[ $# > 0 ]]; do
      -os)
       declare -l passedOS=$2
       case "$passedOS" in
-      windows_nt|linux|freebsd|osx|tvos|ios|android|browser)
-        os=$passedOS
-        arguments="$arguments /p:TargetOS=$2"
-        ;;
-      *)
-        echo "Unsupported target OS '$2'."
-        echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, and Browser."
-        exit 1
-        ;;
+        windows_nt)
+          os="Windows_NT" ;;
+        linux)
+          os="Linux" ;;
+        freebsd)
+          os="FreeBSD" ;;
+        osx)
+          os="OSX" ;;
+        tvos)
+          os="tvOS" ;;
+        ios)
+          os="iOS" ;;
+        android)
+          os="Android" ;;
+        browser)
+          os="Browser" ;;
+        sunos)
+          os="SunOS" ;;
+        *)
+          echo "Unsupported target OS '$2'."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          exit 1
+          ;;
       esac
+      arguments="$arguments /p:TargetOS=$os"
       shift 2
       ;;
 
