@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         public CallingConvention CallingConvention;
 
         /// <summary>
-        /// Optional. If omitted, then the method is unmanaged only, but no export is emitted during compilation.
+        /// Optional. If omitted, no named export is emitted during compilation.
         /// </summary>
         public string? EntryPoint;
     }
