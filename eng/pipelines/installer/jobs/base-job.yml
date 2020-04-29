@@ -435,7 +435,6 @@ jobs:
     - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
       displayName: Install Build Dependencies
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h

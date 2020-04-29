@@ -70,14 +70,13 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - template: /eng/pipelines/common/restore-internal-tools.yml
+
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
-        - ${{ if eq(parameters.isOfficialBuild, true) }}:
-          - template: /eng/pipelines/common/restore-internal-tools.yml
-
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
