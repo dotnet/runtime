@@ -103,10 +103,6 @@ Z_LIBS=$(BUNDLE_ZLIB_PATH)
 endif
 endif
 
-if HAVE_SYS_ICU
-ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
-endif
-
 noinst_LTLIBRARIES = libmonoruntime-config.la $(support_libraries) $(boehm_libraries) $(sgen_libraries) $(shim_libraries)
 
 lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
@@ -143,18 +139,18 @@ libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @
 shim_libraries = libmonoruntime-shimglobalization.la
 
 libmonoruntime_shimglobalization_la_SOURCES = \
-									$(ICU_SHIM_PATH)/pal_calendarData.c \
-									$(ICU_SHIM_PATH)/pal_casing.c \
-									$(ICU_SHIM_PATH)/pal_collation.c \
-									$(ICU_SHIM_PATH)/pal_idna.c \
-									$(ICU_SHIM_PATH)/pal_locale.c \
-									$(ICU_SHIM_PATH)/pal_localeNumberData.c \
-									$(ICU_SHIM_PATH)/pal_localeStringData.c \
-									$(ICU_SHIM_PATH)/pal_normalization.c \
-									$(ICU_SHIM_PATH)/pal_timeZoneInfo.c \
-									$(ICU_SHIM_PATH)/pal_icushim.c
+									@ICU_SHIM_PATH@/pal_calendarData.c \
+									@ICU_SHIM_PATH@/pal_casing.c \
+									@ICU_SHIM_PATH@/pal_collation.c \
+									@ICU_SHIM_PATH@/pal_idna.c \
+									@ICU_SHIM_PATH@/pal_locale.c \
+									@ICU_SHIM_PATH@/pal_localeNumberData.c \
+									@ICU_SHIM_PATH@/pal_localeStringData.c \
+									@ICU_SHIM_PATH@/pal_normalization.c \
+									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
+									@ICU_SHIM_PATH@/pal_icushim.c
 
-libmonoruntime_shimglobalization_la_LDFLAGS = $(ICU_LIBS)
+libmonoruntime_shimglobalization_la_LDFLAGS = @ICU_LIBS@
 libmonoruntime_shimglobalization_la_CPPFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 
 

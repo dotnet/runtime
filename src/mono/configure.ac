@@ -6809,6 +6809,7 @@ if test x$target_osx = xyes; then
 		ICU_CFLAGS="-DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
 		AC_MSG_NOTICE($ICU_CFLAGS)
 		AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+		ICU_SHIM_PATH='$(top_srcdir)'/../libraries/Native/Unix/System.Globalization.Native
 	fi
 	CPPFLAGS=$ORIG_CPPFLAGS
 elif test x$host_win32 = xyes; then
@@ -6825,10 +6826,11 @@ elif test x$host_linux = xyes; then
 	AC_DEFINE(ICU_LIBS, [-licuuc, -licui18n], [adding -licuuc and  -licui18n])
 
 	AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
-	if test x$have_sys_icu = xyes; then
-		ICU_CFLAGS="-DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
+	if test x$have_sys_icu = xyes; then 
+		ICU_CFLAGS="-DTARGET_UNIX -I/usr/local/opt/icu4c/include -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"		
 		AC_MSG_NOTICE($ICU_CFLAGS)
 		AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
+		ICU_SHIM_PATH='$(top_srcdir)'/../libraries/Native/Unix/System.Globalization.Native
 	fi
 	CPPFLAGS=$ORIG_CPPFLAGS
 fi
@@ -6839,6 +6841,8 @@ AC_SUBST(LDFLAGS)
 AC_SUBST(CCLDFLAGS)
 AC_SUBST(ZLIB_CFLAGS)
 AC_SUBST(ICU_CFLAGS)
+AC_SUBST(ICU_LIBS)
+AC_SUBST(ICU_SHIM_PATH)
 
 # Update all submodules recursively to ensure everything is checked out
 if test "x$with_core" != "xonly"; then
