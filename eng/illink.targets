@@ -87,7 +87,7 @@
       <!-- keep types and members required by Debugger-related attributes -->
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
