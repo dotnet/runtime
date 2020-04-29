@@ -40,6 +40,7 @@ public class ProcessParameters
     public IEnumerable<string> InputFileNames;
     public string OutputFileName;
     public long CompilationCostHeuristic;
+    public bool UseShellExecute;
     public bool CollectJittedMethods;
     public IEnumerable<string> MonitorModules;
     public IEnumerable<string> MonitorFolders;
@@ -142,13 +143,14 @@ public class ProcessRunner : IDisposable
         _logWriter.WriteLine(_processInfo.Parameters.Arguments);
         _logWriter.WriteLine("<<<<");
 
+        bool redirectStandardStreams = !_processInfo.Parameters.UseShellExecute;
         ProcessStartInfo psi = new ProcessStartInfo()
         {
             FileName = _processInfo.Parameters.ProcessPath,
             Arguments = _processInfo.Parameters.Arguments,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            UseShellExecute = _processInfo.Parameters.UseShellExecute,
+            RedirectStandardOutput = redirectStandardStreams,
+            RedirectStandardError = redirectStandardStreams,
         };
 
         foreach (KeyValuePair<string, string> environmentOverride in _processInfo.Parameters.EnvironmentOverrides)
@@ -169,13 +171,16 @@ public class ProcessRunner : IDisposable
             _jittedMethods.AddProcessMapping(_processInfo, _process);
         }
 
-        _outputHandler = new DataReceivedEventHandler(StandardOutputEventHandler);
-        _process.OutputDataReceived += _outputHandler;
-        _process.BeginOutputReadLine();
+        if (redirectStandardStreams)
+        {
+            _outputHandler = new DataReceivedEventHandler(StandardOutputEventHandler);
+            _process.OutputDataReceived += _outputHandler;
+            _process.BeginOutputReadLine();
 
-        _errorHandler = new DataReceivedEventHandler(StandardErrorEventHandler);
-        _process.ErrorDataReceived += _errorHandler;
-        _process.BeginErrorReadLine();
+            _errorHandler = new DataReceivedEventHandler(StandardErrorEventHandler);
+            _process.ErrorDataReceived += _errorHandler;
+            _process.BeginErrorReadLine();
+        }
 
         Task.Run(TimeoutWatchdog);
     }
@@ -217,11 +222,14 @@ public class ProcessRunner : IDisposable
         // them into the logical process executions.
         if (_process != null && !_processInfo.Parameters.CollectJittedMethods)
         {
-            _process.CancelOutputRead();
-            _process.CancelErrorRead();
+            if (!_processInfo.Parameters.UseShellExecute)
+            {
+                _process.CancelOutputRead();
+                _process.CancelErrorRead();
 
-            _process.OutputDataReceived -= _outputHandler;
-            _process.ErrorDataReceived -= _errorHandler;
+                _process.OutputDataReceived -= _outputHandler;
+                _process.ErrorDataReceived -= _errorHandler;
+            }
 
             _process.Dispose();
             _process = null;
