@@ -17,13 +17,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is TCollection);
-
             string key = state.Current.JsonPropertyNameAsString!;
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
 
-        protected override void CreateCollection(ref ReadStack state)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             if (state.Current.JsonClassInfo.CreateObject == null)
             {
@@ -50,7 +48,6 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(state.Current.CollectionEnumerator is Dictionary<string, TValue>.Enumerator);
                 enumerator = (Dictionary<string, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
@@ -75,7 +72,6 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    TValue element = enumerator.Current.Value;
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;
@@ -83,6 +79,7 @@ namespace System.Text.Json.Serialization.Converters
                         writer.WritePropertyName(key);
                     }
 
+                    TValue element = enumerator.Current.Value;
                     if (!converter.TryWrite(writer, element, options, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;

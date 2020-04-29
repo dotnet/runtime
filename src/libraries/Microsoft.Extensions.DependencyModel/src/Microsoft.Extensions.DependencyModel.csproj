@@ -6,9 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs">
-      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

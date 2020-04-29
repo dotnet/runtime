@@ -888,6 +888,9 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
     FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
     QCFuncElement("AllocateTypeAssociatedMemoryInternal", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
+    FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
+    FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
+    FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
@@ -995,6 +998,7 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
+    FCIntrinsic("NextCallReturnAddress", StubHelpers::NextCallReturnAddress, CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)

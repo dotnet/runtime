@@ -47,8 +47,6 @@ public:
     // -----------------------------------
     // ILStubResolver-specific methods
     // -----------------------------------
-    bool IsNativeToCLRInteropStub();
-    bool IsCLRToNativeInteropStub();
     MethodDesc* GetStubMethodDesc();
     MethodDesc* GetStubTargetMethodDesc();
     void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
@@ -75,7 +73,6 @@ public:
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
-protected:
     enum ILStubType
     {
         Unassigned = 0,
@@ -95,7 +92,14 @@ protected:
         UnboxingILStub,
         InstantiatingStub,
 #endif
+        TailCallStoreArgsStub,
+        TailCallCallTargetStub,
+        TailCallDispatcherStub,
     };
+
+    ILStubType GetStubType();
+
+protected:
 
     enum CompileTimeStatePtrSpecialValues
     {

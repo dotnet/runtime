@@ -194,6 +194,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             op1Reg = intrin.op1->GetRegNum();
             break;
 
+        case 0:
+            assert(HWIntrinsicInfo::lookupNumArgs(intrin.id) == 0);
+            break;
+
         default:
             unreached();
     }
@@ -268,7 +272,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     else
     {
         instruction ins = INS_invalid;
-
         switch (intrin.id)
         {
             case NI_Crc32_ComputeCrc32:
@@ -447,6 +450,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
                 }
+                break;
+
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            {
+                if (intrin.op1->isContainedFltOrDblImmed())
+                {
+                    // fmov reg, #imm8
+                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
+                }
+                else if (varTypeIsFloating(intrin.baseType))
+                {
+                    if (targetReg != op1Reg)
+                    {
+                        // fmov reg1, reg2
+                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, INS_OPTS_NONE);
+                    }
+                }
+                else
+                {
+                    if (intrin.op1->isContainedIntOrIImmed())
+                    {
+                        // movi/movni reg, #imm8
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
+                    }
+                    else
+                    {
+                        // ins reg1[0], reg2
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    INS_OPTS_NONE);
+                    }
+                }
+            }
+            break;
+
+            // mvni doesn't support the range of element types, so hard code the 'opts' value.
+            case NI_Vector64_get_Zero:
+            case NI_Vector64_get_AllBitsSet:
+                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
+                break;
+
+            case NI_Vector128_get_Zero:
+            case NI_Vector128_get_AllBitsSet:
+                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
                 break;
 
             default:

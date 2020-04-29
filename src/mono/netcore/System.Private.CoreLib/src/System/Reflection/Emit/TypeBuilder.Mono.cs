@@ -32,7 +32,7 @@
 //
 
 #if MONO_FEATURE_SRE
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -974,7 +974,7 @@ namespace System.Reflection.Emit
         {
             if (ctors == null)
                 return Array.Empty<ConstructorInfo>();
-            ArrayList l = new ArrayList();
+            List<ConstructorInfo> result = new List<ConstructorInfo>();
             bool match;
             MethodAttributes mattrs;
 
@@ -1007,11 +1007,9 @@ namespace System.Reflection.Emit
                 }
                 if (!match)
                     continue;
-                l.Add(c);
+                result.Add(c);
             }
-            ConstructorInfo[] result = new ConstructorInfo[l.Count];
-            l.CopyTo(result);
-            return result;
+            return result.ToArray();
         }
 
         public override Type GetElementType()
@@ -1096,7 +1094,7 @@ namespace System.Reflection.Emit
             if (((bindingAttr & BindingFlags.DeclaredOnly) == 0) && (parent != null))
             {
                 MethodInfo[] parent_methods = parent.GetMethods(bindingAttr);
-                ArrayList parent_candidates = new ArrayList(parent_methods.Length);
+                List<MethodInfo> parent_candidates = new List<MethodInfo>(parent_methods.Length);
 
                 bool flatten = (bindingAttr & BindingFlags.FlattenHierarchy) != 0;
 
@@ -1139,7 +1137,7 @@ namespace System.Reflection.Emit
             if (candidates == null)
                 return Array.Empty<MethodInfo>();
 
-            ArrayList l = new ArrayList();
+            List<MethodInfo> result = new List<MethodInfo>();
 
             foreach (MethodInfo c in candidates)
             {
@@ -1177,12 +1175,9 @@ namespace System.Reflection.Emit
                 }
                 if (!match)
                     continue;
-                l.Add(c);
+                result.Add(c);
             }
-
-            MethodInfo[] result = new MethodInfo[l.Count];
-            l.CopyTo(result);
-            return result;
+            return result.ToArray();
         }
 
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
@@ -1239,7 +1234,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException();
 
             bool match;
-            ArrayList result = new ArrayList();
+            List<Type> result = new List<Type>();
 
             if (subtypes == null)
                 return EmptyTypes;
@@ -1260,9 +1255,7 @@ namespace System.Reflection.Emit
                     continue;
                 result.Add(t);
             }
-            Type[] r = new Type[result.Count];
-            result.CopyTo(r);
-            return r;
+            return result.ToArray();
         }
 
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)

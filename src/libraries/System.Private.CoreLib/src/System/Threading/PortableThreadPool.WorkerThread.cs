@@ -26,7 +26,11 @@ namespace System.Threading
 
             private static void WorkerThreadStart()
             {
-                PortableThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+                if (log.IsEnabled())
+                {
+                    log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                }
 
                 while (true)
                 {
@@ -71,7 +75,11 @@ namespace System.Threading
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-                                PortableThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
+
+                                if (log.IsEnabled())
+                                {
+                                    log.WorkerThreadStop(newCounts.numExistingThreads);
+                                }
                                 return;
                             }
                         }
@@ -89,7 +97,11 @@ namespace System.Threading
             /// <returns>If this thread was woken up before it timed out.</returns>
             private static bool WaitForRequest()
             {
-                PortableThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+                if (log.IsEnabled())
+                {
+                    log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                }
                 return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
             }
 

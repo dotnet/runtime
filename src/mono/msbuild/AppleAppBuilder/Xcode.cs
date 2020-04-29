@@ -76,7 +76,7 @@ internal class Xcode
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
 
-        File.WriteAllText(Path.Combine(binDir, "Info.plist.in"), plist);
+        File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
         var cmakeArgs = new StringBuilder();

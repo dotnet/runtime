@@ -41,9 +41,8 @@
     <Compile Include="Internal\SpscTargetCore.cs" />
     <Compile Include="Internal\TargetCore.cs" />
     <Compile Include="Internal\TargetRegistry.cs" />
-    <Compile Include="$(CommonPath)Internal\Padding.cs">
-      <Link>Common\Internal\Padding.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Internal\Padding.cs"
+             Link="Common\Internal\Padding.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">
     <Compile Include="Internal\Threading.cs" />

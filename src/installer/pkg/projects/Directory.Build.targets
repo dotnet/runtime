@@ -26,14 +26,9 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Keep this isolated to desktop mono for now -->
-  <Target Name="MobileGetBuildRidSpecificPackageProps"
-          Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'"
-          AfterTargets="GetBuildRidSpecificPackageProps">
-    <PropertyGroup>
-      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName)$(RuntimeSpecificFrameworkSuffix).Mono.$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
-    </PropertyGroup>
-  </Target>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
 
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the

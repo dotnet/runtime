@@ -130,16 +130,14 @@ void MngStdItfBase::InitHelper(
     pUComItfType->GetMethodTable()->CheckRunClassInitThrowing();
 
     // Retrieve the custom marshaler type handle.
-    SString sstrCMTypeName(SString::Utf8, strCMTypeName);
-    *pCustomMarshalerType = TypeName::GetTypeFromAsmQualifiedName(sstrCMTypeName.GetUnicode());
+    *pCustomMarshalerType = ClassLoader::LoadTypeByNameThrowing(SystemDomain::SystemAssembly(), NULL, strCMTypeName);
 
     // Run the <clinit> for the marshaller.
     pCustomMarshalerType->GetMethodTable()->EnsureInstanceActive();
     pCustomMarshalerType->GetMethodTable()->CheckRunClassInitThrowing();
 
     // Load the managed view.
-    SString sstrManagedViewName(SString::Utf8, strManagedViewName);
-    *pManagedViewType = TypeName::GetTypeFromAsmQualifiedName(sstrManagedViewName.GetUnicode());
+    *pManagedViewType = ClassLoader::LoadTypeByNameThrowing(SystemDomain::SystemAssembly(), NULL, strManagedViewName);
 
     // Run the <clinit> for the managed view.
     pManagedViewType->GetMethodTable()->EnsureInstanceActive();

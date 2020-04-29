@@ -98,7 +98,6 @@
 
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
 
-#include "ndpversion.h"
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"

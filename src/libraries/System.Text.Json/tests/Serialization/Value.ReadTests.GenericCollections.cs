@@ -272,10 +272,11 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            GenericICollectionWrapper<StringICollectionWrapper> result2 = JsonSerializer.Deserialize<GenericICollectionWrapper<StringICollectionWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            GenericICollectionWrapper<GenericICollectionWrapper<string>> result2 =
+                JsonSerializer.Deserialize<GenericICollectionWrapper<GenericICollectionWrapper<string>>>(@"[[""1"",""2""],[""3"",""4""]]");
             expected = 1;
 
-            foreach (StringICollectionWrapper ic in result2)
+            foreach (GenericICollectionWrapper<string> ic in result2)
             {
                 foreach (string str in ic)
                 {
@@ -339,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
             result = JsonSerializer.Deserialize<ICollection<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
 
-            StringICollectionWrapper result2 = JsonSerializer.Deserialize<StringICollectionWrapper>(@"[""1"",""2""]");
+            GenericICollectionWrapper<string> result2 = JsonSerializer.Deserialize<GenericICollectionWrapper<string>>(@"[""1"",""2""]");
             expected = 1;
 
             foreach (string str in result2)
@@ -347,7 +348,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal($"{expected++}", str);
             }
 
-            result2 = JsonSerializer.Deserialize<StringICollectionWrapper>(Encoding.UTF8.GetBytes(@"[]"));
+            result2 = JsonSerializer.Deserialize<GenericICollectionWrapper<string>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result2.Count());
         }
 
@@ -366,7 +367,8 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // There's no way to populate this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper>>(@"[[""1"",""2""],[""3"",""4""]]"));
+            Assert.Throws<NotSupportedException>(
+                () => JsonSerializer.Deserialize<GenericIReadOnlyCollectionWrapper<WrapperForIReadOnlyCollectionOfT<string>>>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
@@ -401,7 +403,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // No way to populate this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringIReadOnlyCollectionWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIReadOnlyCollectionOfT<string>[]>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
@@ -419,7 +421,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, result.Count());
 
             // No way to populate this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringIReadOnlyCollectionWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIReadOnlyCollectionOfT<string>>(@"[""1"",""2""]"));
         }
 
         [Fact]
@@ -1142,7 +1144,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     typeof(SimpleTestClassWithStringIReadOnlyCollectionWrapper),
                     SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json,
-                    typeof(StringIReadOnlyCollectionWrapper)
+                    typeof(WrapperForIReadOnlyCollectionOfT<string>)
                 };
                 yield return new object[]
                 {
@@ -1154,7 +1156,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper),
                     SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json,
-                    typeof(StringToStringIReadOnlyDictionaryWrapper)
+                    typeof(GenericIReadOnlyDictionaryWrapper<string, string>)
                 };
             }
         }
@@ -1163,6 +1165,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ReadOnlyWrapperForIList), @"[""1"", ""2""]")]
         [InlineData(typeof(ReadOnlyStringIListWrapper), @"[""1"", ""2""]")]
         [InlineData(typeof(ReadOnlyStringICollectionWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringISetWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyWrapperForIDictionary), @"{""Key"":""key"",""Value"":""value""}")]
         [InlineData(typeof(ReadOnlyStringToStringIDictionaryWrapper), @"{""Key"":""key"",""Value"":""value""}")]
         public static void ReadReadOnlyCollections_Throws(Type type, string json)
         {
@@ -1266,6 +1270,41 @@ namespace System.Text.Json.Serialization.Tests
                 get { return _allowedGrantTypes; }
                 set { _allowedGrantTypes = new HashSetWithBackingCollection(value); }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(CustomInterfaces_Enumerables))]
+        public static void CustomInterfacesNotSupported_Enumerables(Type type)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("[]", type));
+            Assert.Contains(type.ToString(), ex.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(CustomInterfaces_Dictionaries))]
+        public static void CustomInterfacesNotSupported_Dictionaries(Type type)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", type));
+            Assert.Contains(type.ToString(), ex.ToString());
+        }
+
+        private static IEnumerable<object[]> CustomInterfaces_Enumerables()
+        {
+            yield return new object[] { typeof(IDerivedICollectionOfT<string>) };
+            yield return new object[] { typeof(IDerivedIList) };
+            yield return new object[] { typeof(IDerivedISetOfT<string>) };
+        }
+
+        private static IEnumerable<object[]> CustomInterfaces_Dictionaries()
+        {
+            yield return new object[] { typeof(IDerivedIDictionaryOfTKeyTValue<string, string>) };
+        }
+
+        [Fact]
+        public static void IReadOnlyDictionary_NonStringKey_NotSupported()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<IReadOnlyDictionary<int, int>>(""));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new GenericIReadOnlyDictionaryWrapper<int, int>()));
         }
     }
 }

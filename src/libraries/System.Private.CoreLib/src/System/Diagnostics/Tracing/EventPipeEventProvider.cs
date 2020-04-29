@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tracing
             int userDataCount,
             EventProvider.EventData* userData)
         {
-            if (eventDescriptor.EventId != 0 && eventHandle != IntPtr.Zero)
+            if (eventHandle != IntPtr.Zero)
             {
                 if (userDataCount == 0)
                 {
@@ -69,6 +69,7 @@ namespace System.Diagnostics.Tracing
                 }
                 EventPipeInternal.WriteEventData(eventHandle, userData, (uint)userDataCount, activityId, relatedActivityId);
             }
+
             return EventProvider.WriteEventErrorCode.NoError;
         }
 

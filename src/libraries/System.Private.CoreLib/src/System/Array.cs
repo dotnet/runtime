@@ -1936,7 +1936,7 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
-                Debug.Assert(hi > lo);
+                Debug.Assert(hi >= lo);
                 Debug.Assert(depthLimit >= 0);
 
                 while (hi > lo)
@@ -2150,7 +2150,7 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
-                Debug.Assert(hi > lo);
+                Debug.Assert(hi >= lo);
                 Debug.Assert(depthLimit >= 0);
 
                 while (hi > lo)

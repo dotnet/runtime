@@ -522,6 +522,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector64<byte> CreateScalarUnsafe(byte value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -535,6 +536,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector64<short> CreateScalarUnsafe(short value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -548,6 +550,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector64<int> CreateScalarUnsafe(int value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -562,6 +565,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<sbyte> CreateScalarUnsafe(sbyte value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -575,6 +579,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector64<float> CreateScalarUnsafe(float value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -589,6 +594,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<ushort> CreateScalarUnsafe(ushort value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -603,6 +609,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static unsafe Vector64<uint> CreateScalarUnsafe(uint value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
