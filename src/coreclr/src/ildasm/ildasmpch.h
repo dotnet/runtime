@@ -22,8 +22,6 @@
 #include <htmlhelp.h>
 #include <conio.h>
 
-#include "mdfileformat.h"
-
 #ifndef Debug_ReportError
 #define Debug_ReportError(strMessage)
 #endif
