@@ -1426,19 +1426,18 @@ namespace System.Numerics
             if (_bits is null && _sign == 0)
                 return CreateReadOnlySpan(ref s_zero, 1);
 
-            ReadOnlySpan<uint> dwords;
+            Span<uint> dwords;  //don't mutate after initialization!!!
             uint highDWord;
 
             if (_bits is null)
             {
-                dwords = CreateReadOnlySpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
+                dwords = CreateSpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
             {
-                Span<uint> dwordsMutable = (uint[])_bits.Clone();
-                NumericsHelpers.DangerousMakeTwosComplement(dwordsMutable);  // Mutates dwords
-                dwords = dwordsMutable;
+                dwords = Unsafe.As<uint[]>(_bits.Clone());
+                NumericsHelpers.DangerousMakeTwosComplement(dwords);  // Mutates dwords
                 highDWord = uint.MaxValue;
             }
             else
