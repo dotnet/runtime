@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Numerics
@@ -95,8 +96,20 @@ namespace System.Numerics
             uint[] bits = new uint[left.Length - right.Length + 1];
 
             // NOTE: left will get overwritten, we need a local copy
-
-            Divide(left.ToArray(), right, bits);
+            // However, mutated left is not used afterwards, so use array pooling or stack alloc
+            if (left.Length < AllocationThreshold)
+            {
+                Span<uint> leftCopy = stackalloc uint[left.Length];
+                left.CopyTo(leftCopy);
+                Divide(leftCopy, right, bits);
+            }
+            else
+            {
+                uint[] leftCopy = ArrayPool<uint>.Shared.Rent(left.Length);
+                left.CopyTo(leftCopy);
+                Divide(new Span<uint>(leftCopy, 0, left.Length), right, bits);
+                ArrayPool<uint>.Shared.Return(leftCopy);
+            }
 
             return bits;
         }

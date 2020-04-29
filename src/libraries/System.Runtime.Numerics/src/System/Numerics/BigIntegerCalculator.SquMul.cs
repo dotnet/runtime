@@ -19,7 +19,6 @@ namespace System.Numerics
 
         // Mutable for unit testing...
         private static int SquareThreshold = 32;
-        private static int AllocationThreshold = 256;
 
         private static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {

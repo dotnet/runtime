@@ -1,9 +1,16 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+        // Mutable for unit testing...
+        private static int AllocationThreshold = 256;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Span<uint> ZeroMem(Span<uint> memory)
         {
