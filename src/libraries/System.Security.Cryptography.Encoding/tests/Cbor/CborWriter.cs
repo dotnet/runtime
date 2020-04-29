@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
         private int? _currentValueOffset = null;
-        private SortedSet<(int Offset, int KeyLength, int TotalLength)>? _keyValueEncodingRanges = null;
+        private HashSet<KeyValueEncodingRange>? _keyValueEncodingRanges = null;
 
         public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false)
         {
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private readonly struct StackFrame
         {
             public StackFrame(CborMajorType type, int frameOffset, int? definiteLength, int itemsWritten,
-                              int? currentKeyOffset, int? currentValueOffset, SortedSet<(int, int, int)>? keyValueEncodingRanges)
+                              int? currentKeyOffset, int? currentValueOffset, HashSet<KeyValueEncodingRange>? keyValueEncodingRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int? CurrentKeyOffset { get; }
             public int? CurrentValueOffset { get; }
-            public SortedSet<(int, int, int)>? KeyValueEncodingRanges { get; }
+            public HashSet<KeyValueEncodingRange>? KeyValueEncodingRanges { get; }
         }
     }
 }

@@ -109,15 +109,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             };
         }
 
-        public static int CompareEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, CborConformanceLevel level)
+        public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
+        {
+            return System.Marvin.ComputeHash32(encoding, System.Marvin.DefaultSeed);
+        }
+
+        public static bool AreEqualKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+        {
+            return left.SequenceEqual(right);
+        }
+
+        public static int CompareKeyEncodings(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, CborConformanceLevel level)
         {
             Debug.Assert(!left.IsEmpty && !right.IsEmpty);
 
             switch (level)
             {
-                // Strict mode only concerns itself with uniqueness, not sorting.
-                // Any total order for buffers should do.
-                case CborConformanceLevel.Strict:
                 case CborConformanceLevel.Rfc7049Canonical:
                     // Implements key sorting according to
                     // https://tools.ietf.org/html/rfc7049#section-3.9

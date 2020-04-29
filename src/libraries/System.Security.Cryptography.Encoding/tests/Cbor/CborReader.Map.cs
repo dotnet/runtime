@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 ReadOnlySpan<byte> previousKeyEncoding = originalBuffer.Slice(previousKeyRange.Offset, previousKeyRange.Length);
                 ReadOnlySpan<byte> currentKeyEncoding = originalBuffer.Slice(currentKeyRange.Offset, currentKeyRange.Length);
 
-                int cmp = CborConformanceLevelHelpers.CompareEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
+                int cmp = CborConformanceLevelHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
                 if (cmp > 0)
                 {
                     ResetBuffer(currentKeyRange.Offset);
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _previousKeyRanges;
         }
 
-        private ReadOnlySpan<byte> GetKeyEncoding((int Offset, int Length) range)
+        private ReadOnlySpan<byte> GetKeyEncoding(in (int Offset, int Length) range)
         {
             return _originalBuffer.Span.Slice(range.Offset, range.Length);
         }
@@ -168,12 +168,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public int GetHashCode((int Offset, int Length) value)
             {
-                return System.Marvin.ComputeHash32(_reader.GetKeyEncoding(value), System.Marvin.DefaultSeed);
+                return CborConformanceLevelHelpers.GetKeyEncodingHashCode(_reader.GetKeyEncoding(in value));
             }
 
             public bool Equals((int Offset, int Length) x, (int Offset, int Length) y)
             {
-                return _reader.GetKeyEncoding(x).SequenceEqual(_reader.GetKeyEncoding(y));
+                return CborConformanceLevelHelpers.AreEqualKeyEncodings(_reader.GetKeyEncoding(in x), _reader.GetKeyEncoding(in y));
             }
         }
     }
