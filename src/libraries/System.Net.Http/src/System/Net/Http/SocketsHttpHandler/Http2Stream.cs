@@ -181,7 +181,7 @@ namespace System.Net.Http
                     {
                         using (Http2WriteStream writeStream = new Http2WriteStream(this))
                         {
-                            await _request.Content.CopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
+                            await _request.Content.InternalCopyToAsync(writeStream, null, _requestBodyCancellationToken).ConfigureAwait(false);
                         }
                     }
 
