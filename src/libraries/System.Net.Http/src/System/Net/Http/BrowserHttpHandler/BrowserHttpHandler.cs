@@ -24,7 +24,6 @@ namespace System.Net.Http
     internal partial class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
-
         private static readonly JSObject? fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
         private static readonly JSObject? window = (JSObject)Interop.Runtime.GetGlobalObject("window");
 
@@ -33,6 +32,11 @@ namespace System.Net.Http
         /// </summary>
         private static bool StreamingSupported { get; }
 
+        static BrowserHttpHandler()
+        {
+            using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
+                StreamingSupported = (bool)streamingSupported.Call();
+        }
 
         public bool UseCookies
         {
@@ -151,33 +155,6 @@ namespace System.Net.Http
         }
 
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException("Property Properties is not supported.");
-
-        // protected override void Dispose(bool disposing)
-        // {
-        //     if (disposing)
-        //     {
-        //         if (wasmHandler != null)
-        //         {
-        //             wasmHandler.Dispose();
-        //             wasmHandler = null;
-        //         }
-        //     }
-        //     base.Dispose(disposing);
-        // }
-
-        // protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        // {
-        //     if (wasmHandler == null)
-        //         throw new ObjectDisposedException(GetType().ToString());
-
-        //     return wasmHandler.SendAsync(request, cancellationToken);
-        // }
-
-        static BrowserHttpHandler()
-        {
-            using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
-                StreamingSupported = (bool)streamingSupported.Call();
-        }
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return DoFetch(request, cancellationToken);
