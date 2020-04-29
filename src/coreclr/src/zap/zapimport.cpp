@@ -1249,7 +1249,7 @@ public:
         if (token != mdTokenNil)
         {
             _ASSERTE(TypeFromToken(token) == mdtMethodDef || TypeFromToken(token) == mdtMemberRef);
-            _ASSERTE(!pTable->GetCompileInfo()->IsNativeCallableMethod(handle));
+            _ASSERTE(!pTable->GetCompileInfo()->IsUnmanagedCallersOnlyMethod(handle));
 
             pTable->EncodeModule(
                 (TypeFromToken(token) == mdtMethodDef) ? ENCODE_METHOD_ENTRY_DEF_TOKEN : ENCODE_METHOD_ENTRY_REF_TOKEN,

@@ -1226,7 +1226,7 @@ lExit: ;
                 GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
                 if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
                 {
-                    // Exception is being propagated from a native callable method into its native caller.
+                    // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
                     // The explicit frame chain needs to be unwound at this boundary.
                     bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
                     CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
@@ -4630,7 +4630,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
-            // Propagating exception from a method marked by NativeCallable attribute is prohibited on Unix
+            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
             if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);

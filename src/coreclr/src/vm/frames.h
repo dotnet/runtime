@@ -2788,7 +2788,7 @@ protected:
 };
 #endif // TARGET_X86 && !TARGET_UNIX
 
-// Frame for the Reverse PInvoke (i.e. NativeCallableAttribute).
+// Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).
 struct ReversePInvokeFrame
 {
     Thread* currentThread;

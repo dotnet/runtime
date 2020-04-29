@@ -799,7 +799,7 @@ HRESULT CorHost2::CreateDelegate(
         if (pMD==NULL || !pMD->IsStatic() || pMD->HasClassOrMethodInstantiation())
             ThrowHR(COR_E_MISSINGMETHOD);
 
-        if (pMD->HasNativeCallableAttribute())
+        if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
             if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
                 ThrowHR(COR_E_INVALIDPROGRAM);

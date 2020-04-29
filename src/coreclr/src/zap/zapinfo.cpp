@@ -483,10 +483,10 @@ void ZapInfo::CompileMethod()
 #endif
 
 #ifdef TARGET_X86
-    if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(m_currentMethodHandle))
     {
         if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
+            m_zapper->Warning(W("ReadyToRun:  Methods with UnmanagedCallersOnlyAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
 #endif // TARGET_X86
@@ -2309,10 +2309,10 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #endif
 
 #ifdef TARGET_X86
-    if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
+    if (GetCompileInfo()->IsUnmanagedCallersOnlyMethod(pResult->hMethod))
     {
         if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
+            m_zapper->Warning(W("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
 #endif // TARGET_X86

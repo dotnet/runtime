@@ -2623,7 +2623,7 @@ namespace Internal.JitInterface
 
             if (funcKind == CorJitFuncKind.CORJIT_FUNC_ROOT)
             {
-                if (this.MethodBeingCompiled.IsNativeCallable)
+                if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
                     flags |= FrameInfoFlags.ReversePInvoke;
             }
 
@@ -2912,12 +2912,12 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 
-            if (this.MethodBeingCompiled.IsNativeCallable)
+            if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
 #if READYTORUN
                 if (targetArchitecture == TargetArchitecture.X86)
                 {
-                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
+                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
                 }
 #endif
 

@@ -5095,9 +5095,9 @@ void CEEInfo::getCallInfo(
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
     }
 
-    // If this call is for a LDFTN and the target method has the NativeCallableAttribute,
+    // If this call is for a LDFTN and the target method has the UnmanagedCallersOnlyAttribute,
     // then validate it adheres to the limitations.
-    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
+    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (!pMD->IsStatic())
             EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
@@ -9223,7 +9223,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasNativeCallableAttribute())
+    if (pMD->HasUnmanagedCallersOnlyAttribute())
     {
         pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
     }
@@ -12439,7 +12439,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
     }
 
 #if !defined(TARGET_X86)
-    if (ftn->HasNativeCallableAttribute())
+    if (ftn->HasUnmanagedCallersOnlyAttribute())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
 #endif // !TARGET_X86
 
