@@ -462,7 +462,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     if ((baseType == TYP_BYTE) || (baseType == TYP_USHORT))
                     {
-                        GenTree* constVal = nullptr;
+                        GenTree*  constVal = nullptr;
+                        var_types opType   = baseType;
 
                         NamedIntrinsic opIntrinsic;
                         NamedIntrinsic hwIntrinsic;
@@ -498,17 +499,17 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         constVector = impCloneExpr(constVector, &constVectorDup, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                                    nullptr DEBUGARG("Clone for Vector<T> min/max"));
 
-                        hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, baseType);
+                        hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, opType);
 
                         // op1 = op1 - constVector
                         // -or-
                         // op1 = op1 + constVector
-                        op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, constVector, hwIntrinsic, baseType, simdSize);
+                        op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, constVector, hwIntrinsic, opType, simdSize);
 
                         // op2 = op2 - constVector
                         // -or-
                         // op2 = op2 + constVector
-                        op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, constVectorDup, hwIntrinsic, baseType, simdSize);
+                        op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, constVectorDup, hwIntrinsic, opType, simdSize);
 
                         // op1 = Max(op1, op2)
                         // -or-
@@ -521,8 +522,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // result = op1 - constVectorDup
                         opIntrinsic = (opIntrinsic == NI_VectorT128_op_Subtraction) ? NI_VectorT128_op_Addition
                                                                                     : NI_VectorT128_op_Subtraction;
-                        hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, baseType);
-                        return gtNewSimdAsHWIntrinsicNode(retType, op1, constVectorDup, hwIntrinsic, baseType,
+                        hwIntrinsic = SimdAsHWIntrinsicInfo::lookupHWIntrinsic(opIntrinsic, opType);
+                        return gtNewSimdAsHWIntrinsicNode(retType, op1, constVectorDup, hwIntrinsic, opType,
                                                           simdSize);
                     }
 
@@ -882,7 +883,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                 // We need to treat op1 and op2 as signed for comparison purpose after
                 // the transformation.
 
-                GenTree* constVal = nullptr;
+                GenTree*  constVal = nullptr;
+                var_types opType   = baseType;
 
                 switch (baseType)
                 {
@@ -930,10 +932,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                 NamedIntrinsic hwIntrinsic = isVectorT256 ? NI_AVX2_Subtract : NI_SSE2_Subtract;
 
                 // op1 = op1 - constVector
-                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, constVector, hwIntrinsic, baseType, simdSize);
+                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, constVector, hwIntrinsic, opType, simdSize);
 
                 // op2 = op2 - constVector
-                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, constVectorDup, hwIntrinsic, baseType, simdSize);
+                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, constVectorDup, hwIntrinsic, opType, simdSize);
             }
 
             // This should have been mutated by the above path
