@@ -5,7 +5,7 @@
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class ValidateMethodImplRemainsInEffectAttribute : Attribute
+    public sealed class RequireMethodImplToRemainInEffectAttribute : Attribute
     {
     }
 }

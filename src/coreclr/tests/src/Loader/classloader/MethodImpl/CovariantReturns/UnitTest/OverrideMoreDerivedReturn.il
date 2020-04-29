@@ -268,7 +268,7 @@
 {
   .method public hidebysig newslot virtual instance class NonGenThroughGen5 NonGenThroughGenFunc(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc(string& res)
     ldarg.1
     ldstr "NonGenThroughGen5 DerivedTestType.NonGenThroughGenFunc()"
@@ -279,7 +279,7 @@
 
   .method public hidebysig newslot virtual instance class GenToNonGen4<!V,object> GenToNonGen(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
     ldarg.1
     ldstr "GenToNonGen4<!V,object> DerivedTestType.GenToNonGen()"
@@ -290,7 +290,7 @@
 
   .method public hidebysig newslot virtual instance class NonGenericDerived5 MyGenFunc(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<int32,object> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldarg.1
     ldstr "NonGenericDerived5 DerivedTestType.MyGenFunc()"
@@ -301,7 +301,7 @@
 
   .method public hidebysig newslot virtual instance class GenDerive4<!U,!V> MyGenFunc(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldarg.1
     ldstr "GenDerive4<!U,!V> DerivedTestType.MyGenFunc()"
@@ -312,7 +312,7 @@
   
   .method public hidebysig newslot virtual instance class GenDerivedRetType2<!U,!V> MyFunc(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
     ldarg.1
     ldstr "GenDerivedRetType2<!U,!V> DerivedTestType.MyFunc()"
@@ -323,7 +323,7 @@
   
   .method public hidebysig newslot virtual instance class D MyFunc(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::MyFunc(string& res)
     ldarg.1
     ldstr "D DerivedTestType.MyFunc()"

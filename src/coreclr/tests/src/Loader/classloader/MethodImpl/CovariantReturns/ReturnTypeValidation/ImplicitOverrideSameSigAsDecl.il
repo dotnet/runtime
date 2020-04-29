@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 .assembly extern System.Console { }
-.assembly extern System.Private.CoreLib { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
 .assembly ImplicitOverrideSameSigAsDecl { }

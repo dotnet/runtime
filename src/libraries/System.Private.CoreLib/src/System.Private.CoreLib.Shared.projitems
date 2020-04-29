@@ -633,6 +633,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequireMethodImplToRemainInEffectAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeFeature.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeHelpers.cs" />
@@ -649,7 +650,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ValidateMethodImplRemainsInEffectAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ValueTaskAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Cer.cs" />

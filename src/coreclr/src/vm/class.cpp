@@ -993,7 +993,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     // ECMA I.8.7.1, which is what the CanCastTo() API checks.
     //
     // The second step is to propagate an overriding MethodImpl to all applicable vtable slots if the MethodImpl
-    // has the ValidateMethodImplRemainsInEffect attribute. This is to ensure that if we use the signature of one of
+    // has the RequireMethodImplToRemainInEffect attribute. This is to ensure that if we use the signature of one of
     // the base type methods to call the overriding method, we still execute the overriding method.
     //
     // Consider this case:
@@ -1002,7 +1002,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     //          RetType VirtualFunction() { }
     //      }
     //      class B : A {
-    //          [ValidateMethodImplRemainsInEffect]
+    //          [RequireMethodImplToRemainInEffect]
     //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
     //      }
     //      class C : B {
@@ -1118,7 +1118,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             {
                 BYTE* pVal = NULL;
                 ULONG cbVal = 0;
-                if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::ValidateMethodImplRemainsInEffectAttribute, (const void**)&pVal, &cbVal) == S_OK)
+                if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::RequireMethodImplToRemainInEffectAttribute, (const void**)&pVal, &cbVal) == S_OK)
                     foundAttribute = true;
             }
 

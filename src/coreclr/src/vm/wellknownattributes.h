@@ -35,7 +35,7 @@ enum class WellKnownAttribute : DWORD
     UnmanagedFunctionPointer,
     ThreadStatic,
     WinRTMarshalingBehaviorAttribute,
-    ValidateMethodImplRemainsInEffectAttribute,
+    RequireMethodImplToRemainInEffectAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -100,8 +100,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.ThreadStaticAttribute";
         case WellKnownAttribute::WinRTMarshalingBehaviorAttribute:
             return "Windows.Foundation.Metadata.MarshalingBehaviorAttribute";
-        case WellKnownAttribute::ValidateMethodImplRemainsInEffectAttribute:
-            return "System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute";
+        case WellKnownAttribute::RequireMethodImplToRemainInEffectAttribute:
+            return "System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

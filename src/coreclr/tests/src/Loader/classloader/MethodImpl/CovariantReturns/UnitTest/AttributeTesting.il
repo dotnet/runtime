@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This test validates the behavior in the presence/absence of the ValidateMethodImplRemainsInEffectAttribute.
+// This test validates the behavior in the presence/absence of the RequireMethodImplToRemainInEffectAttribute.
 // Each test scenario will have 3 layers of type inheritance (T1,T2,T3), and we test the following scenarios:
 //
 //  Scenario A: Attribute placed T1's MethodDecl (attribute treated as NOP - only applicable to MethodImpls)
@@ -57,7 +57,7 @@
         
         .method public hidebysig newslot virtual instance string Func1()
         {
-            .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+            .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
             ldstr "T1"
             ret
         }
@@ -250,7 +250,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig newslot virtual instance string Func2()
         {
-            .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+            .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
             .override method instance string class C.T1::Func1()
             ldstr "T2"
             ret
@@ -321,7 +321,7 @@
         .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
         .method public hidebysig virtual instance string Func1()
         {
-            .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
+            .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
             ldstr "T2"
             ret
         }
