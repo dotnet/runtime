@@ -45,6 +45,7 @@ namespace System.Diagnostics.Tests
             foreach (Process p in all)
             {
                 Console.WriteLine("{0,8} {1}", p.Id, p.ProcessName);
+                p.Dispose();
             }
         }
     }
