@@ -13,7 +13,7 @@ namespace System.IO.MemoryMappedFiles
     {
 
         // This will verify file access and return file size. fileSize will -1 for special devices.
-        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, string? createdFile, out long fileSize)
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream, string? createdFile)
         {
             if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
             {
@@ -38,12 +38,10 @@ namespace System.IO.MemoryMappedFiles
             SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
+
             if (fileStream != null)
             {
-                if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-                {
-                    throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-                }
+                VerifyMemoryMappedFileAccess(access, capacity, fileStream, createdFile);
             }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
