@@ -60,9 +60,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (fileName);
 		}
 
-		public virtual void IncludeBlacklist (bool value)
+		public virtual void IgnoreDescriptors (bool value)
 		{
-			Append ("-z");
+			Append ("--ignore-descriptors");
+			Append (value ? "true" : "false");
+		}
+
+		public virtual void IgnoreSubstitutions (bool value)
+		{
+			Append ("--ignore-substitutions");
 			Append (value ? "true" : "false");
 		}
 
@@ -105,10 +111,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual void AddStripResources (bool stripResources)
+		public virtual void AddStripDescriptors (bool stripDescriptors)
 		{
-			if (!stripResources) {
-				Append ("--strip-resources");
+			if (!stripDescriptors) {
+				Append ("--strip-descriptors");
+				Append ("false");
+			}
+		}
+
+		public virtual void AddStripSubstitutions (bool stripSubstitutions)
+		{
+			if (!stripSubstitutions) {
+				Append ("--strip-substitutions");
 				Append ("false");
 			}
 		}
@@ -165,9 +179,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					AddAssemblyAction (entry.Key, entry.Value);
 			}
 
-			// Running the blacklist step causes a ton of stuff to be preserved.  That's good for normal use cases, but for
+			// Honoring descriptors causes a ton of stuff to be preserved.  That's good for normal use cases, but for
 			// our test cases that pollutes the results
-			IncludeBlacklist (options.IncludeBlacklistStep);
+			IgnoreDescriptors (options.IgnoreDescriptors);
+
+			IgnoreSubstitutions (options.IgnoreSubstitutions);
 
 #if !NETCOREAPP
 			if (!string.IsNullOrEmpty (options.Il8n))
@@ -185,7 +201,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			AddSkipUnresolved (options.SkipUnresolved);
 
-			AddStripResources (options.StripResources);
+			AddStripDescriptors (options.StripDescriptors);
+
+			AddStripSubstitutions (options.StripSubstitutions);
 
 			foreach (var substitutions in options.Substitutions)
 				AddSubstitutions (substitutions);

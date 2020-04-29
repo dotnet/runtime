@@ -3,10 +3,11 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Substitutions
 {
-	[SetupCompileResource ("Dependencies/EmbeddedSubstitutions.xml", "ILLink.Substitutions.xml")]
+	[SetupCompileResource ("Dependencies/EmbeddedSubstitutionsKept.xml", "ILLink.Substitutions.xml")]
 	[IgnoreSubstitutions (false)]
-	[RemovedResourceInAssembly ("test.exe", "ILLink.Substitutions.xml")]
-	public class EmbeddedSubstitutions
+	[StripSubstitutions (false)]
+	[KeptResource ("ILLink.Substitutions.xml")]
+	public class EmbeddedSubstitutionsKept
 	{
 		public static void Main ()
 		{

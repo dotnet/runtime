@@ -190,7 +190,6 @@ namespace Mono.Linker
 			var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
 			bool dumpDependencies = false;
 			string dependenciesFileName = null;
-			bool ignoreDescriptors = false;
 			bool removeCAS = true;
 			bool new_mvid_used = false;
 			bool deterministic_used = false;
@@ -246,8 +245,14 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--strip-resources":
-						if (!GetBoolParam (token, l => context.StripResources = l))
+					case "--strip-descriptors":
+						if (!GetBoolParam (token, l => context.StripDescriptors = l))
+							return -1;
+
+						continue;
+
+					case "--strip-substitutions":
+						if (!GetBoolParam (token, l => context.StripSubstitutions = l))
 							return -1;
 
 						continue;
@@ -320,7 +325,13 @@ namespace Mono.Linker
 						continue;
 
 					case "--ignore-descriptors":
-						if (!GetBoolParam (token, l => ignoreDescriptors = l))
+						if (!GetBoolParam (token, l => context.IgnoreDescriptors = l))
+							return -1;
+
+						continue;
+
+					case "--ignore-substitutions":
+						if (!GetBoolParam (token, l => context.IgnoreSubstitutions = l))
 							return -1;
 
 						continue;
@@ -507,7 +518,7 @@ namespace Mono.Linker
 
 						continue;
 					case "z":
-						if (!GetBoolParam (token, l => ignoreDescriptors = !l))
+						if (!GetBoolParam (token, l => context.IgnoreDescriptors = !l))
 							return -1;
 
 						continue;
@@ -573,9 +584,6 @@ namespace Mono.Linker
 			foreach (var file in body_substituter_steps)
 				AddBodySubstituterStep (p, file);
 
-			if (ignoreDescriptors)
-				p.RemoveStep (typeof (BlacklistStep));
-
 			if (context.DeterministicOutput)
 				p.RemoveStep (typeof (RegenerateGuidStep));
 
@@ -622,7 +630,7 @@ namespace Mono.Linker
 			// [mono only] ResolveFromXApiStep [optional, possibly many]
 			// LoadReferencesStep
 			// [mono only] LoadI18nAssemblies
-			// BlacklistStep [optional]
+			// BlacklistStep
 			//   dynamically adds steps:
 			//     ResolveFromXmlStep [optional, possibly many]
 			//     BodySubstituterStep [optional, possibly many]
@@ -922,7 +930,6 @@ namespace Mono.Linker
 #endif
 				UserAction = AssemblyAction.Link,
 				OutputDirectory = "output",
-				StripResources = true
 			};
 			return context;
 		}
@@ -1011,9 +1018,11 @@ namespace Mono.Linker
 			Console.WriteLine ("  --keep-dep-attributes     Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE   Apply any optimizations defined when this feature setting is a constant known at link time");
 			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
-			Console.WriteLine ("  --strip-resources         Remove XML descriptor resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --strip-descriptors       Remove XML descriptor resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
 			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
+			Console.WriteLine ("  --ignore-substitutions    Skips reading embedded substitutions. Defaults to false");
+			Console.WriteLine ("  --strip-substitutions     Remove XML substitution resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
 			Console.WriteLine ("  --attribute-defs FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
 

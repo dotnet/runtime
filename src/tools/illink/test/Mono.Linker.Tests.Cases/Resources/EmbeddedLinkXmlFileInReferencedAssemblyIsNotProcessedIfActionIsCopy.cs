@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Resources
 		new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.cs" },
 		resources: new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" })]
 	[SetupLinkerAction ("copy", "EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1")]
-	[IncludeBlacklistStep (true)]
+	[IgnoreDescriptors (false)]
 
 	[KeptResourceInAssembly ("EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.dll", "EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml")]
 	[KeptMemberInAssembly ("EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.dll", typeof (EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1), "Unused()")]

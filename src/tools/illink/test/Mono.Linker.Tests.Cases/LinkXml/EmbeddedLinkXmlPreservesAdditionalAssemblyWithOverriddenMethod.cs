@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		new[] { "Dependencies/EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod/Library2.cs" },
 		new[] { "Base.dll" },
 		addAsReference: false)]
-	[IncludeBlacklistStep (true)]
+	[IgnoreDescriptors (false)]
 
 	[KeptMemberInAssembly ("Library1.dll", typeof (Library1), "VirtualMethodFromBase()")]
 	[KeptMemberInAssembly ("Library1.dll", typeof (Library1Secondary), "VirtualMethodFromBase()")]
