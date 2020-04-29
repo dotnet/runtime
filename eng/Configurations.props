@@ -39,7 +39,6 @@
   <PropertyGroup>
     <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</HostRuntimeIdentifier>
     <HostRuntimeIdentifier Condition="'$(HostRuntimeIdentifier)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</HostRuntimeIdentifier>
-    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(HostRuntimeIdentifier)' != ''">$(HostRuntimeIdentifier.Remove($(HostRuntimeIdentifier.LastIndexOf('-'))))</RuntimeOS>
 
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
