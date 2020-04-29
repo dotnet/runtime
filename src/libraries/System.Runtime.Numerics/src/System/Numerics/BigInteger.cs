@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.MemoryMarshal;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -1431,7 +1431,7 @@ namespace System.Numerics
 
             if (_bits is null)
             {
-                dwords = CreateSpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
+                dwords = MemoryMarshal.CreateSpan(ref Unsafe.As<int, uint>(ref Unsafe.AsRef(in _sign)), 1);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
@@ -1450,17 +1450,17 @@ namespace System.Numerics
             int msb;
             for (msb = dwords.Length - 1; msb > 0; msb--)
             {
-                if (Unsafe.Add(ref GetReference(dwords), msb) != highDWord) break;
+                if (dwords[msb] != highDWord) break;
             }
             // Ensure high bit is 0 if positive, 1 if negative
-            bool needExtraByte = (Unsafe.Add(ref GetReference(dwords), msb) & 0x80000000) != (highDWord & 0x80000000);
+            bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             Span<uint> trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
             dwords = dwords.Slice(0, msb + 1);
             dwords.CopyTo(trimmed);
 
             if (needExtraByte)
-                Unsafe.Add(ref GetReference(trimmed), trimmed.Length - 1) = highDWord;
+                trimmed[trimmed.Length - 1] = highDWord;
 
             return trimmed;
         }
@@ -1837,8 +1837,8 @@ namespace System.Numerics
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
-                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
+                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
+                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
                 z[i] = xu & yu;
             }
             return new BigInteger(z);
@@ -1864,8 +1864,8 @@ namespace System.Numerics
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
-                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
+                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
+                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
                 z[i] = xu | yu;
             }
             return new BigInteger(z);
@@ -1886,8 +1886,8 @@ namespace System.Numerics
 
             for (int i = 0; i < z.Length; i++)
             {
-                uint xu = (i < x.Length) ? Unsafe.Add(ref GetReference(x), i) : xExtend;
-                uint yu = (i < y.Length) ? Unsafe.Add(ref GetReference(y), i) : yExtend;
+                uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
+                uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
                 z[i] = xu ^ yu;
             }
 

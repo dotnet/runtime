@@ -4,21 +4,14 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Square(uint[] value)
+        public static uint[] Square(ReadOnlySpan<uint> value)
         {
-            Debug.Assert(value != null);
-
-            // Switching to unsafe pointers helps sparing
-            // some nasty index calculations...
-
             uint[] bits = new uint[value.Length + value.Length];
-
             Square(value, bits);
 
             return bits;
@@ -55,23 +48,19 @@ namespace System.Numerics
                 // = 2^64 - 1 (which perfectly matches with ulong!). But
                 // here we would need an UInt65... Hence, we split these
                 // operation and do some extra shifts.
-                ref uint elementPtr = ref NullRef;
                 for (int i = 0; i < value.Length; i++)
                 {
                     ulong carry = 0UL;
                     for (int j = 0; j < i; j++)
                     {
-                        elementPtr = ref Unsafe.Add(ref GetReference(bits), i + j);
-                        ulong digit1 = elementPtr + carry;
-                        ulong digit2 = (ulong)Unsafe.Add(ref GetReference(value), j) * Unsafe.Add(ref GetReference(value), i);
-                        elementPtr = unchecked((uint)(digit1 + (digit2 << 1)));
+                        ulong digit1 = bits[i + j] + carry;
+                        ulong digit2 = (ulong)value[j] * value[i];
+                        bits[i + j] = unchecked((uint)(digit1 + (digit2 << 1)));
                         carry = (digit2 + (digit1 >> 1)) >> 31;
                     }
-                    elementPtr = ref Unsafe.Add(ref GetReference(value), i);
-                    ulong digits = (ulong)elementPtr * elementPtr + carry;
-                    elementPtr = ref Unsafe.Add(ref GetReference(bits), i + i);
-                    elementPtr = unchecked((uint)digits);
-                    Unsafe.Add(ref elementPtr, 1) = (uint)(digits >> 32);
+                    ulong digits = (ulong)value[i] * value[i] + carry;
+                    bits[i + i] = unchecked((uint)digits);
+                    bits[i + i + 1] = (uint)(digits >> 32);
                 }
             }
             else
@@ -145,49 +134,33 @@ namespace System.Numerics
             }
         }
 
-        public static uint[] Multiply(uint[] left, uint right)
+        public static uint[] Multiply(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
-
             // Executes the multiplication for one big and one 32-bit integer.
             // Since every step holds the already slightly familiar equation
             // a_i * b + c <= 2^32 - 1 + (2^32 - 1)^2 < 2^64 - 1,
             // we are safe regarding to overflows.
 
             uint[] bits = new uint[left.Length + 1];
+            int i = 0;
+            ulong carry = 0UL;
 
-            Multiply(ref GetArrayDataReference(left), left.Length, right, ref GetArrayDataReference(bits));
+            for ( ; i < left.Length; i++)
+            {
+                ulong digits = (ulong)left[i] * right + carry;
+                bits[i] = unchecked((uint)digits);
+                carry = digits >> 32;
+            }
+            bits[i] = (uint)carry;
 
             return bits;
         }
 
-        private static void Multiply(ref uint left, int leftLength,
-                                     uint right,
-                                     ref uint bits)
+        public static uint[] Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
-            int i = 0;
-            ulong carry = 0UL;
-
-            for ( ; i < leftLength; i++)
-            {
-                ulong digits = (ulong)Unsafe.Add(ref left, i) * right + carry;
-                Unsafe.Add(ref bits, i) = unchecked((uint)digits);
-                carry = digits >> 32;
-            }
-            Unsafe.Add(ref bits, i) = (uint)carry;
-        }
-
-        public static uint[] Multiply(uint[] left, uint[] right)
-        {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= right.Length);
 
-            // Switching to unsafe pointers helps sparing
-            // some nasty index calculations...
-
             uint[] bits = new uint[left.Length + right.Length];
-
             Multiply(left, right, bits);
 
             return bits;
@@ -221,19 +194,17 @@ namespace System.Numerics
                 // z_i+j + a_j * b_i + c <= 2(2^32 - 1) + (2^32 - 1)^2 =
                 // = 2^64 - 1 (which perfectly matches with ulong!).
 
-                ref uint elementPtr = ref NullRef;
                 for (int i = 0; i < right.Length; i++)
                 {
                     ulong carry = 0UL;
                     for (int j = 0; j < left.Length; j++)
                     {
-                        elementPtr = ref Unsafe.Add(ref GetReference(bits), i + j);
-                        ulong digits = elementPtr + carry
-                            + (ulong)Unsafe.Add(ref GetReference(left), j) * Unsafe.Add(ref GetReference(right), i);
+                        ref uint elementPtr = ref bits[i + j];
+                        ulong digits = elementPtr + carry + (ulong)left[j] * right[i];
                         elementPtr = unchecked((uint)digits);
                         carry = digits >> 32;
                     }
-                    Unsafe.Add(ref GetReference(bits), i + left.Length) = (uint)carry;
+                    bits[i + left.Length] = (uint)carry;
                 }
             }
             else
@@ -332,24 +303,23 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
-            ref uint elementPtr = ref NullRef;
             for (; i < right.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
-                long digit = (elementPtr + carry) - Unsafe.Add(ref GetReference(left), i) - Unsafe.Add(ref GetReference(right), i);
+                ref uint elementPtr = ref core[i];
+                long digit = (elementPtr + carry) - left[i] - right[i];
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < left.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
-                long digit = (elementPtr + carry) - Unsafe.Add(ref GetReference(left), i);
+                ref uint elementPtr = ref core[i];
+                long digit = (elementPtr + carry) - left[i];
                 elementPtr = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < core.Length; i++)
             {
-                elementPtr = ref Unsafe.Add(ref GetReference(core), i);
+                ref uint elementPtr = ref core[i];
                 long digit = elementPtr + carry;
                 elementPtr = (uint)digit;
                 carry = digit >> 32;

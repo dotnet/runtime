@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -52,21 +51,17 @@ namespace System.Numerics
                 // Executes a multiplication for this and value, writes the
                 // result to temp. Switches this and temp arrays afterwards.
 
-                ref uint b = ref GetArrayDataReference(_bits);
-                ref uint v = ref GetArrayDataReference(value._bits);
-                ref uint t = ref GetArrayDataReference(temp._bits);
-
                 if (_length < value._length)
                 {
-                    Multiply(CreateSpan(ref v, value._length),
-                                CreateSpan(ref b, _length),
-                                CreateSpan(ref t, _length + value._length));
+                    Multiply(new ReadOnlySpan<uint>(value._bits, 0, value._length),
+                             new ReadOnlySpan<uint>(_bits, 0, _length),
+                             new Span<uint>(temp._bits, 0, _length + value._length));
                 }
                 else
                 {
-                    Multiply(CreateSpan(ref b, _length),
-                                CreateSpan(ref v, value._length),
-                                CreateSpan(ref t, _length + value._length));
+                    Multiply(new ReadOnlySpan<uint>(_bits, 0, _length),
+                             new ReadOnlySpan<uint>(value._bits, 0, value._length),
+                             new Span<uint>(temp._bits, 0, _length + value._length));
                 }
 
                 Apply(ref temp, _length + value._length);
@@ -80,11 +75,8 @@ namespace System.Numerics
                 // Executes a square for this, writes the result to temp.
                 // Switches this and temp arrays afterwards.
 
-                ref uint b = ref GetArrayDataReference(_bits);
-                ref uint t = ref GetArrayDataReference(temp._bits);
-
-                Square(CreateSpan(ref b, _length),
-                           CreateSpan(ref t, _length + _length));
+                Square(new ReadOnlySpan<uint>(_bits, 0, _length),
+                           new Span<uint>(temp._bits, 0, _length + _length));
 
                 Apply(ref temp, _length + _length);
             }

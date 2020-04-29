@@ -3,16 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Add(uint[] left, uint right)
+        public static uint[] Add(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
 
             // Executes the addition for one big and one 32-bit integer.
@@ -20,40 +17,25 @@ namespace System.Numerics
             // processing the 32-bit integer, since it's a single element.
 
             uint[] bits = new uint[left.Length + 1];
+            long carry = right;
 
-            Add(left, right, ref GetArrayDataReference(bits));
+            for (int i = 0; i < left.Length; i++)
+            {
+                long digit = left[i] + carry;
+                bits[i] = unchecked((uint)digit);
+                carry = digit >> 32;
+            }
+
+            bits[left.Length] = (uint)carry;
 
             return bits;
         }
 
-        private static void Add(ReadOnlySpan<uint> left,
-                                uint right,
-                                ref uint bits)
+        public static uint[] Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
-            long digit = (long)GetReference(left) + right;
-            bits = unchecked((uint)digit);
-            long carry = digit >> 32;
-
-            for (int i = 1; i < left.Length; i++)
-            {
-                digit = Unsafe.Add(ref GetReference(left), i) + carry;
-                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
-                carry = digit >> 32;
-            }
-            Unsafe.Add(ref bits, left.Length) = (uint)carry;
-        }
-
-        public static uint[] Add(uint[] left, uint[] right)
-        {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= right.Length);
 
-            // Switching to managed pointers helps sparing
-            // some nasty index calculations...
-
             uint[] bits = new uint[left.Length + 1];
-
             Add(left, right, bits);
 
             return bits;
@@ -76,17 +58,17 @@ namespace System.Numerics
 
             for (; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref GetReference(left), i) + carry) + Unsafe.Add(ref GetReference(right), i);
-                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
+                long digit = (left[i] + carry) + right[i];
+                bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref GetReference(left), i) + carry;
-                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
+                long digit = left[i] + carry;
+                bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            Unsafe.Add(ref GetReference(bits), i) = (uint)carry;
+            bits[i] = (uint)carry;
         }
 
         private static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
@@ -101,17 +83,16 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-            ref uint leftElement = ref NullRef;
             for (; i < right.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref GetReference(left), i);
-                long digit = (leftElement + carry) + Unsafe.Add(ref GetReference(right), i);
+                ref uint leftElement = ref left[i];
+                long digit = (leftElement + carry) + right[i];
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < left.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref GetReference(left), i);
+                ref uint leftElement = ref left[i];
                 long digit = leftElement + carry;
                 leftElement = (uint)digit;
                 carry = digit >> 32;
@@ -120,9 +101,8 @@ namespace System.Numerics
             Debug.Assert(carry == 0);
         }
 
-        public static uint[] Subtract(uint[] left, uint right)
+        public static uint[] Subtract(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(left[0] >= right || left.Length >= 2);
 
@@ -131,38 +111,24 @@ namespace System.Numerics
             // processing the 32-bit integer, since it's a single element.
 
             uint[] bits = new uint[left.Length];
+            long carry = -right;
 
-            Subtract(left, right, ref GetArrayDataReference(bits));
+            for (int i = 0; i < left.Length; i++)
+            {
+                long digit = left[i] + carry;
+                bits[i] = unchecked((uint)digit);
+                carry = digit >> 32;
+            }
 
             return bits;
         }
 
-        private static void Subtract(ReadOnlySpan<uint> left, uint right, ref uint bits)
+        public static uint[] Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
-            long digit = (long)GetReference(left) - right;
-            bits = unchecked((uint)digit);
-            long carry = digit >> 32;
-
-            for (int i = 1; i < left.Length; i++)
-            {
-                digit = Unsafe.Add(ref GetReference(left), i) + carry;
-                Unsafe.Add(ref bits, i) = unchecked((uint)digit);
-                carry = digit >> 32;
-            }
-        }
-
-        public static uint[] Subtract(uint[] left, uint[] right)
-        {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(Compare(left, right) >= 0);
 
-            // Switching to managed pointers helps sparing
-            // some nasty index calculations...
-
             uint[] bits = new uint[left.Length];
-
             Subtract(left, right, bits);
 
             return bits;
@@ -186,14 +152,14 @@ namespace System.Numerics
 
             for (; i < right.Length; i++)
             {
-                long digit = (Unsafe.Add(ref GetReference(left), i) + carry) - Unsafe.Add(ref GetReference(right), i);
-                Unsafe.Add(ref GetReference(bits), i) = unchecked((uint)digit);
+                long digit = (left[i] + carry) - right[i];
+                bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < left.Length; i++)
             {
-                long digit = Unsafe.Add(ref GetReference(left), i) + carry;
-                Unsafe.Add(ref GetReference(bits), i) = (uint)digit;
+                long digit = left[i] + carry;
+                bits[i] = (uint)digit;
                 carry = digit >> 32;
             }
 
@@ -213,17 +179,17 @@ namespace System.Numerics
 
             int i = 0;
             long carry = 0L;
-            ref uint leftElement = ref NullRef;
+
             for (; i < right.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref GetReference(left), i);
-                long digit = (leftElement + carry) - Unsafe.Add(ref GetReference(right), i);
+                ref uint leftElement = ref left[i];
+                long digit = (leftElement + carry) - right[i];
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < left.Length; i++)
             {
-                leftElement = ref Unsafe.Add(ref GetReference(left), i);
+                ref uint leftElement = ref left[i];
                 long digit = leftElement + carry;
                 leftElement = (uint)digit;
                 carry = digit >> 32;

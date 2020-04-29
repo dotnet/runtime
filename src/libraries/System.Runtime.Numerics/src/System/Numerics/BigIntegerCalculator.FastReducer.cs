@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.MemoryMarshal;
 
 namespace System.Numerics
 {
@@ -89,21 +88,17 @@ namespace System.Numerics
                 {
                     leftLength -= k;
 
-                    ref uint l = ref GetArrayDataReference(left);
-                    ref uint r = ref GetArrayDataReference(right);
-                    ref uint b = ref GetArrayDataReference(bits);
-
                     if (leftLength < rightLength)
                     {
-                        Multiply(CreateSpan(ref r, rightLength),
-                                 CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
-                                 CreateSpan(ref b, leftLength + rightLength));
+                        Multiply(new ReadOnlySpan<uint>(right, 0, rightLength),
+                                 new ReadOnlySpan<uint>(left, k, leftLength),
+                                 new Span<uint>(bits, 0, leftLength + rightLength));
                     }
                     else
                     {
-                        Multiply(CreateSpan(ref Unsafe.Add(ref l, k), leftLength),
-                                 CreateSpan(ref r, rightLength),
-                                 CreateSpan(ref b, leftLength + rightLength));
+                        Multiply(new ReadOnlySpan<uint>(left, k, leftLength),
+                                 new ReadOnlySpan<uint>(right, 0, rightLength),
+                                 new Span<uint>(bits, 0, leftLength + rightLength));
                     }
 
                     return ActualLength(bits, leftLength + rightLength);
@@ -131,16 +126,12 @@ namespace System.Numerics
                 if (rightLength > k)
                     rightLength = k;
 
-                ref uint l = ref GetArrayDataReference(left);
-                ref uint r = ref GetArrayDataReference(right);
-                ref uint m = ref GetArrayDataReference(modulus);
-
-                SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref r, rightLength));
+                SubtractSelf(new Span<uint>(left, 0, leftLength), new ReadOnlySpan<uint>(right, 0, rightLength));
                 leftLength = ActualLength(left, leftLength);
 
-                while (Compare(CreateSpan(ref l, leftLength), CreateSpan(ref m, modulus.Length)) >= 0)
+                while (Compare(new ReadOnlySpan<uint>(left, 0, leftLength), modulus) >= 0)
                 {
-                    SubtractSelf(CreateSpan(ref l, leftLength), CreateSpan(ref m, modulus.Length));
+                    SubtractSelf(new Span<uint>(left, 0, leftLength), modulus);
                     leftLength = ActualLength(left, leftLength);
                 }
 
