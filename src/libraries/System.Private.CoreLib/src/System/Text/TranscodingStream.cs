@@ -151,9 +151,9 @@ namespace System.Text
                 Debug.Assert(pendingData.Count != 0);
 
                 Stream innerStream = _innerStream;
+                _innerStream = null!;
 
                 await innerStream.WriteAsync(pendingData.AsMemory()).ConfigureAwait(false);
-                _innerStream = null!;
 
                 if (!_leaveOpen)
                 {
@@ -471,20 +471,10 @@ namespace System.Text
 
             int rentalLength = Math.Clamp(buffer.Length, MinWriteRentedArraySize, MaxWriteRentedArraySize);
 
-            char[] rentedChars = ArrayPool<char>.Shared.Rent(rentalLength);
-            byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(rentalLength);
+            char[] scratchChars = ArrayPool<char>.Shared.Rent(rentalLength);
+            byte[] scratchBytes = ArrayPool<byte>.Shared.Rent(rentalLength);
 
             try
-            {
-                WriteCore(buffer, rentedChars, rentedBytes);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(rentedChars);
-                ArrayPool<byte>.Shared.Return(rentedBytes);
-            }
-
-            void WriteCore(ReadOnlySpan<byte> remainingOuterEncodedBytes, char[] scratchChars, byte[] scratchBytes)
             {
                 bool decoderFinished, encoderFinished;
                 do
@@ -492,14 +482,14 @@ namespace System.Text
                     // convert bytes [this] -> chars
 
                     _thisDecoder.Convert(
-                        bytes: remainingOuterEncodedBytes,
+                        bytes: buffer,
                         chars: scratchChars,
                         flush: false,
                         out int bytesConsumed,
                         out int charsWritten,
                         out decoderFinished);
 
-                    remainingOuterEncodedBytes = remainingOuterEncodedBytes[bytesConsumed..];
+                    buffer = buffer[bytesConsumed..];
 
                     // convert chars -> bytes [inner]
 
@@ -523,6 +513,11 @@ namespace System.Text
                         _innerStream.Write(scratchBytes, 0, bytesWritten);
                     } while (!encoderFinished);
                 } while (!decoderFinished);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(scratchChars);
+                ArrayPool<byte>.Shared.Return(scratchBytes);
             }
         }
 
