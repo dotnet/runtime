@@ -1,0 +1,10 @@
+<Project DefaultTargets="Build">
+  <Import Project="Directory.Build.props" />
+
+  <!-- This is included by the installer proj so it has to be in a separate file -->
+  <Import Project="wasm.targets"/>
+
+  <Target Name="Build" DependsOnTargets="BuildWasmRuntimes"/>
+
+  <Import Project="Directory.Build.targets" />
+</Project>

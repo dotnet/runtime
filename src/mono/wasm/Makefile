@@ -1,18 +1,24 @@
 TOP=$(realpath $(CURDIR)/../../..)
 -include Make.config
 
+#
+# These variables are set by wasm.targets
+#
+EMSDK_PATH?=emsdk
+CONFIG?=Release
+BINDIR?=$(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)
+OBJDIR?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)
+
 all: build-native
 
 #
 # EMSCRIPTEN SETUP
 #
-#  If EMSCRIPTEN_PATH is not set on the command line (CI), download and setup a local
-# emscripten install.
+#  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
 EMSCRIPTEN_VERSION=1.39.11
 EMSDK_LOCAL_PATH=emsdk
-EMSDK_PATH?=emsdk
 EMCC=source $(CURDIR)/emsdk_env.sh && emcc
 
 emsdk:
@@ -31,7 +37,7 @@ $(EMSDK_PATH)/.emscripten: | $(EMSDK_PATH)
 	cd emsdk && git reset --hard && git clean -xdff && git pull
 	touch $@
 
-ifeq ($(EMSDK_PATH),$(EMSDK_LOCAL_PATH))
+ifeq ($(EMSDK_PATH),emsdk)
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 else
 provision-wasm:
@@ -41,14 +47,14 @@ endif
 emsdk_env.sh: | provision-wasm
 	cd $(EMSDK_PATH) && ./emsdk construct_env $(CURDIR)/emsdk_env.sh
 
-# artifacts/bin doesn't contain all the includes/libs we need
-ARTIFACTS_BIN_DIR=$(TOP)/artifacts/bin/mono/Browser.wasm.Release
-ARTIFACTS_OBJ_DIR=$(TOP)/artifacts/obj/mono/Browser.wasm.Release
-SYS_NATIVE_DIR=$(TOP)/artifacts/bin/native/netcoreapp5.0-Browser-Release-wasm/
+# artifacts/bin doesn't yet contain all the includes/libs we need
+MONO_BIN_DIR=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
+MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
+SYS_NATIVE_DIR=$(BINDIR)/native/netcoreapp5.0-Browser-$(CONFIG)-wasm/
 MONO_LIBS = $(ARTIFACTS_OBJ_DIR)/out/lib/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
 MONO_INCLUDE_DIR=$(ARTIFACTS_OBJ_DIR)/out/include/mono-2.0
-BUILDS_BIN_DIR=$(ARTIFACTS_BIN_DIR)/wasm/runtimes
-BUILDS_OBJ_DIR=$(ARTIFACTS_OBJ_DIR)/wasm/runtimes
+BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
+BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'addFunction']" -s USE_ZLIB=1 -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -s WASM_OBJECT_FILES=0 -s FORCE_FILESYSTEM=1
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1
@@ -73,7 +79,7 @@ $(BUILDS_OBJ_DIR)/$(1)/:
 $(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
-$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c runtime/pinvoke-tables-default.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c runtime/pinvoke-tables-default-netcore.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
@@ -97,4 +103,3 @@ clean-emsdk:
 clean:
 	$(RM) -rf $(BUILDS_BIN_DIR) $(BUILDS_OBJ_DIR)
 	$(RM) emsdk_env.sh
-
