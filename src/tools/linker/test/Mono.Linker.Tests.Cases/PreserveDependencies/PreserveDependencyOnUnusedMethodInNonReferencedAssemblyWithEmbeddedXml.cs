@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 	/// <summary>
 	/// This test is here to ensure that link xml embedded in an assembly used by a [PreserveDependency] is not processed if the dependency is not used
 	/// </summary>
-	[IncludeBlacklistStep (true)]
+	[IgnoreDescriptors (false)]
 	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore (

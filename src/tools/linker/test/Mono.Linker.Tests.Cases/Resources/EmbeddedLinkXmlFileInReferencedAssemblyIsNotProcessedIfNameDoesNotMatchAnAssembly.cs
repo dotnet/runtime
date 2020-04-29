@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Resources
 		"library.dll",
 		new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1.cs" },
 		resources: new[] { "Dependencies/EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" })]
-	[IncludeBlacklistStep (true)]
+	[IgnoreDescriptors (false)]
 
 	[KeptResourceInAssembly ("library.dll", "EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml")]
 	[RemovedMemberInAssembly ("library.dll", typeof (EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1), "Unused()")]

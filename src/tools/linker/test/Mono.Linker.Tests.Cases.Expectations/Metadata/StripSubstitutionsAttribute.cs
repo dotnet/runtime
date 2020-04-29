@@ -2,11 +2,11 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 {
-	public sealed class StripResourcesAttribute : BaseMetadataAttribute
+	public sealed class StripSubstitutionsAttribute : BaseMetadataAttribute
 	{
 		public readonly bool Value;
 
-		public StripResourcesAttribute (bool value)
+		public StripSubstitutionsAttribute (bool value)
 		{
 			Value = value;
 		}
