@@ -8,21 +8,18 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
-        /// <summary>
-        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
-        /// memory mapped file should not be associated with an existing file on disk (i.e. start
-        /// out empty).
-        /// </summary>
-        private static unsafe SafeMemoryMappedFileHandle CreateCore(
-            FileStream? fileStream, string? mapName,
-            HandleInheritability inheritability, MemoryMappedFileAccess access,
-            MemoryMappedFileOptions options, long capacity)
+
+        // This will verify file access and return file size. fileSize will return -1 for special devices.
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, string? createdFile, out long fileSize)
         {
             bool isRegularFile = true;
-            Interop.Sys.FileStatus status = default;
+            fileSize = -1;
 
             if (fileStream != null)
             {
+
+                Interop.Sys.FileStatus status = default;
+
                 int result = Interop.Sys.FStat(fileStream.SafeFileHandle, out status);
                 if (result != 0)
                 {
@@ -32,11 +29,15 @@ namespace System.IO.MemoryMappedFiles
 
                 isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
 
-                // perform deferred argument check.
                 if (isRegularFile)
                 {
+                    fileSize = status.Size;
                     if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
                     {
+                        if (createdFile != null)
+                        {
+                            CleanupFile(fileStream, true, createdFile);
+                        }
                         throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
                     }
 
@@ -46,6 +47,19 @@ namespace System.IO.MemoryMappedFiles
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
+        /// memory mapped file should not be associated with an existing file on disk (i.e. start
+        /// out empty).
+        /// </summary>
+        private static unsafe SafeMemoryMappedFileHandle CreateCore(
+            FileStream? fileStream, string? mapName,
+            HandleInheritability inheritability, MemoryMappedFileAccess access,
+            MemoryMappedFileOptions options, long capacity, string? createdFile = null)
+        {
+            VerifyMemoryMappedFileAccess(access, capacity, fileStream, createdFile, out long fileSize);
 
             if (mapName != null)
             {
@@ -64,9 +78,7 @@ namespace System.IO.MemoryMappedFiles
             bool ownsFileStream = false;
             if (fileStream != null)
             {
-
-
-                if (capacity > status.Size && isRegularFile)
+                if (fileSize >= 0 && capacity > fileSize)
                 {
                     // This map is backed by a file.  Make sure the file's size is increased to be
                     // at least as big as the requested capacity of the map for Write* access.

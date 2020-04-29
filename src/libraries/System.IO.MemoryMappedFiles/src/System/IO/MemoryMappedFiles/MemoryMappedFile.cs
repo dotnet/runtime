@@ -170,7 +170,7 @@ namespace System.IO.MemoryMappedFiles
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,
-                    access, MemoryMappedFileOptions.None, capacity);
+                    access, MemoryMappedFileOptions.None, capacity, existed ? null : path);
             }
             catch
             {

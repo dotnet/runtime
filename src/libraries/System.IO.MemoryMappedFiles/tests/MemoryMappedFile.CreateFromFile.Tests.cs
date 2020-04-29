@@ -896,7 +896,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void OpenCharacterDeviceAsStream(MemoryMappedFileAccess access)
         {
-            string device = "/dev/zero";
+            const string device = "/dev/zero";
             if (!File.Exists(device))
             {
                 throw new SkipTestException($"'{device}' is not available.");
@@ -926,7 +926,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void OpenCharacterDeviceAsFile(MemoryMappedFileAccess access)
         {
-            string device = "/dev/zero";
+            const string device = "/dev/zero";
             if (!File.Exists(device))
             {
                 throw new SkipTestException($"'{device}' is not available.");
@@ -934,7 +934,8 @@ namespace System.IO.MemoryMappedFiles.Tests
 
             long viewCapacity = 0xFF;
 
-            try {
+            try
+            {
                 using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(device, FileMode.Open, null, viewCapacity, access))
                 {
                     ValidateDeviceAccess(memMap, viewCapacity, access);
