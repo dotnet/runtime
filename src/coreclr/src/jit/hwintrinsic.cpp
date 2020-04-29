@@ -349,9 +349,11 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
 //    get the SIMD size from the GenTreeHWIntrinsic node.
 unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig)
 {
-    if (HWIntrinsicInfo::HasFixedSimdSize(id))
+    unsigned simdSize = 0;
+
+    if (tryLookupSimdSize(id, &simdSize))
     {
-        return lookupSimdSize(id);
+        return simdSize;
     }
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
@@ -371,7 +373,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
         typeHnd = sig->retTypeSigClass;
     }
 
-    unsigned  simdSize = 0;
     var_types baseType = comp->getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
     assert((simdSize > 0) && (baseType != TYP_UNKNOWN));
     return simdSize;
