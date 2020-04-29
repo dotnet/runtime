@@ -74,8 +74,6 @@ jobs:
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
-      - src/coreclr/tests/*
-      - src/coreclr/build-test.sh
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -103,6 +101,10 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
+    - subset: runtimetests
+      include:
+      - /src/coreclr/tests/*
+      - /src/coreclr/build-test.sh
     - subset: installer
       include:
       - docs/manpages/*
@@ -695,6 +697,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -716,6 +719,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
