@@ -14,7 +14,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC</DefineConstants>
+    <DefineConstants>$(DefineConstants);BROWSER_DOES_NOT_SUPPORT_QUIC;TargetsBrowser</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
@@ -732,7 +732,7 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
 
-    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpMessageHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
 
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs"
              Link="Common\Interop\Browser\Interop.Runtime.cs" />
@@ -760,8 +760,5 @@
              Link="Common\Interop\Browser\Interop.JavaScript.Function.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs"
              Link="Common\Interop\Browser\Interop.Runtime.AnyRef.cs" />
-
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.HttpHandlerService.cs"
-             Link="Common\Interop\Browser\Interop.HttpHandlerService.cs" />
   </ItemGroup>  
 </Project>

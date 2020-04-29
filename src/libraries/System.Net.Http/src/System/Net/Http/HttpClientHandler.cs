@@ -13,13 +13,21 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
+#if TargetsBrowser
+        private readonly BrowserHttpHandler _socketsHttpHandler;
+#else
         private readonly SocketsHttpHandler _socketsHttpHandler;
+#endif
         private readonly DiagnosticsHandler _diagnosticsHandler;
         private ClientCertificateOption _clientCertificateOptions;
 
         public HttpClientHandler()
         {
+#if TargetsBrowser
+            _socketsHttpHandler = new BrowserHttpHandler();
+#else
             _socketsHttpHandler = new SocketsHttpHandler();
+#endif
             _diagnosticsHandler = new DiagnosticsHandler(_socketsHttpHandler);
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
