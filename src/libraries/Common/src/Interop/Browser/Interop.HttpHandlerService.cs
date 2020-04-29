@@ -29,8 +29,8 @@ internal static partial class Interop
         public class BrowserHttpHandlerService : IHttpHandlerService, IDisposable
         {
 
-            private static JSObject? fetch;
-            private static JSObject? window;
+            private static readonly JSObject? fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
+            private static readonly JSObject? window = (JSObject)Interop.Runtime.GetGlobalObject("window");
 
             /// <summary>
             /// Gets whether the current Browser supports streaming responses
@@ -44,15 +44,7 @@ internal static partial class Interop
             {
                 using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
                     StreamingSupported = (bool)streamingSupported.Call();
-                handlerInit();
             }
-
-            private static void handlerInit()
-            {
-                window = (JSObject)Interop.Runtime.GetGlobalObject("window");
-                fetch = (JSObject)Interop.Runtime.GetGlobalObject("fetch");
-            }
-
             public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 // There is a race condition on Safari as a result of using TaskCompletionSource that
@@ -245,8 +237,8 @@ internal static partial class Interop
 
                 public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
                 {
-                    this.fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse), $"{nameof(fetchResponse)} cannot be null");
-                    this.abortController = abortController ?? throw new ArgumentNullException(nameof(abortController), $"{nameof(abortController)} cannot be null"); ;
+                    this.fetchResponse = fetchResponse ?? throw new ArgumentNullException(nameof(fetchResponse));
+                    this.abortController = abortController ?? throw new ArgumentNullException(nameof(abortController));
                     this.abortCts = abortCts;
                     this.abortRegistration = abortRegistration;
                 }
@@ -301,7 +293,7 @@ internal static partial class Interop
 
                 public BrowserHttpContent(WasmFetchResponse status)
                 {
-                    _status = status ?? throw new ArgumentNullException(nameof(status), $"{nameof(status)} cannot be null");
+                    _status = status ?? throw new ArgumentNullException(nameof(status));
                 }
 
                 private async Task<byte[]> GetResponseData()

@@ -77,9 +77,6 @@ internal static partial class Interop
         private static Dictionary<int, JSObject?> bound_objects = new Dictionary<int, JSObject?>();
         private static Dictionary<object, JSObject?> raw_to_js = new Dictionary<object, JSObject?>();
 
-        static Runtime()
-        { }
-
         public static int New<T>(params object[] _params)
         {
             var res = New(typeof(T).Name, _params, out int exception);
