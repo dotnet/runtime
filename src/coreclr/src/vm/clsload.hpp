@@ -973,7 +973,7 @@ private:
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
 
-    static void ValidateMethodImplRemainsInEffect(MethodTable* pMT);
+    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)

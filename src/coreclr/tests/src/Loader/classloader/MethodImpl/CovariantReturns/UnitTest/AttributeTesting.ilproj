@@ -5,6 +5,6 @@
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="IncompatibleReturnNoValidation.il" />
+    <Compile Include="AttributeTesting.il" />
   </ItemGroup>
 </Project>

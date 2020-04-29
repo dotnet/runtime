@@ -2275,6 +2275,7 @@ MethodTableBuilder::EnumerateMethodImpls()
             bmtMetaData->rgMethodImplTokens[i].fConsiderDuringInexactMethodImplProcessing = false;
             bmtMetaData->rgMethodImplTokens[i].fThrowIfUnmatchedDuringInexactMethodImplProcessing = false;
             bmtMetaData->rgMethodImplTokens[i].interfaceEquivalenceSet = 0;
+            bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = false;
 
             if (FAILED(hr))
             {
@@ -2451,7 +2452,16 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                 if (!compatibleSignatures && IsEligibleForCovariantReturns(theDecl))
                 {
-                    compatibleSignatures = MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, TRUE);
+                    if (MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, TRUE))
+                    {
+                        // Signatures matched, except for the return type. Flag that MethodImpl to check the return type at a later
+                        // stage for compatibility, and treat it as compatible for now.
+                        // For compatibility rules, see ECMA I.8.7.1. We will use the MethodTable::CanCastTo() at a later stage to validate
+                        // compatibilities of the return types according to these rules.
+
+                        compatibleSignatures = TRUE;
+                        bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = true;
+                    }
                 }
 
                 if (!compatibleSignatures)
@@ -5621,6 +5631,11 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 if (fPreexistingImplFound)
                     continue;
 
+                if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
+                {
+                    it->GetMethodDesc()->SetRequiresCovariantReturnTypeChecking();
+                }
+
                 // Otherwise, record the method impl discovery if the match is
                 bmtMethodImpl->AddMethodImpl(*it, declMethod, bmtMetaData->rgMethodImplTokens[m].methodDecl, GetStackingAllocator());
             }
@@ -5936,6 +5951,11 @@ MethodTableBuilder::ProcessMethodImpls()
                     if (!IsMdVirtual(declMethod.GetDeclAttrs()))
                     {   // Make sure the decl is virtual
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
+                    }
+
+                    if (bmtMetaData->rgMethodImplTokens[m].fRequiresCovariantReturnTypeChecking)
+                    {
+                        it->GetMethodDesc()->SetRequiresCovariantReturnTypeChecking();
                     }
 
                     bmtMethodImpl->AddMethodImpl(*it, declMethod, mdDecl, GetStackingAllocator());

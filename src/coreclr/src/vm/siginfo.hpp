@@ -971,14 +971,6 @@ class MetaSig
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
         //------------------------------------------------------------------
-        // Compare two type handles for equality. If the two types are not equal, and allowDerivedClass
-        // is TRUE, return true if hType2 derives from hType1. This inheritance check is used to allow
-        // for covariant return types on MethodImpls.
-        //------------------------------------------------------------------
-        static BOOL CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass);
-
-
-        //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
@@ -992,7 +984,6 @@ class MetaSig
             Module *             pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
-            BOOL                 allowDerivedClass,
             TokenPairList *      pVisited = NULL);
 
 
@@ -1019,7 +1010,7 @@ class MetaSig
             DWORD               cSig2,
             Module*             pModule2,
             const Substitution* pSubst2,
-            BOOL                allowCovariantReturn,
+            BOOL                skipReturnTypeSig,
             TokenPairList*      pVisited = NULL
         );
 
@@ -1067,53 +1058,6 @@ class MetaSig
                                              mdMethodDef tok2); //declared method
 
 private:
-        //------------------------------------------------------------------
-        // Check if a type signature is eligible to be used with derived type signature comparisons
-        // and if so, return TRUE if the type is eligible.
-        //    Inputs:
-        //      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
-        //      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
-        //                                 as that of a base type or a derived type.
-        //    Outputs:
-        //      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
-        //      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
-        //                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
-        //------------------------------------------------------------------
-        static BOOL IsEligibleForDerivedTypeSignatureComparison(
-            PCCOR_SIGNATURE     pSig,
-            PCCOR_SIGNATURE     pEndSig,
-            Module*             pModule,
-            BOOL                isBaseTypeSig,
-            mdToken*            pTypeDefToken = NULL,
-            Module**            ppTypeDefModule = NULL,
-            mdToken*            pParentTypeDefOrRefOrSpecToken = NULL);
-
-        //------------------------------------------------------------------
-        // Compute the base type token (it will either be a typedef or typeref token), and returns the
-        // module where that base type token is declared.
-        // The input token has to either be a TypeRef or TypeDef token.
-        //------------------------------------------------------------------
-        static BOOL GetBaseTypeTokenAndModule(
-            mdToken     tk,
-            Module*     pModule,
-            mdToken*    pBaseTypeDefOrRefToken,
-            Module**    ppBaseTypeTokenModule);
-
-        //------------------------------------------------------------------
-        // Extract the base type's signature and substitution from the second type signature
-        // and recompare it with the first type's signature.
-        //------------------------------------------------------------------
-        static BOOL ComputeBaseTypeAndCompareElementType(
-            PCCOR_SIGNATURE &    pSig1,
-            PCCOR_SIGNATURE &    pSig2,
-            PCCOR_SIGNATURE      pEndSig1,
-            PCCOR_SIGNATURE      pEndSig2,
-            Module *             pModule1,
-            Module *             pModule2,
-            const Substitution * pSubst1,
-            const Substitution * pSubst2,
-            TokenPairList*       pVisited = NULL);
-
         static BOOL CompareVariableConstraints(const Substitution *pSubst1,
                                                Module *pModule1, mdGenericParam tok1, //overriding
                                                const Substitution *pSubst2,

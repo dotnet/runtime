@@ -1992,6 +1992,7 @@ private:
             // This is to detect situations where a methodimpl does not match any method on any equivalent interface.
             bool    fThrowIfUnmatchedDuringInexactMethodImplProcessing;
             UINT32  interfaceEquivalenceSet;// Equivalence set in the interface map to examine
+            bool    fRequiresCovariantReturnTypeChecking;
             static int __cdecl Compare(const void *elem1, const void *elem2);
             static BOOL Equal(const MethodImplTokenPair *elem1, const MethodImplTokenPair *elem2);
         };

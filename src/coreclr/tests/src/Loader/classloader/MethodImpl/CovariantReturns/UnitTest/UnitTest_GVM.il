@@ -8,6 +8,10 @@
 .assembly extern mscorlib { }
 .assembly UnitTest_GVM { }
 
+// ========================================================================================
+// Types that will be used as return types on the various methods
+// ========================================================================================
+
 .class public auto ansi beforefieldinit A 
 {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
@@ -100,15 +104,13 @@
 }
 
 
+// ========================================================================================
+// Main base type with various virtual methods that will be overriden later
+// ========================================================================================
+
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed 
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void [mscorlib]System.Object::.ctor()
-    ret
-  } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
   .method public hidebysig newslot virtual instance object MyFunc<Z>(string& res) 
   {
@@ -158,30 +160,19 @@
     newobj instance void class GenRetType<!A, class Dictionary<!!Z,!B>>::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<!!Z,!B> TestNonGenericDerived<Z>(string& res) 
-  {
-    ldarg.1
-    ldstr "GenRetType<!!Y,!B> GenBaseType.TestNonGenericDerived()"
-    stind.ref
-    newobj instance void class GenRetType<!!Z,!B>::.ctor()
-    ret
-  }
 }
 
 
 // ========================================================================================
+// SECOND LAYER type: overrides *SOME* virtuals on GenBaseType using MethodImpls with 
+// covariant return types (more derived return types)
+// ========================================================================================
 
 .class public auto ansi beforefieldinit GenMiddleType<U,V> extends class GenBaseType<!U,!V>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed 
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenBaseType<!U,!V>::.ctor()
-    ret
-  } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-  .method public hidebysig newslot virtual instance class NonGenThroughGen2<object,int32,!!Y> NonGenThroughGenOverride_Middle<Y>(string& res)
+  .method public hidebysig newslot virtual instance class NonGenThroughGen2<object,int32,!!Y> NonGenThroughGenFunc<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc<[1]>(string& res)
@@ -192,34 +183,34 @@
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenToNonGen1<!V, class Dictionary<string,!!Y>> GenToNonGenOverride_Middle<Y>(string& res)
+  .method public hidebysig newslot virtual instance class GenToNonGen1<!V, class Dictionary<string,!!Y>> GenToNonGen<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen<[1]>(string& res)
     ldarg.1
-    ldstr "GenToNonGen1<!V, class Dictionary<string,!!Y>> GenMiddleType.GenToNonGenOverride()"
+    ldstr "GenToNonGen1<!V, class Dictionary<string,!!Y>> GenMiddleType.GenToNonGen()"
     stind.ref
     ldnull
     ret
   }
 
-  .method public hidebysig newslot virtual instance class NonGenericDerived1<int32,!!Y> NewGenFunc1_Middle<Y>(string& res)
+  .method public hidebysig newslot virtual instance class NonGenericDerived1<int32,!!Y> MyGenFunc<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
-    ldstr "NonGenericDerived1<int32,!!Y> GenMiddleType.NewGenFunc1()"
+    ldstr "NonGenericDerived1<int32,!!Y> GenMiddleType.MyGenFunc()"
     stind.ref
     ldnull
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenDerive2<!U,!V,!!Y> NewGenFunc2_Middle<Y>(string& res)
+  .method public hidebysig newslot virtual instance class GenDerive1<!U, class Dictionary<!!Y,!V>> MyGenFunc<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
-    ldstr "GenDerive2<!U,!V,!!Y> GenMiddleType.NewGenFunc2()"
+    ldstr "GenDerive1<!U, class Dictionary<!!Y,!V>> GenMiddleType.MyGenFunc()"
     stind.ref
     ldnull
     ret
@@ -227,12 +218,14 @@
 }
 
 // ========================================================================================
+// THIRD LAYER type: overrides all virtuals from GenBaseType using MethodImpls with 
+// covariant return types (more derived return types than the ones used in GenMiddleType)
+// ========================================================================================
 
 .class public auto ansi beforefieldinit GenTestType<U,V> extends class GenMiddleType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class NonGenThroughGen5<!!Y> NonGenThroughGenOverride<Y>(string& res)
+  .method public hidebysig newslot virtual instance class NonGenThroughGen5<!!Y> NonGenThroughGenFunc<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc<[1]>(string& res)
     ldarg.1
     ldstr "NonGenThroughGen5<!!Y> TestType.NonGenThroughGenFunc()"
@@ -241,70 +234,65 @@
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenToNonGen3<!V,!!Y> GenToNonGenOverride<Y>(string& res)
+  .method public hidebysig newslot virtual instance class GenToNonGen3<!V,!!Y> GenToNonGen<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen<[1]>(string& res)
     ldarg.1
-    ldstr "GenToNonGen3<!V,!!Y> TestType.GenToNonGenOverride()"
+    ldstr "GenToNonGen3<!V,!!Y> TestType.GenToNonGen()"
     stind.ref
     ldnull
     ret
   }
 
-  .method public hidebysig newslot virtual instance class NonGenericDerived5<!!Y> NewGenFunc1<Y>(string& res)
+  .method public hidebysig newslot virtual instance class NonGenericDerived5<!!Y> MyGenFunc<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
-    ldstr "NonGenericDerived5<!!Y> TestType.NewGenFunc1()"
+    ldstr "NonGenericDerived5<!!Y> TestType.MyGenFunc()"
     stind.ref
     ldnull
     ret
   }
 
-  .method public hidebysig newslot virtual instance class GenDerive2<!U,!V,!!Y> NewGenFunc2<Y>(string& res)
+  .method public hidebysig newslot virtual instance class GenDerive2<!U,!V,!!Y> MyGenFunc<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldarg.1
-    ldstr "GenDerive2<!U,!V,!!Y> TestType.NewGenFunc2()"
+    ldstr "GenDerive2<!U,!V,!!Y> TestType.MyGenFunc()"
     stind.ref
     ldnull
     ret
   }
   
-  .method public hidebysig newslot virtual instance class GenRetType<!U,!V> NewFunc1<Y>(string& res)
+  .method public hidebysig newslot virtual instance class GenRetType<!U,!V> MyFunc<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance object class GenBaseType<!U,!V>::MyFunc<[1]>(string& res)
     ldarg.1
-    ldstr "GenRetType<!U,!V> TestType.NewFunc1()"
+    ldstr "GenRetType<!U,!V> TestType.MyFunc()"
     stind.ref
     ldnull
     ret
   }
   
-  .method public hidebysig newslot virtual instance class C NewFunc2<Y>(string& res)
+  .method public hidebysig newslot virtual instance class C MyFunc<Y>(string& res)
   {
     .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::MyFunc<[1]>(string& res)
     ldarg.1
-    ldstr "C TestType.NewFunc2()"
+    ldstr "C TestType.MyFunc()"
     stind.ref
     ldnull
     ret
   }
 
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenMiddleType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
+// ========================================================================================
+// THIRD LAYER INVALID types: Couple of types that override some method from GenBaseType
+// using a return type signature that would be incompatible with the return type used in
+// GenMiddle. Loading these types will throw a TypeLoadException.
 // ========================================================================================
 
 .class public auto ansi beforefieldinit Invalid1<U,V> extends class GenMiddleType<!U,!V>
@@ -312,7 +300,6 @@
   // Invalid: when comparing 'object' with !!Y in the instantiation of NonGenericDerived1 in the base type chain
   .method public hidebysig newslot virtual instance class NonGenThroughGen4 NonGenThroughGenOverride<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc<[1]>(string& res)
     ldnull
     ret
@@ -324,7 +311,6 @@
    // Invalid: when comparing 'object' with !!Y in the instantiation
   .method public hidebysig newslot virtual instance class GenToNonGen3<!V,object> GenToNonGenOverride<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class B class GenBaseType<!U,!V>::GenToNonGen<[1]>(string& res)
     ldnull
     ret
@@ -336,7 +322,6 @@
   // Invalid when comparing !!Y and 'object' in instantiation of GenRetType
   .method public hidebysig newslot virtual instance class NonGenericDerived4 NewGenFunc1<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<int32,!!0> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldnull
     ret
@@ -348,7 +333,6 @@
   // Invalid when comparing !!Y and 'string' in instantiation of Dictionary
   .method public hidebysig newslot virtual instance class GenDerive3<!U,!V> NewGenFunc2<Y>(string& res)
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
     .override method instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<!U,!V>::MyGenFunc<[1]>(string& res)
     ldnull
     ret
@@ -360,239 +344,367 @@
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
-  // ============== Test using GenTestType<U,V> ============== //
+  .method private hidebysig static bool CheckResults (
+        string expected,
+        string a,
+        [opt] string b,
+        [opt] string c,
+        [opt] string d) cil managed 
+  {
+    .param [3] = nullref
+    .param [4] = nullref
+    .param [5] = nullref
+    // Method begins at RVA 0x20a0
+    // Code size 164 (0xa4)
+    .maxstack 2
+    .locals /* 11000002 */ init (
+        [0] bool
+    )
+
+    IL_0000: ldarg.1
+    IL_0001: ldarg.0
+    IL_0002: call bool [System.Runtime]System.String::op_Equality(string, string) /* 0A000012 */
+    IL_0007: stloc.0
+    IL_0008: ldstr "EXPECTED: " /* 70000001 */
+    IL_000d: ldarg.0
+    IL_000e: call string [System.Runtime]System.String::Concat(string, string) /* 0A000013 */
+    IL_0013: call void [System.Console]System.Console::WriteLine(string) /* 0A000014 */
+    IL_0018: ldstr "ACTUAL1 : " /* 70000017 */
+    IL_001d: ldarg.1
+    IL_001e: call string [System.Runtime]System.String::Concat(string, string) /* 0A000013 */
+    IL_0023: call void [System.Console]System.Console::WriteLine(string) /* 0A000014 */
+    IL_0028: ldarg.2
+    IL_0029: call bool [System.Runtime]System.String::IsNullOrEmpty(string) /* 0A000015 */
+    IL_002e: brtrue.s IL_004e
+
+    IL_0030: ldstr "ACTUAL2 : " /* 7000002D */
+    IL_0035: ldarg.2
+    IL_0036: call string [System.Runtime]System.String::Concat(string, string) /* 0A000013 */
+    IL_003b: call void [System.Console]System.Console::WriteLine(string) /* 0A000014 */
+    IL_0040: ldloc.0
+    IL_0041: brfalse.s IL_004c
+
+    IL_0043: ldarg.2
+    IL_0044: ldarg.0
+    IL_0045: call bool [System.Runtime]System.String::op_Equality(string, string) /* 0A000012 */
+    IL_004a: br.s IL_004d
+
+    IL_004c: ldc.i4.0
+
+    IL_004d: stloc.0
+
+    IL_004e: ldarg.3
+    IL_004f: call bool [System.Runtime]System.String::IsNullOrEmpty(string) /* 0A000015 */
+    IL_0054: brtrue.s IL_0074
+
+    IL_0056: ldstr "ACTUAL3 : " /* 70000043 */
+    IL_005b: ldarg.3
+    IL_005c: call string [System.Runtime]System.String::Concat(string, string) /* 0A000013 */
+    IL_0061: call void [System.Console]System.Console::WriteLine(string) /* 0A000014 */
+    IL_0066: ldloc.0
+    IL_0067: brfalse.s IL_0072
+
+    IL_0069: ldarg.3
+    IL_006a: ldarg.0
+    IL_006b: call bool [System.Runtime]System.String::op_Equality(string, string) /* 0A000012 */
+    IL_0070: br.s IL_0073
+
+    IL_0072: ldc.i4.0
+
+    IL_0073: stloc.0
+
+    IL_0074: ldarg.s d
+    IL_0076: call bool [System.Runtime]System.String::IsNullOrEmpty(string) /* 0A000015 */
+    IL_007b: brtrue.s IL_009d
+
+    IL_007d: ldstr "ACTUAL4 : " /* 70000059 */
+    IL_0082: ldarg.s d
+    IL_0084: call string [System.Runtime]System.String::Concat(string, string) /* 0A000013 */
+    IL_0089: call void [System.Console]System.Console::WriteLine(string) /* 0A000014 */
+    IL_008e: ldloc.0
+    IL_008f: brfalse.s IL_009b
+
+    IL_0091: ldarg.s d
+    IL_0093: ldarg.0
+    IL_0094: call bool [System.Runtime]System.String::op_Equality(string, string) /* 0A000012 */
+    IL_0099: br.s IL_009c
+
+    IL_009b: ldc.i4.0
+
+    IL_009c: stloc.0
+
+    IL_009d: call void [System.Console]System.Console::WriteLine() /* 0A000016 */
+    IL_00a2: ldloc.0
+    IL_00a3: ret
+  } // end of method Program::CheckResults
+
+  // ============== Test using GenTestType ============== //
+  // These test methods will callvirt each method using:
+  //    1) The signature from GetBaseType
+  //    2) The signature from GenMiddleType with covariant returns (when applicable)    
+  //    3) The signature from GenTestType with covariant returns
+  // And verify that the override on GetTestType is the one that executes
+  
   .method public static bool RunTest1() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: GenRetType<!U,!V> TestType.NewFunc1()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance object class GenBaseType<int32,object>::MyFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class GenRetType<!0,!1> class GenTestType<int32,object>::MyFunc<class CMain>(string&)
+    pop
+
+    ldstr "GenRetType<!U,!V> TestType.MyFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "GenRetType<!U,!V> TestType.NewFunc1()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest2() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: C TestType.NewFunc2()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::MyFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class C class GenTestType<int32,object>::MyFunc<class CMain>(string&)
+    pop
+
+    ldstr "C TestType.MyFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "C TestType.NewFunc2()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
   
   .method public static bool RunTest3() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: GenDerive2<!U,!V,!!Y> TestType.NewGenFunc2()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class GenDerive1<!0, class Dictionary<!!0,!1>> class GenMiddleType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   2
+    callvirt   instance class GenDerive2<!0,!1,!!0> class GenTestType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "GenDerive2<!U,!V,!!Y> TestType.MyGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "GenDerive2<!U,!V,!!Y> TestType.NewGenFunc2()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest4() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: NonGenericDerived5<!!Y> TestType.NewGenFunc1()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class GenRetType<int32,!!0> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class NonGenericDerived1<int32,!!0> class GenMiddleType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   2
+    callvirt   instance class NonGenericDerived5<!!0> class GenTestType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "NonGenericDerived5<!!Y> TestType.MyGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "NonGenericDerived5<!!Y> TestType.NewGenFunc1()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest5() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: GenToNonGen3<!V,!!Y> TestType.GenToNonGenOverride()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
     callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class GenToNonGen1<!1, class Dictionary<string,!!0>> class GenMiddleType<int32,object>::GenToNonGen<class CMain>(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   2
+    callvirt   instance class GenToNonGen3<!1,!!0> class GenTestType<int32,object>::GenToNonGen<class CMain>(string&)
+    pop
+
+    ldstr "GenToNonGen3<!V,!!Y> TestType.GenToNonGen()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "GenToNonGen3<!V,!!Y> TestType.GenToNonGenOverride()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest6() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: NonGenThroughGen5<!!Y> TestType.NonGenThroughGenFunc()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenTestType<int32,object>::.ctor()
     ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<class CMain>(string& res)
+    callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class NonGenThroughGen2<object,int32,!!0> class GenMiddleType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
+    pop
+
+    newobj     instance void class GenTestType<int32,object>::.ctor()
+    ldloca.s   2
+    callvirt   instance class NonGenThroughGen5<!!0> class GenTestType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "NonGenThroughGen5<!!Y> TestType.NonGenThroughGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "NonGenThroughGen5<!!Y> TestType.NonGenThroughGenFunc()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
-  // ============== Test using GenMiddleType<U,V> ============== //
+  // ============== Test using GenMiddleType ============== //
+  // These test methods will callvirt each method using:
+  //    1) The signature from GetBaseType
+  //    2) The signature from GenMiddleType with covariant returns
+  // And verify that the override on GenMiddleType is the one that executes  
+  
   .method public static bool RunTest_Middle1() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: GenDerive2<!U,!V,!!Y> GenMiddleType.NewGenFunc2()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
-    callvirt   instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<int32,object>::MyGenFunc<string>(string&)
+    callvirt   instance class GenRetType<!0, class Dictionary<!!0,!1>> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenMiddleType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class GenDerive1<!0, class Dictionary<!!0,!1>> class GenMiddleType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "GenDerive1<!U, class Dictionary<!!Y,!V>> GenMiddleType.MyGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "GenDerive2<!U,!V,!!Y> GenMiddleType.NewGenFunc2()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest_Middle2() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: NonGenericDerived1<int32,!!Y> GenMiddleType.NewGenFunc1()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
-    callvirt   instance class GenRetType<int32,!!0> class GenBaseType<int32,object>::MyGenFunc<string>(string&)
+    callvirt   instance class GenRetType<int32,!!0> class GenBaseType<int32,object>::MyGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenMiddleType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class NonGenericDerived1<int32,!!0> class GenMiddleType<int32,object>::MyGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "NonGenericDerived1<int32,!!Y> GenMiddleType.MyGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "NonGenericDerived1<int32,!!Y> GenMiddleType.NewGenFunc1()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest_Middle3() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: GenToNonGen1<!V, class Dictionary<string,!!Y>> GenMiddleType.GenToNonGenOverride()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen<string>(string&)
+    callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenMiddleType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class GenToNonGen1<!1, class Dictionary<string,!!0>> class GenMiddleType<int32,object>::GenToNonGen<class CMain>(string&)
+    pop
+
+    ldstr "GenToNonGen1<!V, class Dictionary<string,!!Y>> GenMiddleType.GenToNonGen()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "GenToNonGen1<!V, class Dictionary<string,!!Y>> GenMiddleType.GenToNonGenOverride()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
 
   .method public static bool RunTest_Middle4() noinlining 
   {
-    .locals init (string res, bool flag)
-    
-    ldstr "EXPECTED: NonGenThroughGen2<object,int32,!!Y> GenMiddleType.NonGenThroughGenFunc()"
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
+    .locals init (string res1, string res2, string res3)
     
     newobj     instance void class GenMiddleType<int32,object>::.ctor()
     ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<int16>(string& res)
+    callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
     pop
-    
+
+    newobj     instance void class GenMiddleType<int32,object>::.ctor()
+    ldloca.s   1
+    callvirt   instance class NonGenThroughGen2<object,int32,!!0> class GenMiddleType<int32,object>::NonGenThroughGenFunc<class CMain>(string&)
+    pop
+
+    ldstr "NonGenThroughGen2<object,int32,!!Y> GenMiddleType.NonGenThroughGenFunc()"
     ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-	ldstr "NonGenThroughGen2<object,int32,!!Y> GenMiddleType.NonGenThroughGenFunc()"
-	call bool [System.Runtime]System.String::op_Equality(string, string)
+    ldloc.1
+    ldloc.2
+    ldnull
+    call bool CMain::CheckResults(string,string,string,string,string)
     ret
   }
   
-  // ===================================================================================== //
+  // ============== Test using GenMiddleType ============== //
+  // These test methods attempt to load the invalid types, and are
+  // expected to throw a TypeLoadException (caught by Main())
+  
   .method public static void RunInvalidTest1() noinlining 
   {
     newobj     instance void class Invalid1<int32,object>::.ctor()

@@ -2,47 +2,60 @@
 
 Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/records.md) C# language features posed for C# 9.0.
 
-This feature allows an overriding method to have a more derived reference type than the method it overrides. Covariant return methods can only be described through MethodImpl records, and as an initial implementation, will have the following limitations:
-1. Covariant return methods will only be applicable to methods on reference types: the MethodDecl and MethodImpl records can only be on reference types. Methods on interfaces will not be supported.
-2. Return types in covariant return methods can only be reference types: covariant interface return types are not supported.
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1. Example: using a more derived return type. The only exception applicable to this rule for this feature is the compatibility between a value type and an interface that it implements, and this is due to the difference in ABI between reference types and value types (unboxed value types can be returned through a hidden return buffer parameter).
 
-Supporting interfaces comes with many complications (ex: interface equivalence, default interface methods, variance on generic interfaces, etc...), which is why the feature will initially only support classes.
+Covariant return methods can only be described through MethodImpl records, and as an initial implementation will only be applicable to methods on reference types. Methods on interfaces and value types will not be supported (may be supported later in the future).
 
-MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overriden (i.e. a derived type).
+MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overriden (ECMA I.8.7.1).
 
 If a language wishes for the override to be semantically visible such that users of the more derived type may rely on the covariant return type it shall make the override a newslot method with appropriate visibility AND name to be used outside of the class.
 
 For virtual method slot MethodImpl overrides, each slot shall be checked for compatible signature on type load. (Implementation note: This behavior can be triggered only if the type has a covariant return type override in its hierarchy, so as to make this pay for play.)
 
-A new `ValidateMethodImplRemainsInEffectAttribute` shall be added. The presence of this attribute is to require the type loader to ensure that the MethodImpl records specified on the method have not lost their slot unifying behavior due to other actions. In other words, when a MethodImpl on type A overrides some method using a derived return type in the signature, any type deriving from A will be allowed to have a MethodImpl record that overrides the same method as long as the return type used in the signature is the same or more derived than the return type used in the MethodImpl signature on type A. This is used to allow the C# language to require that overrides have the consistent behaviors expected. The expectation is that C# would place this attribute on covariant override methods in classes.
+A new `ValidateMethodImplRemainsInEffectAttribute` shall be added. The presence of this attribute is to require the type loader to ensure that the MethodImpl records specified on the method have not lost their slot unifying behavior due to other actions. This is used to allow the C# language to require that overrides have the consistent behaviors expected. The expectation is that C# would place this attribute on covariant override methods in classes.
 
 ## Implementation Notes
 
-### Signature Checking
+### Return Type Checking
 
-Signature checking for MethodImpl is done through the `MetaSig::CompareElementType` method, which is called from various places in the runtime when comparing method signatures. This method compares the signatures of two types, and will now take a boolean flag that would allow for derived type checking behavior. The boolean flag will be set to `TRUE` appropriately during comparison of the return type signatures between a MethodImpl and MethodDecl records.
+During enumeration of MethodImpls on a type (`MethodTableBuilder::EnumerateMethodImpls()`), if the signatures of the MethodImpl and the MethodDecl do not match:
+1. We repeat the signature comparison a second time, but skip the comparison of the return type signatures. If the signatures for the rest of the method arguments match, we will conditionally treat that MethodImpl as a valid one, but flag it for a closer examination of the return type compatibility at a later stage of type loading (end of `CLASS_LOAD_EXACTPARENTS` stage).
+2. At the end of the `CLASS_LOAD_EXACTPARENTS` type loading stage, examing each virtual method on the type, and if it has been flagged for further return type checking:
+    + Load the `TypeHandle` of the return type of the method on base type.
+    + Load the `TypeHandle` of the return type of the method on the current type being validated.
+    + Verify that the second `TypeHandle` is compatible with the first `TypeHandle` using the `MethodTable::CanCastTo()` API. If they are not compatible, a TypeLoadException is thrown.
+    
+Once a method is flagged for return type checking, every time the vtable slot containing that method gets overridden on a derived type, the new override will also be checked for compatiblity. This is to ensure that no derived type can implicitly override some virtual method that has already been overridden by some MethodImpl with a covariant return type.
 
-The type signature checking algorithm will perform the following:
-1. Traverse and compare the signatures for `type1` and `type2` recursively.
-2. If the signatures mismatch at any given point, and the current element type for `type2` is `ELEMENT_TYPE_CLASS` or `ELEMENT_TYPE_GENERICINST`:
-    + Check if base type comparison is allowed
-    + Compute the parent type's signature and parent type's generic substitution of `type2`
-    + Perform a recursive call to re-compare `type1` with the new parent type signature of `type2`.
+### VTable Slot Unification
 
-Note: if `ELEMENT_TYPE_INTERNAL` is encountered in either of the type signatures, both types will be fully loaded and compared for compatibility.
+If a MethodImpl has the `ValidateMethodImplRemainsInEffectAttribute` attribute, it needs to propagate all applicable vtable slots on the type. This is to ensure that if we use the signature of one of the base type methods to call the overriding method, we still execute the overriding method.
 
-### VTable Slot Validation
+Consider this case:
+``` C#
+     class A {
+         RetType VirtualFunction() { }
+     }
+     class B : A {
+         [ValidateMethodImplRemainsInEffect]
+         DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+     }
+     class C : B {
+         [ValidateMethodImplRemainsInEffect]
+         MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
+     }
+```
 
-Validation will only be performed if the `ValidateMethodImplRemainsInEffectAttribute` exists on the type that needs validation. Validation is only performed on the type where the attribute is added, and does not propagate to its base or derived types (every type that needs to be validated needs to have this attribute).
+Given an object of type `C`, the attribute will ensure that:
+``` C#
+     callvirt RetType A::VirtualFunc()               -> executes the MethodImpl on C
+     callvirt DerivedRetType B::VirtualFunc()        -> executes the MethodImpl on C
+     callvirt MoreDerivedRetType C::VirtualFunc()    -> executes the MethodImpl on C
+```
 
-Validation is performed at the very last step of `CLASS_LOAD_EXACTPARENTS`, after all base types have been loaded, and the vtable has been fully built.
+Without the attribute, the second callvirt would normally execute the MethodImpl on `B` (the MethodImpl on `C` does not override the vtable slot of `B`'s MethodImpl, but only overrides the declaring method's vtable slot.
 
-The validation algorithm will perform the following:
-1. For each slot in the vtable that also exists in the vtable of the base type:
-    + Check if the `MethodDesc` on that slot has a different original slot value. If not, continue.
-    + Let `hType1` be the `TypeHandle` of the return type of the method on base type.
-    + Let `hType2` be the `TypeHandle` of the return type of the method on the current type being validated.
-    + Verify that `hType2` is the same type as, or a derived type of `hType1`
+This slot unification step will also take place during the last step of type loading (end of `CLASS_LOAD_EXACTPARENTS` stage).
 
 ### [Future] Interface Support
 

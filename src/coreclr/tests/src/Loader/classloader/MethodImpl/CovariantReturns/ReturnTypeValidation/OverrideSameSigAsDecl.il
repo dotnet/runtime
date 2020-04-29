@@ -6,7 +6,11 @@
 .assembly extern System.Private.CoreLib { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
-.assembly ImplicitOverrideSameSigAsDecl { }
+.assembly OverrideSameSigAsDecl { }
+
+// ========================================================================================
+// Types that will be used as return types on the various methods
+// ========================================================================================
 
 .class public auto ansi beforefieldinit A {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -72,15 +76,13 @@
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
+// ========================================================================================
+// Main base type with various virtual methods that will be overriden later
+// ========================================================================================
+
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed 
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void [mscorlib]System.Object::.ctor()
-    ret
-  } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
   .method public hidebysig newslot virtual instance object MyFunc(string& res) 
   {
@@ -141,6 +143,9 @@
 }
 
 
+// ========================================================================================
+// SECOND LAYER type: overrides all virtuals on GenBaseType using MethodImpls with 
+// covariant return types (more derived return types)
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenTestType<U,V> extends class GenBaseType<!U,!V>
@@ -215,83 +220,77 @@
 }
 
 // ========================================================================================
+// THIRD LAYER INVALID types: explicitly override the virtual methods on GenBaseType, using
+// the same signature as GenBaseType, and are expected to throw TypeLoadExceptions on load
+// because the return types here are not compatible with the return types used on GenTestType
+// ========================================================================================
 
-.class public auto ansi beforefieldinit DerivedTestType<U,V> extends class GenTestType<!U,!V>
+.class public auto ansi beforefieldinit Invalid1<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig virtual instance object MyFunc(string& res) 
+  .method public hidebysig newslot virtual instance class B NonGenThroughGenOverride_Invalid(string& res)
   {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "object DerivedTestType.MyFunc()"
-    stind.ref
-    newobj instance void A::.ctor()
+    .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc(string& res)
+    ldnull
     ret
   }
 
-  .method public hidebysig virtual instance class B MyFunc(string& res) 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit Invalid2<U,V> extends class GenTestType<!U,!V>
+{
+  .method public hidebysig newslot virtual instance class B GenToNonGenOverride_Invalid(string& res)
   {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "B DerivedTestType.MyFunc()"
-    stind.ref
-    newobj instance void B::.ctor()
+    .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
+    ldnull
+    ret
+  }
+
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit Invalid3<U,V> extends class GenTestType<!U,!V>
+{
+  .method public hidebysig newslot virtual instance class GenRetType<int32,object> NewGenFunc1_Invalid(string& res)
+  {
+    .override method instance class GenRetType<int32,object> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    ldnull
+    ret
+  }
+
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit Invalid4<U,V> extends class GenTestType<!U,!V>
+{
+  .method public hidebysig newslot virtual instance class GenRetType<!U, class Dictionary<string,!V>> NewGenFunc2_Invalid(string& res)
+  {
+    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
+    ldnull
+    ret
+  }
+
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
+
+.class public auto ansi beforefieldinit Invalid5<U,V> extends class GenTestType<!U,!V>
+{
+  .method public hidebysig newslot virtual instance object NewFunc1_Invalid(string& res)
+  {
+    .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
+    ldnull
     ret
   }
   
-  .method public hidebysig virtual instance class B GenToNonGen(string& res) 
-  {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "B DerivedTestType.GenToNonGen()"
-    stind.ref
-    newobj instance void B::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+}
 
-  .method public hidebysig virtual instance class B NonGenThroughGenFunc(string& res) 
+.class public auto ansi beforefieldinit Invalid6<U,V> extends class GenTestType<!U,!V>
+{
+  .method public hidebysig newslot virtual instance class B NewFunc2_Invalid(string& res)
   {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "B DerivedTestType.NonGenThroughGenFunc()"
-    stind.ref
-    newobj instance void B::.ctor()
-    ret
-  }
-
-  .method public hidebysig virtual instance class GenRetType<int32,object> MyGenFunc(string& res) 
-  {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "GenRetType<int32,object> DerivedTestType.MyGenFunc()"
-    stind.ref
-    newobj instance void class GenRetType<int32,object>::.ctor()
-    ret
-  }
-  
-  .method public hidebysig virtual instance class GenRetType<!U, class Dictionary<string,!V>> MyGenFunc(string& res) 
-  {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "GenRetType<!U, class Dictionary<string,!V>> DerivedTestType.MyGenFunc()"
-    stind.ref
-    newobj instance void class GenRetType<!U, class Dictionary<string,!V>>::.ctor()
-    ret
-  }
-
-  .method public hidebysig virtual instance class GenRetType<!U,!V> TestNonGenericDerived(string& res) 
-  {
-    // Attribute ignored since this is not a MethodImpl
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    ldarg.1
-    ldstr "GenRetType<!U,!V> DerivedTestType.TestNonGenericDerived()"
-    stind.ref
-    newobj instance void class GenRetType<!U,!V>::.ctor()
+    .override method instance class B class GenBaseType<!U,!V>::MyFunc(string& res)
+    ldnull
     ret
   }
 
@@ -302,199 +301,45 @@
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
-  .method public static bool RunTest1() noinlining 
+  .method public static void RunTest1() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "object DerivedTestType.MyFunc()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid1<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance object class GenBaseType<int32,object>::MyFunc(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
-  .method public static bool RunTest2() noinlining 
+  .method public static void RunTest2() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "B DerivedTestType.MyFunc()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid2<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::MyFunc(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
-  .method public static bool RunTest3() noinlining 
+  .method public static void RunTest3() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "B DerivedTestType.GenToNonGen()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid3<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::GenToNonGen(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
-  .method public static bool RunTest4() noinlining 
+  .method public static void RunTest4() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "B DerivedTestType.NonGenThroughGenFunc()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid4<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class B class GenBaseType<int32,object>::NonGenThroughGenFunc(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
-  .method public static bool RunTest5() noinlining 
+  .method public static void RunTest5() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "GenRetType<int32,object> DerivedTestType.MyGenFunc()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid5<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class GenRetType<int32,object> class GenBaseType<int32,object>::MyGenFunc(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
-  .method public static bool RunTest6() noinlining 
+  .method public static void RunTest6() noinlining 
   {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "GenRetType<!U, class Dictionary<string,!V>> DerivedTestType.MyGenFunc()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
+    newobj     instance void class Invalid6<int32,object>::.ctor()
     call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<int32,object>::MyGenFunc(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
-    ret
-  }
-
-  .method public static bool RunTest7() noinlining 
-  {
-    .locals init (string res, bool flag, string expected)
-        
-    ldstr "GenRetType<!U,!V> DerivedTestType.TestNonGenericDerived()"
-    stloc.2
-
-    ldstr "EXPECTED: "
-    call       void [System.Console]System.Console::Write(object)    
-    ldloc.2
-    call       void [System.Console]System.Console::WriteLine(object)
-    ldstr "ACTUAL  : "
-    call       void [System.Console]System.Console::Write(object)
-    
-    newobj     instance void class DerivedTestType<int32,object>::.ctor()
-    ldloca.s   0
-    callvirt   instance class GenRetType<!0,!1> class GenBaseType<int32,object>::TestNonGenericDerived(string&)
-    pop
-    
-    ldloc.0
-    call       void [System.Console]System.Console::WriteLine(object)
-    
-	ldloc.0
-    ldloc.2
-	call bool [System.Runtime]System.String::op_Equality(string, string)
     ret
   }
 
@@ -502,52 +347,117 @@
   {
     .entrypoint
     .maxstack  2
-    .locals init ( bool result )
-    
+    .locals init (bool V_0)    
     ldc.i4.1
     stloc.0
     
     T1:
-    call bool CMain::RunTest1()
-    brtrue.s T2
-    ldc.i4.0
-    stloc.0
+    .try
+    {
+        call void CMain::RunTest1()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid1."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s T2
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s T2
+    }
     
     T2:
-    call bool CMain::RunTest2()
-    brtrue.s T3
-    ldc.i4.0
-    stloc.0
-    
-    T3:
-    call bool CMain::RunTest3()
-    brtrue.s T4
-    ldc.i4.0
-    stloc.0
-    
-    T4:
-    call bool CMain::RunTest4()
-    brtrue.s T5
-    ldc.i4.0
-    stloc.0
-    
-    T5:
-    call bool CMain::RunTest5()
-    brtrue.s T6
-    ldc.i4.0
-    stloc.0
-    
-    T6:
-    call bool CMain::RunTest6()
-    brtrue.s T7
-    ldc.i4.0
-    stloc.0
+    .try
+    {
+        call void CMain::RunTest2()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid2."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s T3
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s T3
+    }
 
-    T7:
-    call bool CMain::RunTest7()
-    brtrue.s DONE
-    ldc.i4.0
-    stloc.0
+    T3:
+    .try
+    {
+        call void CMain::RunTest3()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid3."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s T4
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s T4
+    }
+
+    T4:
+    .try
+    {
+        call void CMain::RunTest4()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid4."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s T5
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s T5
+    }
+
+    T5:
+    .try
+    {
+        call void CMain::RunTest5()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid5."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s T6
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s T6
+    }
+
+    T6:
+    .try
+    {
+        call void CMain::RunTest6()
+        ldc.i4.0
+        stloc.0
+        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid6."
+        call       void [System.Console]System.Console::WriteLine(string)
+        leave.s DONE
+    }
+    catch [mscorlib]System.TypeLoadException
+    {   
+        ldstr "Caught expected TypeLoadException:"
+        call       void [System.Console]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(object)        
+        leave.s DONE
+    }    
 
     DONE:
     

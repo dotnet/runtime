@@ -6,7 +6,11 @@
 .assembly extern System.Private.CoreLib { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
-.assembly OverrideSameSigAsDecl { }
+.assembly ImplicitOverrideSameSigAsDecl { }
+
+// ========================================================================================
+// Types that will be used as return types on the various methods
+// ========================================================================================
 
 .class public auto ansi beforefieldinit A {
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
@@ -72,15 +76,13 @@
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
+// ========================================================================================
+// Main base type with various virtual methods that will be overriden later
+// ========================================================================================
+
 .class public auto ansi beforefieldinit GenBaseType<A,B>
 {
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed 
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void [mscorlib]System.Object::.ctor()
-    ret
-  } 
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
   .method public hidebysig newslot virtual instance object MyFunc(string& res) 
   {
@@ -130,17 +132,11 @@
     newobj instance void class GenRetType<!A, class Dictionary<string,!B>>::.ctor()
     ret
   }
-  .method public hidebysig newslot virtual instance class GenRetType<!A,!B> TestNonGenericDerived(string& res) 
-  {
-    ldarg.1
-    ldstr "GenRetType<!A,!B> GenBaseType.TestNonGenericDerived()"
-    stind.ref
-    newobj instance void class GenRetType<!A,!B>::.ctor()
-    ret
-  }
 }
 
-
+// ========================================================================================
+// SECOND LAYER type: overrides all virtuals on GenBaseType using MethodImpls with 
+// covariant return types (more derived return types)
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenTestType<U,V> extends class GenBaseType<!U,!V>
@@ -205,130 +201,71 @@
     ret
   }
 
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenBaseType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
 
+// ========================================================================================
+// THIRD LAYER INVALID types: implicitly override the virtual methods on GenBaseType, using
+// the same signature as GenBaseType, and are expected to throw TypeLoadExceptions on load
+// because the return types here are not compatible with the return types used on GenTestType
 // ========================================================================================
 
 .class public auto ansi beforefieldinit Invalid1<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class B NonGenThroughGenOverride_Invalid(string& res)
+  .method public hidebysig virtual instance object MyFunc(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance class B class GenBaseType<!U,!V>::NonGenThroughGenFunc(string& res)
     ldnull
     ret
   }
-
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-
 .class public auto ansi beforefieldinit Invalid2<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class B GenToNonGenOverride_Invalid(string& res)
+  .method public hidebysig virtual instance class B MyFunc(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance class B class GenBaseType<!U,!V>::GenToNonGen(string& res)
     ldnull
     ret
   }
-
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-
 .class public auto ansi beforefieldinit Invalid3<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class GenRetType<int32,object> NewGenFunc1_Invalid(string& res)
+  .method public hidebysig virtual instance class B GenToNonGen(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance class GenRetType<int32,object> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldnull
     ret
   }
-
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-
 .class public auto ansi beforefieldinit Invalid4<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class GenRetType<!U, class Dictionary<string,!V>> NewGenFunc2_Invalid(string& res)
+  .method public hidebysig virtual instance class B NonGenThroughGenFunc(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance class GenRetType<!0, class Dictionary<string,!1>> class GenBaseType<!U,!V>::MyGenFunc(string& res)
     ldnull
     ret
   }
-
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-
 .class public auto ansi beforefieldinit Invalid5<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance object NewFunc1_Invalid(string& res)
+  .method public hidebysig virtual instance class GenRetType<int32,object> MyGenFunc(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
     ldnull
     ret
   }
-  
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
-
 .class public auto ansi beforefieldinit Invalid6<U,V> extends class GenTestType<!U,!V>
 {
-  .method public hidebysig newslot virtual instance class B NewFunc2_Invalid(string& res)
+  .method public hidebysig virtual instance class GenRetType<!U, class Dictionary<string,!V>> MyGenFunc(string& res) 
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.ValidateMethodImplRemainsInEffectAttribute::.ctor() = (01 00 00 00)
-    .override method instance class B class GenBaseType<!U,!V>::MyFunc(string& res)
     ldnull
     ret
   }
-
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
-  {
-    .maxstack  8
-    ldarg.0
-    call       instance void class GenTestType<!U,!V>::.ctor()
-    ret
-  }
+  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 }
+
+// ========================================================================================
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
