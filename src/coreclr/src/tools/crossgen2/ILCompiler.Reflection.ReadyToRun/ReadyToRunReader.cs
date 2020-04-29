@@ -729,7 +729,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
                     mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                    if (_composite)
+                    if ((_composite) && mdReader == null)
                     {
                         // The only types that don't have module overrides on them in composite images are primitive types within the system module
                         mdReader = GetSystemModuleMetadataReader();

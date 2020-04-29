@@ -28,9 +28,14 @@ if "%5"=="CG2Single" (
         call :CG2SingleBubbleADOnly
         shift
       ) ELSE (
-        if "%5"=="CG2Composite" (
+        if "%5"=="CG2NoMethods" (
+          call :CG2NoMethods
           shift
-          call :Continue
+        ) ELSE (
+          if "%5"=="CG2Composite" (
+            shift
+            call :Continue
+          )
         )
       )
     )
@@ -52,6 +57,13 @@ goto done
 :CG2Single
 del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
 set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll  %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
+echo %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log
+call %BUILDCMD% >> %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
+goto done
+
+:CG2NoMethods
+del %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll
+set BUILDCMD=%TESTBATCHROOT%\..\..\..\..\..\..\.dotnet\dotnet %CORE_ROOT%\crossgen2\crossgen2.dll --compile-no-methods -r %CORE_ROOT%\* -r %TESTINITIALBINPATH%\*.dll -o %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll  %TESTINITIALBINPATH%\%COMPOSITENAME%.dll
 echo %BUILDCMD% > %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log
 call %BUILDCMD% >> %TESTINITIALBINPATH%\%TESTTARGET_DIR%\%COMPOSITENAME%.dll.log 2>&1
 goto done

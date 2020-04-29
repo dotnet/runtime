@@ -11259,8 +11259,8 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     // not take into account NonVersionable attribute. Otherwise, adding NonVersionable attribute to existing
     // type would be ReadyToRun incompatible change.
     //
-    bool modulesDefinedInSameDistrubutionUnit = ModulesAreDistributedAsAnIndivisibleUnit(pDependencyMT->GetModule(), GetModule());
-    bool dependsOnOtherModules = modulesDefinedInSameDistrubutionUnit || pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules();
+    bool modulesDefinedInSameDistributionUnit = ModulesAreDistributedAsAnIndivisibleUnit(pDependencyMT->GetModule(), GetModule());
+    bool dependsOnOtherModules = !modulesDefinedInSameDistributionUnit || pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules();
 
     if (dependsOnOtherModules)
         GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();

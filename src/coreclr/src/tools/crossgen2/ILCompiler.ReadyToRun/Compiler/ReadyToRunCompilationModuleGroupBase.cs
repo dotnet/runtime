@@ -154,6 +154,7 @@ namespace ILCompiler
 
                 if (other.HasMultipleInexactCompilationUnits)
                 {
+                    _bits[0] = true;
                     _bits[1] = true;
                     return;
                 }
@@ -185,12 +186,12 @@ namespace ILCompiler
 
                         compilationUnitCount++;
                     }
-                    if (inexactCompilationUnitCount == 2)
+                    if (compilationUnitCount == 2)
                     {
                         // Multiple compilation units found
                         _bits[1] = true;
                     }
-                    if (inexactCompilationUnitCount > 1)
+                    if (inexactCompilationUnitCount == 2)
                     {
                         // Multiple inexact compilation units involved
                         _bits[0] = true;
@@ -216,7 +217,7 @@ namespace ILCompiler
 
             CompilationUnitSet moduleDependencySet = new CompilationUnitSet(this, defType.Module);
 
-            if ((type.BaseType != null) && !type.BaseType.IsObject)
+            if ((type.BaseType != null) && !type.BaseType.IsObject && !type.IsValueType)
             {
                 moduleDependencySet.UnionWith(this, TypeLayoutCompilationUnits(type.BaseType));
             }
