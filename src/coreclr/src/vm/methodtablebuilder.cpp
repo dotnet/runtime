@@ -11226,6 +11226,21 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 }
 
 #ifdef FEATURE_READYTORUN
+
+bool ModulesAreDistributedAsAnIndivisibleUnit(Module* module1, Module* module2)
+{
+    if (module1 == module2)
+        return true;
+    
+    bool nativeImagesIdentical = false;
+    if (module1->GetCompositeNativeImage() != NULL)
+    {
+        return module1->GetCompositeNativeImage() == module2->GetCompositeNativeImage();
+    }
+
+    return false;
+}
+
 //*******************************************************************************
 VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDependencyMT)
 {
@@ -11237,20 +11252,18 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
     //
-    // Track whether field layout of this type depend on information outside its containing module
+    // Track whether field layout of this type depend on information outside its containing module and compilation unit
     //
     // It is a stronger condition than MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble().
     // It has to remain fixed accross versioning changes in the module dependencies. In particular, it does
     // not take into account NonVersionable attribute. Otherwise, adding NonVersionable attribute to existing
     // type would be ReadyToRun incompatible change.
     //
-    if (pDependencyMT->GetModule() == GetModule())
-    {
-        if (!pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules())
-            return;
-    }
+    bool modulesDefinedInSameDistributionUnit = ModulesAreDistributedAsAnIndivisibleUnit(pDependencyMT->GetModule(), GetModule());
+    bool dependsOnOtherModules = !modulesDefinedInSameDistributionUnit || pDependencyMT->GetClass()->HasLayoutDependsOnOtherModules();
 
-    GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();
+    if (dependsOnOtherModules)
+        GetHalfBakedClass()->SetHasLayoutDependsOnOtherModules();
 }
 
 BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
@@ -11274,7 +11287,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
 
     // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
     // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching
-    // ReadyToRun images with NGen.
+    // ReadyToRun images with and without input bubble enabled.
     if (!GetModule()->GetFile()->IsILImageReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
@@ -11282,33 +11295,13 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
             return FALSE;
     }
 
-    if (pParentMT->GetModule() == GetModule())
+    if (!ModulesAreDistributedAsAnIndivisibleUnit(GetModule(), pParentMT->GetModule()) ||
+        pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
     {
-        if (!pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
-            return FALSE;
-    }
-    else
-    {
-#ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
-        {
-            if (pParentMT->GetModule()->IsInCurrentVersionBubble())
-            {
-                return FALSE;
-            }
-        }
-#else // FEATURE_READYTORUN_COMPILER
-        if (GetModule()->GetFile()->IsILImageReadyToRun())
-        {
-            if (GetModule()->IsInSameVersionBubble(pParentMT->GetModule()))
-            {
-                return FALSE;
-            }
-        }
-#endif // FEATURE_READYTORUN_COMPILER
+        return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 #endif // FEATURE_READYTORUN
 

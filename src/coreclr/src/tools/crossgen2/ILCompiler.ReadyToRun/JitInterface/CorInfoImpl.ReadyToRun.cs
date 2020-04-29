@@ -1921,30 +1921,6 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException("embedMethodHandle: " + methodDesc.ToString());
         }
 
-        private bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
-        {
-            // Primitive types and enums have fixed layout
-            if (type.IsPrimitive || type.IsEnum)
-            {
-                return true;
-            }
-
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
-            {
-                if (!type.IsValueType)
-                {
-                    // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
-                    // to play it safe and ignore it.
-                    return false;
-                }
-
-                // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-                return type is MetadataType metadataType && metadataType.IsNonVersionable();
-            }
-
-            return true;
-        }
-
         private bool NeedsTypeLayoutCheck(TypeDesc type)
         {
             if (!type.IsDefType)
@@ -1953,27 +1929,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !IsLayoutFixedInCurrentVersionBubble(type);
-        }
-
-        /// <summary>
-        /// Is field layout of the inheritance chain fixed within the current version bubble?
-        /// </summary>
-        private bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
-        {
-            // This method is not expected to be called for value types
-            Debug.Assert(!type.IsValueType);
-
-            while (!type.IsObject && type != null)
-            {
-                if (!IsLayoutFixedInCurrentVersionBubble(type))
-                {
-                    return false;
-                }
-                type = type.BaseType;
-            }
-
-            return true;
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type);
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -2009,14 +1965,13 @@ namespace Internal.JitInterface
             {
                 // No-op except for instance fields
             }
-            else if (!IsLayoutFixedInCurrentVersionBubble(pMT))
+            else if (!_compilation.IsLayoutFixedInCurrentVersionBubble(pMT))
             {
                 if (pMT.IsValueType)
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    pResult->offset = 0;
-                    pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    // No-op other than generating the check field offset fixup
                 }
                 else
                 {
@@ -2032,7 +1987,7 @@ namespace Internal.JitInterface
             {
                 // ENCODE_NONE
             }
-            else if (IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
+            else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
                 // ENCODE_NONE
             }
