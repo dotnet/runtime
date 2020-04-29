@@ -1243,6 +1243,24 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector128_get_AllBitsSet:
+        case NI_Vector256_get_AllBitsSet:
+        {
+            assert(op1 == nullptr);
+            if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // The immediate 8 means Equal (unordered, non-signaling)
+                // This is not available without VEX prefix.
+                emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, targetReg, targetReg, 8);
+            }
+            else
+            {
+                assert(varTypeIsIntegral(baseType) || !compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+            }
+            break;
+        }
+
         default:
         {
             unreached();

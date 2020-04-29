@@ -1815,12 +1815,23 @@ void LinearScan::insertZeroInitRefPositions()
                 Interval* interval = getIntervalForLocalVar(varIndex);
                 if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 {
-                    JITDUMP(" creating ZeroInit\n");
-                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
-                                                      allRegs(interval->registerType));
-                    pos->setRegOptional(true);
-                    varDsc->lvMustInit = true;
+                    if (interval->recentRefPosition == nullptr)
+                    {
+                        JITDUMP(" creating ZeroInit\n");
+                        GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                        RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                          allRegs(interval->registerType));
+                        pos->setRegOptional(true);
+                        varDsc->lvMustInit = true;
+                    }
+                    else
+                    {
+                        // We must only generate one entry RefPosition for each Interval. Since this is not
+                        // a parameter, it can't be RefTypeParamDef, so it must be RefTypeZeroInit, which
+                        // we must have generated for the live-in case above.
+                        assert(interval->recentRefPosition->refType == RefTypeZeroInit);
+                        JITDUMP(" already ZeroInited\n");
+                    }
                 }
             }
         }
