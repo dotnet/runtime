@@ -880,9 +880,6 @@ CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
 
 void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
 
-// return a thunk that will copy the arguments for the given signature.
-void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
-
 bool getTailCallHelpers(
     CORINFO_RESOLVED_TOKEN* callToken,
     CORINFO_SIG_INFO* sig,

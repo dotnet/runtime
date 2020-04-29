@@ -1857,15 +1857,6 @@ void interceptor_ICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     original_ICorJitInfo->MethodCompileComplete(methHnd);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* interceptor_ICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-{
-    mc->cr->AddCall("getTailCallCopyArgsThunk");
-    void* result = original_ICorJitInfo->getTailCallCopyArgsThunk(pSig, flags);
-    mc->recGetTailCallCopyArgsThunk(pSig, flags, result);
-    return result;
-}
-
 bool interceptor_ICJI::getTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,

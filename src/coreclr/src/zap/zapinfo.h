@@ -351,10 +351,6 @@ public:
     void * getHelperFtn (CorInfoHelpFunc   ftnNum,
                                   void**            ppIndirection);
 
-    void* getTailCallCopyArgsThunk (
-                      CORINFO_SIG_INFO       *pSig,
-                      CorInfoHelperTailCallSpecialHandling flags);
-
     virtual bool getTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,

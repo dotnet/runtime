@@ -1299,6 +1299,8 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+     CPUCompileFlags.Set(InstructionSet_X86Base);
+
     // NOTE: The below checks are based on the information reported by
     //   Intel® 64 and IA-32 Architectures Software Developer’s Manual. Volume 2
     //   and
