@@ -136,6 +136,7 @@ libmonoruntime_support_la_SOURCES = support.c
 libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
 
+if ENABLE_NETCORE
 shim_libraries = libmonoruntime-shimglobalization.la
 
 libmonoruntime_shimglobalization_la_SOURCES = \
@@ -152,7 +153,7 @@ libmonoruntime_shimglobalization_la_SOURCES = \
 
 libmonoruntime_shimglobalization_la_LDFLAGS = @ICU_LIBS@
 libmonoruntime_shimglobalization_la_CPPFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
-
+endif
 
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables
