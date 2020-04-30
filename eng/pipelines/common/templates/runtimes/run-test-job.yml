@@ -3,6 +3,8 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -38,6 +40,8 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
@@ -55,9 +59,9 @@ jobs:
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
       - ${{ if eq(parameters.testBuildPhased, true) }}:
         # Also depend on AnyOS AnyCPU tests
         - ${{ if eq(parameters.testGroup, 'innerloop') }}:
@@ -211,7 +215,7 @@ jobs:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
           artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
           artifactName: '$(managedTestArtifactName)'
-          displayName: 'managed test artifacts (built on ${{ parameters.osGroup }}${{ parameters.osSubgroup }})'
+          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
     # Download product binaries directory

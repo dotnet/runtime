@@ -70,13 +70,13 @@ jobs:
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: managedTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_$(archType)_$(buildConfig)'
+      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
 
     - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_$(archType)_$(buildConfig)'
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - name: monoRepoRoot
       value: '$(Build.SourcesDirectory)/src/mono'

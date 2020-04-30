@@ -3,6 +3,8 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   readyToRun: false
@@ -24,14 +26,14 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- ${{ if ne(parameters.corefxTests, true) }}:
+- ${{ if and(ne(parameters.corefxTests, true), eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), eq(parameters.osGroup, parameters.managedTestBuildOsGroup)) }}:
   - template: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
       liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
       archType: ${{ parameters.archType }}
-      osGroup: ${{ parameters.osGroup }}
-      osSubgroup: ${{ parameters.osSubgroup }}
+      osGroup: ${{ parameters.managedTestBuildOsGroup }}
+      osSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
       container: ${{ parameters.container }}
       testGroup: ${{ parameters.testGroup }}
       displayNameArgs: ${{ parameters.displayNameArgs }}
@@ -47,6 +49,8 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
+    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
