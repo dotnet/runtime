@@ -11,11 +11,11 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -349,9 +349,11 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
 //    get the SIMD size from the GenTreeHWIntrinsic node.
 unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig)
 {
-    if (HWIntrinsicInfo::HasFixedSimdSize(id))
+    unsigned simdSize = 0;
+
+    if (tryLookupSimdSize(id, &simdSize))
     {
-        return lookupSimdSize(id);
+        return simdSize;
     }
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
@@ -371,7 +373,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
         typeHnd = sig->retTypeSigClass;
     }
 
-    unsigned  simdSize = 0;
     var_types baseType = comp->getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
     assert((simdSize > 0) && (baseType != TYP_UNKNOWN));
     return simdSize;
