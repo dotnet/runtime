@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Runtime.Interop.JavaScript</AssemblyName>
+    <WindowsRID>win</WindowsRID>
+    <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
+    <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <DefineConstants>$(DefineConstants);TargetsBrowser</DefineConstants>
+  </PropertyGroup>
+  <!-- Browser specific implementation -->
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSException.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSException.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.JSObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.JSObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8Array.cs" Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Uint8ClampedArray.cs" Link="Common\Interop\Browser\Interop.JavaScript.Uint8Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.TypedArray.cs" Link="Common\Interop\Browser\Interop.JavaScript.TypedArray.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Array.cs" Link="Common\Interop\Browser\Interop.JavaScript.Array.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" Link="Common\Interop\Browser\Interop.JavaScript.ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" Link="Common\Interop\Browser\Interop.JavaScript.SharedArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.CoreObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.CoreObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.HostObject.cs" Link="Common\Interop\Browser\Interop.JavaScript.HostObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.JavaScript.Function.cs" Link="Common\Interop\Browser\Interop.JavaScript.Function.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.AnyRef.cs" Link="Common\Interop\Browser\Interop.Runtime.AnyRef.cs" />
+  </ItemGroup>  
+</Project>
