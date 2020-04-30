@@ -3,6 +3,8 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  managedTestBuildOsGroup: ''
+  managedTestBuildOsSubgroup: ''
   name: ''
   helixType: '(unspecified)'
   container: ''
@@ -52,11 +54,11 @@ jobs:
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
       - name: testArtifactRootName
-        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.testGroup }}
 
     - ${{ if eq(parameters.testGroup, '') }}:
       - name: testArtifactRootName
-        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+        value: ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
     - name: coreClrRepoRoot
       value: '$(Build.SourcesDirectory)/src/coreclr'
@@ -88,7 +90,7 @@ jobs:
       value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
 
     - name: managedTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_$(archType)_$(buildConfig)'
+      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - name: managedTestArtifactRootFolderPath
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
@@ -103,7 +105,7 @@ jobs:
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
 
     - name: microsoftNetSdkIlArtifactName
-      value: 'MicrosoftNetSdkIlPackage_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_$(archType)_$(buildConfig)'
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
     - name: priorityArg
       value: ''
