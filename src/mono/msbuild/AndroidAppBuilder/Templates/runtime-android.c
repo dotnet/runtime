@@ -23,8 +23,8 @@
 
 static char *bundle_path;
 
-#define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "MONO", fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "MONO", fmt, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
 
 static MonoAssembly*
 load_assembly (const char *name, const char *culture)
@@ -185,15 +185,18 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir)
 {
     char file_dir[2048];
     char cache_dir[2048];
+    char docs_dir[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
+    strncpy_str (env, docs_dir, j_docs_dir, sizeof(docs_dir));
 
     bundle_path = file_dir;
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true); 
+    setenv ("DOCSDIR", docs_dir, true); 
     return mono_mobile_runtime_init ();
 }
