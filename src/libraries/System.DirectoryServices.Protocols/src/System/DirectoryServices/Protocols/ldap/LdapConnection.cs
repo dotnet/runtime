@@ -49,7 +49,6 @@ namespace System.DirectoryServices.Protocols
         private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = null;
         private static readonly ManualResetEvent s_waitHandle = null;
         private static readonly PartialResultsRetriever s_retriever = null;
-        private bool _setFQDNDone = false;
         internal bool _needDispose = true;
         private bool _connected = false;
         internal QUERYCLIENTCERT _clientCertificateRoutine = null;
@@ -296,7 +295,7 @@ namespace System.DirectoryServices.Protocols
                 if (error == 0)
                 {
                     // Success code but message is -1, unexpected.
-                    error = NativePal.LdapGetLastError(_ldapHandle);
+                    error = LdapPal.LdapGetLastError(_ldapHandle);
                 }
 
                 throw ConstructException(error, operation);
@@ -399,7 +398,7 @@ namespace System.DirectoryServices.Protocols
             if (error == 0)
             {
                 // Success code but message is -1, unexpected.
-                error = NativePal.LdapGetLastError(_ldapHandle);
+                error = LdapPal.LdapGetLastError(_ldapHandle);
             }
 
             throw ConstructException(error, operation);
@@ -469,7 +468,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Cancel the request.
-            NativePal.LdapAbandon(_ldapHandle, messageId);
+            LdapPal.LdapAbandon(_ldapHandle, messageId);
 
             LdapRequestState resultObject = result._resultObject;
             if (resultObject != null)
@@ -627,12 +626,12 @@ namespace System.DirectoryServices.Protocols
                 if (request is DeleteRequest)
                 {
                     // It is an delete operation.
-                    error = NativePal.LdapDeleteExt(_ldapHandle, ((DeleteRequest)request).DistinguishedName, serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.LdapDeleteExt(_ldapHandle, ((DeleteRequest)request).DistinguishedName, serverControlArray, clientControlArray, ref messageID);
                 }
                 else if (request is ModifyDNRequest)
                 {
                     // It is a modify dn operation
-                    error = NativePal.LdapRename( _ldapHandle,
+                    error = LdapPal.LdapRename( _ldapHandle,
                                             ((ModifyDNRequest)request).DistinguishedName,
                                             ((ModifyDNRequest)request).NewName,
                                             ((ModifyDNRequest)request).NewParentDistinguishedName,
@@ -673,7 +672,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // It is a compare request.
-                    error = NativePal.LdapCompare(_ldapHandle,
+                    error = LdapPal.LdapCompare(_ldapHandle,
                                             ((CompareRequest)request).DistinguishedName,
                                             assertion.Name,
                                             stringValue,
@@ -708,14 +707,14 @@ namespace System.DirectoryServices.Protocols
 
                     if (request is AddRequest)
                     {
-                        error = NativePal.LdapAdd(_ldapHandle,
+                        error = LdapPal.LdapAdd(_ldapHandle,
                                             ((AddRequest)request).DistinguishedName,
                                             modArray,
                                             serverControlArray, clientControlArray, ref messageID);
                     }
                     else
                     {
-                        error = NativePal.LdapModify(_ldapHandle,
+                        error = LdapPal.LdapModify(_ldapHandle,
                                                ((ModifyRequest)request).DistinguishedName,
                                                modArray,
                                                serverControlArray, clientControlArray, ref messageID);
@@ -737,7 +736,7 @@ namespace System.DirectoryServices.Protocols
                         Marshal.Copy(val, 0, berValuePtr.bv_val, val.Length);
                     }
 
-                    error = NativePal.LdapExtendedOperation(_ldapHandle,
+                    error = LdapPal.LdapExtendedOperation(_ldapHandle,
                                                        name,
                                                        berValuePtr,
                                                        serverControlArray, clientControlArray, ref messageID);
@@ -765,7 +764,7 @@ namespace System.DirectoryServices.Protocols
                         int i = 0;
                         for (i = 0; i < attributeCount; i++)
                         {
-                            IntPtr controlPtr = StringToPtr(searchRequest.Attributes[i]);
+                            IntPtr controlPtr = LdapPal.StringToPtr(searchRequest.Attributes[i]);
                             tempPtr = (IntPtr)((long)searchAttributes + IntPtr.Size * i);
                             Marshal.WriteIntPtr(tempPtr, controlPtr);
                         }
@@ -786,7 +785,7 @@ namespace System.DirectoryServices.Protocols
 
                     try
                     {
-                        error = NativePal.LdapSearch(_ldapHandle,
+                        error = LdapPal.LdapSearch(_ldapHandle,
                                                searchRequest.DistinguishedName,
                                                searchScope,
                                                searchRequestFilter,
@@ -999,7 +998,7 @@ namespace System.DirectoryServices.Protocols
             // Set the certificate callback routine here if user adds the certifcate to the certificate collection.
             if (ClientCertificates.Count != 0)
             {
-                int certError = NativePal.LdapSetOptionClientcert(_ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _clientCertificateRoutine);
+                int certError = LdapPal.LdapSetOptionClientCert(_ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _clientCertificateRoutine);
                 if (certError != (int)ResultCode.Success)
                 {
                     if (Utility.IsLdapError((LdapError)certError))
@@ -1018,13 +1017,13 @@ namespace System.DirectoryServices.Protocols
             // Set the LDAP_OPT_AREC_EXCLUSIVE flag if necessary.
             if (((LdapDirectoryIdentifier)Directory).FullyQualifiedDnsHostName && !_setFQDNDone)
             {
-                SessionOptions.FQDN = true;
+                SessionOptions.SetFqdnRequired();
                 _setFQDNDone = true;
             }
 
             int error = InternalConnectToServer();
 
-            // Filed, throw an exception.
+            // Failed, throw an exception.
             if (error != (int)ResultCode.Success)
             {
                 if (Utility.IsLdapError((LdapError)error))
@@ -1093,7 +1092,7 @@ namespace System.DirectoryServices.Protocols
             int error;
             if (AuthType == AuthType.Anonymous)
             {
-                error = NativePal.LdapSimpleBind(_ldapHandle, null, null);
+                error = LdapPal.LdapSimpleBind(_ldapHandle, null, null);
             }
             else if (AuthType == AuthType.Basic)
             {
@@ -1105,7 +1104,7 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 tempDomainName.Append(username);
-                error = NativePal.LdapSimpleBind(_ldapHandle, tempDomainName.ToString(), password);
+                error = LdapPal.LdapSimpleBind(_ldapHandle, tempDomainName.ToString(), password);
             }
             else
             {
@@ -1255,7 +1254,7 @@ namespace System.DirectoryServices.Protocols
                         managedControls[i] = new LdapControl()
                         {
                             // Get the control type.
-                            ldctl_oid = StringToPtr(((DirectoryControl)controlList[i]).Type),
+                            ldctl_oid = LdapPal.StringToPtr(((DirectoryControl)controlList[i]).Type),
 
                             // Get the control cricality.
                             ldctl_iscritical = ((DirectoryControl)controlList[i]).IsCritical
@@ -1338,7 +1337,7 @@ namespace System.DirectoryServices.Protocols
                     attributes[i].type |= LDAP_MOD_BVALUES;
 
                     // Write the attribute name.
-                    attributes[i].attribute = StringToPtr(modAttribute.Name);
+                    attributes[i].attribute = LdapPal.StringToPtr(modAttribute.Name);
 
                     // Write the values.
                     int valuesCount = 0;
@@ -1431,7 +1430,7 @@ namespace System.DirectoryServices.Protocols
                 needAbandon = false;
             }
 
-            int error = NativePal.LdapResult(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
+            int error = LdapPal.LdapResult(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
             if (error != -1 && error != 0)
             {
                 // parsing the result
@@ -1479,13 +1478,13 @@ namespace System.DirectoryServices.Protocols
                             response = new ExtendedResponse(responseDn, responseControl, (ResultCode)resultError, responseMessage, responseReferral);
                             if (resultError == (int)ResultCode.Success)
                             {
-                                resultError = NativePal.LdapParseExtendedResult(_ldapHandle, ldapResult, ref requestName, ref requestValue, 0 /*not free it*/);
+                                resultError = LdapPal.LdapParseExtendedResult(_ldapHandle, ldapResult, ref requestName, ref requestValue, 0 /*not free it*/);
                                 if (resultError == 0)
                                 {
                                     string name = null;
                                     if (requestName != IntPtr.Zero)
                                     {
-                                        name = PtrToString(requestName);
+                                        name = LdapPal.PtrToString(requestName);
                                     }
 
                                     berval val = null;
@@ -1522,7 +1521,7 @@ namespace System.DirectoryServices.Protocols
                             SearchResultReferenceCollection searchResultReferences = new SearchResultReferenceCollection();
 
                             // parsing the resultentry
-                            entryMessage = NativePal.LdapFirstEntry(_ldapHandle, ldapResult);
+                            entryMessage = LdapPal.LdapFirstEntry(_ldapHandle, ldapResult);
 
                             int entrycount = 0;
                             while (entryMessage != IntPtr.Zero)
@@ -1534,11 +1533,11 @@ namespace System.DirectoryServices.Protocols
                                 }
 
                                 entrycount++;
-                                entryMessage = NativePal.LdapNextEntry(_ldapHandle, entryMessage);
+                                entryMessage = LdapPal.LdapNextEntry(_ldapHandle, entryMessage);
                             }
 
                             // Parse the reference.
-                            IntPtr referenceMessage = NativePal.LdapFirstReference(_ldapHandle, ldapResult);
+                            IntPtr referenceMessage = LdapPal.LdapFirstReference(_ldapHandle, ldapResult);
 
                             while (referenceMessage != IntPtr.Zero)
                             {
@@ -1548,7 +1547,7 @@ namespace System.DirectoryServices.Protocols
                                     searchResultReferences.Add(reference);
                                 }
 
-                                referenceMessage = NativePal.LdapNextReference(_ldapHandle, referenceMessage);
+                                referenceMessage = LdapPal.LdapNextReference(_ldapHandle, referenceMessage);
                             }
 
                             ((SearchResponse)response).Entries = searchResultEntries;
@@ -1581,17 +1580,17 @@ namespace System.DirectoryServices.Protocols
                 {
                     if (requestName != IntPtr.Zero)
                     {
-                        NativePal.LdapMemfree(requestName);
+                        LdapPal.LdapMemfree(requestName);
                     }
 
                     if (requestValue != IntPtr.Zero)
                     {
-                        NativePal.LdapMemfree(requestValue);
+                        LdapPal.LdapMemfree(requestValue);
                     }
 
                     if (ldapResult != IntPtr.Zero)
                     {
-                        NativePal.LdapMemfree(ldapResult);
+                        LdapPal.LdapMemfree(ldapResult);
                     }
                 }
             }
@@ -1614,13 +1613,13 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                    error = NativePal.LdapGetLastError(_ldapHandle);
+                    error = LdapPal.LdapGetLastError(_ldapHandle);
                 }
 
                 // Abandon the request.
                 if (needAbandon)
                 {
-                    NativePal.LdapAbandon(_ldapHandle, messageId);
+                    LdapPal.LdapAbandon(_ldapHandle, messageId);
                 }
             }
 
@@ -1637,15 +1636,15 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                int resultError = NativePal.LdapParseResult(_ldapHandle, ldapResult, ref serverError, ref dn, ref message, ref referral, ref control, 0 /* not free it */);
+                int resultError = LdapPal.LdapParseResult(_ldapHandle, ldapResult, ref serverError, ref dn, ref message, ref referral, ref control, 0 /* not free it */);
 
                 if (resultError == 0)
                 {
                     // Parse the dn.
-                    responseDn = PtrToString(dn);
+                    responseDn = LdapPal.PtrToString(dn);
 
                     // Parse the message.
-                    responseMessage = PtrToString(message);
+                    responseMessage = LdapPal.PtrToString(message);
 
                     // Parse the referral.
                     if (referral != IntPtr.Zero)
@@ -1656,7 +1655,7 @@ namespace System.DirectoryServices.Protocols
                         var referralList = new ArrayList();
                         while (singleReferral != null)
                         {
-                            string s = PtrToString((IntPtr)singleReferral);
+                            string s = LdapPal.PtrToString((IntPtr)singleReferral);
                             referralList.Add(s);
 
                             i++;
@@ -1698,7 +1697,7 @@ namespace System.DirectoryServices.Protocols
                     // we need to take care of one special case, when can't connect to the server, ldap_parse_result fails with local error
                     if (resultError == (int)LdapError.LocalError)
                     {
-                        int tmpResult = NativePal.LdapResult2error(_ldapHandle, ldapResult, 0 /* not free it */);
+                        int tmpResult = LdapPal.LdapResult2error(_ldapHandle, ldapResult, 0 /* not free it */);
                         if (tmpResult != 0)
                         {
                             resultError = tmpResult;
@@ -1712,22 +1711,22 @@ namespace System.DirectoryServices.Protocols
             {
                 if (dn != IntPtr.Zero)
                 {
-                    NativePal.LdapMemfree(dn);
+                    LdapPal.LdapMemfree(dn);
                 }
 
                 if (message != IntPtr.Zero)
                 {
-                    NativePal.LdapMemfree(message);
+                    LdapPal.LdapMemfree(message);
                 }
 
                 if (referral != IntPtr.Zero)
                 {
-                    NativePal.LdapValueFree(referral);
+                    LdapPal.LdapValueFree(referral);
                 }
 
                 if (control != IntPtr.Zero)
                 {
-                    NativePal.LdapControlsFree(control);
+                    LdapPal.LdapControlsFree(control);
                 }
             }
         }
@@ -1742,11 +1741,11 @@ namespace System.DirectoryServices.Protocols
             {
                 // Get the dn.
                 string entryDn = null;
-                dn = NativePal.LdapGetDn(_ldapHandle, entryMessage);
+                dn = LdapPal.LdapGetDn(_ldapHandle, entryMessage);
                 if (dn != IntPtr.Zero)
                 {
-                    entryDn = PtrToString(dn);
-                    NativePal.LdapMemfree(dn);
+                    entryDn = LdapPal.PtrToString(dn);
+                    LdapPal.LdapMemfree(dn);
                     dn = IntPtr.Zero;
                 }
 
@@ -1754,7 +1753,7 @@ namespace System.DirectoryServices.Protocols
                 SearchResultAttributeCollection attributes = resultEntry.Attributes;
 
                 // Get attributes.
-                attribute = NativePal.LdapFirstAttribute(_ldapHandle, entryMessage, ref address);
+                attribute = LdapPal.LdapFirstAttribute(_ldapHandle, entryMessage, ref address);
 
                 int tempcount = 0;
                 while (attribute != IntPtr.Zero)
@@ -1762,14 +1761,14 @@ namespace System.DirectoryServices.Protocols
                     DirectoryAttribute attr = ConstructAttribute(entryMessage, attribute);
                     attributes.Add(attr.Name, attr);
 
-                    NativePal.LdapMemfree(attribute);
+                    LdapPal.LdapMemfree(attribute);
                     tempcount++;
-                    attribute = NativePal.LdapNextAttribute(_ldapHandle, entryMessage, address);
+                    attribute = LdapPal.LdapNextAttribute(_ldapHandle, entryMessage, address);
                 }
 
                 if (address != IntPtr.Zero)
                 {
-                    NativePal.BerFree(address, 0);
+                    LdapPal.BerFree(address, 0);
                     address = IntPtr.Zero;
                 }
 
@@ -1779,17 +1778,17 @@ namespace System.DirectoryServices.Protocols
             {
                 if (dn != IntPtr.Zero)
                 {
-                    NativePal.LdapMemfree(dn);
+                    LdapPal.LdapMemfree(dn);
                 }
 
                 if (attribute != IntPtr.Zero)
                 {
-                    NativePal.LdapMemfree(attribute);
+                    LdapPal.LdapMemfree(attribute);
                 }
 
                 if (address != IntPtr.Zero)
                 {
-                    NativePal.BerFree(address, 0);
+                    LdapPal.BerFree(address, 0);
                 }
             }
         }
@@ -1801,9 +1800,9 @@ namespace System.DirectoryServices.Protocols
                 _isSearchResult = true
             };
 
-            string name = PtrToString(attributeName);
+            string name = LdapPal.PtrToString(attributeName);
             attribute.Name = name;
-            IntPtr valuesArray = NativePal.LdapGetValuesLen(_ldapHandle, entryMessage, name);
+            IntPtr valuesArray = LdapPal.LdapGetValuesLen(_ldapHandle, entryMessage, name);
             try
             {
                 if (valuesArray != IntPtr.Zero)
@@ -1831,7 +1830,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (valuesArray != IntPtr.Zero)
                 {
-                    NativePal.LdapValueFreeLen(valuesArray);
+                    LdapPal.LdapValueFreeLen(valuesArray);
                 }
             }
 
@@ -1841,7 +1840,7 @@ namespace System.DirectoryServices.Protocols
         internal SearchResultReference ConstructReference(IntPtr referenceMessage)
         {
             IntPtr referenceArray = IntPtr.Zero;
-            int error = NativePal.LdapParseReference(_ldapHandle, referenceMessage, ref referenceArray);
+            int error = LdapPal.LdapParseReference(_ldapHandle, referenceMessage, ref referenceArray);
 
             try
             {
@@ -1855,14 +1854,14 @@ namespace System.DirectoryServices.Protocols
                         tempPtr = Marshal.ReadIntPtr(referenceArray, IntPtr.Size * count);
                         while (tempPtr != IntPtr.Zero)
                         {
-                            string s = PtrToString(tempPtr);
+                            string s = LdapPal.PtrToString(tempPtr);
                             referralList.Add(s);
 
                             count++;
                             tempPtr = Marshal.ReadIntPtr(referenceArray, IntPtr.Size * count);
                         }
 
-                        NativePal.LdapValueFree(referenceArray);
+                        LdapPal.LdapValueFree(referenceArray);
                         referenceArray = IntPtr.Zero;
                     }
 
@@ -1882,7 +1881,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (referenceArray != IntPtr.Zero)
                 {
-                    NativePal.LdapValueFree(referenceArray);
+                    LdapPal.LdapValueFree(referenceArray);
                 }
             }
 
@@ -1951,7 +1950,7 @@ namespace System.DirectoryServices.Protocols
             Marshal.PtrToStructure(controlPtr, control);
 
             Debug.Assert(control.ldctl_oid != IntPtr.Zero);
-            string controlType = PtrToString(control.ldctl_oid);
+            string controlType = LdapPal.PtrToString(control.ldctl_oid);
 
             byte[] bytes = new byte[control.ldctl_value.bv_len];
             Marshal.Copy(control.ldctl_value.bv_val, bytes, 0, control.ldctl_value.bv_len);

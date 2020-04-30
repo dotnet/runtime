@@ -27,7 +27,7 @@ namespace System.DirectoryServices.Protocols
             Debug.WriteLine("Begin encoding\n");
 
             // allocate the berelement
-            BerSafeHandle berElement = new BerSafeHandle();
+            SafeBerHandle berElement = new SafeBerHandle();
 
             int valueCount = 0;
             int error = 0;
@@ -37,7 +37,7 @@ namespace System.DirectoryServices.Protocols
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
                 {
                     // no argument needed
-                    error = NativePal.BerPrintfEmptyarg(berElement, new string(fmt, 1));
+                    error = LdapPal.BerPrintfEmptyarg(berElement, new string(fmt, 1));
                 }
                 else if (fmt == 't' || fmt == 'i' || fmt == 'e')
                 {
@@ -56,7 +56,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = NativePal.BerPrintfInt(berElement, new string(fmt, 1), (int)value[valueCount]);
+                    error = LdapPal.BerPrintfInt(berElement, new string(fmt, 1), (int)value[valueCount]);
 
                     // increase the value count
                     valueCount++;
@@ -78,7 +78,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // one int argument
-                    error = NativePal.BerPrintfInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
+                    error = LdapPal.BerPrintfInt(berElement, new string(fmt, 1), (bool)value[valueCount] ? 1 : 0);
 
                     // increase the value count
                     valueCount++;
@@ -220,7 +220,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
                 // deallocation, wldap has special check. So have to use IntPtr directly here.
-                error = NativePal.BerFlatten(berElement, ref flattenptr);
+                error = LdapPal.BerFlatten(berElement, ref flattenptr);
 
                 if (error == -1)
                 {
@@ -247,7 +247,7 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (flattenptr != IntPtr.Zero)
-                    NativePal.BerBvfree(flattenptr);
+                    LdapPal.BerBvfree(flattenptr);
             }
 
             return encodingResult;
@@ -273,7 +273,7 @@ namespace System.DirectoryServices.Protocols
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
             berval berValue = new berval();
             ArrayList resultList = new ArrayList();
-            BerSafeHandle berElement = null;
+            SafeBerHandle berElement = null;
 
             object[] decodeResult = null;
             decodeSucceeded = false;
@@ -292,7 +292,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                berElement = new BerSafeHandle(berValue);
+                berElement = new SafeBerHandle(berValue);
             }
             finally
             {
@@ -307,7 +307,7 @@ namespace System.DirectoryServices.Protocols
                 char fmt = format[formatCount];
                 if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n' || fmt == 'x')
                 {
-                    error = NativePal.BerScanf(berElement, new string(fmt, 1));
+                    error = LdapPal.BerScanf(berElement, new string(fmt, 1));
 
                     if (error != 0)
                         Debug.WriteLine("ber_scanf for {, }, [, ], n or x failed");
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'i' || fmt == 'e' || fmt == 'b')
                 {
                     int result = 0;
-                    error = NativePal.BerScanfInt(berElement, new string(fmt, 1), ref result);
+                    error = LdapPal.BerScanfInt(berElement, new string(fmt, 1), ref result);
 
                     if (error == 0)
                     {
@@ -365,7 +365,7 @@ namespace System.DirectoryServices.Protocols
                     // return a bitstring and its length
                     IntPtr ptrResult = IntPtr.Zero;
                     int length = 0;
-                    error = NativePal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
+                    error = LdapPal.BerScanfBitstring(berElement, "B", ref ptrResult, ref length);
 
                     if (error == 0)
                     {
@@ -444,7 +444,7 @@ namespace System.DirectoryServices.Protocols
             return decodeResult;
         }
 
-        private static int EncodingByteArrayHelper(BerSafeHandle berElement, byte[] tempValue, char fmt)
+        private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt)
         {
             int error = 0;
 
@@ -454,19 +454,19 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-                error = NativePal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
+                error = LdapPal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
             }
             else
             {
                 IntPtr tmp = Marshal.AllocHGlobal(0);
                 HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
-                error = NativePal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, 0);
+                error = LdapPal.BerPrintfBytearray(berElement, new string(fmt, 1), memHandle, 0);
             }
 
             return error;
         }
 
-        private static byte[] DecodingByteArrayHelper(BerSafeHandle berElement, char fmt, ref int error)
+        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
             error = 0;
             IntPtr result = IntPtr.Zero;
@@ -475,7 +475,7 @@ namespace System.DirectoryServices.Protocols
 
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
             // deallocation, wldap has special check. So have to use IntPtr directly here.
-            error = NativePal.BerScanfPtr(berElement, new string(fmt, 1), ref result);
+            error = LdapPal.BerScanfPtr(berElement, new string(fmt, 1), ref result);
 
             try
             {
@@ -495,13 +495,13 @@ namespace System.DirectoryServices.Protocols
             finally
             {
                 if (result != IntPtr.Zero)
-                    NativePal.BerBvfree(result);
+                    LdapPal.BerBvfree(result);
             }
 
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(BerSafeHandle berElement, byte[][] tempValue, char fmt)
+        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt)
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;
@@ -548,7 +548,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
-                error = NativePal.BerPrintfBerarray(berElement, new string(fmt, 1), berValArray);
+                error = LdapPal.BerPrintfBerarray(berElement, new string(fmt, 1), berValArray);
 
                 GC.KeepAlive(managedBerVal);
             }
@@ -569,7 +569,7 @@ namespace System.DirectoryServices.Protocols
             return error;
         }
 
-        private static byte[][] DecodingMultiByteArrayHelper(BerSafeHandle berElement, char fmt, ref int error)
+        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
             error = 0;
             // several berval
@@ -581,7 +581,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                error = NativePal.BerScanfPtr(berElement, new string(fmt, 1), ref ptrResult);
+                error = LdapPal.BerScanfPtr(berElement, new string(fmt, 1), ref ptrResult);
 
                 if (error == 0)
                 {
@@ -616,7 +616,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (ptrResult != IntPtr.Zero)
                 {
-                    NativePal.BerBvecfree(ptrResult);
+                    LdapPal.BerBvecfree(ptrResult);
                 }
             }
 

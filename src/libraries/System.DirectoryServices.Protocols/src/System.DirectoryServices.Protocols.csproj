@@ -36,22 +36,38 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\NativeTypes.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\NativeTypes.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\DirectoryServices\Protocols\ldap\NativePal.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.Windows.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Wldap32\Interop.Ldap.cs">
+      <Link>Common\Interop\Windows\Wldap32\Interop.Ldap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Wldap32\Interop.Ber.cs">
+      <Link>Common\Interop\Windows\Wldap32\Interop.Ber.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\DirectoryServices\Protocols\ldap\NativePal.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.Linux.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\ldap\OpenLdapUnsafeMethods.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Linux.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ldap.cs">
+      <Link>Common\Interop\Linux\OpenLdap\Interop.Ldap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ber.cs">
+      <Link>Common\Interop\Linux\OpenLdap\Interop.Ber.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
