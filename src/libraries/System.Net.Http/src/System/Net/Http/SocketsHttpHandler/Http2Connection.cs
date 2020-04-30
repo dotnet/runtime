@@ -761,27 +761,69 @@ namespace System.Net.Http
         private async ValueTask<Memory<byte>> StartWriteAsync(int writeBytes, CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(writeBytes)}={writeBytes}");
-            await AcquireWriteLockAsync(cancellationToken).ConfigureAwait(false);
 
+            // Acquire the write lock
+            ValueTask acquireLockTask = _writerLock.EnterAsync(cancellationToken);
+            if (acquireLockTask.IsCompletedSuccessfully)
+            {
+                acquireLockTask.GetAwaiter().GetResult(); // to enable the value task sources to be pooled
+            }
+            else
+            {
+                Interlocked.Increment(ref _pendingWriters);
+                try
+                {
+                    await acquireLockTask.ConfigureAwait(false);
+                }
+                catch
+                {
+                    if (Interlocked.Decrement(ref _pendingWriters) == 0)
+                    {
+                        // If a pending waiter is canceled, we may end up in a situation where a previously written frame
+                        // saw that there were pending writers and as such deferred its flush to them, but if/when that pending
+                        // writer is canceled, nothing may end up flushing the deferred work (at least not promptly).  To compensate,
+                        // if a pending writer does end up being canceled, we flush asynchronously.  We can't check whether there's such
+                        // a pending operation because we failed to acquire the lock that protects that state.  But we can at least only
+                        // do the flush if our decrement caused the pending count to reach 0: if it's still higher than zero, then there's
+                        // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
+                        // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
+                        // cancellation was requested, and it's because of that cancellation that we need to flush.
+                        LogExceptions(FlushAsync(default));
+                    }
+
+                    throw;
+                }
+                Interlocked.Decrement(ref _pendingWriters);
+            }
+
+            // If the connection has been aborted, then fail now instead of trying to send more data.
+            if (_abortException != null)
+            {
+                _writerLock.Exit();
+                throw new IOException(SR.net_http_request_aborted, _abortException);
+            }
+
+            // Flush anything necessary, and return back the write buffer to use.
             try
             {
                 // If there is a pending write that was canceled while in progress, wait for it to complete.
                 if (_inProgressWrite != null)
                 {
-                    await _inProgressWrite.ConfigureAwait(false);
+                    await new ValueTask(_inProgressWrite).ConfigureAwait(false); // await ValueTask to minimize number of awaiter fields
                     _inProgressWrite = null;
                 }
 
                 int totalBufferLength = _outgoingBuffer.Capacity;
                 int activeBufferLength = _outgoingBuffer.ActiveLength;
 
+                // If the buffer has already grown to 32k, does not have room for the next request,
+                // and is non-empty, flush the current contents to the wire.
                 if (totalBufferLength >= UnflushedOutgoingBufferSize &&
                     writeBytes >= totalBufferLength - activeBufferLength &&
                     activeBufferLength > 0)
                 {
-                    // If the buffer has already grown to 32k, does not have room for the next request,
-                    // and is non-empty, flush the current contents to the wire.
-                    await FlushOutgoingBytesAsync().ConfigureAwait(false); // we explicitly do not pass cancellationToken here, as this flush impacts more than just this operation
+                    // We explicitly do not pass cancellationToken here, as this flush impacts more than just this operation.
+                    await new ValueTask(FlushOutgoingBytesAsync()).ConfigureAwait(false); // await ValueTask to minimize number of awaiter fields
                 }
 
                 _outgoingBuffer.EnsureAvailableSpace(writeBytes);
@@ -1339,7 +1381,7 @@ namespace System.Net.Http
                     writeBuffer = await StartWriteAsync(FrameHeader.Size + current.Length, cancellationToken).ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
                 }
-                catch (OperationCanceledException)
+                catch
                 {
                     _connectionWindow.AdjustCredit(frameSize);
                     throw;
