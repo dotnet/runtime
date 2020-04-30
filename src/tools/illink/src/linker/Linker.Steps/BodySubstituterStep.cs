@@ -92,7 +92,7 @@ namespace Mono.Linker.Steps
 				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
 
 				if (assembly == null) {
-					Context.LogMessage (MessageImportance.Low, $"Could not match assembly '{name.FullName}' for substitution");
+					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not match assembly '{name.FullName}' for substitution", 2007));
 					continue;
 				}
 
@@ -118,7 +118,7 @@ namespace Mono.Linker.Steps
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
 
 				if (type == null) {
-					Context.LogMessage (MessageImportance.Low, $"Could not resolve type '{fullname}' for substitution");
+					Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve type '{fullname}' for substitution", 2008));
 					continue;
 				}
 
@@ -167,7 +167,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogMessage (MessageImportance.Normal, $"Could not find method '{signature}' for substitution");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' for substitution", 2009));
 				return;
 			}
 
@@ -180,7 +180,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (iterator.Current, "value");
 				if (value != "") {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
-						Context.LogMessage (MessageImportance.High, $"Invalid value for '{signature}' stub");
+						Context.LogMessage (MessageContainer.CreateWarningMessage ($"Invalid value for '{signature}' stub", 2010));
 						return;
 					}
 
@@ -190,7 +190,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				Context.LogMessage (MessageImportance.High, $"Unknown body modification '{action}' for '{signature}'");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Unknown body modification '{action}' for '{signature}'", 2011));
 				return;
 			}
 		}
@@ -203,22 +203,22 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				Context.LogMessage (MessageImportance.Normal, $"Could not find field '{name}' for substitution.");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{name}' for substitution.", 2012));
 				return;
 			}
 
 			if (!field.IsStatic || field.IsLiteral) {
-				Context.LogMessage (MessageImportance.Normal, $"Substituted field '{name}' needs to be static field.");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Substituted field '{name}' needs to be static field.", 2013));
 				return;
 			}
 
 			string value = GetAttribute (iterator.Current, "value");
 			if (string.IsNullOrEmpty (value)) {
-				Context.LogMessage (MessageImportance.High, $"Missing 'value' attribute for field '{field}'.");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Missing 'value' attribute for field '{field}'.", 2014));
 				return;
 			}
 			if (!TryConvertValue (value, field.FieldType, out object res)) {
-				Context.LogMessage (MessageImportance.High, $"Invalid value for '{field}': '{value}'.");
+				Context.LogMessage (MessageContainer.CreateWarningMessage ($"Invalid value for '{field}': '{value}'.", 2015));
 				return;
 			}
 

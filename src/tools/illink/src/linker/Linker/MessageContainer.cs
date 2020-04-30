@@ -28,10 +28,19 @@ namespace Mono.Linker
 		public int? Code { get; }
 
 		/// <summary>
-		/// Optional user friendly text describing the error or warning.
+		/// User friendly text describing the error or warning.
 		/// </summary>
 		public string Text { get; }
 
+		/// <summary>
+		/// Create an error message.
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Code of the error. Please see https://github.com/mono/linker/blob/master/src/linker/ErrorAndWarningCodes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <returns>New MessageContainer of 'Error' category</returns>
 		public static MessageContainer CreateErrorMessage (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
 			if (!(code >= 1000 && code <= 2000))
@@ -40,6 +49,15 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Error, text, code, subcategory, origin);
 		}
 
+		/// <summary>
+		/// Create a warning message.
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the warning</param>
+		/// <param name="code">Code of the warning. Please see https://github.com/mono/linker/blob/master/src/linker/ErrorAndWarningCodes.md
+		/// for the list of warnings and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this warning</param>
+		/// <param name="origin">Filename, line, and column where the warning was found</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public static MessageContainer CreateWarningMessage (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
 			if (!(code > 2000 && code <= 6000))
@@ -48,11 +66,21 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
 		}
 
+		/// <summary>
+		/// Create a info message.
+		/// </summary>
+		/// <param name="text">Humanly readable message</param>
+		/// <returns>New MessageContainer of 'Info' category</returns>
 		public static MessageContainer CreateInfoMessage (string text)
 		{
 			return new MessageContainer (MessageCategory.Info, text, null);
 		}
 
+		/// <summary>
+		/// Create a diagnostics message.
+		/// </summary>
+		/// <param name="text">Humanly readable message</param>
+		/// <returns>New MessageContainer of 'Diagnostic' category</returns>
 		public static MessageContainer CreateDiagnosticMessage (string text)
 		{
 			return new MessageContainer (MessageCategory.Diagnostic, text, null);

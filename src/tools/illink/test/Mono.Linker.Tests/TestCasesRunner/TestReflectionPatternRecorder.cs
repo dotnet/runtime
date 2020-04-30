@@ -1,11 +1,14 @@
 ﻿using Mono.Cecil;
 using Mono.Cecil.Cil;
+using System;
 using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestReflectionPatternRecorder : IReflectionPatternRecorder
 	{
+		public Action<MessageContainer> LogMessage { get; set; }
+
 		public struct ReflectionAccessPattern
 		{
 			public MethodDefinition SourceMethod;
@@ -28,6 +31,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message)
 		{
+			LogMessage (MessageContainer.CreateWarningMessage (message, 2006, "Unrecognized reflection pattern",
+				reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : null));
 			UnrecognizedPatterns.Add (new ReflectionAccessPattern {
 				SourceMethod = sourceMethod,
 				ReflectionMethodCall = reflectionMethodCall,

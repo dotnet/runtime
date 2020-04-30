@@ -52,13 +52,13 @@ namespace Mono.Linker.Steps
 		protected List<MethodBody> _unreachableBodies;
 
 #if DEBUG
-		static readonly DependencyKind [] _entireTypeReasons = new DependencyKind [] {
+		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
 			DependencyKind.NestedType,
 			DependencyKind.PreservedDependency,
 			DependencyKind.TypeInAssembly,
 		};
 
-		static readonly DependencyKind [] _fieldReasons = new DependencyKind [] {
+		static readonly DependencyKind[] _fieldReasons = new DependencyKind[] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.Custom,
@@ -74,7 +74,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.TypePreserve,
 		};
 
-		static readonly DependencyKind [] _typeReasons = new DependencyKind [] {
+		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeType,
@@ -100,7 +100,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.VariableType,
 		};
 
-		static readonly DependencyKind [] _methodReasons = new DependencyKind [] {
+		static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeConstructor,
@@ -587,7 +587,7 @@ namespace Mono.Linker.Steps
 			if (args.Count >= 3 && args[2].Value is string assemblyName) {
 				assembly = _context.GetLoadedAssembly (assemblyName);
 				if (assembly == null) {
-					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{assemblyName}' assembly dependency");
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve '{assemblyName}' assembly dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2003));
 					return;
 				}
 			} else {
@@ -599,7 +599,7 @@ namespace Mono.Linker.Steps
 				td = (assembly ?? context.Module.Assembly).FindType (typeName);
 
 				if (td == null) {
-					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' type dependency");
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve '{typeName}' type dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2004));
 					return;
 				}
 			} else {
@@ -632,7 +632,7 @@ namespace Mono.Linker.Steps
 			if (MarkDependencyField (td, member, new DependencyInfo (DependencyKind.PreservedDependency, ca)))
 				return;
 
-			_context.LogMessage (MessageImportance.High, $"Could not resolve dependency member '{member}' declared in type '{td.FullName}'");
+			_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve dependency member '{member}' declared in type '{td.FullName}' specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2005));
 		}
 
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature, in DependencyInfo reason)
@@ -1937,11 +1937,11 @@ namespace Mono.Linker.Steps
 				break;
 			case TypePreserve.Fields:
 				if (!MarkFields (type, true, new DependencyInfo (DependencyKind.TypePreserve, type), true))
-					_context.LogMessage ($"Type {type.FullName} has no fields to preserve");
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Type {type.FullName} has no fields to preserve", 2001));
 				break;
 			case TypePreserve.Methods:
 				if (!MarkMethods (type, new DependencyInfo (DependencyKind.TypePreserve, type)))
-					_context.LogMessage ($"Type {type.FullName} has no methods to preserve");
+					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Type {type.FullName} has no methods to preserve", 2002));
 				break;
 			}
 		}

@@ -29,7 +29,7 @@ namespace Mono.Linker
 					return null;
 
 				SequencePoint correspondingSequencePoint = methodDef.DebugInformation.SequencePoints
-					.Where (s => s.Offset <= ilOffset)?.First ();
+					.Where (s => s.Offset <= ilOffset)?.Last ();
 				if (correspondingSequencePoint == null)
 					return null;
 
