@@ -86,7 +86,7 @@
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </NativeBinPlaceItem>
     </ItemGroup>
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
