@@ -156,6 +156,8 @@
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
@@ -203,6 +205,7 @@
     <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
     <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <AppleAppBuilderTask 
