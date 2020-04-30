@@ -560,6 +560,10 @@
     <Compile Include="SubtractScalar.Vector64.Int64.cs" />
     <Compile Include="SubtractScalar.Vector64.Single.cs" />
     <Compile Include="SubtractScalar.Vector64.UInt64.cs" />
+    <Compile Include="VectorTableLookup.Vector64.Byte.cs" />
+    <Compile Include="VectorTableLookup.Vector64.SByte.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector64.Byte.cs" />
+    <Compile Include="VectorTableLookupExtension.Vector64.SByte.cs" />
     <Compile Include="Xor.Vector64.Byte.cs" />
     <Compile Include="Xor.Vector64.Double.cs" />
     <Compile Include="Xor.Vector64.Int16.cs" />

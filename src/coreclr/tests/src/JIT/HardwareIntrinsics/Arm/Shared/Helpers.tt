@@ -10,6 +10,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Linq;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -605,6 +606,30 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= typeName #> Insert(<#= typeName #>[] op1, int op2, <#= typeName #> op3, int i) => (op2 != i) ? op1[i] : op3;
 
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte" })
+        {
+#>
+        public static <#= typeName #> TableVectorExtension(int i, <#= typeName #>[] defaultValues, <#= typeName #>[] indices, params <#= typeName #>[][] table)
+        {
+            <#= typeName #>[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
+        }
+
+        public static <#= typeName #> TableVectorLookup(int i, <#= typeName #>[] indices, params <#= typeName #>[][] table)
+        {
+            <#= typeName #>[] zeros = new <#= typeName #>[indices.Length];
+            Array.Fill<<#= typeName #>>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
+        }
 <#
         }
 #>
