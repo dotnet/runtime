@@ -131,13 +131,12 @@ namespace System.Runtime.CompilerServices
                     if (entryTargetAndResult <= 1)
                     {
                         // make sure 'version' is loaded after 'source' and 'targetAndResults'
-#if TARGET_ARM64 || TARGET_ARM
+                        //
                         // We can either:
                         // - use acquires for both _source and _targetAndResults or
-                        // - issue a full fence before reading _version
-                        // benchmarks on available hardware show that use of full fence here is cheaper.
-                        Interlocked.MemoryBarrier();
-#endif
+                        // - issue a load barrier before reading _version
+                        // benchmarks on available hardware show that use of a load barrier is cheaper.
+                        Interlocked.LoadBarrier();
                         if (version != pEntry._version)
                         {
                             // oh, so close, the entry is in inconsistent state.

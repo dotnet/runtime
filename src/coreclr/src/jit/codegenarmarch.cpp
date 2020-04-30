@@ -398,8 +398,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
+        {
+            CodeGen::BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+
+            instGen_MemoryBarrier(barrierKind);
             break;
+        }
 
 #ifdef TARGET_ARM64
         case GT_XCHG:
@@ -1945,7 +1950,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     if (emitBarrier)
     {
 #ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
 #else
         instGen_MemoryBarrier();
 #endif
@@ -1982,7 +1987,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     {
 #ifdef TARGET_ARM64
         // issue a INS_BARRIER_ISHLD after a volatile CpBlk operation
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
 #else
         // issue a full memory barrier after a volatile CpBlk operation
         instGen_MemoryBarrier();
@@ -2305,7 +2310,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (node->IsVolatile())
     {
 #ifdef TARGET_ARM64
-        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
 #else
         instGen_MemoryBarrier();
 #endif
