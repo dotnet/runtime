@@ -15,7 +15,7 @@ namespace System.ComponentModel.Tests
         private static EnumConverter s_someFlagsEnumConverter = new EnumConverter(typeof(SomeFlagsEnum));
 
         [Fact]
-        public static void CanConvertFrom_WithContext()
+        public static void CanConvertFrom_WithContext_EnumConverter()
         {
             CanConvertFrom_WithContext(new object[2, 2]
                 {
@@ -26,7 +26,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void CanConvertTo_WithContext()
+        public static void CanConvertTo_WithContext_EnumConverter()
         {
             CanConvertTo_WithContext(new object[2, 2]
                 {
@@ -37,7 +37,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertFrom_WithContext()
+        public static void ConvertFrom_WithContext_EnumConverter()
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
@@ -62,7 +62,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_EnumConverter()
         {
             ConvertTo_WithContext(new object[1, 3]
                 {

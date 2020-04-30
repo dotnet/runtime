@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
+            AdvanceDataItemCounters();
         }
 
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -26,6 +27,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 WriteUnsignedInteger(CborMajorType.UnsignedInteger, (ulong)value);
             }
+
+            AdvanceDataItemCounters();
+        }
+
+        public void WriteInt32(int value) => WriteInt64(value);
+        public void WriteUInt32(uint value) => WriteUInt64(value);
+
+        // Writes a CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public void WriteCborNegativeIntegerEncoding(ulong value)
+        {
+            WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
+            AdvanceDataItemCounters();
         }
 
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
@@ -39,32 +53,30 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             else if (value <= byte.MaxValue)
             {
                 EnsureWriteCapacity(2);
-                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned8BitIntegerEncoding));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional8BitData));
                 _buffer[_offset++] = (byte)value;
             }
             else if (value <= ushort.MaxValue)
             {
                 EnsureWriteCapacity(3);
-                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned16BitIntegerEncoding));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional16BitData));
                 BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), (ushort)value);
                 _offset += 2;
             }
             else if (value <= uint.MaxValue)
             {
                 EnsureWriteCapacity(5);
-                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned32BitIntegerEncoding));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional32BitData));
                 BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset), (uint)value);
                 _offset += 4;
             }
             else
             {
                 EnsureWriteCapacity(9);
-                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned64BitIntegerEncoding));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional64BitData));
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
                 _offset += 8;
             }
-
-            DecrementRemainingItemCount();
         }
     }
 }

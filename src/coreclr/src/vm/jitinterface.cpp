@@ -66,6 +66,8 @@
 #include "perfmap.h"
 #endif
 
+#include "tailcallhelp.h"
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -2203,12 +2205,22 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result = 0;
+    unsigned result;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
+    result = getClassGClayoutStatic(VMClsHnd, gcPtrs);
 
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+
+unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
+{
+    unsigned result = 0;
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
     if (VMClsHnd.IsNativeValueType())
@@ -2265,8 +2277,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -5085,9 +5095,9 @@ void CEEInfo::getCallInfo(
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
     }
 
-    // If this call is for a LDFTN and the target method has the NativeCallableAttribute,
+    // If this call is for a LDFTN and the target method has the UnmanagedCallersOnlyAttribute,
     // then validate it adheres to the limitations.
-    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
+    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (!pMD->IsStatic())
             EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
@@ -9213,7 +9223,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasNativeCallableAttribute())
+    if (pMD->HasUnmanagedCallersOnlyAttribute())
     {
         pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
     }
@@ -10761,16 +10771,6 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL)
-        {
-            _ASSERTE(ppIndirection != NULL);
-            *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-            return NULL;
-        }
-#endif
-
-#if defined(ENABLE_FAST_GCPOLL_HELPER)
-        //always call this indirectly so that we can swap GC Poll helpers.
-        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_POLL_GC)
         {
             _ASSERTE(ppIndirection != NULL);
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
@@ -12439,7 +12439,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
     }
 
 #if !defined(TARGET_X86)
-    if (ftn->HasNativeCallableAttribute())
+    if (ftn->HasUnmanagedCallersOnlyAttribute())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
 #endif // !TARGET_X86
 
@@ -13042,53 +13042,33 @@ void Module::LoadHelperTable()
         LOG((LF_JIT, LL_INFO1000000, "JIT helper %3d (%-40s: table @ %p, size 0x%x, entry %3d @ %p, pfnHelper %p)\n",
             iHelper, hlpFuncTable[iHelper].name, table, tableSize, iEntryNumber, curEntry, hlpFuncTable[iHelper].pfnHelper));
 
-#if defined(ENABLE_FAST_GCPOLL_HELPER)
-        // The fast GC poll helper works by calling indirect through a pointer that points to either
-        // JIT_PollGC or JIT_PollGC_Nop, based on whether we need to poll or not. The JIT_PollGC_Nop
-        // version is just a "ret". The pointer is stored in hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].
-        // See EnableJitGCPoll() and DisableJitGCPoll().
-        // In NGEN images, we generate a direct call to the helper table. Here, we replace that with
-        // an indirect jump through the pointer in hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].
-        if (iHelper == CORINFO_HELP_POLL_GC)
-        {
-            LOG((LF_JIT, LL_INFO1000000, "JIT helper CORINFO_HELP_POLL_GC (%d); emitting indirect jump to 0x%x\n",
-                CORINFO_HELP_POLL_GC, &hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].pfnHelper));
+        PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
 
-            emitJumpInd(curEntry, &hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_POLL_GC].pfnHelper);
-            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
+        if (dwHelper & CORCOMPILE_HELPER_PTR)
+        {
+            //
+            // Indirection cell
+            //
+            *(TADDR *)curEntry = pfnHelper;
+            curEntry = curEntry + sizeof(TADDR);
         }
         else
-#endif // ENABLE_FAST_GCPOLL_HELPER
         {
-            PCODE pfnHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)iHelper);
-
-            if (dwHelper & CORCOMPILE_HELPER_PTR)
-            {
-                //
-                // Indirection cell
-                //
-
-                *(TADDR *)curEntry = pfnHelper;
-
-                curEntry = curEntry + sizeof(TADDR);
-            }
-            else
-            {
-                //
-                // Jump thunk
-                //
+            //
+            // Jump thunk
+            //
 
 #if defined(TARGET_AMD64)
-                *curEntry = X86_INSTR_JMP_REL32;
-                *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
+            *curEntry = X86_INSTR_JMP_REL32;
+            *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
 #else // all other platforms
-                emitJump(curEntry, (LPVOID)pfnHelper);
-                _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
+            emitJump(curEntry, (LPVOID)pfnHelper);
+            _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
 #endif
 
-                curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
-            }
+            curEntry = curEntry + HELPER_TABLE_ENTRY_LEN;
         }
+
 #ifdef LOGGING
         // Note that some table entries are sizeof(TADDR) in length, and some are HELPER_TABLE_ENTRY_LEN in length
         ++iEntryNumber;
@@ -13239,6 +13219,12 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 }
 
 #endif // FEATURE_READYTORUN
+
+bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r2rInstructionSet)
+{
+    CORINFO_InstructionSet instructionSet = InstructionSetFromR2RInstructionSet(r2rInstructionSet);
+    return jitFlags.IsSet(instructionSet);
+}
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
@@ -13715,6 +13701,25 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = 1;
         }
         break;
+
+    case ENCODE_CHECK_INSTRUCTION_SET_SUPPORT:
+        {
+            DWORD dwInstructionSetCount = CorSigUncompressData(pBlob);
+            CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+
+            for (DWORD dwinstructionSetIndex = 0; dwinstructionSetIndex < dwInstructionSetCount; dwinstructionSetIndex++)
+            {
+                DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
+                bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
+                ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+                if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
+                {
+                    return FALSE;
+                }
+            }
+            result = 1;
+        }
+        break;
 #endif // FEATURE_READYTORUN
 
 #endif // CROSSGEN_COMPILE
@@ -13731,8 +13736,66 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     return TRUE;
 }
 
-void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
-                                        CorInfoHelperTailCallSpecialHandling flags)
+bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
+                                         CORINFO_SIG_INFO* sig,
+                                         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                         CORINFO_TAILCALL_HELPERS* pResult)
+{
+    MethodDesc* pTargetMD = NULL;
+
+    if (callToken != NULL)
+    {
+        pTargetMD = (MethodDesc*)callToken->hMethod;
+        _ASSERTE(pTargetMD != NULL);
+
+        if (pTargetMD->IsWrapperStub())
+        {
+            pTargetMD = pTargetMD->GetWrappedMethodDesc();
+        }
+
+        // We currently do not handle generating the proper call to managed
+        // varargs methods.
+        if (pTargetMD->IsVarArg())
+        {
+            return false;
+        }
+    }
+
+    SigTypeContext typeCtx;
+    GetTypeContext(&sig->sigInst, &typeCtx);
+
+    MetaSig msig(sig->pSig, sig->cbSig, GetModule(sig->scope), &typeCtx);
+
+    bool isCallvirt = (flags & CORINFO_TAILCALL_IS_CALLVIRT) != 0;
+    bool isThisArgByRef = (flags & CORINFO_TAILCALL_THIS_ARG_IS_BYREF) != 0;
+
+    MethodDesc* pStoreArgsMD;
+    MethodDesc* pCallTargetMD;
+    bool needsTarget;
+
+    TailCallHelp::CreateTailCallHelperStubs(
+        m_pMethodBeingCompiled, pTargetMD,
+        msig, isCallvirt, isThisArgByRef,
+        &pStoreArgsMD, &needsTarget,
+        &pCallTargetMD);
+
+    unsigned outFlags = 0;
+    if (needsTarget)
+    {
+        outFlags |= CORINFO_TAILCALL_STORE_TARGET;
+    }
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    return true;
+}
+
+bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
+                                 CORINFO_SIG_INFO* sig,
+                                 CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                 CORINFO_TAILCALL_HELPERS* pResult)
 {
     CONTRACTL {
         THROWS;
@@ -13740,21 +13803,15 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * ftn = NULL;
-
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM)) && !defined(TARGET_UNIX)
+    bool success = false;
 
     JIT_TO_EE_TRANSITION();
 
-    Stub* pStub = CPUSTUBLINKER::CreateTailCallCopyArgsThunk(pSig, m_pMethodBeingCompiled, flags);
-
-    ftn = (void*)pStub->GetEntryPoint();
+    success = getTailCallHelpersInternal(callToken, sig, flags, pResult);
 
     EE_TO_JIT_TRANSITION();
 
-#endif // (TARGET_AMD64 || TARGET_ARM) && !TARGET_UNIX
-
-    return ftn;
+    return success;
 }
 
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)

@@ -36,7 +36,7 @@ namespace System.Collections.Tests
         /// </summary>
         protected abstract IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations);
 
-        protected virtual ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Remove | ModifyOperation.Clear;
+        protected virtual ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         protected virtual ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.None;
 

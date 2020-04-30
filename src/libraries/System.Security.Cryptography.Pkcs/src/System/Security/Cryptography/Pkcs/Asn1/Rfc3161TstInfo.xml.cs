@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal bool Ordering;
         internal ReadOnlyMemory<byte>? Nonce;
         internal System.Security.Cryptography.Asn1.GeneralNameAsn? Tsa;
-        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
+        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
 
 #if DEBUG
         static Rfc3161TstInfo()

@@ -1825,6 +1825,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
 
+    compSuppressedZeroInit = false;
+
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
@@ -2159,7 +2161,7 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 void Compiler::compSetProcessor()
 {
     //
-    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codemap.cpp
+    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codeman.cpp
     //
 
     const JitFlags& jitFlags = *opts.jitFlags;
@@ -2193,12 +2195,14 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
+    // The VM will set the ISA flags depending on actual hardware support.
+    // We then select which ISAs to leave enabled based on the JIT config.
+    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
+    opts.compSupportsISA                            = 0;
+    opts.compSupportsISAReported                    = 0;
 
 #ifdef TARGET_XARCH
-    // Instruction set flags for Intel hardware intrinsics
-    opts.compSupportsISA = 0;
-
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2312,8 +2316,6 @@ void Compiler::compSetProcessor()
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
@@ -2692,6 +2694,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compTailCallOpt = true;
 #endif // FEATURE_TAILCALL_OPT
 
+#if FEATURE_FASTTAILCALL
+    // By default fast tail calls are enabled.
+    opts.compFastTailCalls = true;
+#endif // FEATURE_FASTTAILCALL
+
     if (compIsForInlining())
     {
         return;
@@ -3031,6 +3038,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compTailCallLoopOpt = false;
     }
 #endif
+
+#if FEATURE_FASTTAILCALL
+    if (JitConfig.FastTailCalls() == 0)
+    {
+        opts.compFastTailCalls = false;
+    }
+#endif // FEATURE_FASTTAILCALL
 
     opts.compScopeInfo = opts.compDbgInfo;
 
@@ -4460,9 +4474,16 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
-    // Run an early flow graph simplification pass
+    // Now that we have pred lists, do some flow-related optimizations
+    //
     if (opts.OptimizationEnabled())
     {
+        // Merge common throw blocks
+        //
+        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
+
+        // Run an early flow graph simplification pass
+        //
         auto earlyUpdateFlowGraphPhase = [this]() {
             const bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
@@ -4577,9 +4598,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
@@ -5874,6 +5892,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
+
+    info.compHasNextCallRetAddr = false;
 
     switch (methodInfo->args.getCallConv())
     {
@@ -8023,7 +8043,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -8034,7 +8054,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 }
 
 //------------------------------------------------------------------------
@@ -8043,7 +8063,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // Common portion
     m_compCycles = 0;
@@ -8057,33 +8077,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
-
-#ifdef FEATURE_CLRSQM
-
-    // SQM only portion
-    unsigned __int64 mcycles64 = m_compCycles / ((unsigned __int64)1000000);
-    unsigned         mcycles;
-    if (mcycles64 > UINT32_MAX)
-    {
-        mcycles = UINT32_MAX;
-    }
-    else
-    {
-        mcycles = (unsigned)mcycles64;
-    }
-
-    DWORD ticksAtEnd = GetTickCount();
-    assert(ticksAtEnd >= m_compTickCountAtEndOfInlining);
-    DWORD compTicks = ticksAtEnd - m_compTickCountAtEndOfInlining;
-
-    if (mcycles >= 1000)
-    {
-        info.compCompHnd->logSQMLongJitEvent(mcycles, compTicks, info.compILCodeSize, fgBBcount, opts.MinOpts(),
-                                             info.compMethodHnd);
-    }
-
-#endif // FEATURE_CLRSQM
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 }
 
 #if FUNC_INFO_LOGGING
@@ -9004,9 +8998,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_FRAME_VAR_DEATH]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER)
                     {
-                        chars += printf("[CALL_M_TAILCALL_VIA_HELPER]");
+                        chars += printf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");
                     }
 #if FEATURE_TAILCALL_OPT
                     if (call->gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL)

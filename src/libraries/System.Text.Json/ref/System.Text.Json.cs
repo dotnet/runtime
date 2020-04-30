@@ -208,6 +208,7 @@ namespace System.Text.Json
     public sealed partial class JsonSerializerOptions
     {
         public JsonSerializerOptions() { }
+        public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }
@@ -489,7 +490,7 @@ namespace System.Text.Json.Serialization
         protected internal JsonConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
-        public abstract void Write(System.Text.Json.Utf8JsonWriter writer, [System.Diagnostics.CodeAnalysis.DisallowNull] T value, System.Text.Json.JsonSerializerOptions options);
+        public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple = false)]
     public sealed partial class JsonConstructorAttribute : System.Text.Json.Serialization.JsonAttribute
@@ -506,6 +507,11 @@ namespace System.Text.Json.Serialization
     {
         public JsonIgnoreAttribute() { }
         public System.Text.Json.Serialization.JsonIgnoreCondition Condition { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    public sealed partial class JsonIncludeAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonIncludeAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute

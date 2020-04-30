@@ -146,15 +146,15 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
     noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nMarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum,
+               excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
     }
 #endif
-
-    noway_assert(!opts.MinOpts());
 
     /* Build list of backedges for block begBlk */
     flowList* backedgeList = nullptr;
@@ -327,11 +327,11 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         {
             if (backEdgeCount > 0)
             {
-                printf("\nNot removing loop L%02u, due to an additional back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to an additional back edge", begBlk->bbNum);
             }
             else if (backEdgeCount == 0)
             {
-                printf("\nNot removing loop L%02u, due to no back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to no back edge", begBlk->bbNum);
             }
         }
 #endif
@@ -343,7 +343,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nUnmarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nUnmarking loop at " FMT_BB, begBlk->bbNum);
     }
 #endif
 
@@ -651,14 +651,6 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
 {
     noway_assert(lpHead);
 
-    //
-    // NOTE: we take "loopInd" as an argument instead of using the one
-    //       stored in begBlk->bbLoopNum because sometimes begBlk->bbLoopNum
-    //       has not be set correctly. For example, in optRecordLoop().
-    //       However, in most of the cases, loops should have been recorded.
-    //       Therefore the correct way is to call the Compiler::optPrintLoopInfo(unsigned lnum)
-    //       version of this method.
-    //
     printf("L%02u, from " FMT_BB, loopInd, lpFirst->bbNum);
     if (lpTop != lpFirst)
     {
@@ -2677,6 +2669,20 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     }
 }
 
+// Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+bool Compiler::optIsLoopEntry(BasicBlock* block)
+{
+    for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
+        if (optLoopTable[loopInd].lpEntry == block)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Canonicalize the loop nest rooted at parent loop 'loopInd'.
 // Returns 'true' if the flow graph is modified.
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
@@ -3793,6 +3799,8 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
+                        newBlock->bbFlags &=
+                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -4371,8 +4379,6 @@ void Compiler::optOptimizeLayout()
             continue;
         }
 
-        assert(block->bbLoopNum == 0);
-
         if (compCodeOpt() != SMALL_CODE)
         {
             /* Optimize "while(cond){}" loops to "cond; do{}while(cond);" */
@@ -4480,11 +4486,6 @@ void Compiler::optOptimizeLoops()
             if (foundBottom)
             {
                 loopNum++;
-#ifdef DEBUG
-                /* Mark the loop header as such */
-                assert(FitsIn<unsigned char>(loopNum));
-                top->bbLoopNum = (unsigned char)loopNum;
-#endif
 
                 /* Mark all blocks between 'top' and 'bottom' */
 
@@ -7657,17 +7658,55 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
     BasicBlock* botNext = optLoopTable[lnum].lpBottom->bbNext;
+    JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
     for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
     {
-        optComputeLoopSideEffectsOfBlock(bbInLoop);
+        if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
+        {
+            // When optComputeLoopSideEffectsOfBlock returns false, we encountered
+            // a block that was moved into the loop range (by fgReorderBlocks),
+            // but not marked correctly as being inside the loop.
+            // We conservatively mark this loop (and any outer loops)
+            // as having memory havoc side effects.
+            //
+            // Record that all loops containing this block have memory havoc effects.
+            //
+            optRecordLoopNestsMemoryHavoc(lnum, fullMemoryKindSet);
+
+            // All done, no need to keep visiting more blocks
+            break;
+        }
     }
 }
 
-void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
+void Compiler::optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc)
+{
+    // We should start out with 'lnum' set to a valid natural loop index
+    assert(lnum != BasicBlock::NOT_IN_LOOP);
+
+    while (lnum != BasicBlock::NOT_IN_LOOP)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
+            {
+                optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+            }
+        }
+
+        // Move lnum to the next outtermost loop that we need to mark
+        lnum = optLoopTable[lnum].lpParent;
+    }
+}
+
+bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 {
     unsigned mostNestedLoop = blk->bbNatLoopNum;
-    assert(mostNestedLoop != BasicBlock::NOT_IN_LOOP);
-
+    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
+    if (mostNestedLoop == BasicBlock::NOT_IN_LOOP)
+    {
+        return false;
+    }
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
 
     // MemoryKinds for which an in-loop call or store has arbitrary effects.
@@ -7920,20 +7959,10 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
     if (memoryHavoc != emptyMemoryKindSet)
     {
-        // Record that all loops containing this block have memory havoc effects.
-        unsigned lnum = mostNestedLoop;
-        while (lnum != BasicBlock::NOT_IN_LOOP)
-        {
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
-                {
-                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
-                }
-            }
-            lnum = optLoopTable[lnum].lpParent;
-        }
+        // Record that all loops containing this block have this kind of memoryHavoc effects.
+        optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
     }
+    return true;
 }
 
 // Marks the containsCall information to "lnum" and any parent loops.

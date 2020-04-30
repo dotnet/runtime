@@ -14,8 +14,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct OriginatorInfoAsn
     {
-        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[] CertificateSet;
-        internal ReadOnlyMemory<byte>[] RevocationInfoChoices;
+        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
+        internal ReadOnlyMemory<byte>[]? RevocationInfoChoices;
 
         internal void Encode(AsnWriter writer)
         {

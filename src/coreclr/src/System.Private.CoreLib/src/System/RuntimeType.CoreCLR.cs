@@ -1391,7 +1391,7 @@ namespace System
             private MemberInfoCache<RuntimePropertyInfo>? m_propertyInfoCache;
             private MemberInfoCache<RuntimeEventInfo>? m_eventInfoCache;
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
-            private static object s_methodInstantiationsLock = null!;
+            private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
             private object? m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
@@ -2338,7 +2338,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     Debug.Assert(cache == null || cache is RuntimeTypeCache);
                     return Unsafe.As<RuntimeTypeCache>(cache);
                 }
@@ -2353,7 +2353,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     if (cache != null)
                     {
                         Debug.Assert(cache is RuntimeTypeCache);
@@ -2376,7 +2376,7 @@ namespace System
                     th.FreeGCHandle(newgcHandle);
             }
 
-            RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
+            RuntimeTypeCache? cache = (RuntimeTypeCache?)GCHandle.InternalGet(m_cache);
             if (cache == null)
             {
                 cache = new RuntimeTypeCache(this);

@@ -19,12 +19,6 @@
 #endif
 
 //
-// Initialize the EEConfig::GetConfiguration function pointer to NULL. If EEConfig isn't init'ed, this will
-// stay NULL and CLRConfig will ignore config files.
-//
-CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
-
-//
 // Creating structs using the macro table in CLRConfigValues.h
 //
 
@@ -111,67 +105,13 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if(CheckLookupOption(info, FavorConfigFile) == FALSE)
+    REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
+    if(result>0)
+        return TRUE;
+    LPWSTR result2 = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
+    if(result2 != NULL && result2[0] != 0)
     {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
-        if(result>0)
-            return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-        if(result != NULL && result[0] != 0)
-        {
-            return TRUE;
-        }
-    }
-
-    //
-    // Check config files through EEConfig.
-    //
-    if(CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
-    {
-        LPCWSTR pvalue;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if(SUCCEEDED(s_GetConfigValueCallback(info.name, &pvalue, systemOnly, applicationFirst)) && pvalue != NULL)
-        {
-            WCHAR * end;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                if(pvalue[0]!=0)
-                    return TRUE;
-
-                result = info.defaultValue;
-            }
-
-            if(result>0)
-                return TRUE;
-        }
-    }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if(CheckLookupOption(info, FavorConfigFile) == TRUE)
-    {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
-        if(result>0)
-            return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-        if(result != NULL && result[0] != 0)
-        {
-            return TRUE;
-        }
+        return TRUE;
     }
 
     if(info.defaultValue>0)
@@ -217,98 +157,27 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if (CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {
-        DWORD resultMaybe;
-        HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
+    DWORD resultMaybe;
+    HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
 
-        if (!acceptExplicitDefaultFromRegutil)
+    if (!acceptExplicitDefaultFromRegutil)
+    {
+        // Ignore the default value even if it's set explicitly.
+        if (resultMaybe != info.defaultValue)
         {
-            // Ignore the default value even if it's set explicitly.
-            if (resultMaybe != info.defaultValue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-        }
-        else
-        {
-            // If we are willing to accept the default value when it's set explicitly,
-            // checking the HRESULT here is sufficient. E_FAIL is returned when the
-            // default is used.
-            if (SUCCEEDED(hr))
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
+            *isDefault = false;
+            return resultMaybe;
         }
     }
-
-    //
-    // Check config files through EEConfig.
-    //
-    if (CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
+    else
     {
-        LPCWSTR pvalue;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if (SUCCEEDED(s_GetConfigValueCallback(info.name, &pvalue, systemOnly, applicationFirst)) && pvalue != NULL)
+        // If we are willing to accept the default value when it's set explicitly,
+        // checking the HRESULT here is sufficient. E_FAIL is returned when the
+        // default is used.
+        if (SUCCEEDED(hr))
         {
-            WCHAR * end;
-            errno = 0;
-            DWORD resultMaybe = wcstoul(pvalue, &end, 0);
-
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno != ERANGE && end != pvalue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-            else
-            {
-                // If an invalid value is defined we treat it as the default value.
-                // i.e. we don't look further.
-                *isDefault = true;
-                return info.defaultValue;
-            }
-        }
-    }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if (CheckLookupOption(info, FavorConfigFile) == TRUE)
-    {
-        DWORD resultMaybe;
-        HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
-
-        if (!acceptExplicitDefaultFromRegutil)
-        {
-            // Ignore the default value even if it's set explicitly.
-            if (resultMaybe != info.defaultValue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-        }
-        else
-        {
-            // If we are willing to accept the default value when it's set explicitly,
-            // checking the HRESULT here is sufficient. E_FAIL is returned when the
-            // default is used.
-            if (SUCCEEDED(hr))
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
+            *isDefault = false;
+            return resultMaybe;
         }
     }
 
@@ -393,47 +262,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if(result == NULL && CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    }
-
-    //
-    // Check config files through EEConfig.
-    //
-    if(result == NULL && // Check that we don't have a value from REGUTIL
-        CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL) // Check that GetConfigValueCallback function has been registered.
-    {
-        LPCWSTR pResult;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if(SUCCEEDED(s_GetConfigValueCallback(info.name, &pResult, systemOnly, applicationFirst)) && pResult != NULL)
-        {
-            size_t len = wcslen(pResult) + 1;
-            result = new (nothrow) WCHAR[len];
-            if (result == NULL)
-            {
-                RETURN E_OUTOFMEMORY;
-            }
-            wcscpy_s(result, len, pResult);
-        }
-    }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if(result==NULL &&
-        CheckLookupOption(info, FavorConfigFile) == TRUE)
-    {
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    }
+    result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
 
     if ((result != NULL) && CheckLookupOption(info, TrimWhiteSpaceFromStringValue))
     {
@@ -469,18 +298,6 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    // Check config files
-    {
-        LPCWSTR result = NULL;
-
-        if (s_GetConfigValueCallback != NULL &&
-            SUCCEEDED(s_GetConfigValueCallback(name, &result, FALSE, FALSE)) &&
-            result != NULL)
-        {
-            return TRUE;
-        }
-    }
 
     // Check REGUTIL, both with and without the COMPlus_ prefix
     {
@@ -587,16 +404,6 @@ void CLRConfig::FreeConfigString(__in_z LPWSTR str)
     LIMITED_METHOD_CONTRACT;
 
     delete [] str;
-}
-
-//
-// Register EEConfig's GetConfigValueCallback function so CLRConfig can look in config files.
-//
-//static
-void CLRConfig::RegisterGetConfigValueCallback(GetConfigValueFunction func)
-{
-    LIMITED_METHOD_CONTRACT;
-    s_GetConfigValueCallback = func;
 }
 
 //

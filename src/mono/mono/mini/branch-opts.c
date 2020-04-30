@@ -1252,7 +1252,7 @@ mono_optimize_branches (MonoCompile *cfg)
 	int filter = FILTER_IL_SEQ_POINT;
 
 	/*
-	 * Some crazy loops could cause the code below to go into an infinite
+	 * Possibly some loops could cause the code below to go into an infinite
 	 * loop, see bug #53003 for an example. To prevent this, we put an upper
 	 * bound on the number of iterations.
 	 */

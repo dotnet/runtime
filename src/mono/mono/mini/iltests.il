@@ -17,7 +17,7 @@
 
 	.method static public int32 Main(string[] args) il managed {
 		.entrypoint
-		
+
 		ldtoken Tests
 		call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
 		ldarg.0
@@ -3556,5 +3556,293 @@ L3:
 		IL_0023:  ldloc.2
 		IL_0024:  ret
 	 }
+
+	.method private hidebysig static int32 validate_alloc_array_length_lbound(class [mscorlib]System.Array test_array) cil managed
+	{
+		// Code size       88 (0x58)
+		.maxstack  2
+		.locals init ([0] bool V_0, [1] int32 V_1, [2] bool V_2, [3] bool V_3, [4] bool V_4)
+		IL_0000:  nop
+		IL_0001:  ldarg.0
+		IL_0002:  callvirt   instance int32 [mscorlib]System.Array::get_Length()
+		IL_0007:  ldc.i4.6
+		IL_0008:  ceq
+		IL_000a:  ldc.i4.0
+		IL_000b:  ceq
+		IL_000d:  stloc.0
+		IL_000e:  ldloc.0
+		IL_000f:  brfalse.s  IL_0015
+		IL_0011:  ldc.i4.1
+		IL_0012:  stloc.1
+		IL_0013:  br.s       IL_0056
+		IL_0015:  ldarg.0
+		IL_0016:  callvirt   instance int32 [mscorlib]System.Array::get_Rank()
+		IL_001b:  ldc.i4.1
+		IL_001c:  ceq
+		IL_001e:  ldc.i4.0
+		IL_001f:  ceq
+		IL_0021:  stloc.2
+		IL_0022:  ldloc.2
+		IL_0023:  brfalse.s  IL_0029
+		IL_0025:  ldc.i4.2
+		IL_0026:  stloc.1
+		IL_0027:  br.s       IL_0056
+		IL_0029:  ldarg.0
+		IL_002a:  ldc.i4.0
+		IL_002b:  callvirt   instance int32 [mscorlib]System.Array::GetLowerBound(int32)
+		IL_0030:  ldc.i4 0x2710
+		IL_0031:  cgt.un
+		IL_0033:  stloc.3
+		IL_0034:  ldloc.3
+		IL_0035:  brfalse.s  IL_003b
+		IL_0037:  ldc.i4.3
+		IL_0038:  stloc.1
+		IL_0039:  br.s       IL_0056
+		IL_003b:  ldarg.0
+		IL_003c:  ldc.i4.0
+		IL_003d:  callvirt   instance int32 [mscorlib]System.Array::GetUpperBound(int32)
+		IL_0042:  ldc.i4 0x2715
+		IL_0043:  ceq
+		IL_0045:  ldc.i4.0
+		IL_0046:  ceq
+		IL_0048:  stloc.s    V_4
+		IL_004a:  ldloc.s    V_4
+		IL_004c:  brfalse.s  IL_0052
+		IL_004e:  ldc.i4.4
+		IL_004f:  stloc.1
+		IL_0050:  br.s       IL_0056
+		IL_0052:  ldc.i4.0
+		IL_0053:  stloc.1
+		IL_0054:  br.s       IL_0056
+		IL_0056:  ldloc.1
+		IL_0057:  ret
+	}
+
+	.method public hidebysig static int32  test_0_alloc_array_int16_length_lbound() cil managed
+	{
+		.maxstack  2
+		.locals init ([0] int16[] test_array, [1] int32 V_1)
+		ldc.i4 10000
+		ldc.i4 6
+		newobj instance void int16[10000...10005]::.ctor(int32, int32)
+		call int32 class Tests::validate_alloc_array_length_lbound(class [mscorlib]System.Array)
+		ret
+	}
+
+	.method public hidebysig static int32  test_0_alloc_array_int32_length_lbound() cil managed
+	{
+		.maxstack  2
+		.locals init ([0] int32[] test_array, [1] int32 V_1)
+		ldc.i4 10000
+		ldc.i4 6
+		newobj instance void int32[10000...10005]::.ctor(int32, int32)
+		call int32 class Tests::validate_alloc_array_length_lbound(class [mscorlib]System.Array)
+		ret
+	}
+
+	.method public hidebysig static int32  test_0_alloc_array_int64_length_lbound() cil managed
+	{
+		.maxstack  2
+		.locals init ([0] int64[] test_array, [1] int32 V_1)
+		ldc.i4 10000
+		ldc.i4 6
+		newobj instance void int64[10000...10005]::.ctor(int32, int32)
+		call int32 class Tests::validate_alloc_array_length_lbound(class [mscorlib]System.Array)
+		ret
+	}
+
+	.method public hidebysig static int32  test_0_alloc_array_float32_length_lbound() cil managed
+	{
+		.maxstack  2
+		.locals init ([0] float32[] test_array, [1] int32 V_1)
+		ldc.i4 10000
+		ldc.i4 6
+		newobj instance void float32[10000...10005]::.ctor(int32, int32)
+		call int32 class Tests::validate_alloc_array_length_lbound(class [mscorlib]System.Array)
+		ret
+	}
+
+	.method public hidebysig static int32  test_0_alloc_array_float64_length_lbound() cil managed
+	{
+		.maxstack  2
+		.locals init ([0] float64[] test_array, [1] int32 V_1)
+		ldc.i4 10000
+		ldc.i4 6
+		newobj instance void float64[10000...10005]::.ctor(int32, int32)
+		call int32 class Tests::validate_alloc_array_length_lbound(class [mscorlib]System.Array)
+		ret
+	}
+
+	.method private hidebysig static int32 test_0_two_dimensional_array_bounds() cil managed
+	{
+		.maxstack 5
+		.locals init (int32[,] arr)
+		ldc.i4 100
+		ldc.i4 27
+		ldc.i4 200
+		ldc.i4 31
+		newobj instance void int32[,]::.ctor(int32, int32, int32, int32)
+		stloc arr
+
+		ldc.i4 1
+		ldloc arr
+		ldc.i4 0
+		callvirt instance int32 [mscorlib]System.Array::GetLowerBound(int32)
+		ldc.i4 100
+		bne.un exit
+		pop
+
+		ldc.i4 2
+		ldloc arr
+		ldc.i4 0
+		callvirt instance int32 [mscorlib]System.Array::GetUpperBound(int32)
+		ldc.i4 126
+		bne.un exit
+		pop
+
+		ldc.i4 3
+		ldloc arr
+		ldc.i4 1
+		callvirt instance int32 [mscorlib]System.Array::GetLowerBound(int32)
+		ldc.i4 200
+		bne.un exit
+		pop
+
+		ldc.i4 4
+		ldloc arr
+		ldc.i4 1
+		callvirt instance int32 [mscorlib]System.Array::GetUpperBound(int32)
+		ldc.i4 230
+		bne.un exit
+		pop
+
+		ldc.i4 5
+		ldloc arr
+		ldc.i4 100
+		ldc.i4 200
+		ldc.i4 1234
+		call instance void int32[,]::Set(int32, int32, int32)
+		ldloc arr
+		ldc.i4 100
+		ldc.i4 200
+		call instance int32 int32[,]::Get(int32, int32)
+		ldc.i4 1234
+		bne.un exit
+		pop
+
+		ldc.i4 6
+		ldloc arr
+		ldc.i4 126
+		ldc.i4 230
+		ldc.i4 5678
+		call instance void int32[,]::Set(int32, int32, int32)
+		ldloc arr
+		ldc.i4 126
+		ldc.i4 230
+		call instance int32 int32[,]::Get(int32, int32)
+		ldc.i4 5678
+		bne.un exit
+		pop
+
+		ldc.i4 0
+	exit:
+		ret
+	}
+
+	.method private hidebysig static int32 test_0_five_dimensional_array() cil managed
+	{
+		.maxstack 12
+		.locals init (int32[,,,,] arr)
+		ldc.i4 100
+		ldc.i4 2
+		ldc.i4 200
+		ldc.i4 3
+		ldc.i4 300
+		ldc.i4 4
+		ldc.i4 400
+		ldc.i4 5
+		ldc.i4 500
+		ldc.i4 6
+		newobj instance void int32[,,,,]::.ctor(
+			int32, int32, int32, int32, int32, int32,
+			int32, int32, int32, int32)
+		stloc arr
+
+		ldc.i4 1
+		ldloc arr
+		ldc.i4 0
+		callvirt instance int32 [mscorlib]System.Array::GetLowerBound(int32)
+		ldc.i4 100
+		bne.un exit
+		pop
+
+		ldc.i4 2
+		ldloc arr
+		ldc.i4 0
+		callvirt instance int32 [mscorlib]System.Array::GetUpperBound(int32)
+		ldc.i4 101
+		bne.un exit
+		pop
+
+		ldc.i4 3
+		ldloc arr
+		ldc.i4 4
+		callvirt instance int32 [mscorlib]System.Array::GetLowerBound(int32)
+		ldc.i4 500
+		bne.un exit
+		pop
+
+		ldc.i4 4
+		ldloc arr
+		ldc.i4 4
+		callvirt instance int32 [mscorlib]System.Array::GetUpperBound(int32)
+		ldc.i4 505
+		bne.un exit
+		pop
+
+		ldc.i4 5
+		ldloc arr
+		ldc.i4 100
+		ldc.i4 200
+		ldc.i4 300
+		ldc.i4 400
+		ldc.i4 500
+		ldc.i4 1234
+		call instance void int32[,,,,]::Set(int32, int32, int32, int32, int32, int32)
+		ldloc arr
+		ldc.i4 100
+		ldc.i4 200
+		ldc.i4 300
+		ldc.i4 400
+		ldc.i4 500
+		call instance int32 int32[,,,,]::Get(int32, int32, int32, int32, int32)
+		ldc.i4 1234
+		bne.un exit
+		pop
+
+		ldc.i4 6
+		ldloc arr
+		ldc.i4 101
+		ldc.i4 202
+		ldc.i4 303
+		ldc.i4 404
+		ldc.i4 505
+		ldc.i4 5678
+		call instance void int32[,,,,]::Set(int32, int32, int32, int32, int32, int32)
+		ldloc arr
+		ldc.i4 101
+		ldc.i4 202
+		ldc.i4 303
+		ldc.i4 404
+		ldc.i4 505
+		call instance int32 int32[,,,,]::Get(int32, int32, int32, int32, int32)
+		ldc.i4 5678
+		bne.un exit
+		pop
+
+		ldc.i4 0
+	exit:
+		ret
+	}
 
 }

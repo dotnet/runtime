@@ -49,8 +49,6 @@ private:
     // Flag to indicate if the buffer is full
     BOOL fBufferFull;
 
-    static void GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * pdwMinor, DWORD * pdwBuild, DWORD * pdwRevision);
-
 public:
     // Construct
     EventReporter(EventReporterType type);

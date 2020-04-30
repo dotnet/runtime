@@ -135,7 +135,7 @@ namespace System
         private class Display : TypeNames.ATypeName, ITypeIdentifier
         {
             private readonly string displayName;
-            private string internal_name; //cached
+            private string? internal_name; //cached
 
             internal Display(string displayName)
             {
@@ -147,32 +147,18 @@ namespace System
                 get { return displayName; }
             }
 
-            public string InternalName
-            {
-                get
-                {
-                    if (internal_name == null)
-                        internal_name = GetInternalName();
-                    return internal_name;
-                }
-            }
+            public string InternalName => internal_name ??= GetInternalName();
 
-            private string GetInternalName()
-            {
-                return TypeSpec.UnescapeInternalName(displayName);
-            }
+            private string GetInternalName() => TypeSpec.UnescapeInternalName(displayName);
 
-            public override ITypeName NestedName(ITypeIdentifier innerName)
-            {
-                return TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
-            }
+            public override ITypeName NestedName(ITypeIdentifier innerName) =>
+                TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
         }
-
 
         private class Internal : TypeNames.ATypeName, ITypeIdentifier
         {
             private readonly string internalName;
-            private string display_name; //cached
+            private string? display_name; //cached
 
             internal Internal(string internalName)
             {
@@ -184,31 +170,14 @@ namespace System
                 this.internalName = nameSpaceInternal + "." + typeName.InternalName;
             }
 
-            public override string DisplayName
-            {
-                get
-                {
-                    if (display_name == null)
-                        display_name = GetDisplayName();
-                    return display_name;
-                }
-            }
+            public override string DisplayName => display_name ??= GetDisplayName();
 
-            public string InternalName
-            {
-                get { return internalName; }
-            }
+            public string InternalName => internalName;
 
-            private string GetDisplayName()
-            {
-                return TypeSpec.EscapeDisplayName(internalName);
-            }
+            private string GetDisplayName() => TypeSpec.EscapeDisplayName(internalName);
 
-            public override ITypeName NestedName(ITypeIdentifier innerName)
-            {
-                return TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
-            }
-
+            public override ITypeName NestedName(ITypeIdentifier innerName) =>
+                TypeNames.FromDisplay(DisplayName + "+" + innerName.DisplayName);
         }
 
         private class NoEscape : TypeNames.ATypeName, ITypeIdentifier

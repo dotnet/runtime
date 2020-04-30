@@ -13,25 +13,30 @@ namespace System
 {
     public partial class Environment
     {
-        private static Dictionary<string, string> s_environment;
+        private static Dictionary<string, string>? s_environment;
 
-        private static string GetEnvironmentVariableCore(string variable)
+        private static string? GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
             if (s_environment == null)
             {
-                using (var h = RuntimeMarshal.MarshalString(variable))
-                {
-                    return internalGetEnvironmentVariable_native(h.Value);
-                }
+                return InternalGetEnvironmentVariable(variable);
             }
 
             variable = TrimStringOnFirstZero(variable);
             lock (s_environment)
             {
-                s_environment.TryGetValue(variable, out string value);
+                s_environment.TryGetValue(variable, out string? value);
                 return value;
+            }
+        }
+
+        private static string InternalGetEnvironmentVariable(string name)
+        {
+            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(name))
+            {
+                return internalGetEnvironmentVariable_native(handle.Value);
             }
         }
 
@@ -40,7 +45,7 @@ namespace System
             Debug.Assert(variable != null);
 
             EnsureEnvironmentCached();
-            lock (s_environment)
+            lock (s_environment!)
             {
                 variable = TrimStringOnFirstZero(variable);
                 value = value == null ? null : TrimStringOnFirstZero(value);
@@ -60,7 +65,7 @@ namespace System
             var results = new Hashtable();
 
             EnsureEnvironmentCached();
-            lock (s_environment)
+            lock (s_environment!)
             {
                 foreach (var keyValuePair in s_environment)
                 {
@@ -97,10 +102,7 @@ namespace System
             {
                 if (name != null)
                 {
-                    using (var h = RuntimeMarshal.MarshalString(name))
-                    {
-                        results.Add(name, internalGetEnvironmentVariable_native(h.Value));
-                    }
+                    results.Add(name, InternalGetEnvironmentVariable(name));
                 }
             }
 

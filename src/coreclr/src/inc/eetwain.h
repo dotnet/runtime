@@ -308,10 +308,12 @@ virtual bool IsInSynchronizedRegion(
 virtual size_t GetFunctionSize(GCInfoToken gcInfoToken) = 0;
 
 /*
-Returns the ReturnKind of a given function as reported in the GC info.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-
-virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken) = 0;
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind) = 0;
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -585,9 +587,12 @@ virtual
 size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*
-Returns the ReturnKind of a given function.
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
 */
-virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken);
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind);
 
 #ifndef USE_GC_INFO_DECODER
 /*

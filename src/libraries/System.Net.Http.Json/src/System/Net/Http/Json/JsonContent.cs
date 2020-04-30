@@ -20,8 +20,8 @@ namespace System.Net.Http.Json
         private static MediaTypeHeaderValue DefaultMediaType
             => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
 
-        internal static JsonSerializerOptions DefaultSerializerOptions
-            => new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        internal static readonly JsonSerializerOptions s_defaultSerializerOptions
+            = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         public Type ObjectType { get; }
@@ -42,7 +42,7 @@ namespace System.Net.Http.Json
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? DefaultMediaType;
-            _jsonSerializerOptions = options ?? DefaultSerializerOptions;
+            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)

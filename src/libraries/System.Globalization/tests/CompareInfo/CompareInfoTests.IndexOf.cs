@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -63,6 +65,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, 4 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1 };
 
+            // Weightless characters
+            yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1 };
+
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1 };
@@ -109,26 +115,26 @@ namespace System.Globalization.Tests
             yield return new object[] { s_currentCompare, "\u0131", "\u0130", 0, 1, CompareOptions.Ordinal, -1 };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, PlatformDetection.IsWindows ? 5 : -1};
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.None, PlatformDetection.IsNlsGlobalization ? 5 : -1};
         }
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
         {
-            bool isWindows = PlatformDetection.IsWindows;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
             // Searches for the ligature \u00C6
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
-            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, isWindows ? 24 : -1};
+            yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 };
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, isWindows ? 9 : -1};
+            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.None, useNls ? 9 : -1};
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.Ordinal, 9 };
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.Ordinal, 24 };
             yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.IgnoreCase, 9 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.IgnoreCase, 9 };
-            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, isWindows? 9 : 24 };
-            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, isWindows? 9 : 24 };
+            yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24 };
+            yield return new object[] { s_invariantCompare, source1, "\u00E6", 8, 18, CompareOptions.IgnoreCase, useNls ? 9 : 24 };
         }
 
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
@@ -192,7 +198,27 @@ namespace System.Globalization.Tests
                 // Use int MemoryExtensions.IndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
                 Assert.Equal((expected == -1) ? -1 : (expected - startIndex), source.AsSpan(startIndex, count).IndexOf(value.AsSpan(), stringComparison));
             }
-         }
+
+            // Now test the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanIndexOfTest(compareInfo, source.AsSpan(startIndex, count), value, options, (expected < 0) ? expected : expected - startIndex);
+
+            static void RunSpanIndexOfTest(CompareInfo compareInfo, ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, int expected)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData(value);
+                valueBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
+
+                if (TryCreateRuneFrom(value, out Rune rune))
+                {
+                    Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, rune, options)); // try the Rune-based version
+                }
+            }
+        }
 
         private static void IndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
         {
@@ -225,9 +251,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void IndexOf_UnassignedUnicode()
         {
-            bool isWindows = PlatformDetection.IsWindows;
-            IndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 0, 6, CompareOptions.None, isWindows ? 0 : -1);
-            IndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 0, 7, CompareOptions.IgnoreNonSpace, isWindows ? 1 : -1);
+            bool useNls = PlatformDetection.IsNlsGlobalization;
+            IndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 0, 6, CompareOptions.None, useNls ? 0 : -1);
+            IndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 0, 7, CompareOptions.IgnoreNonSpace, useNls ? 1 : -1);
         }
 
         [Fact]
@@ -331,14 +357,11 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4, CompareOptions.None));
         }
 
-        [Fact]
-        public static void IndexOf_MinusOneCompatability()
+        // Attempts to create a Rune from the entirety of a given text buffer.
+        private static bool TryCreateRuneFrom(ReadOnlySpan<char> text, out Rune value)
         {
-            // This behavior was for .NET Framework 1.1 compatability.
-            // Allowing empty source strings with invalid offsets was quickly outed.
-            // with invalid offsets.
-            Assert.Equal(0, s_invariantCompare.IndexOf("", "", -1, CompareOptions.None));
-            Assert.Equal(-1, s_invariantCompare.IndexOf("", "a", -1, CompareOptions.None));
+            return Rune.DecodeFromUtf16(text, out value, out int charsConsumed) == OperationStatus.Done
+                && charsConsumed == text.Length;
         }
     }
 }

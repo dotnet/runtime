@@ -15,15 +15,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Array = 4,
         Map = 5,
         Tag = 6,
-        Special = 7,
+        Simple = 7,
     }
 
     internal enum CborAdditionalInfo : byte
     {
-        Unsigned8BitIntegerEncoding = 24,
-        Unsigned16BitIntegerEncoding = 25,
-        Unsigned32BitIntegerEncoding = 26,
-        Unsigned64BitIntegerEncoding = 27,
+        SimpleValueFalse = 20,
+        SimpleValueTrue = 21,
+        SimpleValueNull = 22,
+
+        Additional8BitData = 24,
+        Additional16BitData = 25,
+        Additional32BitData = 26,
+        Additional64BitData = 27,
         IndefiniteLength = 31,
     }
 

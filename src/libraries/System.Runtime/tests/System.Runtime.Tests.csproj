@@ -7,45 +7,32 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
-      <Link>Common\System\EnumTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\MockType.cs">
-      <Link>Common\System\MockType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs">
-      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs">
-      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs">
-      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs">
-      <Link>Common\System\Collections\TestBase.Generic.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
-      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs">
-      <Link>System\StringTests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
+             Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\MockType.cs"
+             Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
+             Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs"
+             Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs"
+             Link="Common\System\Collections\IList.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs"
+             Link="Common\System\Collections\TestBase.Generic.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
+             Link="Common\System\StringTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
@@ -76,6 +63,7 @@
     <Compile Include="System\DBNullTests.cs" />
     <Compile Include="System\DecimalTests.cs" />
     <Compile Include="System\DelegateTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
     <Compile Include="System\DivideByZeroExceptionTests.cs" />
     <Compile Include="System\DoubleTests.cs" />
     <Compile Include="System\DuplicateWaitObjectExceptionTests.cs" />
@@ -167,6 +155,8 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />
     <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />
@@ -235,9 +225,8 @@
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />
     <Compile Include="System\Type\TypeTests.Get.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs">
-      <Link>Common\System\RandomDataGenerator.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
+             Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
@@ -256,30 +245,30 @@
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
+             Link="System\RealFormatterTestsBase.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="System\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
+             Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt">
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

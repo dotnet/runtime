@@ -179,11 +179,15 @@ endif(CLR_CMAKE_HOST_UNIX)
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-endif(CLR_CMAKE_HOST_LINUX)
-if(CLR_CMAKE_HOST_FREEBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
-endif(CLR_CMAKE_HOST_FREEBSD)
+  add_link_options(LINKER:--build-id=sha1)
+elseif(CLR_CMAKE_HOST_SUNOS)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+  add_definitions(-D__EXTENSIONS__)
+endif()
 
 #------------------------------------
 # Definitions (for platform)
@@ -363,17 +367,13 @@ if(CLR_CMAKE_TARGET_UNIX)
   add_definitions(-DDISABLE_CONTRACTS)
   if(CLR_CMAKE_TARGET_OSX)
     add_definitions(-DTARGET_OSX)
-  endif(CLR_CMAKE_TARGET_OSX)
-  if(CLR_CMAKE_TARGET_FREEBSD)
+  elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-DTARGET_FREEBSD)
-  endif(CLR_CMAKE_TARGET_FREEBSD)
-  if(CLR_CMAKE_TARGET_LINUX)
+  elseif(CLR_CMAKE_TARGET_LINUX)
     add_definitions(-DTARGET_LINUX)
-  endif(CLR_CMAKE_TARGET_LINUX)
-  if(CLR_CMAKE_TARGET_NETBSD)
+  elseif(CLR_CMAKE_TARGET_NETBSD)
     add_definitions(-DTARGET_NETBSD)
-  endif(CLR_CMAKE_TARGET_NETBSD)
-  if(CLR_CMAKE_TARGET_ANDROID)
+  elseif(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
@@ -435,11 +435,7 @@ if (MSVC)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  # 4302: Truncation from '%$S' to '%$S'.
-  # 4311: Pointer truncation from '%$S' to '%$S'.
-  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
-  # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
-  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+  add_compile_options(/wd4291)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.

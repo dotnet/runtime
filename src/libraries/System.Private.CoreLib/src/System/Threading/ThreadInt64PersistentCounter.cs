@@ -21,7 +21,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Increment()
         {
-            ThreadLocalNode node = _threadLocalNode.Value;
+            ThreadLocalNode? node = _threadLocalNode.Value;
             if (node != null)
             {
                 node.Increment();

@@ -41,6 +41,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
+            Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
             string cgroupsLocation = Interop.cgroups.s_cgroupMemoryLimitPath;
             if (cgroupsLocation != null)
             {
@@ -117,8 +118,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
-                // Dump several procfs files
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits" })
+                // Dump several procfs files and /etc/os-release
+                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release" })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try

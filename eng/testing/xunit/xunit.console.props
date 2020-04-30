@@ -2,7 +2,7 @@
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
-    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.console.json</TestRunnerConfigPath>
+    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.runner.json</TestRunnerConfigPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +18,11 @@
       around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
     -->
     <PackageReference Condition="'$(ArchiveTests)' != 'true'" Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <None Include="$(TestRunnerConfigPath)"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,7 @@
     <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
     <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
     <NetHostPublishRoot>$(IntermediateOutputRootPath)nethost/</NetHostPublishRoot>
+    <Crossgen2PublishRoot>$(IntermediateOutputRootPath)crossgen2/</Crossgen2PublishRoot>
   </PropertyGroup>
 
 </Project>

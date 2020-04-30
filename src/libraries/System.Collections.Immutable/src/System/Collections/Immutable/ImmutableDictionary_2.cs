@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -254,7 +253,7 @@ namespace System.Collections.Immutable
                     return value;
                 }
 
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
             }
         }
 
@@ -287,7 +286,6 @@ namespace System.Collections.Immutable
         /// This is an O(1) operation and results in only a single (small) memory allocation.
         /// The mutable collection that is returned is *not* thread-safe.
         /// </remarks>
-        [Pure]
         public Builder ToBuilder()
         {
             // We must not cache the instance created here and return it to various callers.
@@ -299,7 +297,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -311,7 +308,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
         {
             Requires.NotNull(pairs, nameof(pairs));
@@ -322,7 +318,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -336,7 +331,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The key=value pairs to set on the map.  Any keys that conflict with existing keys will overwrite the previous values.</param>
         /// <returns>An immutable dictionary.</returns>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -348,7 +342,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> Remove(TKey key)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -360,7 +353,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
         {
             Requires.NotNull(keys, nameof(keys));
@@ -432,7 +424,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
             if (keyComparer == null)
@@ -472,7 +463,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer)
         {
             return this.WithComparers(keyComparer, _comparers.ValueComparer);
@@ -490,7 +480,6 @@ namespace System.Collections.Immutable
         /// true if the <see cref="ImmutableDictionary{TKey, TValue}"/> contains
         /// an element with the specified value; otherwise, false.
         /// </returns>
-        [Pure]
         public bool ContainsValue(TValue value)
         {
             foreach (KeyValuePair<TKey, TValue> item in this)
@@ -851,7 +840,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="comparers">The comparers.</param>
         /// <returns>The empty dictionary.</returns>
-        [Pure]
         private static ImmutableDictionary<TKey, TValue> EmptyWithComparers(Comparers comparers)
         {
             Requires.NotNull(comparers, nameof(comparers));
@@ -1076,7 +1064,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="pairs">The entries to add.</param>
         /// <param name="avoidToHashMap"><c>true</c> when being called from <see cref="WithComparers(IEqualityComparer{TKey}, IEqualityComparer{TValue})"/> to avoid a stack overflow.</param>
-        [Pure]
         private ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs, bool avoidToHashMap)
         {
             Requires.NotNull(pairs, nameof(pairs));

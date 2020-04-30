@@ -5,6 +5,8 @@ endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+  include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -111,7 +113,7 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   add_compile_options(-Wno-unused-result)
-endif()
+endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
@@ -132,6 +134,10 @@ if(CLR_CMAKE_HOST_ARCH_ARM)
     set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
   endif()
 endif(CLR_CMAKE_HOST_ARCH_ARM)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_compile_options(-Wa,--divide)
+endif()
 
 set(SOURCES
   cruntime/file.cpp
@@ -170,7 +176,6 @@ set(SOURCES
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/heap.cpp
   memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
@@ -319,6 +324,13 @@ if(CLR_CMAKE_TARGET_NETBSD)
     ${KVM}
   )
 endif(CLR_CMAKE_TARGET_NETBSD)
+
+if(CLR_CMAKE_TARGET_SUNOS)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+  )
+endif(CLR_CMAKE_TARGET_SUNOS)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

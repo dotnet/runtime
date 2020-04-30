@@ -2297,5 +2297,99 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
 
+        public static bool ExtractAndNarrowHigh(int i, sbyte[] left,
+                                                short[] right,
+                                                sbyte[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (sbyte)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, short[] left,
+                                                int[] right,
+                                                short[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (short)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, int[] left,
+                                                long[] right,
+                                                int[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (int)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, byte[] left,
+                                                ushort[] right,
+                                                byte[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (byte)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, ushort[] left,
+                                                uint[] right,
+                                                ushort[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (ushort)right[i - left.Length] != result[i];
+        }
+        public static bool ExtractAndNarrowHigh(int i, uint[] left,
+                                                ulong[] right,
+                                                uint[] result)
+        {
+            if (i < left.Length)
+              return left[i] != result[i];
+            else
+              return (uint)right[i - left.Length] != result[i];
+        }
+        public static sbyte ExtractVector(sbyte[] op1, sbyte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static sbyte Insert(sbyte[] op1, int op2, sbyte op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static byte ExtractVector(byte[] op1, byte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static byte Insert(byte[] op1, int op2, byte op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static short ExtractVector(short[] op1, short[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static short Insert(short[] op1, int op2, short op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ushort ExtractVector(ushort[] op1, ushort[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static ushort Insert(ushort[] op1, int op2, ushort op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static int ExtractVector(int[] op1, int[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static int Insert(int[] op1, int op2, int op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static uint ExtractVector(uint[] op1, uint[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static uint Insert(uint[] op1, int op2, uint op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static long ExtractVector(long[] op1, long[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static long Insert(long[] op1, int op2, long op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ulong ExtractVector(ulong[] op1, ulong[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static ulong Insert(ulong[] op1, int op2, ulong op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static float ExtractVector(float[] op1, float[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static float Insert(float[] op1, int op2, float op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static double ExtractVector(double[] op1, double[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
+
     }
 }

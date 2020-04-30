@@ -10,6 +10,7 @@ parameters:
   strategy: ''
   pool: ''
   llvm: false
+  liveRuntimeBuildConfig: 'release'
 
   # arcade-specific parameters
   condition: true
@@ -46,14 +47,48 @@ jobs:
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
 
     variables:
+
+    - name: coreClrProductArtifactName
+      value: 'CoreCLRProduct_$(osGroup)$(osSubgroup)_$(archType)_${{ parameters.liveRuntimeBuildConfig }}'
+
+    - name: coreClrProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.liveRuntimeBuildConfig }}'
+
     - name: buildProductArtifactName
       ${{ if ne(parameters.llvm, true) }}:
         value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       ${{ if eq(parameters.llvm, true) }}:
         value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
+    - name: binTestsPath
+      value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
+
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: managedTestArtifactRootFolderPath
+      value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: managedTestArtifactName
+      value: 'CoreCLRManagedTestArtifacts_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - name: microsoftNetSdkIlFolderPath
+      value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
+
+    - name: microsoftNetSdkIlArtifactName
+      value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
+
+    - name: monoRepoRoot
+      value: '$(Build.SourcesDirectory)/src/mono'
+
+    - name: nativeTestArtifactName
+      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: nativeTestArtifactRootFolderPath
+      value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
+
+
+
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''

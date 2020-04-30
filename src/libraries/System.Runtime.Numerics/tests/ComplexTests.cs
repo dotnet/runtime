@@ -783,70 +783,70 @@ namespace System.Numerics.Tests
             foreach (double invalidReal in s_invalidDoubleValues)
             {
                 invalidComplex = new Complex(invalidReal, 1);
-                Equals(invalidComplex, complex, false, false);
-                Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true); // Handle double.NaN != double.NaN
+                Equals_Helper(invalidComplex, complex, false, false);
+                Equals_Helper(invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true); // Handle double.NaN != double.NaN
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     invalidComplex = new Complex(1, invalidImaginary);
-                    Equals(invalidComplex, complex, false, false);
-                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
+                    Equals_Helper(invalidComplex, complex, false, false);
+                    Equals_Helper(invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
 
                     invalidComplex = new Complex(invalidReal, invalidImaginary);
-                    Equals(invalidComplex, complex, false, false);
-                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
+                    Equals_Helper(invalidComplex, complex, false, false);
+                    Equals_Helper(invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
                 }
             }
         }
 
         [Fact]
-        public static void Equals()
+        public static void EqualsTest()
         {
             // This is not InlineData, to workaround a niche bug, that mainly occurs on non Windows platforms.
             // This bug moves test values around to different intermediate memory locations, causing true assertions to be false.
             // Moving these methods into a method, not an iterator fixes this.
-            Equals(Complex.Zero, Complex.Zero, true, true);
-            Equals(Complex.Zero, Complex.One, false, false);
-            Equals(Complex.Zero, -Complex.One, false, false);
-            Equals(Complex.Zero, Complex.ImaginaryOne, false, false);
-            Equals(Complex.Zero, -Complex.ImaginaryOne, false, false);
+            Equals_Helper(Complex.Zero, Complex.Zero, true, true);
+            Equals_Helper(Complex.Zero, Complex.One, false, false);
+            Equals_Helper(Complex.Zero, -Complex.One, false, false);
+            Equals_Helper(Complex.Zero, Complex.ImaginaryOne, false, false);
+            Equals_Helper(Complex.Zero, -Complex.ImaginaryOne, false, false);
 
-            Equals(Complex.One, Complex.One, true, true);
-            Equals(Complex.One, -Complex.One, false, false);
-            Equals(Complex.One, Complex.ImaginaryOne, false, false);
-            Equals(Complex.One, -Complex.ImaginaryOne, false, false);
+            Equals_Helper(Complex.One, Complex.One, true, true);
+            Equals_Helper(Complex.One, -Complex.One, false, false);
+            Equals_Helper(Complex.One, Complex.ImaginaryOne, false, false);
+            Equals_Helper(Complex.One, -Complex.ImaginaryOne, false, false);
 
-            Equals(-Complex.One, -Complex.One, true, true);
-            Equals(-Complex.One, Complex.ImaginaryOne, false, false);
-            Equals(-Complex.One, -Complex.ImaginaryOne, false, false);
+            Equals_Helper(-Complex.One, -Complex.One, true, true);
+            Equals_Helper(-Complex.One, Complex.ImaginaryOne, false, false);
+            Equals_Helper(-Complex.One, -Complex.ImaginaryOne, false, false);
 
-            Equals(Complex.ImaginaryOne, Complex.ImaginaryOne, true, true);
-            Equals(Complex.ImaginaryOne, -Complex.ImaginaryOne, false, false);
+            Equals_Helper(Complex.ImaginaryOne, Complex.ImaginaryOne, true, true);
+            Equals_Helper(Complex.ImaginaryOne, -Complex.ImaginaryOne, false, false);
 
-            Equals(-Complex.ImaginaryOne, -Complex.ImaginaryOne, true, true);
+            Equals_Helper(-Complex.ImaginaryOne, -Complex.ImaginaryOne, true, true);
 
-            Equals(Complex.Zero, new Complex(0, 0), true, true);
-            Equals(Complex.Zero, new Complex(1, 0), false, false);
-            Equals(Complex.Zero, new Complex(0, 1), false, false);
+            Equals_Helper(Complex.Zero, new Complex(0, 0), true, true);
+            Equals_Helper(Complex.Zero, new Complex(1, 0), false, false);
+            Equals_Helper(Complex.Zero, new Complex(0, 1), false, false);
 
-            Equals(Complex.One, new Complex(1, 0), true, true);
-            Equals(Complex.One, new Complex(1, 1), false, false);
-            Equals(Complex.One, new Complex(0, 1), false, false);
+            Equals_Helper(Complex.One, new Complex(1, 0), true, true);
+            Equals_Helper(Complex.One, new Complex(1, 1), false, false);
+            Equals_Helper(Complex.One, new Complex(0, 1), false, false);
 
-            Equals(-Complex.One, new Complex(-1, 0), true, true);
-            Equals(-Complex.One, new Complex(-1, -1), false, false);
-            Equals(-Complex.One, new Complex(0, -1), false, false);
+            Equals_Helper(-Complex.One, new Complex(-1, 0), true, true);
+            Equals_Helper(-Complex.One, new Complex(-1, -1), false, false);
+            Equals_Helper(-Complex.One, new Complex(0, -1), false, false);
 
-            Equals(Complex.ImaginaryOne, new Complex(0, 1), true, true);
-            Equals(Complex.ImaginaryOne, new Complex(1, 1), false, false);
-            Equals(Complex.ImaginaryOne, new Complex(0, -1), false, false);
+            Equals_Helper(Complex.ImaginaryOne, new Complex(0, 1), true, true);
+            Equals_Helper(Complex.ImaginaryOne, new Complex(1, 1), false, false);
+            Equals_Helper(Complex.ImaginaryOne, new Complex(0, -1), false, false);
 
-            Equals(-Complex.ImaginaryOne, new Complex(0, -1), true, true);
-            Equals(-Complex.ImaginaryOne, new Complex(-1, -1), false, false);
-            Equals(-Complex.ImaginaryOne, new Complex(0, 1), false, false);
+            Equals_Helper(-Complex.ImaginaryOne, new Complex(0, -1), true, true);
+            Equals_Helper(-Complex.ImaginaryOne, new Complex(-1, -1), false, false);
+            Equals_Helper(-Complex.ImaginaryOne, new Complex(0, 1), false, false);
 
-            Equals(new Complex(0.5, 0.5), new Complex(0.5, 0.5), true, true);
-            Equals(new Complex(0.5, 0.5), new Complex(0.5, 1.5), false, false);
-            Equals(new Complex(0.5, 0.5), new Complex(1.5, 0.5), false, false);
+            Equals_Helper(new Complex(0.5, 0.5), new Complex(0.5, 0.5), true, true);
+            Equals_Helper(new Complex(0.5, 0.5), new Complex(0.5, 1.5), false, false);
+            Equals_Helper(new Complex(0.5, 0.5), new Complex(1.5, 0.5), false, false);
 
             // Boundary values
             Complex maxMax = new Complex(double.MaxValue, double.MaxValue);
@@ -854,33 +854,33 @@ namespace System.Numerics.Tests
             Complex minMax = new Complex(double.MinValue, double.MaxValue);
             Complex minMin = new Complex(double.MinValue, double.MinValue);
 
-            Equals(maxMax, maxMax, true, true);
-            Equals(maxMax, maxMin, false, false);
-            Equals(maxMax, minMax, false, false);
-            Equals(maxMax, minMin, false, false);
-            Equals(maxMax, new Complex(1, 2), false, false);
+            Equals_Helper(maxMax, maxMax, true, true);
+            Equals_Helper(maxMax, maxMin, false, false);
+            Equals_Helper(maxMax, minMax, false, false);
+            Equals_Helper(maxMax, minMin, false, false);
+            Equals_Helper(maxMax, new Complex(1, 2), false, false);
 
-            Equals(maxMin, maxMin, true, true);
-            Equals(maxMin, minMax, false, false);
-            Equals(maxMin, minMin, false, false);
-            Equals(maxMin, new Complex(1, 2), false, false);
+            Equals_Helper(maxMin, maxMin, true, true);
+            Equals_Helper(maxMin, minMax, false, false);
+            Equals_Helper(maxMin, minMin, false, false);
+            Equals_Helper(maxMin, new Complex(1, 2), false, false);
 
-            Equals(minMax, minMax, true, true);
-            Equals(minMax, minMin, false, false);
-            Equals(minMax, new Complex(1, 2), false, false);
+            Equals_Helper(minMax, minMax, true, true);
+            Equals_Helper(minMax, minMin, false, false);
+            Equals_Helper(minMax, new Complex(1, 2), false, false);
 
-            Equals(minMin, minMin, true, true);
-            Equals(minMin, new Complex(1, 2), false, false);
+            Equals_Helper(minMin, minMin, true, true);
+            Equals_Helper(minMin, new Complex(1, 2), false, false);
 
-            Equals(new Complex(100.5, 0), 100.5, false, false);
-            Equals(new Complex(0, 100.5), 100.5, false, false);
-            Equals(new Complex(100.5, 0), 0, false, false);
-            Equals(new Complex(0, 100.5), 0, false, false);
-            Equals(new Complex(0, 100.5), "0", false, false);
-            Equals(new Complex(0, 100.5), null, false, false);
+            Equals_Helper(new Complex(100.5, 0), 100.5, false, false);
+            Equals_Helper(new Complex(0, 100.5), 100.5, false, false);
+            Equals_Helper(new Complex(100.5, 0), 0, false, false);
+            Equals_Helper(new Complex(0, 100.5), 0, false, false);
+            Equals_Helper(new Complex(0, 100.5), "0", false, false);
+            Equals_Helper(new Complex(0, 100.5), null, false, false);
         }
 
-        private static void Equals(Complex complex1, object obj, bool expected, bool expectedEquals)
+        private static void Equals_Helper(Complex complex1, object obj, bool expected, bool expectedEquals)
         {
             if (obj is Complex)
             {
@@ -1728,7 +1728,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Random_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
-        public static void ToString(double real, double imaginary)
+        public static void ToStringTest(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
 

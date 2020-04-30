@@ -10,4 +10,10 @@
     <ProjectReference Include="AssemblyC.csproj" />
     <ProjectReference Include="AssemblyContracts.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
 </Project>

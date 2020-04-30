@@ -7,9 +7,18 @@
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
+                      Version="$(MicrosoftNETILLinkTasksVersion)"
+                      PrivateAssets="all"
+                      IsImplicitlyDefined="true"
+                      ExcludeAssets="build"
+                      GeneratePathProperty="true" />
+  </ItemGroup>
+
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>
+    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NET_ILLink_Tasks)', 'tools'))</ILLinkTasksDir>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)$(NetFrameworkCurrent)/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
@@ -78,7 +87,7 @@
       <!-- keep types and members required by Debugger-related attributes -->
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->

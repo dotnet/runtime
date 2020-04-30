@@ -508,6 +508,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0, false)]
         [InlineData(0, true)]
         [InlineData(1, false)]

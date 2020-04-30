@@ -32,58 +32,62 @@ enum CORINFO_InstructionSet
     InstructionSet_Vector128=12,
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
-    InstructionSet_SSE=1,
-    InstructionSet_SSE2=2,
-    InstructionSet_SSE3=3,
-    InstructionSet_SSSE3=4,
-    InstructionSet_SSE41=5,
-    InstructionSet_SSE42=6,
-    InstructionSet_AVX=7,
-    InstructionSet_AVX2=8,
-    InstructionSet_AES=9,
-    InstructionSet_BMI1=10,
-    InstructionSet_BMI2=11,
-    InstructionSet_FMA=12,
-    InstructionSet_LZCNT=13,
-    InstructionSet_PCLMULQDQ=14,
-    InstructionSet_POPCNT=15,
-    InstructionSet_Vector128=16,
-    InstructionSet_Vector256=17,
-    InstructionSet_BMI1_X64=18,
-    InstructionSet_BMI2_X64=19,
-    InstructionSet_LZCNT_X64=20,
-    InstructionSet_POPCNT_X64=21,
-    InstructionSet_SSE_X64=22,
-    InstructionSet_SSE2_X64=23,
-    InstructionSet_SSE41_X64=24,
-    InstructionSet_SSE42_X64=25,
+    InstructionSet_X86Base=1,
+    InstructionSet_SSE=2,
+    InstructionSet_SSE2=3,
+    InstructionSet_SSE3=4,
+    InstructionSet_SSSE3=5,
+    InstructionSet_SSE41=6,
+    InstructionSet_SSE42=7,
+    InstructionSet_AVX=8,
+    InstructionSet_AVX2=9,
+    InstructionSet_AES=10,
+    InstructionSet_BMI1=11,
+    InstructionSet_BMI2=12,
+    InstructionSet_FMA=13,
+    InstructionSet_LZCNT=14,
+    InstructionSet_PCLMULQDQ=15,
+    InstructionSet_POPCNT=16,
+    InstructionSet_Vector128=17,
+    InstructionSet_Vector256=18,
+    InstructionSet_X86Base_X64=19,
+    InstructionSet_BMI1_X64=20,
+    InstructionSet_BMI2_X64=21,
+    InstructionSet_LZCNT_X64=22,
+    InstructionSet_POPCNT_X64=23,
+    InstructionSet_SSE_X64=24,
+    InstructionSet_SSE2_X64=25,
+    InstructionSet_SSE41_X64=26,
+    InstructionSet_SSE42_X64=27,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
-    InstructionSet_SSE=1,
-    InstructionSet_SSE2=2,
-    InstructionSet_SSE3=3,
-    InstructionSet_SSSE3=4,
-    InstructionSet_SSE41=5,
-    InstructionSet_SSE42=6,
-    InstructionSet_AVX=7,
-    InstructionSet_AVX2=8,
-    InstructionSet_AES=9,
-    InstructionSet_BMI1=10,
-    InstructionSet_BMI2=11,
-    InstructionSet_FMA=12,
-    InstructionSet_LZCNT=13,
-    InstructionSet_PCLMULQDQ=14,
-    InstructionSet_POPCNT=15,
-    InstructionSet_Vector128=16,
-    InstructionSet_Vector256=17,
-    InstructionSet_BMI1_X64=18,
-    InstructionSet_BMI2_X64=19,
-    InstructionSet_LZCNT_X64=20,
-    InstructionSet_POPCNT_X64=21,
-    InstructionSet_SSE_X64=22,
-    InstructionSet_SSE2_X64=23,
-    InstructionSet_SSE41_X64=24,
-    InstructionSet_SSE42_X64=25,
+    InstructionSet_X86Base=1,
+    InstructionSet_SSE=2,
+    InstructionSet_SSE2=3,
+    InstructionSet_SSE3=4,
+    InstructionSet_SSSE3=5,
+    InstructionSet_SSE41=6,
+    InstructionSet_SSE42=7,
+    InstructionSet_AVX=8,
+    InstructionSet_AVX2=9,
+    InstructionSet_AES=10,
+    InstructionSet_BMI1=11,
+    InstructionSet_BMI2=12,
+    InstructionSet_FMA=13,
+    InstructionSet_LZCNT=14,
+    InstructionSet_PCLMULQDQ=15,
+    InstructionSet_POPCNT=16,
+    InstructionSet_Vector128=17,
+    InstructionSet_Vector256=18,
+    InstructionSet_X86Base_X64=19,
+    InstructionSet_BMI1_X64=20,
+    InstructionSet_BMI2_X64=21,
+    InstructionSet_LZCNT_X64=22,
+    InstructionSet_POPCNT_X64=23,
+    InstructionSet_SSE_X64=24,
+    InstructionSet_SSE2_X64=25,
+    InstructionSet_SSE41_X64=26,
+    InstructionSet_SSE42_X64=27,
 #endif // TARGET_X86
 
 };
@@ -139,6 +143,8 @@ public:
             AddInstructionSet(InstructionSet_Crc32_Arm64);
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
+        if (HasInstructionSet(InstructionSet_X86Base))
+            AddInstructionSet(InstructionSet_X86Base_X64);
         if (HasInstructionSet(InstructionSet_SSE))
             AddInstructionSet(InstructionSet_SSE_X64);
         if (HasInstructionSet(InstructionSet_SSE2))
@@ -204,6 +210,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Sha256);
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
+        if (resultflags.HasInstructionSet(InstructionSet_X86Base) && !resultflags.HasInstructionSet(InstructionSet_X86Base_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Base);
+        if (resultflags.HasInstructionSet(InstructionSet_X86Base_X64) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_X86Base_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_SSE_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE);
         if (resultflags.HasInstructionSet(InstructionSet_SSE_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE))
@@ -236,6 +246,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE);
         if (resultflags.HasInstructionSet(InstructionSet_SSE2) && !resultflags.HasInstructionSet(InstructionSet_SSE))
             resultflags.RemoveInstructionSet(InstructionSet_SSE2);
         if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
@@ -264,6 +276,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
+        if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE);
         if (resultflags.HasInstructionSet(InstructionSet_SSE2) && !resultflags.HasInstructionSet(InstructionSet_SSE))
             resultflags.RemoveInstructionSet(InstructionSet_SSE2);
         if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
@@ -332,6 +346,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector128";
 #endif // TARGET_ARM64
 #ifdef TARGET_AMD64
+        case InstructionSet_X86Base :
+            return "X86Base";
+        case InstructionSet_X86Base_X64 :
+            return "X86Base_X64";
         case InstructionSet_SSE :
             return "SSE";
         case InstructionSet_SSE_X64 :
@@ -384,6 +402,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector256";
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
+        case InstructionSet_X86Base :
+            return "X86Base";
         case InstructionSet_SSE :
             return "SSE";
         case InstructionSet_SSE2 :
@@ -422,6 +442,69 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
 
         default:
             return "UnknownInstructionSet";
+    }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+}
+
+inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
+{
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4065) // disable warning for switch statement with only default label.
+#endif
+
+    switch (r2rSet)
+    {
+#ifdef TARGET_ARM64
+        case READYTORUN_INSTRUCTION_ArmBase: return InstructionSet_ArmBase;
+        case READYTORUN_INSTRUCTION_AdvSimd: return InstructionSet_AdvSimd;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_Aes;
+        case READYTORUN_INSTRUCTION_Crc32: return InstructionSet_Crc32;
+        case READYTORUN_INSTRUCTION_Sha1: return InstructionSet_Sha1;
+        case READYTORUN_INSTRUCTION_Sha256: return InstructionSet_Sha256;
+        case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
+#endif // TARGET_ARM64
+#ifdef TARGET_AMD64
+        case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_SSE;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_SSE2;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
+        case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
+        case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
+        case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
+        case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+#endif // TARGET_AMD64
+#ifdef TARGET_X86
+        case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_SSE;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_SSE2;
+        case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
+        case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
+        case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
+        case READYTORUN_INSTRUCTION_Sse42: return InstructionSet_SSE42;
+        case READYTORUN_INSTRUCTION_Avx: return InstructionSet_AVX;
+        case READYTORUN_INSTRUCTION_Avx2: return InstructionSet_AVX2;
+        case READYTORUN_INSTRUCTION_Aes: return InstructionSet_AES;
+        case READYTORUN_INSTRUCTION_Bmi1: return InstructionSet_BMI1;
+        case READYTORUN_INSTRUCTION_Bmi2: return InstructionSet_BMI2;
+        case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
+        case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
+        case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
+        case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
+#endif // TARGET_X86
+
+        default:
+            return InstructionSet_ILLEGAL;
     }
 #ifdef _MSC_VER
 #pragma warning(pop)

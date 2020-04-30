@@ -49,11 +49,6 @@ pal::string_t pal::to_lower(const pal::string_t& in)
     return ret;
 }
 
-pal::string_t pal::to_string(int value)
-{
-    return std::to_wstring(value);
-}
-
 pal::string_t pal::get_timestamp()
 {
     std::time_t t = std::time(0);
@@ -76,7 +71,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
+static void* map_file(const pal::string_t& path, size_t *length, DWORD mapping_protect, DWORD view_desired_access)
 {
     HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -86,16 +81,19 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
         return nullptr;
     }
 
-    LARGE_INTEGER fileSize;
-    if (GetFileSizeEx(file, &fileSize) == 0)
+    if (length != nullptr)
     {
-        trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
-        CloseHandle(file);
-        return nullptr;
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(file, &fileSize) == 0)
+        {
+            trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
+            CloseHandle(file);
+            return nullptr;
+        }
+        *length = (size_t)fileSize.QuadPart;
     }
-    length = (size_t)fileSize.QuadPart;
 
-    HANDLE map = CreateFileMappingW(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    HANDLE map = CreateFileMappingW(file, NULL, mapping_protect, 0, 0, NULL);
 
     if (map == NULL)
     {
@@ -104,7 +102,7 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
         return nullptr;
     }
 
-    void *address = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    void *address = MapViewOfFile(map, view_desired_access, 0, 0, 0);
 
     if (address == NULL)
     {
@@ -118,6 +116,16 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
     CloseHandle(file);
 
     return address;
+}
+
+const void* pal::mmap_read(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PAGE_READONLY, FILE_MAP_READ);
+}
+
+void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PAGE_WRITECOPY, FILE_MAP_READ | FILE_MAP_COPY);
 }
 
 bool pal::getcwd(pal::string_t* recv)
@@ -592,7 +600,6 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     return realpath(&extraction_dir);
 }
 
-
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
     out->clear();
@@ -634,6 +641,12 @@ bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
+}
+
+bool pal::unicode_palstring(const char16_t* str, pal::string_t* out)
+{
+    out->assign((const wchar_t *)str);
+    return true;
 }
 
 // Return if path is valid and file exists, return true and adjust path as appropriate.

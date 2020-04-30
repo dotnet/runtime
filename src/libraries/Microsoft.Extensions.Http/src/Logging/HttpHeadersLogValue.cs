@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Http.Logging
 
                     if (_shouldRedactHeaderValue(kvp.Key))
                     {
-                        builder.Append("*");
+                        builder.Append('*');
                         builder.AppendLine();
                     }
                     else

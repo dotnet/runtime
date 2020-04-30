@@ -11,10 +11,10 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class SimpleTestClassWithGenericCollectionWrappers : ITestClass
     {
-        public StringICollectionWrapper MyStringICollectionWrapper { get; set; }
+        public GenericICollectionWrapper<string> MyStringICollectionWrapper { get; set; }
         public StringIListWrapper MyStringIListWrapper { get; set; }
         public StringISetWrapper MyStringISetWrapper { get; set; }
-        public StringToStringIDictionaryWrapper MyStringToStringIDictionaryWrapper { get; set; }
+        public GenericIDictionaryWrapper<string, string> MyStringToStringIDictionaryWrapper { get; set; }
         public StringListWrapper MyStringListWrapper { get; set; }
         public StringStackWrapper MyStringStackWrapper { get; set; }
         public StringQueueWrapper MyStringQueueWrapper { get; set; }
@@ -46,10 +46,10 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
-            MyStringICollectionWrapper = new StringICollectionWrapper() { "Hello" };
+            MyStringICollectionWrapper = new GenericICollectionWrapper<string>() { "Hello" };
             MyStringIListWrapper = new StringIListWrapper() { "Hello" };
             MyStringISetWrapper = new StringISetWrapper() { "Hello" };
-            MyStringToStringIDictionaryWrapper = new StringToStringIDictionaryWrapper() { { "key", "value" } };
+            MyStringToStringIDictionaryWrapper = new GenericIDictionaryWrapper<string, string>() { { "key", "value" } };
             MyStringListWrapper = new StringListWrapper() { "Hello" };
             MyStringStackWrapper = new StringStackWrapper(new List<string> { "Hello" });
             MyStringQueueWrapper = new StringQueueWrapper(new List<string> { "Hello" });
@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class SimpleTestClassWithStringIReadOnlyCollectionWrapper
     {
-        public StringIReadOnlyCollectionWrapper MyStringIReadOnlyCollectionWrapper { get; set; }
+        public WrapperForIReadOnlyCollectionOfT<string> MyStringIReadOnlyCollectionWrapper { get; set; }
 
         public static readonly string s_json =
             @"{" +
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Tests
         // Call only when testing serialization.
         public void Initialize()
         {
-            MyStringIReadOnlyCollectionWrapper = new StringIReadOnlyCollectionWrapper(new List<string> { "Hello" });
+            MyStringIReadOnlyCollectionWrapper = new WrapperForIReadOnlyCollectionOfT<string>(new List<string> { "Hello" });
         }
     }
 
@@ -135,7 +135,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper
     {
-        public StringToStringIReadOnlyDictionaryWrapper MyStringToStringIReadOnlyDictionaryWrapper { get; set; }
+        public GenericIReadOnlyDictionaryWrapper<string, string> MyStringToStringIReadOnlyDictionaryWrapper { get; set; }
 
         public static readonly string s_json =
             @"{" +
@@ -147,7 +147,7 @@ namespace System.Text.Json.Serialization.Tests
         // Call only when testing serialization.
         public void Initialize()
         {
-            MyStringToStringIReadOnlyDictionaryWrapper = new StringToStringIReadOnlyDictionaryWrapper(
+            MyStringToStringIReadOnlyDictionaryWrapper = new GenericIReadOnlyDictionaryWrapper<string, string>(
                 new Dictionary<string, string>() { { "key", "value" } });
         }
     }
@@ -206,51 +206,7 @@ namespace System.Text.Json.Serialization.Tests
         internal GenericIEnumerableWrapperInternalConstructor() { }
     }
 
-    public class StringICollectionWrapper : ICollection<string>
-    {
-        private readonly List<string> _list = new List<string>();
-
-        public int Count => _list.Count;
-
-        public virtual bool IsReadOnly => ((ICollection<string>)_list).IsReadOnly;
-
-        public virtual void Add(string item)
-        {
-            _list.Add(item);
-        }
-
-        public void Clear()
-        {
-            _list.Clear();
-        }
-
-        public bool Contains(string item)
-        {
-            return _list.Contains(item);
-        }
-
-        public void CopyTo(string[] array, int arrayIndex)
-        {
-            _list.CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<string> GetEnumerator()
-        {
-            return ((ICollection<string>)_list).GetEnumerator();
-        }
-
-        public bool Remove(string item)
-        {
-            return _list.Remove(item);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((ICollection<string>)_list).GetEnumerator();
-        }
-    }
-
-    public class ReadOnlyStringICollectionWrapper : StringICollectionWrapper
+    public class ReadOnlyStringICollectionWrapper : GenericICollectionWrapper<string>
     {
         public override bool IsReadOnly => true;
     }
@@ -394,11 +350,21 @@ namespace System.Text.Json.Serialization.Tests
 
     public class GenericICollectionWrapper<T> : ICollection<T>
     {
-        private readonly List<T> _list = new List<T>();
+        private readonly List<T> _list;
+
+        public GenericICollectionWrapper()
+        {
+            _list = new List<T>();
+        }
+
+        public GenericICollectionWrapper(IEnumerable<T> items)
+        {
+            _list = new List<T>(items);
+        }
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => ((ICollection<T>)_list).IsReadOnly;
+        public virtual bool IsReadOnly => ((ICollection<T>)_list).IsReadOnly;
 
         public void Add(T item)
         {
@@ -446,27 +412,30 @@ namespace System.Text.Json.Serialization.Tests
         internal GenericICollectionWrapperInternalConstructor() { }
     }
 
-    public class StringIReadOnlyCollectionWrapper : IReadOnlyCollection<string>
+    public class WrapperForIReadOnlyCollectionOfT<T> : IReadOnlyCollection<T>
     {
-        private readonly List<string> _list = new List<string>();
+        private readonly List<T> _list;
 
-        public StringIReadOnlyCollectionWrapper() { }
-
-        public StringIReadOnlyCollectionWrapper(List<string> list)
+        public WrapperForIReadOnlyCollectionOfT()
         {
-            _list = list;
+            _list = new List<T>();
+        }
+
+        public WrapperForIReadOnlyCollectionOfT(IEnumerable<T> items)
+        {
+            _list = new List<T>(items);
         }
 
         public int Count => _list.Count;
 
-        public IEnumerator<string> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
-            return ((IReadOnlyCollection<string>)_list).GetEnumerator();
+            return ((IReadOnlyCollection<T>)_list).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IReadOnlyCollection<string>)_list).GetEnumerator();
+            return ((IReadOnlyCollection<T>)_list).GetEnumerator();
         }
     }
 
@@ -546,13 +515,18 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class ReadOnlyStringISetWrapper: StringISetWrapper
+    {
+        public override bool IsReadOnly => true;
+    }
+
     public class StringISetWrapper : ISet<string>
     {
         private readonly HashSet<string> _hashset = new HashSet<string>();
 
         public int Count => _hashset.Count;
 
-        public bool IsReadOnly => ((ISet<string>)_hashset).IsReadOnly;
+        public virtual bool IsReadOnly => ((ISet<string>)_hashset).IsReadOnly;
 
         public bool Add(string item)
         {
@@ -754,86 +728,19 @@ namespace System.Text.Json.Serialization.Tests
         internal GenericISetWrapperInternalConstructor() { }
     }
 
-    public class StringToStringIDictionaryWrapper : IDictionary<string, string>
-    {
-        private Dictionary<string, string> _dictionary = new Dictionary<string, string>();
-
-        public StringToStringIDictionaryWrapper() { }
-
-        public StringToStringIDictionaryWrapper(Dictionary<string, string> dictionary)
-        {
-            _dictionary = dictionary;
-        }
-
-        public string this[string key] { get => ((IDictionary<string, string>)_dictionary)[key]; set => ((IDictionary<string, string>)_dictionary)[key] = value; }
-
-        public ICollection<string> Keys => ((IDictionary<string, string>)_dictionary).Keys;
-
-        public ICollection<string> Values => ((IDictionary<string, string>)_dictionary).Values;
-
-        public int Count => ((IDictionary<string, string>)_dictionary).Count;
-
-        public virtual bool IsReadOnly => ((IDictionary<string, string>)_dictionary).IsReadOnly;
-
-        public virtual void Add(string key, string value)
-        {
-            ((IDictionary<string, string>)_dictionary).Add(key, value);
-        }
-
-        public void Add(KeyValuePair<string, string> item)
-        {
-            ((IDictionary<string, string>)_dictionary).Add(item);
-        }
-
-        public void Clear()
-        {
-            ((IDictionary<string, string>)_dictionary).Clear();
-        }
-
-        public bool Contains(KeyValuePair<string, string> item)
-        {
-            return ((IDictionary<string, string>)_dictionary).Contains(item);
-        }
-
-        public bool ContainsKey(string key)
-        {
-            return ((IDictionary<string, string>)_dictionary).ContainsKey(key);
-        }
-
-        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
-        {
-            ((IDictionary<string, string>)_dictionary).CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
-        {
-            return ((IDictionary<string, string>)_dictionary).GetEnumerator();
-        }
-
-        public bool Remove(string key)
-        {
-            return ((IDictionary<string, string>)_dictionary).Remove(key);
-        }
-
-        public bool Remove(KeyValuePair<string, string> item)
-        {
-            return ((IDictionary<string, string>)_dictionary).Remove(item);
-        }
-
-        public bool TryGetValue(string key, out string value)
-        {
-            return ((IDictionary<string, string>)_dictionary).TryGetValue(key, out value);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IDictionary<string, string>)_dictionary).GetEnumerator();
-        }
-    }
-
     public class GenericIDictionaryWrapper<TKey, TValue> : IDictionary<TKey, TValue>
     {
-        private Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
+        private readonly Dictionary<TKey, TValue> _dict;
+
+        public GenericIDictionaryWrapper()
+        {
+            _dict = new Dictionary<TKey, TValue>();
+        }
+
+        public GenericIDictionaryWrapper(IDictionary<TKey, TValue> items)
+        {
+            _dict = new Dictionary<TKey, TValue>(items);
+        }
 
         public TValue this[TKey key] { get => ((IDictionary<TKey, TValue>)_dict)[key]; set => ((IDictionary<TKey, TValue>)_dict)[key] = value; }
 
@@ -843,7 +750,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public int Count => ((IDictionary<TKey, TValue>)_dict).Count;
 
-        public bool IsReadOnly => ((IDictionary<TKey, TValue>)_dict).IsReadOnly;
+        public virtual bool IsReadOnly => ((IDictionary<TKey, TValue>)_dict).IsReadOnly;
 
         public void Add(TKey key, TValue value)
         {
@@ -913,204 +820,64 @@ namespace System.Text.Json.Serialization.Tests
 
     public class GenericIDictonaryWrapperThreeGenericParameters<TKey, TValue, TUnused> : GenericIDictionaryWrapper<TKey, TValue> { }
 
-    public class ReadOnlyStringToStringIDictionaryWrapper : StringToStringIDictionaryWrapper
+    public class ReadOnlyStringToStringIDictionaryWrapper : GenericIDictionaryWrapper<string, string>
     {
         public override bool IsReadOnly => true;
     }
 
-    public class StringToObjectIDictionaryWrapper : IDictionary<string, object>
+    public class StringToObjectIDictionaryWrapper : GenericIDictionaryWrapper<string, object> { }
+
+    public class StringToGenericIDictionaryWrapper<TValue> : GenericIDictionaryWrapper<string, TValue> { }
+
+    public class GenericIReadOnlyDictionaryWrapper<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
     {
-        private Dictionary<string, object> _dictionary = new Dictionary<string, object>();
+        private readonly Dictionary<TKey, TValue> _dictionary;
 
-        public StringToObjectIDictionaryWrapper() { }
-
-        public StringToObjectIDictionaryWrapper(Dictionary<string, object> dictionary)
+        public GenericIReadOnlyDictionaryWrapper()
         {
-            _dictionary = dictionary;
+            _dictionary = new Dictionary<TKey, TValue>();
         }
 
-        public object this[string key] { get => ((IDictionary<string, object>)_dictionary)[key]; set => ((IDictionary<string, object>)_dictionary)[key] = value; }
-
-        public ICollection<string> Keys => ((IDictionary<string, object>)_dictionary).Keys;
-
-        public ICollection<object> Values => ((IDictionary<string, object>)_dictionary).Values;
-
-        public int Count => ((IDictionary<string, object>)_dictionary).Count;
-
-        public bool IsReadOnly => ((IDictionary<string, object>)_dictionary).IsReadOnly;
-
-        public void Add(string key, object value)
+        public GenericIReadOnlyDictionaryWrapper(IDictionary<TKey, TValue> items)
         {
-            ((IDictionary<string, object>)_dictionary).Add(key, value);
+            _dictionary = new Dictionary<TKey, TValue>(items);
         }
 
-        public void Add(KeyValuePair<string, object> item)
+        public TValue this[TKey key] => ((IReadOnlyDictionary<TKey, TValue>)_dictionary)[key];
+
+        public IEnumerable<TKey> Keys => ((IReadOnlyDictionary<TKey, TValue>)_dictionary).Keys;
+
+        public IEnumerable<TValue> Values => ((IReadOnlyDictionary<TKey, TValue>)_dictionary).Values;
+
+        public int Count => ((IReadOnlyDictionary<TKey, TValue>)_dictionary).Count;
+
+        public bool ContainsKey(TKey key)
         {
-            ((IDictionary<string, object>)_dictionary).Add(item);
+            return ((IReadOnlyDictionary<TKey, TValue>)_dictionary).ContainsKey(key);
         }
 
-        public void Clear()
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            ((IDictionary<string, object>)_dictionary).Clear();
+            return ((IReadOnlyDictionary<TKey, TValue>)_dictionary).GetEnumerator();
         }
 
-        public bool Contains(KeyValuePair<string, object> item)
+        public bool TryGetValue(TKey key, out TValue value)
         {
-            return ((IDictionary<string, object>)_dictionary).Contains(item);
-        }
-
-        public bool ContainsKey(string key)
-        {
-            return ((IDictionary<string, object>)_dictionary).ContainsKey(key);
-        }
-
-        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
-        {
-            ((IDictionary<string, object>)_dictionary).CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
-        {
-            return ((IDictionary<string, object>)_dictionary).GetEnumerator();
-        }
-
-        public bool Remove(string key)
-        {
-            return ((IDictionary<string, object>)_dictionary).Remove(key);
-        }
-
-        public bool Remove(KeyValuePair<string, object> item)
-        {
-            return ((IDictionary<string, object>)_dictionary).Remove(item);
-        }
-
-        public bool TryGetValue(string key, out object value)
-        {
-            return ((IDictionary<string, object>)_dictionary).TryGetValue(key, out value);
+            return ((IReadOnlyDictionary<TKey, TValue>)_dictionary).TryGetValue(key, out value);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IDictionary<string, object>)_dictionary).GetEnumerator();
+            return ((IReadOnlyDictionary<TKey, TValue>)_dictionary).GetEnumerator();
         }
     }
 
-    public class StringToGenericIDictionaryWrapper<TValue> : IDictionary<string, TValue>
-    {
-        private Dictionary<string, TValue> _dictionary = new Dictionary<string, TValue>();
-
-        public TValue this[string key] { get => ((IDictionary<string, TValue>)_dictionary)[key]; set => ((IDictionary<string, TValue>)_dictionary)[key] = value; }
-
-        public ICollection<string> Keys => ((IDictionary<string, TValue>)_dictionary).Keys;
-
-        public ICollection<TValue> Values => ((IDictionary<string, TValue>)_dictionary).Values;
-
-        public int Count => ((IDictionary<string, TValue>)_dictionary).Count;
-
-        public bool IsReadOnly => ((IDictionary<string, TValue>)_dictionary).IsReadOnly;
-
-        public void Add(string key, TValue value)
-        {
-            ((IDictionary<string, TValue>)_dictionary).Add(key, value);
-        }
-
-        public void Add(KeyValuePair<string, TValue> item)
-        {
-            ((IDictionary<string, TValue>)_dictionary).Add(item);
-        }
-
-        public void Clear()
-        {
-            ((IDictionary<string, TValue>)_dictionary).Clear();
-        }
-
-        public bool Contains(KeyValuePair<string, TValue> item)
-        {
-            return ((IDictionary<string, TValue>)_dictionary).Contains(item);
-        }
-
-        public bool ContainsKey(string key)
-        {
-            return ((IDictionary<string, TValue>)_dictionary).ContainsKey(key);
-        }
-
-        public void CopyTo(KeyValuePair<string, TValue>[] array, int arrayIndex)
-        {
-            ((IDictionary<string, TValue>)_dictionary).CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator()
-        {
-            return ((IDictionary<string, TValue>)_dictionary).GetEnumerator();
-        }
-
-        public bool Remove(string key)
-        {
-            return ((IDictionary<string, TValue>)_dictionary).Remove(key);
-        }
-
-        public bool Remove(KeyValuePair<string, TValue> item)
-        {
-            return ((IDictionary<string, TValue>)_dictionary).Remove(item);
-        }
-
-        public bool TryGetValue(string key, out TValue value)
-        {
-            return ((IDictionary<string, TValue>)_dictionary).TryGetValue(key, out value);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IDictionary<string, TValue>)_dictionary).GetEnumerator();
-        }
-    }
-
-    public class StringToStringIReadOnlyDictionaryWrapper : IReadOnlyDictionary<string, string>
-    {
-        private Dictionary<string, string> _dictionary = new Dictionary<string, string>();
-
-        public StringToStringIReadOnlyDictionaryWrapper() { }
-
-        public StringToStringIReadOnlyDictionaryWrapper(Dictionary<string, string> items)
-        {
-            _dictionary = items;
-        }
-
-        public string this[string key] => ((IReadOnlyDictionary<string, string>)_dictionary)[key];
-
-        public IEnumerable<string> Keys => ((IReadOnlyDictionary<string, string>)_dictionary).Keys;
-
-        public IEnumerable<string> Values => ((IReadOnlyDictionary<string, string>)_dictionary).Values;
-
-        public int Count => ((IReadOnlyDictionary<string, string>)_dictionary).Count;
-
-        public bool ContainsKey(string key)
-        {
-            return ((IReadOnlyDictionary<string, string>)_dictionary).ContainsKey(key);
-        }
-
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
-        {
-            return ((IReadOnlyDictionary<string, string>)_dictionary).GetEnumerator();
-        }
-
-        public bool TryGetValue(string key, out string value)
-        {
-            return ((IReadOnlyDictionary<string, string>)_dictionary).TryGetValue(key, out value);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IReadOnlyDictionary<string, string>)_dictionary).GetEnumerator();
-        }
-    }
-
-    public class StringToStringIReadOnlyDictionaryWrapperPrivateConstructor : StringToStringIReadOnlyDictionaryWrapper
+    public class StringToStringIReadOnlyDictionaryWrapperPrivateConstructor : GenericIReadOnlyDictionaryWrapper<string, string>
     {
         private StringToStringIReadOnlyDictionaryWrapperPrivateConstructor() { }
     }
 
-    public class StringToStringIReadOnlyDictionaryWrapperInternalConstructor : StringToStringIReadOnlyDictionaryWrapper
+    public class StringToStringIReadOnlyDictionaryWrapperInternalConstructor : GenericIReadOnlyDictionaryWrapper<string, string>
     {
         internal StringToStringIReadOnlyDictionaryWrapperInternalConstructor() { }
     }
@@ -1402,4 +1169,10 @@ namespace System.Text.Json.Serialization.Tests
             return _inner.GetEnumerator();
         }
     }
+
+    public interface IDerivedICollectionOfT<T> : ICollection<T> { }
+
+    public interface IDerivedIDictionaryOfTKeyTValue<TKey, TValue> : IDictionary<TKey, TValue> { }
+
+    public interface IDerivedISetOfT<T> : ISet<T> { }
 }

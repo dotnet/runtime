@@ -3851,7 +3851,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // !TARGET_64BIT
         {
             // If this arg is never on the stack, go to the next one.
-            if (!regArgTab[argNum].stackArg)
+            if (!regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
             {
                 continue;
             }
@@ -4621,7 +4621,8 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (varNum == compiler->lvaInlinedPInvokeFrameVar || varNum == compiler->lvaStubArgumentVar)
+        if (varNum == compiler->lvaInlinedPInvokeFrameVar || varNum == compiler->lvaStubArgumentVar ||
+            varNum == compiler->lvaRetAddrVar)
         {
             continue;
         }

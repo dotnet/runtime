@@ -3374,15 +3374,29 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return FALSE;
     }
 
-    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    COUNT_T cMeta=0;
-    const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
-    if (pMeta == NULL)
-    {
-        return FALSE;
-    }
+    NativeImage *nativeImage = this->GetCompositeNativeImage();
+    IMDInternalImport* pMdImport = NULL;
 
-    IMDInternalImport* pMdImport = GetNativeAssemblyImport();
+    if (nativeImage != NULL)
+    {
+        if (nativeImage == target->GetCompositeNativeImage())
+        {
+            // Fast path for modules contained within the same native image
+            return TRUE;
+        }
+        pMdImport = nativeImage->GetManifestMetadata();
+    }
+    else
+    {
+        // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+        COUNT_T cMeta=0;
+        const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        if (pMeta == NULL)
+        {
+            return FALSE;
+        }
+        pMdImport = GetNativeAssemblyImport();
+    }
 
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
@@ -10513,10 +10527,20 @@ void Module::RunEagerFixupsUnlocked()
                 SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
                 if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
                 {
-                    _ASSERTE(!"LoadDynamicInfoEntry failed");
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                    if (IsReadyToRun())
+                    {
+                        GetReadyToRunInfo()->DisableAllR2RCode();
+                    }
+                    else
+                    {
+                        _ASSERTE(!"LoadDynamicInfoEntry failed");
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
                 }
-                _ASSERTE(*fixupCell != NULL);
+                else
+                {
+                    _ASSERTE(*fixupCell != NULL);
+                }
             }
         }
         else
@@ -10532,8 +10556,15 @@ void Module::RunEagerFixupsUnlocked()
                 {
                     if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
                     {
-                        _ASSERTE(!"LoadDynamicInfoEntry failed");
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                        if (IsReadyToRun())
+                        {
+                            GetReadyToRunInfo()->DisableAllR2RCode();
+                        }
+                        else
+                        {
+                            _ASSERTE(!"LoadDynamicInfoEntry failed");
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
+                        }
                     }
                     _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
                 }
