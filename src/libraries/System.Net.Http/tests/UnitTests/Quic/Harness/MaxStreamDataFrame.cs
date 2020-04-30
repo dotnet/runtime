@@ -20,6 +20,8 @@ namespace System.Net.Quic.Tests.Harness
         /// </summary>
         internal long MaximumStreamData;
 
+        protected override string GetAdditionalInfo() => $"[{StreamId}, {MaximumStreamData}]";
+
         internal override FrameType FrameType => FrameType.MaxStreamData;
 
         internal override void Serialize(QuicWriter writer)

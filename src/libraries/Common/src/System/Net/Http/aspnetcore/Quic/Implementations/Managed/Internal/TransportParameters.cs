@@ -6,17 +6,24 @@ using System.Net.Quic.Implementations.Managed.Internal.Frames;
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     /// <summary>
-    ///     ///     Wrapper around the currently used QUIC transport parameters.
+    ///     Wrapper around the currently used QUIC transport parameters.
     /// </summary>
     internal class TransportParameters
     {
+        // limits from RFC
         internal const long MinimumPacketSize = 1200;
         internal const long MaxAckDelayExponent = 20;
         internal const long MaxMaxAckDelay = 1 << 14;
 
+        // defaults mandated by RFC
         internal const long DefaultMaxPacketSize = 65527;
         internal const long DefaultAckDelayExponent = 3;
         internal const long DefaultMaxAckDelay = 25;
+
+        // defaults specific for this implementation, since many values cannot be set from user code
+        internal const long DefaultMaxStreamData = 64 * 1024;
+        // TODO-RZ: decrease this, maybe use size of socket recv bufer
+        internal const long DefaultMaxData = 1024 * 1024 * 1024;
 
         internal static TransportParameters FromClientConnectionOptions(QuicClientConnectionOptions options)
         {
@@ -26,11 +33,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
                 MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
 
-                // TODO-RZ: lower these once flow control is implemented
-                InitialMaxData = 1024*1024*1024,
-                InitialMaxStreamDataUni = 1024*1024*1024,
-                InitialMaxStreamDataBidiLocal = 1024*1024*1024,
-                InitialMaxStreamDataBidiRemote = 1024*1024*1024,
+                InitialMaxData = DefaultMaxData,
+                InitialMaxStreamDataUni = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
             };
         }
 
@@ -42,11 +48,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
                 MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
 
-                // TODO-RZ: lower these once flow control is implemented
-                InitialMaxData = 1024*1024*1024,
-                InitialMaxStreamDataUni = 1024*1024*1024,
-                InitialMaxStreamDataBidiLocal = 1024*1024*1024,
-                InitialMaxStreamDataBidiRemote = 1024*1024*1024,
+                InitialMaxData = DefaultMaxData,
+                InitialMaxStreamDataUni = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
             };
         }
 

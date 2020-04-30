@@ -39,6 +39,12 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
+        /// <summary>
+        ///     Opens a new outbound stream with lowest available stream id.
+        /// </summary>
+        /// <param name="unidirectional">True if the stream should be unidirectional.</param>
+        /// <returns></returns>
+        /// <exception cref="QuicException"></exception>
         internal ManagedQuicStream OpenStream(bool unidirectional)
         {
             var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
@@ -51,6 +57,35 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters, _socketContext);
+        }
+
+        /// <summary>
+        ///     Tries to get the stream with given id. Creates also all streams of the same type with lower id. Returns
+        ///     false if creating the remote initiated stream would violate stream limits imposed by this endpoint.
+        /// </summary>
+        /// <param name="streamId">Id of the stream to get or create.</param>
+        /// <param name="stream">Contains the result stream, or null if operation failed.</param>
+        /// <returns></returns>
+        private bool TryGetOrCreateStream(long streamId, out ManagedQuicStream? stream)
+        {
+            // check whether the stream can be opened based on local limits
+            if (!StreamHelpers.IsLocallyInitiated(_isServer, streamId))
+            {
+                long index = StreamHelpers.GetStreamIndex(streamId);
+                long limit = StreamHelpers.IsBidirectional(streamId)
+                    ? _localLimits.MaxStreamsBidi
+                    : _localLimits.MaxStreamsUni;
+
+                if (index > limit)
+                {
+                    stream = null;
+                    return false;
+                }
+            }
+
+            stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, _isServer,
+                _socketContext);
+            return true;
         }
 
         internal ManagedQuicStream? AcceptStream()

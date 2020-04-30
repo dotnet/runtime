@@ -24,8 +24,8 @@ namespace System.Net.Quic.Implementations.Managed
         internal const string InvalidAckRange = "Invalid ack range";
         internal const string UnknownFrameType = "Unknown frame type";
         internal const string NotInRecvState = "Stream is not in Recv state";
-        internal const string StreamsLimitExceeded = "Streams limit exceeded";
-        internal const string StreamMaxDataExceeded = "Streams max data limit exceeded";
+        internal const string StreamsLimitViolated = "Streams limit exceeded";
+        internal const string StreamMaxDataViolated = "Streams max data limit violated";
         internal const string StreamNotWritable = "Stream is not writable";
         internal const string InconsistentFinalSize = "Inconsistent stream final size";
         internal const string WritingPastFinalSize = "Writing data past stream final size";

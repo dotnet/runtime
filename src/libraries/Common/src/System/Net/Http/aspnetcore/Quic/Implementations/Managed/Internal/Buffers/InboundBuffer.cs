@@ -32,17 +32,34 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private readonly SortedSet<StreamChunk> _outOfOrderChunks = new SortedSet<StreamChunk>(StreamChunk.OffsetComparer);
 
         /// <summary>
-        ///     Total number of bytes allowed to transport in this stream.
+        ///     Total number of bytes allowed to transport in this stream. Receiving data at this offset or higher
+        ///     implies protocol violation by the sender.
         /// </summary>
         internal long MaxData { get; private set; }
 
         /// <summary>
-        ///     Updates the <see cref="MaxData"/> parameter.
+        ///     Value of <see cref="MaxData"/> that the peer is confirmed to have received. Used to determine whether an
+        ///     update should be sent.
+        /// </summary>
+        internal long RemoteMaxData { get; private set; }
+
+        /// <summary>
+        ///     Updates the <see cref="MaxData"/> parameter to the maximum of current and new values.
         /// </summary>
         /// <param name="value">Value of the parameter.</param>
         internal void UpdateMaxData(long value)
         {
             MaxData = Math.Max(MaxData, value);
+        }
+
+        /// <summary>
+        ///     Updates <see cref="RemoteMaxData"/> to the maximum of current and new values.
+        /// </summary>
+        /// <param name="value">value of the parameter.</param>
+        internal void UpdateRemoteMaxData(long value)
+        {
+            Debug.Assert(value <= MaxData);
+            MaxData = Math.Max(RemoteMaxData, value);
         }
 
         public InboundBuffer(long maxData)
@@ -153,6 +170,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             }
         }
 
+        /// <summary>
+        ///     Delivers the buffered data by copying to the provided memory. If no data available, this method blocks
+        ///     until more data arrive or the stream is closed.
+        /// </summary>
+        /// <param name="destination">Destination memory.</param>
+        /// <param name="token">Cancellation token for the operation.</param>
+        /// <returns></returns>
         internal async ValueTask<int> DeliverAsync(Memory<byte> destination, CancellationToken token)
         {
             int delivered = Deliver(destination.Span);
@@ -198,6 +222,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
                 destination = destination.Slice(len);
                 delivered += len;
+
+                // allow sender send more data
+                UpdateMaxData(MaxData + len);
             } while (destination.Length > 0);
 
             BytesRead += delivered;
@@ -228,10 +255,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private void ReturnMemory(in StreamChunk chunk)
         {
-            if (chunk.Buffer != null)
+            if (chunk.Buffer == null)
             {
-                ArrayPool<byte>.Shared.Return(chunk.Buffer);
+                return;
             }
+
+            ArrayPool<byte>.Shared.Return(chunk.Buffer);
         }
 
         /// <summary>

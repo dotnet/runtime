@@ -173,7 +173,19 @@ namespace System.Net.Quic.Implementations.Managed
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
 
-            throw new NotImplementedException();
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+                return CloseConnection(TransportErrorCode.StreamLimitError,
+                    QuicError.StreamsLimitViolated, FrameType.MaxStreamData);
+
+            var buffer = stream!.OutboundBuffer!;
+            buffer.UpdateMaxData(frame.MaximumStreamData);
+
+            if (buffer.IsFlushable)
+            {
+                _streams.MarkFlushable(stream!);
+            }
+
+            return ProcessPacketResult.Ok;
         }
 
         private ProcessPacketResult ProcessMaxStreamsFrame(QuicReader reader)
@@ -312,22 +324,14 @@ namespace System.Net.Quic.Implementations.Managed
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
 
-            bool bidirectional = StreamHelpers.IsBidirectional(frame.StreamId);
-            long index = StreamHelpers.GetStreamIndex(frame.StreamId);
-            long limit = bidirectional
-                ? _localLimits.MaxStreamsBidi
-                : _localLimits.MaxStreamsUni;
-
-            if (index > limit)
+            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
             {
                 // Flow control violated
-                return CloseConnection(TransportErrorCode.StreamLimitError, QuicError.StreamsLimitExceeded,
+                return CloseConnection(TransportErrorCode.StreamLimitError, QuicError.StreamsLimitViolated,
                     FrameType.Stream);
             }
 
-            var stream = _streams.GetOrCreateStream(frame.StreamId, _localTransportParameters, _peerTransportParameters,
-                _isServer, _socketContext);
-            if (stream.InboundBuffer == null)
+            if (!stream!.CanRead)
             {
                 // Flow trying to write into receive only stream
                 return CloseConnection(TransportErrorCode.StreamStateError, QuicError.StreamNotWritable,
@@ -336,20 +340,28 @@ namespace System.Net.Quic.Implementations.Managed
 
             var buffer = stream.InboundBuffer!;
 
+            long writtenOffset = frame.Offset + frame.StreamData.Length;
+
             if (frame.Fin)
             {
-                long finalSize = frame.Offset + frame.StreamData.Length;
-
-                if (buffer.FinalSize != null && buffer.FinalSize != finalSize ||
-                    buffer.EstimatedSize > finalSize)
+                // if trying to change final size, or setting too small final size, report error.
+                if (buffer.FinalSize != null && buffer.FinalSize != writtenOffset ||
+                    writtenOffset < buffer.EstimatedSize)
                 {
                     return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.InconsistentFinalSize);
                 }
             }
 
+            // close if writing past known stream end
             if (buffer.FinalSize != null && frame.Offset + frame.StreamData.Length > buffer.FinalSize)
             {
                 return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize);
+            }
+
+            // close if writing past allowed offset
+            if (writtenOffset > buffer.MaxData)
+            {
+                return CloseConnection(TransportErrorCode.FlowControlError, QuicError.StreamMaxDataViolated);
             }
 
             buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
@@ -393,6 +405,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (packetType == PacketType.OneRtt)
             {
+                WriteStreamMaxDataFrames(writer, context);
                 WriteStreamFrames(writer, context);
             }
 
@@ -546,6 +559,31 @@ namespace System.Net.Quic.Implementations.Managed
                         false, 0, 0, 0));
 
                 pnSpace.AckElicited = false;
+            }
+        }
+
+        private void WriteStreamMaxDataFrames(QuicWriter writer, SendContext context)
+        {
+            ManagedQuicStream? stream;
+            while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstStreamForFlowControlUpdate()) != null)
+            {
+                var buffer = stream!.InboundBuffer!;
+
+                if (buffer.MaxData == buffer.RemoteMaxData)
+                {
+                    // nothing to update, this may happen due to a race condition, should not happen terribly often
+                    continue;
+                }
+
+                var frame = new MaxStreamDataFrame(stream.StreamId, buffer.MaxData);
+                if (writer.BytesAvailable < frame.GetSerializedLength())
+                {
+                    // cannot fit the frame into packet
+                    _streams.MarkForFlowControlUpdate(stream);
+                    return;
+                }
+
+                MaxStreamDataFrame.Write(writer, frame);
             }
         }
 

@@ -31,6 +31,11 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly LinkedList<ManagedQuicStream> _flushable = new LinkedList<ManagedQuicStream>();
 
         /// <summary>
+        ///     All streams which require updating flow control bounds.
+        /// </summary>
+        private readonly LinkedList<ManagedQuicStream> _flowControlUpdateQueue = new LinkedList<ManagedQuicStream>();
+
+        /// <summary>
         ///     Channel of streams that were opened by the peer but not yet accepted by this endpoint.
         /// </summary>
         internal Channel<ManagedQuicStream> IncomingStreams { get; } =
@@ -54,6 +59,21 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 _flushable.RemoveFirst();
+                return first.Value;
+            }
+        }
+
+        internal ManagedQuicStream? GetFirstStreamForFlowControlUpdate()
+        {
+            lock (_flowControlUpdateQueue)
+            {
+                var first = _flowControlUpdateQueue.First;
+                if (first == null)
+                {
+                    return null;
+                }
+
+                _flowControlUpdateQueue.RemoveFirst();
                 return first.Value;
             }
         }
@@ -128,15 +148,28 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void MarkFlushable(ManagedQuicStream stream)
         {
+            Debug.Assert(stream.CanWrite);
+
+            AddToListSynchronized(_flushable, stream._flushableListNode);
+        }
+
+        internal void MarkForFlowControlUpdate(ManagedQuicStream stream)
+        {
+            Debug.Assert(stream.CanRead);
+
+            AddToListSynchronized(_flowControlUpdateQueue, stream._flowControlUpdateQueueListNode);
+        }
+
+        private static void AddToListSynchronized(LinkedList<ManagedQuicStream> list, LinkedListNode<ManagedQuicStream> node)
+        {
             // use double checking to prevent frequent locking
-            if (stream._flushableListNode.List == null)
+            if (node.List == null)
             {
                 // TODO-RZ: remove the need for this lock
-                lock (_flushable)
+                lock (list)
                 {
-                    Debug.Assert(stream.CanWrite);
-                    if (stream._flushableListNode.List == null)
-                        _flushable.AddLast(stream._flushableListNode);
+                    if (node.List == null)
+                        list.AddLast(node);
                 }
             }
         }

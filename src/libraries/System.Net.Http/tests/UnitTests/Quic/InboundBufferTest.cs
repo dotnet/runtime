@@ -9,7 +9,7 @@ namespace System.Net.Quic.Tests
 {
     public class InboundBufferTest
     {
-        private InboundBuffer buffer = new InboundBuffer(long.MaxValue);
+        private InboundBuffer buffer = new InboundBuffer(1000);
 
         private void ReceiveBytes(long offset, int count, bool end = false)
         {
@@ -134,6 +134,18 @@ namespace System.Net.Quic.Tests
             // All data have been read, no blocking is expected.
             Assert.True(task.IsCompleted);
             Assert.Equal(0, await task);
+        }
+
+        [Fact]
+        public void IncreasesMaxDataAfterDelivery()
+        {
+            var destination = new byte[10];
+            ReceiveBytes(0, 10);
+            long oldMaxData = buffer.MaxData;
+
+            buffer.Deliver(destination);
+
+            Assert.Equal(oldMaxData + 10, buffer.MaxData);
         }
     }
 }

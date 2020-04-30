@@ -33,7 +33,7 @@ namespace System.Net.Quic.Tests.Harness
         /// </summary>
         internal string ReasonPhrase;
 
-        protected override string GetAdditionalInfo() => $"[{ErrorCode}: {(IsQuicError ? ErrorFrameType + ", " : "")}{ReasonPhrase}]";
+        protected override string GetAdditionalInfo() => $"[{ErrorCode}: {(IsQuicError && ErrorFrameType != FrameType.Padding ? ErrorFrameType + ", " : "")}{ReasonPhrase}]";
 
         internal override FrameType FrameType =>
             IsQuicError ? FrameType.ConnectionCloseQuic : FrameType.ConnectionCloseApplication;

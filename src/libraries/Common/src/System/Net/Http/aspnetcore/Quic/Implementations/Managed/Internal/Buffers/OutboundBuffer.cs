@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -243,7 +244,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
             long sendableLength = MaxData - _pending[0].Start;
             long count = Math.Min(sendableLength, _pending[0].Length);
-            Debug.Assert(count > 0);
             return (_pending[0].Start, count);
         }
 

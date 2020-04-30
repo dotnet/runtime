@@ -44,6 +44,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             };
         }
 
+        internal static bool IsLocallyInitiated(bool isServer, long streamId)
+        {
+            return isServer == IsServerInitiated(streamId);
+        }
+
         internal static StreamType GetLocallyInitiatedType(bool isServer, bool unidirectional)
         {
             return (StreamType)

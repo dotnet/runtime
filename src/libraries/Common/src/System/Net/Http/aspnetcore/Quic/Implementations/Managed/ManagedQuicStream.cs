@@ -14,10 +14,24 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed class ManagedQuicStream : QuicStreamProvider
     {
+        /// <summary>
+        ///     Node to the linked list of all flushable streams. Should be accessed only by the <see cref="StreamCollection"/> class.
+        /// </summary>
         internal readonly LinkedListNode<ManagedQuicStream> _flushableListNode;
 
+        /// <summary>
+        ///     Node to the linked list of all streams needing flow control update. Should be accessed only by the <see cref="StreamCollection"/> class.
+        /// </summary>
+        internal readonly LinkedListNode<ManagedQuicStream> _flowControlUpdateQueueListNode;
+
+        /// <summary>
+        ///     Value task source for signalling that <see cref="ShutdownWriteCompleted"/> has finished.
+        /// </summary>
         private readonly SingleEventValueTaskSource _shutdownCompleted = new SingleEventValueTaskSource();
 
+        /// <summary>
+        ///     True if this instance has been disposed.
+        /// </summary>
         private bool _disposed;
 
         /// <summary>
@@ -25,11 +39,19 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly StreamCollection _streamCollection;
 
+        /// <summary>
+        ///     Context used to request updates after input from user.
+        /// </summary>
         private readonly QuicSocketContext _ctx;
 
-        // TODO-RZ: think about thread-safety of the buffers, and who can access which parts of them
+        /// <summary>
+        ///     If the stream can receive data, contains buffer representing receiving part of the stream. Otherwise null.
+        /// </summary>
         internal InboundBuffer? InboundBuffer { get; }
 
+        /// <summary>
+        ///     If the stream can send data, contains buffer representing sending part of the stream.
+        /// </summary>
         internal OutboundBuffer? OutboundBuffer { get; }
 
         internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, StreamCollection streamCollection, QuicSocketContext ctx)
@@ -43,7 +65,9 @@ namespace System.Net.Quic.Implementations.Managed
             OutboundBuffer = outboundBuffer;
             _streamCollection = streamCollection;
             _ctx = ctx;
+
             _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
+            _flowControlUpdateQueueListNode = new LinkedListNode<ManagedQuicStream>(this);
         }
 
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
@@ -57,7 +81,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                RequestUpdate();
+                MarkFlushable();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -78,6 +102,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotReadable();
 
             int result = InboundBuffer!.Deliver(buffer);
+            MarkForFlowControlUpdate();
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
@@ -89,6 +115,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotReadable();
 
             int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
+            MarkForFlowControlUpdate();
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
@@ -113,7 +141,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                RequestUpdate();
+                MarkFlushable();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -181,16 +209,22 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 OutboundBuffer!.MarkEndOfData();
                 await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
-                RequestUpdate();
+                MarkFlushable();
             }
 
             // TODO-RZ: cancellation
             await _shutdownCompleted.GetTask();
         }
 
-        private void RequestUpdate()
+        private void MarkFlushable()
         {
             _streamCollection.MarkFlushable(this);
+            _ctx.Ping();
+        }
+
+        private void MarkForFlowControlUpdate()
+        {
+            _streamCollection.MarkForFlowControlUpdate(this);
             _ctx.Ping();
         }
 
@@ -198,6 +232,8 @@ namespace System.Net.Quic.Implementations.Managed
         {
             // closing connection (CONNECTION_CLOSE frame) causes all streams to become closed
             NotifyShutdownWriteCompleted();
+
+            // TODO-RZ: handle callers blocking on async tasks
         }
 
         internal override void Shutdown()
@@ -211,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 OutboundBuffer!.MarkEndOfData();
                 OutboundBuffer!.FlushChunk();
-                RequestUpdate();
+                MarkFlushable();
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
