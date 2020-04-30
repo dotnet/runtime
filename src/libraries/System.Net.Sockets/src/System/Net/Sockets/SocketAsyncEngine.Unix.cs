@@ -407,11 +407,12 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _eventQueueProcessingRequested, 0);
 
             ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-            int startTimeMs = Environment.TickCount;
             if (!eventQueue.TryDequeue(out SocketIOEvent ev))
             {
                 return;
             }
+
+            int startTimeMs = Environment.TickCount;
 
             // An event was successfully dequeued, and there may be more events to process. Schedule a work item to parallelize
             // processing of events, before processing more events. Following this, it is the responsibility of the new work
@@ -424,6 +425,11 @@ namespace System.Net.Sockets
             {
                 ev.Context.HandleEvents(ev.Events);
 
+                // If there is a constant stream of new events, and/or if user callbacks take long to process an event, this
+                // work item may run for a long time. If work items of this type are using up all of the thread pool threads,
+                // collectively they may starve other types of work items from running. Before dequeuing and processing another
+                // event, check the elapsed time since the start of the work item and yield the thread after some time has
+                // elapsed to allow the thread pool to run other work items.
                 if (Environment.TickCount - startTimeMs >= 15)
                 {
                     break;
@@ -435,7 +441,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            // Yield the thread to allow the thread pool to run other work items
+            // The queue was not observed to be empty, schedule another work item before yielding the thread
             ScheduleToProcessEvents();
         }
 

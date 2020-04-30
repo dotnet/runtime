@@ -1980,7 +1980,12 @@ namespace System.Net.Sockets
 
         // Called on the epoll thread, speculatively tries to process synchronous events and errors for synchronous events, and
         // returns any remaining events that remain to be processed. Taking a lock for each operation queue to deterministically
-        // handle synchronous events on the epoll thread seems to significantly reduce throughput in benchmarks.
+        // handle synchronous events on the epoll thread seems to significantly reduce throughput in benchmarks. On the other
+        // hand, the speculative checks make it nondeterministic, where it would be possible for the epoll thread to think that
+        // the next operation in a queue is not synchronous when it is (due to a race, old caches, etc.) and cause the event to
+        // be scheduled instead. It's not functionally incorrect to schedule the release of a synchronous operation, just it may
+        // lead to thread pool starvation issues if the synchronous operations are blocking thread pool threads (typically not
+        // advised) and more threads are not immediately available to run work items that would release those operations.
         public unsafe Interop.Sys.SocketEvents HandleSyncEventsSpeculatively(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
