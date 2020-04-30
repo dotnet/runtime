@@ -38,13 +38,9 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal override JsonPropertyInfo CreateJsonPropertyInfo()
-        {
-            // We should never get here.
-            Debug.Assert(false);
+        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo() => throw new InvalidOperationException();
 
-            throw new InvalidOperationException();
-        }
+        internal sealed override JsonParameterInfo CreateJsonParameterInfo() => throw new InvalidOperationException();
 
         internal sealed override object CreateDictionaryOfStringT() => throw new InvalidOperationException();
 
