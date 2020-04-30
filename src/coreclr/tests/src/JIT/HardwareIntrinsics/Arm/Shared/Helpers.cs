@@ -8,6 +8,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Linq;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -2391,5 +2392,41 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static sbyte TableVectorExtension(int i, sbyte[] defaultValues, sbyte[] indices, params sbyte[][] table)
+        {
+            sbyte[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
+        }
+
+        public static sbyte TableVectorLookup(int i, sbyte[] indices, params sbyte[][] table)
+        {
+            sbyte[] zeros = new sbyte[indices.Length];
+            Array.Fill<sbyte>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
+        }
+        public static byte TableVectorExtension(int i, byte[] defaultValues, byte[] indices, params byte[][] table)
+        {
+            byte[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
+        }
+
+        public static byte TableVectorLookup(int i, byte[] indices, params byte[][] table)
+        {
+            byte[] zeros = new byte[indices.Length];
+            Array.Fill<byte>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
+        }
     }
 }

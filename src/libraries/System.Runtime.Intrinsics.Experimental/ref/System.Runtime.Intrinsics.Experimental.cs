@@ -564,6 +564,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<long> SubtractScalar(System.Runtime.Intrinsics.Vector64<long> left, System.Runtime.Intrinsics.Vector64<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> SubtractScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ulong> SubtractScalar(System.Runtime.Intrinsics.Vector64<ulong> left, System.Runtime.Intrinsics.Vector64<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<byte> defaultValues, System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<sbyte> defaultValues, System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector64<sbyte> byteIndexes) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Xor(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Xor(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Xor(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
@@ -838,6 +842,10 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector64<float> UnzipOdd(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<ushort> UnzipOdd(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<uint> UnzipOdd(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector128<byte> defaultValues, System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector128<sbyte> defaultValues, System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector128<sbyte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ZipHigh(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ZipHigh(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> ZipHigh(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
