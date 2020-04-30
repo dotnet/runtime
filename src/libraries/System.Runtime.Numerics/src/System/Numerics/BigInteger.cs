@@ -2404,8 +2404,20 @@ namespace System.Numerics
             {
                 return dividend;
             }
-            uint[] bits = BigIntegerCalculator.Remainder(dividend._bits, divisor._bits);
-            return new BigInteger(bits, dividend._sign < 0);
+
+            uint[]? bitsFromPool = null;
+            int size = dividend._bits.Length;
+            Span<uint> bits = size <= StackAllocThreshold ?
+                              stackalloc uint[size]
+                              : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+            BigIntegerCalculator.Remainder(dividend._bits, divisor._bits, bits);
+            var result = new BigInteger(bits, dividend._sign < 0);
+
+            if (bitsFromPool != null)
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
+
+            return result;
         }
 
         public static bool operator <(BigInteger left, BigInteger right)

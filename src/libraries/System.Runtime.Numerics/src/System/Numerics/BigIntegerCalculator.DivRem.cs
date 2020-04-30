@@ -93,6 +93,9 @@ namespace System.Numerics
             left.CopyTo(leftCopy);
 
             Divide(leftCopy, right, quotient);
+
+            if (leftCopyFromPool != null)
+                ArrayPool<uint>.Shared.Return(leftCopyFromPool);
         }
 
         public static uint[] Divide(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
@@ -133,6 +136,19 @@ namespace System.Numerics
             Divide(localLeft, right, default);
 
             return localLeft;
+        }
+
+        public static void Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> remainder)
+        {
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(remainder.Length == left.Length);
+
+            // Same as above, but only returning the remainder.
+
+            left.CopyTo(remainder);
+            Divide(remainder, right, default);
         }
 
         private static void Divide(Span<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
