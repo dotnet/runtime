@@ -6298,13 +6298,13 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Optimize "x<0" to shift if it's saved to a register
     if ((targetReg != REG_NA) && tree->OperIs(GT_LT) && op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
-        int shift = (genTypeSize(op1) * 8) - 1;
+        emitAttr targetSize = emitActualTypeSize(op1);
         if (targetReg != op1->GetRegNum())
         {
-            inst_RV_RV(INS_mov, tree->GetRegNum(), op1->GetRegNum(), TYP_LONG);
-            shift = 63;
+            targetSize = op1Type == TYP_LONG ? EA_8BYTE : EA_4BYTE;
+            inst_RV_RV(INS_mov, tree->GetRegNum(), op1->GetRegNum());
         }
-        inst_RV_IV(INS_shr_N, tree->GetRegNum(), shift, emitActualTypeSize(op1));
+        inst_RV_IV(INS_shr_N, tree->GetRegNum(), (int)targetSize * 8 - 1, targetSize);
         genProduceReg(tree);
         return;
     }
