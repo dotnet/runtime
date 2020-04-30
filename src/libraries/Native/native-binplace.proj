@@ -24,6 +24,10 @@
       <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
       <FileWrites Include="@(NativeBinPlaceItem)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="%(NativeBinPlaceItem.Identity)" />
+      <FileWrites Include="@(TestHostBinPlaceItem)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="Build" DependsOnTargets="BinPlace" />

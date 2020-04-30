@@ -86,6 +86,9 @@
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </NativeBinPlaceItem>
     </ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
@@ -108,9 +111,9 @@
       <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <!--<ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
-    </ItemGroup>
+    </ItemGroup>-->
   </Target>
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
