@@ -158,6 +158,10 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
+    - ${{ if eq(parameters.osGroup, 'Browser') }}:
+      - name: EMSDK_PATH
+        value: /usr/local/emscripten
+
   - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
