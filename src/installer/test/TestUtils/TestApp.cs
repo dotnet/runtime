@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string RuntimeDevConfigJson { get; private set; }
         public string HostPolicyDll { get; private set; }
         public string HostFxrDll { get; private set; }
-        public string CoreClrDll { get; private set; }
 
         public string AssemblyName { get; }
 
@@ -56,7 +55,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");
             HostPolicyDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
             HostFxrDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-            CoreClrDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr"));
         }
     }
 }

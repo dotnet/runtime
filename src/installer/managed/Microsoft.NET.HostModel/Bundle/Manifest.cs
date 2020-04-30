@@ -59,7 +59,7 @@ namespace Microsoft.NET.HostModel.Bundle
         enum HeaderFlags : ulong
         {
             None = 0,
-            NetcoreApp3CompatMode = 1
+            NetcoreApp3CompatMode = 2
         }
 
         // Bundle ID is a string that is used to uniquely 

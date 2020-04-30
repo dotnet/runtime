@@ -90,7 +90,7 @@ namespace Microsoft.NET.HostModel.Bundle
             return fileRelativePath.Equals(RuntimeConfigDevJson);
         }
 
-        bool ShouldExclude(FileType type, string relativePath)
+        bool ShouldExclude(FileType type)
         {
             switch (type)
             {
@@ -100,7 +100,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     return false;
 
                 case FileType.NativeBinary:
-                    return !Options.HasFlag(BundleOptions.BundleNativeBinaries) || Target.ShouldExclude(relativePath);
+                    return !Options.HasFlag(BundleOptions.BundleNativeBinaries);
 
                 case FileType.Symbols:
                     return !Options.HasFlag(BundleOptions.BundleSymbolFiles);
@@ -229,24 +229,22 @@ namespace Microsoft.NET.HostModel.Bundle
 
                 foreach (var fileSpec in fileSpecs)
                 {
-                    string relativePath = fileSpec.BundleRelativePath;
-
-                    if (IsHost(relativePath))
+                    if (IsHost(fileSpec.BundleRelativePath))
                     {
                         continue;
                     }
 
-                    if (ShouldIgnore(relativePath))
+                    if (ShouldIgnore(fileSpec.BundleRelativePath))
                     {
-                        Tracer.Log($"Ignore: {relativePath}");
+                        Tracer.Log($"Ignore: {fileSpec.BundleRelativePath}");
                         continue;
                     }
 
                     FileType type = InferType(fileSpec);
 
-                    if (ShouldExclude(type, relativePath))
+                    if (ShouldExclude(type))
                     {
-                        Tracer.Log($"Exclude [{type}]: {relativePath}");
+                        Tracer.Log($"Exclude [{type}]: {fileSpec.BundleRelativePath}");
                         fileSpec.Excluded = true;
                         continue;
                     }
@@ -255,7 +253,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     {
                         FileType targetType = Target.TargetSpecificFileType(type);
                         long startOffset = AddToBundle(bundle, file, targetType);
-                        FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length);
+                        FileEntry entry = BundleManifest.AddEntry(targetType, fileSpec.BundleRelativePath, startOffset, file.Length);
                         Tracer.Log($"Embed: {entry}");
                     }
                 }

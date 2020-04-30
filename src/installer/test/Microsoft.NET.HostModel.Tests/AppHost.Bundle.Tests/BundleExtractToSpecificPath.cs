@@ -7,7 +7,9 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Xunit;
 
@@ -27,19 +29,24 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var hostName = BundleHelper.GetHostName(fixture);
+            var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
+
+            // Compute bundled files
+            var bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();
 
             // Verify expected files in the bundle directory
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
             bundleDir.Should().HaveFile(hostName);
-            bundleDir.Should().NotHaveFiles(BundleHelper.GetBundledFiles(fixture)); 
+            bundleDir.Should().NotHaveFiles(bundledFiles);
 
             // Create a directory for extraction.
-            var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
-            extractBaseDir.Should().NotHaveDirectory(BundleHelper.GetAppBaseName(fixture));
+            var extractBaseDir = BundleHelper.GetExtractDir(fixture);
+            extractBaseDir.Should().NotHaveDirectory(appName);
 
             // Run the bundled app for the first time, and extract files to 
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
@@ -53,22 +60,27 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
-            extractDir.Should().HaveFiles(BundleHelper.GetExtractedFiles(fixture));
-            extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
+            string extractPath = Path.Combine(extractBaseDir.FullName, appName, bundler.BundleManifest.BundleID);
+            var extractDir = new DirectoryInfo(extractPath);
+            extractDir.Should().OnlyHaveFiles(bundledFiles);
+            extractDir.Should().NotHaveFile(hostName);
         }
 
         [Fact]
         private void Bundle_extraction_is_reused()
         {
             var fixture = sharedTestState.TestFixture.Copy();
+            var hostName = BundleHelper.GetHostName(fixture);
+            var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Create a directory for extraction.
-            var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
+            var extractBaseDir = BundleHelper.GetExtractDir(fixture);
 
             // Run the bunded app for the first time, and extract files to 
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
@@ -82,8 +94,8 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            var appBaseName = BundleHelper.GetAppBaseName(fixture);
-            var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
+            string extractPath = Path.Combine(extractBaseDir.FullName, appName, bundler.BundleManifest.BundleID);
+            var extractDir = new DirectoryInfo(extractPath);
 
             extractDir.Refresh();
             DateTime firstWriteTime = extractDir.LastWriteTimeUtc;
@@ -113,14 +125,20 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var hostName = BundleHelper.GetHostName(fixture);
             var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
 
             // Publish the bundle
-            string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
+
+            // Compute bundled files
+            List<string> bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();
 
             // Create a directory for extraction.
-            var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
-            
+            var extractBaseDir = BundleHelper.GetExtractDir(fixture);
+            string extractPath = Path.Combine(extractBaseDir.FullName, appName, bundler.BundleManifest.BundleID);
+            var extractDir = new DirectoryInfo(extractPath);
 
             // Run the bunded app for the first time, and extract files to 
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id
@@ -134,14 +152,10 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            // Remove the extracted files, but keep the extraction directory
-            var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
-            var extractedFiles = BundleHelper.GetExtractedFiles(fixture);
-
-            Array.ForEach(extractedFiles, file => File.Delete(Path.Combine(extractDir.FullName, file)));
+            bundledFiles.ForEach(file => File.Delete(Path.Combine(extractPath, file)));
 
             extractDir.Should().Exist();
-            extractDir.Should().NotHaveFiles(extractedFiles);
+            extractDir.Should().NotHaveFiles(bundledFiles);
 
             // Run the bundled app again (recover deleted files)
             Command.Create(singleFile)
@@ -154,7 +168,7 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            extractDir.Should().HaveFiles(extractedFiles);
+            extractDir.Should().HaveFiles(bundledFiles);
         }
 
 

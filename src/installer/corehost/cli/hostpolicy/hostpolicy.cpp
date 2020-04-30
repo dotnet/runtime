@@ -18,7 +18,6 @@
 #include <corehost_context_contract.h>
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
-#include "bundle/runner.h"
 
 namespace
 {
@@ -355,7 +354,7 @@ int corehost_init(
 }
 
 int corehost_main_init(
-    hostpolicy_init_t& hostpolicy_init,
+    hostpolicy_init_t &hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
     const pal::string_t& location,
@@ -366,15 +365,6 @@ int corehost_main_init(
     {
         // For backwards compat (older hostfxr), default the host_info
         hostpolicy_init.host_info.parse(argc, argv);
-    }
-
-    if (bundle::info_t::is_single_file_bundle())
-    {
-        StatusCode status = bundle::runner_t::process_manifest_and_extract();
-        if (status != StatusCode::Success)
-        {
-            return status;
-        }
     }
 
     return corehost_init(hostpolicy_init, argc, argv, location, args);
@@ -443,9 +433,6 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
 {
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid(host_mode_t::libhost));
-
-    // Single-file bundle is only expected in apphost mode.
-    assert(!bundle::info_t::is_single_file_bundle());
 
     return corehost_init(hostpolicy_init, 0, nullptr, location, args);
 }
