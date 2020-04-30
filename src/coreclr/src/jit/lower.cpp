@@ -1333,7 +1333,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         }
         else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
         {
-            GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTree##fn*>(arg);
+            GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
             assert((jitIntrinsic->gtSIMDSize == 12) || (jitIntrinsic->gtSIMDSize == 16));
 
             if (jitIntrinsic->gtSIMDSize == 12)
