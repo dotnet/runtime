@@ -31,7 +31,7 @@ This function needs to be able to decode an arbitrary `amd64`
 instruction.  The decoder currently must be able to identify:
 
 - Whether the instruction includes a instruction pointer relative memory accesses
-- The location of the memory displacement withing the instruction
+- The location of the memory displacement within the instruction
 - The instruction length in bytes
 - The size of the memory operation in bytes
 
@@ -104,7 +104,7 @@ After the modrm byte, the generated instructions always include a
 const char* postamble = "0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,\n";
 ```
 
-This meets the padding a consistency needs.
+This meets the padding consistency needs.
 
 #### Ordering
 
@@ -247,7 +247,7 @@ To facilitate identifying sets of instructions, the creates an `opCodeExt`.
 For the `Primary` map this is simply the encoded opcode from the instruction
 shifted left by 4 bits.
 
-For the #D Now `NOW3D` map this is simply the encoded immediate from the
+For the 3D Now `NOW3D` map this is simply the encoded immediate from the
 instruction shifted left by 4 bits.
 
 For the `Secondary` `F38`, and `F39` maps this is the encoded opcode from
@@ -352,9 +352,9 @@ would mitigate this to some extent.
 
 ### Bugs
 - Inadequate samples.  Are there other bits which modify instruction
-behavior which we missed.
+behavior which we missed?
 - Parser/Table generator implementation bugs. Does the parser do what it
-was intended to do
+was intended to do?
 
 ## Reasons to regenerate the file
 
