@@ -102,9 +102,14 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.IPv6Loopback, entry.AddressList[0]);
         }
 
+        public static readonly TheoryData<int> Numbers = FinalCountdown(100);
+
+#pragma warning disable xUnit1026
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [Fact]
-        public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
+        [Theory]
+        [MemberData(nameof(Numbers))]
+        public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName(int dummy)
         {
             IPHostEntry entry = Dns.GetHostByName("");
 
@@ -113,13 +118,25 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [Fact]
-        public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
+        [Theory]
+        [MemberData(nameof(Numbers))]
+        public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName(int dummy)
         {
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static TheoryData<int> FinalCountdown(int n)
+        {
+            var result = new TheoryData<int>();
+            for (int i = 0; i < n; i++)
+            {
+                result.Add(i);
+            }
+
+            return result;
         }
     }
 }

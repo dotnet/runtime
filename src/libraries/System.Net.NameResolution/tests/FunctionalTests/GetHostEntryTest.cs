@@ -20,11 +20,27 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
+        private static TheoryData<string, int> GetStressData(int n)
+        {
+            var result = new TheoryData<string, int>();
+
+            for (int i = 0; i < n; i++)
+            {
+                result.Add("", i);
+                result.Add(TestSettings.LocalHost, i);
+            }
+
+            return result;
+        }
+
+#pragma warning disable xUnit1026
+
+        public static TheoryData<string, int> StressData = GetStressData(100);
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
-        [InlineData("")]
-        [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
+        [MemberData(nameof(StressData))]
+        public async Task Dns_GetHostEntry_HostString_Ok(string hostName, int dummy)
         {
             try
             {
@@ -71,9 +87,8 @@ namespace System.Net.NameResolution.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [Theory]
-        [InlineData("")]
-        [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
+        [MemberData(nameof(StressData))]
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName, int dummy) =>
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
 
         [Fact]
