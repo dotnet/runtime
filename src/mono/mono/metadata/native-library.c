@@ -1238,8 +1238,10 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_scope = g_strdup (orig_scope);
 	new_import = g_strdup (orig_import);
 #endif
-retry_with_libcoreclr:
 #ifdef ENABLE_NETCORE
+#ifndef HOST_WIN32
+retry_with_libcoreclr:
+#endif
 	// FIXME: these flags are not getting passed correctly
 	module = netcore_lookup_native_library (alc, image, new_scope, 0);
 #else
