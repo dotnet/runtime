@@ -412,7 +412,7 @@ namespace System.Numerics
 
                 if (isNegative)
                 {
-                    NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
+                    NumericsHelpers.MakeTwosComplement(val); // Mutates val
 
                     // Pack _bits to remove any wasted space after the twos complement
                     int len = val.Length - 1;
@@ -559,7 +559,7 @@ namespace System.Numerics
             }
 
             // Finally handle the more complex cases where we must transform the input into sign magnitude
-            NumericsHelpers.DangerousMakeTwosComplement(value); // mutates val
+            NumericsHelpers.MakeTwosComplement(value); // mutates val
 
             // Pack _bits to remove any wasted space after the twos complement
             int len = value.Length;
@@ -1440,16 +1440,17 @@ namespace System.Numerics
                 buffer[0] = unchecked((uint)_sign);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
-            else if (_sign == -1)
-            {
-                _bits.CopyTo(buffer);
-                NumericsHelpers.DangerousMakeTwosComplement(buffer[..^1]);  // Mutates dwords
-                highDWord = uint.MaxValue;
-            }
             else
             {
                 _bits.CopyTo(buffer);
-                highDWord = 0;
+                buffer = buffer.Slice(0, _bits.Length + 1);
+                if (_sign == -1)
+                {
+                    NumericsHelpers.MakeTwosComplement(buffer[..^1]);  // Mutates dwords
+                    highDWord = uint.MaxValue;
+                }
+                else
+                    highDWord = 0;
             }
 
             // Find highest significant byte
@@ -2072,7 +2073,7 @@ namespace System.Numerics
                     result = MinusOne;
                     goto exit;
                 }
-                NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
+                NumericsHelpers.MakeTwosComplement(xd); // Mutates xd
             }
 
             uint[]? zdFromPool = null;
@@ -2106,7 +2107,7 @@ namespace System.Numerics
             }
             if (negx)
             {
-                NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
+                NumericsHelpers.MakeTwosComplement(zd); // Mutates zd
             }
             result = new BigInteger(zd, negx);
 
