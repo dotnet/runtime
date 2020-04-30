@@ -789,19 +789,15 @@ namespace System
             else g = (Guid)o;
 
             // Now compare each of the elements
-            return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+            return Unsafe.As<int, long>(ref g._a) == Unsafe.As<int, long>(ref _a) &&
+                Unsafe.As<byte, long>(ref g._d) == Unsafe.As<byte, long>(ref _d);
         }
 
         public bool Equals(Guid g)
         {
             // Now compare each of the elements
-            return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+            return Unsafe.As<int, long>(ref g._a) == Unsafe.As<int, long>(ref _a) &&
+                Unsafe.As<byte, long>(ref g._d) == Unsafe.As<byte, long>(ref _d);
         }
 
         private int GetResult(uint me, uint them) => me < them ? -1 : 1;
@@ -937,17 +933,13 @@ namespace System
         }
 
         public static bool operator ==(Guid a, Guid b) =>
-            a._a == b._a &&
-                Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
-                Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
-                Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
+            Unsafe.As<int, long>(ref a._a) == Unsafe.As<int, long>(ref b._a) &&
+                Unsafe.As<byte, long>(ref a._d) == Unsafe.As<byte, long>(ref b._d);
 
         public static bool operator !=(Guid a, Guid b) =>
             // Now compare each of the elements
-            a._a != b._a ||
-                Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
-                Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
-                Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
+            Unsafe.As<int, long>(ref a._a) != Unsafe.As<int, long>(ref b._a) ||
+                Unsafe.As<byte, long>(ref a._d) != Unsafe.As<byte, long>(ref b._d);
 
         public string ToString(string? format)
         {
