@@ -604,7 +604,8 @@ namespace Internal.JitInterface
             var corInfoType = asCorInfoType(type);
             *structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
                 (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF)) ? ObjectToHandle(type) : null;
+                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF) ||
+                (corInfoType == CorInfoType.CORINFO_TYPE_PTR)) ? ObjectToHandle(type) : null;
             return corInfoType;
         }
 
@@ -1988,7 +1989,7 @@ namespace Internal.JitInterface
             CorInfoType result = CorInfoType.CORINFO_TYPE_UNDEF;
 
             var td = HandleToObject(clsHnd);
-            if (td.IsArray || td.IsByRef)
+            if (td.IsArray || td.IsByRef || td.IsPointer)
             {
                 TypeDesc returnType = ((ParameterizedType)td).ParameterType;
                 result = asCorInfoType(returnType, clsRet);
