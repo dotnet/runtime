@@ -9,18 +9,10 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Square(ReadOnlySpan<uint> value)
-        {
-            uint[] bits = new uint[value.Length + value.Length];
-            Square(value, bits);
-
-            return bits;
-        }
-
         // Mutable for unit testing...
         private static int SquareThreshold = 32;
 
-        private static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
+        public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {
             Debug.Assert(value.Length >= 0);
             Debug.Assert(bits.Length == value.Length + value.Length);
@@ -126,14 +118,15 @@ namespace System.Numerics
             }
         }
 
-        public static uint[] Multiply(ReadOnlySpan<uint> left, uint right)
+        public static void Multiply(ReadOnlySpan<uint> left, uint right, Span<uint> bits)
         {
+            Debug.Assert(bits.Length == left.Length + 1);
+
             // Executes the multiplication for one big and one 32-bit integer.
             // Since every step holds the already slightly familiar equation
             // a_i * b + c <= 2^32 - 1 + (2^32 - 1)^2 < 2^64 - 1,
             // we are safe regarding to overflows.
 
-            uint[] bits = new uint[left.Length + 1];
             int i = 0;
             ulong carry = 0UL;
 
@@ -144,24 +137,12 @@ namespace System.Numerics
                 carry = digits >> 32;
             }
             bits[i] = (uint)carry;
-
-            return bits;
-        }
-
-        public static uint[] Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
-        {
-            Debug.Assert(left.Length >= right.Length);
-
-            uint[] bits = new uint[left.Length + right.Length];
-            Multiply(left, right, bits);
-
-            return bits;
         }
 
         // Mutable for unit testing...
         private static int MultiplyThreshold = 32;
 
-        private static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+        public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= 0);
             Debug.Assert(right.Length >= 0);

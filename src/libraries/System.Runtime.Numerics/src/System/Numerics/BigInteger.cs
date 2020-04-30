@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -2220,46 +2221,87 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
-            bool trivialLeft = left._bits == null;
-            bool trivialRight = right._bits == null;
+            return Multiply(left._bits, left._sign, right._bits, right._sign);
+        }
+
+        private static BigInteger Multiply(ReadOnlySpan<uint> left, int leftSign, ReadOnlySpan<uint> right, int rightSign)
+        {
+            bool trivialLeft = left.IsEmpty;
+            bool trivialRight = right.IsEmpty;
 
             if (trivialLeft && trivialRight)
             {
-                return (long)left._sign * right._sign;
+                return (long)leftSign * rightSign;
             }
+
+            BigInteger result;
+            uint[]? bitsFromPool = null;
 
             if (trivialLeft)
             {
-                Debug.Assert(right._bits != null);
-                uint[] bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                Debug.Assert(!right.IsEmpty);
+
+                int size = right.Length + 1;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Multiply(right, NumericsHelpers.Abs(leftSign), bits);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
-
-            if (trivialRight)
+            else if (trivialRight)
             {
-                Debug.Assert(left._bits != null);
-                uint[] bits = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                Debug.Assert(!left.IsEmpty);
+
+                int size = left.Length + 1;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Multiply(left, NumericsHelpers.Abs(rightSign), bits);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
-
-            Debug.Assert(left._bits != null && right._bits != null);
-
-            if (left._bits == right._bits)
+            else if (left.Length == right.Length && Unsafe.AreSame(ref Unsafe.AsRef(in left[0]), ref Unsafe.AsRef(in right[0])))
             {
-                uint[] bits = BigIntegerCalculator.Square(left._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                int size = left.Length + right.Length;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Square(left, bits);
+                result = new BigInteger(bits, false);
             }
-
-            if (left._bits.Length < right._bits.Length)
+            else if (left.Length < right.Length)
             {
-                uint[] bits = BigIntegerCalculator.Multiply(right._bits, left._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                Debug.Assert(!left.IsEmpty && !right.IsEmpty);
+
+                int size = left.Length + right.Length;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                bits.Clear();
+
+                BigIntegerCalculator.Multiply(right, left, bits);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
             else
             {
-                uint[] bits = BigIntegerCalculator.Multiply(left._bits, right._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                Debug.Assert(!left.IsEmpty && !right.IsEmpty);
+
+                int size = left.Length + right.Length;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                bits.Clear();
+
+                BigIntegerCalculator.Multiply(left, right, bits);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
+
+            if (bitsFromPool != null)
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
+
+            return result;
         }
 
         public static BigInteger operator /(BigInteger dividend, BigInteger divisor)
