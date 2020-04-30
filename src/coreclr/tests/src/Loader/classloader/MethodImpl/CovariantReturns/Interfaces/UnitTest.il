@@ -14,37 +14,37 @@
 .class interface public auto ansi abstract IUnused1 { }
 .class interface public auto ansi abstract IUnused2 { }
 
-.class interface public auto ansi abstract IA implements IUnused1, IUnused1 { }
-.class interface public auto ansi abstract IB implements IUnused1, IUnused1, IA  { }
-.class interface public auto ansi abstract IC implements IUnused1, IUnused1, IB  { }
+.class interface public auto ansi abstract IA implements IUnused1, IUnused2 { }
+.class interface public auto ansi abstract IB implements IUnused1, IUnused2, IA  { }
+.class interface public auto ansi abstract IC implements IUnused1, IUnused2, IB  { }
 
 .class interface public auto ansi abstract IGenRetType<X,Y>  { }
 .class interface public auto ansi abstract IDictionary<KEY,VAL>  { }
 
-.class interface public auto ansi abstract IGenDerive1<V1,V2> implements IUnused1, IUnused1, class IGenRetType<!V1,!V2>  { }
-.class interface public auto ansi abstract IGenDerive2<U1,U2,U3> implements IUnused1, IUnused1, class IGenDerive1<!U1, class IDictionary<!U3,!U2>>  { }
-.class interface public auto ansi abstract IGenDerive3<T1,T2> implements IUnused1, IUnused1, class IGenDerive2<!T1,!T2,string>  { }
+.class interface public auto ansi abstract IGenDerive1<V1,V2> implements IUnused1, IUnused2, class IGenRetType<!V1,!V2>  { }
+.class interface public auto ansi abstract IGenDerive2<U1,U2,U3> implements IUnused1, IUnused2, class IGenDerive1<!U1, class IDictionary<!U3,!U2>>  { }
+.class interface public auto ansi abstract IGenDerive3<T1,T2> implements IUnused1, IUnused2, class IGenDerive2<!T1,!T2,string>  { }
 
-.class interface public auto ansi abstract INonGenericDerived1<ARG1,ARG2> implements IUnused1, IUnused1, class IGenRetType<!ARG1,!ARG2>  { }
-.class interface public auto ansi abstract INonGenericDerived2<T> implements IUnused1, IUnused1, class INonGenericDerived1<!T,object>  { }
-.class interface public auto ansi abstract INonGenericDerived3 implements IUnused1, IUnused1, class INonGenericDerived2<int32>  { }
-.class interface public auto ansi abstract INonGenericDerived4 implements IUnused1, IUnused1, INonGenericDerived3  { }
+.class interface public auto ansi abstract INonGenericDerived1<ARG1,ARG2> implements IUnused1, IUnused2, class IGenRetType<!ARG1,!ARG2>  { }
+.class interface public auto ansi abstract INonGenericDerived2<T> implements IUnused1, IUnused2, class INonGenericDerived1<!T,object>  { }
+.class interface public auto ansi abstract INonGenericDerived3 implements IUnused1, IUnused2, class INonGenericDerived2<int32>  { }
+.class interface public auto ansi abstract INonGenericDerived4 implements IUnused1, IUnused2, INonGenericDerived3  { }
 
-.class interface public auto ansi abstract IGenToNonGen1<V1,V2> implements IUnused1, IUnused1, IC  { }
-.class interface public auto ansi abstract IGenToNonGen2<U1,U2,U3> implements IUnused1, IUnused1, class IGenToNonGen1<!U1, class IDictionary<!U3,!U2>>  { }
-.class interface public auto ansi abstract IGenToNonGen3<T1,T2> implements IUnused1, IUnused1, class IGenToNonGen2<!T1,!T2,string>  { }
+.class interface public auto ansi abstract IGenToNonGen1<V1,V2> implements IUnused1, IUnused2, IC  { }
+.class interface public auto ansi abstract IGenToNonGen2<U1,U2,U3> implements IUnused1, IUnused2, class IGenToNonGen1<!U1, class IDictionary<!U3,!U2>>  { }
+.class interface public auto ansi abstract IGenToNonGen3<T1,T2> implements IUnused1, IUnused2, class IGenToNonGen2<!T1,!T2,string>  { }
 
-.class interface public auto ansi abstract INonGenThroughGen1<V1,V2> implements IUnused1, IUnused1, IC  { }
-.class interface public auto ansi abstract INonGenThroughGen2<U1,U2,U3> implements IUnused1, IUnused1, class INonGenThroughGen1<!U1, class IDictionary<!U3,!U2>>  { }
-.class interface public auto ansi abstract INonGenThroughGen3 implements IUnused1, IUnused1, class INonGenThroughGen2<object,int32,string>  { }
-.class interface public auto ansi abstract INonGenThroughGen4 implements IUnused1, IUnused1, INonGenThroughGen3  { }
+.class interface public auto ansi abstract INonGenThroughGen1<V1,V2> implements IUnused1, IUnused2, IC  { }
+.class interface public auto ansi abstract INonGenThroughGen2<U1,U2,U3> implements IUnused1, IUnused2, class INonGenThroughGen1<!U1, class IDictionary<!U3,!U2>>  { }
+.class interface public auto ansi abstract INonGenThroughGen3 implements IUnused1, IUnused2, class INonGenThroughGen2<object,int32,string>  { }
+.class interface public auto ansi abstract INonGenThroughGen4 implements IUnused1, IUnused2, INonGenThroughGen3  { }
 
 // class implementing the interfaces
-.class public auto ansi beforefieldinit NonGenThroughGen4   implements IUnused1, IUnused1, INonGenThroughGen4 { }
-.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> implements IUnused1, IUnused1, class IGenToNonGen3<!T1,!T2> { }
-.class public auto ansi beforefieldinit NonGenericDerived4  implements IUnused1, IUnused1, INonGenericDerived4 { }
-.class public auto ansi beforefieldinit GenDerive3<T1,T2>   implements IUnused1, IUnused1, class IGenDerive3<!T1,!T2> { }
-.class public auto ansi beforefieldinit C                   implements IUnused1, IUnused1, IC { }
+.class public auto ansi beforefieldinit NonGenThroughGen4   implements IUnused1, IUnused2, INonGenThroughGen4 { }
+.class public auto ansi beforefieldinit GenToNonGen3<T1,T2> implements IUnused1, IUnused2, class IGenToNonGen3<!T1,!T2> { }
+.class public auto ansi beforefieldinit NonGenericDerived4  implements IUnused1, IUnused2, INonGenericDerived4 { }
+.class public auto ansi beforefieldinit GenDerive3<T1,T2>   implements IUnused1, IUnused2, class IGenDerive3<!T1,!T2> { }
+.class public auto ansi beforefieldinit C                   implements IUnused1, IUnused2, IC { }
 .class public auto ansi beforefieldinit GenRetType<X,Y>     implements IUnused1, IUnused2, class IGenRetType<!X,!Y> { }
 
 // ========================================================================================

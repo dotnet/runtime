@@ -4,11 +4,11 @@
 
 // Test to validate the current unsupported scenarios will throw a TypeLoadException.
 // Scenario being tested here: covariant returns on MethodImpls to interface methods 
-// implemented by classes
+// implemented by structs
 
 .assembly extern System.Console { }
 .assembly extern mscorlib { }
-.assembly UnsupportedScenario2 { }
+.assembly UnsupportedScenario3 { }
 
 .class public auto ansi beforefieldinit A { 
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
@@ -103,7 +103,9 @@
   }
 }
 
-.class public auto ansi beforefieldinit Test1<U,V> implements class IBaseTest<!U,!V>
+.class public sealed auto ansi Test1<U,V> 
+        extends [mscorlib]System.ValueType 
+        implements class IBaseTest<!U,!V>
 {
   .method public hidebysig newslot virtual instance class B NonGenThroughGenOverride()
   {
@@ -111,10 +113,11 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 
-.class public auto ansi beforefieldinit Test2<U,V> implements class IBaseTest<!U,!V>
+.class public sealed auto ansi Test2<U,V> 
+        extends [mscorlib]System.ValueType 
+        implements class IBaseTest<!U,!V>
 {
   .method public hidebysig newslot virtual instance class B GenToNonGenOverride()
   {
@@ -122,10 +125,11 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 
-.class public auto ansi beforefieldinit Test3<U,V> implements class IBaseTest<!U,!V>
+.class public sealed auto ansi Test3<U,V> 
+        extends [mscorlib]System.ValueType 
+        implements class IBaseTest<!U,!V>
 {
   .method public hidebysig newslot virtual instance class GenRetType<int32,object> NewGenFunc1()
   {
@@ -133,10 +137,11 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 
-.class public auto ansi beforefieldinit Test4<U,V> implements class IBaseTest<!U,!V>
+.class public sealed auto ansi Test4<U,V> 
+        extends [mscorlib]System.ValueType 
+        implements class IBaseTest<!U,!V>
 {
   .method public hidebysig newslot virtual instance class GenRetType<!U, class Dictionary<string,!V>> NewGenFunc2()
   {
@@ -144,10 +149,11 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
 
-.class public auto ansi beforefieldinit Test5<U,V> implements class IBaseTest<!U,!V>
+.class public sealed auto ansi Test5<U,V> 
+        extends [mscorlib]System.ValueType 
+        implements class IBaseTest<!U,!V>
 {
   .method public hidebysig newslot virtual instance object NewFunc1()
   {
@@ -155,43 +161,64 @@
     ldnull
     ret
   }
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
 }
+
+// ========================================================================================
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
 {
   .method public static void RunTest1() noinlining 
   {
-    newobj     instance void class Test1<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
+    .locals init (valuetype Test1<int32,object>)
+    ldloca.s 0
+    initobj valuetype Test1<int32,object>
+    ldloc.0
+    box valuetype Test1<int32,object>
+    call void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest2() noinlining 
   {
-    newobj     instance void class Test2<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
+    .locals init (valuetype Test2<int32,object>)
+    ldloca.s 0
+    initobj valuetype Test2<int32,object>
+    ldloc.0
+    box valuetype Test2<int32,object>
+    call void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest3() noinlining 
   {
-    newobj     instance void class Test3<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
+    .locals init (valuetype Test3<int32,object>)
+    ldloca.s 0
+    initobj valuetype Test3<int32,object>
+    ldloc.0
+    box valuetype Test3<int32,object>
+    call void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest4() noinlining 
   {
-    newobj     instance void class Test4<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
+    .locals init (valuetype Test4<int32,object>)
+    ldloca.s 0
+    initobj valuetype Test4<int32,object>
+    ldloc.0
+    box valuetype Test4<int32,object>
+    call void [System.Console]System.Console::WriteLine(object)
     ret
   }
 
   .method public static void RunTest5() noinlining 
   {
-    newobj     instance void class Test5<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
+    .locals init (valuetype Test5<int32,object>)
+    ldloca.s 0
+    initobj valuetype Test5<int32,object>
+    ldloc.0
+    box valuetype Test5<int32,object>
+    call void [System.Console]System.Console::WriteLine(object)
     ret
   }
 

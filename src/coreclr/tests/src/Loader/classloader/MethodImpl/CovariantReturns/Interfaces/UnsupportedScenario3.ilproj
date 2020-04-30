@@ -5,6 +5,6 @@
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="UnitTestDelegates.il" />
+    <Compile Include="UnsupportedScenario3.il" />
   </ItemGroup>
 </Project>

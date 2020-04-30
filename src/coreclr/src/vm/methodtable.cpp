@@ -8475,30 +8475,6 @@ void MethodTable::MethodDataObject::UpdateImplMethodDesc(MethodDesc* pMD, UINT32
     _ASSERTE(slotNumber < GetNumVirtuals());
     _ASSERTE(pMD->IsMethodImpl());
 
-#if _DEBUG
-    // This kind of update to a vtable slot with a MethodImpl is used when the RequireMethodImplToRemainInEffect attribute is
-    // applied to the method. Verify this, otherwise we should not be making this kind of update
-
-    bool foundAttribute = false;
-    MethodTable* pCurrentMT = pMD->GetMethodTable();
-    while (!foundAttribute && pCurrentMT != NULL && slotNumber < pCurrentMT->GetNumVirtuals())
-    {
-        MethodDesc* pCurrentMD = pCurrentMT->GetMethodDescForSlot(slotNumber);
-
-        // The attribute is only applicable to MethodImpls. For anything else, it will be treated as a no-op
-        if (pCurrentMD->IsMethodImpl())
-        {
-            BYTE* pVal = NULL;
-            ULONG cbVal = 0;
-            if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::RequireMethodImplToRemainInEffectAttribute, (const void**)&pVal, &cbVal) == S_OK)
-                foundAttribute = true;
-        }
-
-        pCurrentMT = pCurrentMT->GetParentMethodTable();
-    }
-    //_ASSERTE(foundAttribute);
-#endif
-
     MethodDataObjectEntry* pEntry = GetEntry(slotNumber);
 
     // Fill the entries one level of inheritance at a time,

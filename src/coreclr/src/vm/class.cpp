@@ -1066,8 +1066,11 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         {
             GCX_COOP();
 
+            // Structs can be casted to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+            bool isCastFromValueTypeToReferenceType = hType2.IsValueType() && !hType1.IsValueType();
+
             TypeHandlePairList visited(hType1, hType2, NULL);
-            if (!hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), &visited))
+            if (isCastFromValueTypeToReferenceType || !hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), &visited))
             {
                 SString strAssemblyName;
                 pMD->GetAssembly()->GetDisplayName(strAssemblyName);
