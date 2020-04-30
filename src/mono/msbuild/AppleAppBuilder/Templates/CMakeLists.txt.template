@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14.5)
 
 project(%ProjectName%)
+enable_language(OBJC ASM)
 
 set(APP_RESOURCES
 %AppResources%
@@ -14,6 +15,8 @@ add_executable(
     modules.m
     ${APP_RESOURCES}
 )
+
+%AotSources%
 
 include_directories("%MonoInclude%")
 

@@ -108,5 +108,6 @@
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
     <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'msbuild', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
 </Project>
