@@ -101,7 +101,7 @@ namespace System.Numerics
                                  new Span<uint>(bits, 0, leftLength + rightLength));
                     }
 
-                    return ActualLength(bits, leftLength + rightLength);
+                    return ActualLength(new ReadOnlySpan<uint>(bits, 0, leftLength + rightLength));
                 }
 
                 return 0;
@@ -127,12 +127,12 @@ namespace System.Numerics
                     rightLength = k;
 
                 SubtractSelf(new Span<uint>(left, 0, leftLength), new ReadOnlySpan<uint>(right, 0, rightLength));
-                leftLength = ActualLength(left, leftLength);
+                leftLength = ActualLength(new ReadOnlySpan<uint>(left, 0, leftLength));
 
                 while (Compare(new ReadOnlySpan<uint>(left, 0, leftLength), modulus) >= 0)
                 {
                     SubtractSelf(new Span<uint>(left, 0, leftLength), modulus);
-                    leftLength = ActualLength(left, leftLength);
+                    leftLength = ActualLength(new ReadOnlySpan<uint>(left, 0, leftLength));
                 }
 
                 Array.Clear(left, leftLength, left.Length - leftLength);

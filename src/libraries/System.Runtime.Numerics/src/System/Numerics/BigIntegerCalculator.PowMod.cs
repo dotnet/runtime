@@ -386,18 +386,12 @@ namespace System.Numerics
             }
         }
 
-        private static int ActualLength(uint[] value)
+        private static int ActualLength(ReadOnlySpan<uint> value)
         {
             // Since we're reusing memory here, the actual length
             // of a given value may be less then the array's length
 
-            return ActualLength(value, value.Length);
-        }
-
-        private static int ActualLength(uint[] value, int length)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(length <= value.Length);
+            int length = value.Length;
 
             while (length > 0 && value[length - 1] == 0)
                 --length;

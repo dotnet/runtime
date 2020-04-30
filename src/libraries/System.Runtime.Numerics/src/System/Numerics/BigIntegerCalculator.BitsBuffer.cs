@@ -100,7 +100,7 @@ namespace System.Numerics
                 {
                     Divide(new Span<uint>(_bits, 0, _length), modulus, default);
 
-                    _length = ActualLength(_bits, modulus.Length);
+                    _length = ActualLength(new ReadOnlySpan<uint>(_bits, 0, modulus.Length));
                 }
             }
 
@@ -113,7 +113,7 @@ namespace System.Numerics
                 {
                     Divide(new Span<uint>(_bits, 0, _length), new Span<uint>(modulus._bits, 0, modulus._length), default);
 
-                    _length = ActualLength(_bits, modulus._length);
+                    _length = ActualLength(new ReadOnlySpan<uint>(_bits, 0, modulus._length));
                 }
             }
 
@@ -174,7 +174,7 @@ namespace System.Numerics
                     Array.Clear(_bits, maxLength, _length - maxLength);
                 }
 
-                _length = ActualLength(_bits, maxLength);
+                _length = ActualLength(new ReadOnlySpan<uint>(_bits, 0, maxLength));
             }
 
             private void Apply(ref BitsBuffer temp, int maxLength)
@@ -191,7 +191,7 @@ namespace System.Numerics
                 temp._bits = _bits;
                 _bits = t;
 
-                _length = ActualLength(_bits, maxLength);
+                _length = ActualLength(new ReadOnlySpan<uint>(_bits, 0, maxLength));
             }
         }
     }
