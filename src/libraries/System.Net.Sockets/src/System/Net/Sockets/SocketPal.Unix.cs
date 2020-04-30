@@ -1756,11 +1756,11 @@ namespace System.Net.Sockets
 
                 if ((options & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
                 {
-                    await Task.Factory.FromAsync(
-                        (reuse, c, s) => ((Socket)s!).BeginDisconnect(reuse, c, s),
-                        iar => ((Socket)iar.AsyncState!).EndDisconnect(iar),
-                        (options & TransmitFileOptions.ReuseSocket) != 0,
-                        socket).ConfigureAwait(false);
+                    error = Disconnect(socket, socket.InternalSafeHandle, (options & TransmitFileOptions.ReuseSocket) != 0);
+                    if (error != SocketError.Success)
+                    {
+                        throw new SocketException((int)error);
+                    }
                 }
             }
             catch (Exception exc)
