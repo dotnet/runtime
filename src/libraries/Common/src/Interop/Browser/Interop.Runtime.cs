@@ -102,7 +102,7 @@ internal static partial class Interop
             return res as JSObject;
         }
 
-        private static int BindJSObject(int js_id, Type mappedType)
+        internal static int BindJSObject(int js_id, Type mappedType)
         {
             if (!bound_objects.TryGetValue(js_id, out JSObject? obj))
             {
@@ -118,7 +118,7 @@ internal static partial class Interop
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        private static int BindCoreCLRObject(int js_id, int gcHandle)
+        internal static int BindCoreCLRObject(int js_id, int gcHandle)
         {
             //Console.WriteLine ($"Registering CLR Object {js_id} with handle {gcHandle}");
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
