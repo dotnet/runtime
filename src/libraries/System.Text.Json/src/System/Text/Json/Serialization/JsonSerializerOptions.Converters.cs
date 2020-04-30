@@ -26,6 +26,7 @@ namespace System.Text.Json
             new NullableConverterFactory(),
             new EnumConverterFactory(),
             new KeyValuePairConverterFactory(),
+            new UriConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
             new IEnumerableConverterFactory(),
             // Object should always be last since it converts any type.
@@ -37,7 +38,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 23;
+            const int NumberOfSimpleConverters = 22;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -64,7 +65,6 @@ namespace System.Text.Json
             Add(new UInt16Converter());
             Add(new UInt32Converter());
             Add(new UInt64Converter());
-            Add(new UriConverter());
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
 
