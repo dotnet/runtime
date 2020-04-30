@@ -9,15 +9,15 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Divide(ReadOnlySpan<uint> left, uint right, out uint remainder)
+        public static void Divide(ReadOnlySpan<uint> left, uint right, Span<uint> quotient, out uint remainder)
         {
             Debug.Assert(left.Length >= 1);
+            Debug.Assert(quotient.Length == left.Length);
 
             // Executes the division for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            uint[] quotient = new uint[left.Length];
             ulong carry = 0UL;
 
             for (int i = left.Length - 1; i >= 0; i--)
@@ -28,8 +28,6 @@ namespace System.Numerics
                 carry = value - digit * right;
             }
             remainder = (uint)carry;
-
-            return quotient;
         }
 
         public static uint[] Divide(ReadOnlySpan<uint> left, uint right)

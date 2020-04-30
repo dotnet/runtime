@@ -478,7 +478,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
-        internal BigInteger(uint[] value, bool negative)
+        internal BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -503,8 +503,8 @@ namespace System.Numerics
             else
             {
                 _sign = negative ? -1 : +1;
-                _bits = new uint[len];
-                Array.Copy(value, _bits, len);
+                value = value.Slice(0, len);
+                _bits = value.ToArray();
             }
             AssertValid();
         }
@@ -742,10 +742,22 @@ namespace System.Numerics
             if (trivialDivisor)
             {
                 uint rest;
-                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), out rest);
+
+                uint[]? bitsFromPool = null;
+                int size = dividend._bits.Length;
+                Span<uint> quotient = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out rest);
 
                 remainder = dividend._sign < 0 ? -1 * rest : rest;
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                var result = new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+
+                if (bitsFromPool != null)
+                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+
+                return result;
             }
 
             Debug.Assert(divisor._bits != null);
