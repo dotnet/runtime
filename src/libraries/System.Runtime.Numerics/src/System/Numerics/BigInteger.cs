@@ -589,8 +589,7 @@ namespace System.Numerics
             {
                 _sign = -1;
                 value = value.Slice(0, len);
-                _bits = new uint[len];
-                value.CopyTo(_bits);
+                _bits = value.ToArray();
             }
             AssertValid();
             return;
