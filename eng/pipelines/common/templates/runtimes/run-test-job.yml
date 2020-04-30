@@ -256,15 +256,17 @@ jobs:
           displayName: Build managed test components
 
 
+    # If we didn't build target specific tests here
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
-          artifactName: '$(microsoftNetSdkIlArtifactName)'
-          displayName: 'Microsoft.NET.Sdk.IL package'
+      - ${{ if ne(parameters.testBuildPhased, true) }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+            artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+            artifactName: '$(microsoftNetSdkIlArtifactName)'
+            displayName: 'Microsoft.NET.Sdk.IL package'
 
 
     # Download and unzip native test artifacts
