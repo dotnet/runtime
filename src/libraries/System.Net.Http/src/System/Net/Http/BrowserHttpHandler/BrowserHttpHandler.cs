@@ -11,7 +11,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 
 using JSObject = Interop.JavaScript.JSObject;
 using JSException = Interop.JavaScript.JSException;
@@ -44,7 +43,6 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException("Property UseCookies is not supported.");
         }
 
-        [AllowNull]
         public CookieContainer CookieContainer
         {
             get => throw new PlatformNotSupportedException("Property CookieContainer is not supported.");
@@ -123,7 +121,6 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException("Property MaxResponseHeadersLength is not supported.");
         }
 
-        [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
             get => throw new PlatformNotSupportedException("Property SslOptions is not supported.");
