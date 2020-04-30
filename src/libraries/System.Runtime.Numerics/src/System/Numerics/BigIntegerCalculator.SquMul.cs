@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -94,42 +95,35 @@ namespace System.Numerics
                 Square(valueHigh, bitsHigh);
 
                 int foldLength = valueHigh.Length + 1;
+                uint[]? foldFromPool = null;
+                Span<uint> fold = foldLength <= AllocationThreshold ?
+                                  stackalloc uint[foldLength]
+                                  : (foldFromPool = ArrayPool<uint>.Shared.Rent(foldLength)).AsSpan(0, foldLength);
+                fold.Clear();
+
                 int coreLength = foldLength + foldLength;
+                uint[]? coreFromPool = null;
+                Span<uint> core = coreLength <= AllocationThreshold ?
+                                  stackalloc uint[coreLength]
+                                  : (coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).AsSpan(0, coreLength);
+                core.Clear();
 
-                Span<uint> result = bits.Slice(n);
+                // ... compute z_a = a_1 + a_0 (call it fold...)
+                Add(valueHigh, valueLow, fold);
 
-                if (coreLength < AllocationThreshold)
-                {
-                    SquareFinal(valueHigh, valueLow,
-                                ZeroMem(stackalloc uint[foldLength]), ZeroMem(stackalloc uint[coreLength]),
-                                bitsHigh, bitsLow,
-                                result);
-                }
-                else
-                {
-                    SquareFinal(valueHigh, valueLow,
-                                new uint[foldLength], new uint[coreLength],
-                                bitsHigh, bitsLow,
-                                result);
-                }
+                // ... compute z_1 = z_a * z_a - z_0 - z_2
+                Square(fold, core);
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static void SquareFinal(ReadOnlySpan<uint> valueHigh, ReadOnlySpan<uint> valueLow,
-                                        Span<uint> fold, Span<uint> core,
-                                        ReadOnlySpan<uint> bitsHigh, ReadOnlySpan<uint> bitsLow,
-                                        Span<uint> result)
-                {
-                    // ... compute z_a = a_1 + a_0 (call it fold...)
-                    Add(valueHigh, valueLow, fold);
+                if (foldFromPool != null)
+                    ArrayPool<uint>.Shared.Return(foldFromPool);
 
-                    // ... compute z_1 = z_a * z_a - z_0 - z_2
-                    Square(fold, core);
+                SubtractCore(bitsHigh, bitsLow, core);
 
-                    SubtractCore(bitsHigh, bitsLow, core);
+                // ... and finally merge the result! :-)
+                AddSelf(bits.Slice(n), core);
 
-                    // ... and finally merge the result! :-)
-                    AddSelf(result, core);
-                }
+                if (coreFromPool != null)
+                    ArrayPool<uint>.Shared.Return(coreFromPool);
             }
         }
 
