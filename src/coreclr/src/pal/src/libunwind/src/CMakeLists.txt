@@ -17,43 +17,91 @@ add_definitions(-D_GNU_SOURCE)
 # Ensure that the remote and local unwind code can reside in the same binary without name clashing
 add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_table_int)")
 
-# Disable warning due to incorrect format specifier in debugging printf via the Debug macro
-add_compile_options(-Wno-format -Wno-format-security)
+if(CLR_CMAKE_HOST_UNIX)
+    # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
+    add_compile_options(-Wno-format -Wno-format-security)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wno-header-guard)
-else()
-  add_compile_options(-Wno-unused-value)
-  add_compile_options(-Wno-unused-result)
-endif()
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      add_compile_options(-Wno-header-guard)
+    else()
+      add_compile_options(-Wno-unused-value)
+      add_compile_options(-Wno-unused-result)
+    endif()
+    if(CLR_CMAKE_TARGET_ARCH_ARM)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            # Disable warning due to labs function called on unsigned argument
+            add_compile_options(-Wno-absolute-value)
+            # Disable warning in asm: use of SP or PC in the list is deprecated
+            add_compile_options(-Wno-inline-asm)
+        endif()
+        # Disable warning for a bug in the libunwind source src/arm/Gtrace.c:529, but not in code that we exercise
+        add_compile_options(-Wno-implicit-function-declaration)
+        # Disable warning due to an unused function prel31_read
+        add_compile_options(-Wno-unused-function)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+    endif()
+else(CLR_CMAKE_HOST_UNIX)
+    # Set compile options for windows cross DAC compile
+    add_definitions(-DDACCESS_COMPILE)
+    add_definitions(-DUNW_REMOTE_ONLY)
+    add_definitions(-DHAVE_UNW_GET_ACCESSORS)
+    add_definitions(-DHAVE_UNW_GET_SAVE_LOC)
+    add_definitions(-D__linux__)
+    add_definitions(-DHAVE_ELF_H)
+    add_definitions(-DHAVE_ENDIAN_H)
+    if (CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_definitions(-D__x86_64__)
+        add_definitions(-D__amd64__)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+        add_definitions(-D__aarch64__)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+        add_definitions(-D__arm__)
+    endif()
 
-if(CLR_CMAKE_HOST_ARCH_ARM)
+    add_compile_options(/std:c++latest)
+    add_compile_options(/TC) # compile all files as C
+    add_compile_options(/permissive-)
+    add_compile_options(-wd4028) # formal parameter different from declaration
+    add_compile_options(-wd4029) # formal parameter list different from declaration
+    add_compile_options(-wd4068) # unknown pragma
+    add_compile_options(-wd4146) # minus operator applied to unsigned
+    add_compile_options(-wd4244) # possible loss of data
+    add_compile_options(-wd4267) # possible loss of data
+    add_compile_options(-wd4293) # shift count
+    add_compile_options(-wd4313) # fprintf argument type
+    add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
+    add_compile_options(-wd4353) # nonstandard extension used: constant 0 as function expression
+    add_compile_options(-wd4473) # fprintf not enough argumets
+    add_compile_options(-wd4477) # fprintf argument type
+    add_compile_options(-wd4996) # may be unsafe
+
+    # files for cross os compilation
+    include_directories(cross-dac)
+    # other source files
+    include_directories(../include/tdep)
+    include_directories(../include)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR}/../include/tdep)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR}/../include)
+    include_directories(${CLR_DIR}/src/inc)
+endif(CLR_CMAKE_HOST_UNIX)
+
+if(CLR_CMAKE_TARGET_ARCH_ARM)
     # Ensure that the remote and local unwind code can reside in the same binary without name clashing
     add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Disable warning due to labs function called on unsigned argument
-        add_compile_options(-Wno-absolute-value)
-        # Disable warning in asm: use of SP or PC in the list is deprecated
-        add_compile_options(-Wno-inline-asm)
-    endif()
-    # Disable warning for a bug in the libunwind source src/arm/Gtrace.c:529, but not in code that we exercise
-    add_compile_options(-Wno-implicit-function-declaration)
-    # Disable warning due to an unused function prel31_read
-    add_compile_options(-Wno-unused-function)
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
     # in include/tdep like it works for similar files on other architectures. So we need to add
     # the include/tdep-arm to include directories
     include_directories(../include/tdep-arm)
-elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
     endif()
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
     # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
     add_compile_options(-Wno-incompatible-pointer-types)
 endif()
@@ -115,7 +163,7 @@ SET(libunwind_la_SOURCES_os_freebsd_local
 # Nothing
 )
 
-if(CLR_CMAKE_HOST_LINUX)
+if(CLR_CMAKE_TARGET_LINUX)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_linux})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_linux_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-linux.c)
@@ -126,7 +174,7 @@ if(CLR_CMAKE_HOST_LINUX)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-linux.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-linux.c)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_linux.c)
-elseif(CLR_CMAKE_HOST_FREEBSD)
+elseif(CLR_CMAKE_TARGET_FREEBSD)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_freebsd})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_freebsd_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-freebsd.c)
@@ -320,35 +368,54 @@ SET(libunwind_x86_64_la_SOURCES_x86_64
     x86_64/Gstash_frame.c x86_64/Gstep.c x86_64/Gtrace.c
 )
 
-if(CLR_CMAKE_HOST_ARCH_ARM64)
+if(CLR_CMAKE_TARGET_ARCH_ARM64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
-elseif(CLR_CMAKE_HOST_ARCH_ARM)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
     SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
     SET(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
-elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+elseif(CLR_CMAKE_TARGET_ARCH_AMD64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
 endif()
 
-add_library(libunwind
-  OBJECT
-  ${libunwind_la_SOURCES}
-  ${libunwind_remote_la_SOURCES}
-  ${libunwind_dwarf_local_la_SOURCES}
-  ${libunwind_dwarf_common_la_SOURCES}
-  ${libunwind_dwarf_generic_la_SOURCES}
-  ${libunwind_elf_la_SOURCES}
-)
+if(CLR_CMAKE_HOST_UNIX)
+    add_library(libunwind
+      OBJECT
+      ${libunwind_la_SOURCES}
+      ${libunwind_remote_la_SOURCES}
+      ${libunwind_dwarf_local_la_SOURCES}
+      ${libunwind_dwarf_common_la_SOURCES}
+      ${libunwind_dwarf_generic_la_SOURCES}
+      ${libunwind_elf_la_SOURCES}
+    )
+else(CLR_CMAKE_HOST_WIN4)
+    set_source_files_properties(../../exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP)
+    set_source_files_properties(../../exception/seh-unwind.cpp PROPERTIES COMPILE_FLAGS /TP)
+    add_library(libunwind_xdac
+      OBJECT
+      ../../exception/remote-unwind.cpp
+      ../../exception/seh-unwind.cpp
+      cross-dac/cross-dac.c
+      # ${libunwind_la_SOURCES}  Local...
+      ${libunwind_remote_la_SOURCES}
+        # Commented out above for LOCAL + REMOTE runtime build
+        mi/Gget_accessors.c
+      # ${libunwind_dwarf_local_la_SOURCES}
+      ${libunwind_dwarf_common_la_SOURCES}
+      ${libunwind_dwarf_generic_la_SOURCES}
+      ${libunwind_elf_la_SOURCES}
+    )
+endif(CLR_CMAKE_HOST_UNIX)
 

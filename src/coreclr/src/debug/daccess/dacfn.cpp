@@ -245,6 +245,16 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
     return TRUE;
 }
 
+#ifdef HOST_WINDOWS
+// For the cross OS dac, we don't have the full pal layer
+// Use these minimal prototypes instead of the full pal header
+typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
+
+extern
+BOOL
+PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+#endif
+
 HRESULT
 DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
@@ -273,9 +283,7 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
 #endif
     {
         SIZE_T baseAddress = DacGlobalBase();
-#ifdef HOST_UNIX
         if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
-#endif
         {
             hr = E_FAIL;
         }

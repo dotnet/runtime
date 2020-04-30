@@ -146,6 +146,12 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        libunwind_xdac
+    )
+endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
+
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)

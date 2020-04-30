@@ -161,6 +161,12 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 # define DWARF_FPREG_LOC(c,r)   DWARF_LOC((r), (DWARF_LOC_TYPE_REG      \
                                                 | DWARF_LOC_TYPE_FP))
 
+#ifdef DACCESS_COMPILE
+// Use VC++ compatible syntax for DWARF_IS_NULL_LOC
+#undef DWARF_IS_NULL_LOC
+#define DWARF_IS_NULL_LOC(l) (l.val == 0 && l.type == 0)
+#endif
+
 static inline int
 dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
 {

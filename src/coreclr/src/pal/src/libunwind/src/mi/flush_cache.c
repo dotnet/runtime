@@ -53,7 +53,9 @@ unw_flush_cache (unw_addr_space_t as, unw_word_t lo, unw_word_t hi)
 #ifdef HAVE_FETCH_AND_ADD
   fetch_and_add1 (&as->cache_generation);
 #else
+#ifndef DACCESS_COMPILE
 # warning unw_flush_cache(): need a way to atomically increment an integer.
+#endif
   ++as->cache_generation;
 #endif
 }

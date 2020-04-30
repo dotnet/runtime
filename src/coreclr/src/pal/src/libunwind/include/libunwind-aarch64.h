@@ -56,6 +56,10 @@ typedef long double unw_tdep_fpreg_t;
 typedef struct
   {
     /* no aarch64-specific auxiliary proc-info */
+#ifdef DACCESS_COMPILE
+    // error C2016: C requires that a struct or union have at least one member
+    char dummy;
+#endif
   }
 unw_tdep_proc_info_t;
 
@@ -165,6 +169,10 @@ aarch64_regnum_t;
 typedef struct unw_tdep_save_loc
   {
     /* Additional target-dependent info on a save location.  */
+#ifdef DACCESS_COMPILE
+    // error C2016: C requires that a struct or union have at least one member
+    char dummy;
+#endif
   }
 unw_tdep_save_loc_t;
 

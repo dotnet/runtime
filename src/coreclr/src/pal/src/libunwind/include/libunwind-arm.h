@@ -247,6 +247,10 @@ arm_regnum_t;
 typedef struct unw_tdep_save_loc
   {
     /* Additional target-dependent info on a save location.  */
+#ifdef DACCESS_COMPILE
+    // error C2016: C requires that a struct or union have at least one member
+    char dummy;
+#endif
   }
 unw_tdep_save_loc_t;
 
@@ -288,6 +292,10 @@ unw_tdep_context_t;
 typedef struct
   {
     /* no arm-specific auxiliary proc-info */
+#ifdef DACCESS_COMPILE
+    // error C2016: C requires that a struct or union have at least one member
+    char dummy;
+#endif
   }
 unw_tdep_proc_info_t;
 

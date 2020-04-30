@@ -106,7 +106,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #define DW_EH_VERSION           1       /* The version we're implementing */
 
-struct __attribute__((packed)) dwarf_eh_frame_hdr
+struct PACKED dwarf_eh_frame_hdr
   {
     unsigned char version;
     unsigned char eh_frame_ptr_enc;

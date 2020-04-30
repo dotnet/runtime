@@ -249,6 +249,40 @@ dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t *addr, unw_word_t len,
   uint32_t u32;
   uint64_t u64;
   int ret;
+#ifdef DACCESS_COMPILE
+  // The coding style used for GCC doesn't work for VC++
+  // Use another approach
+
+  // We need a temporary to defer reporting errors.
+  int stackoverflow = 0;
+
+  // For pop(), we report the error in a statement follow the pop.
+  // This works for the only current usage pattern t = pop();
+
+# define pop() (((tos - 1) >= MAX_EXPR_STACK_SIZE) ?                                           \
+  stackoverflow++ :                                                                            \
+  stack[--tos]);                                                                               \
+  do { if (stackoverflow) { Debug (1, "Stack underflow\n"); return -UNW_EINVAL; } } while(0)
+
+# define push(x)                                                                               \
+  do {                                                                                         \
+    unw_word_t _x = x;                                                                         \
+    if (tos >= MAX_EXPR_STACK_SIZE)                                                            \
+      {                                                                                        \
+        Debug (1, "Stack overflow\n");                                                         \
+        return -UNW_EINVAL;                                                                    \
+      }                                                                                        \
+    stack[tos++] = _x;                                                                         \
+  } while (0)
+
+  // For pick(), we rely on the pick always being pushed in the code below.
+  // This works for the only current usage pattern push( pick());
+# define pick(n) (((tos - 1 - (n)) >= MAX_EXPR_STACK_SIZE) ?                                   \
+  stackoverflow++ :                                                                            \
+  stack[tos - 1 - (n)]);                                                                       \
+  do { if (stackoverflow) { Debug (1, "Out-of-stack pick\n"); return -UNW_EINVAL; } } while(0)
+
+#else
 # define pop()                                  \
 ({                                              \
   if ((tos - 1) >= MAX_EXPR_STACK_SIZE)         \
@@ -278,6 +312,7 @@ do {                                            \
     }                                           \
   stack[_index];                                \
 })
+#endif // DACCESS_COMPILE
 
   as = c->as;
   arg = c->as_arg;

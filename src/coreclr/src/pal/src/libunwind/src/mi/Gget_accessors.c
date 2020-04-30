@@ -35,3 +35,12 @@ unw_get_accessors (unw_addr_space_t as)
     tdep_init ();
   return &as->acc;
 }
+
+#ifdef DACCESS_COMPILE
+// ALIAS not supported
+unw_accessors_t *
+unw_get_accessors_int (unw_addr_space_t as)
+{
+  return unw_get_accessors(as);
+}
+#endif

@@ -137,6 +137,12 @@ dwarf_get_uc(const struct dwarf_cursor *cursor)
 
 #endif /* !UNW_LOCAL_ONLY */
 
+#ifdef DACCESS_COMPILE
+// Use VC++ compatible syntax for DWARF_IS_NULL_LOC
+#undef DWARF_IS_NULL_LOC
+#define DWARF_IS_NULL_LOC(l) (l.val == 0 && l.type == 0)
+#endif
+
 static inline int
 dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
 {

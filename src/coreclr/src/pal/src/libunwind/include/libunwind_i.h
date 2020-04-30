@@ -265,6 +265,11 @@ extern int unwi_dyn_validate_cache (unw_addr_space_t as, void *arg);
 extern unw_dyn_info_list_t _U_dyn_info_list;
 extern pthread_mutex_t _U_dyn_info_list_lock;
 
+#ifdef DACCESS_COMPILE
+// Use VC++ compatible variadic macros
+# define Debug(level,format, ...)
+# define Dprintf(format, ...)
+#else // DACCESS_COMPILE
 #if UNW_DEBUG
 #define unwi_debug_level                UNWI_ARCH_OBJ(debug_level)
 extern long unwi_debug_level;
@@ -286,6 +291,7 @@ do {                                                                    \
 # define Debug(level,format...)
 # define Dprintf(format...)
 #endif
+#endif // DACCESS_COMPILE
 
 static ALWAYS_INLINE int
 print_error (const char *string)
