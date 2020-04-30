@@ -2225,12 +2225,15 @@ namespace System.Diagnostics.Tracing
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
                                     paramInfo.SetInfo("message", typeof(string));
-                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
-                                    uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
+                                    EventPipeMetadata metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, new EventParameterInfo[] { paramInfo });
+                                    uint metadataLength = (metadata.MetadataV1 != null) ? (uint)metadata.MetadataV1.Length : 0;
+                                    uint metadataLengthV2 = (metadata.MetadataV2 != null) ? (uint)metadata.MetadataV2.Length : 0;
 
-                                    fixed (byte* pMetadata = metadata)
+                                    fixed (byte* pMetadata = metadata.MetadataV1)
+                                    fixed (byte* pMetadataV2 = metadata.MetadataV2)
                                     {
-                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level, pMetadata, metadataLength);
+                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level,
+                                                                            pMetadata, metadataLength, pMetadataV2, metadataLengthV2);
                                     }
                                 }
                             }
