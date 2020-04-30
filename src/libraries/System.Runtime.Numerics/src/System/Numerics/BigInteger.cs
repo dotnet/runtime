@@ -510,16 +510,11 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Create a BigInteger from a little-endian twos-complement UInt32 array.
-        /// When possible, value is assigned directly to this._bits without an array copy
-        /// so use this ctor with care.
+        /// Create a BigInteger from a little-endian twos-complement UInt32 span.
         /// </summary>
         /// <param name="value"></param>
-        private BigInteger(uint[] value)
+        private BigInteger(Span<uint> value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             int dwordCount = value.Length;
             bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & 0x80000000) == 0x80000000);
 
@@ -558,18 +553,10 @@ namespace System.Numerics
             if (!isNegative)
             {
                 // Handle the simple positive value cases where the input is already in sign magnitude
-                if (dwordCount != value.Length)
-                {
-                    _sign = +1;
-                    _bits = new uint[dwordCount];
-                    Array.Copy(value, _bits, dwordCount);
-                }
-                // No trimming is possible.  Assign value directly to _bits.
-                else
-                {
-                    _sign = +1;
-                    _bits = value;
-                }
+                _sign = +1;
+                value = value.Slice(0, dwordCount);
+                _bits = value.ToArray();
+                value.CopyTo(_bits);
                 AssertValid();
                 return;
             }
@@ -598,19 +585,12 @@ namespace System.Numerics
                     _bits = null;
                 }
             }
-            // The number is represented by multiple dwords.
-            // Trim off any wasted uint values when possible.
-            else if (len != value.Length)
-            {
-                _sign = -1;
-                _bits = new uint[len];
-                Array.Copy(value, _bits, len);
-            }
-            // No trimming is possible.  Assign value directly to _bits.
             else
             {
                 _sign = -1;
-                _bits = value;
+                value = value.Slice(0, len);
+                _bits = new uint[len];
+                value.CopyTo(_bits);
             }
             AssertValid();
             return;
@@ -1847,12 +1827,17 @@ namespace System.Numerics
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
             y = y.Slice(0, right.CopyTo(y));
 
-            var result = new uint[Math.Max(x.Length, y.Length)];
-            for (int i = 0; i < result.Length; i++)
+            uint[]? resultBufferFromPool = null;
+            size = Math.Max(x.Length, y.Length);
+            Span<uint> z = size <= StackAllocThreshold ?
+                           stackalloc uint[size]
+                           : (resultBufferFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+            for (int i = 0; i < z.Length; i++)
             {
                 uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
                 uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                result[i] = xu & yu;
+                z[i] = xu & yu;
             }
 
             if (leftBufferFromPool != null)
@@ -1861,7 +1846,12 @@ namespace System.Numerics
             if (rightBufferFromPool != null)
                 ArrayPool<uint>.Shared.Return(rightBufferFromPool);
 
-            return new BigInteger(result);
+            var result = new BigInteger(z);
+
+            if (resultBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(resultBufferFromPool);
+
+            return result;
         }
 
         public static BigInteger operator |(BigInteger left, BigInteger right)
@@ -1893,12 +1883,17 @@ namespace System.Numerics
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
             y = y.Slice(0, right.CopyTo(y));
 
-            var result = new uint[Math.Max(x.Length, y.Length)];
-            for (int i = 0; i < result.Length; i++)
+            uint[]? resultBufferFromPool = null;
+            size = Math.Max(x.Length, y.Length);
+            Span<uint> z = size <= StackAllocThreshold ?
+                           stackalloc uint[size]
+                           : (resultBufferFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+            for (int i = 0; i < z.Length; i++)
             {
                 uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
                 uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                result[i] = xu | yu;
+                z[i] = xu | yu;
             }
 
             if (leftBufferFromPool != null)
@@ -1907,7 +1902,12 @@ namespace System.Numerics
             if (rightBufferFromPool != null)
                 ArrayPool<uint>.Shared.Return(rightBufferFromPool);
 
-            return new BigInteger(result);
+            var result = new BigInteger(z);
+
+            if (resultBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(resultBufferFromPool);
+
+            return result;
         }
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
@@ -1934,12 +1934,17 @@ namespace System.Numerics
                            : rightBufferFromPool = ArrayPool<uint>.Shared.Rent(size);
             y = y.Slice(0, right.CopyTo(y));
 
-            var result = new uint[Math.Max(x.Length, y.Length)];
-            for (int i = 0; i < result.Length; i++)
+            uint[]? resultBufferFromPool = null;
+            size = Math.Max(x.Length, y.Length);
+            Span<uint> z = size <= StackAllocThreshold ?
+                           stackalloc uint[size]
+                           : (resultBufferFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+            for (int i = 0; i < z.Length; i++)
             {
                 uint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
                 uint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                result[i] = xu ^ yu;
+                z[i] = xu ^ yu;
             }
 
             if (leftBufferFromPool != null)
@@ -1948,7 +1953,12 @@ namespace System.Numerics
             if (rightBufferFromPool != null)
                 ArrayPool<uint>.Shared.Return(rightBufferFromPool);
 
-            return new BigInteger(result);
+            var result = new BigInteger(z);
+
+            if (resultBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(resultBufferFromPool);
+
+            return result;
         }
 
         public static BigInteger operator <<(BigInteger value, int shift)
