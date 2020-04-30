@@ -185,7 +185,7 @@ internal static partial class Interop
 
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = h.Target as JSObject;
-            if (obj != null && obj.RawObject != null)
+            if (obj?.RawObject != null)
             {
                 raw_to_js.Remove(obj.RawObject);
 
