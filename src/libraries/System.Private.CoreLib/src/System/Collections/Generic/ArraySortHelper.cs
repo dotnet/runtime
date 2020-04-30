@@ -146,7 +146,6 @@ namespace System.Collections.Generic
             {
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
-                    Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
@@ -407,7 +406,6 @@ namespace System.Collections.Generic
             {
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
-                    Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
@@ -633,7 +631,6 @@ namespace System.Collections.Generic
             {
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
-                    Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
@@ -855,7 +852,6 @@ namespace System.Collections.Generic
             {
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
-                    Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
