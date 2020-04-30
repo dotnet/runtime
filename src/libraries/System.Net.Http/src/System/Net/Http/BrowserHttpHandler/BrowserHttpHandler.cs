@@ -173,10 +173,10 @@ namespace System.Net.Http
                 {
                     var requestObject = new JSObject();
 
-                    if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out var fetchOoptionsValue) &&
+                    if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out object? fetchOoptionsValue) &&
                         fetchOoptionsValue is IDictionary<string, object> fetchOptions)
                     {
-                        foreach (var item in fetchOptions)
+                        foreach (KeyValuePair<string, object> item in fetchOptions)
                         {
                             requestObject.SetObjectProperty(item.Key, item.Value);
                         }
@@ -197,7 +197,7 @@ namespace System.Net.Http
                             // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
                             // so we split it up into two lines.
                             var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
-                            using (var uint8Buffer = Uint8Array.From(byteAsync))
+                            using (Uint8Array uint8Buffer = Uint8Array.From(byteAsync))
                             {
                                 requestObject.SetObjectProperty("body", uint8Buffer);
                             }
@@ -207,13 +207,13 @@ namespace System.Net.Http
                     // Process headers
                     // Cors has it's own restrictions on headers.
                     // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                    using (var jsHeaders = new HostObject("Headers"))
+                    using (HostObject jsHeaders = new HostObject("Headers"))
                     {
                         if (request.Headers != null)
                         {
-                            foreach (var header in request.Headers)
+                            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                             {
-                                foreach (var value in header.Value)
+                                foreach (string value in header.Value)
                                 {
                                     jsHeaders.Invoke("append", header.Key, value);
                                 }
@@ -221,9 +221,9 @@ namespace System.Net.Http
                         }
                         if (request.Content?.Headers != null)
                         {
-                            foreach (var header in request.Content.Headers)
+                            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                             {
-                                foreach (var value in header.Value)
+                                foreach (string value in header.Value)
                                 {
                                     jsHeaders.Invoke("append", header.Key, value);
                                 }
@@ -264,13 +264,13 @@ namespace System.Net.Http
                     if (response == null)
                         throw new Exception("Internal error marshalling the response Promise from `fetch`.");
 
-                    var t = await response.ConfigureAwait(true);
+                    JSObject t = (JSObject)await response.ConfigureAwait(true);
 
-                    var status = new WasmFetchResponse((JSObject)t, abortController, abortCts, abortRegistration);
+                    var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
                     HttpResponseMessage httpresponse = new HttpResponseMessage((HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), status.Status.ToString()));
 
-                    var streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
+                    bool streamingEnabled = request.Properties.TryGetValue("WebAssemblyEnableStreamingResponse", out object? streamingEnabledValue) && (bool)(streamingEnabledValue ?? false);
 
                     httpresponse.Content = StreamingSupported && streamingEnabled
                         ? new StreamContent(wasmHttpReadStream = new WasmHttpReadStream(status))
@@ -284,7 +284,7 @@ namespace System.Net.Http
                     // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
                     //
                     // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
-                    using (var respHeaders = (JSObject)status.Headers)
+                    using (JSObject respHeaders = status.Headers)
                     {
                         if (respHeaders != null)
                         {
@@ -352,7 +352,6 @@ namespace System.Net.Http
             public string StatusText => (string)fetchResponse.GetObjectProperty("statusText");
             public string ResponseType => (string)fetchResponse.GetObjectProperty("type");
             public string Url => (string)fetchResponse.GetObjectProperty("url");
-            //public bool IsUseFinalURL => (bool)managedJSObject.GetObjectProperty("useFinalUrl");
             public bool IsBodyUsed => (bool)fetchResponse.GetObjectProperty("bodyUsed");
             public JSObject Headers => (JSObject)fetchResponse.GetObjectProperty("headers");
             public JSObject Body => (JSObject)fetchResponse.GetObjectProperty("body");
@@ -418,13 +417,13 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                var data = await GetResponseData().ConfigureAwait(true);
+                byte[] data = await GetResponseData().ConfigureAwait(true);
                 return new MemoryStream(data, writable: false);
             }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
-                var data = await GetResponseData().ConfigureAwait(true);
+                byte[] data = await GetResponseData().ConfigureAwait(true);
                 await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(true);
             }
 
@@ -495,7 +494,7 @@ namespace System.Net.Http
 
                     try
                     {
-                        using (var body = _status.Body)
+                        using (JSObject body = _status.Body)
                         {
                             _reader = (JSObject)body.Invoke("getReader");
                         }
