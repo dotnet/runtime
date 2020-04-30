@@ -3,7 +3,7 @@
   <Import Project="Directory.Build.targets" />
 
   <UsingTask TaskName="WasmAppBuilder"
-      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\$(TargetOS)-$(TargetArchitecture)\publish\WasmAppBuilder.dll"/>
+      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
 	<WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>

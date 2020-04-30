@@ -947,7 +947,7 @@
   <!-- Need to publish this since it references System.Reflection.MetadataLoadContext -->
   <Target Name="BuildWasmAppBuilder">
     <MSBuild Projects="$(MonoProjectRoot)msbuild\WasmAppBuilder\WasmAppBuilder.csproj"
-             Properties="Configuration=$(Configuration)"
+             Properties="Configuration=$(Configuration);OutputPath=$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\"
              Targets="Restore;Build;Publish"/>
   </Target>
 
