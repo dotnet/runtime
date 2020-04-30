@@ -6801,6 +6801,7 @@ if test x$with_core = xonly; then
 	CPPFLAGS="$CPPFLAGS -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 
 	if test x$target_osx = xyes; then
+		CPPFLAGS="$CPPFLAGS -I/usr/local/opt/icu4c/include"
 		AC_CHECK_LIB(icucore, ucol_open, [],
 			[AC_MSG_ERROR([Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.])])
 		AC_DEFINE(ICU_LIBS, -licucore, [adding -licucore])
