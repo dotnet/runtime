@@ -585,6 +585,7 @@ namespace System.Globalization
         {
             get
             {
+                Debug.Assert(GlobalizationMode.UseNls);
                 EnumData context = default;
                 context.strings = new List<string>();
 
