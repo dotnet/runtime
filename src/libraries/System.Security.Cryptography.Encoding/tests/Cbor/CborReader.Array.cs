@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
-                PushDataItem(CborMajorType.Array, (uint)arrayLength);
+                PushDataItem(CborMajorType.Array, (int)arrayLength);
                 return (int)arrayLength;
             }
         }

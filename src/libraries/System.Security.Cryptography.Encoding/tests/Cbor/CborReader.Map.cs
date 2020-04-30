@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
 
                 AdvanceBuffer(1 + additionalBytes);
-                PushDataItem(CborMajorType.Map, 2 * (uint)mapSize);
+                PushDataItem(CborMajorType.Map, 2 * (int)mapSize);
                 return (int)mapSize;
             }
         }

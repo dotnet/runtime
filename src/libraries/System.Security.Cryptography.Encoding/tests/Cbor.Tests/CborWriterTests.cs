@@ -39,6 +39,38 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(bytesWritten, writer.BytesWritten);
         }
 
+        [Theory]
+        [InlineData(1, 2, "0101")]
+        [InlineData(10, 10, "0a0a0a0a0a0a0a0a0a0a")]
+        [InlineData(new object[] { 1, 2 }, 3, "820102820102820102")]
+        public static void CborWriter_MultipleRootLevelValuesAllowed_WritingMultipleRootValues_HappyPath(object value, int repetitions, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter(allowMultipleRootLevelValues: true);
+
+            for (int i = 0; i < repetitions; i++)
+            {
+                Helpers.WriteValue(writer, value);
+            }
+
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+        }
+
+        [Fact]
+        public static void GetEncoding_MultipleRootLevelValuesAllowed_PartialRootValue_ShouldThrowInvalidOperationException()
+        {
+            using var writer = new CborWriter(allowMultipleRootLevelValues: true);
+
+            writer.WriteStartArray(1);
+            writer.WriteDouble(3.14);
+            writer.WriteEndArray();
+            writer.WriteStartArray(1);
+            writer.WriteDouble(3.14);
+            // misses writer.WriteEndArray();
+
+            Assert.Throws<InvalidOperationException>(() => writer.GetEncoding());
+        }
+
         [Fact]
         public static void BytesWritten_SingleValue_ShouldReturnBytesWritten()
         {

@@ -20,10 +20,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private Stack<StackFrame>? _nestedDataItems;
 
-        // remaining number of data items in current cbor context
-        // with null representing indefinite length data items.
-        // The root context ony permits one data item to be written.
-        private int? _definiteLength = 1;
+        private int? _definiteLength; // predetermined definite-length of current data item context
         private int _itemsWritten = 0; // number of items written in the current context
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if writer is expecting a tagged value
@@ -32,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private int? _currentValueOffset = null;
         private HashSet<KeyValueEncodingRange>? _keyValueEncodingRanges = null;
 
-        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false)
+        public CborWriter(CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool encodeIndefiniteLengths = false, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
@@ -43,13 +40,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             ConformanceLevel = conformanceLevel;
             EncodeIndefiniteLengths = encodeIndefiniteLengths;
+            AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-        public bool EncodeIndefiniteLengths { get; }
         public CborConformanceLevel ConformanceLevel { get; }
+        public bool EncodeIndefiniteLengths { get; }
+        public bool AllowMultipleRootLevelValues { get; }
         public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
-        public bool IsWriteCompleted => (_nestedDataItems?.Count ?? 0) == 0 && _itemsWritten == _definiteLength;
+        public bool IsWriteCompleted => (_nestedDataItems?.Count ?? 0) == 0 && _itemsWritten > 0;
 
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {

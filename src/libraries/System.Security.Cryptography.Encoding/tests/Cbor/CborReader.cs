@@ -6,7 +6,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -33,6 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         DoublePrecisionFloat,
         SpecialValue,
         Finished,
+        FinishedWithTrailingBytes,
         EndOfData,
         FormatError,
     }
@@ -43,11 +43,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private ReadOnlyMemory<byte> _buffer;
         private int _bytesRead = 0;
 
-        // remaining number of data items in current cbor context
-        // with null representing indefinite length data items.
-        // The root context ony permits one data item to be read.
-        private uint? _remainingDataItems = 1;
         private Stack<StackFrame>? _nestedDataItems;
+        private int? _remainingDataItems; // remaining data items to read if context is definite-length collection
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if reader is expecting a tagged value
 
@@ -60,16 +57,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
 
-        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax)
+        internal CborReader(ReadOnlyMemory<byte> buffer, CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceLevelHelpers.Validate(conformanceLevel);
 
             _originalBuffer = buffer;
             _buffer = buffer;
             ConformanceLevel = conformanceLevel;
+            AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            _remainingDataItems = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
         public CborConformanceLevel ConformanceLevel { get; }
+        public bool AllowMultipleRootLevelValues { get; }
         public int BytesRead => _bytesRead;
         public int BytesRemaining => _buffer.Length;
 
@@ -89,21 +89,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_nestedDataItems?.Count > 0)
                 {
-                    return _nestedDataItems.Peek().MajorType switch
+                    // is at the end of a definite-length collection
+                    switch (_nestedDataItems.Peek().MajorType)
                     {
-                        CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map => CborReaderState.EndMap,
-                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
+                        case CborMajorType.Array: return CborReaderState.EndArray;
+                        case CborMajorType.Map: return CborReaderState.EndMap;
+                        default:
+                            Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
                     };
                 }
                 else
                 {
-                    return CborReaderState.Finished;
+                    // is at the end of the root value
+                    return _buffer.IsEmpty ? CborReaderState.Finished : CborReaderState.FinishedWithTrailingBytes;
                 }
             }
 
             if (_buffer.IsEmpty)
             {
+                if (_remainingDataItems is null && (_nestedDataItems?.Count ?? 0) == 0)
+                {
+                    // is at the end of a well-defined sequence of root-level values
+                    return CborReaderState.Finished;
+                }
+
                 return CborReaderState.EndOfData;
             }
 
@@ -117,19 +127,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return CborReaderState.FormatError;
                 }
 
-                if (_remainingDataItems == null)
+                if (_remainingDataItems is null)
                 {
                     // stack guaranteed to be populated since root context cannot be indefinite-length
                     Debug.Assert(_nestedDataItems != null && _nestedDataItems.Count > 0);
 
-                    return _nestedDataItems.Peek().MajorType switch
+                    switch (_nestedDataItems.Peek().MajorType)
                     {
-                        CborMajorType.ByteString => CborReaderState.EndByteString,
-                        CborMajorType.TextString => CborReaderState.EndTextString,
-                        CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map when !_curentItemIsKey => CborReaderState.FormatError,
-                        CborMajorType.Map => CborReaderState.EndMap,
-                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
+                        case CborMajorType.ByteString: return CborReaderState.EndByteString;
+                        case CborMajorType.TextString: return CborReaderState.EndTextString;
+                        case CborMajorType.Array: return CborReaderState.EndArray;
+                        case CborMajorType.Map when !_curentItemIsKey: return CborReaderState.FormatError;
+                        case CborMajorType.Map: return CborReaderState.EndMap;
+                        default:
+                            Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                            throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack.");
                     };
                 }
                 else
@@ -138,11 +150,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
             }
 
-            if (_remainingDataItems == null)
+            if (_remainingDataItems is null && _nestedDataItems?.Count > 0)
             {
-                // stack guaranteed to be populated since root context cannot be indefinite-length
-                Debug.Assert(_nestedDataItems != null && _nestedDataItems.Count > 0);
-
                 CborMajorType parentType = _nestedDataItems.Peek().MajorType;
 
                 switch (parentType)
@@ -159,19 +168,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
             }
 
-            return initialByte.MajorType switch
+            switch (initialByte.MajorType)
             {
-                CborMajorType.UnsignedInteger => CborReaderState.UnsignedInteger,
-                CborMajorType.NegativeInteger => CborReaderState.NegativeInteger,
-                CborMajorType.ByteString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartByteString,
-                CborMajorType.ByteString => CborReaderState.ByteString,
-                CborMajorType.TextString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartTextString,
-                CborMajorType.TextString => CborReaderState.TextString,
-                CborMajorType.Array => CborReaderState.StartArray,
-                CborMajorType.Map => CborReaderState.StartMap,
-                CborMajorType.Tag => CborReaderState.Tag,
-                CborMajorType.Simple => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
-                _ => throw new Exception("CborReader internal error. Invalid major type."),
+                case CborMajorType.UnsignedInteger: return CborReaderState.UnsignedInteger;
+                case CborMajorType.NegativeInteger: return CborReaderState.NegativeInteger;
+                case CborMajorType.ByteString:
+                    return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
+                            CborReaderState.StartByteString :
+                            CborReaderState.ByteString;
+
+                case CborMajorType.TextString:
+                    return (initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength) ?
+                            CborReaderState.StartTextString :
+                            CborReaderState.TextString;
+
+                case CborMajorType.Array: return CborReaderState.StartArray;
+                case CborMajorType.Map: return CborReaderState.StartMap;
+                case CborMajorType.Tag: return CborReaderState.Tag;
+                case CborMajorType.Simple: return MapSpecialValueTagToReaderState(initialByte.AdditionalInfo);
+                default:
+                    Debug.Fail("CborReader internal error. Invalid major type.");
+                    throw new Exception("CborReader internal error. Invalid major type.");
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
@@ -219,7 +236,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_buffer.IsEmpty)
             {
-                throw new FormatException("unexpected end of buffer.");
+                if (_remainingDataItems is null && _bytesRead > 0 && (_nestedDataItems?.Count ?? 0) == 0)
+                {
+                    throw new InvalidOperationException("No remaining root-level CBOR data items in the buffer.");
+                }
+
+                throw new FormatException("Unexpected end of buffer.");
             }
 
             var result = new CborInitialByte(_buffer.Span[0]);
@@ -269,7 +291,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private void PushDataItem(CborMajorType type, uint? expectedNestedItems)
+        private void PushDataItem(CborMajorType type, int? expectedNestedItems)
         {
             var frame = new StackFrame(
                 type: type,
@@ -284,7 +306,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _nestedDataItems ??= new Stack<StackFrame>();
             _nestedDataItems.Push(frame);
 
-            _remainingDataItems = checked((uint?)expectedNestedItems);
+            _remainingDataItems = expectedNestedItems;
             _frameOffset = _bytesRead;
             _isTagContext = false;
             _currentKeyOffset = (type == CborMajorType.Map) ? (int?)_bytesRead : null;
@@ -389,7 +411,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private readonly struct StackFrame
         {
-            public StackFrame(CborMajorType type, int frameOffset, uint? remainingDataItems,
+            public StackFrame(CborMajorType type, int frameOffset, int? remainingDataItems,
                               int? currentKeyOffset, bool currentItemIsKey,
                               (int Offset, int Length)? previousKeyRange, HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
@@ -405,7 +427,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public CborMajorType MajorType { get; }
             public int FrameOffset { get; }
-            public uint? RemainingDataItems { get; }
+            public int? RemainingDataItems { get; }
 
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
@@ -418,7 +440,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // reader is within the original context in which the checkpoint was created
         private readonly struct Checkpoint
         {
-            public Checkpoint(int bytesRead, int stackDepth, int frameOffset, uint? remainingDataItems,
+            public Checkpoint(int bytesRead, int stackDepth, int frameOffset, int? remainingDataItems,
                               int? currentKeyOffset, bool currentItemIsKey, (int Offset, int Length)? previousKeyRange,
                               HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
@@ -436,7 +458,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             public int BytesRead { get; }
             public int StackDepth { get; }
             public int FrameOffset { get; }
-            public uint? RemainingDataItems { get; }
+            public int? RemainingDataItems { get; }
 
             public int? CurrentKeyOffset { get; }
             public bool CurrentItemIsKey { get; }
