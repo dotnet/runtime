@@ -10,8 +10,6 @@ namespace System.Globalization
     {
         internal static CultureInfo NlsGetUserDefaultCulture()
         {
-            Debug.Assert(GlobalizationMode.UseNls);
-
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
@@ -52,8 +50,6 @@ namespace System.Globalization
 
         private static unsafe CultureInfo NlsGetUserDefaultUICulture()
         {
-            Debug.Assert(GlobalizationMode.UseNls);
-
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 

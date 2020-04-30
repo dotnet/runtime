@@ -49,7 +49,6 @@ namespace System.Globalization
         private unsafe bool NlsInitCultureData()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
 
             int result;
             string realNameBuffer = _sRealName;
@@ -720,7 +719,6 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(GlobalizationMode.UseNls);
                 EnumData context = default;
                 context.strings = new List<string>();
 
@@ -741,7 +739,6 @@ namespace System.Globalization
 
         internal static unsafe CultureData NlsGetCurrentRegionData()
         {
-            Debug.Assert(GlobalizationMode.UseNls);
             Span<char> geoIso2Letters = stackalloc char[10];
 
             int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);
