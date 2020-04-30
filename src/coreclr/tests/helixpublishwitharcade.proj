@@ -233,7 +233,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetWindows) == 'true' and $(RuntimeMode == 'interpreter' ">
-    <HelixPreCommand Include=set MONO_ENV_OPTIONS='--interpreter'/>
+    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter' "/>
   </ItemGroup>
 
 
