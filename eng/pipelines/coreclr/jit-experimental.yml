@@ -35,7 +35,6 @@ jobs:
     - Windows_NT_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    managedOsxBuild: false
     jobParameters:
       testGroup: jit-experimental
       liveLibrariesBuildConfig: Release

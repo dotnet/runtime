@@ -41,7 +41,6 @@ jobs:
     - Windows_NT_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    managedOsxBuild: false
     jobParameters:
       testGroup: outerloop
       readyToRun: true

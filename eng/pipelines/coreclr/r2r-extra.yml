@@ -31,7 +31,6 @@ jobs:
     platformGroup: gcstress # r2r-extra testGroup runs gcstress15 scenario
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    managedOsxBuild: false
     jobParameters:
       testGroup: r2r-extra
       readyToRun: true
