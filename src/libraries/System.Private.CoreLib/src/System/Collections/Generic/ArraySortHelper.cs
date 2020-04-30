@@ -141,45 +141,43 @@ namespace System.Collections.Generic
             Debug.Assert(depthLimit >= 0);
             Debug.Assert(comparer != null);
 
-            int hi = keys.Length - 1;
-            while (hi > 0)
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
             {
-                int partitionSize = hi + 1;
-
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
                     Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
-                        SwapIfGreater(keys, comparer, 0, hi);
+                        SwapIfGreater(keys, comparer, 0, 1);
                         return;
                     }
 
                     if (partitionSize == 3)
                     {
-                        SwapIfGreater(keys, comparer, 0, hi - 1);
-                        SwapIfGreater(keys, comparer, 0, hi);
-                        SwapIfGreater(keys, comparer, hi - 1, hi);
+                        SwapIfGreater(keys, comparer, 0, 1);
+                        SwapIfGreater(keys, comparer, 0, 2);
+                        SwapIfGreater(keys, comparer, 1, 2);
                         return;
                     }
 
-                    InsertionSort(keys.Slice(0, hi+1), comparer);
+                    InsertionSort(keys.Slice(0, partitionSize), comparer);
                     return;
                 }
 
                 if (depthLimit == 0)
                 {
-                    HeapSort(keys.Slice(0, hi+1), comparer);
+                    HeapSort(keys.Slice(0, partitionSize), comparer);
                     return;
                 }
                 depthLimit--;
 
-                int p = PickPivotAndPartition(keys.Slice(0, hi+1), comparer);
+                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer);
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..(hi+1)], depthLimit, comparer);
-                hi = p - 1;
+                IntroSort(keys[(p+1)..partitionSize], depthLimit, comparer);
+                partitionSize = p;
             }
         }
 
@@ -404,11 +402,9 @@ namespace System.Collections.Generic
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(depthLimit >= 0);
 
-            int hi = keys.Length - 1;
-            while (hi > 0)
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
             {
-                int partitionSize = hi + 1;
-
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
                     Debug.Assert(partitionSize >= 2);
@@ -446,7 +442,7 @@ namespace System.Collections.Generic
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
                 IntroSort(keys[(p+1)..partitionSize], depthLimit);
-                hi = p - 1;
+                partitionSize = p;
             }
         }
 
@@ -632,26 +628,24 @@ namespace System.Collections.Generic
             Debug.Assert(depthLimit >= 0);
             Debug.Assert(comparer != null);
 
-            int hi = keys.Length - 1;
-            while (hi > 0)
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
             {
-                int partitionSize = hi + 1;
-
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
                     Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, hi);
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
                         return;
                     }
 
                     if (partitionSize == 3)
                     {
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, hi - 1);
-                        SwapIfGreaterWithValues(keys, values, comparer, 0, hi);
-                        SwapIfGreaterWithValues(keys, values, comparer, hi - 1, hi);
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 2);
+                        SwapIfGreaterWithValues(keys, values, comparer, 1, 2);
                         return;
                     }
 
@@ -670,7 +664,7 @@ namespace System.Collections.Generic
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
                 IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit, comparer);
-                hi = p - 1;
+                partitionSize = p;
             }
         }
 
@@ -856,26 +850,24 @@ namespace System.Collections.Generic
             Debug.Assert(values.Length == keys.Length);
             Debug.Assert(depthLimit >= 0);
 
-            int hi = keys.Length - 1;
-            while (hi > 0)
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
             {
-                int partitionSize = hi + 1;
-
                 if (partitionSize <= Array.IntrosortSizeThreshold)
                 {
                     Debug.Assert(partitionSize >= 2);
 
                     if (partitionSize == 2)
                     {
-                        SwapIfGreaterWithValues(keys, values, 0, hi);
+                        SwapIfGreaterWithValues(keys, values, 0, 1);
                         return;
                     }
 
                     if (partitionSize == 3)
                     {
-                        SwapIfGreaterWithValues(keys, values, 0, hi - 1);
-                        SwapIfGreaterWithValues(keys, values, 0, hi);
-                        SwapIfGreaterWithValues(keys, values, hi - 1, hi);
+                        SwapIfGreaterWithValues(keys, values, 0, 1);
+                        SwapIfGreaterWithValues(keys, values, 0, 2);
+                        SwapIfGreaterWithValues(keys, values, 1, 2);
                         return;
                     }
 
@@ -894,7 +886,7 @@ namespace System.Collections.Generic
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
                 IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit);
-                hi = p - 1;
+                partitionSize = p;
             }
         }
 
