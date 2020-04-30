@@ -330,11 +330,9 @@ internal static partial class Interop
 
             var mb = MethodBase.GetMethodFromHandle(tmp.handle);
 
-            string res = "";
-            var parms = mb?.GetParameters();
-            if (parms == null)
-                return res;
-            foreach (var p in parms)
+            char[] res = new char[20];
+            var charIndex = 0;
+            foreach (var p in mb.GetParameters())
             {
                 var t = p.ParameterType;
 
@@ -349,47 +347,48 @@ internal static partial class Interop
                     case TypeCode.Boolean:
                         // Enums types have the same code as their underlying numeric types
                         if (t.IsEnum)
-                            res += "j";
+                            res[charIndex++] = 'j';
                         else
-                            res += "i";
+                            res[charIndex++] = 'i';
                         break;
                     case TypeCode.Int64:
                     case TypeCode.UInt64:
                         // Enums types have the same code as their underlying numeric types
                         if (t.IsEnum)
-                            res += "k";
+                            res[charIndex++] = 'k';
                         else
-                            res += "l";
+                            res[charIndex++] = 'l';
                         break;
                     case TypeCode.Single:
-                        res += "f";
+                        res[charIndex++] = 'f';
                         break;
                     case TypeCode.Double:
-                        res += "d";
+                        res[charIndex++] = 'd';
                         break;
                     case TypeCode.String:
-                        res += "s";
+                        res[charIndex++] = 's';
                         break;
                     default:
                         if (t == typeof(IntPtr))
                         {
-                            res += "i";
+                            res[charIndex++] = 'i';
                         }
                         else if (t == typeof(Uri))
                         {
-                            res += "u";
+                            res[charIndex++] = 'u';
                         }
                         else
                         {
                             if (t.IsValueType)
                                 throw new NotSupportedException("ValueType arguments are not supported.");
-                            res += "o";
+                            res[charIndex++] = 'o';
                         }
                         break;
                 }
             }
 
-            return res;
+            return charIndex == 0 ? string.Empty : new string(res, 0, charIndex);
+
         }
         internal static void SetupJSContinuation(Task task, JSObject cont_obj)
         {
