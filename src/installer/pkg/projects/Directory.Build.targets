@@ -30,14 +30,6 @@
     <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
 
-  <!-- Wasm runtimes depend on the mono runtime and libs to be built, so they can only be built here -->
-  <Target Name="BuildWasmPackageDependency"
-          Condition="'$(TargetOS)' == 'Browser'"
-          BeforeTargets="GetPackageDependencies">
-    <MSBuild Projects="$(MonoProjectRoot)\wasm\wasm.proj"
-             Properties="Configuration=$(Configuration);TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)"/>
-  </Target>
-
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
     version generation target. For any with a VersionFromProject, query the ProductVersion from that
