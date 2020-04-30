@@ -17,7 +17,6 @@ internal static partial class Interop
 
             internal AnyRef(int js_handle)
             {
-                //Console.WriteLine ($"AnyRef: {js_handle}");
                 this.JSHandle = js_handle;
                 this.Handle = GCHandle.Alloc(this);
             }
