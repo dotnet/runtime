@@ -1213,11 +1213,11 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE41);
         m_pOpt->m_compilerFlags.Set(InstructionSet_SSE42);
         m_pOpt->m_compilerFlags.Set(InstructionSet_POPCNT);
-        // Leaving out CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, CORJIT_FLAGS::CORJIT_FLAG_USE_FMA
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1,
-        // CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2 on purpose - these require VEX encodings
+        // Leaving out InstructionSet_AVX, InstructionSet_FMA, InstructionSet_AVX2,
+        // InstructionSet_BMI1, InstructionSet_BMI2 on purpose - these require VEX encodings
         // and the JIT doesn't support generating code for methods with mixed encodings.
-        m_pOpt->m_compilerFlags.Set(InstructionSet_LZCNT);
+        // Also leaving out InstructionSet_LZCNT because BSR from InstructionSet_X86Base
+        // is used as a fallback in CoreLib and doesn't require an IsSupported check.
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
