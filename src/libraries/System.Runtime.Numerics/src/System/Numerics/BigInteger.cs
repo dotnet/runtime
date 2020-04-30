@@ -474,15 +474,12 @@ namespace System.Numerics
 
         /// <summary>
         /// Constructor used during bit manipulation and arithmetic.
-        /// When possible the uint[] will be packed into  _sign to conserve space.
+        /// When possible the uints will be packed into  _sign to conserve space.
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
         internal BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             int len;
 
             // Try to conserve space as much as possible by checking for wasted leading uint[] entries
@@ -2004,11 +2001,19 @@ namespace System.Numerics
             int digitShift = shift / kcbitUint;
             int smallShift = shift - (digitShift * kcbitUint);
 
-            uint[] xd; int xl; bool negx;
-            negx = GetPartsForBitManipulation(ref value, out xd, out xl);
+            uint[]? xdFromPool = null;
+            int xl = value._bits?.Length ?? 1;
+            Span<uint> xd = xl <= StackAllocThreshold ?
+                            stackalloc uint[xl]
+                            : (xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).AsSpan(0, xl);
+            bool negx = value.GetPartsForBitManipulation(xd);
 
             int zl = xl + digitShift + 1;
-            uint[] zd = new uint[zl];
+            uint[]? zdFromPool = null;
+            Span<uint> zd = zl <= StackAllocThreshold ?
+                            stackalloc uint[zl]
+                            : (zdFromPool = ArrayPool<uint>.Shared.Rent(zl)).AsSpan(0, zl);
+            zd.Clear();
 
             if (smallShift == 0)
             {
@@ -2030,7 +2035,15 @@ namespace System.Numerics
                 }
                 zd[i + digitShift] = carry;
             }
-            return new BigInteger(zd, negx);
+
+            var result = new BigInteger(zd, negx);
+
+            if (xdFromPool != null)
+                ArrayPool<uint>.Shared.Return(xdFromPool);
+            if (zdFromPool != null)
+                ArrayPool<uint>.Shared.Return(zdFromPool);
+
+            return result;
         }
 
         public static BigInteger operator >>(BigInteger value, int shift)
@@ -2042,24 +2055,32 @@ namespace System.Numerics
             int digitShift = shift / kcbitUint;
             int smallShift = shift - (digitShift * kcbitUint);
 
-            uint[] xd; int xl; bool negx;
-            negx = GetPartsForBitManipulation(ref value, out xd, out xl);
+            BigInteger result;
+
+            uint[]? xdFromPool = null;
+            int xl = value._bits?.Length ?? 1;
+            Span<uint> xd = xl <= StackAllocThreshold ?
+                 stackalloc uint[xl]
+                 : (xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).AsSpan(0, xl);
+
+            bool negx = value.GetPartsForBitManipulation(xd);
 
             if (negx)
             {
                 if (shift >= (kcbitUint * xl))
                 {
-                    return MinusOne;
+                    result = MinusOne;
+                    goto exit;
                 }
-                uint[] temp = new uint[xl];
-                Array.Copy(xd /* sourceArray */, 0 /* sourceIndex */, temp /* destinationArray */, 0 /* destinationIndex */, xl /* length */);  // Make a copy of immutable value._bits
-                xd = temp;
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
             }
 
-            int zl = xl - digitShift;
-            if (zl < 0) zl = 0;
-            uint[] zd = new uint[zl];
+            uint[]? zdFromPool = null;
+            int zl = Math.Max(xl - digitShift, 0);
+            Span<uint> zd = zl <= StackAllocThreshold ?
+                            stackalloc uint[zl]
+                            : (zdFromPool = ArrayPool<uint>.Shared.Rent(zl)).AsSpan(0, zl);
+            zd.Clear();
 
             if (smallShift == 0)
             {
@@ -2087,7 +2108,15 @@ namespace System.Numerics
             {
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
             }
-            return new BigInteger(zd, negx);
+            result = new BigInteger(zd, negx);
+
+            if (zdFromPool != null)
+                ArrayPool<uint>.Shared.Return(zdFromPool);
+        exit:
+            if (xdFromPool != null)
+                ArrayPool<uint>.Shared.Return(xdFromPool);
+
+            return result;
         }
 
         public static BigInteger operator ~(BigInteger value)
@@ -2443,34 +2472,26 @@ namespace System.Numerics
         /// Encapsulate the logic of normalizing the "small" and "large" forms of BigInteger
         /// into the "large" form so that Bit Manipulation algorithms can be simplified.
         /// </summary>
-        /// <param name="x"></param>
         /// <param name="xd">
         /// The UInt32 array containing the entire big integer in "large" (denormalized) form.
         /// E.g., the number one (1) and negative one (-1) are both stored as 0x00000001
         /// BigInteger values Int32.MinValue &lt; x &lt;= Int32.MaxValue are converted to this
         /// format for convenience.
         /// </param>
-        /// <param name="xl">The length of xd.</param>
         /// <returns>True for negative numbers.</returns>
-        private static bool GetPartsForBitManipulation(ref BigInteger x, out uint[] xd, out int xl)
+        private bool GetPartsForBitManipulation(Span<uint> xd)
         {
-            if (x._bits == null)
+            Debug.Assert(_bits is null ? xd.Length == 1 : xd.Length == _bits.Length);
+
+            if (_bits is null)
             {
-                if (x._sign < 0)
-                {
-                    xd = new uint[] { (uint)-x._sign };
-                }
-                else
-                {
-                    xd = new uint[] { (uint)x._sign };
-                }
+                xd[0] = (uint)(_sign < 0 ? -_sign : _sign);
             }
             else
             {
-                xd = x._bits;
+                _bits.CopyTo(xd);
             }
-            xl = (x._bits == null ? 1 : x._bits.Length);
-            return x._sign < 0;
+            return _sign < 0;
         }
 
         internal static int GetDiffLength(uint[] rgu1, uint[] rgu2, int cu)
