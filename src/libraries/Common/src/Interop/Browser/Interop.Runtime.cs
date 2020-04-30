@@ -137,7 +137,7 @@ internal static partial class Interop
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        private static int BindJSType(int js_id, Type mappedType)
+        internal static int BindJSType(int js_id, Type mappedType)
         {
             if (!bound_objects.TryGetValue(js_id, out JSObject? obj))
             {
@@ -148,7 +148,7 @@ internal static partial class Interop
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        private static int UnBindJSObject(int js_id)
+        internal static int UnBindJSObject(int js_id)
         {
             if (bound_objects.TryGetValue(js_id, out var obj))
             {
@@ -159,7 +159,7 @@ internal static partial class Interop
             return 0;
         }
 
-        private static void UnBindJSObjectAndFree(int js_id)
+        internal static void UnBindJSObjectAndFree(int js_id)
         {
             if (bound_objects.TryGetValue(js_id, out var obj))
             {
@@ -180,7 +180,7 @@ internal static partial class Interop
         }
 
 
-        private static void UnBindRawJSObjectAndFree(int gcHandle)
+        internal static void UnBindRawJSObjectAndFree(int gcHandle)
         {
 
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
@@ -231,27 +231,27 @@ internal static partial class Interop
             }
         }
 
-        private static object CreateTaskSource(int js_id)
+        internal static object CreateTaskSource(int js_id)
         {
             return new TaskCompletionSource<object>();
         }
 
-        private static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
+        internal static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
         {
             tcs.SetResult(result);
         }
 
-        private static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
+        internal static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
         {
             tcs.SetException(new JSException(reason));
         }
 
-        private static int GetTaskAndBind(TaskCompletionSource<object> tcs, int js_id)
+        internal static int GetTaskAndBind(TaskCompletionSource<object> tcs, int js_id)
         {
             return BindExistingObject(tcs.Task, js_id);
         }
 
-        private static int BindExistingObject(object raw_obj, int js_id)
+        internal static int BindExistingObject(object raw_obj, int js_id)
         {
             JSObject? obj = raw_obj as JSObject;
 
@@ -261,7 +261,7 @@ internal static partial class Interop
             return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
-        private static int GetJSObjectId(object raw_obj)
+        internal static int GetJSObjectId(object raw_obj)
         {
             JSObject? obj = raw_obj as JSObject;
 
@@ -271,7 +271,7 @@ internal static partial class Interop
             return obj != null ? obj.JSHandle : -1;
         }
 
-        private static object? GetMonoObject(int gc_handle)
+        internal static object? GetMonoObject(int gc_handle)
         {
             GCHandle h = (GCHandle)(IntPtr)gc_handle;
             JSObject? o = h.Target as JSObject;
@@ -280,21 +280,21 @@ internal static partial class Interop
             return o;
         }
 
-        private static object BoxInt(int i)
+        internal static object BoxInt(int i)
         {
             return i;
         }
-        private static object BoxDouble(double d)
+        internal static object BoxDouble(double d)
         {
             return d;
         }
 
-        private static object BoxBool(int b)
+        internal static object BoxBool(int b)
         {
             return b == 0 ? false : true;
         }
 
-        private static bool IsSimpleArray(object a)
+        internal static bool IsSimpleArray(object a)
         {
             if (a is Array arr)
             {
@@ -305,7 +305,7 @@ internal static partial class Interop
 
         }
 
-        private static object? GetCoreType(string coreObj)
+        internal static object? GetCoreType(string coreObj)
         {
             Assembly asm = typeof(Runtime).Assembly;
             Type? type = asm.GetType(coreObj);
@@ -323,8 +323,7 @@ internal static partial class Interop
             internal RuntimeMethodHandle handle;
         }
 
-        //FIXME this probably won't handle generics
-        private static string GetCallSignature(IntPtr method_handle)
+        internal static string GetCallSignature(IntPtr method_handle)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = method_handle;
@@ -392,7 +391,7 @@ internal static partial class Interop
 
             return res;
         }
-        private static void SetupJSContinuation(Task task, JSObject cont_obj)
+        internal static void SetupJSContinuation(Task task, JSObject cont_obj)
         {
             if (task.IsCompleted)
                 Complete();
@@ -429,7 +428,7 @@ internal static partial class Interop
             }
         }
 
-        public static object GetGlobalObject(string? str = null)
+        internal static object GetGlobalObject(string? str = null)
         {
             int exception;
             var globalHandle = Runtime.GetGlobalObject(str, out exception);
@@ -440,7 +439,7 @@ internal static partial class Interop
             return globalHandle;
         }
 
-        private static string ObjectToString(object o)
+        internal static string ObjectToString(object o)
         {
 
             //if (o == null)
@@ -451,7 +450,7 @@ internal static partial class Interop
             return o.ToString() ?? string.Empty;
         }
 
-        private static double GetDateValue(object dtv)
+        internal static double GetDateValue(object dtv)
         {
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv), "Value can not be null");
@@ -467,127 +466,15 @@ internal static partial class Interop
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        private static DateTime CreateDateTime(double ticks)
+        internal static DateTime CreateDateTime(double ticks)
         {
             var unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
         }
-        private static Uri CreateUri(string uri)
+        internal static Uri CreateUri(string uri)
         {
             return new Uri(uri);
         }
-
-        // This is simple right now and will include FlagsAttribute later.
-        // public static Enum EnumFromExportContract(Type enumType, object value)
-        // {
-
-        //     if (!enumType.IsEnum)
-        //     {
-        //         throw new ArgumentException("Type provided must be an Enum.", nameof(enumType));
-        //     }
-
-        //     if (value is string)
-        //     {
-
-        //         var fields = enumType.GetFields();
-        //         foreach (var fi in fields)
-        //         {
-        //             // Do not process special names
-        //             if (fi.IsSpecialName)
-        //                 continue;
-
-        //             Interop.Runtime.ExportAttribute[] attributes =
-        //                 (Interop.Runtime.ExportAttribute[])fi.GetCustomAttributes(typeof(Interop.Runtime.ExportAttribute), false);
-
-        //             var enumConversionType = ConvertEnum.Default;
-
-        //             object contractName = null;
-
-        //             if (attributes != null && attributes.Length > 0)
-        //             {
-        //                 enumConversionType = attributes[0].EnumValue;
-        //                 if (enumConversionType != ConvertEnum.Numeric)
-        //                     contractName = attributes[0].ContractName;
-
-        //             }
-
-        //             if (contractName == null)
-        //                 contractName = fi.Name;
-
-        //             switch (enumConversionType)
-        //             {
-        //                 case ConvertEnum.ToLower:
-        //                     contractName = contractName.ToString().ToLower();
-        //                     break;
-        //                 case ConvertEnum.ToUpper:
-        //                     contractName = contractName.ToString().ToUpper();
-        //                     break;
-        //                 case ConvertEnum.Numeric:
-        //                     contractName = (int)Enum.Parse(value.GetType(), contractName.ToString());
-        //                     break;
-        //                 default:
-        //                     contractName = contractName.ToString();
-        //                     break;
-        //             }
-
-        //             if (contractName.ToString() == value.ToString())
-        //             {
-        //                 return (Enum)Enum.Parse(enumType, fi.Name);
-        //             }
-
-        //         }
-
-        //         throw new ArgumentException($"Value is a name, but not one of the named constants defined for the enum of type: {enumType}.", nameof(value));
-        //     }
-        //     else
-        //     {
-        //         return (Enum)Enum.ToObject(enumType, value);
-        //     }
-
-        // }
-
-        // // This is simple right now and will include FlagsAttribute later.
-        // public static object EnumToExportContract(Enum value)
-        // {
-
-        //     FieldInfo fi = value.GetType().GetField(value.ToString());
-
-        //     ExportAttribute[] attributes =
-        //         (ExportAttribute[])fi.GetCustomAttributes(typeof(ExportAttribute), false);
-
-        //     var enumConversionType = ConvertEnum.Default;
-
-        //     object contractName = null;
-
-        //     if (attributes != null && attributes.Length > 0)
-        //     {
-        //         enumConversionType = attributes[0].EnumValue;
-        //         if (enumConversionType != ConvertEnum.Numeric)
-        //             contractName = attributes[0].ContractName;
-
-        //     }
-
-        //     if (contractName == null)
-        //         contractName = value;
-
-        //     switch (enumConversionType)
-        //     {
-        //         case ConvertEnum.ToLower:
-        //             contractName = contractName.ToString().ToLower();
-        //             break;
-        //         case ConvertEnum.ToUpper:
-        //             contractName = contractName.ToString().ToUpper();
-        //             break;
-        //         case ConvertEnum.Numeric:
-        //             contractName = (int)Enum.Parse(value.GetType(), contractName.ToString());
-        //             break;
-        //         default:
-        //             contractName = contractName.ToString();
-        //             break;
-        //     }
-
-        //     return contractName;
-        // }
 
         //
         // Can be called by the app to stop profiling
