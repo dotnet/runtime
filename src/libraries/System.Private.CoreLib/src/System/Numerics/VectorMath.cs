@@ -59,7 +59,7 @@ namespace System.Numerics
                 return Sse2.Or(
                             Sse2.And(ifTrue, selector),
                             Sse2.AndNot(selector, ifFalse))
-                    );
+                        );
             }
             else if (Sse.IsSupported)
             {
