@@ -907,8 +907,8 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutableJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutableJsonElement>("{\"hello\":\"world\"}"));
         }
 
         [Fact]

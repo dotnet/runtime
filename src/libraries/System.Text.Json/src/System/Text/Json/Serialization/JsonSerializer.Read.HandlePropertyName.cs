@@ -128,15 +128,11 @@ namespace System.Text.Json
             object? extensionData = state.Current.DataExtensionData;
             if (extensionData == null)
             {
-                Type? underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>));
-                if (underlyingIDictionaryType is null)
-                {
-                    underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))!;
-                }
+#if DEBUG
+                Type? underlyingIDictionaryType = jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))
+                    ?? jsonPropertyInfo.DeclaredPropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))!;
 
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
-                // Create the appropriate dictionary type. We already verified the types.
-#if DEBUG
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
@@ -147,12 +143,12 @@ namespace System.Text.Json
                 if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
                 {
                     // Special case for immutable dictionaries since we build up a dictionary and convert
-                    if (!jsonPropertyInfo.DeclaredPropertyType.IsImmutableDictionaryType())
+                    if (!jsonPropertyInfo.ConverterBase.IsImmutableDictionary)
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
                     }
 
-                    extensionData = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(genericArgs));
+                    extensionData = jsonPropertyInfo.RuntimeClassInfo.ElementClassInfo?.PropertyInfoForClassInfo.ConverterBase.CreateDictionaryOfStringT();
                 }
                 else
                 {

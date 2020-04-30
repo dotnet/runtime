@@ -227,9 +227,13 @@ namespace System.Text.Json.Serialization.Converters
 
             if (state.Current.DataExtensionData != null)
             {
-                JsonPropertyInfo prop = state.Current.JsonClassInfo.DataExtensionProperty!;
-                object? converted = prop.ConverterBase.ConvertToDictionary(ref state, state.Current.DataExtensionData, options);
-                prop.SetValueAsObject(obj, converted);
+                JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty!;
+                object extData = state.Current.DataExtensionData;
+                if (dataExtProperty.ConverterBase.IsImmutableDictionary)
+                {
+                    extData = dataExtProperty.ConverterBase.ConvertToDictionary(ref state, extData, options)!;
+                }
+                dataExtProperty.SetValueAsObject(obj, extData);
             }
 
             value = (T)obj;

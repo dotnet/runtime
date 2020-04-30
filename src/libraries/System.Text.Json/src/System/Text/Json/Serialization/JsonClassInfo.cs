@@ -277,24 +277,24 @@ namespace System.Text.Json
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
 
-                bool isImmutableReadOnly = declaredPropertyType.IsImmutableDictionaryType() &&
-                    (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                     typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType));
+                Type? genericInterface = declaredPropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>)) ??
+                    declaredPropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>));
 
-                bool isReadOnlyDictionaryInterface = declaredPropertyType == typeof(IReadOnlyDictionary<string, object>) ||
-                     declaredPropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
+                Type[]? genericArgs = genericInterface?.GetGenericArguments();
+                Type? valueType = genericArgs?[1];
 
-                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
-                    isImmutableReadOnly||
-                    isReadOnlyDictionaryInterface)
-                {
-                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
-                    Debug.Assert(converter != null);
-                }
-                else
+                if (genericArgs?[0] != typeof(string) || !(valueType == typeof(object) || valueType == typeof(JsonElement)))
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
+                }
+
+                Debug.Assert(Options.GetConverter(declaredPropertyType) != null);
+                jsonPropertyInfo.RuntimeClassInfo.ElementType = valueType;
+
+                if (declaredPropertyType.IsImmutableDictionaryType())
+                {
+                    // Necessary to set this for custom converters
+                    jsonPropertyInfo.ConverterBase.IsImmutableDictionary = true;
                 }
 
                 DataExtensionProperty = jsonPropertyInfo;

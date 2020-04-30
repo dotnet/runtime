@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -51,6 +52,8 @@ namespace System.Text.Json.Serialization
         {
             return new JsonParameterInfo<T>();
         }
+
+        internal override object CreateDictionaryOfStringT() => new Dictionary<string, T>();
 
         internal override Type? ElementType => null;
 

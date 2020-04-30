@@ -38,6 +38,8 @@ namespace System.Text.Json.Serialization
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
+        internal abstract object CreateDictionaryOfStringT();
+
         internal abstract Type? ElementType { get; }
 
         /// <summary>
@@ -82,5 +84,7 @@ namespace System.Text.Json.Serialization
 
         internal virtual object? ConvertToDictionary(ref ReadStack state, object value, JsonSerializerOptions options)
             => value;
+
+        internal virtual bool IsImmutableDictionary { get; set; }
     }
 }

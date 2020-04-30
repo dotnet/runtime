@@ -232,13 +232,8 @@ namespace System.Text.Json
                     dictionaryObject[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
-            else
+            else if (propValue is IDictionary<string, JsonElement> dictionaryJsonElement)
             {
-                // Handle case where extension property is JsonElement-based.
-
-                Debug.Assert(propValue is IDictionary<string, JsonElement>);
-                IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
-
                 JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
 
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
@@ -247,6 +242,10 @@ namespace System.Text.Json
                 }
 
                 dictionaryJsonElement[state.Current.JsonPropertyNameAsString!] = value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(DeclaredPropertyType);
             }
 
             return true;

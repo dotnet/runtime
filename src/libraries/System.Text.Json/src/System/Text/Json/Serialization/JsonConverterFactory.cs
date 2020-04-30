@@ -46,10 +46,7 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal override JsonParameterInfo CreateJsonParameterInfo()
-        {
-            throw new InvalidOperationException();
-        }
+        internal sealed override object CreateDictionaryOfStringT() => throw new InvalidOperationException();
 
         internal sealed override Type? ElementType => null;
 

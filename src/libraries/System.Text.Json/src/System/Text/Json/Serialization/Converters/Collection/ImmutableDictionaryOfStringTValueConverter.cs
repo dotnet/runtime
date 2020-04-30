@@ -42,6 +42,8 @@ namespace System.Text.Json.Serialization.Converters
             return creator((Dictionary<string, TValue>)value);
         }
 
+        internal override bool IsImmutableDictionary => true;
+
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator<KeyValuePair<string, TValue>> enumerator;
