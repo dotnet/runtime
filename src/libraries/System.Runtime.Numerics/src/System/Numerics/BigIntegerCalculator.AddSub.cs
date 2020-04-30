@@ -8,40 +8,28 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Add(ReadOnlySpan<uint> left, uint right)
+        public static void Add(ReadOnlySpan<uint> left, uint right, Span<uint> result)
         {
             Debug.Assert(left.Length >= 1);
+            Debug.Assert(result.Length == left.Length + 1);
 
             // Executes the addition for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            uint[] bits = new uint[left.Length + 1];
             long carry = right;
 
             for (int i = 0; i < left.Length; i++)
             {
                 long digit = left[i] + carry;
-                bits[i] = unchecked((uint)digit);
+                result[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
 
-            bits[left.Length] = (uint)carry;
-
-            return bits;
+            result[left.Length] = (uint)carry;
         }
 
-        public static uint[] Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
-        {
-            Debug.Assert(left.Length >= right.Length);
-
-            uint[] bits = new uint[left.Length + 1];
-            Add(left, right, bits);
-
-            return bits;
-        }
-
-        private static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+        public static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= 0);
             Debug.Assert(right.Length >= 0);

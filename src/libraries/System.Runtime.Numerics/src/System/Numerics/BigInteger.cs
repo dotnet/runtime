@@ -1503,42 +1503,73 @@ namespace System.Numerics
             return BigNumber.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
-        private static BigInteger Add(uint[]? leftBits, int leftSign, uint[]? rightBits, int rightSign)
+        private static BigInteger Add(ReadOnlySpan<uint> leftBits, int leftSign, ReadOnlySpan<uint> rightBits, int rightSign)
         {
-            bool trivialLeft = leftBits == null;
-            bool trivialRight = rightBits == null;
+            bool trivialLeft = leftBits.IsEmpty;
+            bool trivialRight = rightBits.IsEmpty;
 
             if (trivialLeft && trivialRight)
             {
                 return (long)leftSign + rightSign;
             }
 
+            BigInteger result;
+            uint[]? bitsFromPool = null;
+
             if (trivialLeft)
             {
-                Debug.Assert(rightBits != null);
-                uint[] bits = BigIntegerCalculator.Add(rightBits, NumericsHelpers.Abs(leftSign));
-                return new BigInteger(bits, leftSign < 0);
+                Debug.Assert(!rightBits.IsEmpty);
+
+                int size = rightBits.Length + 1;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                         stackalloc uint[size]
+                         : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Add(rightBits, NumericsHelpers.Abs(leftSign), bits);
+
+                result = new BigInteger(bits, leftSign < 0);
             }
-
-            if (trivialRight)
+            else if (trivialRight)
             {
-                Debug.Assert(leftBits != null);
-                uint[] bits = BigIntegerCalculator.Add(leftBits, NumericsHelpers.Abs(rightSign));
-                return new BigInteger(bits, leftSign < 0);
-            }
+                Debug.Assert(!leftBits.IsEmpty);
 
-            Debug.Assert(leftBits != null && rightBits != null);
+                int size = leftBits.Length + 1;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
 
-            if (leftBits.Length < rightBits.Length)
-            {
-                uint[] bits = BigIntegerCalculator.Add(rightBits, leftBits);
-                return new BigInteger(bits, leftSign < 0);
+                BigIntegerCalculator.Add(leftBits, NumericsHelpers.Abs(rightSign), bits);
+                result = new BigInteger(bits, leftSign < 0);
             }
             else
             {
-                uint[] bits = BigIntegerCalculator.Add(leftBits, rightBits);
-                return new BigInteger(bits, leftSign < 0);
+                Debug.Assert(!leftBits.IsEmpty && !rightBits.IsEmpty);
+
+                int size;
+                if (leftBits.Length < rightBits.Length)
+                {
+                    size = rightBits.Length + 1;
+                    ReadOnlySpan<uint> temp = leftBits;
+                    leftBits = rightBits;
+                    rightBits = temp;
+                }
+                else
+                {
+                    size = leftBits.Length + 1;
+                }
+
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Add(leftBits, rightBits, bits);
+                result = new BigInteger(bits, leftSign < 0);
             }
+
+            if (bitsFromPool != null)
+                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+
+            return result;
         }
 
         public static BigInteger operator -(BigInteger left, BigInteger right)
