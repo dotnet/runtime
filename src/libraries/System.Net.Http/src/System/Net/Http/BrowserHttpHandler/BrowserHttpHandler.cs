@@ -189,14 +189,14 @@ namespace System.Net.Http
                     {
                         if (request.Content is StringContent)
                         {
-                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(true));
+                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync().ConfigureAwait(false));
                         }
                         else
                         {
                             // 2.1.801 seems to have a problem with the line
                             // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
                             // so we split it up into two lines.
-                            var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
+                            var byteAsync = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                             using (Uint8Array uint8Buffer = Uint8Array.From(byteAsync))
                             {
                                 requestObject.SetObjectProperty("body", uint8Buffer);
@@ -264,7 +264,7 @@ namespace System.Net.Http
                     if (response == null)
                         throw new Exception("Internal error marshalling the response Promise from `fetch`.");
 
-                    JSObject t = (JSObject)await response.ConfigureAwait(true);
+                    JSObject t = (JSObject)await response.ConfigureAwait(false);
 
                     var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
 
@@ -327,7 +327,7 @@ namespace System.Net.Http
                 {
                     tcs.SetException(exception);
                 }
-                return await tcs.Task.ConfigureAwait(true);
+                return await tcs.Task.ConfigureAwait(false);
             }
         }
 
@@ -403,7 +403,7 @@ namespace System.Net.Http
                     return _data;
                 }
 
-                using (Interop.JavaScript.ArrayBuffer dataBuffer = (Interop.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(true))
+                using (Interop.JavaScript.ArrayBuffer dataBuffer = (Interop.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(false))
                 {
                     using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
                     {
@@ -417,14 +417,14 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                byte[] data = await GetResponseData().ConfigureAwait(true);
+                byte[] data = await GetResponseData().ConfigureAwait(false);
                 return new MemoryStream(data, writable: false);
             }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
-                byte[] data = await GetResponseData().ConfigureAwait(true);
-                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(true);
+                byte[] data = await GetResponseData().ConfigureAwait(false);
+                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
             }
 
             protected internal override bool TryComputeLength(out long length)
@@ -514,7 +514,7 @@ namespace System.Net.Http
                 try
                 {
                     var t = (Task<object>)_reader.Invoke("read");
-                    using (var read = (JSObject)await t.ConfigureAwait(true))
+                    using (var read = (JSObject)await t.ConfigureAwait(false))
                     {
                         if ((bool)read.GetObjectProperty("done"))
                         {
