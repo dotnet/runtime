@@ -80,7 +80,7 @@ We will iterate through all the necessary set. Many of these combinations
 will lead to invalid/undefined encodings.  This will cause the disassembler
 to give up and mark the disassemble as bad.
 
-The disassemble will then resume trying to diassemble at the next boundary.
+The disassemble will then resume trying to disassemble at the next boundary.
 
 To make sure the disassembler attempts to disassemble every instruction,
 we need to make sure the preceding instruction is always valid and terminates
@@ -213,7 +213,7 @@ We continue parsing the first line of each group.
 
 #### Ignoring bad encodings
 
-Many encoding are not valid.  For `gdb`, these instructions are marked
+Many encodings are not valid.  For `gdb`, these instructions are marked
 `(bad)`.  We filter and ignore these.
 
 #### Parsing the disassambly for each instruction sample
@@ -351,7 +351,7 @@ of the disassembler may have disassembly bugs.  Using newer disassemblers
 would mitigate this to some extent.
 
 ### Bugs
-- Inadequate samples.  Are thre other bits which modify instruction
+- Inadequate samples.  Are there other bits which modify instruction
 behavior which we missed.
 - Parser/Table generator implementation bugs. Does the parser do what it
 was intended to do
