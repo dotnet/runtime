@@ -76,12 +76,12 @@ jobs:
 
     # Compute job name from template parameters
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      name: 'run_test_p0_${{ parameters.runtimeFlavor }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }}  Pri0 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeMode }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} ${{ parameters.runtimeMode}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     ${{ if ne(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Pri1 Test Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavorDisplayName }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
     - name: testhostArg
