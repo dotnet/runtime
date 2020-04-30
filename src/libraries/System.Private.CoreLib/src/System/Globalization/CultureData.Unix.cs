@@ -19,7 +19,6 @@ namespace System.Globalization
             Debug.Assert(_sRealName != null);
 
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
 
             string realNameBuffer = _sRealName;
 

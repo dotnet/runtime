@@ -10,8 +10,6 @@ namespace System.Globalization
     {
         internal static CultureInfo GetUserDefaultCulture()
         {
-            Debug.Assert(!GlobalizationMode.UseNls);
-
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
@@ -32,8 +30,6 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultUICulture()
         {
-            Debug.Assert(!GlobalizationMode.UseNls);
-
             return InitializeUserDefaultCulture();
         }
     }
