@@ -111,9 +111,6 @@
       <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
-    <!--<ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
-    </ItemGroup>-->
   </Target>
 
   <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
