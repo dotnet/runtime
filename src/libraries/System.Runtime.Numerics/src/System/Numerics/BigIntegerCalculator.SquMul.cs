@@ -236,45 +236,48 @@ namespace System.Numerics
                 Multiply(leftHigh, rightHigh, bitsHigh);
 
                 int leftFoldLength = leftHigh.Length + 1;
+                uint[]? leftFoldFromPool = null;
+                Span<uint> leftFold = leftFoldLength <= AllocationThreshold ?
+                                      stackalloc uint[leftFoldLength]
+                                      : (leftFoldFromPool = ArrayPool<uint>.Shared.Rent(leftFoldLength)).AsSpan(0, leftFoldLength);
+                leftFold.Clear();
+
                 int rightFoldLength = rightHigh.Length + 1;
+                uint[]? rightFoldFromPool = null;
+                Span<uint> rightFold = rightFoldLength <= AllocationThreshold ?
+                                       stackalloc uint[rightFoldLength]
+                                       : (rightFoldFromPool = ArrayPool<uint>.Shared.Rent(rightFoldLength)).AsSpan(0, rightFoldLength);
+                rightFold.Clear();
+
                 int coreLength = leftFoldLength + rightFoldLength;
+                uint[]? coreFromPool = null;
+                Span<uint> core = coreLength <= AllocationThreshold ?
+                                  stackalloc uint[coreLength]
+                                  : (coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).AsSpan(0, coreLength);
+                core.Clear();
 
-                Span<uint> result = bits.Slice(n);
+                // ... compute z_a = a_1 + a_0 (call it fold...)
+                Add(leftHigh, leftLow, leftFold);
 
-                if (coreLength < AllocationThreshold)
-                {
-                    MultiplyFinal(leftHigh, leftLow, ZeroMem(stackalloc uint[leftFoldLength]),
-                                    rightHigh, rightLow, ZeroMem(stackalloc uint[rightFoldLength]),
-                                    bitsHigh, bitsLow, ZeroMem(stackalloc uint[coreLength]),
-                                    result);
-                }
-                else
-                {
-                    MultiplyFinal(leftHigh, leftLow, new uint[leftFoldLength],
-                                    rightHigh, rightLow, new uint[rightFoldLength],
-                                    bitsHigh, bitsLow, new uint[coreLength],
-                                    result);
-                }
+                // ... compute z_b = b_1 + b_0 (call it fold...)
+                Add(rightHigh, rightLow, rightFold);
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static void MultiplyFinal(ReadOnlySpan<uint> leftHigh, ReadOnlySpan<uint> leftLow, Span<uint> leftFold,
-                                            ReadOnlySpan<uint> rightHigh, ReadOnlySpan<uint> rightLow, Span<uint> rightFold,
-                                            ReadOnlySpan<uint> bitsHigh, ReadOnlySpan<uint> bitsLow, Span<uint> core,
-                                            Span<uint> result)
-                {
-                    // ... compute z_a = a_1 + a_0 (call it fold...)
-                    Add(leftHigh, leftLow, leftFold);
+                // ... compute z_1 = z_a * z_b - z_0 - z_2
+                Multiply(leftFold, rightFold, core);
 
-                    // ... compute z_b = b_1 + b_0 (call it fold...)
-                    Add(rightHigh, rightLow, rightFold);
+                if (leftFoldFromPool != null)
+                    ArrayPool<uint>.Shared.Return(leftFoldFromPool);
 
-                    // ... compute z_1 = z_a * z_b - z_0 - z_2
-                    Multiply(leftFold, rightFold, core);
-                    SubtractCore(bitsHigh, bitsLow, core);
+                if (rightFoldFromPool != null)
+                    ArrayPool<uint>.Shared.Return(rightFoldFromPool);
 
-                    // ... and finally merge the result! :-)
-                    AddSelf(result, core);
-                }
+                SubtractCore(bitsHigh, bitsLow, core);
+
+                // ... and finally merge the result! :-)
+                AddSelf(bits.Slice(n), core);
+
+                if (coreFromPool != null)
+                    ArrayPool<uint>.Shared.Return(coreFromPool);
             }
         }
 
