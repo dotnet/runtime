@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
                 }
 
                 return ReadChunkedByteStringConcatenated();
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
                 }
 
                 return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
                 }
 
                 return ReadChunkedTextStringConcatenated();
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
                 }
 
                 return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
             }
 
             AdvanceBuffer(1);
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
             }
 
             AdvanceBuffer(1);

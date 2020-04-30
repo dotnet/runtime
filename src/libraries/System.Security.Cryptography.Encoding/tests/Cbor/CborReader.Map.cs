@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not support under the current conformance level.");
+                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
                 }
 
                 AdvanceBuffer(1);
