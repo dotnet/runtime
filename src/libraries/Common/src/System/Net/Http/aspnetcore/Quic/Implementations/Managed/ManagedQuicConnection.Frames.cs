@@ -1,10 +1,7 @@
 #nullable enable
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -339,8 +336,23 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             var buffer = stream.InboundBuffer!;
-
             long writtenOffset = frame.Offset + frame.StreamData.Length;
+
+            if (writtenOffset > buffer.EstimatedSize)
+            {
+                // receiving data on largest offset yet, check also connection-level control flow
+                ReceivedData += writtenOffset - buffer.EstimatedSize;
+                if (ReceivedData > _peerLimits.MaxData)
+                {
+                    return CloseConnection(TransportErrorCode.FlowControlError, QuicError.MaxDataViolated);
+                }
+            }
+
+            // check stream-level flow control
+            if (writtenOffset > buffer.MaxData)
+            {
+                return CloseConnection(TransportErrorCode.FlowControlError, QuicError.StreamMaxDataViolated);
+            }
 
             if (frame.Fin)
             {
@@ -356,12 +368,6 @@ namespace System.Net.Quic.Implementations.Managed
             if (buffer.FinalSize != null && frame.Offset + frame.StreamData.Length > buffer.FinalSize)
             {
                 return CloseConnection(TransportErrorCode.FinalSizeError, QuicError.WritingPastFinalSize);
-            }
-
-            // close if writing past allowed offset
-            if (writtenOffset > buffer.MaxData)
-            {
-                return CloseConnection(TransportErrorCode.FlowControlError, QuicError.StreamMaxDataViolated);
             }
 
             buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
@@ -406,6 +412,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (packetType == PacketType.OneRtt)
             {
                 WriteStreamMaxDataFrames(writer, context);
+                WriteMaxDataFrame(writer, context);
                 WriteStreamFrames(writer, context);
             }
 
@@ -474,8 +481,8 @@ namespace System.Net.Quic.Implementations.Managed
                 count = Math.Min(count, (long)writer.BytesAvailable - minSize);
                 pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
 
-                context.SentPacket.SentStreamData.Add(
-                    SentPacket.StreamChunkInfo.ForCryptoStream(offset, count));
+                context.SentPacket.StreamFrames.Add(
+                    SentPacket.StreamFrameHeader.ForCryptoStream(offset, (int) count));
             }
         }
 
@@ -578,13 +585,35 @@ namespace System.Net.Quic.Implementations.Managed
                 var frame = new MaxStreamDataFrame(stream.StreamId, buffer.MaxData);
                 if (writer.BytesAvailable < frame.GetSerializedLength())
                 {
-                    // cannot fit the frame into packet
+                    // cannot fit the frame into packet, be sure to try next time
                     _streams.MarkForFlowControlUpdate(stream);
                     return;
                 }
 
+                context.SentPacket.MaxStreamDataFrames.Add(frame);
                 MaxStreamDataFrame.Write(writer, frame);
             }
+        }
+
+        private void WriteMaxDataFrame(QuicWriter writer, SendContext context)
+        {
+            // TODO-RZ: strategy for deciding whether the frame should be sent.
+            if (MaxDataFrameSent ||
+                _localLimits.MaxData - _peerReceivedLocalLimits.MaxData < 1024 * 32 )
+            {
+                return;
+            }
+
+            var frame = new MaxDataFrame(_localLimits.MaxData);
+
+            if (writer.BytesAvailable <= frame.GetSerializedLength())
+            {
+                return;
+            }
+
+            MaxDataFrame.Write(writer, frame);
+            context.SentPacket.MaxDataFrame = frame;
+            MaxDataFrameSent = true;
         }
 
         private void WriteStreamFrames(QuicWriter writer, SendContext context)
@@ -601,27 +630,36 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 (long offset, long count) = buffer.GetNextSendableRange();
-                int overhead =
-                    StreamFrame.GetOverheadLength(stream!.StreamId, offset, Math.Min(count, writer.BytesAvailable));
 
+                // send only as much data as can fit into the packet
+                int overhead = StreamFrame.GetOverheadLength(stream.StreamId, offset, count);
                 count = Math.Min(count, writer.BytesAvailable - overhead);
+
+                // respect connection-level control flow
+                long flowControlAvailable = _peerLimits.MaxData - SentData;
+                count = Math.Min(count, buffer.SentBytes + flowControlAvailable - offset);
 
                 // if size is known, WrittenBytes is no longer mutable
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
 
                 if (count > 0 || fin)
                 {
-                    var data = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
+                    var payloadDestination = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
 
                     if (count > 0)
                     {
-                        buffer.CheckOut(data);
+                        // add the newly sent data to the flow control counter
+                        SentData += Math.Max(0, offset + count - buffer.SentBytes);
+
+                        buffer.CheckOut(payloadDestination);
                     }
 
-                    context.SentPacket.SentStreamData.Add(
-                        new SentPacket.StreamChunkInfo(stream!.StreamId, offset, count, fin));
+                    // record sent data
+                    context.SentPacket.StreamFrames.Add(
+                        new SentPacket.StreamFrameHeader(stream!.StreamId, offset, (int) count, fin));
                 }
 
+                // if there is more data to sent, put the stream back to queue
                 if (buffer.IsFlushable)
                 {
                     _streams.MarkFlushable(stream!);
@@ -629,7 +667,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (count <= 0)
                 {
-                    // no more data could fit into the packet.
+                    // no more data can fit into this packet.
                     break;
                 }
             }
@@ -638,7 +676,7 @@ namespace System.Net.Quic.Implementations.Managed
         private void OnPacketAcked(SentPacket packet, PacketNumberSpace pnSpace)
         {
             // mark all sent data as acked
-            foreach (var data in packet.SentStreamData)
+            foreach (var data in packet.StreamFrames)
             {
                 if (data.IsCryptoStream)
                 {
@@ -660,6 +698,19 @@ namespace System.Net.Quic.Implementations.Managed
                         stream.NotifyShutdownWriteCompleted();
                     }
                 }
+            }
+
+            foreach (var frame in packet.MaxStreamDataFrames)
+            {
+                var stream = GetStream(frame.StreamId);
+                Debug.Assert(stream.InboundBuffer != null);
+                stream.InboundBuffer.UpdateRemoteMaxData(frame.MaximumStreamData);
+            }
+
+            if (packet.MaxDataFrame != null)
+            {
+                MaxDataFrameSent = false;
+                _peerReceivedLocalLimits.UpdateMaxData(packet.MaxDataFrame.Value.MaximumData);
             }
 
             // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.

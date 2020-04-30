@@ -91,6 +91,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal long MaxData { get; private set; }
 
         /// <summary>
+        ///     Number of bytes from the beginning of the stream which were sent (and not necessarily delivered).
+        /// </summary>
+        internal long SentBytes { get; private set; }
+
+        /// <summary>
         ///     Synchronization for avoiding overfilling the buffer.
         /// </summary>
         private readonly SemaphoreSlim _bufferLimitSemaphore = new SemaphoreSlim(MaximumHeldChunks - 1);
@@ -276,6 +281,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 copied += inChunkCount;
                 i++;
             }
+
+            SentBytes = Math.Max(SentBytes, end + 1);
         }
 
         /// <summary>

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Threading;
 
 namespace System.Net.Quic.Implementations.Managed
 {
@@ -8,14 +10,21 @@ namespace System.Net.Quic.Implementations.Managed
     {
         private struct ConnectionFlowControlLimits
         {
+            private long _maxData;
+
             /// <summary>
             ///     Maximum amount of data the endpoint is allowed to send.
             /// </summary>
-            internal long MaxData { get; private set; }
+            internal long MaxData => _maxData;
 
             internal void UpdateMaxData(long value)
             {
-                MaxData = Math.Max(MaxData, value);
+                _maxData = Math.Max(_maxData, value);
+            }
+
+            internal void AddMaxData(long value)
+            {
+                Interlocked.Add(ref _maxData, value);
             }
 
             /// <summary>
@@ -40,11 +49,25 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         /// <summary>
+        ///     True if packet with <see cref="MaxDataFrame"/> is waiting for acknowledgement.
+        /// </summary>
+        private bool MaxDataFrameSent { get; set; }
+
+        /// <summary>
+        ///     Sum of maximum offsets of data sent across all streams.
+        /// </summary>
+        private long SentData { get; set; }
+
+        /// <summary>
+        ///     Sum of maximum offsets of data received across all streams.
+        /// </summary>
+        private long ReceivedData { get; set; }
+
+        /// <summary>
         ///     Opens a new outbound stream with lowest available stream id.
         /// </summary>
         /// <param name="unidirectional">True if the stream should be unidirectional.</param>
         /// <returns></returns>
-        /// <exception cref="QuicException"></exception>
         internal ManagedQuicStream OpenStream(bool unidirectional)
         {
             var type = StreamHelpers.GetLocallyInitiatedType(_isServer, unidirectional);
@@ -56,7 +79,17 @@ namespace System.Net.Quic.Implementations.Managed
                 throw new QuicException("Cannot open stream");
             }
 
-            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters, _socketContext);
+            return _streams.CreateOutboundStream(type, _localTransportParameters, _peerTransportParameters, this);
+        }
+
+        /// <summary>
+        ///     Gets a stream with given id. Use in cases where you are sure the stream exists.
+        /// </summary>
+        /// <param name="streamId">Id of the stream.</param>
+        /// <returns>The stream associated with provided id.</returns>
+        private ManagedQuicStream GetStream(long streamId)
+        {
+            return _streams[streamId];
         }
 
         /// <summary>
@@ -83,8 +116,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, _isServer,
-                _socketContext);
+            stream = _streams.GetOrCreateStream(streamId, _localTransportParameters, _peerTransportParameters, _isServer, this);
             return true;
         }
 
@@ -92,6 +124,18 @@ namespace System.Net.Quic.Implementations.Managed
         {
             _streams.IncomingStreams.Reader.TryRead(out var stream);
             return stream;
+        }
+
+        internal void OnStreamDataWritten(ManagedQuicStream stream)
+        {
+            _streams.MarkFlushable(stream);
+            _socketContext.Ping();
+        }
+
+        internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)
+        {
+            _localLimits.AddMaxData(bytesRead);
+            _streams.MarkForFlowControlUpdate(stream);
         }
     }
 }

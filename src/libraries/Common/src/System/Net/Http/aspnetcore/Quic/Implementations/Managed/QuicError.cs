@@ -26,6 +26,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal const string NotInRecvState = "Stream is not in Recv state";
         internal const string StreamsLimitViolated = "Streams limit exceeded";
         internal const string StreamMaxDataViolated = "Streams max data limit violated";
+        internal const string MaxDataViolated = "Connection max data limit violated";
         internal const string StreamNotWritable = "Stream is not writable";
         internal const string InconsistentFinalSize = "Inconsistent stream final size";
         internal const string WritingPastFinalSize = "Writing data past stream final size";

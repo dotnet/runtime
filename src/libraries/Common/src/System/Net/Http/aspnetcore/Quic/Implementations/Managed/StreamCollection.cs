@@ -79,7 +79,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         internal ManagedQuicStream GetOrCreateStream(long streamId, in TransportParameters localParams,
-            in TransportParameters remoteParams, bool isServer, QuicSocketContext ctx)
+            in TransportParameters remoteParams, bool isServer, ManagedQuicConnection connection)
         {
             var type = StreamHelpers.GetStreamType(streamId);
             // TODO-RZ: allow for long indices
@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.Managed
             // reserve space in the list
             while (streamList.Count <= index)
             {
-                var stream = CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, ctx);
+                var stream = CreateStream(streamId, isLocal, unidirectional, localParams, remoteParams, connection);
                 streamList.Add(stream);
 
                 if (!isLocal)
@@ -108,7 +108,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ManagedQuicStream CreateStream(long streamId,
             bool isLocal, bool unidirectional, TransportParameters localParams, TransportParameters remoteParams,
-            QuicSocketContext ctx)
+            ManagedQuicConnection connection)
         {
             // use initial flow control limits
             (long? maxDataInbound, long? maxDataOutbound) = (isLocal, unidirectional) switch
@@ -131,17 +131,17 @@ namespace System.Net.Quic.Implementations.Managed
                 ? new OutboundBuffer(maxDataOutbound.Value)
                 : null;
 
-            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, this, ctx);
+            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, connection);
         }
 
         internal ManagedQuicStream CreateOutboundStream(StreamType type, in TransportParameters localParams,
-            in TransportParameters remoteParams, QuicSocketContext ctx)
+            in TransportParameters remoteParams, ManagedQuicConnection connection)
         {
             var streamList = _streams[(int)type];
             long streamId = StreamHelpers.ComposeStreamId(type, streamList.Count);
 
             // TODO-RZ: data race: this is called from user-thread
-            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams, ctx);
+            var stream = CreateStream(streamId, true, !StreamHelpers.IsBidirectional(type), localParams, remoteParams, connection);
             streamList.Add(stream);
             return stream;
         }

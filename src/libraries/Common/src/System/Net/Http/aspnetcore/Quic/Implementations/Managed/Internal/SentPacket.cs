@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Xml;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -12,9 +14,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Structure containing data about sent data in Stream frames.
         /// </summary>
-        internal readonly struct StreamChunkInfo
+        internal readonly struct StreamFrameHeader
         {
-            internal StreamChunkInfo(long streamId, long offset, long count, bool fin)
+            internal StreamFrameHeader(long streamId, long offset, int count, bool fin)
             {
                 StreamId = streamId;
                 Offset = offset;
@@ -22,9 +24,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Fin = fin;
             }
 
-            internal static StreamChunkInfo ForCryptoStream(long offset, long length)
+            internal static StreamFrameHeader ForCryptoStream(long offset, int length)
             {
-                return new StreamChunkInfo(-1, offset, length, false);
+                return new StreamFrameHeader(-1, offset, length, false);
             }
 
             /// <summary>
@@ -45,7 +47,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             /// <summary>
             ///     Number of bytes sent.
             /// </summary>
-            internal readonly long Count;
+            internal readonly int Count;
 
             /// <summary>
             ///     True if this the Fin bit was set in the stream frame.
@@ -69,9 +71,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal RangeSet AckedRanges { get; } = new RangeSet();
 
         /// <summary>
-        ///     Offset and lengths of data sent in Stream and Crypto frames.
+        ///     Headers of the stream frames sent in this packet.
         /// </summary>
-        internal List<StreamChunkInfo> SentStreamData { get; } = new List<StreamChunkInfo>();
+        internal List<StreamFrameHeader> StreamFrames { get; } = new List<StreamFrameHeader>();
+
+        /// <summary>
+        ///     List of <see cref="MaxStreamDataFrames"/> sent in the packet.
+        /// </summary>
+        internal List<MaxStreamDataFrame> MaxStreamDataFrames { get; } = new List<MaxStreamDataFrame>();
+
+        /// <summary>
+        ///     Contains data from <see cref="MaxDataFrame"/>, if it was sent in the packet.
+        /// </summary>
+        internal MaxDataFrame? MaxDataFrame { get; set; }
 
         /// <summary>
         ///     True if HANDSHAKE_DONE frame is sent in the packet.
@@ -101,8 +113,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         public void Reset()
         {
+            PacketNumber = 0;
+            TimeSent = 0;
+
             AckedRanges.Clear();
-            SentStreamData.Clear();
+            StreamFrames.Clear();
+            MaxStreamDataFrames.Clear();
+            MaxDataFrame = null;
+
             HandshakeDoneSent = false;
             InFlight = false;
             AckEliciting = false;

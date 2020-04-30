@@ -35,14 +35,9 @@ namespace System.Net.Quic.Implementations.Managed
         private bool _disposed;
 
         /// <summary>
-        ///     Stream collection to which this stream belongs.
+        ///     Connection to which this stream belongs;
         /// </summary>
-        private readonly StreamCollection _streamCollection;
-
-        /// <summary>
-        ///     Context used to request updates after input from user.
-        /// </summary>
-        private readonly QuicSocketContext _ctx;
+        private readonly ManagedQuicConnection _connection;
 
         /// <summary>
         ///     If the stream can receive data, contains buffer representing receiving part of the stream. Otherwise null.
@@ -54,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         internal OutboundBuffer? OutboundBuffer { get; }
 
-        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, StreamCollection streamCollection, QuicSocketContext ctx)
+        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, ManagedQuicConnection connection)
         {
             // trivial check whether buffer nullable combination makes sense with respect to streamId
             Debug.Assert(inboundBuffer != null || outboundBuffer != null);
@@ -63,8 +58,7 @@ namespace System.Net.Quic.Implementations.Managed
             StreamId = streamId;
             InboundBuffer = inboundBuffer;
             OutboundBuffer = outboundBuffer;
-            _streamCollection = streamCollection;
-            _ctx = ctx;
+            _connection = connection;
 
             _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
             _flowControlUpdateQueueListNode = new LinkedListNode<ManagedQuicStream>(this);
@@ -81,7 +75,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                MarkFlushable();
+                _connection.OnStreamDataWritten(this);
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -102,7 +96,10 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotReadable();
 
             int result = InboundBuffer!.Deliver(buffer);
-            MarkForFlowControlUpdate();
+            if (result > 0)
+            {
+                _connection.OnStreamDataRead(this, result);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
@@ -115,7 +112,10 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfNotReadable();
 
             int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
-            MarkForFlowControlUpdate();
+            if (result > 0)
+            {
+                _connection.OnStreamDataRead(this, result);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
@@ -141,7 +141,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
-                MarkFlushable();
+                _connection.OnStreamDataWritten(this);
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -209,24 +209,13 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 OutboundBuffer!.MarkEndOfData();
                 await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
-                MarkFlushable();
+                _connection.OnStreamDataWritten(this);
             }
 
             // TODO-RZ: cancellation
             await _shutdownCompleted.GetTask();
         }
 
-        private void MarkFlushable()
-        {
-            _streamCollection.MarkFlushable(this);
-            _ctx.Ping();
-        }
-
-        private void MarkForFlowControlUpdate()
-        {
-            _streamCollection.MarkForFlowControlUpdate(this);
-            _ctx.Ping();
-        }
 
         internal void OnConnectionClosed()
         {
@@ -247,7 +236,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 OutboundBuffer!.MarkEndOfData();
                 OutboundBuffer!.FlushChunk();
-                MarkFlushable();
+                _connection.OnStreamDataWritten(this);
             }
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }

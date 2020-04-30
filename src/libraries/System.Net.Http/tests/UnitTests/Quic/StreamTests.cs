@@ -182,6 +182,23 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public void ClosesConnectionWhenSendingPastConnectionMaxData()
+        {
+            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
+            var clientStream = _client.OpenStream(true);
+            clientStream.Write(data);
+            clientStream.Flush();
+            _harness.Intercept1RttFrame<StreamFrame>(_client, _server, frame =>
+            {
+                frame.Offset = TransportParameters.DefaultMaxData - 1;
+            });
+
+            _harness.Send1Rtt(_server, _client).ShouldContainConnectionClose(
+                TransportErrorCode.FlowControlError,
+                QuicError.MaxDataViolated);
+        }
+
+        [Fact]
         public void ResendsDataAfterLoss()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};

@@ -224,10 +224,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 delivered += len;
 
                 // allow sender send more data
-                UpdateMaxData(MaxData + len);
             } while (destination.Length > 0);
 
+            UpdateMaxData(MaxData + delivered);
             BytesRead += delivered;
+
             return delivered;
         }
 

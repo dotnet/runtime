@@ -122,12 +122,17 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly ConnectionIdCollection _localConnectionIdCollection = new ConnectionIdCollection();
 
         /// <summary>
-        ///     Flow control limits for this endpoint for the entire connection.
+        ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
         private ConnectionFlowControlLimits _localLimits = default;
 
         /// <summary>
-        ///     Flow control limits for the peer endpoint for the entire connection.
+        ///     Values of <see cref="_localLimits"/> that peer has confirmed received.
+        /// </summary>
+        private ConnectionFlowControlLimits _peerReceivedLocalLimits = default;
+
+        /// <summary>
+        ///     Flow control limits set by the peer for this endpoint for the entire connection.
         /// </summary>
         private ConnectionFlowControlLimits _peerLimits;
 
@@ -578,16 +583,16 @@ namespace System.Net.Quic.Implementations.Managed
             // make sure we send something if a probe is wanted
             _pingWanted |= isProbePacket;
 
-                // TODO-RZ: Although ping should always work, the actual algorithm for probe packet is following
-                // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
-                // {
-                    // TODO-RZ: Client needs to send an anti-deadlock packet:
-                // }
-                // else
-                // {
-                    // TODO-RZ: PTO. Send new data if available, else retransmit old data.
-                    // If neither is available, send single PING frame.
-                // }
+            // TODO-RZ: Although ping should always work, the actual algorithm for probe packet is following
+            // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
+            // {
+                // TODO-RZ: Client needs to send an anti-deadlock packet:
+            // }
+            // else
+            // {
+                // TODO-RZ: PTO. Send new data if available, else retransmit old data.
+                // If neither is available, send single PING frame.
+            // }
 
             // limit outbound packet by available congestion window
             // probe packets are not limited by congestion window
@@ -806,7 +811,7 @@ namespace System.Net.Quic.Implementations.Managed
                     pnSpace.AckElicited = true;
                 }
 
-                foreach (var data in lostPacket.SentStreamData)
+                foreach (var data in lostPacket.StreamFrames)
                 {
                     if (data.IsCryptoStream)
                     {
@@ -814,7 +819,7 @@ namespace System.Net.Quic.Implementations.Managed
                     }
                     else
                     {
-                        var stream = _streams[data.StreamId];
+                        var stream = GetStream(data.StreamId);
 
                         // empty stream frames are only sent to send the Fin bit
                         Debug.Assert(data.Count > 0 || data.Fin);
@@ -830,6 +835,21 @@ namespace System.Net.Quic.Implementations.Managed
                 if (lostPacket.HandshakeDoneSent)
                 {
                     _handshakeDoneSent = false;
+                }
+
+                foreach (var frame in lostPacket.MaxStreamDataFrames)
+                {
+                    var stream = GetStream(frame.StreamId);
+                    // TODO-RZ: send these frames less often
+                    if (frame.MaximumStreamData > stream.InboundBuffer!.RemoteMaxData)
+                    {
+                        _streams.MarkForFlowControlUpdate(stream);
+                    }
+                }
+
+                if (lostPacket.MaxDataFrame != null)
+                {
+                    MaxDataFrameSent = false;
                 }
 
                 // acked ranges are deleted only when the packet was acked, so no action needed here
