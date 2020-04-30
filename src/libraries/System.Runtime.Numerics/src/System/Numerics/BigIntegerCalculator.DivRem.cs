@@ -94,22 +94,16 @@ namespace System.Numerics
             // Same as above, but only returning the quotient.
 
             uint[] bits = new uint[left.Length - right.Length + 1];
+            uint[]? leftCopyFromPool = null;
 
             // NOTE: left will get overwritten, we need a local copy
             // However, mutated left is not used afterwards, so use array pooling or stack alloc
-            if (left.Length < AllocationThreshold)
-            {
-                Span<uint> leftCopy = stackalloc uint[left.Length];
-                left.CopyTo(leftCopy);
-                Divide(leftCopy, right, bits);
-            }
-            else
-            {
-                uint[] leftCopy = ArrayPool<uint>.Shared.Rent(left.Length);
-                left.CopyTo(leftCopy);
-                Divide(new Span<uint>(leftCopy, 0, left.Length), right, bits);
-                ArrayPool<uint>.Shared.Return(leftCopy);
-            }
+            Span<uint> leftCopy = left.Length < AllocationThreshold ?
+                                  stackalloc uint[left.Length]
+                                  : (leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).AsSpan(0, left.Length);
+            left.CopyTo(leftCopy);
+
+            Divide(leftCopy, right, bits);
 
             return bits;
         }
