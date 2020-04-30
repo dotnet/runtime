@@ -3,7 +3,7 @@
   <Import Project="Directory.Build.targets" />
 
   <UsingTask TaskName="WasmAppBuilder"
-      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\publish\WasmAppBuilder.dll"/>
+      AssemblyFile="$(MonoProjectRoot)msbuild\WasmAppBuilder\bin\$(TargetOS)-$(TargetArchitecture)\publish\WasmAppBuilder.dll"/>
 
   <PropertyGroup>
 	<WasmPInvokeTablePath>$(MonoObjDir)wasm/pinvoke-table.h</WasmPInvokeTablePath>
@@ -20,7 +20,13 @@
 	<Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
-  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv">
+  <Target Name="BuildWasmAppBuilder">
+    <MSBuild Projects="$(MonoProjectRoot)mono.proj"
+             Properties="Configuration=$(Configuration)"
+             Targets="BuildWasmAppBuilder"/>
+  </Target>
+
+  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;BuildWasmAppBuilder">
     <MakeDir Directories="$(MonoObjDir)wasm"/>
 	<WasmAppBuilder
 	  PInvokeModules="@(WasmPInvokeModules)"
