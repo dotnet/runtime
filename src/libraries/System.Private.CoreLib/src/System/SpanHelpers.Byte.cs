@@ -1758,9 +1758,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(ulong match)
-        {
-            return 7 - (BitOperations.LeadingZeroCount(match) >> 3);
-        }
+            => BitOperations.Log2Unsafe(match) >> 3;
 
         private const ulong XorPowerOfTwoToHighByte = (0x07ul |
                                                        0x06ul << 8 |

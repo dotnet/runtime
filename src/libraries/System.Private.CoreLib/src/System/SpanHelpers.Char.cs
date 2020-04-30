@@ -1029,9 +1029,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundChar(ulong match)
-        {
-            return 3 - (BitOperations.LeadingZeroCount(match) >> 4);
-        }
+            => BitOperations.Log2Unsafe(match) >> 4;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector<ushort> LoadVector(ref char start, nint offset)

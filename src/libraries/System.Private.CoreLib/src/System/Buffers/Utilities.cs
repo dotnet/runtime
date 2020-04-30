@@ -14,8 +14,7 @@ namespace System.Buffers
         internal static int SelectBucketIndex(int bufferSize)
         {
             Debug.Assert(bufferSize >= 0);
-            uint bits = ((uint)bufferSize - 1) >> 4;
-            return 32 - BitOperations.LeadingZeroCount(bits);
+            return BitOperations.Log2Unsafe((uint)bufferSize - 1 | 0xF) - 3;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
