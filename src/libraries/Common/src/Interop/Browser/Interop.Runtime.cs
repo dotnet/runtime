@@ -382,7 +382,7 @@ internal static partial class Interop
                         else
                         {
                             if (t.IsValueType)
-                                throw new Exception("Can't handle VT arguments");
+                                throw new NotSupportedException("ValueType arguments are not supported.");
                             res += "o";
                         }
                         break;
