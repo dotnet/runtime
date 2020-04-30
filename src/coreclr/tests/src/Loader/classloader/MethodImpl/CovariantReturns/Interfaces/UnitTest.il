@@ -92,7 +92,7 @@
     ldarg.1
     ldstr "IGenRetType<int32,object> GenBaseType.MyGenFunc()"
     stind.ref
-    newobj instance void class IGenRetType<int32,object>::.ctor()
+    ldnull
     ret
   }
   .method public hidebysig newslot virtual instance class IGenRetType<!A, class IDictionary<string,!B>> MyGenFunc(string& res) 
