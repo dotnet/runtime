@@ -30,7 +30,7 @@ and accurately mechanism to implement
 This function needs to be able to decode an arbitrary `amd64`
 instruction.  The decoder currently must be able to identify:
 
-- Whether the instruction includes a instruction pointer relative memory accesses
+- Whether the instruction includes an instruction pointer relative memory access
 - The location of the memory displacement within the instruction
 - The instruction length in bytes
 - The size of the memory operation in bytes
