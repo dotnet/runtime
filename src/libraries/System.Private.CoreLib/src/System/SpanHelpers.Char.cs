@@ -984,27 +984,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(ulong match)
-        {
-            // TODO: Arm variants
-            if (Bmi1.X64.IsSupported)
-            {
-                return (int)(Bmi1.X64.TrailingZeroCount(match) >> 4);
-            }
-            else
-            {
-                unchecked
-                {
-                    // Flag least significant power of two bit
-                    ulong powerOfTwoFlag = match ^ (match - 1);
-                    // Shift all powers of two into the high byte and extract
-                    return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
-                }
-            }
-        }
-
-        private const ulong XorPowerOfTwoToHighChar = (0x03ul |
-                                                       0x02ul << 16 |
-                                                       0x01ul << 32) + 1;
+            => BitOperations.TrailingZeroCount(match) >> 4;
 
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
