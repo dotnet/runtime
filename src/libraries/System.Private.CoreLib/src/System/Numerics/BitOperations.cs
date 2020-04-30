@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -126,18 +127,35 @@ namespace System.Numerics
         /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
+        // The 0->0 contract is fulfilled by setting the LSB to 1.
+        // Log(1) is 0, and setting the LSB for values > 1 does not change the Log2 result.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(uint value)
+            => Log2Unsafe(value | 1);
+
+        /// <summary>
+        /// Returns the integer (floor) log of the specified value, base 2.
+        /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int Log2(ulong value)
+            => Log2Unsafe(value | 1);
+
+        /// <summary>
+        /// Returns the integer (floor) log of the specified value, base 2.
+        /// The result is undefined for input value 0.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Unsafe(uint value)
         {
-            // Enforce conventional contract 0->0 (Log(0) is undefined)
-            if (value == 0)
-            {
-                return 0;
-            }
+            Debug.Assert(value != 0);
 
             // value    lzcnt   actual  expected
-            // ..0000   32      0        0 (by convention, guard clause)
+            // ..0000   32      31^32   undefined
             // ..0001   31      31-31    0
             // ..0010   30      31-30    1
             // 0010..    2      31-2    29
@@ -157,6 +175,7 @@ namespace System.Numerics
             // However BSR is much slower than LZCNT on AMD processors, so we leave it as a fallback only.
             if (X86Base.IsSupported)
             {
+                // BSR contract is 0->undefined
                 return (int)X86Base.BitScanReverse(value);
             }
 
@@ -166,18 +185,13 @@ namespace System.Numerics
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
-        /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
+        /// The result is undefined for input value 0.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CLSCompliant(false)]
-        public static int Log2(ulong value)
+        internal static int Log2Unsafe(ulong value)
         {
-            // Enforce conventional contract 0->0 (Log(0) is undefined)
-            if (value == 0)
-            {
-                return 0;
-            }
+            Debug.Assert(value != 0);
 
             if (Lzcnt.X64.IsSupported)
             {
