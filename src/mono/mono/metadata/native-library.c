@@ -1238,7 +1238,7 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	new_scope = g_strdup (orig_scope);
 	new_import = g_strdup (orig_import);
 #endif
-
+retry_with_libcoreclr:
 #ifdef ENABLE_NETCORE
 	// FIXME: these flags are not getting passed correctly
 	module = netcore_lookup_native_library (alc, image, new_scope, 0);
@@ -1262,6 +1262,13 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
 
 	if (!addr) {
+#if defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
+		if (strcmp (new_scope, "__Internal") == 0) {
+			g_free ((char *)new_scope);
+			new_scope = g_strdup ("libcoreclr.so");
+			goto retry_with_libcoreclr;
+		}
+#endif		
 		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
 		status_out->err_arg = g_strdup (new_import);
 		goto exit;
