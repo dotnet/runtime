@@ -416,22 +416,13 @@ namespace System.Net.Http
         internal void LoadIntoBuffer(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (maxBufferSize > HttpContent.MaxBufferSize)
-            {
-                // This should only be hit when called directly; HttpClient/HttpClientHandler
-                // will not exceed this limit.
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
-            }
 
-            if (IsBuffered)
+            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
             {
-                // If we already buffered the content, just return a completed task.
+                // If we already buffered the content, just return.
                 return;
             }
 
-            MemoryStream? tempBuffer = CreateMemoryStream(maxBufferSize, out Exception? error);
             if (tempBuffer == null)
             {
                 throw error!;
@@ -473,22 +464,13 @@ namespace System.Net.Http
         internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (maxBufferSize > HttpContent.MaxBufferSize)
-            {
-                // This should only be hit when called directly; HttpClient/HttpClientHandler
-                // will not exceed this limit.
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
-            }
 
-            if (IsBuffered)
+            if (!CreateTemporaryBuffer(maxBufferSize, out MemoryStream? tempBuffer, out Exception? error))
             {
                 // If we already buffered the content, just return a completed task.
                 return Task.CompletedTask;
             }
 
-            MemoryStream? tempBuffer = CreateMemoryStream(maxBufferSize, out Exception? error);
             if (tempBuffer == null)
             {
                 // We don't throw in LoadIntoBufferAsync(): return a faulted task.
@@ -582,7 +564,31 @@ namespace System.Net.Http
                 // to do so.
                 _canCalculateLength = false;
             }
+
             return null;
+        }
+
+        private bool CreateTemporaryBuffer(long maxBufferSize, out MemoryStream? tempBuffer, out Exception? error)
+        {
+            if (maxBufferSize > HttpContent.MaxBufferSize)
+            {
+                // This should only be hit when called directly; HttpClient/HttpClientHandler
+                // will not exceed this limit.
+                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
+            }
+
+            if (IsBuffered)
+            {
+                // If we already buffered the content, just return false.
+                tempBuffer = default;
+                error = default;
+                return false;
+            }
+
+            tempBuffer = CreateMemoryStream(maxBufferSize, out error);
+            return true;
         }
 
         private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
