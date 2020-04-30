@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Numerics
@@ -244,8 +245,46 @@ namespace System.Numerics
             }
             else
             {
-                FastReducer reducer = new FastReducer(modulus);
-                PowCore(power, ref reducer, ref value, ref result, ref temp);
+                size = modulus.Length * 2 + 1;
+                uint[]? rFromPool = null;
+                Span<uint> r = size <= AllocationThreshold ?
+                               stackalloc uint[size]
+                               : (rFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                r.Clear();
+
+                size = r.Length - modulus.Length + 1;
+                uint[]? muFromPool = null;
+                Span<uint> mu = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (muFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                mu.Clear();
+
+                size = modulus.Length * 2 + 2;
+                uint[]? q1FromPool = null;
+                Span<uint> q1 = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (q1FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                q1.Clear();
+
+                uint[]? q2FromPool = null;
+                Span<uint> q2 = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (q2FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                q2.Clear();
+
+                FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
+
+                if (rFromPool != null)
+                    ArrayPool<uint>.Shared.Return(rFromPool);
+
+                PowCore(power, reducer, ref value, ref result, ref temp);
+
+                if (muFromPool != null)
+                    ArrayPool<uint>.Shared.Return(muFromPool);
+                if (q1FromPool != null)
+                    ArrayPool<uint>.Shared.Return(q1FromPool);
+                if (q2FromPool != null)
+                    ArrayPool<uint>.Shared.Return(q2FromPool);
             }
 
             return result.GetBits();
@@ -267,8 +306,46 @@ namespace System.Numerics
             }
             else
             {
-                FastReducer reducer = new FastReducer(modulus);
-                PowCore(power, ref reducer, ref value, ref result, ref temp);
+                size = modulus.Length * 2 + 1;
+                uint[]? rFromPool = null;
+                Span<uint> r = size <= AllocationThreshold ?
+                               stackalloc uint[size]
+                               : (rFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                r.Clear();
+
+                size = r.Length - modulus.Length + 1;
+                uint[]? muFromPool = null;
+                Span<uint> mu = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (muFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                mu.Clear();
+
+                size = modulus.Length * 2 + 2;
+                uint[]? q1FromPool = null;
+                Span<uint> q1 = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (q1FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                q1.Clear();
+
+                uint[]? q2FromPool = null;
+                Span<uint> q2 = size <= AllocationThreshold ?
+                                stackalloc uint[size]
+                                : (q2FromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                q2.Clear();
+
+                FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
+
+                if (rFromPool != null)
+                    ArrayPool<uint>.Shared.Return(rFromPool);
+
+                PowCore(power, reducer, ref value, ref result, ref temp);
+
+                if (muFromPool != null)
+                    ArrayPool<uint>.Shared.Return(muFromPool);
+                if (q1FromPool != null)
+                    ArrayPool<uint>.Shared.Return(q1FromPool);
+                if (q2FromPool != null)
+                    ArrayPool<uint>.Shared.Return(q2FromPool);
             }
 
             return result.GetBits();
@@ -330,7 +407,7 @@ namespace System.Numerics
             }
         }
 
-        private static void PowCore(uint[] power, ref FastReducer reducer,
+        private static void PowCore(uint[] power, in FastReducer reducer,
                                     ref BitsBuffer value, ref BitsBuffer result,
                                     ref BitsBuffer temp)
         {
@@ -348,19 +425,19 @@ namespace System.Numerics
                     if ((p & 1) == 1)
                     {
                         result.MultiplySelf(ref value, ref temp);
-                        result.Reduce(ref reducer);
+                        result.Reduce(reducer);
                     }
                     value.SquareSelf(ref temp);
-                    value.Reduce(ref reducer);
+                    value.Reduce(reducer);
                     p = p >> 1;
                 }
             }
 
-            PowCore(power[power.Length - 1], ref reducer, ref value, ref result,
+            PowCore(power[power.Length - 1], reducer, ref value, ref result,
                 ref temp);
         }
 
-        private static void PowCore(uint power, ref FastReducer reducer,
+        private static void PowCore(uint power, in FastReducer reducer,
                                     ref BitsBuffer value, ref BitsBuffer result,
                                     ref BitsBuffer temp)
         {
@@ -375,12 +452,12 @@ namespace System.Numerics
                 if ((power & 1) == 1)
                 {
                     result.MultiplySelf(ref value, ref temp);
-                    result.Reduce(ref reducer);
+                    result.Reduce(reducer);
                 }
                 if (power != 1)
                 {
                     value.SquareSelf(ref temp);
-                    value.Reduce(ref reducer);
+                    value.Reduce(reducer);
                 }
                 power = power >> 1;
             }

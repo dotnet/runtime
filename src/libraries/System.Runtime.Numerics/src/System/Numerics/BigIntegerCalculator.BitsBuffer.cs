@@ -81,12 +81,12 @@ namespace System.Numerics
                 Apply(ref temp, _length + _length);
             }
 
-            public void Reduce(ref FastReducer reducer)
+            public void Reduce(in FastReducer reducer)
             {
                 // Executes a modulo operation using an optimized reducer.
                 // Thus, no need of any switching here, happens in-line.
 
-                _length = reducer.Reduce(_bits, _length);
+                _length = reducer.Reduce(_bits.AsSpan(0, _length));
             }
 
             public void Reduce(uint[] modulus)
