@@ -749,15 +749,19 @@ namespace System.Numerics
                                   stackalloc uint[size]
                                   : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
 
-                BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out rest);
+                try
+                {
+                    //may throw DivideByZeroException
+                    BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out rest);
 
-                remainder = dividend._sign < 0 ? -1 * rest : rest;
-                var result = new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
-
-                if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
-
-                return result;
+                    remainder = dividend._sign < 0 ? -1 * rest : rest;
+                    return new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+                }
+                finally
+                {
+                    if (bitsFromPool != null)
+                        ArrayPool<uint>.Shared.Return(bitsFromPool);
+                }
             }
 
             Debug.Assert(divisor._bits != null);
@@ -769,11 +773,30 @@ namespace System.Numerics
             }
             else
             {
-                uint[] rest;
-                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits, out rest);
+                uint[]? remainderFromPool = null;
+                int size = dividend._bits.Length;
+                Span<uint> rest = size <= StackAllocThreshold ?
+                                       stackalloc uint[size]
+                                       : (remainderFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                uint[]? quotientFromPool = null;
+                size = dividend._bits.Length - divisor._bits.Length + 1;
+                Span<uint> quotient = size <= StackAllocThreshold ?
+                                      stackalloc uint[size]
+                                      : (quotientFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient, rest);
 
                 remainder = new BigInteger(rest, dividend._sign < 0);
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                var result = new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+
+                if (remainderFromPool != null)
+                    ArrayPool<uint>.Shared.Return(remainderFromPool);
+
+                if (quotientFromPool != null)
+                    ArrayPool<uint>.Shared.Return(quotientFromPool);
+
+                return result;
             }
         }
 
@@ -2174,8 +2197,24 @@ namespace System.Numerics
             if (trivialDivisor)
             {
                 Debug.Assert(dividend._bits != null);
-                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+
+                uint[]? quotientFromPool = null;
+                int size = dividend._bits.Length;
+                Span<uint> quotient = size <= StackAllocThreshold ?
+                                      stackalloc uint[size]
+                                      : (quotientFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                try
+                {
+                    //may throw DivideByZeroException
+                    BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient);
+                    return new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+                }
+                finally
+                {
+                    if (quotientFromPool != null)
+                        ArrayPool<uint>.Shared.Return(quotientFromPool);
+                }
             }
 
             Debug.Assert(dividend._bits != null && divisor._bits != null);
@@ -2186,8 +2225,19 @@ namespace System.Numerics
             }
             else
             {
-                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits);
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                uint[]? quotientFromPool = null;
+                int size = dividend._bits.Length - divisor._bits.Length + 1;
+                Span<uint> quotient = size < StackAllocThreshold ?
+                                      stackalloc uint[size]
+                                      : (quotientFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+
+                BigIntegerCalculator.Divide(dividend._bits, divisor._bits, quotient);
+                var result = new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+
+                if (quotientFromPool != null)
+                    ArrayPool<uint>.Shared.Return(quotientFromPool);
+
+                return result;
             }
         }
 
