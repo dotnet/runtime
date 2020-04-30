@@ -8,10 +8,10 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static void Add(ReadOnlySpan<uint> left, uint right, Span<uint> result)
+        public static void Add(ReadOnlySpan<uint> left, uint right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= 1);
-            Debug.Assert(result.Length == left.Length + 1);
+            Debug.Assert(bits.Length == left.Length + 1);
 
             // Executes the addition for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
@@ -22,11 +22,11 @@ namespace System.Numerics
             for (int i = 0; i < left.Length; i++)
             {
                 long digit = left[i] + carry;
-                result[i] = unchecked((uint)digit);
+                bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
 
-            result[left.Length] = (uint)carry;
+            bits[left.Length] = (uint)carry;
         }
 
         public static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
@@ -89,16 +89,16 @@ namespace System.Numerics
             Debug.Assert(carry == 0);
         }
 
-        public static uint[] Subtract(ReadOnlySpan<uint> left, uint right)
+        public static void Subtract(ReadOnlySpan<uint> left, uint right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= 1);
             Debug.Assert(left[0] >= right || left.Length >= 2);
+            Debug.Assert(bits.Length == left.Length);
 
             // Executes the subtraction for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            uint[] bits = new uint[left.Length];
             long carry = -right;
 
             for (int i = 0; i < left.Length; i++)
@@ -107,22 +107,9 @@ namespace System.Numerics
                 bits[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-
-            return bits;
         }
 
-        public static uint[] Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
-        {
-            Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(Compare(left, right) >= 0);
-
-            uint[] bits = new uint[left.Length];
-            Subtract(left, right, bits);
-
-            return bits;
-        }
-
-        private static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+        public static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= 0);
             Debug.Assert(right.Length >= 0);
