@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    internal class SystemIPGlobalProperties : IPGlobalProperties
+    internal sealed class SystemIPGlobalProperties : IPGlobalProperties
     {
         internal SystemIPGlobalProperties()
         {
@@ -371,96 +368,39 @@ namespace System.Net.NetworkInformation
             return new SystemIcmpV6Statistics();
         }
 
-        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state)
+        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(GetUnicastAddressesAsync(), callback, state);
+
+        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult) =>
+            TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
+
+        public override UnicastIPAddressInformationCollection GetUnicastAddresses() =>
+            GetUnicastAddressesAsync().GetAwaiter().GetResult();
+
+        public override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
-            ContextAwareResult asyncResult = new ContextAwareResult(false, false, this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-            if (TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(StableUnicastAddressTableCallback, asyncResult))
+            // Wait for the address table to stabilize.
+            var tcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
             {
-                asyncResult.InvokeCallback();
+                await tcs.Task.ConfigureAwait(false);
             }
 
-            asyncResult.FinishPostingAsyncOp();
+            // Get the address table.
+            var addresses = new UnicastIPAddressInformationCollection();
 
-            return asyncResult;
-        }
-
-        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
+            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
-            ContextAwareResult? result = asyncResult as ContextAwareResult;
-            if (result == null || result.AsyncObject == null || result.AsyncObject.GetType() != typeof(SystemIPGlobalProperties))
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult);
-            }
-
-            if (result.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndGetStableUnicastAddresses"));
-            }
-
-            result.InternalWaitForCompletion();
-
-            result.EndCalled = true;
-            return GetUnicastAddressTable();
-        }
-
-        public override UnicastIPAddressInformationCollection GetUnicastAddresses()
-        {
-            // Wait for the Address Table to stabilize
-            using (ManualResetEvent stable = new ManualResetEvent(false))
-            {
-                if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(StableUnicastAddressTableCallback, stable))
+                foreach (UnicastIPAddressInformation address in ni.GetIPProperties().UnicastAddresses)
                 {
-                    stable.WaitOne();
-                }
-            }
-
-            return GetUnicastAddressTable();
-        }
-
-        public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
-        {
-            return Task<UnicastIPAddressInformationCollection>.Factory.FromAsync(BeginGetUnicastAddresses, EndGetUnicastAddresses, null);
-        }
-
-        private static void StableUnicastAddressTableCallback(object param)
-        {
-            EventWaitHandle? handle = param as EventWaitHandle;
-            if (handle != null)
-            {
-                handle.Set();
-            }
-            else
-            {
-                LazyAsyncResult asyncResult = (LazyAsyncResult)param;
-                asyncResult.InvokeCallback();
-            }
-        }
-
-        private static UnicastIPAddressInformationCollection GetUnicastAddressTable()
-        {
-            UnicastIPAddressInformationCollection rval = new UnicastIPAddressInformationCollection();
-
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-            for (int i = 0; i < interfaces.Length; ++i)
-            {
-                UnicastIPAddressInformationCollection addresses = interfaces[i].GetIPProperties().UnicastAddresses;
-
-                foreach (UnicastIPAddressInformation address in addresses)
-                {
-                    if (!rval.Contains(address))
+                    if (!addresses.Contains(address))
                     {
-                        rval.InternalAdd(address);
+                        addresses.InternalAdd(address);
                     }
                 }
             }
 
-            return rval;
+            return addresses;
         }
     }
 }
