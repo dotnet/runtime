@@ -15,6 +15,8 @@ extern "C"
     int HOSTPOLICY_CALLTYPE corehost_unload();
     corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer);
     int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract);
+    int HOSTPOLICY_CALLTYPE corehost_main(const int argc, const pal::char_t* argv[]);
+    int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
 }
 
 int hostpolicy_resolver::load(
@@ -30,6 +32,8 @@ int hostpolicy_resolver::load(
     contract.unload = corehost_unload;
     contract.set_error_writer = corehost_set_error_writer;
     contract.initialize = corehost_initialize;
+    contract.corehost_main = corehost_main;
+    contract.corehost_main_with_output_buffer = corehost_main_with_output_buffer;
 
     hostpolicy_contract = contract;
     *dll = nullptr;
