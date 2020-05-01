@@ -143,6 +143,19 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
     return SimdAsHWIntrinsicClassId::Unknown;
 }
 
+//------------------------------------------------------------------------
+// impSimdAsIntrinsic: Import a SIMD intrinsic as a GT_HWINTRINSIC node if possible
+//
+// Arguments:
+//    intrinsic  -- id of the intrinsic function.
+//    clsHnd     -- class handle containing the intrinsic function.
+//    method     -- method handle of the intrinsic function.
+//    sig        -- signature of the intrinsic call
+//    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
+//
+// Return Value:
+//    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
+//
 GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
@@ -251,6 +264,21 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impSimdAsHWIntrinsicSpecial: Import a SIMD intrinsic as a GT_HWINTRINSIC node if possible
+//                              This method handles cases which cannot be table driven
+//
+// Arguments:
+//    intrinsic  -- id of the intrinsic function.
+//    clsHnd     -- class handle containing the intrinsic function.
+//    sig        -- signature of the intrinsic call
+//    retType    -- the return type of the intrinsic call
+//    baseType   -- the base type of SIMD type of the intrinsic
+//    simdSize   -- the size of the SIMD type of the intrinsic
+//
+// Return Value:
+//    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
+//
 GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                CORINFO_CLASS_HANDLE clsHnd,
                                                CORINFO_SIG_INFO*    sig,
@@ -650,6 +678,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impSimdAsHWIntrinsicCndSel: Import a SIMD conditional select intrinsic
+//
+// Arguments:
+//    clsHnd     -- class handle containing the intrinsic function.
+//    retType    -- the return type of the intrinsic call
+//    baseType   -- the base type of SIMD type of the intrinsic
+//    simdSize   -- the size of the SIMD type of the intrinsic
+//    op1        -- the first operand of the intrinsic
+//    op2        -- the second operand of the intrinsic
+//    op3        -- the third operand of the intrinsic
+//
+// Return Value:
+//    The GT_HWINTRINSIC node representing the conditional select
+//
 GenTree* Compiler::impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
                                               var_types            retType,
                                               var_types            baseType,
@@ -715,6 +758,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
 }
 
 #if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// impSimdAsHWIntrinsicRelOp: Import a SIMD relational operator intrinsic
+//
+// Arguments:
+//    intrinsic  -- id of the intrinsic function.
+//    clsHnd     -- class handle containing the intrinsic function.
+//    retType    -- the return type of the intrinsic call
+//    baseType   -- the base type of SIMD type of the intrinsic
+//    simdSize   -- the size of the SIMD type of the intrinsic
+//    op1        -- the first operand of the intrinsic
+//    op2        -- the second operand of the intrinsic
+//
+// Return Value:
+//    The GT_HWINTRINSIC node representing the relational operator
+//
 GenTree* Compiler::impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                                              CORINFO_CLASS_HANDLE clsHnd,
                                              var_types            retType,
