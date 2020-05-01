@@ -20,7 +20,8 @@ This is similar to [Linux](linux-requirements.md) instructions. https://github.c
 with all needed prerequisites to build. As the example bellow may become stale, https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json offers list of latest Docker tags.
 
 ```sh
-docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2 ./build.sh -cross -FreeBSD
+TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2
+docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -FreeBSD
 ```
 
 Build using Toolchain Setup
@@ -33,10 +34,6 @@ apt-get install -y libbz2-dev libz-dev liblzma-dev libarchive-dev libbsd-dev
 With prerequisites for crossrootfs one can run:
 ```sh
 ./eng/common/cross/build-rootfs.sh freebsd11 $(pwd)/rootfs/freebsd
-```
-or
-```sh
-./eng/common/cross/build-rootfs.sh freebsd12 $(pwd)/rootfs/freebsd
 ```
 After that, FreeBSD build can be started by running
 ```
