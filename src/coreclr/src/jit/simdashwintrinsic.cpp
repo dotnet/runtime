@@ -208,6 +208,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         compFloatingPointUsed = true;
     }
 
+    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
+    {
+        // We need to fixup the clsHnd in the case we are an intrinsic on Vector
+        // The first argument will be the appropriate Vector<T> handle to use
+        clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
+    }
+
     if (hwIntrinsic == intrinsic)
     {
         // The SIMD intrinsic requires special handling outside the normal code path
