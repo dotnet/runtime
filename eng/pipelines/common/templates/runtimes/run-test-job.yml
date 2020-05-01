@@ -217,7 +217,7 @@ jobs:
             unpackFolder: '$(managedTestArtifactRootFolderPath)'
             artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
             artifactName: '$(managedTestArtifactName)'
-            displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+            displayName: 'target specific managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
 
 
     # Download product binaries directory
@@ -253,7 +253,7 @@ jobs:
 
         # Build targetSpecific managed test components
         - script: $(coreClrRepoRootDir)build-test$(scriptExt) targetSpecific skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
-          displayName: Build managed test components
+          displayName: Build target specific managed test components
 
 
     # If we didn't build target specific tests here
