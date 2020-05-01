@@ -40,6 +40,6 @@ namespace System.Diagnostics.Tracing
 
         // Define an EventPipeEvent handle.
         unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
-            uint level, byte *pMetadata, uint metadataLength, byte* pMetadataV2, uint metadataLengthV2);
+            uint level, byte *pMetadata, uint metadataLength);
     }
 }

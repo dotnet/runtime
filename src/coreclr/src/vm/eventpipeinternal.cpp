@@ -111,9 +111,7 @@ INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
     UINT32 eventVersion,
     UINT32 level,
     void *pMetadata,
-    UINT32 metadataLength,
-    void *pMetadataV2,
-    UINT32 metadataLengthV2)
+    UINT32 metadataLength)
 {
     QCALL_CONTRACT;
 
@@ -123,8 +121,7 @@ INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
 
     _ASSERTE(provHandle != NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-     pEvent = pProvider->AddEvent(eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength,
-        (BYTE*)pMetadataV2, metadataLengthV2);
+     pEvent = pProvider->AddEvent(eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
 
     END_QCALL;

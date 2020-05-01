@@ -7,20 +7,13 @@ using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 namespace System.Diagnostics.Tracing
 {
 #if FEATURE_PERFTRACING
-
-    internal struct EventPipeMetadata
-    {
-        public byte[]? MetadataV1;
-        public byte[]? MetadataV2;
-    }
-
     internal sealed class EventPipeMetadataGenerator
     {
         public static EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
 
         private EventPipeMetadataGenerator() { }
 
-        public EventPipeMetadata GenerateEventMetadata(EventMetadata eventMetadata)
+        public byte[]? GenerateEventMetadata(EventMetadata eventMetadata)
         {
             ParameterInfo[] parameters = eventMetadata.Parameters;
             EventParameterInfo[] eventParams = new EventParameterInfo[parameters.Length];
@@ -38,7 +31,7 @@ namespace System.Diagnostics.Tracing
                 eventParams);
         }
 
-        public EventPipeMetadata GenerateEventMetadata(
+        public byte[]? GenerateEventMetadata(
             int eventId,
             string eventName,
             EventKeywords keywords,
@@ -62,7 +55,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, eventParams);
         }
 
-        internal unsafe EventPipeMetadata GenerateMetadata(
+        internal unsafe byte[]? GenerateMetadata(
             int eventId,
             string eventName,
             long keywords,
@@ -71,14 +64,31 @@ namespace System.Diagnostics.Tracing
             EventParameterInfo[] parameters)
 
         {
-            EventPipeMetadata md = default(EventPipeMetadata);
-            md.MetadataV1 = GenerateMetadata(eventId, eventName, keywords, level, version, parameters,
+            // TODO: I would like this to not allocate 2x what it needs to
+            byte[]? metadataV1 = GenerateMetadata(eventId, eventName, keywords, level, version, parameters,
                 out bool hasUnsupportedParamTypes);
+            byte[]? metadataV2 = null;
             if (hasUnsupportedParamTypes)
             {
-                md.MetadataV2 = GenerateMetadataV2(eventId, eventName, keywords, level, version, parameters);
+                if (metadataV1 == null)
+                {
+                    // We bailed on metadata generation so we can't trust anything
+                    return null;
+                }
+
+                metadataV2 = GenerateMetadataV2(eventId, eventName, keywords, level, version, parameters);
+                if (metadataV2 != null)
+                {
+                    // Append the new metadata to the end of the original metadata.
+                    byte[] temp = new byte[metadataV1.Length + metadataV2.Length];
+                    Array.Copy(metadataV1, 0, temp, 0, metadataV1.Length);
+                    Array.Copy(metadataV2, 0, temp, metadataV1.Length, metadataV2.Length);
+
+                    metadataV1 = temp;
+                }
             }
-            return md;
+
+            return metadataV1;
         }
 
         private unsafe byte[]? GenerateMetadata(
