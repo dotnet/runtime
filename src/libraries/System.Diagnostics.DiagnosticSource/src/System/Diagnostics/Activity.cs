@@ -1162,11 +1162,11 @@ namespace System.Diagnostics
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
 
-            public LinkedList(T firstValue) => _last =_first = new LinkedListNode<T>(firstValue);
+            public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
 
             public LinkedList(IEnumerator<T> e)
             {
-                _last =_first = new LinkedListNode<T>(e.Current);
+                _last = _first = new LinkedListNode<T>(e.Current);
 
                 while (e.MoveNext())
                 {

@@ -16,20 +16,13 @@ namespace System.Diagnostics
     {
         public override int GetHashCode()
         {
-            if (this == default)
-                return 0;
-
             HashCode hashCode = default;
             hashCode.Add(Context);
             if (Attributes != null)
             {
                 foreach (KeyValuePair<string, object> kvp in Attributes)
                 {
-                    hashCode.Add(kvp.Key);
-                    if (kvp.Value != null)
-                    {
-                        hashCode.Add(kvp.Value);
-                    }
+                    hashCode.Add(kvp.Key, kvp.Value);
                 }
             }
             return hashCode.ToHashCode();

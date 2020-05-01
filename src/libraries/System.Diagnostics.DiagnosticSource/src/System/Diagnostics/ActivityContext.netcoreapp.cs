@@ -10,12 +10,6 @@ namespace System.Diagnostics
     /// </summary>
     public readonly partial struct ActivityContext : IEquatable<ActivityContext>
     {
-        public override int GetHashCode()
-        {
-            if (this == default)
-                return 0;
-
-            return HashCode.Combine(TraceId, SpanId, TraceFlags, TraceState == null ? "" : TraceState);
-        }
+        public override int GetHashCode() => HashCode.Combine(TraceId, SpanId, TraceFlags, TraceState);
     }
 }
