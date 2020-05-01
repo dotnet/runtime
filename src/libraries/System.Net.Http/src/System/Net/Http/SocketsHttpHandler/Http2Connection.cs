@@ -788,7 +788,7 @@ namespace System.Net.Http
                         // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
                         // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
                         // cancellation was requested, and it's because of that cancellation that we need to flush.
-                        LogExceptions(FlushAsync(default));
+                        LogExceptions(FlushAsync(cancellationToken: default));
                     }
 
                     throw;
@@ -919,7 +919,7 @@ namespace System.Net.Http
                         // at least one other pending writer who can handle the flush.  Worst case, we pay for a flush that ends up being
                         // a nop.  Note: we explicitly do not pass in the cancellationToken; if we're here, it's almost certainly because
                         // cancellation was requested, and it's because of that cancellation that we need to flush.
-                        LogExceptions(FlushAsync(default));
+                        LogExceptions(FlushAsync(cancellationToken: default));
                     }
 
                     throw;

@@ -236,6 +236,8 @@ namespace System.Net.Http.Headers
                     break;
             }
 
+            Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
+
             return candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
                 candidate :
                 null;
