@@ -194,6 +194,9 @@ namespace System.Diagnostics.Tracing
                 uint metadataLength = 24 + ((uint)eventName.Length + 1) * 2;
                 uint metadataHeaderLength = metadataLength;
 
+                // "V2" identifier       : 6 bytes
+                metadataLength += 6;
+
                 // parameter area
                 // parameterCount        : 4 bytes
                 // parameters            : N bytes
@@ -222,6 +225,10 @@ namespace System.Diagnostics.Tracing
                 fixed (byte* pMetadata = metadata)
                 {
                     uint offset = 0;
+                    // Write "V2" in to the stream to indicate that we are adding V2 metadata
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, 'V');
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, '2');
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, '\0');
                     WriteToBuffer(pMetadata, metadataLength, ref offset, metadataHeaderLength);
                     WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
                     fixed (char* pEventName = eventName)
