@@ -885,30 +885,37 @@ namespace System.Numerics
         {
             Debug.Assert(BigIntegerCalculator.Compare(leftBits, rightBits) >= 0);
 
+            uint[]? bitsFromPool = null;
+            BigInteger result;
+
             // Short circuits to spare some allocations...
             if (rightBits.Length == 1)
             {
                 uint temp = BigIntegerCalculator.Remainder(leftBits, rightBits[0]);
-                return BigIntegerCalculator.Gcd(rightBits[0], temp);
+                result = BigIntegerCalculator.Gcd(rightBits[0], temp);
             }
-
-            if (rightBits.Length == 2)
+            else if (rightBits.Length == 2)
             {
-                uint[] tempBits = BigIntegerCalculator.Remainder(leftBits, rightBits);
+                Span<uint> bits = leftBits.Length <= StackAllocThreshold ?
+                                  stackalloc uint[leftBits.Length]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(leftBits.Length)).AsSpan(0, leftBits.Length);
+
+                BigIntegerCalculator.Remainder(leftBits, rightBits, bits);
 
                 ulong left = ((ulong)rightBits[1] << 32) | rightBits[0];
-                ulong right = ((ulong)tempBits[1] << 32) | tempBits[0];
+                ulong right = ((ulong)bits[1] << 32) | bits[0];
 
-                return BigIntegerCalculator.Gcd(left, right);
+                result = BigIntegerCalculator.Gcd(left, right);
             }
-
-            uint[]? bitsFromPool = null;
-            Span<uint> bits = leftBits.Length <= StackAllocThreshold ?
+            else
+            {
+                Span<uint> bits = leftBits.Length <= StackAllocThreshold ?
                               stackalloc uint[leftBits.Length]
                               : (bitsFromPool = ArrayPool<uint>.Shared.Rent(leftBits.Length)).AsSpan(0, leftBits.Length);
 
-            BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
-            var result = new BigInteger(bits, false);
+                BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
+                result = new BigInteger(bits, false);
+            }
 
             if (bitsFromPool != null)
                 ArrayPool<uint>.Shared.Return(bitsFromPool);

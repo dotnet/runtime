@@ -104,51 +104,6 @@ namespace System.Numerics
                 }
             }
 
-            public void Reduce(ref BitsBuffer modulus)
-            {
-                // Executes a modulo operation using the divide operation.
-                // Thus, no need of any switching here, happens in-line.
-
-                if (_length >= modulus._length)
-                {
-                    Divide(new Span<uint>(_bits, 0, _length), new Span<uint>(modulus._bits, 0, modulus._length), default);
-
-                    _length = ActualLength(new ReadOnlySpan<uint>(_bits, 0, modulus._length));
-                }
-            }
-
-            public void Overwrite(ulong value)
-            {
-                Debug.Assert(_bits.Length >= 2);
-
-                if (_length > 2)
-                {
-                    // Ensure leading zeros
-                    Array.Clear(_bits, 2, _length - 2);
-                }
-
-                uint lo = unchecked((uint)value);
-                uint hi = (uint)(value >> 32);
-
-                _bits[0] = lo;
-                _bits[1] = hi;
-                _length = hi != 0 ? 2 : lo != 0 ? 1 : 0;
-            }
-
-            public void Overwrite(uint value)
-            {
-                Debug.Assert(_bits.Length >= 1);
-
-                if (_length > 1)
-                {
-                    // Ensure leading zeros
-                    Array.Clear(_bits, 1, _length - 1);
-                }
-
-                _bits[0] = value;
-                _length = value != 0 ? 1 : 0;
-            }
-
             public uint[] GetBits()
             {
                 return _bits;

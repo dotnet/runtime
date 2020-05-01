@@ -98,29 +98,6 @@ namespace System.Numerics
                 ArrayPool<uint>.Shared.Return(leftCopyFromPool);
         }
 
-        public static uint[] Divide(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
-        {
-            Debug.Assert(left.Length >= 1);
-            Debug.Assert(right.Length >= 1);
-            Debug.Assert(left.Length >= right.Length);
-
-            // Same as above, but only returning the quotient.
-
-            uint[] bits = new uint[left.Length - right.Length + 1];
-            uint[]? leftCopyFromPool = null;
-
-            // NOTE: left will get overwritten, we need a local copy
-            // However, mutated left is not used afterwards, so use array pooling or stack alloc
-            Span<uint> leftCopy = left.Length < AllocationThreshold ?
-                                  stackalloc uint[left.Length]
-                                  : (leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).AsSpan(0, left.Length);
-            left.CopyTo(leftCopy);
-
-            Divide(leftCopy, right, bits);
-
-            return bits;
-        }
-
         public static uint[] Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
             Debug.Assert(left.Length >= 1);
