@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private int? _currentKeyOffset = null;
         private bool _currentItemIsKey = false;
         private (int Offset, int Length)? _previousKeyRange;
-        private HashSet<(int Offset, int Length)>? _previousKeyRanges;
+        private HashSet<(int Offset, int Length)>? _keyEncodingRanges;
 
         // flag used to temporarily disable conformance level checks,
         // e.g. during a skip operation over nonconforming encodings.
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 currentKeyOffset: _currentKeyOffset,
                 currentItemIsKey: _currentItemIsKey,
                 previousKeyRange: _previousKeyRange,
-                previousKeyRanges: _previousKeyRanges
+                previousKeyRanges: _keyEncodingRanges
             );
 
             _nestedDataItems ??= new Stack<StackFrame>();
@@ -316,14 +316,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _currentKeyOffset = (type == CborMajorType.Map) ? (int?)_bytesRead : null;
             _currentItemIsKey = type == CborMajorType.Map;
             _previousKeyRange = null;
-            _previousKeyRanges = null;
+            _keyEncodingRanges = null;
         }
 
         private void PopDataItem(CborMajorType expectedType)
         {
             if (_nestedDataItems is null || _nestedDataItems.Count == 0)
             {
-                throw new InvalidOperationException("No active CBOR nested data item to pop");
+                throw new InvalidOperationException("No active CBOR nested data item to pop.");
             }
 
             StackFrame frame = _nestedDataItems.Peek();
@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _currentKeyOffset = frame.CurrentKeyOffset;
             _currentItemIsKey = frame.CurrentItemIsKey;
             _previousKeyRange = frame.PreviousKeyRange;
-            _previousKeyRanges = frame.PreviousKeyRanges;
+            _keyEncodingRanges = frame.PreviousKeyRanges;
             // Popping items from the stack can change the reader state
             // without necessarily needing to advance the buffer
             // (e.g. we're at the end of a definite-length collection).
@@ -369,11 +369,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if(_currentItemIsKey)
                 {
-                    HandleMapKeyAdded();
+                    HandleMapKeyRead();
                 }
                 else
                 {
-                    HandleMapValueAdded();
+                    HandleMapValueRead();
                 }
             }
 
@@ -491,7 +491,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 currentKeyOffset: _currentKeyOffset,
                 currentItemIsKey: _currentItemIsKey,
                 previousKeyRange: _previousKeyRange,
-                previousKeyRanges: _previousKeyRanges);
+                previousKeyRanges: _keyEncodingRanges);
         }
 
         private void RestoreCheckpoint(in Checkpoint checkpoint)
@@ -521,7 +521,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
             _currentItemIsKey = checkpoint.CurrentItemIsKey;
             _previousKeyRange = checkpoint.PreviousKeyRange;
-            _previousKeyRanges = checkpoint.PreviousKeyRanges;
+            _keyEncodingRanges = checkpoint.PreviousKeyRanges;
 
             // invalidate the state cache
             _cachedState = CborReaderState.Unknown;

@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Map decoding conformance
         //
 
-        private void HandleMapKeyAdded()
+        private void HandleMapKeyRead()
         {
             Debug.Assert(_currentKeyOffset != null && _currentItemIsKey);
 
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _currentItemIsKey = false;
         }
 
-        private void HandleMapValueAdded()
+        private void HandleMapValueRead()
         {
             Debug.Assert(_currentKeyOffset != null && !_currentItemIsKey);
 
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            HashSet<(int Offset, int Length)> previousKeys = GetPreviousKeyRanges();
+            HashSet<(int Offset, int Length)> previousKeys = GetKeyEncodingRanges();
 
             if (!previousKeys.Add(currentKeyRange))
             {
@@ -146,45 +146,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private HashSet<(int Offset, int Length)> GetPreviousKeyRanges()
+        private HashSet<(int Offset, int Length)> GetKeyEncodingRanges()
         {
-            return _previousKeyRanges ??= RequestKeyEncodingRangeSet();
-
-            HashSet<(int Offset, int Length)> RequestKeyEncodingRangeSet()
+            if (_keyEncodingRanges != null)
             {
-                if (_pooledKeyEncodingRangeSets != null)
-                {
-                    HashSet<(int Offset, int Length)>? result;
-
-                    lock (_pooledKeyEncodingRangeSets)
-                    {
-                        _pooledKeyEncodingRangeSets.TryPop(out result);
-                    }
-
-                    if (result != null)
-                    {
-                        result.Clear();
-                        return result;
-                    }
-                }
-
-                _keyEncodingComparer ??= new KeyEncodingComparer(this);
-                return new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
+                return _keyEncodingRanges;
             }
+
+            if (_pooledKeyEncodingRangeSets != null &&
+                _pooledKeyEncodingRangeSets.TryPop(out HashSet<(int Offset, int Length)>? result))
+            {
+                result.Clear();
+                return _keyEncodingRanges = result;
+            }
+
+            _keyEncodingComparer ??= new KeyEncodingComparer(this);
+            return _keyEncodingRanges = new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
         }
 
         private void ReturnKeyEncodingRangeSet()
         {
-            HashSet<(int Offset, int Length)>? set = Interlocked.Exchange(ref _previousKeyRanges, null);
-
-            if (set != null)
+            if (_keyEncodingRanges != null)
             {
                 _pooledKeyEncodingRangeSets ??= new Stack<HashSet<(int Offset, int Length)>>();
-
-                lock (_pooledKeyEncodingRangeSets)
-                {
-                    _pooledKeyEncodingRangeSets.Push(set);
-                }
+                _pooledKeyEncodingRangeSets.Push(_keyEncodingRanges);
+                _keyEncodingRanges = null;
             }
         }
 

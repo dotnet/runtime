@@ -56,46 +56,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
 
-            int currentValueOffset = _offset;
-
             if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
-                HashSet<KeyValueEncodingRange> keys = GetKeyValueEncodingRanges();
+                // Check against the existing set of key/value encodings that the new key is not a dupe.
+                // NB the key/value encoding set stores values up to key encoding equality.
+                // We use a dummy KeyValueEncodingRange instance which only contains key offset information to check this.
+                HashSet<KeyValueEncodingRange> keyValueEncodingRanges = GetKeyValueEncodingRanges();
 
-                var newKey = new KeyValueEncodingRange(
+                var currentKeyRange = new KeyValueEncodingRange(
                     offset: _currentKeyOffset.Value,
-                    keyLength: currentValueOffset - _currentKeyOffset.Value,
-                    totalLength: -1 // totalLength not known, but is not significant w.r.t. key equality semantics
+                    keyLength: _offset - _currentKeyOffset.Value,
+                    totalLength: -1 // totalLength not yet known, but is not significant w.r.t. key equality semantics
                 );
 
-                if (keys.Contains(newKey))
+                if (keyValueEncodingRanges.Contains(currentKeyRange))
                 {
-                    // reset writer state to what existed before the offending key write
-                    _buffer.AsSpan(newKey.Offset, _offset).Fill(0);
-                    _offset = newKey.Offset;
+                    // reset writer state to right before the offending key write
+                    _buffer.AsSpan(currentKeyRange.Offset, _offset).Fill(0);
+                    _offset = currentKeyRange.Offset;
 
                     throw new InvalidOperationException("Duplicate key encoding in CBOR map.");
                 }
             }
 
-            _currentValueOffset = currentValueOffset;
+            _currentValueOffset = _offset;
         }
 
         private void HandleValueWritten()
         {
             Debug.Assert(_currentKeyOffset != null && _currentValueOffset != null);
 
-            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel) || CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
                 HashSet<KeyValueEncodingRange> ranges = GetKeyValueEncodingRanges();
 
-                var currentKeyRange = new KeyValueEncodingRange(
+                var currentKeyValueRange = new KeyValueEncodingRange(
                     offset: _currentKeyOffset.Value,
                     keyLength: _currentValueOffset.Value - _currentKeyOffset.Value,
                     totalLength: _offset - _currentKeyOffset.Value);
 
-                bool unique = ranges.Add(currentKeyRange);
-                Debug.Assert(unique || !CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel));
+                bool unique = ranges.Add(currentKeyValueRange);
+                Debug.Assert(unique); // guaranteed to hold by virtue of uniqueness check at key write time
+            }
+            else
+            {
+                // There is currently no conformance level that requires sorted keys but not key uniqueness.
+                // NB using HashSet for storing key ranges would be inappropriate in such a scenario.
+                Debug.Assert(!CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel));
             }
 
             // reset state to new key
@@ -114,8 +121,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             // copy the key/value ranges to a temporary buffer and sort in-place
             KeyValueEncodingRange[] rangeBuffer = s_rangeBuffers.Rent(_keyValueEncodingRanges.Count);
-            _keyValueEncodingRanges.CopyTo(rangeBuffer);
             Span<KeyValueEncodingRange> rangeSpan = rangeBuffer.AsSpan(0, _keyValueEncodingRanges.Count);
+            _keyValueEncodingRanges.CopyTo(rangeBuffer);
             rangeSpan.Sort(_keyComparer);
 
             // copy sorted ranges to temporary buffer
@@ -150,46 +157,33 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return _buffer.AsSpan(keyValueRange.Offset, keyValueRange.TotalLength);
         }
 
+        // Gets or initializes a hashset containing all key/value encoding ranges for the current CBOR map context
+        // Equality of the HashSet is determined up to key encoding equality.
         private HashSet<KeyValueEncodingRange> GetKeyValueEncodingRanges()
         {
-            return _keyValueEncodingRanges ??= RequestKeyValueEncodingRangeSet();
-
-            HashSet<KeyValueEncodingRange> RequestKeyValueEncodingRangeSet()
+            if (_keyValueEncodingRanges != null)
             {
-                if (_pooledKeyValueEncodingRangeSets != null)
-                {
-                    HashSet<KeyValueEncodingRange>? result;
-
-                    lock (_pooledKeyValueEncodingRangeSets)
-                    {
-                        _pooledKeyValueEncodingRangeSets.TryPop(out result);
-                    }
-
-                    if (result != null)
-                    {
-                        result.Clear();
-                        return result;
-                    }
-                }
-
-                _keyComparer ??= new KeyEncodingComparer(this);
-                return new HashSet<KeyValueEncodingRange>(_keyComparer);
+                return _keyValueEncodingRanges;
             }
+
+            if (_pooledKeyValueEncodingRangeSets != null &&
+                _pooledKeyValueEncodingRangeSets.TryPop(out HashSet<KeyValueEncodingRange>? result))
+            { 
+                result.Clear();
+                return _keyValueEncodingRanges = result;
+            }
+
+            _keyComparer ??= new KeyEncodingComparer(this);
+            return _keyValueEncodingRanges = new HashSet<KeyValueEncodingRange>(_keyComparer);
         }
 
         private void ReturnKeyValueEncodingRange()
         {
-            HashSet<KeyValueEncodingRange>? set = Interlocked.Exchange(ref _keyValueEncodingRanges, null);
+            Debug.Assert(_keyValueEncodingRanges != null);
 
-            if (set != null)
-            {
-                _pooledKeyValueEncodingRangeSets ??= new Stack<HashSet<KeyValueEncodingRange>>();
-
-                lock (_pooledKeyValueEncodingRangeSets)
-                {
-                    _pooledKeyValueEncodingRangeSets.Push(set);
-                }
-            }
+            _pooledKeyValueEncodingRangeSets ??= new Stack<HashSet<KeyValueEncodingRange>>();
+            _pooledKeyValueEncodingRangeSets.Push(_keyValueEncodingRanges);
+            _keyValueEncodingRanges = null;
         }
 
         private readonly struct KeyValueEncodingRange
@@ -206,6 +200,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             public int TotalLength { get; }
         }
 
+        // Defines order and equality semantics for a key/value encoding range pair up to key encoding
         private class KeyEncodingComparer : IComparer<KeyValueEncodingRange>,
                                             IEqualityComparer<KeyValueEncodingRange>
         {
