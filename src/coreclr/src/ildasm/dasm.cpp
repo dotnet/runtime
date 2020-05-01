@@ -40,6 +40,9 @@
 DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
 
+#include "mdfileformat.h"
+
+
 struct MIDescriptor
 {
     mdToken tkClass;    // defining class token

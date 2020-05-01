@@ -16,7 +16,8 @@
 #endif
 
 #include <cor.h>
-#include <stgpool.h>
+#include "contract.h"
+
 
 #ifndef lengthof
 # define lengthof(x) (sizeof(x)/sizeof((x)[0]))
