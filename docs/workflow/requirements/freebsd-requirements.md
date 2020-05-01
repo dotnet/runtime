@@ -20,7 +20,7 @@ This is similar to [Linux](linux-requirements.md) instructions. https://github.c
 with all needed prerequisites to build. As the example bellow may become stale, https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json offers list of latest Docker tags.
 
 ```sh
-docker run --rm --volume $(pwd):$(pwd) -workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2 ./build.sh -cross -FreeBSD
+docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2 ./build.sh -cross -FreeBSD
 ```
 
 Build using Toolchain Setup
@@ -38,13 +38,16 @@ or
 ```sh
 ./eng/common/cross/build-rootfs.sh freebsd12 $(pwd)/rootfs/freebsd
 ```
+After that, FreeBSD build can be started by running
+```
+ROOTFS_DIR=$(pwd)/rootfs/freebsd ./build.sh -cross -os FreeBSD
+```
 
-ROOTFS_DIR=$(pwd)/rootfs/freebsd ./build.sh -cross -FreeBSD
 
 Building on FreeBSD
 -------------------
 
-Building dotnet/runtime depends on several tools to be installed. 
+Building dotnet/runtime depends on several tools to be installed.
 
 Install the following packages:
 
@@ -52,13 +55,17 @@ Install the following packages:
 - autoconf
 - automake
 - libtool
-- pkg-config
-- python3
-- icu4c
+- icu
+- libunwind
+- lttng-ust
+- krb5
+- openssl (optional)
 
 The lines to install all the packages above using Homebrew.
 
 ```
-pkg install  --yes libunwind icu libinotify lttng-ust krb5
+sudo pkg install  --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl
 ```
+
+TBD
 
