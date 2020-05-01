@@ -3,7 +3,7 @@ Requirements to build dotnet/runtime on FreeBSD
 
 This guide will walk you through the requirements needed to build dotnet/runtime on FreeBSD. We'll start by showing how to set up your environment from scratch.
 Since there is no official build and FreeBSD package, native build on FreeBSD is not trivial. There are generally three options, sorted by ease of use:
-- build using Docker on Linux
+- cross-compile on Linux using Docker
 - cross-compile on Linux using Toolchain
 - build on FreeBSD
 
@@ -61,11 +61,12 @@ Install the following packages:
 - krb5
 - openssl (optional)
 
-The lines to install all the packages above using Homebrew.
+The lines to install all the packages above using package manager.
 
-```
-sudo pkg install  --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl
+```sh
+sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl
 ```
 
-TBD
+Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.
+It needs to be built once on supported platform or obtained via community resources.
 
