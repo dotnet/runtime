@@ -3634,8 +3634,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
 
-            // on XARCH only full fences are emitted.
-            // there is still effect on reordering.
+            // On XARCH `CORINFO_INTRINSIC_MemoryBarrierLoad` fences need not be emitted.
+            // However, we still need to capture the effect on reordering.
             if (intrinsicID == CORINFO_INTRINSIC_MemoryBarrierLoad)
             {
                 op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
