@@ -18,7 +18,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public static void Validate(CborConformanceLevel conformanceLevel)
         {
-            if (!Enum.IsDefined(typeof(CborConformanceLevel), conformanceLevel))
+            if (conformanceLevel < CborConformanceLevel.Lax ||
+                conformanceLevel > CborConformanceLevel.Ctap2Canonical)
             {
                 throw new ArgumentOutOfRangeException(nameof(conformanceLevel));
             }
