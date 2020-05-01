@@ -234,6 +234,7 @@ jobs:
             Contents: '**'
             TargetFolder: '$(managedTestArtifactRootFolderPath)'
             CleanTargetFolder: false
+            OverWrite: true
 
 
     # Download product binaries directory
