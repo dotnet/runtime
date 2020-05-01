@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using System.Numerics;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -324,6 +325,131 @@ namespace JIT.HardwareIntrinsics.Arm
 <#
         }
 
+        foreach (var type in new[] { (name: "sbyte",  wideUnsigned: "ushort", wide: "short"),
+                                     (name: "short",  wideUnsigned: "uint",   wide: "int"),
+                                     (name: "int",    wideUnsigned: "ulong",  wide: "long"),
+                                     (name: "byte",   wideUnsigned: "ushort", wide: "ushort"),
+                                     (name: "ushort", wideUnsigned: "uint",   wide: "uint"),
+                                     (name: "uint",   wideUnsigned: "ulong",  wide: "ulong") })
+        {
+#>
+        public static <#= type.wideUnsigned #> AbsoluteDifferenceWidening(<#= type.name #> op1, <#= type.name #> op2) => op1 < op2 ? (<#= type.wideUnsigned #>)(op2 - op1) : (<#= type.wideUnsigned #>)(op1 - op2);
+
+        public static <#= type.wideUnsigned #> AbsoluteDifferenceWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> AbsoluteDifferenceWideningAndAdd(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 + (<#= type.wide #>)AbsoluteDifferenceWidening(op2, op3));
+
+        public static <#= type.wide #> AbsoluteDifferenceWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> AddPairwiseWidening(<#= type.name #>[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static <#= type.wide #> AddPairwiseWideningAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => (<#= type.wide #>)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static <#= type.name #> HighNarrow(<#= type.wide #> op1, bool round)
+        {
+            <#= type.wideUnsigned #> roundConst = 0;
+            if (round)
+            {
+                roundConst = (<#= type.wideUnsigned #>)1 << (8 * sizeof(<#= type.name #>) - 1);
+            }
+            return (<#= type.name #>)(((<#= type.wideUnsigned #>)op1 + roundConst) >> (8 * sizeof(<#= type.name #>)));
+        }
+
+        public static <#= type.name #> AddReturningHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: false);
+
+        public static <#= type.name #> AddReturningHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.name #> AddReturningRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 + op2), round: true);
+
+        public static <#= type.wide #> AddReturningRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : AddReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.wide #> AddWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> AddWidening(<#= type.wide #> op1, <#= type.name #> op2) => (<#= type.wide #>)(op1 + op2);
+
+        public static <#= type.wide #> AddWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> AddWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static <#= type.name #> FusedAddHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2) >> 1);
+
+        public static <#= type.name #> FusedAddRoundedHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 + (<#= type.wide #>)op2 + 1) >> 1);
+
+        public static <#= type.name #> FusedSubtractHalving(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.name #>)((<#= type.wideUnsigned #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2) >> 1);
+
+        public static <#= type.wide #> MultiplyWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> MultiplyWideningAndAdd(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 + MultiplyWidening(op2, op3));
+
+        public static <#= type.wide #> MultiplyWideningAndSubtract(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.wide #>)(op1 - MultiplyWidening(op2, op3));
+
+        public static <#= type.wide #> MultiplyWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> MultiplyWideningUpperAndAdd(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.wide #> MultiplyWideningUpperAndSubtract(<#= type.wide #>[] op1, <#= type.name #>[] op2, <#= type.name #>[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static <#= type.name #> SubtractReturningHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: false);
+
+        public static <#= type.wide #> SubtractReturningHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.name #> SubtractReturningRoundedHighNarrow(<#= type.wide #> op1, <#= type.wide #> op2) => HighNarrow((<#= type.wide #>)(op1 - op2), round: true);
+
+        public static <#= type.wide #> SubtractReturningRoundedHighNarrowUpper(<#= type.name #>[] op1, <#= type.wide #>[] op2, <#= type.wide #>[] op3, int i) => i < op1.Length ? op1[i] : SubtractReturningRoundedHighNarrow(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static <#= type.wide #> SubtractWidening(<#= type.name #> op1, <#= type.name #> op2) => (<#= type.wide #>)((<#= type.wide #>)op1 - (<#= type.wide #>)op2);
+
+        public static <#= type.wide #> SubtractWidening(<#= type.wide #> op1, <#= type.name #> op2) => (<#= type.wide #>)(op1 - op2);
+
+        public static <#= type.wide #> SubtractWideningUpper(<#= type.name #>[] op1, <#= type.name #>[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static <#= type.wide #> SubtractWideningUpper(<#= type.wide #>[] op1, <#= type.name #>[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+#>
+        private static bool SatQ(BigInteger i, out <#= typeName #> result)
+        {
+            bool saturated = false;
+
+            if (i > <#= typeName #>.MaxValue)
+            {
+                result = <#= typeName #>.MaxValue;
+                saturated = true;
+            }
+            else if (i < <#= typeName #>.MinValue)
+            {
+                result = <#= typeName #>.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (<#= typeName #>)i;
+            }
+
+            return saturated;
+        }
+
+        public static <#= typeName #> AddSaturate(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            <#= typeName #> result;
+            SatQ(new BigInteger(op1) + new BigInteger(op2), out result);
+            return result;
+        }
+
+        public static <#= typeName #> SubtractSaturate(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            <#= typeName #> result;
+            SatQ(new BigInteger(op1) - new BigInteger(op2), out result);
+            return result;
+        }
+
+<#
+        }
+
         foreach ((string typeName, string className) in new (string, string)[] { ("float", "MathF"), ("double", "Math") })
         {
 #>
@@ -633,5 +759,6 @@ namespace JIT.HardwareIntrinsics.Arm
 <#
         }
 #>
+
     }
 }
