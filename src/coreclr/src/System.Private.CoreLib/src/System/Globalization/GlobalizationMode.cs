@@ -65,8 +65,7 @@ namespace System.Globalization
                     Environment.FailFast($"The resolved \"{icuSuffix.ToString()}\" suffix from System.Globalization.AppLocalIcu switch has to be < 20 chars long.");
                 }
 
-                if (icuSuffix.Length + 1 <= icuSuffixAndVersion.Length)
-                    version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
+                version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
             }
             else
             {
@@ -80,12 +79,7 @@ namespace System.Globalization
 
             if (suffixWithSeparator)
             {
-                int suffixLength = icuSuffix.Length + 1;
-                Span<char> finalSuffix = stackalloc char[suffixLength];
-                icuSuffix.CopyTo(finalSuffix);
-                finalSuffix[suffixLength - 1] = '.';
-                LoadAppLocalIcuCore(version, finalSuffix);
-                return;
+                icuSuffix = string.Concat(icuSuffix, ".");
             }
 
             LoadAppLocalIcuCore(version, icuSuffix);
