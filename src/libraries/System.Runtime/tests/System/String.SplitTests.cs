@@ -30,24 +30,24 @@ namespace System.Tests
             const string value = "a,b";
             const int count = int.MaxValue;
             const StringSplitOptions optionsTooLow = StringSplitOptions.None - 1;
-            const StringSplitOptions optionsTooHigh = StringSplitOptions.RemoveEmptyEntries + 1;
+            const StringSplitOptions optionsTooHigh = (StringSplitOptions)0x04;
 
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(',', optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(',', optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(',', count, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(',', count, optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { ',' }, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { ',' }, optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { ',' }, count, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { ',' }, count, optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(",", optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(",", optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(",", count, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(",", count, optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { "," }, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { "," }, optionsTooHigh));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { "," }, count, optionsTooLow));
-            AssertExtensions.Throws<ArgumentException>(null, () => value.Split(new[] { "," }, count, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(',', optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(',', optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(',', count, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(',', count, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { ',' }, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { ',' }, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { ',' }, count, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { ',' }, count, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(",", optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(",", optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(",", count, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(",", count, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { "," }, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { "," }, optionsTooHigh));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { "," }, count, optionsTooLow));
+            AssertExtensions.Throws<ArgumentException>("options", () => value.Split(new[] { "," }, count, optionsTooHigh));
         }
 
         [Fact]
@@ -423,6 +423,30 @@ namespace System.Tests
         [InlineData("first,second,third", ' ', M, StringSplitOptions.RemoveEmptyEntries, new[] { "first,second,third" })]
         [InlineData("Foo Bar Baz", ' ', 2, StringSplitOptions.RemoveEmptyEntries, new[] { "Foo", "Bar Baz" })]
         [InlineData("Foo Bar Baz", ' ', M, StringSplitOptions.None, new[] { "Foo", "Bar", "Baz" })]
+        [InlineData("a", ',', 0, StringSplitOptions.None, new string[0])]
+        [InlineData("a", ',', 0, StringSplitOptions.RemoveEmptyEntries, new string[0])]
+        [InlineData("a", ',', 0, StringSplitOptions.TrimEntries, new string[0])]
+        [InlineData("a", ',', 0, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[0])]
+        [InlineData("a", ',', 1, StringSplitOptions.None, new string[] { "a" })]
+        [InlineData("a", ',', 1, StringSplitOptions.RemoveEmptyEntries, new string[] { "a" })]
+        [InlineData("a", ',', 1, StringSplitOptions.TrimEntries, new string[] { "a" })]
+        [InlineData("a", ',', 1, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[] { "a" })]
+        [InlineData(" ", ',', 0, StringSplitOptions.None, new string[0])]
+        [InlineData(" ", ',', 0, StringSplitOptions.RemoveEmptyEntries, new string[0])]
+        [InlineData(" ", ',', 0, StringSplitOptions.TrimEntries, new string[0])]
+        [InlineData(" ", ',', 0, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[0])]
+        [InlineData(" ", ',', 1, StringSplitOptions.None, new string[] { " " })]
+        [InlineData(" ", ',', 1, StringSplitOptions.RemoveEmptyEntries, new string[] { " " })]
+        [InlineData(" ", ',', 1, StringSplitOptions.TrimEntries, new string[] { "" })]
+        [InlineData(" ", ',', 1, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[0])]
+        [InlineData(" a,, b, c ", ',', 2, StringSplitOptions.None, new string[] { " a", ", b, c " })]
+        [InlineData(" a,, b, c ", ',', 2, StringSplitOptions.RemoveEmptyEntries, new string[] { " a", " b, c " })]
+        [InlineData(" a,, b, c ", ',', 2, StringSplitOptions.TrimEntries, new string[] { "a", ", b, c" })]
+        [InlineData(" a,, b, c ", ',', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[] { "a", "b, c" })]
+        [InlineData(" a,, b, c ", ',', 3, StringSplitOptions.None, new string[] { " a", "", " b, c " })]
+        [InlineData(" a,, b, c ", ',', 3, StringSplitOptions.RemoveEmptyEntries, new string[] { " a", " b", " c " })]
+        [InlineData(" a,, b, c ", ',', 3, StringSplitOptions.TrimEntries, new string[] { "a", "", "b, c" })]
+        [InlineData(" a,, b, c ", ',', 3, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new string[] { "a", "b", "c" })]
         public static void SplitCharSeparator(string value, char separator, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separator, count, options));
@@ -456,6 +480,10 @@ namespace System.Tests
         [InlineData("aaabaaabaaa", "aa", M, StringSplitOptions.None, new[] { "", "ab", "ab", "a" })]
         [InlineData("aaabaaabaaa", "aa", M, StringSplitOptions.RemoveEmptyEntries, new[] { "ab", "ab", "a" })]
         [InlineData("this, is, a, string, with some spaces", ", ", M, StringSplitOptions.None, new[] { "this", "is", "a", "string", "with some spaces" })]
+        [InlineData("Monday, Tuesday, Wednesday, Thursday, Friday", ",", M, StringSplitOptions.TrimEntries, new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })]
+        [InlineData("Monday, Tuesday,\r, Wednesday,\n, Thursday, Friday", ",", M, StringSplitOptions.TrimEntries, new[] { "Monday", "Tuesday", "", "Wednesday", "", "Thursday", "Friday" })]
+        [InlineData("Monday, Tuesday,\r, Wednesday,\n, Thursday, Friday", ",", M, StringSplitOptions.RemoveEmptyEntries, new[] { "Monday", " Tuesday", "\r", " Wednesday", "\n", " Thursday", " Friday" })]
+        [InlineData("Monday, Tuesday,\r, Wednesday,\n, Thursday, Friday", ",", M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })]
         public static void SplitStringSeparator(string value, string separator, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separator, count, options));
@@ -499,6 +527,10 @@ namespace System.Tests
         [InlineData("this, is, a, string, with some spaces", new[] { ',', ' ' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ',', ' ', 's' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", "i", "a", "tring", "with", "ome", "pace" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ',', ' ', 's', 'a' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", "i", "tring", "with", "ome", "p", "ce" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.None, new[] { "thi" /*s*/, "" /*,*/, " i" /*s*/, "" /*,*/, " " /*a*/, "" /*,*/, " " /*s*/, "tring" /*,*/, " with " /*s*/, "ome " /*s*/, "p" /*a*/, "ce" /*s*/, "" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", " i", " ", " ", "tring", " with ", "ome ", "p", "ce" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.TrimEntries, new[] { "thi", "", "i", "", "", "", "", "tring", "with", "ome", "p", "ce", "" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ',', 's', 'a' }, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "thi", "i", "tring", "with", "ome", "p", "ce" })]
         public static void SplitCharArraySeparator(string value, char[] separators, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separators, count, options));
@@ -522,6 +554,14 @@ namespace System.Tests
         [InlineData("this, is, a, string, with some spaces", new[] { ", ", " " }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", "is", "a", "string", "with", "some", "spaces" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ",", " ", "s" }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", "i", "a", "tring", "with", "ome", "pace" })]
         [InlineData("this, is, a, string, with some spaces", new[] { ",", " ", "s", "a" }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", "i", "tring", "with", "ome", "p", "ce" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ",", "s", "a" }, M, StringSplitOptions.None, new[] { "thi" /*s*/, "" /*,*/, " i" /*s*/, "" /*,*/, " " /*a*/, "" /*,*/, " " /*s*/, "tring" /*,*/, " with " /*s*/, "ome " /*s*/, "p" /*a*/, "ce" /*s*/, "" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ",", "s", "a" }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "thi", " i", " ", " ", "tring", " with ", "ome ", "p", "ce" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ",", "s", "a" }, M, StringSplitOptions.TrimEntries, new[] { "thi", "", "i", "", "", "", "", "tring", "with", "ome", "p", "ce", "" })]
+        [InlineData("this, is, a, string, with some spaces", new[] { ",", "s", "a" }, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "thi", "i", "tring", "with", "ome", "p", "ce" })]
+        [InlineData("this, is, a, string, with some spaces, ", new[] { ",", " s" }, M, StringSplitOptions.None, new[] { "this", " is", " a", "", "tring", " with", "ome", "paces", " " })]
+        [InlineData("this, is, a, string, with some spaces, ", new[] { ",", " s" }, M, StringSplitOptions.RemoveEmptyEntries, new[] { "this", " is", " a", "tring", " with", "ome", "paces", " " })]
+        [InlineData("this, is, a, string, with some spaces, ", new[] { ",", " s" }, M, StringSplitOptions.TrimEntries, new[] { "this", "is", "a", "", "tring", "with", "ome", "paces", "" })]
+        [InlineData("this, is, a, string, with some spaces, ", new[] { ",", " s" }, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "this", "is", "a", "tring", "with", "ome", "paces" })]
         public static void SplitStringArraySeparator(string value, string[] separators, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separators, count, options));
