@@ -14,7 +14,7 @@ namespace System.Tests
 {
     public unsafe partial class Utf8StringTests
     {
-        private delegate Utf8String.SplitResult Utf8StringSplitDelegate(Utf8String ustr, Utf8StringSplitOptions splitOptions);
+        private delegate Utf8String.SplitResult Utf8StringSplitDelegate(Utf8String ustr, StringSplitOptions splitOptions);
 
         [Fact]
         public static void Split_Utf8StringSeparator_WithNullOrEmptySeparator_Throws()
@@ -98,13 +98,13 @@ namespace System.Tests
             // into the original buffer), not deep (textual) equality checks.
 
             {
-                (Utf8String a, Utf8String b) = ustr.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries);
+                (Utf8String a, Utf8String b) = ustr.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 Assert.Equal(u8("a"), a);
                 Assert.Equal(u8(" , b, c,, d, e"), b);
             }
 
             {
-                (Utf8String a, Utf8String x, Utf8String b, Utf8String c, Utf8String d, Utf8String e) = ustr.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries);
+                (Utf8String a, Utf8String x, Utf8String b, Utf8String c, Utf8String d, Utf8String e) = ustr.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 Assert.Equal(u8("a"), a); // "a"
                 Assert.Equal(u8(" "), x); // " "
                 Assert.Equal(u8(" b"), b); // " b"
@@ -114,7 +114,7 @@ namespace System.Tests
             }
 
             {
-                (Utf8String a, Utf8String b, Utf8String c, Utf8String d, Utf8String e, Utf8String f, Utf8String g, Utf8String h) = ustr.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries | Utf8StringSplitOptions.TrimEntries);
+                (Utf8String a, Utf8String b, Utf8String c, Utf8String d, Utf8String e, Utf8String f, Utf8String g, Utf8String h) = ustr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 Assert.Equal(u8("a"), a);
                 Assert.Equal(u8("b"), b);
                 Assert.Equal(u8("c"), c);
@@ -150,25 +150,25 @@ namespace System.Tests
 
             Assert.Equal(
                 expected: expectedRanges.Select(range => source[range]),
-                actual: splitAction(source, Utf8StringSplitOptions.None));
+                actual: splitAction(source, StringSplitOptions.None));
 
             // Next, run the split with empty entries removed
 
             Assert.Equal(
                 expected: expectedRanges.Select(range => source[range]).Where(ustr => ustr.Length != 0),
-                actual: splitAction(source, Utf8StringSplitOptions.RemoveEmptyEntries));
+                actual: splitAction(source, StringSplitOptions.RemoveEmptyEntries));
 
             // Next, run the split with results trimmed (but allowing empty results)
 
             Assert.Equal(
                 expected: expectedRanges.Select(range => source[range].Trim()),
-                actual: splitAction(source, Utf8StringSplitOptions.TrimEntries));
+                actual: splitAction(source, StringSplitOptions.TrimEntries));
 
             // Finally, run the split both trimmed and with empty entries removed
 
             Assert.Equal(
                 expected: expectedRanges.Select(range => source[range].Trim()).Where(ustr => ustr.Length != 0),
-                actual: splitAction(source, Utf8StringSplitOptions.TrimEntries | Utf8StringSplitOptions.RemoveEmptyEntries));
+                actual: splitAction(source, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
         }
 
         public static IEnumerable<object[]> Trim_TestData() => Utf8SpanTests.Trim_TestData();

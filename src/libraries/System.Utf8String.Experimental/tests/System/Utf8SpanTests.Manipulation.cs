@@ -17,7 +17,7 @@ namespace System.Text.Tests
 {
     public partial class Utf8SpanTests
     {
-        private delegate Utf8Span.SplitResult Utf8SpanSplitDelegate(Utf8Span span, Utf8StringSplitOptions splitOptions);
+        private delegate Utf8Span.SplitResult Utf8SpanSplitDelegate(Utf8Span span, StringSplitOptions splitOptions);
 
         [Fact]
         public static void Split_EmptySearchSpan_Throws()
@@ -55,7 +55,7 @@ namespace System.Text.Tests
 
             // Next, make sure that if "remove empty entries" is specified, yields the empty set [ ].
 
-            enumerator = source.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries).GetEnumerator();
+            enumerator = source.Split(',', StringSplitOptions.RemoveEmptyEntries).GetEnumerator();
             Assert.False(enumerator.MoveNext());
         }
 
@@ -119,13 +119,13 @@ namespace System.Text.Tests
             // into the original buffer), not deep (textual) equality checks.
 
             {
-                (Utf8Span a, Utf8Span b) = span.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries);
+                (Utf8Span a, Utf8Span b) = span.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 Assert.True(a.Bytes == span.Bytes[..1]); // "a"
                 Assert.True(b.Bytes == span.Bytes[2..]); // " , b, c,, d, e"
             }
 
             {
-                (Utf8Span a, Utf8Span x, Utf8Span b, Utf8Span c, Utf8Span d, Utf8Span e) = span.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries);
+                (Utf8Span a, Utf8Span x, Utf8Span b, Utf8Span c, Utf8Span d, Utf8Span e) = span.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 Assert.True(a.Bytes == span.Bytes[0..1]); // "a"
                 Assert.True(x.Bytes == span.Bytes[2..3]); // " "
                 Assert.True(b.Bytes == span.Bytes[4..6]); // " b"
@@ -135,7 +135,7 @@ namespace System.Text.Tests
             }
 
             {
-                (Utf8Span a, Utf8Span b, Utf8Span c, Utf8Span d, Utf8Span e, Utf8Span f, Utf8Span g, Utf8Span h) = span.Split(',', Utf8StringSplitOptions.RemoveEmptyEntries | Utf8StringSplitOptions.TrimEntries);
+                (Utf8Span a, Utf8Span b, Utf8Span c, Utf8Span d, Utf8Span e, Utf8Span f, Utf8Span g, Utf8Span h) = span.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 Assert.True(a.Bytes == span.Bytes[0..1]); // "a"
                 Assert.True(b.Bytes == span.Bytes[5..6]); // "b"
                 Assert.True(c.Bytes == span.Bytes[8..9]); // "c"
@@ -171,7 +171,7 @@ namespace System.Text.Tests
             // First, run the split with default options and make sure the ranges are equivalent
 
             List<Range> actualRanges = new List<Range>();
-            foreach (Utf8Span slice in splitAction(span, Utf8StringSplitOptions.None))
+            foreach (Utf8Span slice in splitAction(span, StringSplitOptions.None))
             {
                 actualRanges.Add(GetRangeOfSubspan(span, slice));
             }
@@ -181,7 +181,7 @@ namespace System.Text.Tests
             // Next, run the split with empty entries removed
 
             actualRanges = new List<Range>();
-            foreach (Utf8Span slice in splitAction(span, Utf8StringSplitOptions.RemoveEmptyEntries))
+            foreach (Utf8Span slice in splitAction(span, StringSplitOptions.RemoveEmptyEntries))
             {
                 actualRanges.Add(GetRangeOfSubspan(span, slice));
             }
@@ -197,7 +197,7 @@ namespace System.Text.Tests
             }
 
             actualRanges = new List<Range>();
-            foreach (Utf8Span slice in splitAction(span, Utf8StringSplitOptions.TrimEntries))
+            foreach (Utf8Span slice in splitAction(span, StringSplitOptions.TrimEntries))
             {
                 actualRanges.Add(GetRangeOfSubspan(span, slice));
             }
@@ -207,7 +207,7 @@ namespace System.Text.Tests
             // Finally, run the split both trimmed and with empty entries removed
 
             actualRanges = new List<Range>();
-            foreach (Utf8Span slice in splitAction(span, Utf8StringSplitOptions.TrimEntries | Utf8StringSplitOptions.RemoveEmptyEntries))
+            foreach (Utf8Span slice in splitAction(span, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
                 actualRanges.Add(GetRangeOfSubspan(span, slice));
             }

@@ -21,16 +21,16 @@ namespace System
     {
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void CheckSplitOptions(Utf8StringSplitOptions options)
+        internal static void CheckSplitOptions(StringSplitOptions options)
         {
-            if ((uint)options > (uint)(Utf8StringSplitOptions.RemoveEmptyEntries | Utf8StringSplitOptions.TrimEntries))
+            if ((uint)options > (uint)(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 CheckSplitOptions_Throw(options);
             }
         }
 
         [StackTraceHidden]
-        private static void CheckSplitOptions_Throw(Utf8StringSplitOptions options)
+        private static void CheckSplitOptions_Throw(StringSplitOptions options)
         {
             throw new ArgumentOutOfRangeException(
                 paramName: nameof(options),
@@ -134,7 +134,7 @@ namespace System
             return InternalSubstring(startIndex, length);
         }
 
-        public SplitResult Split(char separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
             if (!Rune.TryCreate(separator, out Rune rune))
             {
@@ -148,14 +148,14 @@ namespace System
             return new SplitResult(this, rune, options);
         }
 
-        public SplitResult Split(Rune separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(Rune separator, StringSplitOptions options = StringSplitOptions.None)
         {
             CheckSplitOptions(options);
 
             return new SplitResult(this, separator, options);
         }
 
-        public SplitResult Split(Utf8String separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(Utf8String separator, StringSplitOptions options = StringSplitOptions.None)
         {
             if (IsNullOrEmpty(separator))
             {
@@ -372,7 +372,7 @@ namespace System
         {
             private readonly State _state;
 
-            internal SplitResult(Utf8String source, Rune searchRune, Utf8StringSplitOptions splitOptions)
+            internal SplitResult(Utf8String source, Rune searchRune, StringSplitOptions splitOptions)
             {
                 _state = new State
                 {
@@ -384,7 +384,7 @@ namespace System
                 };
             }
 
-            internal SplitResult(Utf8String source, Utf8String searchTerm, Utf8StringSplitOptions splitOptions)
+            internal SplitResult(Utf8String source, Utf8String searchTerm, StringSplitOptions splitOptions)
             {
                 _state = new State
                 {
@@ -526,7 +526,7 @@ namespace System
 
             private unsafe Utf8String? TrimIfNeeded(Utf8Span span)
             {
-                if ((_state.SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                if ((_state.SplitOptions & StringSplitOptions.TrimEntries) != 0)
                 {
                     span = span.Trim();
                 }
@@ -541,7 +541,7 @@ namespace System
                     {
                         // normalize empty spans to null if needed, otherwise normalize to Utf8String.Empty
 
-                        if ((_state.SplitOptions & Utf8StringSplitOptions.RemoveEmptyEntries) != 0
+                        if ((_state.SplitOptions & StringSplitOptions.RemoveEmptyEntries) != 0
                             || Unsafe.AreSame(ref span.DangerousGetMutableReference(), ref Unsafe.AsRef<byte>(null)))
                         {
                             return null;
@@ -566,7 +566,7 @@ namespace System
             [StructLayout(LayoutKind.Auto)]
             public struct Enumerator : IEnumerator<Utf8String?>
             {
-                private const Utf8StringSplitOptions HALT_ENUMERATION = (Utf8StringSplitOptions)int.MinValue;
+                private const StringSplitOptions HALT_ENUMERATION = (StringSplitOptions)int.MinValue;
 
                 private Utf8String? _current;
                 private State _state;
@@ -595,7 +595,7 @@ namespace System
                     // bit of data after the final occurrence of the search term. We'll also set a flag saying that we've
                     // completed enumeration.
 
-                    if (firstItem.IsEmpty && (_state.SplitOptions & Utf8StringSplitOptions.RemoveEmptyEntries) != 0)
+                    if (firstItem.IsEmpty && (_state.SplitOptions & StringSplitOptions.RemoveEmptyEntries) != 0)
                     {
                         return false;
                     }
@@ -630,7 +630,7 @@ namespace System
                 internal int OffsetAtWhichToContinueSearch;
                 internal int SearchRune; // -1 if not specified, takes less space than "Rune?"
                 internal Utf8String? SearchTerm;
-                internal Utf8StringSplitOptions SplitOptions;
+                internal StringSplitOptions SplitOptions;
 
                 // Returns 'true' if a match was found, 'false' otherwise.
                 internal readonly bool DeconstructHelper(in Utf8Span source, out Utf8Span firstItem, out Utf8Span remainder)
@@ -673,7 +673,7 @@ namespace System
 
                             firstItem = searchSpan;
 
-                            if ((SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                            if ((SplitOptions & StringSplitOptions.TrimEntries) != 0)
                             {
                                 firstItem = firstItem.Trim();
                             }
@@ -688,14 +688,14 @@ namespace System
                             firstItem = searchSpan[..matchRange.Start]; // TODO_UTF8STRING: Could use unsafe slicing as optimization
                             remainder = searchSpan[matchRange.End..]; // TODO_UTF8STRING: Could use unsafe slicing as optimization
 
-                            if ((SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                            if ((SplitOptions & StringSplitOptions.TrimEntries) != 0)
                             {
                                 firstItem = firstItem.Trim();
                             }
 
                             // If we're asked to remove empty entries, loop until there's a real value in 'firstItem'.
 
-                            if ((SplitOptions & Utf8StringSplitOptions.RemoveEmptyEntries) != 0 && firstItem.IsEmpty)
+                            if ((SplitOptions & StringSplitOptions.RemoveEmptyEntries) != 0 && firstItem.IsEmpty)
                             {
                                 searchSpan = ref remainder;
                                 continue;

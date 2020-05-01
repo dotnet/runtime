@@ -73,8 +73,6 @@
              Link="System\Text\Unicode\Utf8Utility.Transcoding.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs"
              Link="System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Utf8StringSplitOptions.cs"
-             Link="System\Utf8StringSplitOptions.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Utf8Extensions.cs"
              Link="System\Utf8Extensions.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.cs"

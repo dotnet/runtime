@@ -122,9 +122,9 @@ namespace System
         public System.Utf8String Normalize(System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static bool operator !=(System.Utf8String? left, System.Utf8String? right) { throw null; }
         public static bool operator ==(System.Utf8String? left, System.Utf8String? right) { throw null; }
-        public SplitResult Split(char separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
-        public SplitResult Split(System.Text.Rune separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
-        public SplitResult Split(System.Utf8String separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
+        public SplitResult Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Text.Rune separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Utf8String separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public SplitOnResult SplitOn(char separator) { throw null; }
         public SplitOnResult SplitOn(char separator, System.StringComparison comparisonType) { throw null; }
         public SplitOnResult SplitOn(System.Text.Rune separator) { throw null; }
@@ -262,13 +262,6 @@ namespace System
             public void Deconstruct(out System.Utf8String before, out System.Utf8String? after) { throw null; }
         }
     }
-    [System.FlagsAttribute]
-    public enum Utf8StringSplitOptions
-    {
-        None = 0,
-        RemoveEmptyEntries = 1,
-        TrimEntries = 2
-    }
 }
 namespace System.Net.Http
 {
@@ -327,9 +320,9 @@ namespace System.Text
         public static bool operator !=(System.Text.Utf8Span left, System.Text.Utf8Span right) { throw null; }
         public static bool operator ==(System.Text.Utf8Span left, System.Text.Utf8Span right) { throw null; }
         public System.Text.Utf8Span this[System.Range range] { get { throw null; } }
-        public SplitResult Split(char separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
-        public SplitResult Split(System.Text.Rune separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
-        public SplitResult Split(System.Text.Utf8Span separator, System.Utf8StringSplitOptions options = System.Utf8StringSplitOptions.None) { throw null; }
+        public SplitResult Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Text.Rune separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public SplitResult Split(System.Text.Utf8Span separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public SplitOnResult SplitOn(char separator) { throw null; }
         public SplitOnResult SplitOn(char separator, System.StringComparison comparisonType) { throw null; }
         public SplitOnResult SplitOn(System.Text.Rune separator) { throw null; }

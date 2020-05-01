@@ -11,7 +11,7 @@ namespace System.Text
 {
     public readonly ref partial struct Utf8Span
     {
-        public SplitResult Split(char separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
             if (!Rune.TryCreate(separator, out Rune rune))
             {
@@ -25,14 +25,14 @@ namespace System.Text
             return new SplitResult(this, rune, options);
         }
 
-        public SplitResult Split(Rune separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(Rune separator, StringSplitOptions options = StringSplitOptions.None)
         {
             Utf8String.CheckSplitOptions(options);
 
             return new SplitResult(this, separator, options);
         }
 
-        public SplitResult Split(Utf8Span separator, Utf8StringSplitOptions options = Utf8StringSplitOptions.None)
+        public SplitResult Split(Utf8Span separator, StringSplitOptions options = StringSplitOptions.None)
         {
             if (separator.IsEmpty)
             {
@@ -252,7 +252,7 @@ namespace System.Text
         {
             private readonly State _state;
 
-            internal SplitResult(Utf8Span source, Rune searchRune, Utf8StringSplitOptions splitOptions)
+            internal SplitResult(Utf8Span source, Rune searchRune, StringSplitOptions splitOptions)
             {
                 _state = new State
                 {
@@ -263,7 +263,7 @@ namespace System.Text
                 };
             }
 
-            internal SplitResult(Utf8Span source, Utf8Span searchTerm, Utf8StringSplitOptions splitOptions)
+            internal SplitResult(Utf8Span source, Utf8Span searchTerm, StringSplitOptions splitOptions)
             {
                 _state = new State
                 {
@@ -348,7 +348,7 @@ namespace System.Text
 
             private void TrimIfNeeded(ref Utf8Span span)
             {
-                if ((_state.SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                if ((_state.SplitOptions & StringSplitOptions.TrimEntries) != 0)
                 {
                     span = span.Trim();
                 }
@@ -357,7 +357,7 @@ namespace System.Text
             [StructLayout(LayoutKind.Auto)]
             public ref struct Enumerator
             {
-                private const Utf8StringSplitOptions HALT_ENUMERATION = (Utf8StringSplitOptions)int.MinValue;
+                private const StringSplitOptions HALT_ENUMERATION = (StringSplitOptions)int.MinValue;
 
                 private Utf8Span _current;
                 private State _state;
@@ -384,7 +384,7 @@ namespace System.Text
                     // bit of data after the final occurrence of the search term. We'll also set a flag saying that we've
                     // completed enumeration.
 
-                    if (_current.IsEmpty && (_state.SplitOptions & Utf8StringSplitOptions.RemoveEmptyEntries) != 0)
+                    if (_current.IsEmpty && (_state.SplitOptions & StringSplitOptions.RemoveEmptyEntries) != 0)
                     {
                         return false;
                     }
@@ -406,7 +406,7 @@ namespace System.Text
                 internal Utf8Span RemainingSearchSpace;
                 internal int SearchRune; // -1 if not specified, takes less space than "Rune?"
                 internal Utf8Span SearchTerm;
-                internal Utf8StringSplitOptions SplitOptions;
+                internal StringSplitOptions SplitOptions;
 
                 // Returns 'true' if a match was found, 'false' otherwise.
                 internal readonly bool DeconstructHelper(in Utf8Span source, out Utf8Span firstItem, out Utf8Span remainder)
@@ -448,7 +448,7 @@ namespace System.Text
 
                             firstItem = searchSpan;
 
-                            if ((SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                            if ((SplitOptions & StringSplitOptions.TrimEntries) != 0)
                             {
                                 firstItem = firstItem.Trim();
                             }
@@ -463,14 +463,14 @@ namespace System.Text
                             firstItem = searchSpan[..matchRange.Start]; // TODO_UTF8STRING: Could use unsafe slicing as optimization
                             remainder = searchSpan[matchRange.End..]; // TODO_UTF8STRING: Could use unsafe slicing as optimization
 
-                            if ((SplitOptions & Utf8StringSplitOptions.TrimEntries) != 0)
+                            if ((SplitOptions & StringSplitOptions.TrimEntries) != 0)
                             {
                                 firstItem = firstItem.Trim();
                             }
 
                             // If we're asked to remove empty entries, loop until there's a real value in 'firstItem'.
 
-                            if ((SplitOptions & Utf8StringSplitOptions.RemoveEmptyEntries) != 0 && firstItem.IsEmpty)
+                            if ((SplitOptions & StringSplitOptions.RemoveEmptyEntries) != 0 && firstItem.IsEmpty)
                             {
                                 searchSpan = ref remainder;
                                 continue;
