@@ -9,7 +9,6 @@
 #include "sdk_info.h"
 #include <trace.h>
 #include <utils.h>
-#include "bundle/info.h"
 
 namespace
 {
@@ -145,7 +144,7 @@ namespace
         if (mode == host_mode_t::apphost)
         {
             app_candidate = host_info.app_path;
-            doesAppExist = bundle::info_t::is_single_file_bundle() || pal::realpath(&app_candidate);
+            doesAppExist = pal::realpath(&app_candidate);
         }
         else
         {

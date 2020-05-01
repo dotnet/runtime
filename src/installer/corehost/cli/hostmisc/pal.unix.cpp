@@ -70,7 +70,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-static void* map_file(const pal::string_t& path, size_t* length, int prot, int flags)
+void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
 {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
@@ -86,33 +86,19 @@ static void* map_file(const pal::string_t& path, size_t* length, int prot, int f
         close(fd);
         return nullptr;
     }
-    size_t size = buf.st_size;
 
-    if (length != nullptr)
-    {
-        *length = size;
-    }
+    length = buf.st_size;
+    void* address = mmap(nullptr, length, PROT_READ, MAP_SHARED, fd, 0);
 
-    void* address = mmap(nullptr, size, prot, flags, fd, 0);
-
-    if (address == MAP_FAILED)
+    if(address == nullptr)
     {
         trace::error(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
-        address = nullptr;
+        close(fd);
+        return nullptr;
     }
 
     close(fd);
     return address;
-}
-
-const void* pal::mmap_read(const string_t& path, size_t* length)
-{
-    return map_file(path, length, PROT_READ, MAP_SHARED);
-}
-
-void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
-{
-    return map_file(path, length, PROT_READ | PROT_WRITE, MAP_PRIVATE);
 }
 
 bool pal::getcwd(pal::string_t* recv)
@@ -504,10 +490,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
     pal::char_t quote_array[2] = {'\"', '\''};
-    for (size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
+    for(size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
     {
         size_t pos = stringToCleanup.find(quote_array[index]);
-        while (pos != std::string::npos)
+        while(pos != std::string::npos)
         {
             stringToCleanup = stringToCleanup.erase(pos, 1);
             pos = stringToCleanup.find(quote_array[index]);
