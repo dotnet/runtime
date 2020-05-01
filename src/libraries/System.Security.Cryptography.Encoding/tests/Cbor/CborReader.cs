@@ -412,8 +412,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private readonly struct StackFrame
         {
             public StackFrame(CborMajorType type, int frameOffset, int? remainingDataItems,
-                              int? currentKeyOffset, bool currentItemIsKey,
-                              (int Offset, int Length)? previousKeyRange, HashSet<(int Offset, int Length)>? previousKeyRanges)
+                int? currentKeyOffset, bool currentItemIsKey,
+                (int Offset, int Length)? previousKeyRange, HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
