@@ -240,33 +240,31 @@ jobs:
 
 
     # Build target specific tests
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if eq(parameters.testBuildPhased, true) }}:
-        # Install test build dependencies
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
-          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
-            displayName: Install native dependencies
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          # Necessary to install correct cmake version
-          - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
-            displayName: Install native dependencies
+    - ${{ if and(ne(parameters.corefxTests, true), eq(parameters.testBuildPhased, true)) }}:
+      # Install test build dependencies
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+          displayName: Install native dependencies
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        # Necessary to install correct cmake version
+        - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+          displayName: Install native dependencies
 
-        # Build targetSpecific managed test components
-        - script: $(coreClrRepoRootDir)build-test$(scriptExt) targetSpecific skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
-          displayName: Build target specific managed test components
+      # Build targetSpecific managed test components
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) targetSpecific skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+        displayName: Build target specific managed test components
 
 
     # If we didn't build target specific tests here
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
-    - ${{ if ne(parameters.corefxTests, true) }}:
-      - ${{ if ne(parameters.testBuildPhased, true) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-            artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
-            artifactName: '$(microsoftNetSdkIlArtifactName)'
-            displayName: 'Microsoft.NET.Sdk.IL package'
+    - ${{ if and(ne(parameters.corefxTests, true), ne(parameters.testBuildPhased, true)) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactName: '$(microsoftNetSdkIlArtifactName)'
+          displayName: 'Microsoft.NET.Sdk.IL package'
 
 
     # Download and unzip native test artifacts
