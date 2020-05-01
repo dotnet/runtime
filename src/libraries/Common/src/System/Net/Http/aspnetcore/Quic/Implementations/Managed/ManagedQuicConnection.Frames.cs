@@ -8,6 +8,10 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal partial class ManagedQuicConnection
     {
+        /// <summary>
+        ///     Returns true if the frame type requires receiver to sent acknowledgement before the maximum ack delay.
+        /// </summary>
+        /// <param name="frameType">The frame type.</param>
         private static bool IsAckEliciting(FrameType frameType)
         {
             return frameType switch
@@ -16,15 +20,21 @@ namespace System.Net.Quic.Implementations.Managed
                 FrameType.Ack => false,
                 FrameType.ConnectionCloseQuic => false,
                 FrameType.ConnectionCloseApplication => false,
+                // all other frame types are ack eliciting
                 _ => true
             };
         }
 
+        /// <summary>
+        ///     Returns true if the QUIC protocol allows given frame type to be sent in the given packet type.
+        /// </summary>
+        /// <param name="frameType">The frame type.</param>
+        /// <param name="packetType">The packet type.</param>
         private bool IsFrameAllowed(FrameType frameType, PacketType packetType)
         {
             return packetType switch
             {
-                // 1-RTT packets may contain any frame, but HANDSHAKE_DONE can only be sent by server
+                // 1-RTT packets may contain any frame, but HANDSHAKE_DONE may only be sent by server
                 PacketType.OneRtt => frameType != FrameType.HandshakeDone || !_isServer,
 
                 PacketType.Initial => frameType switch
@@ -68,23 +78,13 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private ProcessPacketResult DiscardFrameType(QuicReader reader)
-        {
-            reader.ReadFrameType();
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult DiscardPadding(QuicReader reader)
-        {
-            while (reader.BytesLeft > 0 && reader.Peek() == 0)
-            {
-                reader.ReadUInt8();
-            }
-
-            return ProcessPacketResult.Ok;
-        }
-
-        private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, RecvContext context)
+        /// <summary>
+        ///     Processes the sequence of frames in the given reader.
+        /// </summary>
+        /// <param name="reader">Reader with the packet payload (frames).</param>
+        /// <param name="packetType">The type of the packet in which the payload was sent.</param>
+        /// <param name="context">Contextual data for the current receive operation.</param>
+        private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
             while (reader.BytesLeft > 0)
             {
@@ -150,10 +150,28 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult DiscardFrameType(QuicReader reader)
+        {
+            reader.ReadFrameType();
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult DiscardPadding(QuicReader reader)
+        {
+            while (reader.BytesLeft > 0 && reader.Peek() == 0)
+            {
+                reader.ReadUInt8();
+            }
+
+            return ProcessPacketResult.Ok;
+        }
+
         private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader)
         {
-            Debug.Assert(!_isServer); // frame not allowed handled elsewhere
-            reader.ReadFrameType();
+            // frame not being allowed to be sent by client is handled in IsPacketAllowed
+            Debug.Assert(!_isServer);
+
+            reader.ReadFrameType(); // there are no more data, just the frame type identifier.
             _handshakeDoneReceived = true;
             _connectTcs.TryComplete();
 
@@ -207,7 +225,7 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessConnectionClose(QuicReader reader, RecvContext context)
+        private ProcessPacketResult ProcessConnectionClose(QuicReader reader, QuicSocketContext.RecvContext context)
         {
             if (!ConnectionCloseFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
@@ -240,7 +258,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
 
-        private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, RecvContext context)
+        private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
@@ -289,12 +307,13 @@ namespace System.Net.Quic.Implementations.Managed
             while (ackedPackets.TryDequeue(out var packet))
             {
                 OnPacketAcked(packet, pnSpace);
+                context.ReturnPacket(packet);
             }
 
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, RecvContext context)
+        private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.Error;
 
@@ -375,7 +394,7 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
-        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, SendContext context)
+        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, QuicSocketContext.SendContext context)
         {
             var pnSpace = GetPacketNumberSpace(level);
 
@@ -424,7 +443,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteConnectionCloseFrame(QuicWriter writer, SendContext context)
+        private void WriteConnectionCloseFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
             if (outboundError == null)
             {
@@ -467,7 +486,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
+        private static void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, QuicSocketContext.SendContext context)
         {
             // assume 2 * 2 bytes for offset and length and 1 B for type
             const int minSize = 5;
@@ -486,7 +505,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, SendContext context)
+        private void WriteAckFrame(QuicWriter writer, PacketNumberSpace pnSpace, QuicSocketContext.SendContext context)
         {
             var ranges = pnSpace.UnackedPacketNumbers;
 
@@ -569,7 +588,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteStreamMaxDataFrames(QuicWriter writer, SendContext context)
+        private void WriteStreamMaxDataFrames(QuicWriter writer, QuicSocketContext.SendContext context)
         {
             ManagedQuicStream? stream;
             while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstStreamForFlowControlUpdate()) != null)
@@ -595,7 +614,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteMaxDataFrame(QuicWriter writer, SendContext context)
+        private void WriteMaxDataFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
             // TODO-RZ: strategy for deciding whether the frame should be sent.
             if (MaxDataFrameSent ||
@@ -616,7 +635,7 @@ namespace System.Net.Quic.Implementations.Managed
             MaxDataFrameSent = true;
         }
 
-        private void WriteStreamFrames(QuicWriter writer, SendContext context)
+        private void WriteStreamFrames(QuicWriter writer, QuicSocketContext.SendContext context)
         {
             ManagedQuicStream? stream;
             while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstFlushableStream()) != null)
@@ -671,51 +690,6 @@ namespace System.Net.Quic.Implementations.Managed
                     break;
                 }
             }
-        }
-
-        private void OnPacketAcked(SentPacket packet, PacketNumberSpace pnSpace)
-        {
-            // mark all sent data as acked
-            foreach (var data in packet.StreamFrames)
-            {
-                if (data.IsCryptoStream)
-                {
-                    pnSpace.CryptoOutboundStream.OnAck(data.Offset, data.Count);
-                }
-                else
-                {
-                    // empty frames are sent only to send the FIN bit
-                    Debug.Assert(data.Count > 0 || data.Fin);
-
-                    var stream = _streams[data.StreamId];
-                    var buffer = stream.OutboundBuffer!;
-                    bool wasFinished = buffer.Finished;
-
-                    buffer.OnAck(data.Offset, data.Count, data.Fin);
-
-                    if (buffer.Finished && !wasFinished)
-                    {
-                        stream.NotifyShutdownWriteCompleted();
-                    }
-                }
-            }
-
-            foreach (var frame in packet.MaxStreamDataFrames)
-            {
-                var stream = GetStream(frame.StreamId);
-                Debug.Assert(stream.InboundBuffer != null);
-                stream.InboundBuffer.UpdateRemoteMaxData(frame.MaximumStreamData);
-            }
-
-            if (packet.MaxDataFrame != null)
-            {
-                MaxDataFrameSent = false;
-                _peerReceivedLocalLimits.UpdateMaxData(packet.MaxDataFrame.Value.MaximumData);
-            }
-
-            // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
-            pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
-            _sentPacketPool.Return(packet);
         }
     }
 }

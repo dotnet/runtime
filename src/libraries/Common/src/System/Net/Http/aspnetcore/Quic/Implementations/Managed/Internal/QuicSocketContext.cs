@@ -25,7 +25,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
 
+        private readonly SendContext _sendContext;
+        private readonly RecvContext _recvContext;
+
         private Task _timeoutTask;
+
         private long _currentTimeout = long.MaxValue;
         private CancellationTokenSource _timeoutCts = new CancellationTokenSource();
 
@@ -45,6 +49,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             _reader = new QuicReader(_recvBuffer);
             _writer = new QuicWriter(_sendBuffer);
+
+            var sentPacketPool = new ObjectPool<SentPacket>(128);
+            _sendContext = new SendContext(sentPacketPool);
+            _recvContext = new RecvContext(sentPacketPool);
         }
 
         public IPEndPoint LocalEndPoint => (IPEndPoint)_socket.LocalEndPoint;
@@ -74,13 +82,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             for (int i = 0; i < 2; i++)
             {
                 _writer.Reset(_sendBuffer);
-                connection.SendData(_writer, out var receiver, Timestamp.Now);
+                _sendContext.Timestamp = Timestamp.Now;
+                _sendContext.SentPacket.Reset();
+                connection.SendData(_writer, out var receiver, _sendContext);
 
-                var newState = connection.GetConnectionState();
+                var newState = connection.ConnectionState;
                 if (newState != previousState)
                 {
                     OnConnectionStateChanged(connection, newState);
                 }
+
                 previousState = newState;
 
                 if (_writer.BytesWritten == 0)
@@ -98,7 +109,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected Task UpdateAsync(ManagedQuicConnection connection)
         {
-            return UpdateAsync(connection, connection.GetConnectionState());
+            return UpdateAsync(connection, connection.ConnectionState);
         }
 
         protected void UpdateTimeout(long timestamp)
@@ -135,8 +146,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             var connection = FindConnection(reader, sender);
             if (connection != null)
             {
-                var previousState = connection.GetConnectionState();
-                connection.ReceiveData(reader, sender, Timestamp.Now);
+                var previousState = connection.ConnectionState;
+                _recvContext.Timestamp = Timestamp.Now;
+                connection.ReceiveData(reader, sender, _recvContext);
                 await UpdateAsync(connection, previousState).ConfigureAwait(false);
                 UpdateTimeout(connection.GetNextTimerTimestamp());
             }
@@ -253,5 +265,52 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         /// <param name="connection"></param>
         protected abstract void DetachConnection(ManagedQuicConnection connection);
+
+        internal class ContextBase
+        {
+            public ContextBase(ObjectPool<SentPacket> sentPacketPool) => SentPacketPool = sentPacketPool;
+
+            /// <summary>
+            ///     Timestamp when the next tick of internal processing was requested.
+            /// </summary>
+            internal long Timestamp { get; set; }
+
+            protected ObjectPool<SentPacket> SentPacketPool { get; }
+
+            internal void ReturnPacket(SentPacket packet)
+            {
+                SentPacketPool.Return(packet);
+            }
+        }
+
+        internal sealed class RecvContext : ContextBase
+        {
+            /// <summary>
+            ///     Flag whether TLS handshake should be incremented at the end of packet processing, perhaps due to
+            ///     having received crypto data.
+            /// </summary>
+            internal bool HandshakeWanted { get; set; }
+
+            public RecvContext(ObjectPool<SentPacket> sentPacketPool) : base(sentPacketPool)
+            {
+            }
+        }
+
+        internal sealed class SendContext : ContextBase
+        {
+            /// <summary>
+            ///     Data about next packet that is to be sent.
+            /// </summary>
+            internal SentPacket SentPacket { get; private set; } = new SentPacket();
+
+            internal void StartNextPacket()
+            {
+                SentPacket = SentPacketPool.Rent();
+            }
+
+            public SendContext(ObjectPool<SentPacket> sentPacketPool) : base(sentPacketPool)
+            {
+            }
+        }
     }
 }

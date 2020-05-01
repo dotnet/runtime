@@ -58,13 +58,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="value">value of the parameter.</param>
         internal void UpdateRemoteMaxData(long value)
         {
+            // the peer cannot receive greater max data than we have locally
             Debug.Assert(value <= MaxData);
-            MaxData = Math.Max(RemoteMaxData, value);
+            RemoteMaxData = Math.Max(RemoteMaxData, value);
         }
 
         public InboundBuffer(long maxData)
         {
-            UpdateMaxData(maxData);
+            MaxData = maxData;
+            RemoteMaxData = maxData;
         }
 
         /// <summary>

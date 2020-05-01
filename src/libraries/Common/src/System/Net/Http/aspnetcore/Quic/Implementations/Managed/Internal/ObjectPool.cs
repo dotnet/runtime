@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -22,10 +24,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public T Rent()
         {
-            if (_items.TryPop(out var item))
-                return item;
+            if (!_items.TryPop(out var item))
+                item = new T();
 
-            return new T();
+            return item;
         }
 
         public void Return(T item)

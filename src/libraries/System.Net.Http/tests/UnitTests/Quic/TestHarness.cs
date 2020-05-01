@@ -22,6 +22,10 @@ namespace System.Net.Quic.Tests
         private readonly QuicReader _reader;
         private readonly QuicWriter _writer;
 
+        private readonly QuicSocketContext.SendContext _sendContext;
+        private readonly QuicSocketContext.RecvContext _recvContext;
+
+
         private readonly long _startTimestamp = Implementations.Managed.Internal.Timestamp.Now;
         internal long Timestamp;
 
@@ -45,6 +49,10 @@ namespace System.Net.Quic.Tests
             _writer = new QuicWriter(buffer);
 
             Timestamp = _startTimestamp;
+
+            var sentPacketPool = new ObjectPool<SentPacket>(64);
+            _sendContext = new QuicSocketContext.SendContext(sentPacketPool);
+            _recvContext = new QuicSocketContext.RecvContext(sentPacketPool);
         }
 
         internal const string CertificateFilePath = "Certs/cert.crt";
@@ -53,7 +61,8 @@ namespace System.Net.Quic.Tests
         internal PacketFlight GetFlightToSend(ManagedQuicConnection from)
         {
             _writer.Reset(buffer);
-            from.SendData(_writer, out _, Timestamp);
+            _sendContext.Timestamp = Timestamp;
+            from.SendData(_writer, out _, _sendContext);
             int written = _writer.BytesWritten;
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarnessContext(from));
@@ -135,7 +144,8 @@ namespace System.Net.Quic.Tests
             }
 
             _reader.Reset(buffer.AsMemory(0, written));
-            destination.ReceiveData(_reader, IpAnyEndpoint, Timestamp);
+            _recvContext.Timestamp = Timestamp;
+            destination.ReceiveData(_reader, IpAnyEndpoint, _recvContext);
         }
 
         internal void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
@@ -164,7 +174,8 @@ namespace System.Net.Quic.Tests
             long packetTravelTime = 0)
         {
             _writer.Reset(buffer);
-            source.SendData(_writer, out _, Timestamp);
+            _sendContext.Timestamp = Timestamp;
+            source.SendData(_writer, out _, _sendContext);
 
             Timestamp += packetTravelTime;
 
@@ -177,7 +188,8 @@ namespace System.Net.Quic.Tests
             LogFlightPackets(packets, source == _client);
 
             _reader.Reset(buffer.AsMemory(0, written));
-            destination.ReceiveData(_reader, IpAnyEndpoint, Timestamp);
+            _recvContext.Timestamp = Timestamp;
+            destination.ReceiveData(_reader, IpAnyEndpoint, _recvContext);
 
             return new PacketFlight(packets, written, source, Timestamp);
         }
