@@ -988,10 +988,15 @@
         <Destination>$(BinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <WasmRuntimeArtifacts Include="$(MonoObjDir)out\lib\libmono-ee-interp.a;$(MonoObjDir)out\lib\libmono-icall-table.a;$(MonoObjDir)out\lib\libmono-ilgen.a;$(MonoObjDir)out\lib\libmono-profiler-aot.a"/>
     </ItemGroup>
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
+          SkipUnchangedFiles="true" />
+
+    <Copy Condition="'$(TargetOS)' == 'Browser'" SourceFiles="@(WasmRuntimeArtifacts)"
+          DestinationFolder="$(BinDir)"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"

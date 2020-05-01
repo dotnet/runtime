@@ -6,8 +6,8 @@ TOP=$(realpath $(CURDIR)/../../..)
 #
 EMSDK_PATH?=emsdk
 CONFIG?=Release
-BINDIR?=$(TOP)/artifacts/bin/mono/Browser.wasm.$(CONFIG)
-OBJDIR?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)
+BINDIR?=$(TOP)/artifacts/bin
+OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
 
 all: build-native
@@ -52,8 +52,8 @@ emsdk_env.sh: | provision-wasm
 MONO_BIN_DIR=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 SYS_NATIVE_DIR=$(BINDIR)/native/netcoreapp5.0-Browser-$(CONFIG)-wasm/
-MONO_LIBS = $(MONO_OBJ_DIR)/out/lib/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
-MONO_INCLUDE_DIR=$(MONO_OBJ_DIR)/out/include/mono-2.0
+MONO_LIBS = $(MONO_BIN_DIR)/{libmono-ee-interp.a,libmono.a,libmono-ilgen.a,libmono-icall-table.a} ${SYS_NATIVE_DIR}/libSystem.Native.a
+MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
 BUILDS_BIN_DIR=$(MONO_BIN_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 
