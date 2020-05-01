@@ -1357,6 +1357,14 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
 
+#if READYTORUN
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+            {
+                // Prevent the JIT from drilling into types outside of the current versioning bubble
+                result |= CorInfoFlag.CORINFO_FLG_OVERLAPPING_FIELDS;
+            }
+#endif
+
             return (uint)result;
         }
 
