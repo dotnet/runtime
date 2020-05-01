@@ -320,6 +320,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
+    GenTree* op3 = nullptr;
 
     SimdAsHWIntrinsicClassId classId          = SimdAsHWIntrinsicInfo::lookupClassId(intrinsic);
     bool                     isInstanceMethod = SimdAsHWIntrinsicInfo::IsInstanceMethod(intrinsic);
@@ -692,6 +693,48 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+
+        case 3:
+        {
+            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(argList);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass, isInstanceMethod);
+
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+
+            switch (intrinsic)
+            {
+#if defined(TARGET_XARCH)
+                case NI_VectorT128_ConditionalSelect:
+                case NI_VectorT256_ConditionalSelect:
+                {
+                    return impSimdAsHWIntrinsicCndSel(clsHnd, retType, baseType, simdSize, op1, op2, op3);
+                }
+#elif defined(TARGET_ARM64)
+                case NI_VectorT128_ConditionalSelect:
+                {
+                    return impSimdAsHWIntrinsicCndSel(clsHnd, retType, baseType, simdSize, op1, op2, op3);
+                }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+        }
     }
 
     assert(!"Unexpected SimdAsHWIntrinsic");
@@ -723,7 +766,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
 {
     assert(featureSIMD);
     assert(retType != TYP_UNKNOWN);
-    assert(varTypeIsIntegral(baseType));
+    assert(varTypeIsArithmetic(baseType));
     assert(simdSize != 0);
     assert(varTypeIsSIMD(getSIMDTypeForSize(simdSize)));
     assert(op1 != nullptr);
