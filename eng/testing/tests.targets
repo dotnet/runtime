@@ -156,6 +156,8 @@
     <Copy SourceFiles="@(AndroidTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+
     <AndroidAppBuilderTask 
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
@@ -194,8 +196,6 @@
       <!-- remove PDBs to save some space until we integrate ILLink -->
       <BclBinaries Remove="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)\*.pdb" />
     </ItemGroup>
-    <Error Condition="$(TargetArchitecture.StartsWith('arm')) and '$(DevTeamProvisioning)' == ''" 
-           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
     <Error Condition="!Exists('$(AppleTestRunner)')" Text="AppleTestRunner=$(AppleTestRunner) doesn't exist" />
     <Error Condition="!Exists('$(RuntimePackDir)')" Text="RuntimePackDir=$(RuntimePackDir) doesn't exist" />
     <RemoveDir Directories="$(BundleDir)" />
@@ -203,6 +203,7 @@
     <Copy SourceFiles="@(AppleTestRunnerBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
     <Copy SourceFiles="@(BclBinaries)" DestinationFolder="$(BundleDir)\%(RecursiveDir)" SkipUnchangedFiles="true"/>
 
+    <WriteLinesToFile File="$(BundleDir)\xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
     <!-- Run App bundler, it should AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <AppleAppBuilderTask 
@@ -225,6 +226,8 @@
     </AppleAppBuilderTask>
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
+    <Error Condition="$(TargetArchitecture.StartsWith('arm')) and '$(DevTeamProvisioning)' == ''" 
+           Text="'DevTeamProvisioning' shouldn't be empty for arm64" />
     <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
