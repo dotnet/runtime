@@ -41,9 +41,8 @@ namespace System.Numerics
             return left;
         }
 
-        public static uint Gcd(uint[] left, uint right)
+        public static uint Gcd(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right != 0);
 
@@ -88,7 +87,7 @@ namespace System.Numerics
             {
                 ulong x, y;
 
-                ExtractDigits(ref left, ref right, out x, out y);
+                ExtractDigits(new ReadOnlySpan<uint>(left.GetBits(), 0, left.GetLength()), new ReadOnlySpan<uint>(right.GetBits(), 0, right.GetLength()), out x, out y);
 
                 uint a = 1U, b = 0U;
                 uint c = 0U, d = 1U;
@@ -187,48 +186,42 @@ namespace System.Numerics
             }
         }
 
-        private static void ExtractDigits(ref BitsBuffer xBuffer,
-                                          ref BitsBuffer yBuffer,
+        private static void ExtractDigits(ReadOnlySpan<uint> xBuffer,
+                                          ReadOnlySpan<uint> yBuffer,
                                           out ulong x, out ulong y)
         {
-            Debug.Assert(xBuffer.GetLength() >= 3);
-            Debug.Assert(yBuffer.GetLength() >= 3);
-            Debug.Assert(xBuffer.GetLength() >= yBuffer.GetLength());
+            Debug.Assert(xBuffer.Length >= 3);
+            Debug.Assert(yBuffer.Length >= 3);
+            Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
             // Extracts the most significant bits of x and y,
             // but ensures the quotient x / y does not change!
 
-            uint[] xBits = xBuffer.GetBits();
-            int xLength = xBuffer.GetLength();
-
-            uint[] yBits = yBuffer.GetBits();
-            int yLength = yBuffer.GetLength();
-
-            ulong xh = xBits[xLength - 1];
-            ulong xm = xBits[xLength - 2];
-            ulong xl = xBits[xLength - 3];
+            ulong xh = xBuffer[xBuffer.Length - 1];
+            ulong xm = xBuffer[xBuffer.Length - 2];
+            ulong xl = xBuffer[xBuffer.Length - 3];
 
             ulong yh, ym, yl;
 
             // arrange the bits
-            switch (xLength - yLength)
+            switch (xBuffer.Length - yBuffer.Length)
             {
                 case 0:
-                    yh = yBits[yLength - 1];
-                    ym = yBits[yLength - 2];
-                    yl = yBits[yLength - 3];
+                    yh = yBuffer[yBuffer.Length - 1];
+                    ym = yBuffer[yBuffer.Length - 2];
+                    yl = yBuffer[yBuffer.Length - 3];
                     break;
 
                 case 1:
                     yh = 0UL;
-                    ym = yBits[yLength - 1];
-                    yl = yBits[yLength - 2];
+                    ym = yBuffer[yBuffer.Length - 1];
+                    yl = yBuffer[yBuffer.Length - 2];
                     break;
 
                 case 2:
                     yh = 0UL;
                     ym = 0UL;
-                    yl = yBits[yLength - 1];
+                    yl = yBuffer[yBuffer.Length - 1];
                     break;
 
                 default:
