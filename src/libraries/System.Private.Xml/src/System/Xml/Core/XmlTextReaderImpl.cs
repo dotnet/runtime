@@ -8410,6 +8410,7 @@ namespace System.Xml
         private int IncrementalRead()
         {
             Debug.Assert(_incReadDecoder != null);
+            Debug.Assert(_ps.chars != null);
             int charsDecoded = 0;
 
         OuterContinue:
@@ -8505,7 +8506,6 @@ namespace System.Xml
                               _incReadState == IncrementalReadState.Attributes ||
                               _incReadState == IncrementalReadState.AttributeValue);
 
-                Debug.Assert(_ps.chars != null);
                 char[] chars = _ps.chars;
                 startPos = _ps.charPos;
                 pos = startPos;
@@ -9633,6 +9633,7 @@ namespace System.Xml
                 if (_incReadState == IncrementalReadState.ReadContentAsBinary_OnPartialValue)
                 {
                     _curNode.SetValue(string.Empty);
+                    Debug.Assert(_ps.chars != null);
 
                     // read next chunk of text
                     bool endOfValue = false;
@@ -9657,12 +9658,12 @@ namespace System.Xml
                         }
                         startPos += charsRead;
                     }
+
                     _incReadState = endOfValue ? IncrementalReadState.ReadContentAsBinary_OnCachedValue : IncrementalReadState.ReadContentAsBinary_OnPartialValue;
                     _readValueOffset = 0;
 
                     if (_incReadDecoder.IsFull)
                     {
-                        Debug.Assert(_ps.chars != null);
                         _curNode.SetValue(_ps.chars, startPos, endPos - startPos);
                         // adjust line info for the chunk that has been already decoded
                         AdjustLineInfo(_ps.chars, startPos - charsRead, startPos, _ps.eolNormalized, ref _incReadLineInfo);
