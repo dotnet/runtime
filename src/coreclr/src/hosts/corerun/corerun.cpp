@@ -767,6 +767,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     hr = InitializeHost(log, hostEnvironment, appPath, appNiPath, nativeDllSearchDirs, appLocalWinmetadata, &hostHandle, (unsigned int*)&domainId);
     if (FAILED(hr))
     {
+        exitCode = hr;
         return false;
     }
 
