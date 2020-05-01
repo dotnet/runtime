@@ -6281,6 +6281,12 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 			MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 			return (arr->vector);
 		}
+		if (eklass == mono_get_char_class ()) {
+			MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+			char *res =  mono_utf16_to_utf8 ((mono_unichar2*) arr->vector, arr->max_length, error);
+			return_val_if_nok (error, NULL);
+			return res;
+		}
 		break;
 	}
 	default:
@@ -6341,6 +6347,20 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		}
 
 		mono_marshal_free (ptr);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+
+		if (eklass != mono_get_char_class ())
+			break;
+
+		mono_unichar2 *utf16_array = g_utf8_to_utf16 (ptr, arr->max_length, NULL, NULL, NULL);
+		g_free (ptr);
+		memcpy (arr->vector, utf16_array, arr->max_length * sizeof(mono_unichar2));
+		g_free (utf16_array);
 		break;
 	}
 	default:
