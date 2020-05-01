@@ -345,6 +345,9 @@
   <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
     <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
   </data>
+  <data name="Cryptography_HashSizeInvalid" xml:space="preserve">
+    <value>The specified hash's size is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
