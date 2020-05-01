@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             return new DSACryptoServiceProvider(keySize);
         }
 
-        public bool SupportsFips186_3 => PlatformDetection.IsLinux;
+        public bool SupportsFips186_3 => false;
         public bool SupportsKeyGeneration => !PlatformDetection.IsOSX;
     }
 
