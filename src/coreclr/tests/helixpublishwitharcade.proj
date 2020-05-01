@@ -32,7 +32,7 @@
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
-        TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes)
+        TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
         RuntimeMode=$(_RuntimeMode)
       </_PropertiesToPass>
     </PropertyGroup>
