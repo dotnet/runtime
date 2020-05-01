@@ -360,7 +360,9 @@ namespace System.Security.Cryptography.Pkcs
             {
                 // In .NET Framework RemoveCounterSignature doesn't bounds check, but the helper it calls does.
                 // In the helper the argument is called "childIndex".
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentOutOfRangeException("childIndex");
+#pragma warning restore CA2208
             }
 
             // The SignerInfo class is a projection of data contained within the SignedCms.

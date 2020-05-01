@@ -1111,7 +1111,9 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
                 throw new CultureNotFoundException("name/altName", SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+#pragma warning restore CA2208
             }
 
             lock (nameTable)

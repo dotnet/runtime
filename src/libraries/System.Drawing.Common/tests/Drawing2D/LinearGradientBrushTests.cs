@@ -371,7 +371,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = new Blend { Factors = new float[2], Positions = new float[1] });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => brush.Blend = new Blend { Factors = new float[2], Positions = new float[1] });
             }
         }
 

@@ -32,12 +32,14 @@ namespace System.Security.Cryptography.Pkcs
             : base(asnEncodedData)
         {
             if (asnEncodedData.Oid == null)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                 throw new ArgumentNullException(nameof(asnEncodedData.Oid));
             string? szOid = base.Oid!.Value;
             if (szOid == null)
                 throw new ArgumentNullException("oid.Value");
+#pragma warning restore CA2208
             if (szOid.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullString, "oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString, "oid.Value"), nameof(asnEncodedData));
         }
 
         internal Pkcs9AttributeObject(Oid oid)

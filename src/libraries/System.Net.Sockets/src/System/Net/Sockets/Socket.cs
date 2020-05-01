@@ -1908,7 +1908,7 @@ namespace System.Net.Sockets
                 }
                 if (lingerOption.LingerTime < 0 || lingerOption.LingerTime > (int)ushort.MaxValue)
                 {
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, (int)ushort.MaxValue), "optionValue.LingerTime");
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, (int)ushort.MaxValue, "optionValue.LingerTime"), nameof(optionValue));
                 }
                 SetLingerOption(lingerOption);
             }
@@ -3816,7 +3816,7 @@ namespace System.Net.Sockets
             }
             if (e.HasMultipleBuffers)
             {
-                throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
+                throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
             }
             if (_rightEndPoint == null)
             {
@@ -3979,11 +3979,13 @@ namespace System.Net.Sockets
             }
             if (e.HasMultipleBuffers)
             {
-                throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
+                throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
             }
             if (e.RemoteEndPoint == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, the argument not applicable
                 throw new ArgumentNullException("remoteEP");
+#pragma warning restore CA2208
             }
 
             EndPoint endPointSnapshot = e.RemoteEndPoint;
@@ -4116,11 +4118,13 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applcable
                 throw new ArgumentNullException(nameof(e.RemoteEndPoint));
+#pragma warning restore CA2208
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), "RemoteEndPoint");
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
             SocketPal.CheckDualModeReceiveSupport(this);
@@ -4166,11 +4170,13 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentNullException(nameof(e.RemoteEndPoint));
+#pragma warning restore CA2208
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), "RemoteEndPoint");
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
             SocketPal.CheckDualModeReceiveSupport(this);
@@ -4250,7 +4256,9 @@ namespace System.Net.Sockets
             }
             if (e.SendPacketsElements == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                 throw new ArgumentNullException("e.SendPacketsElements");
+#pragma warning restore CA2208
             }
             if (!Connected)
             {
@@ -4288,7 +4296,9 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                 throw new ArgumentNullException(nameof(RemoteEndPoint));
+#pragma warning restore CA2208
             }
 
             // Prepare SocketAddress

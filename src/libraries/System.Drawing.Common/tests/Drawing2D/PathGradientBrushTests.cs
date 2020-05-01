@@ -350,7 +350,7 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = invalidBlend);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => brush.Blend = invalidBlend);
             }
         }
 

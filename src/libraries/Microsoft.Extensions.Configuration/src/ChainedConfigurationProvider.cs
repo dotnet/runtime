@@ -29,7 +29,9 @@ namespace Microsoft.Extensions.Configuration
             }
             if (source.Configuration == null)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentNullException(nameof(source.Configuration));
+#pragma warning restore CA2208
             }
 
             _config = source.Configuration;

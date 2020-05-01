@@ -415,7 +415,7 @@ namespace System.Management
             // and also negative timespan cannot be represented in DMTF
             if (timespan.Days > MAXDATE_INTIMESPAN || timespan < TimeSpan.Zero)
             {
-                throw new System.ArgumentOutOfRangeException();
+                throw new System.ArgumentOutOfRangeException(nameof(timespan));
             }
 
             dmtftimespan = (dmtftimespan + timespan.Hours.ToString(frmInt32).PadLeft(2, '0'));

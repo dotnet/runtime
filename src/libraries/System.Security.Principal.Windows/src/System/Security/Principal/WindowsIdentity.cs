@@ -138,7 +138,9 @@ namespace System.Security.Principal
                 // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves
                 // and simulate the exception from Encoding.Unicode.GetBytes().
                 if (sUserPrincipalName == null)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                     throw new ArgumentNullException("s");
+#pragma warning restore C2208
 
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)

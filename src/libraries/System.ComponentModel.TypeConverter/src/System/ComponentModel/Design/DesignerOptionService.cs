@@ -48,7 +48,7 @@ namespace System.ComponentModel.Design
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, name.Length.ToString(), "0"), "name.Length");
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "name.Length", "0"), nameof(name));
             }
 
             return new DesignerOptionCollection(this, parent, name, value);

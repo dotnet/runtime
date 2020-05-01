@@ -44,7 +44,9 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                     throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+#pragma warning restore CA2208
                 }
 
                 Debug.Assert(source.Member != null);
@@ -57,7 +59,9 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                     throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+#pragma warning restore CA2208
                 }
 
                 Debug.Assert(source.Member != null);

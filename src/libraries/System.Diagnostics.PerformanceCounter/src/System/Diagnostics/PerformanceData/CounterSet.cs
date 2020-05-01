@@ -195,7 +195,7 @@ namespace System.Diagnostics.PerformanceData
                     {
                         if (_provider == null)
                         {
-                            throw new ArgumentException(SR.Format(SR.Perflib_Argument_ProviderNotFound, _providerGuid), "ProviderGuid");
+                            throw new ArgumentException(SR.Format(SR.Perflib_Argument_ProviderNotFound, _providerGuid), nameof(instanceName));
                         }
                         if (_provider._hProvider.IsInvalid)
                         {
@@ -256,7 +256,7 @@ namespace System.Diagnostics.PerformanceData
                             {
                                 throw Status switch
                                 {
-                                    (uint)Interop.Errors.ERROR_ALREADY_EXISTS => new ArgumentException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet), "CounterSetGuid"),
+                                    (uint)Interop.Errors.ERROR_ALREADY_EXISTS => new ArgumentException(SR.Format(SR.Perflib_Argument_CounterSetAlreadyRegister, _counterSet), nameof(instanceName)),
 
                                     _ => new Win32Exception((int)Status),
                                 };

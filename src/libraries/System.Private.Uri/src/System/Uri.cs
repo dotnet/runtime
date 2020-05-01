@@ -386,7 +386,9 @@ namespace System
 
             uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
             if ((object?)uriString == null)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentNullException(nameof(uriString));
+#pragma warning restore CA2208
 
             CreateThis(uriString, false, UriKind.Relative);
         }
@@ -1503,7 +1505,7 @@ namespace System
             (uint)(digit - '0') <= '9' - '0' ? digit - '0' :
             (uint)(digit - 'A') <= 'F' - 'A' ? digit - 'A' + 10 :
             (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
-            throw new ArgumentException(nameof(digit));
+            throw new ArgumentException(null, nameof(digit));
 
         //
         // GetHashCode

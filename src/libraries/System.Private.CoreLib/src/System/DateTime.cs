@@ -583,7 +583,9 @@ namespace System
             {
                 // DateTimeOffset.AddYears(int years) is implemented on top of DateTime.AddYears(int value). Use the more appropriate
                 // parameter name out of the two for the exception.
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
                 throw new ArgumentOutOfRangeException("years", SR.ArgumentOutOfRange_DateTimeBadYears);
+#pragma warning restore CA2208
             }
             return AddMonths(value * 12);
         }

@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -193,7 +194,7 @@
     <value>The specified value cannot be negative.</value>
   </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
-    <value>Argument must be between {0} and {1}.</value>
+    <value>Argument {2} must be between {0} and {1}.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>

@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentException(null, nameof(path));
             }
 
             Path = path;

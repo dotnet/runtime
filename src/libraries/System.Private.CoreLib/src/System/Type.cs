@@ -267,7 +267,9 @@ namespace System
             for (int i = 0; i < cls.Length; i++)
             {
                 if (args[i] == null)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                     throw new ArgumentNullException();
+#pragma warning restore CA2208
                 cls[i] = args[i].GetType();
             }
             return cls;
