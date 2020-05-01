@@ -140,6 +140,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }.Select(l => new object[] { l.Level, l.Encoding });
 
         [Fact]
+        internal static void SkipValue_SkippedValueFollowedByNonConformingValue_ShouldThrowFormatException()
+        {
+            byte[] encoding = "827fff7fff".HexToByteArray();
+            var reader = new CborReader(encoding, CborConformanceLevel.Ctap2Canonical);
+
+            reader.ReadStartArray();
+            reader.SkipValue();
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
+        }
+
+        [Fact]
         public static void SkipValue_NestedFormatException_ShouldPreserveOriginalReaderState()
         {
             string hexEncoding = "820181bf01ff"; // [1, [ {_ 1 : <missing value> } ]]

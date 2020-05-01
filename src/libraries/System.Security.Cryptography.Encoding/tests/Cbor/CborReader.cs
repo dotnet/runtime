@@ -50,9 +50,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         // Map-specific bookkeeping
         private int? _currentKeyOffset = null;
-        private bool _curentItemIsKey = false;
+        private bool _currentItemIsKey = false;
         private (int Offset, int Length)? _previousKeyRange;
         private HashSet<(int Offset, int Length)>? _previousKeyRanges;
+
+        // flag used to temporarily disable conformance level checks,
+        // e.g. during a skip operation over nonconforming encodings.
+        private bool _isConformanceLevelCheckEnabled = true;
 
         // keeps a cached copy of the reader state; 'Unknown' denotes uncomputed state
         private CborReaderState _cachedState = CborReaderState.Unknown;
@@ -137,7 +141,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         case CborMajorType.ByteString: return CborReaderState.EndByteString;
                         case CborMajorType.TextString: return CborReaderState.EndTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;
-                        case CborMajorType.Map when !_curentItemIsKey: return CborReaderState.FormatError;
+                        case CborMajorType.Map when !_currentItemIsKey: return CborReaderState.FormatError;
                         case CborMajorType.Map: return CborReaderState.EndMap;
                         default:
                             Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
@@ -298,7 +302,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 frameOffset: _frameOffset,
                 remainingDataItems: _remainingDataItems,
                 currentKeyOffset: _currentKeyOffset,
-                currentItemIsKey: _curentItemIsKey,
+                currentItemIsKey: _currentItemIsKey,
                 previousKeyRange: _previousKeyRange,
                 previousKeyRanges: _previousKeyRanges
             );
@@ -310,7 +314,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _frameOffset = _bytesRead;
             _isTagContext = false;
             _currentKeyOffset = (type == CborMajorType.Map) ? (int?)_bytesRead : null;
-            _curentItemIsKey = type == CborMajorType.Map;
+            _currentItemIsKey = type == CborMajorType.Map;
             _previousKeyRange = null;
             _previousKeyRanges = null;
         }
@@ -349,7 +353,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _frameOffset = frame.FrameOffset;
             _remainingDataItems = frame.RemainingDataItems;
             _currentKeyOffset = frame.CurrentKeyOffset;
-            _curentItemIsKey = frame.CurrentItemIsKey;
+            _currentItemIsKey = frame.CurrentItemIsKey;
             _previousKeyRange = frame.PreviousKeyRange;
             _previousKeyRanges = frame.PreviousKeyRanges;
             // Popping items from the stack can change the reader state
@@ -363,7 +367,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             if (_currentKeyOffset != null) // is map context
             {
-                if(_curentItemIsKey)
+                if(_currentItemIsKey)
                 {
                     HandleMapKeyAdded();
                 }
@@ -411,9 +415,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private readonly struct StackFrame
         {
-            public StackFrame(CborMajorType type, int frameOffset, int? remainingDataItems,
-                int? currentKeyOffset, bool currentItemIsKey,
-                (int Offset, int Length)? previousKeyRange, HashSet<(int Offset, int Length)>? previousKeyRanges)
+            public StackFrame(
+                CborMajorType type,
+                int frameOffset,
+                int? remainingDataItems,
+                int? currentKeyOffset,
+                bool currentItemIsKey,
+                (int Offset, int Length)? previousKeyRange,
+                HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
                 MajorType = type;
                 FrameOffset = frameOffset;
@@ -440,9 +449,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // reader is within the original context in which the checkpoint was created
         private readonly struct Checkpoint
         {
-            public Checkpoint(int bytesRead, int stackDepth, int frameOffset, int? remainingDataItems,
-                              int? currentKeyOffset, bool currentItemIsKey, (int Offset, int Length)? previousKeyRange,
-                              HashSet<(int Offset, int Length)>? previousKeyRanges)
+            public Checkpoint(
+                int bytesRead,
+                int stackDepth,
+                int frameOffset,
+                int? remainingDataItems,
+                int? currentKeyOffset,
+                bool currentItemIsKey,
+                (int Offset, int Length)? previousKeyRange,
+                HashSet<(int Offset, int Length)>? previousKeyRanges)
             {
                 BytesRead = bytesRead;
                 StackDepth = stackDepth;
@@ -474,7 +489,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 frameOffset: _frameOffset,
                 remainingDataItems: _remainingDataItems,
                 currentKeyOffset: _currentKeyOffset,
-                currentItemIsKey: _curentItemIsKey,
+                currentItemIsKey: _currentItemIsKey,
                 previousKeyRange: _previousKeyRange,
                 previousKeyRanges: _previousKeyRanges);
         }
@@ -504,7 +519,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _frameOffset = checkpoint.FrameOffset;
             _remainingDataItems = checkpoint.RemainingDataItems;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
-            _curentItemIsKey = checkpoint.CurrentItemIsKey;
+            _currentItemIsKey = checkpoint.CurrentItemIsKey;
             _previousKeyRange = checkpoint.PreviousKeyRange;
             _previousKeyRanges = checkpoint.PreviousKeyRanges;
 

@@ -60,19 +60,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
             {
-                HashSet<KeyValueEncodingRange> ranges = GetKeyValueEncodingRanges();
+                HashSet<KeyValueEncodingRange> keys = GetKeyValueEncodingRanges();
 
-                var currentKeyRange = new KeyValueEncodingRange(
+                var newKey = new KeyValueEncodingRange(
                     offset: _currentKeyOffset.Value,
                     keyLength: currentValueOffset - _currentKeyOffset.Value,
-                    totalLength: 0 // totalLength not known, but is not significant w.r.t. key equality semantics
+                    totalLength: -1 // totalLength not known, but is not significant w.r.t. key equality semantics
                 );
 
-                if (ranges.Contains(currentKeyRange))
+                if (keys.Contains(newKey))
                 {
                     // reset writer state to what existed before the offending key write
-                    _buffer.AsSpan(currentKeyRange.Offset, _offset).Fill(0);
-                    _offset = currentKeyRange.Offset;
+                    _buffer.AsSpan(newKey.Offset, _offset).Fill(0);
+                    _offset = newKey.Offset;
 
                     throw new InvalidOperationException("Duplicate key encoding in CBOR map.");
                 }

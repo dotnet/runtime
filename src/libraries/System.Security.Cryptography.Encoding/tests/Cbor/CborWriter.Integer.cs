@@ -52,30 +52,30 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             else if (value <= byte.MaxValue)
             {
-                EnsureWriteCapacity(2);
+                EnsureWriteCapacity(1 + sizeof(byte));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional8BitData));
                 _buffer[_offset++] = (byte)value;
             }
             else if (value <= ushort.MaxValue)
             {
-                EnsureWriteCapacity(3);
+                EnsureWriteCapacity(1 + sizeof(ushort));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional16BitData));
                 BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), (ushort)value);
-                _offset += 2;
+                _offset += sizeof(ushort);
             }
             else if (value <= uint.MaxValue)
             {
-                EnsureWriteCapacity(5);
+                EnsureWriteCapacity(1 + sizeof(uint));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional32BitData));
                 BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset), (uint)value);
-                _offset += 4;
+                _offset += sizeof(uint);
             }
             else
             {
-                EnsureWriteCapacity(9);
+                EnsureWriteCapacity(1 + sizeof(ulong));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional64BitData));
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
-                _offset += 8;
+                _offset += sizeof(ulong);
             }
         }
 
@@ -87,19 +87,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             else if (value <= byte.MaxValue)
             {
-                return 2;
+                return 1 + sizeof(byte);
             }
             else if (value <= ushort.MaxValue)
             {
-                return 3;
+                return 1 + sizeof(ushort);
             }
             else if (value <= uint.MaxValue)
             {
-                return 5;
+                return 1 + sizeof(uint);
             }
             else
             {
-                return 9;
+                return 1 + sizeof(ulong);
             }
         }
     }

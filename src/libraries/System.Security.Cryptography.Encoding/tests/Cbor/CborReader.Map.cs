@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new InvalidOperationException("Not at end of indefinite-length map.");
                 }
 
-                if (!_curentItemIsKey)
+                if (!_currentItemIsKey)
                 {
                     throw new FormatException("CBOR map key is missing a value.");
                 }
@@ -78,28 +78,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void HandleMapKeyAdded()
         {
-            Debug.Assert(_currentKeyOffset != null && _curentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && _currentItemIsKey);
 
             (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _bytesRead - _currentKeyOffset.Value);
 
-            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+            if (_isConformanceLevelCheckEnabled)
             {
-                ValidateSortedKeyEncoding(currentKeyRange);
-            }
-            else if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
-            {
-                ValidateKeyUniqueness(currentKeyRange);
+                if (CborConformanceLevelHelpers.RequiresSortedKeys(ConformanceLevel))
+                {
+                    ValidateSortedKeyEncoding(currentKeyRange);
+                }
+                else if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
+                {
+                    ValidateKeyUniqueness(currentKeyRange);
+                }
             }
 
-            _curentItemIsKey = false;
+            _currentItemIsKey = false;
         }
 
         private void HandleMapValueAdded()
         {
-            Debug.Assert(_currentKeyOffset != null && !_curentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && !_currentItemIsKey);
 
             _currentKeyOffset = _bytesRead;
-            _curentItemIsKey = true;
+            _currentItemIsKey = true;
         }
 
         private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyRange)

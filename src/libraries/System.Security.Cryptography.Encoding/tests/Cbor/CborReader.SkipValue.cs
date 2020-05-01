@@ -9,10 +9,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        // flag used to temporarily disable conformance level checks,
-        // e.g. during a skip operation over nonconforming encodings.
-        private bool _isConformanceLevelCheckEnabled = true;
-
         public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
         public void SkipToParent(bool validateConformance = false)
         {
@@ -44,7 +40,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             finally
             {
-                _isConformanceLevelCheckEnabled = false;
+                _isConformanceLevelCheckEnabled = true;
             }
         }
 
