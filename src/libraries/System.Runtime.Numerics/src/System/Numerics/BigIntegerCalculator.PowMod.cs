@@ -20,7 +20,7 @@ namespace System.Numerics
             // To spare memory allocations we first roughly
             // estimate an upper bound for our buffers.
 
-            int size = PowBound(power, 1, 1);
+            int size = PowBound(power, 1);
             BitsBuffer v = new BitsBuffer(size, value);
             return PowCore(power, ref v);
         }
@@ -33,7 +33,7 @@ namespace System.Numerics
             // To spare memory allocations we first roughly
             // estimate an upper bound for our buffers.
 
-            int size = PowBound(power, value.Length, 1);
+            int size = PowBound(power, value.Length);
             BitsBuffer v = new BitsBuffer(size, value);
             return PowCore(power, ref v);
         }
@@ -52,12 +52,12 @@ namespace System.Numerics
             return result.GetBits();
         }
 
-        private static int PowBound(uint power, int valueLength,
-                                    int resultLength)
+        private static int PowBound(uint power, int valueLength)
         {
             // The basic pow algorithm, but instead of squaring
             // and multiplying we just sum up the lengths.
 
+            int resultLength = 1;
             while (power != 0)
             {
                 checked
