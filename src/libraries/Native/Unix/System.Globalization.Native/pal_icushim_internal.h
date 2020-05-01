@@ -121,6 +121,7 @@
     PER_FUNCTION_BLOCK(uloc_getName, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getParent, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_setKeywordValue, libicuuc) \
+    PER_FUNCTION_BLOCK(ulocdata_getCLDRVersion, libicui18n) \
     PER_FUNCTION_BLOCK(ulocdata_getMeasurementSystem, libicui18n) \
     PER_FUNCTION_BLOCK(unorm2_getNFCInstance, libicuuc) \
     PER_FUNCTION_BLOCK(unorm2_getNFDInstance, libicuuc) \
@@ -256,6 +257,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define uloc_getName(...) uloc_getName_ptr(__VA_ARGS__)
 #define uloc_getParent(...) uloc_getParent_ptr(__VA_ARGS__)
 #define uloc_setKeywordValue(...) uloc_setKeywordValue_ptr(__VA_ARGS__)
+#define ulocdata_getCLDRVersion(...) ulocdata_getCLDRVersion_ptr(__VA_ARGS__)
 #define ulocdata_getMeasurementSystem(...) ulocdata_getMeasurementSystem_ptr(__VA_ARGS__)
 #define unorm2_getNFCInstance(...) unorm2_getNFCInstance_ptr(__VA_ARGS__)
 #define unorm2_getNFDInstance(...) unorm2_getNFDInstance_ptr(__VA_ARGS__)

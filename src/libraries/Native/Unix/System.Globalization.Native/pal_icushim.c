@@ -366,6 +366,19 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 
 #endif
 
+void ValidateICUDataCanLoad()
+{
+    UVersionInfo version;
+    UErrorCode err = U_ZERO_ERROR;
+    ulocdata_getCLDRVersion(version, &err);
+
+    if (U_FAILURE(err))
+    {
+        fprintf(stderr, "Could not load ICU data. UErrorCode: %d\n", err);
+        abort();
+    }
+}
+
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -398,6 +411,7 @@ int32_t GlobalizationNative_LoadICU()
 #endif // TARGET_WINDOWS || TARGET_OSX
 
     FOR_ALL_ICU_FUNCTIONS
+    ValidateICUDataCanLoad();
     return TRUE;
 }
 
@@ -437,6 +451,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     }
 
     FOR_ALL_ICU_FUNCTIONS
+    ValidateICUDataCanLoad();
 }
 
 #undef PER_FUNCTION_BLOCK
