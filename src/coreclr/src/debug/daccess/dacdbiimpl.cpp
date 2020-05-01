@@ -7407,6 +7407,9 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
 #ifdef FEATURE_COMINTEROP
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
+
+    if (mHandleMask & CorHandleWeakWinRT)
+        result |= (1 << HNDTYPE_WEAK_WINRT);
 #endif // FEATURE_COMINTEROP
 
     if (mHandleMask & CorHandleStrongDependent)
@@ -7579,6 +7582,10 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.dwType = (DWORD)(data.i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
             GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &refCnt, NULL, NULL, NULL);
             data.i64ExtraData = refCnt;
+            break;
+
+        case HNDTYPE_WEAK_WINRT:
+            data.dwType = (DWORD)CorHandleWeakWinRT;
             break;
 #endif
 

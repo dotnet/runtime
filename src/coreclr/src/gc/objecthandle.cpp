@@ -425,6 +425,9 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         break;
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
+#ifdef FEATURE_COMINTEROP
+    case    HNDTYPE_WEAK_WINRT:
+#endif // FEATURE_COMINTEROP
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
 
@@ -517,6 +520,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_DEPENDENT
     HNDF_NORMAL,    // HNDTYPE_ASYNCPINNED
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
+    HNDF_EXTRAINFO, // HNDTYPE_WEAK_WINRT
 };
 
 int getNumberOfSlots()
@@ -1375,6 +1379,9 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     uint32_t types[] =
     {
         HNDTYPE_WEAK_SHORT
+#ifdef FEATURE_COMINTEROP
+        , HNDTYPE_WEAK_WINRT
+#endif // FEATURE_COMINTEROP
     };
     uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
@@ -1431,6 +1438,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
+        HNDTYPE_WEAK_WINRT,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_SIZEDREF,
     };
 
@@ -1474,6 +1484,9 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
+        HNDTYPE_WEAK_WINRT,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_PINNED,
 //        HNDTYPE_VARIABLE,
         HNDTYPE_ASYNCPINNED,
@@ -1617,6 +1630,9 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
+        HNDTYPE_WEAK_WINRT,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
     };
@@ -1657,6 +1673,9 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
+        HNDTYPE_WEAK_WINRT,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
     };
@@ -1696,6 +1715,9 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
+        HNDTYPE_WEAK_WINRT,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
         HNDTYPE_DEPENDENT,
