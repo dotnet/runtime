@@ -74,7 +74,6 @@ $(BUILDS_BIN_DIR)/$(1)/:
 	mkdir -p $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/:
-	find $(BINDIR)
 	mkdir -p $$@
 
 $(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(BUILDS_OBJ_DIR)/$(1)/zlib-helper.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
