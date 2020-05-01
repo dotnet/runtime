@@ -18,6 +18,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         private readonly HttpListener _listener;
 
+        private readonly Dictionary<string, CertificateAuthority> _aiaPaths =
+            new Dictionary<string, CertificateAuthority>();
+
         private readonly Dictionary<string, CertificateAuthority> _crlPaths
             = new Dictionary<string, CertificateAuthority>();
 
@@ -39,6 +42,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         internal void AddCertificateAuthority(CertificateAuthority authority)
         {
+            if (authority.AiaHttpUri != null && authority.AiaHttpUri.StartsWith(UriPrefix))
+            {
+                _aiaPaths.Add(authority.AiaHttpUri.Substring(UriPrefix.Length - 1), authority);
+            }
+
             if (authority.CdpUri != null && authority.CdpUri.StartsWith(UriPrefix))
             {
                 _crlPaths.Add(authority.CdpUri.Substring(UriPrefix.Length - 1), authority);
@@ -148,6 +156,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             CertificateAuthority authority;
             string url = context.Request.RawUrl;
+
+            if (_aiaPaths.TryGetValue(url, out authority))
+            {
+                byte[] certData = authority.GetCertData();
+
+                responded = true;
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/pkix-cert";
+                context.Response.Close(certData, willBlock: false);
+                Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                return;
+            }
 
             if (_crlPaths.TryGetValue(url, out authority))
             {
