@@ -2,21 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
         // Mutable for unit testing...
         private static int AllocationThreshold = 256;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<uint> ZeroMem(Span<uint> memory)
-        {
-            memory.Clear();
-            return memory;
-        }
 
         public static int Compare(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
@@ -36,6 +27,18 @@ namespace System.Numerics
             }
 
             return 0;
+        }
+
+        private static int ActualLength(ReadOnlySpan<uint> value)
+        {
+            // Since we're reusing memory here, the actual length
+            // of a given value may be less then the array's length
+
+            int length = value.Length;
+
+            while (length > 0 && value[length - 1] == 0)
+                --length;
+            return length;
         }
     }
 }

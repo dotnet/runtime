@@ -462,17 +462,5 @@ namespace System.Numerics
                 power = power >> 1;
             }
         }
-
-        private static int ActualLength(ReadOnlySpan<uint> value)
-        {
-            // Since we're reusing memory here, the actual length
-            // of a given value may be less then the array's length
-
-            int length = value.Length;
-
-            while (length > 0 && value[length - 1] == 0)
-                --length;
-            return length;
-        }
     }
 }
