@@ -4811,10 +4811,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             // * (must not copy) If the call is a tail call, the use is a last use.
             //   We must skip the copy if we have a fast tail call.
             //
-            // * (must copy) However the current slow tail call helper always copies
-            //   the tail call args from the current frame, so we must copy
-            //   if the tail call is a slow tail call.
-            //
             // * (may not copy) if the call is noreturn, the use is a last use.
             //   We also check for just one reference here as we are not doing
             //   alias analysis of the call's parameters, or checking if the call
@@ -4826,7 +4822,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             const bool isTailCallLastUse = call->IsTailCall();
             const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
             const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
-            if (!call->IsTailCallViaJitHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
+            if (isTailCallLastUse || isCallLastUse || isNoReturnLastUse)
             {
                 varDsc->setLvRefCnt(0, RCS_EARLY);
                 args->SetNode(lcl);
