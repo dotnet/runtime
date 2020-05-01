@@ -254,6 +254,8 @@
 		<type fullname="System.InvalidProgramException">
 			<!-- mono_exception_from_name_msg -->
 			<method signature="System.Void .ctor(System.String)" />
+			<!-- mono_runtime_object_init_handle -->
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- reflection.c mono_get_reflection_missing_object -->
@@ -299,6 +301,8 @@
 		<type fullname="System.NotSupportedException">
 			<!-- mono_get_exception_not_implemented -->
 			<method signature="System.Void .ctor(System.String)" />
+			<!-- mono_exception_from_token -->
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- mono-error.c (mono_error_set_ambiguous_implementation) -->
@@ -657,6 +661,8 @@
 			<!-- marshal.c (init_safe_handle) -->
 			<method name="DangerousAddRef" />
 			<method name="DangerousRelease" />
+			<!-- marshal-ilgen.c (emit_marshal_safehandle_ilgen) -->
+			<method signature="System.Void .ctor()" />
 		</type>
 		
 		<!-- marshal.c: mono_mb_emit_exception_marshal_directive -->

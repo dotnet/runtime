@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -20,7 +21,7 @@ namespace System.Text.Json
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
-        public object? CreateObjectWithParameterizedCtor { get; set; }
+        public object? CreateObjectWithArgs { get; set; }
 
         public ClassType ClassType { get; private set; }
 
@@ -352,6 +353,7 @@ namespace System.Text.Json
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
+            ValidateType(type, parentClassType, propertyInfo, options);
 
             JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
@@ -395,7 +397,46 @@ namespace System.Text.Json
                 }
             }
 
+            Debug.Assert(!IsInvalidForSerialization(runtimeType));
+
             return converter;
+        }
+
+        private static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo, JsonSerializerOptions options)
+        {
+            if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, propertyInfo);
+            }
+        }
+
+        private static bool IsInvalidForSerialization(Type type)
+        {
+            return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
+        }
+
+        private static bool IsByRefLike(Type type)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return type.IsByRefLike;
+#else
+            if (!type.IsValueType)
+            {
+                return false;
+            }
+
+            object[] attributes = type.GetCustomAttributes(inherit: false);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+#endif
         }
     }
 }

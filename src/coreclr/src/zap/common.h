@@ -52,7 +52,7 @@ typedef unsigned int TARGET_POINTER_TYPE;
 #include "guidfromname.h"
 #include "../dlls/mscorrc/resource.h"
 #include "zaplog.h"
-#include "ndpversion.h"
+#include "clrversion.h"
 
 #include "loaderheap.h"
 

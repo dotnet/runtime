@@ -67,7 +67,7 @@ namespace ILCompiler
             }
         }
 
-        public void SetCompilationGroup(CompilationModuleGroup compilationModuleGroup)
+        public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
         }

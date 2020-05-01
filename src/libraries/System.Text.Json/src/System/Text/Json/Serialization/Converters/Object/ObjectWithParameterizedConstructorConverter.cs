@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (!(jsonParameterInfo!.ShouldDeserialize))
                     {
-                        reader.TrySkip();
+                        reader.Skip();
                         state.Current.EndConstructorParameter();
                         continue;
                     }

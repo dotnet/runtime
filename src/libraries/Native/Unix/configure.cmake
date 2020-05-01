@@ -31,9 +31,9 @@ elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
     set(PAL_UNIX_NAME \"SUNOS\")
-    set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
-    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
-    include_directories(SYSTEM /opt/local/include)
+    # requires /opt/tools when building in Global Zone (GZ)
+    include_directories(SYSTEM /opt/local/include /opt/tools/include)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
 else ()
     message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
@@ -417,6 +417,10 @@ check_include_files(
 check_include_files(
      "sys/poll.h"
      HAVE_SYS_POLL_H)
+
+check_include_files(
+     "sys/proc_info.h"
+     HAVE_SYS_PROCINFO_H)
 
 check_symbol_exists(
     epoll_create1

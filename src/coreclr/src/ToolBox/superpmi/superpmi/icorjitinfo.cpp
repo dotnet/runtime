@@ -1540,11 +1540,14 @@ void MyICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     DebugBreakorAV(118);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* MyICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool MyICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    jitInstance->mc->cr->AddCall("getTailCallCopyArgsThunk");
-    return jitInstance->mc->repGetTailCallCopyArgsThunk(pSig, flags);
+    jitInstance->mc->cr->AddCall("getTailCallHelpers");
+    return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)

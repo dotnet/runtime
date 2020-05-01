@@ -67,6 +67,17 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "Zero", ["VectorType"] = "Vector64", ["BaseType"] = "UInt16", ["LargestVectorSize"] = "8" }),
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "Zero", ["VectorType"] = "Vector64", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "8" }),
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "Zero", ["VectorType"] = "Vector64", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "8" }),
+    
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Double", ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Int16",  ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Int32",  ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Int64",  ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "SByte",  ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "Single", ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "UInt16", ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "8" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector64", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "8" }),
 
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "As", ["VectorType"] = "Vector64", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "8", ["NextValueOp"] = "TestLibrary.Generator.GetByte()" }),
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector64_1", ["Method"] = "As", ["VectorType"] = "Vector64", ["BaseType"] = "Double", ["LargestVectorSize"] = "8", ["NextValueOp"] = "TestLibrary.Generator.GetDouble()" }),
@@ -199,6 +210,17 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "Zero", ["VectorType"] = "Vector128", ["BaseType"] = "UInt16", ["LargestVectorSize"] = "16" }),
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "Zero", ["VectorType"] = "Vector128", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "16" }),
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "Zero", ["VectorType"] = "Vector128", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "16" }),
+
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Double", ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Int16",  ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Int32",  ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Int64",  ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "SByte",  ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "Single", ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "UInt16", ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "16" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector128", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "16" }),
 
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "As", ["VectorType"] = "Vector128", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "16", ["NextValueOp"] = "(byte)TestLibrary.Generator.GetByte()" }),
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector128_1", ["Method"] = "As", ["VectorType"] = "Vector128", ["BaseType"] = "Double", ["LargestVectorSize"] = "16", ["NextValueOp"] = "(double)TestLibrary.Generator.GetDouble()" }),
@@ -368,6 +390,18 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "Zero", ["VectorType"] = "Vector256", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "32" }),
     ("VectorZeroTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "Zero", ["VectorType"] = "Vector256", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "32" }),
 
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Double", ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Int16",  ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Int32",  ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Int64",  ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "SByte",  ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "Single", ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "UInt16", ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "UInt32", ["LargestVectorSize"] = "32" }),
+    ("VectorAllBitsSetTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "AllBitsSet", ["VectorType"] = "Vector256", ["BaseType"] = "UInt64", ["LargestVectorSize"] = "32" }),
+
+
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "As", ["VectorType"] = "Vector256", ["BaseType"] = "Byte",   ["LargestVectorSize"] = "32", ["NextValueOp"] = "(byte)TestLibrary.Generator.GetByte()" }),
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "As", ["VectorType"] = "Vector256", ["BaseType"] = "Double", ["LargestVectorSize"] = "32", ["NextValueOp"] = "(double)TestLibrary.Generator.GetDouble()" }),
     ("VectorAsTest.template", new Dictionary<string, string> { ["Isa"] = "Vector256_1", ["Method"] = "As", ["VectorType"] = "Vector256", ["BaseType"] = "Int16",  ["LargestVectorSize"] = "32", ["NextValueOp"] = "(short)TestLibrary.Generator.GetInt16()" }),
@@ -465,6 +499,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static readonly (string templateFileName, Dictionary<string, string> templateData)[] NotSupportedInputs = new []
 {
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64Zero",                      ["TargetType"] = "Vector64<bool>",    ["Source"] = "Vector64<bool>",             ["Method"] = "Zero" }),
+    ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64AllBitsSet",                ["TargetType"] = "Vector64<bool>",    ["Source"] = "Vector64<bool>",             ["Method"] = "AllBitsSet" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64BooleanAsGeneric_Boolean",  ["TargetType"] = "Vector64<bool>",    ["Source"] = "default(Vector64<bool>)",    ["Method"] = "As<bool, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64ByteAsGeneric_Boolean",     ["TargetType"] = "Vector64<bool>",    ["Source"] = "default(Vector64<byte>)",    ["Method"] = "As<byte, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64DoubleAsGeneric_Boolean",   ["TargetType"] = "Vector64<bool>",    ["Source"] = "default(Vector64<double>)",  ["Method"] = "As<double, bool>()" }),
@@ -508,6 +543,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector64ToString",                  ["TargetType"] = "string",            ["Source"] = "default(Vector64<bool>)",    ["Method"] = "ToString()" }),
 
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128Zero",                     ["TargetType"] = "Vector128<bool>",   ["Source"] = "Vector128<bool>",            ["Method"] = "Zero" }),
+    ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128AllBitsSet",               ["TargetType"] = "Vector128<bool>",   ["Source"] = "Vector128<bool>",            ["Method"] = "AllBitsSet" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128BooleanAsGeneric_Boolean", ["TargetType"] = "Vector128<bool>",   ["Source"] = "default(Vector128<bool>)",   ["Method"] = "As<bool, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128ByteAsGeneric_Boolean",    ["TargetType"] = "Vector128<bool>",   ["Source"] = "default(Vector128<byte>)",   ["Method"] = "As<byte, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128DoubleAsGeneric_Boolean",  ["TargetType"] = "Vector128<bool>",   ["Source"] = "default(Vector128<double>)", ["Method"] = "As<double, bool>()" }),
@@ -555,6 +591,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector128ToString",                 ["TargetType"] = "string",            ["Source"] = "default(Vector128<bool>)",   ["Method"] = "ToString()" }),
 
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector256Zero",                     ["TargetType"] = "Vector256<bool>",   ["Source"] = "Vector256<bool>",            ["Method"] = "Zero" }),
+    ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector256AllBitsSet",               ["TargetType"] = "Vector256<bool>",   ["Source"] = "Vector256<bool>",            ["Method"] = "AllBitsSet" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector256BooleanAsGeneric_Boolean", ["TargetType"] = "Vector256<bool>",   ["Source"] = "default(Vector256<bool>)",   ["Method"] = "As<bool, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector256ByteAsGeneric_Boolean",    ["TargetType"] = "Vector256<bool>",   ["Source"] = "default(Vector256<byte>)",   ["Method"] = "As<byte, bool>()" }),
     ("VectorNotSupportedTest.template", new Dictionary<string, string> { ["Isa"] = "NotSupported", ["Name"] = "Vector256DoubleAsGeneric_Boolean",  ["TargetType"] = "Vector256<bool>",   ["Source"] = "default(Vector256<double>)", ["Method"] = "As<double, bool>()" }),

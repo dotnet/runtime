@@ -185,7 +185,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                StringToStringIDictionaryWrapper obj = JsonSerializer.Deserialize<StringToStringIDictionaryWrapper>(JsonString);
+                GenericIDictionaryWrapper<string, string> obj = JsonSerializer.Deserialize<GenericIDictionaryWrapper<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
@@ -197,9 +197,9 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToStringIReadOnlyDictionaryWrapper>(JsonString));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIReadOnlyDictionaryWrapper<string, string>>(JsonString));
 
-                StringToStringIReadOnlyDictionaryWrapper obj = new StringToStringIReadOnlyDictionaryWrapper(new Dictionary<string, string>()
+                GenericIReadOnlyDictionaryWrapper<string, string> obj = new GenericIReadOnlyDictionaryWrapper<string, string>(new Dictionary<string, string>()
                 {
                     { "Hello", "World" },
                     { "Hello2", "World2" },
@@ -281,7 +281,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ImplementsIDictionaryOfObject()
         {
-            var input = new StringToObjectIDictionaryWrapper(new Dictionary<string, object>
+            var input = new GenericIDictionaryWrapper<string, object>(new Dictionary<string, object>
             {
                 { "Name", "David" },
                 { "Age", 32 }
@@ -299,7 +299,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ImplementsIDictionaryOfString()
         {
-            var input = new StringToStringIDictionaryWrapper(new Dictionary<string, string>
+            var input = new GenericIDictionaryWrapper<string, string>(new Dictionary<string, string>
             {
                 { "Name", "David" },
                 { "Job", "Software Architect" }

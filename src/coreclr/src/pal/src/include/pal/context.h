@@ -121,7 +121,11 @@ using asm_sigcontext::_xstate;
 #define MCREG_Rax(mc)       ((mc).gregs[REG_RAX])
 #define MCREG_Rip(mc)       ((mc).gregs[REG_RIP])
 #define MCREG_Rsp(mc)       ((mc).gregs[REG_RSP])
+#ifdef REG_CSGSFS
 #define MCREG_SegCs(mc)     (*(WORD*)&((mc).gregs[REG_CSGSFS]))
+#else
+#define MCREG_SegCs(mc)     (*(WORD*)&((mc).gregs[REG_CS]))
+#endif
 #define MCREG_R8(mc)        ((mc).gregs[REG_R8])
 #define MCREG_R9(mc)        ((mc).gregs[REG_R9])
 #define MCREG_R10(mc)       ((mc).gregs[REG_R10])
@@ -131,20 +135,35 @@ using asm_sigcontext::_xstate;
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
+#if HAVE_FPREGS_WITH_CW
+#define FPREG_Fpstate(uc) (&((uc)->uc_mcontext.fpregs.fp_reg_set.fpchip_state))
+
+#define FPREG_Xmm(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->xmm[index])
+#define FPREG_St(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->st[index])
+#define FPREG_ControlWord(uc) (FPREG_Fpstate(uc)->cw)
+#define FPREG_StatusWord(uc) (FPREG_Fpstate(uc)->sw)
+#define FPREG_MxCsr_Mask(uc) (FPREG_Fpstate(uc)->mxcsr_mask)
+
+// on SunOS, fctw and __fx_rsvd are uint8_t, whereas on linux ftw is uint16_t,
+// so we use split and join technique for these two uint8_t members at call sites.
+#define FPREG_TagWord1(uc) (FPREG_Fpstate(uc)->fctw)
+#define FPREG_TagWord2(uc) (FPREG_Fpstate(uc)->__fx_rsvd)
+#else
 #define FPREG_Fpstate(uc) ((uc)->uc_mcontext.fpregs)
+
 #define FPREG_Xmm(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->_xmm[index])
-
 #define FPREG_St(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->_st[index])
-
 #define FPREG_ControlWord(uc) (FPREG_Fpstate(uc)->cwd)
 #define FPREG_StatusWord(uc) (FPREG_Fpstate(uc)->swd)
 #define FPREG_TagWord(uc) (FPREG_Fpstate(uc)->ftw)
+#define FPREG_MxCsr_Mask(uc) (FPREG_Fpstate(uc)->mxcr_mask)
+#endif
+
 #define FPREG_ErrorOffset(uc) *(DWORD*)&(FPREG_Fpstate(uc)->rip)
 #define FPREG_ErrorSelector(uc) *(((WORD*)&(FPREG_Fpstate(uc)->rip)) + 2)
 #define FPREG_DataOffset(uc) *(DWORD*)&(FPREG_Fpstate(uc)->rdp)
 #define FPREG_DataSelector(uc) *(((WORD*)&(FPREG_Fpstate(uc)->rdp)) + 2)
 #define FPREG_MxCsr(uc) (FPREG_Fpstate(uc)->mxcsr)
-#define FPREG_MxCsr_Mask(uc) (FPREG_Fpstate(uc)->mxcr_mask)
 
 /////////////////////
 // Extended state
@@ -239,7 +258,11 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
 #endif // HOST_64BIT
 
+#ifdef REG_EFL
 #define MCREG_EFlags(mc)    ((mc).gregs[REG_EFL])
+#else
+#define MCREG_EFlags(mc)    ((mc).gregs[EFL])
+#endif
 
 #else // HAVE_GREGSET_T
 

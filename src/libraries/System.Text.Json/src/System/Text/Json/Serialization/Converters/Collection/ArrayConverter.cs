@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
@@ -48,8 +48,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Fast path that avoids validation and extra indirection.
                 for (; index < array.Length; index++)
                 {
-                    // TODO: https://github.com/dotnet/runtime/issues/32523
-                    elementConverter.Write(writer, array[index]!, options);
+                    elementConverter.Write(writer, array[index], options);
                 }
             }
             else
