@@ -261,8 +261,15 @@ namespace System.Security.Cryptography
 
                 public override byte[] CreateSignature(byte[] rgbHash)
                 {
+                    const int Sha1DigestSizeBytes = 20;
+
                     if (rgbHash == null)
                         throw new ArgumentNullException(nameof(rgbHash));
+
+                    // MacOS only supports FIPS-186-2, which only defines SHA1
+                    // as a supported algorithm.
+                    if (rgbHash.Length != Sha1DigestSizeBytes)
+                        throw new CryptographicException(SR.Cryptography_HashSizeInvalid);
 
                     SecKeyPair keys = GetKeys();
 
@@ -277,7 +284,7 @@ namespace System.Security.Cryptography
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature.AsSpan(0, derFormatSignature.Length),
-                        fieldSizeBits: 160);
+                        fieldSizeBits: Sha1DigestSizeBytes * 8);
 
                     return ieeeFormatSignature;
                 }

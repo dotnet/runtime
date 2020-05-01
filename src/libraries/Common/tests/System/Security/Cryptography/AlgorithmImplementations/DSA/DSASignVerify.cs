@@ -374,6 +374,25 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
+        [ConditionalTheory(nameof(DoesNotSupportFips186_3))]
+        [InlineData(128)]
+        [InlineData(256)]
+        [InlineData(384)]
+        [InlineData(512)]
+        public void SignHash_DigestAlgorithmUnsupported(int hashSizeBits)
+        {
+            byte[] hash = new byte[hashSizeBits / 8];
+            RandomNumberGenerator.Fill(hash);
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                DSATestData.GetDSA1024_186_2(out DSAParameters parameters, out _, out _);
+                dsa.ImportParameters(parameters);
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => dsa.CreateSignature(hash));
+                Assert.Contains("hash's size is not supported", ce.Message);
+            }
+        }
+
         private void SignAndVerify(byte[] data, string hashAlgorithmName, DSAParameters dsaParameters, int expectedSignatureLength)
         {
             using (DSA dsa = DSAFactory.Create())
@@ -394,5 +413,6 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        public static bool DoesNotSupportFips186_3 => !SupportsFips186_3;
     }
 }
