@@ -70,17 +70,19 @@ namespace System.Numerics
                                   : (rightCopyFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).AsSpan(0, right.Length);
             right.CopyTo(rightCopy);
 
-            Gcd(result, rightCopy).CopyTo(result);
+            Gcd(result, rightCopy);
 
             if (rightCopyFromPool != null)
                 ArrayPool<uint>.Shared.Return(rightCopyFromPool);
         }
 
-        private static Span<uint> Gcd(Span<uint> left, Span<uint> right)
+        private static void Gcd(Span<uint> left, Span<uint> right)
         {
             Debug.Assert(left.Length >= 2);
             Debug.Assert(right.Length >= 2);
             Debug.Assert(left.Length >= right.Length);
+
+            Span<uint> result = left;   //keep result buffer untouched during computation
 
             // Executes Lehmer's gcd algorithm, but uses the most
             // significant bits to work with 64-bit (not 32-bit) values.
@@ -164,7 +166,9 @@ namespace System.Numerics
                 else
                 {
                     // Lehmer's step
-                    LehmerCore(ref left, ref right, a, b, c, d);
+                    var count = LehmerCore(left, right, a, b, c, d);
+                    left = left.Slice(0, Refresh(left, count));
+                    right = right.Slice(0, Refresh(right, count));
 
                     if (iteration % 2 == 1)
                     {
@@ -185,10 +189,10 @@ namespace System.Numerics
                 ulong y = ((ulong)left[1] << 32) | left[0];
 
                 left = left.Slice(0, Overwrite(left, Gcd(x, y)));
-                right = right.Slice(0, Overwrite(right, 0U));
+                Overwrite(right, 0U);
             }
 
-            return left;
+            left.CopyTo(result);
         }
 
         private static int Reduce(Span<uint> bits, ReadOnlySpan<uint> modulus)
@@ -291,10 +295,10 @@ namespace System.Numerics
             Debug.Assert(x >= y);
         }
 
-        private static void LehmerCore(ref Span<uint> x,
-                                       ref Span<uint> y,
-                                       long a, long b,
-                                       long c, long d)
+        private static int LehmerCore(Span<uint> x,
+                                      Span<uint> y,
+                                      long a, long b,
+                                      long c, long d)
         {
             Debug.Assert(x.Length >= 1);
             Debug.Assert(y.Length >= 1);
@@ -317,11 +321,10 @@ namespace System.Numerics
                 y[i] = unchecked((uint)yDigit);
             }
 
-            Refresh(ref x, length);
-            Refresh(ref y, length);
+            return length;
         }
 
-        private static void Refresh(ref Span<uint> bits, int maxLength)
+        private static int Refresh(Span<uint> bits, int maxLength)
         {
             Debug.Assert(bits.Length >= maxLength);
 
@@ -331,7 +334,7 @@ namespace System.Numerics
                 bits.Slice(maxLength).Clear();
             }
 
-            bits = bits.Slice(0, ActualLength(bits.Slice(0, maxLength)));
+            return ActualLength(bits.Slice(0, maxLength));
         }
     }
 }
