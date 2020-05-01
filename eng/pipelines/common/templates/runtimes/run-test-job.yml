@@ -213,6 +213,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          # We want the specific tests to overlay the generic tests
+          cleanUnpackFolder: false
           artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
           artifactName: '$(managedTestArtifactName)'
           displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
