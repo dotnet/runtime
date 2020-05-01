@@ -6268,6 +6268,21 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 
 		return res;
 	}
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *klass = t->data.klass;
+		MonoClass *eklass = m_class_get_element_class (klass);
+		if (m_class_get_rank (klass) > 1)
+			break;
+
+		if (mono_class_is_auto_layout (eklass))
+			break;
+		if (m_class_is_valuetype (eklass) && (mono_class_is_explicit_layout (eklass) || m_class_is_blittable (eklass) || m_class_is_enumtype (eklass)))	{
+			//FIXME: Pin array - if we can't pin, we should probably do a copy here instead of this
+			MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
+			return (arr->vector);
+		}
+		break;
+	}
 	default:
 		break;
 	}
