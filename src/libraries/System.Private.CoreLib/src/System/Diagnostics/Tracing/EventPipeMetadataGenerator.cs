@@ -493,6 +493,25 @@ namespace System.Diagnostics.Tracing
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, EventPipeTypeCodeArray);
                 GenerateMetadataForTypeV2(enumerableTypeInfo.ElementInfo, pMetadataBlob, ref offset, blobSize);
             }
+            else if (typeInfo is ScalarArrayTypeInfo arrayTypeInfo)
+            {
+                // Each enumerable is serialized as:
+                //     TypeCode.Array               : 4 bytes
+                //     ElementType                  : N bytes
+                if (!arrayTypeInfo.DataType.HasElementType)
+                {
+                    return false;
+                }
+
+                TraceLoggingTypeInfo elementTypeInfo;
+                if (!GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
+                {
+                    return false;
+                }
+
+                EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, EventPipeTypeCodeArray);
+                GenerateMetadataForTypeV2(elementTypeInfo, pMetadataBlob, ref offset, blobSize);
+            }
             else
             {
                 // Each primitive type is serialized as:
@@ -509,6 +528,90 @@ namespace System.Diagnostics.Tracing
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)typeCode);
             }
             return true;
+        }
+
+        internal static bool GetTypeInfoFromType(Type? type, out TraceLoggingTypeInfo typeInfo)
+        {
+            if (type == typeof(bool))
+            {
+                typeInfo = ScalarTypeInfo.Boolean();
+                return true;
+            }
+            else if (type == typeof(byte))
+            {
+                typeInfo = ScalarTypeInfo.Byte();
+                return true;
+            }
+            else if (type == typeof(sbyte))
+            {
+                typeInfo = ScalarTypeInfo.SByte();
+                return true;
+            }
+            else if (type == typeof(char))
+            {
+                typeInfo = ScalarTypeInfo.Char();
+                return true;
+            }
+            else if (type == typeof(short))
+            {
+                typeInfo = ScalarTypeInfo.Int16();
+                return true;
+            }
+            else if (type == typeof(ushort))
+            {
+                typeInfo = ScalarTypeInfo.UInt16();
+                return true;
+            }
+            else if (type == typeof(int))
+            {
+                typeInfo = ScalarTypeInfo.Int32();
+                return true;
+            }
+            else if (type == typeof(uint))
+            {
+                typeInfo = ScalarTypeInfo.UInt32();
+                return true;
+            }
+            else if (type == typeof(long))
+            {
+                typeInfo = ScalarTypeInfo.Int64();
+                return true;
+            }
+            else if (type == typeof(ulong))
+            {
+                typeInfo = ScalarTypeInfo.UInt64();
+                return true;
+            }
+            else if (type == typeof(IntPtr))
+            {
+                typeInfo = ScalarTypeInfo.IntPtr();
+                return true;
+            }
+            else if (type == typeof(UIntPtr))
+            {
+                typeInfo = ScalarTypeInfo.UIntPtr();
+                return true;
+            }
+            else if (type == typeof(float))
+            {
+                typeInfo = ScalarTypeInfo.Single();
+                return true;
+            }
+            else if (type == typeof(double))
+            {
+                typeInfo = ScalarTypeInfo.Double();
+                return true;
+            }
+            else if (type == typeof(Guid))
+            {
+                typeInfo = ScalarTypeInfo.Guid();
+                return true;
+            }
+            else
+            {
+                typeInfo = new NullTypeInfo();
+                return false;
+            }
         }
 
         internal int GetMetadataLength()
@@ -649,6 +752,16 @@ namespace System.Diagnostics.Tracing
                 //     ElementType         : N bytes
                 ret += sizeof(uint)
                      + GetMetadataLengthForTypeV2(enumerableTypeInfo.ElementInfo);
+            }
+            else if (typeInfo is ScalarArrayTypeInfo arrayTypeInfo)
+            {
+                TraceLoggingTypeInfo elementTypeInfo;
+                if (arrayTypeInfo.DataType.HasElementType
+                    && GetTypeInfoFromType(arrayTypeInfo.DataType.GetElementType(), out elementTypeInfo))
+                {
+                    ret += sizeof(uint)
+                         + GetMetadataLengthForTypeV2(elementTypeInfo);
+                }
             }
             else
             {
