@@ -269,7 +269,7 @@ namespace System.Security.Cryptography
                     // MacOS only supports FIPS-186-2, which only defines SHA1
                     // as a supported algorithm.
                     if (rgbHash.Length != Sha1DigestSizeBytes)
-                        throw new CryptographicException(SR.Cryptography_HashSizeInvalid);
+                        throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", Sha1DigestSizeBytes));
 
                     SecKeyPair keys = GetKeys();
 

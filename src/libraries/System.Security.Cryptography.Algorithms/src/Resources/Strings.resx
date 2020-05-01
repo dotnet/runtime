@@ -162,8 +162,8 @@
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
-  <data name="Cryptography_HashSizeInvalid" xml:space="preserve">
-    <value>The specified hash's size is not supported on this platform.</value>
+  <data name="Cryptography_InvalidHashSize" xml:space="preserve">
+    <value>{0} algorithm hash size is {1} bytes.</value>
   </data>
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>

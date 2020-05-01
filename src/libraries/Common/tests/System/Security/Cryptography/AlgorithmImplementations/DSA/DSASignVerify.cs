@@ -389,7 +389,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 DSATestData.GetDSA1024_186_2(out DSAParameters parameters, out _, out _);
                 dsa.ImportParameters(parameters);
                 CryptographicException ce = Assert.Throws<CryptographicException>(() => dsa.CreateSignature(hash));
-                Assert.Contains("hash's size is not supported", ce.Message);
+                Assert.Equal("SHA1 algorithm hash size is 20 bytes.", ce.Message);
             }
         }
 
