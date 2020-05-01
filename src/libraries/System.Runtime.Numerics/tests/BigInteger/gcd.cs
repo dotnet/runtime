@@ -67,22 +67,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void SimpleGCDTest()
-        {
-            var tempByteArray1 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 1 };
-            var tempByteArray2 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 1 };
-
-            Console.WriteLine("Correct GCD");
-            var result = MyBigIntImp.GCD(new Collections.Generic.List<byte>(tempByteArray1), new Collections.Generic.List<byte>(tempByteArray2)).ToArray();
-            Console.WriteLine(Print(result));
-
-            Console.WriteLine("Incorrect GCD");
-            result = BigInteger.GreatestCommonDivisor(new BigInteger(tempByteArray1), new BigInteger(tempByteArray2)).ToByteArray();
-
-            Console.WriteLine(Print(result));
-        }
-
-        [Fact]
         public static void RunGCDTests()
         {
             byte[] tempByteArray1 = new byte[0];
