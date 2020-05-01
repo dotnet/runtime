@@ -514,8 +514,9 @@ namespace System.Net.WebSockets
             if (acquiredLock)
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
-                // The call will handle releasing the lock.
-                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
+                // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
+                // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, true, ReadOnlyMemory<byte>.Empty);
                 if (t.IsCompletedSuccessfully)
                 {
                     t.GetAwaiter().GetResult();
