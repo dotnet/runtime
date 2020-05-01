@@ -127,7 +127,7 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
     {
         return SimdAsHWIntrinsicClassId::Vector4;
     }
-    if (strcmp(className, "Vector`1") == 0)
+    if ((strcmp(className, "Vector") == 0) || (strcmp(className, "Vector`1") == 0))
     {
 #if defined(TARGET_XARCH)
         if (sizeOfVectorT == 32)
