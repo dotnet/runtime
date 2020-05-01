@@ -6273,8 +6273,12 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
-		if (m_class_get_rank (klass) > 1 || arr->bounds->lower_bound != 0)
+		if (m_class_get_rank (klass) > 1)
 			break;
+
+		if (arr->bounds)
+			if (arr->bounds->lower_bound != 0)
+				break;
 
 		if (mono_class_is_auto_layout (eklass))
 			break;
