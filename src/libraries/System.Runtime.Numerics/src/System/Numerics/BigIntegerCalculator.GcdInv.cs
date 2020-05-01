@@ -184,8 +184,8 @@ namespace System.Numerics
                 ulong x = ((ulong)right[1] << 32) | right[0];
                 ulong y = ((ulong)left[1] << 32) | left[0];
 
-                Overwrite(ref left, Gcd(x, y));
-                Overwrite(ref right, 0U);
+                left = left.Slice(0, Overwrite(left, Gcd(x, y)));
+                right = right.Slice(0, Overwrite(right, 0U));
             }
 
             return left;
@@ -205,7 +205,7 @@ namespace System.Numerics
             return bits.Length;
         }
 
-        private static void Overwrite(ref Span<uint> buffer, ulong value)
+        private static int Overwrite(Span<uint> buffer, ulong value)
         {
             Debug.Assert(buffer.Length >= 2);
 
@@ -220,15 +220,10 @@ namespace System.Numerics
 
             buffer[0] = lo;
             buffer[1] = hi;
-            if (hi != 0)
-                buffer = buffer.Slice(0, 2);
-            else if (lo != 0)
-                buffer = buffer.Slice(0, 1);
-            else
-                buffer = default;
+            return hi != 0 ? 2 : lo != 0 ? 1 : 0;
         }
 
-        private static void Overwrite(ref Span<uint> bits, uint value)
+        private static int Overwrite(Span<uint> bits, uint value)
         {
             Debug.Assert(bits.Length >= 1);
 
@@ -239,7 +234,7 @@ namespace System.Numerics
             }
 
             bits[0] = value;
-            bits = value != 0 ? bits.Slice(0, 1) : default;
+            return value != 0 ? 1 : 0;
         }
 
         private static void ExtractDigits(ReadOnlySpan<uint> xBuffer,
