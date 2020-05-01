@@ -839,11 +839,14 @@ namespace Internal.TypeSystem
 
         private ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
         {
+            // Use this constant to make the code below more laconic
+            const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;
+
             Debug.Assert(type.IsValueType);
 
             TargetArchitecture targetArch = type.Context.Target.Architecture;
             if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
-                return ValueTypeShapeCharacteristics.None;
+                return NotHA;
 
             MetadataType metadataType = (MetadataType)type;
 
@@ -851,7 +854,7 @@ namespace Internal.TypeSystem
             // eligible for HA, but it is hard to tell the real intent. Make it simple and just 
             // unconditionally disable HAs for explicit layout.
             if (metadataType.IsExplicitLayout)
-                return ValueTypeShapeCharacteristics.None;
+                return NotHA;
 
             switch (metadataType.Category)
             {
@@ -862,8 +865,8 @@ namespace Internal.TypeSystem
                     return ValueTypeShapeCharacteristics.Float64Aggregate;
 
                 case TypeFlags.ValueType:
-                    // Find the common element type if any
-                    ValueTypeShapeCharacteristics haResultType = ValueTypeShapeCharacteristics.None;
+                    // Find the common HA element type if any
+                    ValueTypeShapeCharacteristics haResultType = NotHA;
 
                     foreach (FieldDesc field in metadataType.GetFields())
                     {
@@ -872,14 +875,14 @@ namespace Internal.TypeSystem
 
                         // If a field isn't a DefType, then this type cannot be a HA type
                         if (!(field.FieldType is DefType fieldType))
-                            return ValueTypeShapeCharacteristics.None;
+                            return NotHA;
 
                         // If a field isn't a HA type, then this type cannot be a HA type
                         ValueTypeShapeCharacteristics haFieldType = fieldType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask;
-                        if (haFieldType == ValueTypeShapeCharacteristics.None)
-                            return ValueTypeShapeCharacteristics.None;
+                        if (haFieldType == NotHA)
+                            return NotHA;
 
-                        if (haResultType == ValueTypeShapeCharacteristics.None)
+                        if (haResultType == NotHA)
                         {
                             // If we hadn't yet figured out what form of HA this type might be, we've now found one case
                             haResultType = haFieldType;
@@ -889,9 +892,13 @@ namespace Internal.TypeSystem
                             // If we had already determined the possible HA type of the current type, but
                             // the field we've encountered is not of that type, then the current type cannot
                             // be a HA type.
-                            return ValueTypeShapeCharacteristics.None;
+                            return NotHA;
                         }
                     }
+
+                    // If there are no instance fields, this is not a HA type
+                    if (haResultType == NotHA)
+                        return NotHA;
 
                     int haElementSize = haResultType switch
                     {
@@ -900,14 +907,12 @@ namespace Internal.TypeSystem
                         ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
                         ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
                         ValueTypeShapeCharacteristics.Vector256Aggregate => 32,
-                        _ => 0
+                        _ => throw new ArgumentOutOfRangeException()
                     };
-
-                    Debug.Assert(haElementSize != 0);
 
                     // Types which are indeterminate in field size are not considered to be HA
                     if (type.InstanceFieldSize.IsIndeterminate)
-                        return ValueTypeShapeCharacteristics.None;
+                        return NotHA;
 
                     // Note that we check the total size, but do not perform any checks on number of fields:
                     // - Type of fields can be HA valuetype itself.
@@ -915,13 +920,13 @@ namespace Internal.TypeSystem
                     //   the valuetype is HA and explicitly specified size.
                     int maxSize = haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount;
                     if (type.InstanceFieldSize.AsInt > maxSize)
-                        return ValueTypeShapeCharacteristics.None;
+                        return NotHA;
 
                     // All the tests passed. This is a HA type.
                     return haResultType;
             }
 
-            return ValueTypeShapeCharacteristics.None;
+            return NotHA;
         }
 
         private struct SizeAndAlignment
