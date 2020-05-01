@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
@@ -11,12 +13,19 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type type)
         {
-            return type.ToString() == "System.Uri";
+            return (type.ToString() == "System.Uri" && IsSystemUriType(type));
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             return new UriConverter();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool IsSystemUriType(Type type)
+        {
+            // Verify the Type is what we expect.
+            return (type == typeof(Uri));
         }
     }
 }
