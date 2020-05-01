@@ -94,8 +94,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     keyLength: _currentValueOffset.Value - _currentKeyOffset.Value,
                     totalLength: _offset - _currentKeyOffset.Value);
 
-                Debug.Assert(!(CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel) && ranges.Contains(currentKeyRange)));
-                ranges.Add(currentKeyRange);
+                bool unique = ranges.Add(currentKeyRange);
+                Debug.Assert(unique || !CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel));
             }
 
             // reset state to new key
