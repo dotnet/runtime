@@ -22,7 +22,8 @@ namespace System.Diagnostics
             {
                 foreach (KeyValuePair<string, object> kvp in Attributes)
                 {
-                    hashCode.Add(kvp.Key, kvp.Value);
+                    hashCode.Add(kvp.Key);
+                    hashCode.Add(kvp.Value);
                 }
             }
             return hashCode.ToHashCode();
