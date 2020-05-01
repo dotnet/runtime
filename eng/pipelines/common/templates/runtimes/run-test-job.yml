@@ -212,12 +212,28 @@ jobs:
       # Download and unzip target specific tests
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          # We want the specific tests to overlay the generic tests
-          cleanUnpackFolder: false
           artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
           artifactName: '$(managedTestArtifactName)'
           displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+          ${{ if ne(parameters.testBuildPhased, true) }}:
+            # These are the only tests unpack directly
+            unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          ${{ if eq(parameters.testBuildPhased, true) }}:
+            # We want the specific tests to overlay the generic tests
+            # Unpacking directly casues issues due to not handling overwriting existing files
+            # Unpack to a temp folder and copy below
+            unpackFolder: '$(Build.SourcesDirectory)/__unpack__/$(managedTestArtifactName)'
+
+      - ${{ if eq(parameters.testBuildPhased, true) }}:
+        # Copy target specific tests on top of the generic test
+        # Expected to overwrite duplicates
+        - task: CopyFiles@2
+          displayName: Gather binaries for publish to artifacts
+          inputs:
+            SourceFolder: '$(Build.SourcesDirectory)/__unpack__/$(managedTestArtifactName)'
+            Contents: '**'
+            TargetFolder: '$(managedTestArtifactRootFolderPath)'
+            CleanTargetFolder: false
 
 
     # Download product binaries directory
