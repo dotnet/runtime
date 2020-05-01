@@ -11,6 +11,8 @@ namespace System.Text.Json
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
+    /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
+    /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
         public Func<object, T>? Get { get; private set; }

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ValueTests
+    public static partial class CollectionTests
     {
         [Fact]
         public static void ReadListOfList()

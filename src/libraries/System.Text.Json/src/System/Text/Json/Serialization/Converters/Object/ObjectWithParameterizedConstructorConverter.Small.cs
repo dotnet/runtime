@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     break;
                 default:
-                    Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                    Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
                     throw new InvalidOperationException();
             }
 
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Converters
                             arguments.Arg3 = ((JsonParameterInfo<TArg3>)parameterInfo).TypedDefaultValue!;
                             break;
                         default:
-                            Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                            Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
                             throw new InvalidOperationException();
                     }
                 }
