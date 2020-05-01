@@ -36,7 +36,7 @@
   </Target>
 
   <Target Name="BuildWasmRuntimes" DependsOnTargets="BuildPInvokeTable">
-	<Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
+	<Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildWasmRuntimes"/>
