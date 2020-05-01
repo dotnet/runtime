@@ -454,8 +454,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SetSocketOption_Linger_InvalidLingerTime_Throws_Argument()
         {
-            AssertExtensions.Throws<ArgumentException>("optionValue.LingerTime", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, -1)));
-            AssertExtensions.Throws<ArgumentException>("optionValue.LingerTime", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, (int)ushort.MaxValue + 1)));
+            AssertExtensions.Throws<ArgumentException>("optionValue", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, -1)));
+            AssertExtensions.Throws<ArgumentException>("optionValue", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, (int)ushort.MaxValue + 1)));
         }
 
         [Fact]
@@ -516,7 +516,7 @@ namespace System.Net.Sockets.Tests
                 BufferList = s_buffers
             };
 
-            AssertExtensions.Throws<ArgumentException>("BufferList", () => GetSocket().AcceptAsync(eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => GetSocket().AcceptAsync(eventArgs));
         }
 
         [Fact]
@@ -598,7 +598,7 @@ namespace System.Net.Sockets.Tests
                 BufferList = s_buffers
             };
 
-            AssertExtensions.Throws<ArgumentException>("BufferList", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, eventArgs));
         }
 
         [Fact]
@@ -632,7 +632,7 @@ namespace System.Net.Sockets.Tests
                 RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, 1)
             };
 
-            AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () => GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(eventArgs));
         }
 
         [Fact]
@@ -654,7 +654,7 @@ namespace System.Net.Sockets.Tests
                 RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, 1)
             };
 
-            AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () => GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(eventArgs));
         }
 
         [Fact]

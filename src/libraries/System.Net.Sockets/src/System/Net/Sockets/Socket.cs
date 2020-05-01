@@ -3983,7 +3983,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly, the argument not applicable
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                 throw new ArgumentNullException("remoteEP");
 #pragma warning restore CA2208
             }
@@ -4170,7 +4170,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, argument not applicable
                 throw new ArgumentNullException(nameof(e.RemoteEndPoint));
 #pragma warning restore CA2208
             }

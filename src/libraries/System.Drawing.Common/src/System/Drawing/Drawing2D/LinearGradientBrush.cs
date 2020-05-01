@@ -232,7 +232,7 @@ namespace System.Drawing.Drawing2D
                     throw new NullReferenceException();
 
                 if (value.Positions == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
                     throw new ArgumentNullException("source");
 #pragma warning restore CA2208
 

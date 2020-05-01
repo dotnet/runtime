@@ -641,7 +641,7 @@ namespace System.Drawing
                     {
                         // We threw this way on NetFX
                         if (outputStream == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, NetFX compatability
                             throw new ArgumentNullException("dataStream");
 #pragma warning restore CA2208
 

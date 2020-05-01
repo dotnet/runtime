@@ -188,7 +188,7 @@ namespace System.Drawing.Drawing2D
                 // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
                 // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
                 if (value.Positions == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
                     throw new ArgumentNullException("source");
 #pragma warning restore CA2208
 
@@ -304,7 +304,7 @@ namespace System.Drawing.Drawing2D
                 // depending on how sane the input is. These checks exist to replicate the exact Desktop behavior.
                 int count = value.Colors.Length;
 
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
                 if (value.Positions == null)
                     throw new ArgumentNullException("source");
                 if (value.Colors.Length > value.Positions.Length)

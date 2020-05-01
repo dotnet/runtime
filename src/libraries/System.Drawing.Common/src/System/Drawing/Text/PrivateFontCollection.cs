@@ -60,7 +60,7 @@ namespace System.Drawing.Text
         {
             if (_nativeFontCollection == IntPtr.Zero)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, Desktop compatability
                 // This is the default behavior on Desktop. The ArgumentException originates from GdipPrivateAddFontFile which would
                 // refuse the null pointer.
                 throw new ArgumentException();
