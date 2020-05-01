@@ -3,6 +3,8 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CrossGenTest>false</CrossGenTest>
+    <!-- This requires a specific targetis OS because it fails when built on OSX and run on Windows -->
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
