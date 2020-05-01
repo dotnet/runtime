@@ -552,6 +552,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_get_Zero:
             case NI_Vector128_get_AllBitsSet:
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
+                break;
+
             case NI_Vector64_Create:
             case NI_Vector128_Create:
                 assert(opt != INS_OPTS_NONE);
