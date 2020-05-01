@@ -175,6 +175,18 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     var_types simdType = TYP_UNKNOWN;
     unsigned  simdSize = 0;
 
+    // We want to resolve and populate the handle cache for this type even
+    // if it isn't the basis for anything carried on the node.
+    baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
+    assert(simdSize != 0);
+
+    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
+    {
+        // We need to fixup the clsHnd in the case we are an intrinsic on Vector
+        // The first argument will be the appropriate Vector<T> handle to use
+        clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
+    }
+
     if (retType == TYP_STRUCT)
     {
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
@@ -206,13 +218,6 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         // Set `compFloatingPointUsed` to cover the scenario where an intrinsic
         // is operating on SIMD fields, but where no SIMD local vars are in use.
         compFloatingPointUsed = true;
-    }
-
-    if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
-    {
-        // We need to fixup the clsHnd in the case we are an intrinsic on Vector
-        // The first argument will be the appropriate Vector<T> handle to use
-        clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
     }
 
     if (hwIntrinsic == intrinsic)
