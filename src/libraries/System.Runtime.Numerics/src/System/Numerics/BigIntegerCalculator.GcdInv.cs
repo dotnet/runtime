@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Numerics
@@ -54,27 +55,32 @@ namespace System.Numerics
             return Gcd(right, temp);
         }
 
-        public static uint[] Gcd(uint[] left, uint[] right)
+        public static void Gcd(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> result)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 2);
-            Debug.Assert(right != null);
             Debug.Assert(right.Length >= 2);
             Debug.Assert(Compare(left, right) >= 0);
+            Debug.Assert(result.Length == left.Length);
 
-            BitsBuffer leftBuffer = new BitsBuffer(left.Length, left);
-            BitsBuffer rightBuffer = new BitsBuffer(right.Length, right);
+            left.CopyTo(result);
 
-            Gcd(ref leftBuffer, ref rightBuffer);
+            uint[]? rightCopyFromPool = null;
+            Span<uint> rightCopy = right.Length <= AllocationThreshold ?
+                                  stackalloc uint[right.Length]
+                                  : (rightCopyFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).AsSpan(0, right.Length);
+            right.CopyTo(rightCopy);
 
-            return leftBuffer.GetBits();
+            Gcd(result, rightCopy).CopyTo(result);
+
+            if (rightCopyFromPool != null)
+                ArrayPool<uint>.Shared.Return(rightCopyFromPool);
         }
 
-        private static void Gcd(ref BitsBuffer left, ref BitsBuffer right)
+        private static Span<uint> Gcd(Span<uint> left, Span<uint> right)
         {
-            Debug.Assert(left.GetLength() >= 2);
-            Debug.Assert(right.GetLength() >= 2);
-            Debug.Assert(left.GetLength() >= right.GetLength());
+            Debug.Assert(left.Length >= 2);
+            Debug.Assert(right.Length >= 2);
+            Debug.Assert(left.Length >= right.Length);
 
             // Executes Lehmer's gcd algorithm, but uses the most
             // significant bits to work with 64-bit (not 32-bit) values.
@@ -83,11 +89,11 @@ namespace System.Numerics
             // http://cacr.uwaterloo.ca/hac/about/chap14.pdf (see 14.4.2)
             // ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1992/92-69.ps.gz
 
-            while (right.GetLength() > 2)
+            while (right.Length > 2)
             {
                 ulong x, y;
 
-                ExtractDigits(new ReadOnlySpan<uint>(left.GetBits(), 0, left.GetLength()), new ReadOnlySpan<uint>(right.GetBits(), 0, right.GetLength()), out x, out y);
+                ExtractDigits(left, right, out x, out y);
 
                 uint a = 1U, b = 0U;
                 uint c = 0U, d = 1U;
@@ -149,9 +155,9 @@ namespace System.Numerics
                 if (b == 0)
                 {
                     // Euclid's step
-                    left.Reduce(ref right);
+                    left = left.Slice(0, Reduce(left, right));
 
-                    BitsBuffer temp = left;
+                    Span<uint> temp = left;
                     left = right;
                     right = temp;
                 }
@@ -163,27 +169,77 @@ namespace System.Numerics
                     if (iteration % 2 == 1)
                     {
                         // Ensure left is larger than right
-                        BitsBuffer temp = left;
+                        Span<uint> temp = left;
                         left = right;
                         right = temp;
                     }
                 }
             }
 
-            if (right.GetLength() > 0)
+            if (right.Length > 0)
             {
                 // Euclid's step
-                left.Reduce(ref right);
+                Reduce(left, right);
 
-                uint[] xBits = right.GetBits();
-                uint[] yBits = left.GetBits();
+                ulong x = ((ulong)right[1] << 32) | right[0];
+                ulong y = ((ulong)left[1] << 32) | left[0];
 
-                ulong x = ((ulong)xBits[1] << 32) | xBits[0];
-                ulong y = ((ulong)yBits[1] << 32) | yBits[0];
-
-                left.Overwrite(Gcd(x, y));
-                right.Overwrite(0);
+                Overwrite(ref left, Gcd(x, y));
+                Overwrite(ref right, 0U);
             }
+
+            return left;
+        }
+
+        private static int Reduce(Span<uint> bits, ReadOnlySpan<uint> modulus)
+        {
+            // Executes a modulo operation using the divide operation.
+            // Thus, no need of any switching here, happens in-line.
+
+            if (bits.Length >= modulus.Length)
+            {
+                Divide(bits, modulus, default);
+
+                return ActualLength(bits.Slice(0, modulus.Length));
+            }
+            return bits.Length;
+        }
+
+        private static void Overwrite(ref Span<uint> buffer, ulong value)
+        {
+            Debug.Assert(buffer.Length >= 2);
+
+            if (buffer.Length > 2)
+            {
+                // Ensure leading zeros
+                buffer.Slice(2).Clear();
+            }
+
+            uint lo = unchecked((uint)value);
+            uint hi = (uint)(value >> 32);
+
+            buffer[0] = lo;
+            buffer[1] = hi;
+            if (hi != 0)
+                buffer = buffer.Slice(0, 2);
+            else if (lo != 0)
+                buffer = buffer.Slice(0, 1);
+            else
+                buffer = default;
+        }
+
+        private static void Overwrite(ref Span<uint> bits, uint value)
+        {
+            Debug.Assert(bits.Length >= 1);
+
+            if (bits.Length > 1)
+            {
+                // Ensure leading zeros
+                bits.Slice(1).Clear();
+            }
+
+            bits[0] = value;
+            bits = value != 0 ? bits.Slice(0, 1) : default;
         }
 
         private static void ExtractDigits(ReadOnlySpan<uint> xBuffer,
@@ -240,23 +296,20 @@ namespace System.Numerics
             Debug.Assert(x >= y);
         }
 
-        private static void LehmerCore(ref BitsBuffer xBuffer,
-                                       ref BitsBuffer yBuffer,
+        private static void LehmerCore(ref Span<uint> x,
+                                       ref Span<uint> y,
                                        long a, long b,
                                        long c, long d)
         {
-            Debug.Assert(xBuffer.GetLength() >= 1);
-            Debug.Assert(yBuffer.GetLength() >= 1);
-            Debug.Assert(xBuffer.GetLength() >= yBuffer.GetLength());
+            Debug.Assert(x.Length >= 1);
+            Debug.Assert(y.Length >= 1);
+            Debug.Assert(x.Length >= y.Length);
             Debug.Assert(a <= 0x7FFFFFFF && b <= 0x7FFFFFFF);
             Debug.Assert(c <= 0x7FFFFFFF && d <= 0x7FFFFFFF);
 
             // Executes the combined calculation of Lehmer's step.
 
-            uint[] x = xBuffer.GetBits();
-            uint[] y = yBuffer.GetBits();
-
-            int length = yBuffer.GetLength();
+            int length = y.Length;
 
             long xCarry = 0L, yCarry = 0L;
             for (int i = 0; i < length; i++)
@@ -269,8 +322,21 @@ namespace System.Numerics
                 y[i] = unchecked((uint)yDigit);
             }
 
-            xBuffer.Refresh(length);
-            yBuffer.Refresh(length);
+            Refresh(ref x, length);
+            Refresh(ref y, length);
+        }
+
+        private static void Refresh(ref Span<uint> bits, int maxLength)
+        {
+            Debug.Assert(bits.Length >= maxLength);
+
+            if (bits.Length > maxLength)
+            {
+                // Ensure leading zeros
+                bits.Slice(maxLength).Clear();
+            }
+
+            bits = bits.Slice(0, ActualLength(bits.Slice(0, maxLength)));
         }
     }
 }

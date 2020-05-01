@@ -881,7 +881,7 @@ namespace System.Numerics
             }
         }
 
-        private static BigInteger GreatestCommonDivisor(uint[] leftBits, uint[] rightBits)
+        private static BigInteger GreatestCommonDivisor(ReadOnlySpan<uint> leftBits, ReadOnlySpan<uint> rightBits)
         {
             Debug.Assert(BigIntegerCalculator.Compare(leftBits, rightBits) >= 0);
 
@@ -902,8 +902,18 @@ namespace System.Numerics
                 return BigIntegerCalculator.Gcd(left, right);
             }
 
-            uint[] bits = BigIntegerCalculator.Gcd(leftBits, rightBits);
-            return new BigInteger(bits, false);
+            uint[]? bitsFromPool = null;
+            Span<uint> bits = leftBits.Length <= StackAllocThreshold ?
+                              stackalloc uint[leftBits.Length]
+                              : (bitsFromPool = ArrayPool<uint>.Shared.Rent(leftBits.Length)).AsSpan(0, leftBits.Length);
+
+            BigIntegerCalculator.Gcd(leftBits, rightBits, bits);
+            var result = new BigInteger(bits, false);
+
+            if (bitsFromPool != null)
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
+
+            return result;
         }
 
         public static BigInteger Max(BigInteger left, BigInteger right)
