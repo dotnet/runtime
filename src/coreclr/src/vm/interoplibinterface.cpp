@@ -408,7 +408,7 @@ namespace
 
     // Scenarios for ComWrappers usage.
     // These values should match the managed definition in ComWrappers.
-    enum ComWrappersScenario
+    enum class ComWrappersScenario
     {
         Instance = 0,
         TrackerSupportGlobalInstance = 1,
@@ -416,10 +416,10 @@ namespace
     };
 
     void* CallComputeVTables(
+        _In_ ComWrappersScenario scenario,
         _In_ OBJECTREF* implPROTECTED,
         _In_ OBJECTREF* instancePROTECTED,
         _In_ INT32 flags,
-        _In_ ComWrappersScenario scenario,
         _Out_ DWORD* vtableCount)
     {
         CONTRACTL
@@ -436,21 +436,21 @@ namespace
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__COMPUTE_VTABLES);
         DECLARE_ARGHOLDER_ARRAY(args, 5);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
-        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*instancePROTECTED);
-        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
-        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(scenario);
+        args[ARGNUM_0]  = DWORD_TO_ARGHOLDER(scenario);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_2]  = OBJECTREF_TO_ARGHOLDER(*instancePROTECTED);
+        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
         args[ARGNUM_4]  = PTR_TO_ARGHOLDER(vtableCount);
         CALL_MANAGED_METHOD(vtables, void*, args);
 
         return vtables;
     }
 
-    OBJECTREF CallGetObject(
+    OBJECTREF CallCreateObject(
+        _In_ ComWrappersScenario scenario,
         _In_ OBJECTREF* implPROTECTED,
         _In_ IUnknown* externalComObject,
-        _In_ INT32 flags,
-        _In_ ComWrappersScenario scenario)
+        _In_ INT32 flags)
     {
         CONTRACTL
         {
@@ -465,10 +465,10 @@ namespace
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
         DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
-        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
-        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(scenario);
+        args[ARGNUM_0]  = DWORD_TO_ARGHOLDER(scenario);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(externalComObject);
+        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
         CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
 
         return retObjRef;
@@ -567,7 +567,7 @@ namespace
             // is taken. However, a key assumption here is that the returned memory will be
             // idempotent for the same object.
             DWORD vtableCount;
-            void* vtables = CallComputeVTables(&gc.implRef, &gc.instRef, flags, scenario, &vtableCount);
+            void* vtables = CallComputeVTables(scenario, &gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
             if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe)
@@ -730,7 +730,7 @@ namespace
             // If the wrapper hasn't been set yet, call the implementation to create one.
             if (gc.objRefMaybe == NULL)
             {
-                gc.objRefMaybe = CallGetObject(&gc.implRef, identity, flags, scenario);
+                gc.objRefMaybe = CallCreateObject(scenario, &gc.implRef, identity, flags);
             }
 
             // The object may be null if the specified ComWrapper implementation returns null

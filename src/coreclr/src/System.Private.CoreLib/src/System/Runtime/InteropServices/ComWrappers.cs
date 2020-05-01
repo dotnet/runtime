@@ -180,7 +180,7 @@ namespace System.Runtime.InteropServices
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         // Called by the runtime to execute the abstract instance function
-        internal static unsafe void* CallComputeVtables(ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, ComWrappersScenario scenario, out int count)
+        internal static unsafe void* CallComputeVtables(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
         {
             ComWrappers? impl = null;
             switch (scenario)
@@ -232,7 +232,7 @@ namespace System.Runtime.InteropServices
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
         // Called by the runtime to execute the abstract instance function.
-        internal static object? CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ComWrappersScenario scenario)
+        internal static object? CallCreateObject(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags)
         {
             ComWrappers? impl = null;
             switch (scenario)
@@ -356,6 +356,9 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
 
+            // Indicate to the runtime that a global instance has been registered for marshalling.
+            // This allows the native runtime know to call into the managed ComWrappers only if a
+            // global instance is registered for marshalling.
             SetGlobalInstanceRegisteredForMarshalling();
         }
 
