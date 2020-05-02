@@ -207,7 +207,7 @@
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
     <HelixPreCommand Include="type %__TestEnv%" />
-    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter' " Condition=" '$(RuntimeMode)' == 'interpreter' " />
+    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter'" Condition=" '$(RuntimeMode)' == 'interpreter' " />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
