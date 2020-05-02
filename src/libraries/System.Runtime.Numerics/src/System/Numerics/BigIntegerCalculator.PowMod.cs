@@ -140,10 +140,8 @@ namespace System.Numerics
             return PowCore(power, modulus, value, 1);
         }
 
-        public static uint Pow(uint[] value, uint power, uint modulus)
+        public static uint Pow(ReadOnlySpan<uint> value, uint power, uint modulus)
         {
-            Debug.Assert(value != null);
-
             // The 32-bit modulus pow method for a big integer
             // raised by a 32-bit integer...
 
