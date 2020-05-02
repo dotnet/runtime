@@ -133,7 +133,7 @@ namespace System.Numerics
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a 32-bit integer...
 
-            return PowCore(power, modulus, value, 1);
+            return PowCore(value, power, modulus, 1);
         }
 
         public static uint Pow(ReadOnlySpan<uint> value, uint power, uint modulus)
@@ -142,7 +142,7 @@ namespace System.Numerics
             // raised by a 32-bit integer...
 
             uint v = Remainder(value, modulus);
-            return PowCore(power, modulus, v, 1);
+            return PowCore(v, power, modulus, 1);
         }
 
         public static uint Pow(uint value, ReadOnlySpan<uint> power, uint modulus)
@@ -179,11 +179,10 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(power[power.Length - 1], modulus, value, result);
+            return PowCore(value, power[power.Length - 1], modulus, result);
         }
 
-        private static uint PowCore(uint power, uint modulus,
-                                    ulong value, ulong result)
+        private static uint PowCore(ulong value, uint power, uint modulus, ulong result)
         {
             // The 32-bit modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
