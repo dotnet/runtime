@@ -78,52 +78,49 @@ namespace System.Net.NetworkInformation
         /// <returns>The constructed command line arguments, which can be passed to ping or ping6.</returns>
         public static string ConstructCommandLine(int packetSize, int timeout, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
         {
+            var sb = new StringBuilder();
+            sb.Append("-c 1"); // Just send a single ping ("count = 1")
+
             // Pass timeout argument to ping utility
             // BusyBox, Linux: ping and ping6 requires -W flag which accepts timeout in SECONDS.
             // FreeBSD: ping requires -W flag which accepts timeout in MILLISECONDS;
             // ping6 requires -x which accepts timeout in MILLISECONDS
             // OSX: ping requires -W flag which accepts timeout in MILLISECONDS; ping6 doesn't support timeout
-            static void AppendTimeout(StringBuilder cmd, int timeout, bool ipv4)
+            if (s_isBSD)
             {
-                if (s_isBSD)
+                if (ipv4)
                 {
-                    if (ipv4)
-                    {
-                        cmd.Append(" -W ");
-                    }
-                    else
-                    {
-                        cmd.Append(" -x ");
-                    }
-                }
-                else if (s_isOSX)
-                {
-                    if (ipv4)
-                    {
-                        cmd.Append(" -W ");
-                    }
-                    else
-                    {
-                        return;
-                    }
+                    cmd.Append(" -W ");
                 }
                 else
                 {
-                    cmd.Append(" -W ");
-                    const int millisInSecond = 1000;
-                    timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
-                    if (remainder != 0)
-                    {
-                        timeout += 1;
-                    }
+                    cmd.Append(" -x ");
                 }
-                cmd.Append(timeout);
             }
+            else if (s_isOSX)
+            {
+                if (ipv4)
+                {
+                    cmd.Append(" -W ");
+                }
+                else
+                {
+                    goto skipped_timeout;
+                }
+            }
+            else
+            {
+                cmd.Append(" -W ");
+                const int millisInSecond = 1000;
+                timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
+                if (remainder != 0)
+                {
+                    timeout += 1;
+                }
+            }
+            cmd.Append(timeout);
 
-            var sb = new StringBuilder();
-            sb.Append("-c 1"); // Just send a single ping ("count = 1")
-
-            AppendTimeout(sb, timeout, ipv4);
+        skipped_timeout:
 
             // The command-line flags for "Do-not-fragment" and "TTL" are not standard.
             // In fact, they are different even between ping and ping6 on the same machine.
