@@ -424,9 +424,28 @@ namespace System.Threading
             return ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this);
         }
 
+        internal void EnsureThreadPoolActive()
+        {
+            // Used for queuing.
+
+            // If we have not yet requested a thread, then request a new thread so the ThreadPool is active.
+            int count = numOutstandingThreadRequests;
+            while (count < 1)
+            {
+                int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
+                if (prev == count)
+                {
+                    ThreadPool.RequestWorkerThread();
+                    break;
+                }
+                count = prev;
+            }
+        }
+
         internal void EnsureThreadRequested()
         {
-            //
+            // Used when running work items with a non-empty queue.
+
             // If we have not yet requested #procs threads, then request a new thread.
             //
             // CoreCLR: Note that there is a separate count in the VM which has already been incremented
@@ -486,7 +505,7 @@ namespace System.Threading
                 workItems.Enqueue(callback);
             }
 
-            EnsureThreadRequested();
+            EnsureThreadPoolActive();
         }
 
         internal bool LocalFindAndPop(object callback)
