@@ -7,28 +7,24 @@ namespace System.Net.Quic.Tests
 {
     public class NewRenoTests
     {
-        private readonly NewRenoCongestionController reno;
+        private NewRenoCongestionController reno => NewRenoCongestionController.Instance;
+
+        private readonly RecoveryController recovery = new RecoveryController();
 
         private long Now = Timestamp.Now;
-
-        public NewRenoTests()
-        {
-            reno = new NewRenoCongestionController();
-            reno.Reset();
-        }
 
         [Fact]
         public void InitialWindowIsNotEmpty()
         {
-            Assert.True(reno.CongestionWindow > 0);
-            Assert.Equal(0, reno.BytesInFlight);
+            Assert.True(recovery.CongestionWindow > 0);
+            Assert.Equal(0, recovery.BytesInFlight);
         }
 
         [Fact]
         public void SendAddsToBytesInFlight()
         {
-            reno.OnPacketSent(new SentPacket(){ TimeSent = Now, BytesSent = 1000, InFlight = true});
-            Assert.Equal(1000, reno.BytesInFlight);
+            reno.OnPacketSent(recovery, new SentPacket(){ TimeSent = Now, BytesSent = 1000, InFlight = true});
+            Assert.Equal(1000, recovery.BytesInFlight);
         }
 
         [Fact]
@@ -37,27 +33,27 @@ namespace System.Net.Quic.Tests
             var packet = new SentPacket {TimeSent = Now, BytesSent = 5000, InFlight = true};
 
             // saturate initial congestion window (the congestion window does not increase when app-limited)
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
-            int window = reno.CongestionWindow;
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
+            int window = recovery.CongestionWindow;
 
-            reno.OnPacketAcked(packet, Now);
+            reno.OnPacketAcked(recovery, packet, Now);
             // congestion window should increase
-            Assert.Equal(window + packet.BytesSent, reno.CongestionWindow);
+            Assert.Equal(window + packet.BytesSent, recovery.CongestionWindow);
         }
 
         [Fact]
         public void ReducesWindowAfterCongestionEvent()
         {
-            int window = reno.CongestionWindow;
-            reno.OnCongestionEvent(Now - Timestamp.FromMilliseconds(15), Now);
+            int window = recovery.CongestionWindow;
+            reno.OnCongestionEvent(recovery, Now - Timestamp.FromMilliseconds(15), Now);
 
-            Assert.Equal(window / 2, reno.CongestionWindow);
+            Assert.Equal(window / 2, recovery.CongestionWindow);
 
             // further congestion events should not change the window
-            reno.OnCongestionEvent(Now - Timestamp.FromMilliseconds(15), Now);
-            Assert.Equal(window / 2, reno.CongestionWindow);
+            reno.OnCongestionEvent(recovery, Now - Timestamp.FromMilliseconds(15), Now);
+            Assert.Equal(window / 2, recovery.CongestionWindow);
         }
 
         [Fact]
@@ -66,14 +62,14 @@ namespace System.Net.Quic.Tests
             var packet = new SentPacket {TimeSent = Now, BytesSent = 5000, InFlight = true};
 
             // saturate initial congestion window (the congestion window does not increase when app-limited)
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
 
-            reno.OnCongestionEvent(Now, Now + Timestamp.FromMilliseconds(15));
-            int window = reno.CongestionWindow;
-            reno.OnPacketAcked(packet, Now); // sent before congestion recovery started
-            Assert.Equal(window, reno.CongestionWindow);
+            reno.OnCongestionEvent(recovery, Now, Now + Timestamp.FromMilliseconds(15));
+            int window = recovery.CongestionWindow;
+            reno.OnPacketAcked(recovery, packet, Now); // sent before congestion recovery started
+            Assert.Equal(window, recovery.CongestionWindow);
         }
 
         [Fact]
@@ -82,26 +78,26 @@ namespace System.Net.Quic.Tests
             var packet = new SentPacket {TimeSent = Now, BytesSent = 5000, InFlight = true};
 
             // saturate initial congestion window (the congestion window does not increase when app-limited)
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
-            reno.OnPacketSent(packet);
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
+            reno.OnPacketSent(recovery, packet);
 
             // experience congestion to set slow start threshold
-            int window = reno.CongestionWindow;
-            reno.OnCongestionEvent(Now, Now + Timestamp.FromMilliseconds(15));
-            Assert.Equal(window/2, reno.CongestionWindow);
+            int window = recovery.CongestionWindow;
+            reno.OnCongestionEvent(recovery, Now, Now + Timestamp.FromMilliseconds(15));
+            Assert.Equal(window/2, recovery.CongestionWindow);
 
             // send another packet some time later
             Now += Timestamp.FromMilliseconds(15);
             packet = new SentPacket {TimeSent = Now, BytesSent = 5000, InFlight = true};
-            reno.OnPacketSent(packet);
+            reno.OnPacketSent(recovery, packet);
 
             // this one gets acked
-            window = reno.CongestionWindow;
-            reno.OnPacketAcked(packet, Now + Timestamp.FromMilliseconds(10));
+            window = recovery.CongestionWindow;
+            reno.OnPacketAcked(recovery, packet, Now + Timestamp.FromMilliseconds(10));
 
             // congestion window should be increased by smaller value than packet size
-            Assert.True(reno.CongestionWindow - window < packet.BytesSent);
+            Assert.True(recovery.CongestionWindow - window < packet.BytesSent);
         }
     }
 }

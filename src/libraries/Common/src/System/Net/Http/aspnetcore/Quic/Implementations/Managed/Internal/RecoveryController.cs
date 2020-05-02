@@ -13,9 +13,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class RecoveryController
     {
+        internal const int MaxDatagramSize = 1452;
+
         public RecoveryController()
         {
-            CongestionController = new NewRenoCongestionController();
+            CongestionController = NewRenoCongestionController.Instance;
             Reset();
         }
 
@@ -40,6 +42,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     The RTT used before an RTT sample is taken in ticks. the RECOMMENDED value is 500ms.
         /// </summary>
         internal static readonly long InitialRtt = Timestamp.FromMilliseconds(500);
+
+        /// <summary>
+        ///     Minimum congestion window in bytes. The RECOMMENDED value is 2 * MaxDatagramSize.
+        /// </summary>
+        internal const int MinimumWindowSize = 2 * MaxDatagramSize;
+
+        /// <summary>
+        ///     Default limit on the initial amount of data in flight, in bytes. The RECOMMENDED value is the minimum
+        ///     of 10 * MaxDatagramSize and max(2 * MaxDatagramSize, 14720).
+        /// </summary>
+        internal static readonly int InitialWindowSize =
+            Math.Min(10 * MaxDatagramSize, Math.Max(2 * MaxDatagramSize, 14720));
+
 
         /// <summary>
         ///     Helper structure for holding packet number space related data together.
@@ -144,7 +159,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <returns></returns>
         internal int GetAvailableCongestionWindowBytes()
         {
-            return Math.Max(0, CongestionController.CongestionWindow - AckElicitingBytesInFlight);
+             return Math.Max(0, CongestionWindow - BytesInFlight);
         }
 
         /// <summary>
@@ -153,22 +168,39 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Include the QUIC header and AEAD overhead. Packets only containing ACK frames do not count towards this
         ///     count to ensure congestion control does not impede congestion feedback.
         /// </summary>
-        private int AckElicitingBytesInFlight => CongestionController.BytesInFlight;
+        internal int BytesInFlight { get; set; }
 
+        /// <summary>
+        ///     Current width of the congestion window in bytes.
+        /// </summary>
+        public int CongestionWindow { get; set; }
+
+        /// <summary>
+        ///     The timestamp when QUIC first detects congestion due to loss of ECN, causing it to enter congestion
+        ///     recovery. When a packet sent after this time is acknowledged, QUIC exits congestion recovery.
+        /// </summary>
+        internal long CongestionRecoveryStartTime { get; set; }
+
+        /// <summary>
+        ///     Slow start threshold in bytes. When the congestion window is below this value, the mode is slow start
+        ///     and the window grows by the number of bytes acknowledged.
+        /// </summary>
+        internal int SlowStartThreshold { get; set; }
 
         /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
         void Reset()
         {
-            CongestionController.Reset();
-
             PtoCount = 0;
             LatestRtt = 0;
             SmoothedRtt = 0;
             MinimumRtt = 0;
+            CongestionWindow = InitialWindowSize;
+            SlowStartThreshold = int.MaxValue;
             LossRecoveryTimer = long.MaxValue;
             MaxAckDelay = Timestamp.FromMilliseconds(25);
+            BytesInFlight = 0;
 
             foreach (PacketNumberSpace space in _pnSpaces)
             {
@@ -194,7 +226,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     pnSpace.TimeOfLastAckElicitingPacketSent = packet.TimeSent;
                 }
 
-                CongestionController.OnPacketSent(packet);
+                CongestionController.OnPacketSent(this, packet);
 
                 // Note that we do not set NextLossTime because we need to receive an ack for later packet in order
                 // to deem this packet lost. The NextLossTime has to be set only when receiving ack or during the
@@ -279,7 +311,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 if (packet.InFlight)
                 {
-                    CongestionController.OnPacketAcked(packet, now);
+                    CongestionController.OnPacketAcked(this, packet, now);
                 }
 
                 pnSpace.AckedPackets.Enqueue(packet);
@@ -353,7 +385,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return;
             }
 
-            if (AckElicitingBytesInFlight == 0 && // no ack-eliciting packets in flight
+            if (BytesInFlight == 0 && // no ack-eliciting packets in flight
                 PeerNotAwaitingAddressValidation())
             {
                 // no timer set
@@ -466,7 +498,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             pnSpace.SentPackets.RemoveRange(0, removed);
 
             // Inform the congestion controller of lost packets.
-            CongestionController.OnPacketsLost(lostPacketsForCc, now);
+            CongestionController.OnPacketsLost(this, lostPacketsForCc, now);
+        }
+
+        /// <summary>
+        ///     Drops all unacked data from given packet space.
+        /// </summary>
+        /// <param name="space"></param>
+        internal void DropUnackedData(PacketSpace space)
+        {
+            var pnSpace = GetPacketNumberSpace(space);
+
+            // remove sent bytes from congestion window
+            for (int i = 0; i < pnSpace.SentPackets.Count; i++)
+            {
+                if (pnSpace.SentPackets[i].InFlight)
+                {
+                    BytesInFlight -= pnSpace.SentPackets[i].BytesSent;
+                }
+            }
         }
     }
 }

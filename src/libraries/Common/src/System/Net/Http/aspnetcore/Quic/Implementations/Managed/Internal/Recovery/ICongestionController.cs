@@ -8,39 +8,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
     internal interface ICongestionController
     {
         /// <summary>
-        ///     Current width of the congestion window.
-        /// </summary>
-        int CongestionWindow { get; }
-
-        /// <summary>
-        ///     The sum of the size in bytes of all sent packets not acked or declared lost.
-        ///     The size does not include IP or UDP overhead, but does include the QUIC header and AEAD overhead.
-        /// </summary>
-        int BytesInFlight { get; }
-
-        /// <summary>
-        ///     Resets the controller to the initial state.
-        /// </summary>
-        void Reset();
-
-        /// <summary>
         ///     Called when a packet is sent.
         /// </summary>
+        /// <param name="recovery">The recovery controller.</param>
         /// <param name="packet">Packet sent.</param>
-        void OnPacketSent(SentPacket packet);
+        void OnPacketSent(RecoveryController recovery, SentPacket packet);
 
         /// <summary>
         ///     Called when a previously sent packet is acked.
         /// </summary>
+        /// <param name="recovery">The recovery controller.</param>
         /// <param name="packet">Packet acked.</param>
         /// <param name="now">Timestamp when ack was received in ticks</param>
-        void OnPacketAcked(SentPacket packet, long now);
+        void OnPacketAcked(RecoveryController recovery, SentPacket packet, long now);
 
         /// <summary>
         ///     Called when detecting loss of group of consecutive packets.
         /// </summary>
+        /// <param name="recovery">The recovery controller.</param>
         /// <param name="packets">Packets lost.</param>
         /// <param name="now">Timestamp when loss occured in ticks.</param>
-        void OnPacketsLost(List<SentPacket> packets, long now);
+        void OnPacketsLost(RecoveryController recovery, List<SentPacket> packets, long now);
     }
 }
