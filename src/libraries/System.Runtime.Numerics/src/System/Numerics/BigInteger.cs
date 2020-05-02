@@ -2388,7 +2388,7 @@ namespace System.Numerics
                 // and therefore the bigger one
                 return s_bnZeroInt;
             }
-            
+
             uint[]? quotientFromPool = null;
 
             if (trivialDivisor)
