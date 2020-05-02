@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void TestCurrentRegion_Windows()
+        public void CurrentRegion_Windows()
         {
             RemoteExecutor.Invoke(() =>
             {

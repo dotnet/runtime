@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -28,7 +29,7 @@ namespace System.Globalization
             return true;
         }
 
-        internal static unsafe bool GetDefaultLocaleName(out string? windowsName)
+        internal static unsafe bool GetDefaultLocaleName([NotNullWhen(true)] out string? windowsName)
         {
             // Get the default (system) locale name from ICU
             char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];

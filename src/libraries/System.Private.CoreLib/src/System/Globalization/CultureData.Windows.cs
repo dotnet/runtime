@@ -98,6 +98,7 @@ namespace System.Globalization
                 {
                     return false;
                 }
+
                 // We found a locale name, so use it.
                 // In vista this should look like a sort name (de-DE_phoneb) or a specific culture (en-US) and be in the "pretty" form
                 _sSpecificCulture = new string(pBuffer, 0, result - 1);
@@ -131,7 +132,7 @@ namespace System.Globalization
                 {
                     // not custom locale
                     int index = realNameBuffer.IndexOf('_');
-                    if (index > 0 && index < realNameBuffer.Length)
+                    if (index > 0)
                     {
                         _sName = realNameBuffer.Substring(0, index);
                     }

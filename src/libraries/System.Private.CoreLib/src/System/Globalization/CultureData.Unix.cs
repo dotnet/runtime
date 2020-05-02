@@ -17,7 +17,6 @@ namespace System.Globalization
         private bool InitCultureDataCore()
         {
             Debug.Assert(_sRealName != null);
-
             Debug.Assert(!GlobalizationMode.Invariant);
 
             string realNameBuffer = _sRealName;
