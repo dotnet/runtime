@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Xml;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -92,8 +93,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private static ulong ReadUnsignedInteger(ReadOnlySpan<byte> buffer, CborInitialByte header, out int additionalBytes)
+        private ulong ReadUnsignedInteger(ReadOnlySpan<byte> buffer, CborInitialByte header, out int additionalBytes)
         {
+            ulong result;
+
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo x when (x < CborAdditionalInfo.Additional8BitData):
@@ -102,26 +105,62 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 case CborAdditionalInfo.Additional8BitData:
                     EnsureBuffer(buffer, 2);
+                    result = buffer[1];
+
+                    if (result < (int)CborAdditionalInfo.Additional8BitData)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 1;
-                    return buffer[1];
+                    return result;
 
                 case CborAdditionalInfo.Additional16BitData:
                     EnsureBuffer(buffer, 3);
+                    result = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
+
+                    if (result <= byte.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 2;
-                    return BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
+                    return result;
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureBuffer(buffer, 5);
+                    result = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
+
+                    if (result <= ushort.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 4;
-                    return BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
+                    return result;
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureBuffer(buffer, 9);
+                    result = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
+
+                    if (result <= uint.MaxValue)
+                    {
+                        ValidateIsNonStandardIntegerRepresentationSupported();
+                    }
+
                     additionalBytes = 8;
-                    return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
+                    return result;
 
                 default:
                     throw new FormatException("initial byte contains invalid integer encoding data.");
+            }
+
+            void ValidateIsNonStandardIntegerRepresentationSupported()
+            {
+                if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresMinimalIntegerRepresentation(ConformanceLevel))
+                {
+                    throw new FormatException("Non-minimal integer representations are not permitted under the current conformance level.");
+                }
             }
         }
     }

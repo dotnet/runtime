@@ -59,6 +59,63 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(CborConformanceLevel.Lax, "9800")]
+        [InlineData(CborConformanceLevel.Lax, "990000")]
+        [InlineData(CborConformanceLevel.Lax, "9a00000000")]
+        [InlineData(CborConformanceLevel.Lax, "9b0000000000000000")]
+        [InlineData(CborConformanceLevel.Strict, "9800")]
+        [InlineData(CborConformanceLevel.Strict, "990000")]
+        [InlineData(CborConformanceLevel.Strict, "9a00000000")]
+        [InlineData(CborConformanceLevel.Strict, "9b0000000000000000")]
+        internal static void ReadArray_NonCanonicalLengths_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            int? length = reader.ReadStartArray();
+            Assert.NotNull(length);
+            Assert.Equal(0, length!.Value);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9800")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "990000")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9a00000000")]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9b0000000000000000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "9800")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "990000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "9a00000000")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "9b0000000000000000")]
+        internal static void ReadArray_NonCanonicalLengths_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax, "9fff")]
+        [InlineData(CborConformanceLevel.Strict, "9fff")]
+        internal static void ReadArray_IndefiniteLength_SupportedConformanceLevel_ShouldSucceed(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            int? length = reader.ReadStartArray();
+            Assert.Null(length);
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Rfc7049Canonical, "9fff")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "9fff")]
+        internal static void ReadArray_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, level);
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Theory]
         [InlineData("80", 0)]
         [InlineData("8101", 1)]
         [InlineData("83010203", 3)]
@@ -67,7 +124,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -88,13 +145,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
             {
-                ulong? nestedLength = reader.ReadStartArray();
-                Assert.Equal(1, (int)nestedLength!.Value);
+                int? nestedLength = reader.ReadStartArray();
+                Assert.Equal(1, nestedLength!.Value);
                 reader.ReadInt64();
                 reader.ReadEndArray();
             }
@@ -146,7 +203,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
@@ -167,13 +224,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
             {
-                ulong? nestedLength = reader.ReadStartArray();
-                Assert.Equal(1, (int)nestedLength!.Value);
+                int? nestedLength = reader.ReadStartArray();
+                Assert.Equal(1, nestedLength!.Value);
                 reader.ReadInt64();
                 reader.ReadEndArray();
             }
@@ -199,7 +256,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
@@ -220,13 +277,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.ReadStartArray();
+            int? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
             {
-                ulong? innerLength = reader.ReadStartArray();
-                Assert.Equal(1, (int)innerLength!.Value);
+                int? innerLength = reader.ReadStartArray();
+                Assert.Equal(1, innerLength!.Value);
                 reader.ReadInt64();
                 reader.ReadEndArray();
             }

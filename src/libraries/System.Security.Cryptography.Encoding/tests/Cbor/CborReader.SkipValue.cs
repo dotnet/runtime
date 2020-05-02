@@ -2,18 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+using System.Diagnostics;
+
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        public void SkipValue()
+        public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
+        public void SkipToParent(bool validateConformance = false)
         {
-            CborReaderCheckpoint checkpoint = CreateCheckpoint();
+            if (_currentMajorType is null)
+            {
+                throw new InvalidOperationException("CBOR reader is at the root context.");
+            }
+
+            SkipToAncestor(1, validateConformance);
+        }
+
+        private void SkipToAncestor(int depth, bool validateConformance)
+        {
+            Debug.Assert(0 <= depth && depth <= Depth);
+            Checkpoint checkpoint = CreateCheckpoint();
+            _isConformanceLevelCheckEnabled = validateConformance;
 
             try
             {
-                int depth = 0;
-
                 do
                 {
                     SkipNextNode(ref depth);
@@ -21,8 +35,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             catch
             {
-                RestoreCheckpoint(checkpoint);
+                RestoreCheckpoint(in checkpoint);
                 throw;
+            }
+            finally
+            {
+                _isConformanceLevelCheckEnabled = true;
             }
         }
 

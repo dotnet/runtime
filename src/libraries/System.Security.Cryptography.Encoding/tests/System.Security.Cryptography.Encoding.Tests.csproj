@@ -5,6 +5,7 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Marvin.cs" Link="System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Cbor\CborWriter.Tag.cs" />
+    <Compile Include="Cbor\CborConformanceLevel.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />
