@@ -50,6 +50,16 @@ namespace System.Net.Quic.Implementations.Managed
         private bool IsClosing => _closingPeriodEnd != null;
 
         /// <summary>
+        ///     Timestamp when the connection close will be initiated due to lack of packets from peer.
+        /// </summary>
+        private long _idleTimeout = long.MaxValue; // use infinite by default
+
+        /// <summary>
+        ///     True if an ack-eliciting packet has been sent since last receiving an ack-eliciting packet.
+        /// </summary>
+        private bool _ackElicitingSentSinceLastReceive;
+
+        /// <summary>
         ///     Timestamp when the closing period will be end and the connection will be considered closed.
         /// </summary>
         private long? _closingPeriodEnd;
@@ -250,11 +260,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             long timer = Recovery.LossRecoveryTimer;
 
-            // TODO-RZ: find a way to get shutdown reliably without hammering the peer with packets.
             if (_closingPeriodEnd != null)
                 timer = Math.Min(timer, _closingPeriodEnd.Value);
 
-            return timer;
+            return Math.Min(timer, _idleTimeout);
         }
 
         /// <summary>
@@ -328,7 +337,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (Recovery.GetPacketNumberSpace(probeSpace).RemainingLossProbes > 0)
             {
-                return (EncryptionLevel) probeSpace;
+                return (EncryptionLevel)probeSpace;
             }
 
             // if pending errors, send them in appropriate epoch,
@@ -630,7 +639,7 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: data race with user who is trying to open a new stream?
             foreach (var stream in _streams.AllStreams)
             {
-                stream.OnConnectionClosed();
+                stream.OnConnectionClosed(inboundError!);
             }
         }
 
@@ -640,6 +649,36 @@ namespace System.Net.Quic.Implementations.Managed
 
             // for all user's purposes, the connection is closed.
             SignalConnectionClose();
+        }
+
+        /// <summary>
+        ///     Calculates idle timeout based on the local and peer endpoints transport parameters.
+        /// </summary>
+        private long GetIdleTimeoutPeriod()
+        {
+            long localTimeout = Timestamp.FromMilliseconds(_localTransportParameters.MaxIdleTimeout);
+            long peerTimeout = Timestamp.FromMilliseconds(_peerTransportParameters.MaxIdleTimeout);
+
+            return (localTimeout, peerTimeout) switch
+            {
+                (0, 0) => 0,
+                (long t, 0) => t,
+                (0, long t) => t,
+                (long t, long u) => Math.Min(t, u)
+            };
+        }
+
+        private void RestartIdleTimer(long now)
+        {
+            long timeout = GetIdleTimeoutPeriod();
+            if (timeout > 0)
+            {
+                // RFC: If the idle timeout is enabled by either peer, a connection is
+                // silently closed and its state is discarded when it remains idle for
+                // longer than the minimum of the max_idle_timeouts (see Section 18.2)
+                // and three times the current Probe Timeout (PTO).
+                _idleTimeout = now + timeout + 3 * Recovery.GetProbeTimeoutInterval();
+            }
         }
     }
 }

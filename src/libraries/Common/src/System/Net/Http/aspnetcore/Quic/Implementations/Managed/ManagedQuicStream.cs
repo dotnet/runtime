@@ -217,12 +217,17 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
 
-        internal void OnConnectionClosed()
+        internal void OnConnectionClosed(QuicError inboundError)
         {
             // closing connection (CONNECTION_CLOSE frame) causes all streams to become closed
             NotifyShutdownWriteCompleted();
 
-            // TODO-RZ: handle callers blocking on async tasks
+            // TODO-RZ: handle callers blocking on other async tasks
+            if (inboundError != null)
+            {
+                InboundBuffer?.OnConnectionError(inboundError);
+                _shutdownCompleted.TryCompleteException(new QuicErrorException(inboundError));
+            }
         }
 
         internal override void Shutdown()

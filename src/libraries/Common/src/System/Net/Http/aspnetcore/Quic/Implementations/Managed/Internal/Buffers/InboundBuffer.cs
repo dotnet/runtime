@@ -279,5 +279,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             _bytesDeliverable += length;
             DrainDeliverableOutOfOrderChunks();
         }
+
+        public void OnConnectionError(QuicError error)
+        {
+            _deliverableChannel.Writer.Complete(new QuicErrorException(error));
+        }
     }
 }

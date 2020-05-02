@@ -21,12 +21,20 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var status = ReceiveOne(reader, ctx);
 
-                if (status == ProcessPacketResult.DropPacket)
+                switch (status)
                 {
-                    Console.WriteLine("Packet dropped");
+                    case ProcessPacketResult.DropPacket:
+                        Console.WriteLine("Packet dropped");
+                        break;
+                    case ProcessPacketResult.Ok:
+                        // An endpoint restarts its idle timer when a packet from its peer is
+                        // received and processed successfully.
+                        _ackElicitingSentSinceLastReceive = false;
+                        RestartIdleTimer(ctx.Timestamp);
+                        break;
                 }
 
-                // Receive will adjust the buffer length once it is known, thus the length here skips the
+                // ReceiveOne will adjust the buffer length once it is known, thus the length here skips the
                 // just processed coalesced packet
                 buffer = buffer.Slice(reader.Buffer.Length);
                 reader.Reset(buffer);
@@ -226,10 +234,16 @@ namespace System.Net.Quic.Implementations.Managed
         {
             receiver = _remoteEndpoint;
 
-            if (ctx.Timestamp > _closingPeriodEnd)
+            if(ctx.Timestamp > _closingPeriodEnd)
             {
                 SignalConnectionClose();
                 return;
+            }
+
+            if (ctx.Timestamp > _idleTimeout)
+            {
+                // TODO-RZ: Force close the connection with error
+                SignalConnectionClose();
             }
 
             if (_isDraining)
@@ -415,6 +429,12 @@ namespace System.Net.Quic.Implementations.Managed
             Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
             NetEventSource.PacketSent(this, context.SentPacket.BytesSent);
+
+            if (context.SentPacket.AckEliciting && !_ackElicitingSentSinceLastReceive)
+            {
+                RestartIdleTimer(context.Timestamp);
+                _ackElicitingSentSinceLastReceive = true;
+            }
 
             return true;
         }
