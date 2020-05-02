@@ -29,16 +29,45 @@
       <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
       <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
-      
-      <RunTimeArtifactsExcludeFiles Include="protononjit.dll" />
-      <RunTimeArtifactsExcludeFiles Include="linuxonjit.dll" />
-      
-      <RunTimeArtifactsIncludeFolders Include="/" />
-      <RunTimeArtifactsIncludeFolders Include="IL/" />
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/" />
-      <RunTimeArtifactsIncludeFolders Include="PDB/" />
-      <RunTimeArtifactsIncludeFolders Include="R2RTest/" />
+    </ItemGroup>
 
+    <ItemGroup>
+      <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/dbgshim.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-simple.pdb" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
+      <RunTimeArtifactsExcludeFiles Include="PDB/ilasm.pdb" />
+      <RunTimeArtifactsExcludeFiles Include="PDB/ildasm.pdb" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeArtifactsIncludeFolders Include="/" />
+
+      <!-- Used by the Crossgen comparison job -->
+      <RunTimeArtifactsIncludeFolders Include="IL/" />
+
+      <!-- Used for Crossgen2 R2R tests -->
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/" />
+
+      <!-- Used for capturing symbolic stack traces using Watson -->
+      <RunTimeArtifactsIncludeFolders Include="PDB/" />
+
+      <!-- Used by the coreroot_determinism test -->
+      <RunTimeArtifactsIncludeFolders Include="R2RTest/" />
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- Add binary dependencies to copy-local items -->
       <RunTimeDependencyCopyLocal
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"

@@ -831,12 +831,44 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunFixupKind.Check_TypeLayout:
                     ParseType(builder);
+                    ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
+                    builder.Append($" Flags {layoutFlags}");
+                    int actualSize = (int)ReadUInt();
+                    builder.Append($" Size {actualSize}");
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+                    {
+                        builder.Append($" HFAType {ReadUInt()}");
+                    }
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment))
+                    {
+                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
+                        {
+                            builder.Append($" Align {ReadUInt()}");
+                        }
+                    }
+
+                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
+                    {
+                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
+                        {
+                            int cbGCRefMap = (actualSize / _contextReader.TargetPointerSize + 7) / 8;
+                            builder.Append(" GCLayout ");
+                            for (int i = 0; i < cbGCRefMap; i++)
+                            {
+                                builder.Append(ReadByte().ToString("X"));
+                            }
+                        }
+                    }
+
                     builder.Append(" (CHECK_TYPE_LAYOUT)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:
-                    builder.Append("CHECK_FIELD_OFFSET");
-                    // TODO
+                    builder.Append($"{ReadUInt()} ");
+                    ParseField(builder);
+                    builder.Append(" (CHECK_FIELD_OFFSET)");
                     break;
 
                 case ReadyToRunFixupKind.Check_InstructionSetSupport:

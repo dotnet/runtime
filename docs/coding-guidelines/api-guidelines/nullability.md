@@ -94,6 +94,7 @@ The C# compiler respects a set of attributes that impact its flow analysis.  We 
 - **DO** annotate `ref` arguments that guarantee the argument will be non-`null` upon exit (e.g. lazy initialization helpers) with `[NotNull]`.
 - **DO** annotate properties where a getter will never return `null` but a setter allows `null` as being non-nullable but also `[AllowNull]`.
 - **DO** annotate properties where a getter may return `null` but a setter throws for `null` as being nullable but also `[DisallowNull]`.
+- **DO** add `[NotNullWhen(true)]` to nullable arguments of `Try` methods that will definitively be non-`null` if the method returns `true`.  For example, if `Int32.TryParse(string? s)` returns `true`, `s` is known to not be `null`, and so the method should be `public static bool TryParse([NotNullWhen(true)] string? s, out int result)`.
 
 ## Code Review Guidance
 

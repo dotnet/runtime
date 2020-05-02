@@ -9,9 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Xml;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler.PEWriter
 {
@@ -65,10 +63,21 @@ namespace ILCompiler.PEWriter
         /// </summary>
         public readonly int Length;
 
+        /// <summary>
+        /// Number of file-level relocations (.reloc section entries) used by the node.
+        /// </summary>
+        public int Relocations { get; private set; }
+
         public MapFileNode(int sectionIndex, int offset, int length, string name)
             : base(sectionIndex, offset, name)
         {
             Length = length;
+            Relocations = 0;
+        }
+
+        public void AddRelocation()
+        {
+            Relocations++;
         }
     }
 
@@ -98,14 +107,14 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Statistic information for a single node type.
         /// </summary>
-        private class Statistics
+        private class NodeTypeStatistics
         {
             public readonly string Name;
 
             public int Count;
             public int Length;
 
-            public Statistics(string name)
+            public NodeTypeStatistics(string name)
             {
                 Name = name;
             }
@@ -122,6 +131,8 @@ namespace ILCompiler.PEWriter
         private readonly List<MapFileSymbol> _symbols;
         private readonly List<Section> _sections;
 
+        private readonly Dictionary<RelocType, int> _relocCounts;
+
         private long _fileSize;
 
         public MapFileBuilder()
@@ -129,11 +140,20 @@ namespace ILCompiler.PEWriter
             _nodes = new List<MapFileNode>();
             _symbols = new List<MapFileSymbol>();
             _sections = new List<Section>();
+
+            _relocCounts = new Dictionary<RelocType, int>();
         }
 
         public void AddNode(MapFileNode node)
         {
             _nodes.Add(node);
+        }
+
+        public void AddRelocation(MapFileNode node, RelocType relocType)
+        {
+            node.AddRelocation();
+            _relocCounts.TryGetValue(relocType, out int relocTypeCount);
+            _relocCounts[relocType] = relocTypeCount + 1;
         }
 
         public void AddSymbol(MapFileSymbol symbol)
@@ -161,7 +181,8 @@ namespace ILCompiler.PEWriter
             using (StreamWriter mapWriter = new StreamWriter(mapFileName))
             {
                 WriteHeader(mapWriter);
-                WriteStatistics(mapWriter);
+                WriteNodeTypeStatistics(mapWriter);
+                WriteRelocTypeStatistics(mapWriter);
                 WriteSections(mapWriter);
                 WriteMap(mapWriter);
             }
@@ -175,18 +196,19 @@ namespace ILCompiler.PEWriter
             writer.WriteLine($"Section count:    {_sections.Count,10}");
             writer.WriteLine($"Node count:       {_nodes.Count,10}");
             writer.WriteLine($"Symbol count:     {_symbols.Count,10}");
+            writer.WriteLine($"Relocation count: {_relocCounts.Values.Sum(),10}");
         }
 
-        private void WriteStatistics(StreamWriter writer)
+        private void WriteNodeTypeStatistics(StreamWriter writer)
         {
-            List<Statistics> nodeTypeStats = new List<Statistics>();
+            List<NodeTypeStatistics> nodeTypeStats = new List<NodeTypeStatistics>();
             Dictionary<string, int> statsNameIndex = new Dictionary<string, int>();
             foreach (MapFileNode node in _nodes)
             {
                 if (!statsNameIndex.TryGetValue(node.Name, out int statsIndex))
                 {
                     statsIndex = nodeTypeStats.Count;
-                    nodeTypeStats.Add(new Statistics(node.Name));
+                    nodeTypeStats.Add(new NodeTypeStatistics(node.Name));
                     statsNameIndex.Add(node.Name, statsIndex);
                 }
                 nodeTypeStats[statsIndex].AddNode(node);
@@ -195,13 +217,43 @@ namespace ILCompiler.PEWriter
 
             WriteTitle(writer, "Node Type Statistics");
             WriteTitle(writer, "    LENGTH |   %FILE |    AVERAGE |  COUNT | NODETYPE");
-            foreach (Statistics nodeStats in nodeTypeStats)
+            foreach (NodeTypeStatistics nodeStats in nodeTypeStats)
             {
                 writer.Write($"{nodeStats.Length,10} | ");
                 writer.Write($"{(nodeStats.Length * 100.0 / _fileSize),7:F3} | ");
                 writer.Write($"{(nodeStats.Length / (double)nodeStats.Count),10:F1} | ");
                 writer.Write($"{nodeStats.Count,6} | ");
                 writer.WriteLine(nodeStats.Name);
+            }
+        }
+
+        private void WriteRelocTypeStatistics(StreamWriter writer)
+        {
+            KeyValuePair<RelocType, int>[] relocTypeCounts = _relocCounts.ToArray();
+            Array.Sort(relocTypeCounts, (a, b) => b.Value.CompareTo(a.Value));
+
+            WriteTitle(writer, "Reloc Type Statistics");
+            WriteTitle(writer, "   COUNT | RELOC_TYPE");
+            foreach (KeyValuePair<RelocType, int> relocTypeCount in relocTypeCounts)
+            {
+                writer.Write($"{relocTypeCount.Value,8} | ");
+                writer.WriteLine(relocTypeCount.Key.ToString());
+            }
+
+            const int NumberOfTopNodesByRelocType = 10;
+
+            WriteTitle(writer, "Top Nodes By Relocation Count");
+            WriteTitle(writer, "   COUNT | SYMBOL  (NODE)");
+
+            foreach (MapFileNode node in _nodes.Where(node => node.Relocations != 0).OrderByDescending(node => node.Relocations).Take(NumberOfTopNodesByRelocType))
+            {
+                writer.Write($"{node.Relocations,8} | ");
+                int symbolIndex = _symbols.BinarySearch(new MapFileSymbol(node.SectionIndex, node.Offset, name: null), MapFileItem.Comparer.Instance);
+                if (symbolIndex >= 0 && symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(_symbols[symbolIndex], node) == 0)
+                {
+                    writer.Write($"{_symbols[symbolIndex].Name}");
+                }
+                writer.WriteLine($"  ({node.Name})");
             }
         }
 
@@ -224,7 +276,7 @@ namespace ILCompiler.PEWriter
         private void WriteMap(StreamWriter writer)
         {
             WriteTitle(writer, "Node & Symbol Map");
-            WriteTitle(writer, "RVA        | LENGTH   | SECTION | SYMBOL (NODE)");
+            WriteTitle(writer, "RVA        | LENGTH   | RELOCS | SECTION | SYMBOL (NODE)");
 
             int nodeIndex = 0;
             int symbolIndex = 0;
@@ -237,7 +289,8 @@ namespace ILCompiler.PEWriter
                     MapFileSymbol symbol = _symbols[symbolIndex++];
                     Section section = _sections[symbol.SectionIndex];
                     writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8} | ");
-                    writer.Write("         | "); // 
+                    writer.Write("         | ");
+                    writer.Write("       | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
                     writer.WriteLine(symbol.Name);
                 }
@@ -249,6 +302,7 @@ namespace ILCompiler.PEWriter
 
                     writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8} | ");
                     writer.Write($"0x{node.Length:X6} | ");
+                    writer.Write($"{node.Relocations,6} | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
                     if (symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(node, _symbols[symbolIndex]) == 0)
                     {

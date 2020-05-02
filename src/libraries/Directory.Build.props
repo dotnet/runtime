@@ -304,7 +304,7 @@
     <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
-    <BinPlaceTestRuntimePack Condition="'$(TargetsMobile)' == 'true'">true</BinPlaceTestRuntimePack>
+    <BinPlaceTestRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono'">true</BinPlaceTestRuntimePack>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 

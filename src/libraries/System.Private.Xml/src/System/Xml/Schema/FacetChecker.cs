@@ -334,6 +334,13 @@ namespace System.Xml.Schema
                 {
                     throw new XmlSchemaException(SR.Sch_FractionDigitsFacetInvalid, SR.Sch_FractionDigitsNotOnDecimal, facet);
                 }
+                if ((_baseFixedFlags & RestrictionFlags.FractionDigits) != 0)
+                {
+                    if (_datatype.Restriction.FractionDigits != _derivedRestriction.FractionDigits)
+                    {
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
+                    }
+                }
                 if ((_baseFlags & RestrictionFlags.FractionDigits) != 0)
                 {
                     if (_derivedRestriction.FractionDigits > _datatype.Restriction.FractionDigits)
