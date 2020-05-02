@@ -35,8 +35,8 @@ namespace System.Numerics
             Span<uint> valueCopy = bits.Length <= AllocationThreshold ?
                                    stackalloc uint[bits.Length]
                                    : (valueCopyFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
-            valueCopy.Clear();
             value.CopyTo(valueCopy);
+            valueCopy.Slice(value.Length).Clear();
 
             PowCore(valueCopy, value.Length, temp, power, bits);
 
