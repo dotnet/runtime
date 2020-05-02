@@ -180,24 +180,34 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     assert(simdSize != 0);
 
+    CORINFO_CLASS_HANDLE argClass;
+
+    if (retType == TYP_STRUCT)
+    {
+        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
+        retType  = getSIMDTypeForSize(simdSize);
+    }
+    else
+    {
+        argClass = info.compCompHnd->getArgClass(sig, sig->args);
+        baseType = getBaseTypeAndSizeOfSIMDType(argClass, &simdSize);
+    }
+
     if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (sig->numArgs != 0))
     {
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
         clsHnd = info.compCompHnd->getArgClass(sig, sig->args);
+
+        // We also need to adjust the baseType as some methods on Vector return
+        // a type different than the operation we need to perform. An example
+        // is LessThan or Equals which takes double but returns long. This is
+        // unlike the counterparts on Vector<T> which take a return the same type.
+        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
-    if (retType == TYP_STRUCT)
-    {
-        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
-        simdType = getSIMDTypeForSize(simdSize);
-        retType  = simdType;
-    }
-    else
-    {
-        assert(!"Unexpected SimdAsHWIntrinsic");
-        return nullptr;
-    }
+    simdType = getSIMDTypeForSize(simdSize);
+    assert(varTypeIsSIMD(simdType));
 
     if (!varTypeIsArithmetic(baseType))
     {
@@ -236,7 +246,6 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
     CORINFO_ARG_LIST_HANDLE argList = sig->args;
     var_types               argType = TYP_UNKNOWN;
-    CORINFO_CLASS_HANDLE    argClass;
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
