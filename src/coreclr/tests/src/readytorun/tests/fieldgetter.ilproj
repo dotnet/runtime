@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
+    <!-- This requires a specific targetis OS because it fails when built on OSX and run on Windows -->
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="fieldgetter.il" />
