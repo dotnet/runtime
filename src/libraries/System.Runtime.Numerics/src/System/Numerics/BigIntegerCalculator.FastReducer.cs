@@ -14,7 +14,7 @@ namespace System.Numerics
 
         // see https://en.wikipedia.org/wiki/Barrett_reduction
 
-        internal readonly ref struct FastReducer
+        private readonly ref struct FastReducer
         {
             private readonly ReadOnlySpan<uint> _modulus;
             private readonly ReadOnlySpan<uint> _mu;
