@@ -59,7 +59,10 @@ namespace System.Numerics
                 int l2 = DivMul(_q1.Slice(0, l1), _modulus, _q2, _modulus.Length + 1);
 
                 // Let v = (v - q2) % 2^(k+1) - i*m
-                return SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
+                var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
+                value.Slice(length).Clear();
+
+                return length;
             }
 
             private static int DivMul(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int k)
@@ -104,8 +107,6 @@ namespace System.Numerics
                 Debug.Assert(!left.IsEmpty);
                 Debug.Assert(!right.IsEmpty);
 
-                Span<uint> originalLeft = left; //TODO: Should be removed later
-
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
                 // preceding reduction by 2^(32*k). Furthermore, if left is
@@ -124,8 +125,6 @@ namespace System.Numerics
                     SubtractSelf(left, modulus);
                     left = left.Slice(0, ActualLength(left));
                 }
-
-                originalLeft.Slice(left.Length, originalLeft.Length - left.Length).Clear(); //TODO: Should be removed later
 
                 return left.Length;
             }
