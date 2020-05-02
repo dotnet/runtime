@@ -24,6 +24,7 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeMode: ''
+  runtimeModeDisplayName: ''
   # If true, tests were built in two phases
   # We will depend on both the TargetGeneric tests which are for AnyOS AnyCPU
   # as well as the TargetSpecific test.  Both sets of tests will be run
