@@ -557,6 +557,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
                 break;
 
+                case NI_Vector64_ToScalar:
+                case NI_Vector128_ToScalar:
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                INS_OPTS_NONE);
+
+                    break;
+
             default:
                 unreached();
         }
