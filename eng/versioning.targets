@@ -128,7 +128,8 @@
     <WriteLinesToFile
       File="$(RuntimeVersionFile)"
       Lines="$(_RuntimeVersionFileContents)"
-      Overwrite="true" />
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
 
   </Target>
 </Project>

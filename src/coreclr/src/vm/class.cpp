@@ -1253,11 +1253,6 @@ CorElementType MethodTable::GetHFAType()
         {
         case ELEMENT_TYPE_VALUETYPE:
             pMT = pFirstField->LookupApproxFieldTypeHandle().GetMethodTable();
-            vectorSize = pMT->GetVectorSize();
-            if (vectorSize != 0)
-            {
-                return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
-            }
             break;
 
         case ELEMENT_TYPE_R4:

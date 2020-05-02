@@ -5,6 +5,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Xsl;
 using Xunit;
 
@@ -70,6 +71,38 @@ namespace System.Xml.Tests
 
             // Then, last '>' will be cut off in resulting string if BOM is present
             Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-32\"?>", string.Concat(resultString.Take(39)));
+        }
+
+        [Fact]
+        public static async Task AsyncSyncWrite_StreamResult_ShouldMatch()
+        {
+            using (var syncStream = new MemoryStream())
+            using (var asyncStream = new MemoryStream())
+            {
+                await using (var writer = XmlWriter.Create(asyncStream, new XmlWriterSettings() { Async = true }))
+                {
+                    await writer.WriteStartDocumentAsync();
+                    await writer.WriteStartElementAsync(string.Empty, "root", null);
+                    await writer.WriteStartElementAsync(null, "test", null);
+                    await writer.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                    await writer.WriteStringAsync("value");
+                    await writer.WriteEndElementAsync();
+                    await writer.WriteEndElementAsync();
+                }
+
+                using (var writer = XmlWriter.Create(syncStream, new XmlWriterSettings() { Async = false }))
+                {
+                    writer.WriteStartDocument();
+                    writer.WriteStartElement("root");
+                    writer.WriteStartElement("test");
+                    writer.WriteAttributeString("abc", "1");
+                    writer.WriteString("value");
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+
+                Assert.Equal(syncStream.ToArray(), asyncStream.ToArray());
+            }
         }
     }
 }

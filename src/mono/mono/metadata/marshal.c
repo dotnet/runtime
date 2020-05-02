@@ -5191,11 +5191,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHan
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
-	if (bytes)
-		memmove (dest, managed_source_addr, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) {
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
+		if (bytes)
+			memmove (dest, managed_source_addr, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 void
@@ -5208,11 +5210,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpoin
 {
 	g_assert_not_netcore ();
 
-	MonoGCHandle gchandle = 0;
-	gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
-	if (bytes)
-		memmove (managed_dest_addr, src, bytes); // no references should be involved
-	mono_gchandle_free_internal (gchandle);
+	if (length != 0) { 
+		MonoGCHandle gchandle = 0;
+		gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
+		if (bytes)
+			memmove (managed_dest_addr, src, bytes); // no references should be involved
+		mono_gchandle_free_internal (gchandle);
+	}
 }
 
 MonoStringHandle

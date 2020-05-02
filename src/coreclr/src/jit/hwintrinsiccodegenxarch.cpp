@@ -359,6 +359,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_Vector256:
             genBaseIntrinsic(node);
             break;
+        case InstructionSet_X86Base:
+        case InstructionSet_X86Base_X64:
+            genX86BaseIntrinsic(node);
+            break;
         case InstructionSet_SSE:
         case InstructionSet_SSE_X64:
             genSSEIntrinsic(node);
@@ -1239,6 +1243,24 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector128_get_AllBitsSet:
+        case NI_Vector256_get_AllBitsSet:
+        {
+            assert(op1 == nullptr);
+            if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                // The immediate 8 means Equal (unordered, non-signaling)
+                // This is not available without VEX prefix.
+                emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, targetReg, targetReg, 8);
+            }
+            else
+            {
+                assert(varTypeIsIntegral(baseType) || !compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+            }
+            break;
+        }
+
         default:
         {
             unreached();
@@ -1247,6 +1269,40 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genX86BaseIntrinsic: Generates the code for an X86 base hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
+void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+
+    switch (intrinsicId)
+    {
+        case NI_X86Base_BitScanForward:
+        case NI_X86Base_BitScanReverse:
+        case NI_X86Base_X64_BitScanForward:
+        case NI_X86Base_X64_BitScanReverse:
+        {
+            GenTree*    op1        = node->gtGetOp1();
+            regNumber   targetReg  = node->GetRegNum();
+            var_types   targetType = node->TypeGet();
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+
+            genConsumeOperands(node);
+            genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1);
+            genProduceReg(node);
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 //------------------------------------------------------------------------
