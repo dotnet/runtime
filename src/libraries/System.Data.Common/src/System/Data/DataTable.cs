@@ -3688,12 +3688,12 @@ namespace System.Data
             IndexField[] indexDesc = Array.Empty<IndexField>();
             if ((null != sortString) && (0 < sortString.Length))
             {
-                string[] split = sortString.Split(',');
+                string[] split = sortString.Split(',', StringSplitOptions.TrimEntries);
                 indexDesc = new IndexField[split.Length];
 
                 for (int i = 0; i < split.Length; i++)
                 {
-                    string current = split[i].Trim();
+                    string current = split[i];
 
                     // handle ASC and DESC.
                     int length = current.Length;
