@@ -21,6 +21,17 @@ namespace System.IO.Tests
             Assert.Empty(Path.GetPathRoot(value));
         }
 
+        [Fact]
+        public static void GetPathRoot_VerifySameOutput_SpanVsString()
+        {
+            string original = "/home/../folder/../..";
+            string expected = "/";
+            string actualString = Path.GetPathRoot(original);
+            ReadOnlySpan<char> actualSpan = Path.GetPathRoot(original.AsSpan());
+            Assert.Equal(expected, actualString);
+            Assert.Equal(expected, actualSpan.ToString());
+        }
+
         [Theory,
             InlineData("B:", "B:"),
             InlineData("A:.", "A:.")]
