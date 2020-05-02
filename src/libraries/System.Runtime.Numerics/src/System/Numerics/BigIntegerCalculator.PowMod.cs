@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -14,45 +15,103 @@ namespace System.Numerics
 
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 
-        public static uint[] Pow(uint value, uint power)
+        public static void Pow(uint value, uint power, Span<uint> bits)
         {
-            // The basic pow method for a 32-bit integer.
-            // To spare memory allocations we first roughly
-            // estimate an upper bound for our buffers.
-
-            int size = PowBound(power, 1);
-            BitsBuffer v = new BitsBuffer(size, value);
-            return PowCore(power, ref v);
+            Pow(value != 0U ? MemoryMarshal.CreateReadOnlySpan(ref value, 1) : default, power, bits);
         }
 
-        public static uint[] Pow(uint[] value, uint power)
+        public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(bits.Length == PowBound(power, value.Length));
 
             // The basic pow method for a big integer.
-            // To spare memory allocations we first roughly
-            // estimate an upper bound for our buffers.
+            uint[]? tempFromPool = null;
+            Span<uint> temp = bits.Length <= AllocationThreshold ?
+                              stackalloc uint[bits.Length]
+                              : (tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            temp.Clear();
 
-            int size = PowBound(power, value.Length);
-            BitsBuffer v = new BitsBuffer(size, value);
-            return PowCore(power, ref v);
+            uint[]? valueCopyFromPool = null;
+            Span<uint> valueCopy = bits.Length <= AllocationThreshold ?
+                                   stackalloc uint[bits.Length]
+                                   : (valueCopyFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
+            valueCopy.Clear();
+            value.CopyTo(valueCopy);
+
+            PowCore(valueCopy, value.Length, temp, power, bits);
+
+            if (tempFromPool != null)
+                ArrayPool<uint>.Shared.Return(tempFromPool);
+            if (valueCopyFromPool != null)
+                ArrayPool<uint>.Shared.Return(valueCopyFromPool);
         }
 
-        private static uint[] PowCore(uint power, ref BitsBuffer value)
+        private static void PowCore(Span<uint> value, int valueLength, Span<uint> temp, uint power, Span<uint> bits)
         {
-            // Executes the basic pow algorithm.
+            Debug.Assert(value.Length >= valueLength);
+            Debug.Assert(temp.Length == bits.Length);
+            Debug.Assert(value.Length == temp.Length);
 
-            int size = value.GetSize();
+            //save the result buffer to temp variable because bits buffer will change during buffer switch later
+            Span<uint> result = bits;
 
-            BitsBuffer temp = new BitsBuffer(size, 0);
-            BitsBuffer result = new BitsBuffer(size, 1);
+            bits[0] = 1;
+            int bitsLength = 1;
 
-            PowCore(power, ref value, ref result, ref temp);
+            // The basic pow algorithm using square-and-multiply.
+            while (power != 0)
+            {
+                if ((power & 1) == 1)
+                    bitsLength = MultiplySelf(ref bits, bitsLength, value.Slice(0, valueLength), ref temp);
+                if (power != 1)
+                    valueLength = SquareSelf(ref value, valueLength, ref temp);
+                power = power >> 1;
+            }
 
-            return result.GetBits();
+            bits.CopyTo(result);
         }
 
-        private static int PowBound(uint power, int valueLength)
+        private static int MultiplySelf(ref Span<uint> left, int leftLength, ReadOnlySpan<uint> right, ref Span<uint> temp)
+        {
+            Debug.Assert(leftLength <= left.Length);
+
+            int resultLength = leftLength + right.Length;
+
+            if (leftLength >= right.Length)
+            {
+                Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
+            }
+            else
+            {
+                Multiply(right, left.Slice(0, leftLength), temp.Slice(0, resultLength));
+            }
+
+            left.Clear();
+            //switch buffers
+            Span<uint> t = left;
+            left = temp;
+            temp = t;
+            return ActualLength(left.Slice(0, resultLength));
+        }
+
+        private static int SquareSelf(ref Span<uint> value, int valueLength, ref Span<uint> temp)
+        {
+            Debug.Assert(valueLength <= value.Length);
+            Debug.Assert(temp.Length >= valueLength + valueLength);
+
+            int resultLength = valueLength + valueLength;
+
+            Square(value.Slice(0, valueLength), temp.Slice(0, resultLength));
+
+            value.Clear();
+            //switch buffers
+            Span<uint> t = value;
+            value = temp;
+            temp = t;
+            return ActualLength(value.Slice(0, resultLength));
+        }
+
+        public static int PowBound(uint power, int valueLength)
         {
             // The basic pow algorithm, but instead of squaring
             // and multiplying we just sum up the lengths.
@@ -71,21 +130,6 @@ namespace System.Numerics
             }
 
             return resultLength;
-        }
-
-        private static void PowCore(uint power, ref BitsBuffer value,
-                                    ref BitsBuffer result, ref BitsBuffer temp)
-        {
-            // The basic pow algorithm using square-and-multiply.
-
-            while (power != 0)
-            {
-                if ((power & 1) == 1)
-                    result.MultiplySelf(ref value, ref temp);
-                if (power != 1)
-                    value.SquareSelf(ref temp);
-                power = power >> 1;
-            }
         }
 
         public static uint Pow(uint value, uint power, uint modulus)

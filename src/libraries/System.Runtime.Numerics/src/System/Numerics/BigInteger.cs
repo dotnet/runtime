@@ -984,6 +984,10 @@ namespace System.Numerics
 
             bool trivialValue = value._bits == null;
 
+            uint power = NumericsHelpers.Abs(exponent);
+            uint[]? valuesFromPool = null;
+            BigInteger result;
+
             if (trivialValue)
             {
                 if (value._sign == 1)
@@ -992,13 +996,32 @@ namespace System.Numerics
                     return (exponent & 1) != 0 ? value : s_bnOneInt;
                 if (value._sign == 0)
                     return value;
+
+                int size = BigIntegerCalculator.PowBound(power, 1);
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (valuesFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                bits.Clear();
+
+                BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), power, bits);
+                result = new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
+            }
+            else
+            {
+                int size = BigIntegerCalculator.PowBound(power, value._bits!.Length);
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (valuesFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                bits.Clear();
+
+                BigIntegerCalculator.Pow(value._bits, power, bits);
+                result = new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
             }
 
-            uint[] bits = trivialValue
-                        ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent))
-                        : BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent));
+            if (valuesFromPool != null)
+                ArrayPool<uint>.Shared.Return(valuesFromPool);
 
-            return new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
+            return result;
         }
 
         public override int GetHashCode()
