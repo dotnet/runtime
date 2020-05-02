@@ -98,29 +98,12 @@ namespace System.Numerics
                 ArrayPool<uint>.Shared.Return(leftCopyFromPool);
         }
 
-        public static uint[] Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
-        {
-            Debug.Assert(left.Length >= 1);
-            Debug.Assert(right.Length >= 1);
-            Debug.Assert(left.Length >= right.Length);
-
-            // Same as above, but only returning the remainder.
-
-            // NOTE: left will get overwritten, we need a local copy
-
-            uint[] localLeft = left.ToArray();
-
-            Divide(localLeft, right, default);
-
-            return localLeft;
-        }
-
         public static void Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> remainder)
         {
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(remainder.Length == left.Length);
+            Debug.Assert(remainder.Length >= left.Length);
 
             // Same as above, but only returning the remainder.
 

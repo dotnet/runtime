@@ -198,7 +198,6 @@ namespace System.Numerics
         private static int Reduce(Span<uint> bits, ReadOnlySpan<uint> modulus)
         {
             // Executes a modulo operation using the divide operation.
-            // Thus, no need of any switching here, happens in-line.
 
             if (bits.Length >= modulus.Length)
             {

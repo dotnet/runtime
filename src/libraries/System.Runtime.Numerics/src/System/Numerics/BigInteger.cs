@@ -950,6 +950,8 @@ namespace System.Numerics
             bool trivialExponent = exponent._bits == null;
             bool trivialModulus = modulus._bits == null;
 
+            BigInteger result;
+
             if (trivialModulus)
             {
                 uint bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
@@ -957,17 +959,40 @@ namespace System.Numerics
                             trivialExponent ? BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
                             BigIntegerCalculator.Pow(value._bits!, exponent._bits!, NumericsHelpers.Abs(modulus._sign));
 
-                return value._sign < 0 && !exponent.IsEven ? -1 * bits : bits;
+                result = value._sign < 0 && !exponent.IsEven ? -1 * bits : bits;
             }
             else
             {
-                uint[] bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits!) :
-                              trivialValue ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits!, modulus._bits!) :
-                              trivialExponent ? BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent._sign), modulus._bits!) :
-                              BigIntegerCalculator.Pow(value._bits!, exponent._bits!, modulus._bits!);
+                int size = (modulus._bits?.Length ?? 1) << 1;
+                uint[]? bitsFromPool = null;
+                Span<uint> bits = size <= StackAllocThreshold ?
+                                  stackalloc uint[size]
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                bits.Clear();
+                if (trivialValue && trivialExponent)
+                {
+                    BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits!, bits);
+                }
+                else if (trivialValue)
+                {
+                    BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits!, modulus._bits!, bits);
+                }
+                else if (trivialExponent)
+                {
+                    BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent._sign), modulus._bits!, bits);
+                }
+                else
+                {
+                    BigIntegerCalculator.Pow(value._bits!, exponent._bits!, modulus._bits!, bits);
+                }
 
-                return new BigInteger(bits, value._sign < 0 && !exponent.IsEven);
+                result = new BigInteger(bits, value._sign < 0 && !exponent.IsEven);
+
+                if (bitsFromPool != null)
+                    ArrayPool<uint>.Shared.Return(bitsFromPool);
             }
+
+            return result;
         }
 
         public static BigInteger Pow(BigInteger value, int exponent)
