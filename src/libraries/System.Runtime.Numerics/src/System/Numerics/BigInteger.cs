@@ -1010,7 +1010,7 @@ namespace System.Numerics
             bool trivialValue = value._bits == null;
 
             uint power = NumericsHelpers.Abs(exponent);
-            uint[]? valuesFromPool = null;
+            uint[]? bitsFromPool = null;
             BigInteger result;
 
             if (trivialValue)
@@ -1025,7 +1025,7 @@ namespace System.Numerics
                 int size = BigIntegerCalculator.PowBound(power, 1);
                 Span<uint> bits = size <= StackAllocThreshold ?
                                   stackalloc uint[size]
-                                  : (valuesFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
                 bits.Clear();
 
                 BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), power, bits);
@@ -1036,15 +1036,15 @@ namespace System.Numerics
                 int size = BigIntegerCalculator.PowBound(power, value._bits!.Length);
                 Span<uint> bits = size <= StackAllocThreshold ?
                                   stackalloc uint[size]
-                                  : (valuesFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
+                                  : (bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).AsSpan(0, size);
                 bits.Clear();
 
                 BigIntegerCalculator.Pow(value._bits, power, bits);
                 result = new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
             }
 
-            if (valuesFromPool != null)
-                ArrayPool<uint>.Shared.Return(valuesFromPool);
+            if (bitsFromPool != null)
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2388,12 +2388,13 @@ namespace System.Numerics
                 // and therefore the bigger one
                 return s_bnZeroInt;
             }
+            
+            uint[]? quotientFromPool = null;
 
             if (trivialDivisor)
             {
                 Debug.Assert(dividend._bits != null);
 
-                uint[]? quotientFromPool = null;
                 int size = dividend._bits.Length;
                 Span<uint> quotient = size <= StackAllocThreshold ?
                                       stackalloc uint[size]
@@ -2420,7 +2421,6 @@ namespace System.Numerics
             }
             else
             {
-                uint[]? quotientFromPool = null;
                 int size = dividend._bits.Length - divisor._bits.Length + 1;
                 Span<uint> quotient = size < StackAllocThreshold ?
                                       stackalloc uint[size]
