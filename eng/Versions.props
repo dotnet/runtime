@@ -82,7 +82,7 @@
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.20228.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>5.0.0-beta.20228.1</SystemDrawingCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>5.0.0-beta.20251.1</SystemDrawingCommonTestDataVersion>
     <SystemIOCompressionTestDataVersion>5.0.0-beta.20228.1</SystemIOCompressionTestDataVersion>
     <SystemIOPackagingTestDataVersion>5.0.0-beta.20228.1</SystemIOPackagingTestDataVersion>
     <SystemNetTestDataVersion>5.0.0-beta.20228.1</SystemNetTestDataVersion>

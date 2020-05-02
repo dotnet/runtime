@@ -90,9 +90,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>4aa2a9b60112e056b61295826c2def4956b14bbc</Sha>
     </Dependency>
-    <Dependency Name="System.Drawing.Common.TestData" Version="5.0.0-beta.20228.1">
+    <Dependency Name="System.Drawing.Common.TestData" Version="5.0.0-beta.20251.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>4aa2a9b60112e056b61295826c2def4956b14bbc</Sha>
+      <Sha>205a003b723482863e26e9d29eb7c8513ae3ded1</Sha>
     </Dependency>
     <Dependency Name="System.IO.Compression.TestData" Version="5.0.0-beta.20228.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
