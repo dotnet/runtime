@@ -20,39 +20,35 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const long DefaultAckDelayExponent = 3;
         internal const long DefaultMaxAckDelay = 25;
 
-        // defaults specific for this implementation, since many values cannot be set from user code
-        internal const long DefaultMaxStreamData = 64 * 1024;
-        // TODO-RZ: decrease this, maybe use size of socket recv bufer
-        internal const long DefaultMaxData = 1024 * 1024 * 1024;
+
+        private static TransportParameters Create(long maxBidiStreams, long maxUniStreams, TimeSpan idleTimeout)
+        {
+            // defaults specific for this implementation, since many values cannot be set from user code
+            const long defaultMaxStreamData = 1024 * 1024;
+            // TODO-RZ: decrease this, maybe use size of socket recv bufer
+            const long defaultMaxData = 1024 * 1024 * 1024;
+
+            return new TransportParameters
+            {
+                InitialMaxStreamsBidi = maxBidiStreams,
+                InitialMaxStreamsUni = maxUniStreams,
+                MaxIdleTimeout = idleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
+
+                InitialMaxData = defaultMaxData,
+                InitialMaxStreamDataUni = defaultMaxStreamData,
+                InitialMaxStreamDataBidiLocal = defaultMaxStreamData,
+                InitialMaxStreamDataBidiRemote = defaultMaxStreamData,
+            };
+        }
 
         internal static TransportParameters FromClientConnectionOptions(QuicClientConnectionOptions options)
         {
-            return new TransportParameters
-            {
-                InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
-                InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
-                MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
-
-                InitialMaxData = DefaultMaxData,
-                InitialMaxStreamDataUni = DefaultMaxStreamData,
-                InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
-                InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
-            };
+            return Create(options.MaxBidirectionalStreams, options.MaxUnidirectionalStreams, options.IdleTimeout);
         }
 
         internal static TransportParameters FromListenerOptions(QuicListenerOptions options)
         {
-            return new TransportParameters
-            {
-                InitialMaxStreamsBidi = options.MaxBidirectionalStreams,
-                InitialMaxStreamsUni = options.MaxUnidirectionalStreams,
-                MaxIdleTimeout = options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
-
-                InitialMaxData = DefaultMaxData,
-                InitialMaxStreamDataUni = DefaultMaxStreamData,
-                InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
-                InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
-            };
+            return Create(options.MaxBidirectionalStreams, options.MaxUnidirectionalStreams, options.IdleTimeout);
         }
 
         /// <summary>

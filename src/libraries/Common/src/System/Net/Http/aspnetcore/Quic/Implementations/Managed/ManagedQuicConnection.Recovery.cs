@@ -60,6 +60,8 @@ namespace System.Net.Quic.Implementations.Managed
         /// <param name="pnSpace">The packet number space in which the packet was sent.</param>
         private void OnPacketLost(SentPacket packet, PacketNumberSpace pnSpace)
         {
+            NetEventSource.PacketLost(this, packet.BytesSent);
+
             if (packet.AckEliciting || packet.TimeSent == pnSpace.LastAckSent)
             {
                 pnSpace.AckElicited = true;

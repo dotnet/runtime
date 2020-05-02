@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 
@@ -413,6 +414,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, _tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
+            NetEventSource.PacketSent(this, context.SentPacket.BytesSent);
 
             return true;
         }
