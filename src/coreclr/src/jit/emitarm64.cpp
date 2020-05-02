@@ -2867,7 +2867,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*static*/ UINT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
 {
     bool     onesShift = (bsImm.immOnes == 1);
-    unsigned bySh      = bsImm.immBY;         // Num Bytes to shift 0,1,2,3
+    unsigned bySh      = bsImm.immBY;          // Num Bytes to shift 0,1,2,3
     UINT32   result    = (UINT32)bsImm.immVal; // 8-bit immediate
 
     if (bySh > 0)
