@@ -58,7 +58,7 @@ steps:
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
-      _RuntimeMode: #{{ parameters.runtimeMode }}
+      _RuntimeMode: ${{ parameters.runtimeMode }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
@@ -100,6 +100,7 @@ steps:
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      _RuntimeMode: ${{ parameters.runtimeMode }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

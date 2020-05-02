@@ -207,6 +207,7 @@
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
     <HelixPreCommand Include="type %__TestEnv%" />
+    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter' " Condition=" '$(RuntimeMode)' == 'interpreter' " />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
@@ -226,16 +227,8 @@
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(TargetOS)' != 'OSX' " />
     <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(TargetOS)' == 'OSX' " />
+    <HelixPreCommand Include="export MONO_ENV_OPTIONS='--interpreter" Condition=" '$(RuntimeMode)' == 'interpreter' " />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' and $(RuntimeMode) == 'interpreter' " >
-    <HelixPreCommand Include="export MONO_ENV_OPTIONS='--interpreter"/>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetWindows)' == 'true' and '$(RuntimeMode)' == 'interpreter' ">
-    <HelixPreCommand Include="set MONO_ENV_OPTIONS='--interpreter' "/>
-  </ItemGroup>
-
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
