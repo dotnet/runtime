@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
             PushDataItem(CborMajorType.Map, definiteLength: checked(2 * definiteLength));
+            _currentKeyOffset = _offset;
         }
 
         public void WriteStartMap()
@@ -34,7 +35,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Map, definiteLength: null);
             _currentKeyOffset = _offset;
-            _currentValueOffset = null;
         }
 
         public void WriteEndMap()

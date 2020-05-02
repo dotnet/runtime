@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
             EnsureWriteCapacity(value.Length);
 
-            if (!EncodeIndefiniteLengths && IsMajorTypeContext(CborMajorType.ByteString))
+            if (!EncodeIndefiniteLengths && _currentMajorType == CborMajorType.ByteString)
             {
                 // operation is writing chunk of an indefinite-length string
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
 
-            if (!EncodeIndefiniteLengths && IsMajorTypeContext(CborMajorType.TextString))
+            if (!EncodeIndefiniteLengths && _currentMajorType == CborMajorType.TextString)
             {
                 // operation is writing chunk of an indefinite-length string
                 Debug.Assert(_currentIndefiniteLengthStringRanges != null);

@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public int? ReadStartMap()
         {
+            int? length;
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Map);
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 AdvanceBuffer(1);
                 PushDataItem(CborMajorType.Map, null);
-                return null;
+                length = null;
             }
             else
             {
@@ -41,8 +42,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 AdvanceBuffer(1 + additionalBytes);
                 PushDataItem(CborMajorType.Map, 2 * (int)mapSize);
-                return (int)mapSize;
+                length = (int)mapSize;
             }
+
+            _currentKeyOffset = _bytesRead;
+            _currentItemIsKey = true;
+            return length;
         }
 
         public void ReadEndMap()

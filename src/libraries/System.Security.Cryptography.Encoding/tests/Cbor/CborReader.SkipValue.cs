@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
         public void SkipToParent(bool validateConformance = false)
         {
-            if ((_nestedDataItems?.Count ?? 0) == 0)
+            if (_currentMajorType is null)
             {
                 throw new InvalidOperationException("CBOR reader is at the root context.");
             }
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void SkipToAncestor(int depth, bool validateConformance)
         {
-            Debug.Assert(0 <= depth && depth <= (_nestedDataItems?.Count ?? 0));
+            Debug.Assert(0 <= depth && depth <= Depth);
             Checkpoint checkpoint = CreateCheckpoint();
             _isConformanceLevelCheckEnabled = validateConformance;
 
