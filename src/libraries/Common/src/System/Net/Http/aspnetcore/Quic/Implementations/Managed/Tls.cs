@@ -1,7 +1,9 @@
 #nullable enable
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
@@ -47,6 +49,11 @@ namespace System.Net.Quic.Implementations.Managed
             Interop.OpenSslQuic.SslSetConnectState(_ssl);
             if (options.ClientAuthenticationOptions?.TargetHost != null)
                 Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, options.ClientAuthenticationOptions.TargetHost);
+
+            if (options.ClientAuthenticationOptions != null)
+            {
+                SetAlpn(options.ClientAuthenticationOptions.ApplicationProtocols);
+            }
         }
 
         internal Tls(GCHandle handle, QuicListenerOptions options, TransportParameters localTransportParameters)
@@ -59,6 +66,27 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (options.PrivateKeyFilePath != null)
                 Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, options.PrivateKeyFilePath, SslFiletype.Pem);
+
+            if (options.ServerAuthenticationOptions != null)
+            {
+                SetAlpn(options.ServerAuthenticationOptions.ApplicationProtocols);
+            }
+        }
+
+        private unsafe void SetAlpn(List<SslApplicationProtocol> protos)
+        {
+            Span<byte> buffer = stackalloc byte[protos.Sum(p => p.Protocol.Length + 1)];
+            int offset = 0;
+            foreach (var protocol in protos)
+            {
+                buffer[offset] = (byte) protocol.Protocol.Length;
+                protocol.Protocol.Span.CopyTo(buffer.Slice(offset + 1));
+                offset += 1 + protocol.Protocol.Length;
+            }
+
+            int result = Interop.OpenSslQuic.SslSetAlpnProtos(_ssl,
+                new IntPtr(Unsafe.AsPointer(ref MemoryMarshal.AsRef<byte>(buffer))), buffer.Length);
+            Debug.Assert(result == 0);
         }
 
         private unsafe Tls(GCHandle handle, bool isServer, TransportParameters localTransportParams)
@@ -189,6 +217,17 @@ namespace System.Net.Quic.Implementations.Managed
             ArrayPool<byte>.Shared.Return(buffer);
 
             return parameters;
+        }
+
+        internal unsafe SslApplicationProtocol GetAlpnProtocol()
+        {
+            int result = Interop.OpenSslQuic.SslGet0AlpnSelected(_ssl, out IntPtr pString, out int length);
+            if (pString != IntPtr.Zero)
+            {
+                return new SslApplicationProtocol(Marshal.PtrToStringAnsi(pString, length));
+            }
+
+            return new SslApplicationProtocol();
         }
 
         private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,

@@ -265,8 +265,6 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: handle failed handshake attempts
             var status = _tls.DoHandshake();
 
-            // TODO-RZ: application level protocol negotiation
-
             if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
             {
                 var param = _tls.GetPeerTransportParameters(_isServer);
@@ -573,7 +571,7 @@ namespace System.Net.Quic.Implementations.Managed
             return stream;
         }
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol => _tls.GetAlpnProtocol();
 
         internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {

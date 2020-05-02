@@ -171,6 +171,12 @@ internal static partial class Interop
             return list;
         }
 
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_alpn_protos")]
+        internal static extern int SslSetAlpnProtos(IntPtr ssl, IntPtr protosStr, int protosLen);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get0_alpn_selected")]
+        internal static extern int SslGet0AlpnSelected(IntPtr ssl, out IntPtr data, out int len);
+
         static OpenSslQuic()
         {
             ErrPrintErrorsCb(PrintErrors, IntPtr.Zero);

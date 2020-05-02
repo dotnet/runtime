@@ -20,24 +20,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const long DefaultAckDelayExponent = 3;
         internal const long DefaultMaxAckDelay = 25;
 
+        // defaults specific for this implementation, since many values cannot be set from user code
+        internal const long DefaultMaxStreamData = 1024 * 1024;
+        // TODO-RZ: decrease this, maybe use size of socket recv bufer
+        internal const long DefaultMaxData = 1024 * 1024 * 1024;
 
         private static TransportParameters Create(long maxBidiStreams, long maxUniStreams, TimeSpan idleTimeout)
         {
-            // defaults specific for this implementation, since many values cannot be set from user code
-            const long defaultMaxStreamData = 1024 * 1024;
-            // TODO-RZ: decrease this, maybe use size of socket recv bufer
-            const long defaultMaxData = 1024 * 1024 * 1024;
 
             return new TransportParameters
             {
                 InitialMaxStreamsBidi = maxBidiStreams,
                 InitialMaxStreamsUni = maxUniStreams,
                 MaxIdleTimeout = idleTimeout.Ticks / TimeSpan.TicksPerMillisecond,
-
-                InitialMaxData = defaultMaxData,
-                InitialMaxStreamDataUni = defaultMaxStreamData,
-                InitialMaxStreamDataBidiLocal = defaultMaxStreamData,
-                InitialMaxStreamDataBidiRemote = defaultMaxStreamData,
+                InitialMaxData = DefaultMaxData,
+                InitialMaxStreamDataUni = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiLocal = DefaultMaxStreamData,
+                InitialMaxStreamDataBidiRemote = DefaultMaxStreamData,
             };
         }
 
