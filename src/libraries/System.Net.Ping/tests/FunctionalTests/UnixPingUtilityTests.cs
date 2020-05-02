@@ -27,6 +27,10 @@ namespace System.Net.NetworkInformation.Tests
         public static void TimeoutIsRespected(int timeout)
         {
             Process p = ConstructPingProcess(IPAddress.Parse(TestSettings.UnreachableAddress), 50, timeout);
+            //suppress Ping output to console/terminal stdout during test execution
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.RedirectStandardOutput = true;
+
             Stopwatch stopWatch = Stopwatch.StartNew();
                         
             p.Start();
