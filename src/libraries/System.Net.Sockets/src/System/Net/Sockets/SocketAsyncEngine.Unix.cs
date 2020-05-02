@@ -430,6 +430,13 @@ namespace System.Net.Sockets
                 // collectively they may starve other types of work items from running. Before dequeuing and processing another
                 // event, check the elapsed time since the start of the work item and yield the thread after some time has
                 // elapsed to allow the thread pool to run other work items.
+                //
+                // The threshold chosen below was based on trying various thresholds and in trying to keep the latency of
+                // running another work item low when these work items are using up all of the thread pool worker threads. In
+                // such cases, the latency would be something like threshold / proc count. Smaller thresholds were tried and
+                // using Stopwatch instead (like 1 ms, 5 ms, etc.), from quick tests they appeared to have a slightly greater
+                // impact on throughput compared to the threshold chosen below, though it is slight enough that it may not
+                // matter much. Higher thresholds didn't seem to have any noticeable effect.
                 if (Environment.TickCount - startTimeMs >= 15)
                 {
                     break;
