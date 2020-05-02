@@ -90,18 +90,18 @@ namespace System.Net.NetworkInformation
             {
                 if (ipv4)
                 {
-                    cmd.Append(" -W ");
+                    sb.Append(" -W ");
                 }
                 else
                 {
-                    cmd.Append(" -x ");
+                    sb.Append(" -x ");
                 }
             }
             else if (s_isOSX)
             {
                 if (ipv4)
                 {
-                    cmd.Append(" -W ");
+                    sb.Append(" -W ");
                 }
                 else
                 {
@@ -110,7 +110,7 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                cmd.Append(" -W ");
+                sb.Append(" -W ");
                 const int millisInSecond = 1000;
                 timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
                 if (remainder != 0)
@@ -118,7 +118,7 @@ namespace System.Net.NetworkInformation
                     timeout += 1;
                 }
             }
-            cmd.Append(timeout);
+            sb.Append(timeout);
 
         skipped_timeout:
 
