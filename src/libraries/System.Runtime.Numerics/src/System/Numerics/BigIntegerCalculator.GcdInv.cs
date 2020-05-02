@@ -195,19 +195,6 @@ namespace System.Numerics
             left.CopyTo(result);
         }
 
-        private static int Reduce(Span<uint> bits, ReadOnlySpan<uint> modulus)
-        {
-            // Executes a modulo operation using the divide operation.
-
-            if (bits.Length >= modulus.Length)
-            {
-                Divide(bits, modulus, default);
-
-                return ActualLength(bits.Slice(0, modulus.Length));
-            }
-            return bits.Length;
-        }
-
         private static int Overwrite(Span<uint> buffer, ulong value)
         {
             Debug.Assert(buffer.Length >= 2);
