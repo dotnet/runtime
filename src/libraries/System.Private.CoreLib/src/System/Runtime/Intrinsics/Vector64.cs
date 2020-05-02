@@ -809,6 +809,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the first element from.</param>
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static T ToScalar<T>(this Vector64<T> vector)
             where T : struct
         {
