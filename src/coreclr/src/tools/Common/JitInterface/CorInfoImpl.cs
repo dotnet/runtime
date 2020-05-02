@@ -59,10 +59,10 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)]
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
         private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
@@ -1689,7 +1689,7 @@ namespace Internal.JitInterface
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
                 // for NULL "this" object. It does not conform with what the spec says. However, we have been historically
                 // doing it for perf reasons.
-                if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
+                if (!typeToInit.IsValueType && !typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
                     if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
                     {
@@ -2013,7 +2013,7 @@ namespace Internal.JitInterface
         {
             var td = HandleToObject(cls) as ArrayType;
             Debug.Assert(td != null);
-            return (uint) td.Rank;
+            return (uint)td.Rank;
         }
 
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
@@ -2203,7 +2203,19 @@ namespace Internal.JitInterface
         private CorInfoType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
         {
             var type = (DefType)HandleToObject(hClass);
-            return type.IsHfa ? asCorInfoType(type.HfaElementType) : CorInfoType.CORINFO_TYPE_UNDEF;
+
+            // For 8-byte vectors return CORINFO_TYPE_DOUBLE, which is mapped by JIT to SIMD8.
+            // Otherwise, return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
+            // See MethodTable::GetHFAType and Compiler::GetHfaType.
+            return (type.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+            {
+                ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoType.CORINFO_TYPE_FLOAT,
+                ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
+                ValueTypeShapeCharacteristics.Vector256Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
+                _ => CorInfoType.CORINFO_TYPE_UNDEF
+            };
         }
 
         private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
