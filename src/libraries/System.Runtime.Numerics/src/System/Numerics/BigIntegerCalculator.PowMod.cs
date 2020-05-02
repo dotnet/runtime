@@ -199,12 +199,14 @@ namespace System.Numerics
             return (uint)(result % modulus);
         }
 
-        public static void Pow(uint value, uint power, ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(uint value, uint power,
+                               ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
             Pow(value != 0U ? MemoryMarshal.CreateReadOnlySpan(ref value, 1) : default, power, modulus, bits);
         }
 
-        public static void Pow(ReadOnlySpan<uint> value, uint power, ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(ReadOnlySpan<uint> value, uint power,
+                               ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
             Debug.Assert(!modulus.IsEmpty);
             Debug.Assert(bits.Length == modulus.Length + modulus.Length);
@@ -242,12 +244,14 @@ namespace System.Numerics
                 ArrayPool<uint>.Shared.Return(tempFromPool);
         }
 
-        public static void Pow(uint value, ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(uint value, ReadOnlySpan<uint> power,
+                               ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
             Pow(value != 0U ? MemoryMarshal.CreateReadOnlySpan(ref value, 1) : default, power, modulus, bits);
         }
 
-        public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,
+                               ReadOnlySpan<uint> modulus, Span<uint> bits)
         {
             Debug.Assert(!modulus.IsEmpty);
             Debug.Assert(bits.Length == modulus.Length + modulus.Length);
@@ -277,7 +281,7 @@ namespace System.Numerics
                               : (tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).AsSpan(0, bits.Length);
             temp.Clear();
 
-            PowCore(power, modulus, valueCopy, ActualLength(valueCopy), temp, bits);
+            PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
             if (valueCopyFromPool != null)
                 ArrayPool<uint>.Shared.Return(valueCopyFromPool);
@@ -288,8 +292,8 @@ namespace System.Numerics
         // Mutable for unit testing...
         private static int ReducerThreshold = 32;
 
-        private static void PowCore(ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
-                                    Span<uint> value, int valueLength,
+        private static void PowCore(Span<uint> value, int valueLength,
+                                    ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
                                     Span<uint> temp, Span<uint> bits)
         {
             // Executes the big pow algorithm.
@@ -298,7 +302,7 @@ namespace System.Numerics
 
             if (modulus.Length < ReducerThreshold)
             {
-                PowCore(power, modulus, value, valueLength, bits, 1, temp).CopyTo(bits);
+                PowCore(value, valueLength, power, modulus, bits, 1, temp).CopyTo(bits);
             }
             else
             {
@@ -334,7 +338,7 @@ namespace System.Numerics
                 if (rFromPool != null)
                     ArrayPool<uint>.Shared.Return(rFromPool);
 
-                PowCore(power, reducer, value, valueLength, bits, 1, temp).CopyTo(bits);
+                PowCore(value, valueLength, power, reducer, bits, 1, temp).CopyTo(bits);
 
                 if (muFromPool != null)
                     ArrayPool<uint>.Shared.Return(muFromPool);
@@ -345,15 +349,16 @@ namespace System.Numerics
             }
         }
 
-        private static void PowCore(Span<uint> value, int valueLength, uint power, ReadOnlySpan<uint> modulus,
-                                      Span<uint> temp, Span<uint> bits)
+        private static void PowCore(Span<uint> value, int valueLength,
+                                    uint power, ReadOnlySpan<uint> modulus,
+                                    Span<uint> temp, Span<uint> bits)
         {
             // Executes the big pow algorithm.
             bits[0] = 1;
 
             if (modulus.Length < ReducerThreshold)
             {
-                PowCore(power, modulus, value, valueLength, bits, 1, temp).CopyTo(bits);
+                PowCore(value, valueLength, power, modulus, bits, 1, temp).CopyTo(bits);
             }
             else
             {
@@ -389,7 +394,7 @@ namespace System.Numerics
                 if (rFromPool != null)
                     ArrayPool<uint>.Shared.Return(rFromPool);
 
-                PowCore(power, reducer, value, valueLength, bits, 1, temp).CopyTo(bits);
+                PowCore(value, valueLength, power, reducer, bits, 1, temp).CopyTo(bits);
 
                 if (muFromPool != null)
                     ArrayPool<uint>.Shared.Return(muFromPool);
@@ -400,10 +405,10 @@ namespace System.Numerics
             }
         }
 
-        private static Span<uint> PowCore(ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
-                                    Span<uint> value, int valueLength,
-                                    Span<uint> result, int resultLength,
-                                    Span<uint> temp)
+        private static Span<uint> PowCore(Span<uint> value, int valueLength,
+                                          ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
+                                          Span<uint> result, int resultLength,
+                                          Span<uint> temp)
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
@@ -427,13 +432,13 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(power[power.Length - 1], modulus, value, valueLength, result, resultLength, temp);
+            return PowCore(value, valueLength, power[power.Length - 1], modulus, result, resultLength, temp);
         }
 
-        private static Span<uint> PowCore(uint power, ReadOnlySpan<uint> modulus,
-                                    Span<uint> value, int valueLength,
-                                    Span<uint> result, int resultLength,
-                                    Span<uint> temp)
+        private static Span<uint> PowCore(Span<uint> value, int valueLength,
+                                          uint power, ReadOnlySpan<uint> modulus,
+                                          Span<uint> result, int resultLength,
+                                          Span<uint> temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
@@ -459,10 +464,10 @@ namespace System.Numerics
             return result;
         }
 
-        private static Span<uint> PowCore(ReadOnlySpan<uint> power, in FastReducer reducer,
-                                    Span<uint> value, int valueLength,
-                                    Span<uint> result, int resultLength,
-                                    Span<uint> temp)
+        private static Span<uint> PowCore(Span<uint> value, int valueLength,
+                                          ReadOnlySpan<uint> power, in FastReducer reducer,
+                                          Span<uint> result, int resultLength,
+                                          Span<uint> temp)
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
@@ -486,13 +491,13 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(power[power.Length - 1], reducer, value, valueLength, result, resultLength, temp);
+            return PowCore(value, valueLength, power[power.Length - 1], reducer, result, resultLength, temp);
         }
 
-        private static Span<uint> PowCore(uint power, in FastReducer reducer,
-                                    Span<uint> value, int valueLength,
-                                    Span<uint> result, int resultLength,
-                                    Span<uint> temp)
+        private static Span<uint> PowCore(Span<uint> value, int valueLength,
+                                          uint power, in FastReducer reducer,
+                                          Span<uint> result, int resultLength,
+                                          Span<uint> temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
